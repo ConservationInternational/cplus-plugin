@@ -1,7 +1,5 @@
 # CPLUS QGIS plugin
 
-<img src="img/ci_logo.png" alt= “” width="50" height="50">
-
 ## Introduction
 
 Through the help of community leaders and policymakers, the mission of Conservation International (CI) is to combat climate

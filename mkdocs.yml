@@ -1,10 +1,9 @@
-site_name: CPLUS QGIS CPLUS
+site_name: CPLUS QGIS plugin
 
 repo_name: 'kartoza/cplus-plugin'
 repo_url: 'https://github.com/kartoza/cplus-plugin'
 
 site_description: CPLUS
-
 site_author: Kartoza
 
 nav:
@@ -28,26 +27,9 @@ plugins:
   - git-revision-date-localized
   - mkdocs-video
 
-markdown_extensions:
-  - pymdownx.highlight:
-      anchor_linenums: true
-  - pymdownx.inlinehilite
-  - pymdownx.snippets
-  - admonition
-  - pymdownx.arithmatex:
-      generic: true
-  - footnotes
-  - pymdownx.details
-  - pymdownx.superfences
-  - pymdownx.mark
-  - attr_list
-
-extra_css:
-  - stylesheets/extra.css
-
 theme:
   name: material
-  logo: img/logos/cplus_logo.svg
+  logo: img/ci_logo.png
   features:
     - navigation.tabs
     - navigation.sections
@@ -75,3 +57,21 @@ theme:
 extra:
   social:
     - icon: fontawesome/brands/github-alt
+      link: https://github.com/vermeulendivan
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - admonition
+  - pymdownx.arithmatex:
+      generic: true
+  - footnotes
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.mark
+  - attr_list
+
+extra_css:
+  - stylesheets/extra.css
