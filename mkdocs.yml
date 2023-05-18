@@ -29,7 +29,7 @@ plugins:
 
 theme:
   name: material
-  logo: img/ci_logo.png
+  logo: img/logos/cplus_logo.svg
   features:
     - navigation.tabs
     - navigation.sections
