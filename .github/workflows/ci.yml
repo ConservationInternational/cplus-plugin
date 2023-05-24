@@ -3,7 +3,7 @@ name: Continuous Integration
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     types:
       - edited
@@ -11,7 +11,7 @@ on:
       - reopened
       - synchronize
     branches:
-      - master
+      - main
 
 env:
   # Global environment variable
