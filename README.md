@@ -1,10 +1,26 @@
 # CPLUS QGIS plugin
 
 
+QGIS plugin for the CPLUS framework.
+
+![image](https://github.com/Samweli/ci-cplus-scoping/assets/2663775/cbcfdad4-34c5-4214-a633-b6a5cdc2515c)
+
+
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/kartoza/cplus-plugin/ci.yml?branch=main)
 ![GitHub](https://img.shields.io/github/license/kartoza/cplus-plugin)
 
-QGIS plugin for the CPLUS framework.
+[![QGIS.org](https://img.shields.io/badge/QGIS.org-ondevelopment-yellow)](https://plugins.qgis.org/plugins/ci-cplus-plugin/)
+[![Documentation](https://img.shields.io/badge/Documentation-onprogress-inactive)](https://github.com/kartoza/ci-cplus/actions/workflows/doc.yml)
+[![Tests](https://img.shields.io/badge/Tests-onprogress-inactive)](https://github.com/kartoza/ci-cplus-plugin/actions/workflows/ci.yml)
+
+
+### Versions
+
+* Available and supported in all the QGIS 3.x versions
+
+| Plugin version   | Minimum QGIS version | Maximum QGIS version |
+|-------------|----------|------|
+| 0.0.1   | 3.0          | 3.99 |
 
 ### Installation
 
