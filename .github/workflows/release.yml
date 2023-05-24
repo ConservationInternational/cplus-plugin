@@ -69,8 +69,8 @@ jobs:
           echo " " >> docs/repository/plugins.xml 
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        #git config --global --add safe.directory /__w/plugin-repo-name/plugin-repo-name
+          git config --global --add safe.directory /__w/cplus-plugin/cplus-plugin
 
           git add -A
-          git commit -m "Update on plugins.xml"
+          git commit -m "Update on the plugins.xml"
           git push origin release
