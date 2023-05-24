@@ -1,9 +1,8 @@
 
 # -*- coding: utf-8 -*-
-""" QGIS STAC plugin admin operations
+""" QGIS CPLUS plugin admin operations
 
 """
-
 
 import os
 
@@ -45,6 +44,29 @@ class GithubRelease:
     url: str
     published_at: dt.datetime
 
+
+@app.callback()
+def main(
+        context: typer.Context,
+        verbose: bool = False,
+        qgis_profile: str = "default"):
+    """Performs various development-oriented tasks for this plugin
+
+    :param context: Application context
+    :type context: typer.Context
+
+    :param verbose: Boolean value to whether more details should be displayed
+    :type verbose: bool
+
+    :param qgis_profile: QGIS user profile to be used when operating in
+            QGIS application
+    :type qgis_profile: str
+
+    """
+    context.obj = {
+        "verbose": verbose,
+        "qgis_profile": qgis_profile,
+    }
 
 @app.command()
 def install(
