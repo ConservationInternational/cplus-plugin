@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/cplus_plugin">
+        <file>icon.svg</file>
+    </qresource>
+</RCC>
