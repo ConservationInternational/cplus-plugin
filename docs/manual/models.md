@@ -1,5 +1,9 @@
 # CPLUS model
 
+https://www.pnas.org/doi/10.1073/pnas.1710465114
+
+https://royalsocietypublishing.org/doi/10.1098/rstb.2019.0126
+
 ## Implementation models
 
 ![Simplified analysis model](../img/cplus_core/simplified_analysis_model.svg)
