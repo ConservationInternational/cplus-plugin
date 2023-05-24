@@ -1,7 +1,7 @@
 # CPLUS QGIS plugin
 
 
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/kartoza/cplus-plugin/ci.yml?branch=master)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/kartoza/cplus-plugin/ci.yml?branch=main)
 ![GitHub](https://img.shields.io/github/license/kartoza/cplus-plugin)
 
 QGIS plugin for the CPLUS framework.
@@ -82,9 +82,17 @@ pip install virtualenvwrapper
     pip install -r requirements-dev.txt
    ```
 
+#### Plugin admin interface
+The plugin contain an admin script that can be used for various development tasks.
 
-To install the plugin into the QGIS application, activate virtual environment and then use the below command
-
+Install the plugin into the QGIS application, activate virtual environment the use the below command.
 ```
  python admin.py install
+```
+
+Generate a plugin zip file using the below command, after successful run a plugin zip file will be located
+on the `dist` folder under the plugin root folder.
+
+```
+python admin.py generate-zip
 ```
