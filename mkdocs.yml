@@ -72,6 +72,3 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.mark
   - attr_list
-
-extra_css:
-  - stylesheets/extra.css
