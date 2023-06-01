@@ -44,7 +44,7 @@
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>450</y>
+         <y>330</y>
          <width>541</width>
          <height>71</height>
         </rect>
@@ -80,58 +80,15 @@
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>240</y>
+         <y>70</y>
          <width>541</width>
-         <height>201</height>
+         <height>251</height>
         </rect>
        </property>
        <property name="title">
         <string>Reports</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout">
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_10">
-          <item>
-           <widget class="QLabel" name="lbl_footer">
-            <property name="text">
-             <string>Footer</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QTextEdit" name="txt_footer"/>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_7">
-          <item>
-           <widget class="QLabel" name="lbl_disclaimer">
-            <property name="text">
-             <string>Disclaimer</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QTextEdit" name="txt_disclaimer"/>
-          </item>
-         </layout>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QgsCollapsibleGroupBox" name="mGroupBox_3">
-       <property name="geometry">
-        <rect>
-         <x>9</x>
-         <y>9</y>
-         <width>531</width>
-         <height>221</height>
-        </rect>
-       </property>
-       <property name="title">
-        <string>Configure Analysis</string>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
@@ -193,6 +150,34 @@
          </layout>
         </item>
         <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_10">
+          <item>
+           <widget class="QLabel" name="lbl_footer">
+            <property name="text">
+             <string>Footer</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTextEdit" name="txt_footer"/>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_7">
+          <item>
+           <widget class="QLabel" name="lbl_disclaimer">
+            <property name="text">
+             <string>Disclaimer</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTextEdit" name="txt_disclaimer"/>
+          </item>
+         </layout>
+        </item>
+        <item>
          <layout class="QHBoxLayout" name="horizontalLayout_5">
           <item>
            <widget class="QLabel" name="lbl_license">
@@ -207,6 +192,20 @@
          </layout>
         </item>
        </layout>
+      </widget>
+      <widget class="QgsCollapsibleGroupBox" name="mGroupBox_3">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>10</y>
+         <width>531</width>
+         <height>51</height>
+        </rect>
+       </property>
+       <property name="title">
+        <string>Configure Analysis</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_2"/>
       </widget>
      </widget>
     </widget>
