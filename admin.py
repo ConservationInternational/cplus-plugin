@@ -68,6 +68,7 @@ def main(
         "qgis_profile": qgis_profile,
     }
 
+
 @app.command()
 def install(
         context: typer.Context,
@@ -138,7 +139,6 @@ def uninstall(context: typer.Context):
     base_target_directory = root_directory / "python/plugins" / SRC_NAME
     shutil.rmtree(str(base_target_directory), ignore_errors=True)
     _log(f"Removed {str(base_target_directory)!r}", context=context)
-
 
 
 @app.command()
@@ -282,7 +282,6 @@ def compile_resources(
     target_path.parent.mkdir(parents=True, exist_ok=True)
     _log(f"compile_resources target_path: {target_path}", context=context)
     subprocess.run(shlex.split(f"pyrcc5 -o {target_path} {resources_path}"))
-
 
 
 @app.command()
