@@ -1,5 +1,12 @@
 name: Build documentation
-on: workflow_dispatch
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
 
 jobs:
   build-docs:
@@ -7,14 +14,25 @@ jobs:
     container:
       image: qgis/qgis:release-3_16
     steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          key: ${{github.ref}}
+          path: .cache
 
       - name: Fix Python command
         run: apt-get install python-is-python3
 
       - name: Install plugin dependencies
         run: pip install -r requirements-dev.txt
+
+      - name: Install mkdocs-material
+        run: pip install mkdocs-material
 
       - name: Generate plugin repo XML
         run: python admin.py --verbose generate-plugin-repo-xml
