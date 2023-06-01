@@ -24,7 +24,7 @@ from .gui.qgis_cplus_main import QgisCplusMain
 from .conf import settings_manager
 
 from .utils import create_priority_layers
-
+from .settings import CplusOptionsFactory
 
 class QgisCplus:
     """QGIS CPLUS Plugin Implementation."""
@@ -55,6 +55,8 @@ class QgisCplus:
         self.main_widget = QgisCplusMain(
             iface=self.iface, parent=self.iface.mainWindow()
         )
+
+        self.options_factory = None
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -157,6 +159,10 @@ class QgisCplus:
             callback=self.run,
             parent=self.iface.mainWindow(),
         )
+
+        # Adds the settings to the QGIS options panel
+        self.options_factory = CplusOptionsFactory()
+        self.iface.registerOptionsWidgetFactory(self.options_factory)
 
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin widget is closed"""
