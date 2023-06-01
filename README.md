@@ -23,12 +23,12 @@ QGIS plugin for the CPLUS framework.
 
 ### Installation
 
-[//]: # ()
-[//]: # (During the development phase the plugin is available to install via )
 
-[//]: # (a dedicated plugin repository )
+During the development phase the plugin is available to install via 
 
-[//]: # ([https://raw.githubusercontent.com/kartoza/cplus-plugin/release/docs/repository/plugins.xml]&#40;https://raw.githubusercontent.com/kartoza/cplus-plugin/release/docs/repository/plugins.xml&#41;)
+a dedicated plugin repository 
+
+[https://raw.githubusercontent.com/kartoza/cplus-plugin/release/docs/repository/plugins.xml](https://raw.githubusercontent.com/kartoza/cplus-plugin/release/docs/repository/plugins.xml)
 
 [//]: # ()
 [//]: # (#### Install from QGIS plugin repository)
@@ -56,28 +56,28 @@ using the admin interface as explained [here](https://github.com/kartoza/cplus-p
 
 - From the **Install from ZIP** page, select the zip file and click the **Install** button to install plugin
 
-[//]: # (#### Install from custom plugin repository)
+#### Install from custom plugin repository
 
-[//]: # ()
-[//]: # (- Open the QGIS plugin manager, then select the **Settings** page)
 
-[//]: # ()
-[//]: # (- Click **Add** button on the **Plugin Repositories** group box and use the above url to create)
+- Open the QGIS plugin manager, then select the **Settings** page
 
-[//]: # (the new plugin repository.)
 
-[//]: # (- The plugin should now be available from the list)
+- Click **Add** button on the **Plugin Repositories** group box and use the above url to create
 
-[//]: # (of all plugins that can be installed.)
+the new plugin repository.
 
-[//]: # ()
-[//]: # (Disable QGIS official plugin repository in order to not fetch plugins from it.)
+- The plugin should now be available from the list
 
-[//]: # (**NOTE:** While the development phase is on going the plugin will be flagged as experimental, make)
+of all plugins that can be installed.
 
-[//]: # (sure to enable the QGIS plugin manager in the **Settings** page to show the experimental plugins)
 
-[//]: # (in order to be able to install it.)
+Disable QGIS official plugin repository in order to not fetch plugins from it.
+
+**NOTE:** While the development phase is on going the plugin will be flagged as experimental, make
+
+sure to enable the QGIS plugin manager in the **Settings** page to show the experimental plugins
+
+in order to be able to install it.
 
 
 When the development work is complete the plugin will be available on the QGIS
