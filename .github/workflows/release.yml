@@ -8,7 +8,7 @@ jobs:
   create-release:
     runs-on: ubuntu-22.04
     container:
-      image: qgis/qgis:release-3_26
+      image: qgis/qgis:release-3_30
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
