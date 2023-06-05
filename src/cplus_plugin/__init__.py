@@ -3,7 +3,7 @@
 /***************************************************************************
  QgisCplus
 
- A QGIS plugin that enables usage of the CPLUS framework.
+ A QGIS plugin that enables usage of the CPLUS framework in land-use planning.
                              -------------------
         begin                : 2021-11-15
         copyright            : (C) 2021 by Kartoza
