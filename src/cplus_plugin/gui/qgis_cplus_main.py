@@ -13,8 +13,12 @@ from qgis.PyQt import (
     QtNetwork,
 )
 from qgis.PyQt.uic import loadUiType
+from qgis.core import QgsCoordinateReferenceSystem, QgsRectangle
+from qgis.utils import iface
 
 from ..resources import *
+
+from ..definitions.defaults import PILOT_AREA_EXTENT
 
 
 WidgetUi, _ = loadUiType(
@@ -33,3 +37,40 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         super().__init__(parent)
         self.setupUi(self)
         self.iface = iface
+
+        self.prepare_input()
+
+    def prepare_input(self):
+        """ Initializes plugin input widgets """
+        self.prepare_extent_box()
+
+    def prepare_extent_box(self):
+        """ Configure the spatial extent box with the initial settings. """
+        self.extent_box.setOutputCrs(
+            QgsCoordinateReferenceSystem("EPSG:4326")
+        )
+        map_canvas = iface.mapCanvas()
+        self.extent_box.setCurrentExtent(
+            map_canvas.mapSettings().destinationCrs().bounds(),
+            map_canvas.mapSettings().destinationCrs()
+        )
+        self.extent_box.setOutputExtentFromCurrent()
+        self.extent_box.setMapCanvas(map_canvas)
+
+        extent_list = PILOT_AREA_EXTENT['coordinates']
+        default_extent = QgsRectangle(
+            extent_list[3],
+            extent_list[2],
+            extent_list[1],
+            extent_list[0]
+        )
+
+        self.extent_box.setOutputExtentFromUser(
+            default_extent,
+            QgsCoordinateReferenceSystem("EPSG:4326"),
+        )
+
+        self.extent_box.setChecked(False)
+        self.extent_box.setEnabled(False)
+
+
