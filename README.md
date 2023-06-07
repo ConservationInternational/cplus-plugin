@@ -24,8 +24,7 @@
 ### Installation
 
 
-During the development phase the plugin is available to install via 
-
+During the development phase the plugin is available to install via
 a dedicated plugin repository 
 
 [https://raw.githubusercontent.com/kartoza/cplus-plugin/release/docs/repository/plugins.xml](https://raw.githubusercontent.com/kartoza/cplus-plugin/release/docs/repository/plugins.xml)
