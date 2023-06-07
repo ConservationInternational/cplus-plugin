@@ -18,6 +18,8 @@ from qgis.utils import iface
 
 from ..resources import *
 
+from ..utils import open_documentation
+
 from ..definitions.defaults import PILOT_AREA_EXTENT
 
 
@@ -43,6 +45,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def prepare_input(self):
         """Initializes plugin input widgets"""
         self.prepare_extent_box()
+        self.help_btn.clicked.connect(open_documentation)
 
     def prepare_extent_box(self):
         """Configure the spatial extent box with the initial settings."""

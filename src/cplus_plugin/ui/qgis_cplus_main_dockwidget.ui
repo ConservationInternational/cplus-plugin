@@ -57,9 +57,12 @@
         </rect>
        </property>
        <property name="text">
-        <string>The CPLUS Plugin allows you to analyze spatial data to predict ideal locations to implement different land use projects (implementation models) depending on your priorities and goals. For complete documentation and analysis configuration, click the Help and Options buttons.</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The CPLUS Plugin allows you to analyze spatial data to predict ideal locations to implement different land use projects (implementation models) depending on your priorities and goals. Documentation is available &lt;a href=&quot;https://kartoza.github.io/cplus-plugin&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;here&lt;/span&gt;&lt;/a&gt;, for analysis configuration click the Help and Options buttons.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
        <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+       <property name="openExternalLinks">
         <bool>true</bool>
        </property>
       </widget>
@@ -115,14 +118,14 @@
          </spacer>
         </item>
         <item row="2" column="0" colspan="2">
-         <widget class="QLineEdit" name="lineEdit_10">
+         <widget class="QLineEdit" name="scenario_name">
           <property name="text">
            <string/>
           </property>
          </widget>
         </item>
         <item row="4" column="0" colspan="2">
-         <widget class="QLineEdit" name="lineEdit_9">
+         <widget class="QLineEdit" name="scenario_description">
           <property name="text">
            <string/>
           </property>
@@ -204,7 +207,7 @@
         <item row="0" column="0">
          <widget class="QLabel" name="label_73">
           <property name="text">
-           <string>TextLabel</string>
+           <string/>
           </property>
          </widget>
         </item>
@@ -1527,7 +1530,7 @@
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout">
         <item>
-         <widget class="QPushButton" name="pushButton_10">
+         <widget class="QPushButton" name="help_btn">
           <property name="maximumSize">
            <size>
             <width>80</width>
@@ -1540,30 +1543,39 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton_2">
+         <widget class="QPushButton" name="options_btn">
           <property name="text">
            <string>Options</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton_11">
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="run_btn">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="text">
            <string>Run </string>
           </property>
          </widget>
         </item>
        </layout>
-      </item>
-      <item>
-       <widget class="QDialogButtonBox" name="buttonBox">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="standardButtons">
-         <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-        </property>
-       </widget>
       </item>
      </layout>
     </item>
