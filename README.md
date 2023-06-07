@@ -60,24 +60,15 @@ using the admin interface as explained [here](https://github.com/kartoza/cplus-p
 
 - Open the QGIS plugin manager, then select the **Settings** page
 
+- Click **Add** button on the **Plugin Repositories** group box and use the above url to create the new plugin repository.
 
-- Click **Add** button on the **Plugin Repositories** group box and use the above url to create
-
-the new plugin repository.
-
-- The plugin should now be available from the list
-
-of all plugins that can be installed.
-
+- The plugin should now be available from the list of all plugins that can be installed.
 
 Disable QGIS official plugin repository in order to not fetch plugins from it.
 
 **NOTE:** While the development phase is on going the plugin will be flagged as experimental, make
-
 sure to enable the QGIS plugin manager in the **Settings** page to show the experimental plugins
-
 in order to be able to install it.
-
 
 When the development work is complete the plugin will be available on the QGIS
 official plugin [repository](https://plugins.qgis.org/plugins).
