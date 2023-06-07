@@ -27,12 +27,12 @@ WidgetUi, _ = loadUiType(
 
 
 class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
-    """ Main plugin UI"""
+    """Main plugin UI"""
 
     def __init__(
-            self,
-            iface,
-            parent=None,
+        self,
+        iface,
+        parent=None,
     ):
         super().__init__(parent)
         self.setupUi(self)
@@ -41,28 +41,23 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.prepare_input()
 
     def prepare_input(self):
-        """ Initializes plugin input widgets """
+        """Initializes plugin input widgets"""
         self.prepare_extent_box()
 
     def prepare_extent_box(self):
-        """ Configure the spatial extent box with the initial settings. """
-        self.extent_box.setOutputCrs(
-            QgsCoordinateReferenceSystem("EPSG:4326")
-        )
+        """Configure the spatial extent box with the initial settings."""
+        self.extent_box.setOutputCrs(QgsCoordinateReferenceSystem("EPSG:4326"))
         map_canvas = iface.mapCanvas()
         self.extent_box.setCurrentExtent(
             map_canvas.mapSettings().destinationCrs().bounds(),
-            map_canvas.mapSettings().destinationCrs()
+            map_canvas.mapSettings().destinationCrs(),
         )
         self.extent_box.setOutputExtentFromCurrent()
         self.extent_box.setMapCanvas(map_canvas)
 
-        extent_list = PILOT_AREA_EXTENT['coordinates']
+        extent_list = PILOT_AREA_EXTENT["coordinates"]
         default_extent = QgsRectangle(
-            extent_list[3],
-            extent_list[2],
-            extent_list[1],
-            extent_list[0]
+            extent_list[3], extent_list[2], extent_list[1], extent_list[0]
         )
 
         self.extent_box.setOutputExtentFromUser(
@@ -72,5 +67,3 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.extent_box.setChecked(False)
         self.extent_box.setEnabled(False)
-
-

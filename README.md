@@ -1,16 +1,16 @@
 # CPLUS QGIS plugin
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/kartoza/cplus-plugin/ci.yml?branch=main)
 ![GitHub](https://img.shields.io/github/license/kartoza/cplus-plugin)
-
-
-QGIS plugin for the CPLUS framework.
-
-![image](https://github.com/Samweli/ci-cplus-scoping/assets/2663775/cbcfdad4-34c5-4214-a633-b6a5cdc2515c)
-
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 [![QGIS.org](https://img.shields.io/badge/QGIS.org-ondevelopment-yellow)](https://plugins.qgis.org/plugins/ci-cplus-plugin/)
 [![Documentation](https://img.shields.io/badge/Documentation-onprogress-inactive)](https://github.com/kartoza/ci-cplus/actions/workflows/doc.yml)
 [![Tests](https://img.shields.io/badge/Tests-onprogress-inactive)](https://github.com/kartoza/ci-cplus-plugin/actions/workflows/ci.yml)
+
+
+### QGIS plugin for the CPLUS framework.
+
+![image](https://raw.githubusercontent.com/kartoza/cplus-plugin/master/docs/img/logos/cplus_logo.svg)
 
 
 ### Versions
@@ -110,6 +110,17 @@ pip install virtualenvwrapper
 
     ```
     pip install -r requirements-dev.txt
+    ```
+
+3. Install an automatic code formatting hook using the following command, 
+   this will run code style checks each time a commit is created.
+    ```
+    pre-commit install
+    ```
+   Run the following pre-commit command after installing the pre-commit hook
+   for the first time.
+   ```
+    pre-commit run --all-files
    ```
 
 #### Plugin admin interface

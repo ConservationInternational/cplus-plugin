@@ -29,9 +29,7 @@ class QgisCplus:
         self.iface = iface
         self.plugin_dir = os.path.dirname(__file__)
         locale = QgsSettings().value("locale/userLocale")[0:2]
-        locale_path = os.path.join(
-            self.plugin_dir, "i18n", "CPLUS{}.qm".format(locale)
-        )
+        locale_path = os.path.join(self.plugin_dir, "i18n", "CPLUS{}.qm".format(locale))
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -40,16 +38,14 @@ class QgisCplus:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr(u"&CPLUS")
+        self.menu = self.tr("&CPLUS")
         self.pluginIsActive = False
         self.toolbar = self.iface.addToolBar("Open CPLUS")
         self.toolbar.setObjectName("CPLUS")
 
         self.main_widget = QgisCplusMain(
-            iface=self.iface,
-            parent=self.iface.mainWindow()
+            iface=self.iface, parent=self.iface.mainWindow()
         )
-
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -64,17 +60,17 @@ class QgisCplus:
         return QCoreApplication.translate("CPLUS", message)
 
     def add_action(
-            self,
-            icon_path,
-            text,
-            callback,
-            enabled_flag=True,
-            add_to_menu=True,
-            add_to_web_menu=True,
-            add_to_toolbar=True,
-            status_tip=None,
-            whats_this=None,
-            parent=None,
+        self,
+        icon_path,
+        text,
+        callback,
+        enabled_flag=True,
+        add_to_menu=True,
+        add_to_web_menu=True,
+        add_to_toolbar=True,
+        status_tip=None,
+        whats_this=None,
+        parent=None,
     ):
         """Add a toolbar icon to the toolbar.
 
@@ -134,10 +130,7 @@ class QgisCplus:
             self.iface.addPluginToMenu(self.menu, action)
 
         if add_to_web_menu:
-            self.iface.addPluginToWebMenu(
-                self.menu,
-                action
-            )
+            self.iface.addPluginToWebMenu(self.menu, action)
 
         if add_to_toolbar:
             self.toolbar.addAction(action)
@@ -151,7 +144,7 @@ class QgisCplus:
         icon_path = ":/plugins/cplus_plugin/icon.svg"
         self.add_action(
             icon_path,
-            text=self.tr(u"Open CPLUS"),
+            text=self.tr("Open CPLUS"),
             callback=self.run,
             parent=self.iface.mainWindow(),
         )
@@ -163,27 +156,18 @@ class QgisCplus:
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         try:
-
             for action in self.actions:
-                self.iface.removePluginMenu(
-                    self.tr(u"&CPLUS"),
-                    action
-                )
-                self.iface.removePluginWebMenu(
-                    self.tr(u"&CPLUS"),
-                    action
-                )
+                self.iface.removePluginMenu(self.tr("&CPLUS"), action)
+                self.iface.removePluginWebMenu(self.tr("&CPLUS"), action)
                 self.iface.removeToolBarIcon(action)
 
         except Exception as e:
             pass
 
     def run(self):
-
         if self.main_widget == None:
             self.main_widget = QgisCplusMain(
-                iface=self.iface,
-                parent=self.iface.mainWindow()
+                iface=self.iface, parent=self.iface.mainWindow()
             )
 
         self.iface.addDockWidget(Qt.RightDockWidgetArea, self.main_widget)
