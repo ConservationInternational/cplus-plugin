@@ -55,6 +55,8 @@ def log(
     )
 
 
-def open_documentation():
+def open_documentation(url=None):
     """Opens documentation website in the default browser"""
-    QtGui.QDesktopServices.openUrl(QtCore.QUrl(DOCUMENTATION_SITE))
+    url = DOCUMENTATION_SITE if url is None else url
+    result = QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
+    return result
