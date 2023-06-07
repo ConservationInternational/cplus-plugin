@@ -11,17 +11,19 @@ from uuid import UUID
 
 @dataclasses.dataclass
 class SpatialExtent:
-    """ Extent object that stores
+    """Extent object that stores
     the coordinates of the area of interest
     """
+
     bbox: typing.List[float]
 
 
 @dataclasses.dataclass
 class Scenario:
-    """ Object for the handling
+    """Object for the handling
     workflow scenario information.
     """
+
     uuid: UUID
     name: str
     description: str
