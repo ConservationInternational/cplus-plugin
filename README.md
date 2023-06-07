@@ -2,8 +2,8 @@
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/kartoza/cplus-plugin/ci.yml?branch=main)
 ![GitHub](https://img.shields.io/github/license/kartoza/cplus-plugin)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-
 [![QGIS.org](https://img.shields.io/badge/QGIS.org-ondevelopment-yellow)](https://plugins.qgis.org/plugins/ci-cplus-plugin/)
+
 [![Documentation](https://img.shields.io/badge/Documentation-onprogress-inactive)](https://github.com/kartoza/ci-cplus/actions/workflows/doc.yml)
 [![Tests](https://img.shields.io/badge/Tests-onprogress-inactive)](https://github.com/kartoza/ci-cplus-plugin/actions/workflows/ci.yml)
 
@@ -136,3 +136,17 @@ on the `dist` folder under the plugin root folder.
 ```
 python admin.py generate-zip
 ```
+
+### Testing
+
+The plugin currently support running tests on Linux environment only, to run plugin tests use the below script
+from the plugin root.
+```
+   ./run-tests.sh
+```
+
+The script builds a testable plugin code and then it spins up Docker containers that contain QGIS version 3.26 
+and latest version images respectively, finally it run the available test suite.
+
+When using the script for the first time it will pull the QGIS Docker images if there are not available 
+locally. After the tests have finished running the Docker containers create for the tests will be stopped and removed.
