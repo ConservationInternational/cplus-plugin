@@ -117,6 +117,11 @@ pip install virtualenvwrapper
     ```
     pre-commit install
     ```
+   Run the following pre-commit command after installing the pre-commit hook
+   for the first time.
+   ```
+    pre-commit run --all-files
+   ```
 
 #### Plugin admin interface
 The plugin contain an admin script that can be used for various development tasks.
