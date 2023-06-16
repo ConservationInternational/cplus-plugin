@@ -29,8 +29,13 @@ from qgis.gui import (
 
 from qgis.utils import iface
 
+<<<<<<< HEAD
 from .priority_group_widget import PriorityGroupWidget
 from .priority_layer_group import PriorityLayerDialog
+=======
+from .implementation_model_widget import ImplementationModelContainerWidget
+
+>>>>>>> 28399ff (Initial implementation model UI framework.)
 from ..resources import *
 
 from ..utils import open_documentation, tr, log
@@ -57,6 +62,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.priority_groups_widgets = {}
 
         self.initialize_priority_layers()
+
+        # Insert widget for step 2
+        self.implementation_model_widget = ImplementationModelContainerWidget(
+            self
+        )
+        self.tabWidget.insertTab(
+            1,
+            self.implementation_model_widget,
+            self.tr("Step 2")
+        )
 
         self.prepare_input()
 

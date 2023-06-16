@@ -3,6 +3,9 @@
     Plugin utilities
 """
 
+
+import os
+
 from qgis.PyQt import QtCore, QtGui
 from qgis.core import Qgis, QgsMessageLog
 
@@ -83,3 +86,36 @@ def create_priority_layers():
             settings_manager.save_priority_layer(layer)
 
         settings_manager.set_value("default_priority_layers_set", True)
+
+class FileUtils:
+    """
+    Provides functionality for commonly used file-related operations.
+    """
+
+    @staticmethod
+    def plugin_dir() -> str:
+        """Returns the root directory of the plugin.
+
+        :returns: Root directory of the plugin.
+        :rtype: str
+        """
+        return os.path.join(os.path.dirname(os.path.realpath(__file__)))
+
+    @staticmethod
+    def get_icon(file_name: str) -> QtGui.QIcon:
+        """Creates an icon based on the icon name in the 'icons' folder.
+
+        :param file_name: File name which should include the extension.
+        :type file_name: str
+
+        :returns: Icon object matching the file name.
+        :rtype: QtGui.QIcon
+        """
+        icon_path = os.path.normpath(
+            f"{FileUtils.plugin_dir()}/icons/{file_name}"
+        )
+
+        if not os.path.exists(icon_path):
+            return QtGui.QIcon()
+
+        return QtGui.QIcon(icon_path)
