@@ -29,6 +29,8 @@ from qgis.gui import (
 
 from qgis.utils import iface
 
+from .implementation_model_widget import ImplementationModelContainerWidget
+
 from ..resources import *
 
 from ..utils import open_documentation, tr, log
@@ -52,6 +54,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         super().__init__(parent)
         self.setupUi(self)
         self.iface = iface
+
+        # Insert widget for step 2
+        self.implementation_model_widget = ImplementationModelContainerWidget(
+            self
+        )
+        self.tabWidget.insertTab(
+            1,
+            self.implementation_model_widget,
+            self.tr("Step 2")
+        )
 
         self.prepare_input()
 
