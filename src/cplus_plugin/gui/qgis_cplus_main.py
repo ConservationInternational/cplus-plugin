@@ -164,3 +164,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             default_extent,
             QgsCoordinateReferenceSystem("EPSG:4326"),
         )
+
+    def on_step_changed(self, index: int):
+        """Slot raised when the current tab changes.
+
+        :param index: Zero-based index position of new current tab.
+        :type index: int
+        """
+        if index == 1:
+            self.implementation_model_widget.load()
