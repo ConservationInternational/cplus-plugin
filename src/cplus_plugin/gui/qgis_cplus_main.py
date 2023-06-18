@@ -311,3 +311,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def open_settings(self):
         """Options the CPLUS settings in the QGIS options dialog."""
         self.iface.showOptionsDialog(currentPage=OPTIONS_TITLE)
+
+    def on_step_changed(self, index: int):
+        """Slot raised when the current tab changes.
+
+        :param index: Zero-based index position of new current tab.
+        :type index: int
+        """
+        if index == 1:
+            self.implementation_model_widget.load()
