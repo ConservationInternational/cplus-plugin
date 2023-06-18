@@ -3,8 +3,8 @@
 Container widget for configuring the implementation widget.
 """
 
-
 import os
+import typing
 
 from qgis.PyQt import (
     QtCore,
@@ -14,7 +14,12 @@ from qgis.PyQt import (
 
 from qgis.PyQt.uic import loadUiType
 
-from.model_component_widget import ModelComponentWidget
+from .model_component_widget import ModelComponentWidget
+
+from ..models.base import (
+    ImplementationModel,
+    NcsPathway
+)
 
 from ..utils import FileUtils
 
@@ -69,20 +74,19 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         """Load default and user-defined NCS pathways."""
         pass
 
-    def ncs_pathways(self):
-        """Returns the NCS pathway items in the NCS Pathways view.
+    def ncs_pathways(self) -> typing.List[NcsPathway]:
+        """Gets the NCS pathway objects in the NCS Pathways view.
 
-        :returns:
-        :rtype:
+        :returns: NCS pathway objects, both default and user-defined.
+        :rtype: list
         """
         pass
 
-    def implementation_models(self):
+    def implementation_models(self) -> typing.List[ImplementationModel]:
         """Returns the user-defined implementation models in the
         Implementation Models view.
 
-        :returns:
-        :rtype:
+        :returns: User-defined implementation models for the current scenario.
+        :rtype: list
         """
         pass
-
