@@ -4,7 +4,6 @@ Composite list view-based widgets for displaying implementation model
 and NCS pathway items.
 """
 
-
 import os
 
 from qgis.PyQt import (
