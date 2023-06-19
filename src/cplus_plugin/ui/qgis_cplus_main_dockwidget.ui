@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>CPLUS</string>
   </property>
-  <widget class="QWidget" name="dockWidgetContents">
+  <widget class="QWidget" name="dock_widget_contents">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <widget class="QFrame" name="frame">
@@ -52,8 +52,8 @@
         <rect>
          <x>120</x>
          <y>10</y>
-         <width>641</width>
-         <height>80</height>
+         <width>651</width>
+         <height>81</height>
         </rect>
        </property>
        <property name="text">
@@ -71,7 +71,7 @@
         <rect>
          <x>10</x>
          <y>10</y>
-         <width>91</width>
+         <width>81</width>
          <height>81</height>
         </rect>
        </property>
@@ -88,7 +88,7 @@
      </widget>
     </item>
     <item>
-     <widget class="QTabWidget" name="tabWidget">
+     <widget class="QTabWidget" name="tab_widget">
       <property name="currentIndex">
        <number>0</number>
       </property>
@@ -97,25 +97,12 @@
         <string>Step 1</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_8">
-        <item row="3" column="0">
-         <widget class="QLabel" name="label_71">
+        <item row="4" column="0" colspan="2">
+         <widget class="QLineEdit" name="scenario_description">
           <property name="text">
-           <string>Scenario description</string>
+           <string/>
           </property>
          </widget>
-        </item>
-        <item row="6" column="0" colspan="2">
-         <spacer name="verticalSpacer_3">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>182</height>
-           </size>
-          </property>
-         </spacer>
         </item>
         <item row="2" column="0" colspan="2">
          <widget class="QLineEdit" name="scenario_name">
@@ -124,10 +111,10 @@
           </property>
          </widget>
         </item>
-        <item row="4" column="0" colspan="2">
-         <widget class="QLineEdit" name="scenario_description">
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_71">
           <property name="text">
-           <string/>
+           <string>Scenario description</string>
           </property>
          </widget>
         </item>
@@ -135,16 +122,6 @@
          <widget class="QLabel" name="label_64">
           <property name="text">
            <string>Scenario name</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_10">
-          <property name="styleSheet">
-           <string notr="true">font-weight:bold;</string>
-          </property>
-          <property name="text">
-           <string>Scenario Information</string>
           </property>
          </widget>
         </item>
@@ -161,76 +138,48 @@
           </property>
          </widget>
         </item>
+        <item row="8" column="0" colspan="2">
+         <spacer name="verticalSpacer_3">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>182</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_10">
+          <property name="styleSheet">
+           <string notr="true">font-weight:bold;</string>
+          </property>
+          <property name="text">
+           <string>Scenario Information</string>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="0">
+         <widget class="QPushButton" name="pilot_area_btn">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;pre style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; background-color:#ffffff;&quot;&gt;&lt;span style=&quot; font-family:'JetBrains Mono','monospace'; font-size:9.8pt; color:#067d17;&quot;&gt;Changes the current map canvas extent to the pilot area extent. Zoom only occurs&lt;/span&gt;&lt;/pre&gt;&lt;pre style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; background-color:#ffffff;&quot;&gt;&lt;span style=&quot; font-family:'JetBrains Mono','monospace'; font-size:9.8pt; color:#067d17;&quot;&gt;if the map canvas is using EPSG:4326 coordinate system.&lt;/span&gt;&lt;/pre&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="text">
+           <string>Zoom to Pilot Area</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
       <widget class="QWidget" name="tab_6">
        <attribute name="title">
         <string>Step 3</string>
        </attribute>
-       <layout class="QGridLayout" name="gridLayout_11">
-        <item row="1" column="0" colspan="9">
-         <widget class="QLabel" name="label_77">
-          <property name="text">
-           <string>Assign priority weights using the sliders. Add the priority weighting layers unique to each implementation model by clicking and dragging the layer under a group title.</string>
-          </property>
-          <property name="wordWrap">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="6">
-         <widget class="QToolButton" name="toolButton_21">
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyAdd.png</normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyAdd.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="8">
-         <widget class="QToolButton" name="toolButton_22">
-          <property name="text">
-           <string>P</string>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/mActionToggleEditing.png</normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/mActionToggleEditing.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="0">
-         <widget class="QToolButton" name="toolButton_23">
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyAdd.png</normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyAdd.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0" rowspan="2" colspan="9">
-         <widget class="Line" name="line_4">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="7">
-         <widget class="QToolButton" name="toolButton_24">
-          <property name="text">
-           <string>-</string>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyRemove.png</normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyRemove.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0" colspan="4">
-         <widget class="QLabel" name="label_78">
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="3" column="2">
+         <widget class="QLabel" name="label_122">
           <property name="font">
            <font>
             <weight>75</weight>
@@ -238,11 +187,147 @@
            </font>
           </property>
           <property name="text">
-           <string> Weighting priorities</string>
+           <string>Priority Weighting Layers</string>
           </property>
          </widget>
         </item>
-        <item row="5" column="0" colspan="4">
+        <item row="2" column="0" colspan="3">
+         <widget class="Line" name="line_4">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="2">
+         <widget class="QListWidget" name="listWidget_6">
+          <item>
+           <property name="text">
+            <string>Carbon importance Herding for Health</string>
+           </property>
+           <property name="foreground">
+            <brush brushstyle="NoBrush">
+             <color alpha="255">
+              <red>154</red>
+              <green>153</green>
+              <blue>150</blue>
+             </color>
+            </brush>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Carbon importance Eat Fresh</string>
+           </property>
+           <property name="foreground">
+            <brush brushstyle="NoBrush">
+             <color alpha="255">
+              <red>154</red>
+              <green>153</green>
+              <blue>150</blue>
+             </color>
+            </brush>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Biodiversity Herding for Health</string>
+           </property>
+           <property name="foreground">
+            <brush brushstyle="NoBrush">
+             <color alpha="255">
+              <red>154</red>
+              <green>153</green>
+              <blue>150</blue>
+             </color>
+            </brush>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Biodiversity Eat Fresh</string>
+           </property>
+           <property name="foreground">
+            <brush brushstyle="NoBrush">
+             <color alpha="255">
+              <red>154</red>
+              <green>153</green>
+              <blue>150</blue>
+             </color>
+            </brush>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>PWL 1</string>
+           </property>
+           <property name="foreground">
+            <brush brushstyle="NoBrush">
+             <color alpha="255">
+              <red>154</red>
+              <green>153</green>
+              <blue>150</blue>
+             </color>
+            </brush>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>PWL 2</string>
+           </property>
+           <property name="foreground">
+            <brush brushstyle="NoBrush">
+             <color alpha="255">
+              <red>154</red>
+              <green>153</green>
+              <blue>150</blue>
+             </color>
+            </brush>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>PWL 3</string>
+           </property>
+           <property name="foreground">
+            <brush brushstyle="NoBrush">
+             <color alpha="255">
+              <red>154</red>
+              <green>153</green>
+              <blue>150</blue>
+             </color>
+            </brush>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>PWL 4</string>
+           </property>
+           <property name="foreground">
+            <brush brushstyle="NoBrush">
+             <color alpha="255">
+              <red>154</red>
+              <green>153</green>
+              <blue>150</blue>
+             </color>
+            </brush>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_121">
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>Priority groups</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0" colspan="2">
          <widget class="QFrame" name="frame_4">
           <property name="minimumSize">
            <size>
@@ -910,8 +995,18 @@
           </layout>
          </widget>
         </item>
-        <item row="4" column="0" colspan="4">
-         <widget class="QLabel" name="label_121">
+        <item row="1" column="0" colspan="3">
+         <widget class="QLabel" name="label_77">
+          <property name="text">
+           <string>Assign priority weights using the sliders. Add the priority weighting layers unique to each implementation model by clicking and dragging the layer under a group title.</string>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0" colspan="2">
+         <widget class="QLabel" name="label_78">
           <property name="font">
            <font>
             <weight>75</weight>
@@ -919,160 +1014,39 @@
            </font>
           </property>
           <property name="text">
-           <string>Priority groups</string>
+           <string> Weighting priorities</string>
           </property>
          </widget>
         </item>
-        <item row="6" column="1">
-         <widget class="QToolButton" name="toolButton_25">
-          <property name="text">
-           <string>-</string>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyRemove.png</normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyRemove.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="2">
-         <widget class="QToolButton" name="toolButton_26">
-          <property name="text">
-           <string>P</string>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/mActionToggleEditing.png</normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/mActionToggleEditing.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="4" colspan="5">
-         <widget class="QListWidget" name="listWidget_6">
+        <item row="5" column="2">
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
           <item>
-           <property name="text">
-            <string>Carbon importance Herding for Health</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
           </item>
           <item>
-           <property name="text">
-            <string>Carbon importance Eat Fresh</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
+           <widget class="QPushButton" name="run_scenario_btn">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+              <horstretch>10</horstretch>
+              <verstretch>3</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Run Scenario</string>
+            </property>
+           </widget>
           </item>
-          <item>
-           <property name="text">
-            <string>Biodiversity Herding for Health</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Biodiversity Eat Fresh</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>PWL 1</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>PWL 2</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>PWL 3</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>PWL 4</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-         </widget>
-        </item>
-        <item row="4" column="4">
-         <widget class="QLabel" name="label_122">
-          <property name="font">
-           <font>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string>Priority Weighting Layers</string>
-          </property>
-         </widget>
+         </layout>
         </item>
        </layout>
       </widget>
@@ -1114,19 +1088,6 @@
            </size>
           </property>
          </spacer>
-        </item>
-        <item>
-         <widget class="QPushButton" name="run_btn">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>Run </string>
-          </property>
-         </widget>
         </item>
        </layout>
       </item>
