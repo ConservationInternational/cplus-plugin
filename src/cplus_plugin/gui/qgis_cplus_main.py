@@ -29,13 +29,10 @@ from qgis.gui import (
 
 from qgis.utils import iface
 
-<<<<<<< HEAD
 from .priority_group_widget import PriorityGroupWidget
 from .priority_layer_group import PriorityLayerDialog
-=======
 from .implementation_model_widget import ImplementationModelContainerWidget
 
->>>>>>> 28399ff (Initial implementation model UI framework.)
 from ..resources import *
 
 from ..utils import open_documentation, tr, log
