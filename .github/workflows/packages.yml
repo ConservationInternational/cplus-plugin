@@ -1,0 +1,50 @@
+name: Plugin packages
+
+on:
+  pull_request:
+    types:
+      - edited
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - main
+
+jobs:
+  create-package:
+    runs-on: ubuntu-22.04
+    container:
+      image: qgis/qgis:release-3_30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Fix Python command
+        run: apt-get install python-is-python3
+
+      - name: Install python
+        uses: actions/setup-python@v4
+
+      - name: Install plugin dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Get unique identifier
+        id: get-identifier
+        run: |
+          echo "::set-output name=PACKAGE_ID::$(python -c "import uuid; str(uuid.uuid4())[:5])"
+        
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: release
+      - name: Create plugin zip
+        run: |
+          python admin.py generate-zip --version ${{ format('{0}_{1}', github.event.pull_request.head.ref, steps.get-identifier.outputs.PACKAGE_ID }}
+          
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global --add safe.directory /__w/cplus-plugin/cplus-plugin
+
+          git add -A
+          git commit -m "Created new package"
+          git push origin release
