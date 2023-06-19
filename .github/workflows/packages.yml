@@ -31,20 +31,22 @@ jobs:
       - name: Get unique identifier
         id: get-identifier
         run: |
-          echo "::set-output name=PACKAGE_ID::$(python -c "import uuid; str(uuid.uuid4())[:5])"
-        
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          ref: release
-      - name: Create plugin zip
-        run: |
-          python admin.py generate-zip --version ${{ format('{0}_{1}', github.event.pull_request.head.ref, steps.get-identifier.outputs.PACKAGE_ID }}
-          
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global --add safe.directory /__w/cplus-plugin/cplus-plugin
+          echo "::set-output name=PACKAGE_ID::$(python -c "import uuid; print(str(uuid.uuid4())[:5])")"
 
-          git add -A
-          git commit -m "Created new package"
-          git push origin release
+      - name: Generate zip file
+        run: |
+          python admin.py generate-zip --version ${{ format('{0}_{1}', 
+          github.event.pull_request.head.ref,
+          steps.get-identifier.outputs.PACKAGE_ID) }} --output-directory docs/plugin/package
+
+      - name: Zip file path details
+        id: get-zip-details
+        run: |
+          echo "::set-output name=ZIP_PATH::docs/plugin/package/$(ls docs/plugin/package)\n"
+          echo "::set-output name=ZIP_NAME::$(ls docs/plugin/package)"
+
+      - name: Uploading plugin zip
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.get-zip-details.outputs.ZIP_NAME }}
+          path: ${{ steps.get-zip-details.outputs.ZIP_PATH }}
