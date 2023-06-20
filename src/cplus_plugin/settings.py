@@ -13,10 +13,7 @@ from .conf import (
     settings_manager,
     Settings,
 )
-from .definitions.defaults import (
-    OPTIONS_TITLE,
-    ICON_PATH
-)
+from .definitions.defaults import OPTIONS_TITLE, ICON_PATH
 
 Ui_DlgSettings, _ = uic.loadUiType(str(Path(__file__).parent / "ui/qgis_settings.ui"))
 
@@ -72,8 +69,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         if not os.path.exists(custom_logo_path):
             # File not found
             self.message_bar.pushWarning(
-                "CPLUS - Custom logo not found: ",
-                custom_logo_path
+                "CPLUS - Custom logo not found: ", custom_logo_path
             )
 
     def base_dir_exists(self):
@@ -88,8 +84,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         if not os.path.exists(base_dir_path):
             # File not found
             self.message_bar.pushWarning(
-                "CPLUS - Base directory not found: ",
-                base_dir_path
+                "CPLUS - Base directory not found: ", base_dir_path
             )
 
     def save_settings(self):
@@ -123,8 +118,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
                 settings_manager.set_value(Settings.REPORT_CUSTOM_LOGO, 0)
 
                 iface.messageBar().pushWarning(
-                    "CPLUS - Custom logo not found, disabled: ",
-                    custom_logo_path
+                    "CPLUS - Custom logo not found, disabled: ", custom_logo_path
                 )
 
         footer = self.txt_footer.toPlainText()
@@ -143,13 +137,11 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         # Checks if the provided base directory exists
         if not os.path.exists(base_dir_path):
             iface.messageBar().pushCritical(
-                "CPLUS - Base directory not found: ",
-                base_dir_path
+                "CPLUS - Base directory not found: ", base_dir_path
             )
 
     def load_settings(self):
-        """Loads the settings and displays it in the options UI
-        """
+        """Loads the settings and displays it in the options UI"""
 
         # Analysis configuration settings
 
@@ -210,4 +202,3 @@ class CplusOptionsFactory(QgsOptionsWidgetFactory):
 
     def createWidget(self, parent):
         return CplusSettings(parent)
-
