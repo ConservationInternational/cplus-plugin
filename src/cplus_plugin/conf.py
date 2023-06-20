@@ -94,6 +94,19 @@ class Settings(enum.Enum):
     REFRESH_LAST_UPDATE = "refresh/last_update"
     REFRESH_STATE = "refresh/state"
 
+    # Report settings
+    REPORT_ORGANIZATION = "report/organization"
+    REPORT_CONTACT_EMAIL = "report/email"
+    REPORT_WEBSITE = "report/website"
+    REPORT_CUSTOM_LOGO = "report/custom_logo"
+    REPORT_LOGO_DIR = "report/logo_dir"
+    REPORT_FOOTER = "report/footer"
+    REPORT_DISLAIMER = "report/disclaimer"
+    REPORT_LICENSE = "report/license"
+
+    # Advanced settings
+    BASE_DIR = "advanced/base_dir"
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""

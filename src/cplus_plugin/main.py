@@ -20,11 +20,19 @@ from qgis.PyQt.QtWidgets import QAction, QDockWidget, QMainWindow, QVBoxLayout
 from .resources import *
 
 from .gui.qgis_cplus_main import QgisCplusMain
+from qgis.PyQt.QtWidgets import QToolButton
+from qgis.PyQt.QtWidgets import QMenu
+from qgis.PyQt.QtWidgets import QToolButton
 
 from .conf import settings_manager
 
 from .utils import create_priority_layers
+from .definitions.defaults import (
+    ICON_PATH,
+    OPTIONS_TITLE
+)
 from .settings import CplusOptionsFactory
+
 
 class QgisCplus:
     """QGIS CPLUS Plugin Implementation."""
@@ -42,10 +50,23 @@ class QgisCplus:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr("&CPLUS")
         self.pluginIsActive = False
+
+        self.menu = QMenu("&Trends.Earth")
+        self.menu.setIcon(
+            QIcon(ICON_PATH)
+        )
+
+        self.raster_menu = self.iface.rasterMenu()
+        self.raster_menu.addMenu(self.menu)
+
         self.toolbar = self.iface.addToolBar("Open CPLUS")
         self.toolbar.setObjectName("CPLUS")
+        self.toolButton = QToolButton()
+        self.toolButton.setMenu(QMenu())
+        self.toolButton.setPopupMode(QToolButton.MenuButtonPopup)
+        self.toolBtnAction = self.toolbar.addWidget(self.toolButton)
+        self.actions.append(self.toolBtnAction)
 
         if not settings_manager.get_value(
             "default_priority_layers_set", default=False, setting_type=bool
@@ -79,6 +100,7 @@ class QgisCplus:
         add_to_menu=True,
         add_to_web_menu=True,
         add_to_toolbar=True,
+        set_as_default_action=False,
         status_tip=None,
         whats_this=None,
         parent=None,
@@ -111,6 +133,10 @@ class QgisCplus:
             be added to the toolbar. Defaults to True.
         :type add_to_toolbar: bool
 
+        :param set_as_default_action: Flag indicating whether the action is the default action
+            Defaults to False
+        :type set_as_default_action: bool
+
         :param status_tip: Optional text to show in a popup when mouse pointer
             hovers over the action.
         :type status_tip: str
@@ -138,13 +164,20 @@ class QgisCplus:
             action.setWhatsThis(whats_this)
 
         if add_to_menu:
-            self.iface.addPluginToMenu(self.menu, action)
+            self.menu.addAction(action)
 
-        if add_to_web_menu:
-            self.iface.addPluginToWebMenu(self.menu, action)
+        # If we want to readd this
+        # if add_to_web_menu:
+        #     self.iface.addPluginToWebMenu(self.menu, action)
 
         if add_to_toolbar:
-            self.toolbar.addAction(action)
+            self.toolButton.menu().addAction(action)
+
+            if set_as_default_action:
+                self.toolButton.setDefaultAction(action)
+
+        if add_to_menu:
+            self.menu.addAction(action)
 
         self.actions.append(action)
 
@@ -152,12 +185,20 @@ class QgisCplus:
 
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
-        icon_path = ":/plugins/cplus_plugin/icon.svg"
         self.add_action(
-            icon_path,
-            text=self.tr("Open CPLUS"),
+            ICON_PATH,
+            text=self.tr("CPLUS"),
             callback=self.run,
             parent=self.iface.mainWindow(),
+            set_as_default_action=True,
+        )
+
+        self.add_action(
+            os.path.join(os.path.dirname(__file__), "icons", "wrench.svg"),
+            text=self.tr("Settings"),
+            callback=self.run_settings,
+            parent=self.iface.mainWindow(),
+            status_tip=self.tr("CPLUS Settings"),
         )
 
         # Adds the settings to the QGIS options panel
@@ -192,3 +233,6 @@ class QgisCplus:
 
         if not self.pluginIsActive:
             self.pluginIsActive = True
+
+    def run_settings(self):
+        self.iface.showOptionsDialog(currentPage=OPTIONS_TITLE)

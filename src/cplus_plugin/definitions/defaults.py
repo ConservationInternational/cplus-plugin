@@ -10,7 +10,6 @@ PILOT_AREA_EXTENT = {
 
 DOCUMENTATION_SITE = "https://kartoza.github.io/cplus-plugin"
 
-
 PRIORITY_LAYERS = [
     {
         "uuid": "c931282f-db2d-4644-9786-6720b3ab206a",
@@ -91,3 +90,6 @@ PRIORITY_GROUPS = [
         "description": "Placeholder text for finance carbon",
     },
 ]
+
+OPTIONS_TITLE = "CPLUS"  # Title in the QGIS settings
+ICON_PATH = ":/plugins/cplus_plugin/icon.svg"
