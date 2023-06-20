@@ -25,11 +25,8 @@ from qgis.PyQt.QtWidgets import QMenu
 
 from .conf import settings_manager
 
-from .utils import create_priority_layers
-from .definitions.defaults import (
-    ICON_PATH,
-    OPTIONS_TITLE
-)
+from .definitions.defaults import ICON_PATH, OPTIONS_TITLE
+
 from .settings import CplusOptionsFactory
 
 
@@ -52,9 +49,7 @@ class QgisCplus:
         self.pluginIsActive = False
 
         self.menu = QMenu("&Trends.Earth")
-        self.menu.setIcon(
-            QIcon(ICON_PATH)
-        )
+        self.menu.setIcon(QIcon(ICON_PATH))
 
         self.raster_menu = self.iface.rasterMenu()
         self.raster_menu.addMenu(self.menu)
