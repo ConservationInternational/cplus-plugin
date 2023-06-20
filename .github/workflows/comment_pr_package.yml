@@ -1,4 +1,4 @@
-name: Comment on Pull request
+name: Add package comment on a pull request
 # Based on work from https://github.com/orgs/community/discussions/51403#discussioncomment-5535167
 on:
   workflow_run:
@@ -69,6 +69,6 @@ jobs:
             
             Plugin zip package for the changes in this PR has been successfully built!.
             
-            Download plugin zip here ${{ env.ARTIFACT_URL }}
+            Download the plugin zip file here ${{ env.ARTIFACT_URL }}
             
             [badge]: https://img.shields.io/badge/package_build-success-green

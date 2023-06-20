@@ -1,0 +1,47 @@
+name: Creating plugin package in main branch
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  create-package:
+    runs-on: ubuntu-22.04
+    container:
+      image: qgis/qgis:release-3_30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Fix Python command
+        run: apt-get install python-is-python3
+
+      - name: Install python
+        uses: actions/setup-python@v4
+
+      - name: Install plugin dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Get unique identifier
+        id: get-identifier
+        run: |
+          echo "::set-output name=PACKAGE_ID::$(python -c "import uuid; print(str(uuid.uuid4())[:5])")"
+
+      - name: Generate zip file
+        run: |
+          python admin.py generate-zip --version ${{ format('{0}_{1}', 
+          'main',
+          steps.get-identifier.outputs.PACKAGE_ID) }} --output-directory docs/plugin/package
+
+      - name: Zip file path details
+        id: get-zip-details
+        run: |
+          echo "::set-output name=ZIP_PATH::docs/plugin/package/$(ls docs/plugin/package)\n"
+          echo "::set-output name=ZIP_NAME::$(ls docs/plugin/package)"
+
+      - name: Uploading plugin zip
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.get-zip-details.outputs.ZIP_NAME }}
+          path: ${{ steps.get-zip-details.outputs.ZIP_PATH }}
