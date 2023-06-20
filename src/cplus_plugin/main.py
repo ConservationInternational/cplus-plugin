@@ -22,7 +22,6 @@ from .resources import *
 from .gui.qgis_cplus_main import QgisCplusMain
 from qgis.PyQt.QtWidgets import QToolButton
 from qgis.PyQt.QtWidgets import QMenu
-from qgis.PyQt.QtWidgets import QToolButton
 
 from .definitions.defaults import (
     ICON_PATH,
