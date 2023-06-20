@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>594</width>
-    <height>668</height>
+    <width>592</width>
+    <height>646</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -36,33 +36,129 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>572</width>
-        <height>646</height>
+        <width>570</width>
+        <height>624</height>
        </rect>
       </property>
-      <widget class="QgsCollapsibleGroupBox" name="gb_advanced">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>330</y>
-         <width>551</width>
-         <height>71</height>
-        </rect>
-       </property>
-       <property name="title">
-        <string>Advanced</string>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_4">
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_8">
-          <item>
-           <widget class="QLabel" name="lbl_data_dir">
+      <layout class="QVBoxLayout" name="verticalLayout_5">
+       <item>
+        <widget class="QgsCollapsibleGroupBox" name="mGroupBox_3">
+         <property name="title">
+          <string>Configure Analysis</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_3"/>
+        </widget>
+       </item>
+       <item>
+        <widget class="QgsCollapsibleGroupBox" name="gb_reports">
+         <property name="title">
+          <string>Reports</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="lbl_org">
             <property name="text">
-             <string>Base data directory</string>
+             <string>Organization</string>
             </property>
            </widget>
           </item>
-          <item>
+          <item row="12" column="0">
+           <widget class="QLabel" name="lbl_license">
+            <property name="text">
+             <string>License</string>
+            </property>
+           </widget>
+          </item>
+          <item row="10" column="0">
+           <widget class="QLabel" name="lbl_disclaimer">
+            <property name="text">
+             <string>Disclaimer</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="2">
+           <widget class="QgsFileWidget" name="logo_file">
+            <property name="storageMode">
+             <enum>QgsFileWidget::GetFile</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QCheckBox" name="cb_custom_logo">
+            <property name="text">
+             <string>Custom logo</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="0">
+           <widget class="QLabel" name="lbl_footer">
+            <property name="text">
+             <string>Footer</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="lbl_email">
+            <property name="text">
+             <string>Contact email</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="lbl_website">
+            <property name="text">
+             <string>Website</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="2">
+           <widget class="QPlainTextEdit" name="txt_footer">
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>100</height>
+             </size>
+            </property>
+            <property name="verticalScrollBarPolicy">
+             <enum>Qt::ScrollBarAlwaysOff</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="10" column="2">
+           <widget class="QPlainTextEdit" name="txt_disclaimer">
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>100</height>
+             </size>
+            </property>
+            <property name="verticalScrollBarPolicy">
+             <enum>Qt::ScrollBarAlwaysOff</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QLineEdit" name="txt_organization"/>
+          </item>
+          <item row="1" column="2">
+           <widget class="QLineEdit" name="txt_email"/>
+          </item>
+          <item row="4" column="2">
+           <widget class="QLineEdit" name="txt_website"/>
+          </item>
+          <item row="12" column="2">
+           <widget class="QLineEdit" name="txt_license"/>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QgsCollapsibleGroupBox" name="gb_advanced">
+         <property name="title">
+          <string>Advanced</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="2" column="1">
            <widget class="QgsFileWidget" name="folder_data">
             <property name="storageMode">
              <enum>QgsFileWidget::GetDirectory</enum>
@@ -72,141 +168,30 @@
             </property>
            </widget>
           </item>
-         </layout>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QgsCollapsibleGroupBox" name="gb_reports">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>70</y>
-         <width>551</width>
-         <height>251</height>
-        </rect>
-       </property>
-       <property name="title">
-        <string>Reports</string>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout">
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout">
-          <item>
-           <widget class="QLabel" name="lbl_org">
+          <item row="2" column="0">
+           <widget class="QLabel" name="lbl_data_dir">
             <property name="text">
-             <string>Organization</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QTextEdit" name="txt_org"/>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_2">
-          <item>
-           <widget class="QLabel" name="lbl_email">
-            <property name="text">
-             <string>Contact email</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QTextEdit" name="txt_email"/>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_3">
-          <item>
-           <widget class="QLabel" name="lbl_website">
-            <property name="text">
-             <string>Website</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QTextEdit" name="txt_website"/>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_4">
-          <item>
-           <widget class="QCheckBox" name="cb_custom_logo">
-            <property name="text">
-             <string>Custom logo</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QgsFileWidget" name="logo_file">
-            <property name="storageMode">
-             <enum>QgsFileWidget::GetFile</enum>
+             <string>Base data directory</string>
             </property>
            </widget>
           </item>
          </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_10">
-          <item>
-           <widget class="QLabel" name="lbl_footer">
-            <property name="text">
-             <string>Footer</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QTextEdit" name="txt_footer"/>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_7">
-          <item>
-           <widget class="QLabel" name="lbl_disclaimer">
-            <property name="text">
-             <string>Disclaimer</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QTextEdit" name="txt_disclaimer"/>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_5">
-          <item>
-           <widget class="QLabel" name="lbl_license">
-            <property name="text">
-             <string>License</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QTextEdit" name="txt_license"/>
-          </item>
-         </layout>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QgsCollapsibleGroupBox" name="mGroupBox_3">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>10</y>
-         <width>551</width>
-         <height>51</height>
-        </rect>
-       </property>
-       <property name="title">
-        <string>Configure Analysis</string>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_2"/>
-      </widget>
+        </widget>
+       </item>
+       <item>
+        <spacer name="scroll_area_vspacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
      </widget>
     </widget>
    </item>
