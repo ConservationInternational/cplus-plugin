@@ -43,14 +43,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.iface = iface
 
         # Insert widget for step 2
-        self.implementation_model_widget = ImplementationModelContainerWidget(
-            self
-        )
-        self.tabWidget.insertTab(
-            1,
-            self.implementation_model_widget,
-            self.tr("Step 2")
-        )
+        self.implementation_model_widget = ImplementationModelContainerWidget(self)
+        self.tabWidget.insertTab(1, self.implementation_model_widget, self.tr("Step 2"))
 
         self.prepare_input()
 

@@ -5,45 +5,77 @@ and NCS pathway items.
 """
 
 import os
+import typing
+import uuid
 
-from qgis.PyQt import (
-    QtCore,
-    QtGui,
-    QtWidgets
-)
+from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
 from qgis.core import QgsApplication
 
+from .component_item_model import (
+    ComponentItemModel,
+    ComponentItemModelType,
+    ModelComponentItemType,
+    NcsPathwayItemModel,
+)
+from .ncs_pathway_editor_dialog import NcsPathwayEditorDialog
+from ..models.base import LayerType, NcsPathway
+
 
 WidgetUi, _ = loadUiType(
-    os.path.join(
-        os.path.dirname(__file__),
-        "../ui/model_component_widget.ui"
-    )
+    os.path.join(os.path.dirname(__file__), "../ui/model_component_widget.ui")
 )
 
 
 class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
     """Widget for displaying and managing model items in a list view."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, item_model=None):
         super().__init__(parent)
         self.setupUi(self)
 
+        self._item_model = item_model
+        if self._item_model is not None:
+            self.item_model = self._item_model
+
         add_icon = QgsApplication.instance().getThemeIcon("symbologyAdd.svg")
         self.btn_add.setIcon(add_icon)
+        self.btn_add.clicked.connect(self._on_add_item)
 
-        remove_icon = QgsApplication.instance().getThemeIcon(
-            "symbologyRemove.svg"
-        )
+        remove_icon = QgsApplication.instance().getThemeIcon("symbologyRemove.svg")
         self.btn_remove.setIcon(remove_icon)
+        self.btn_remove.setEnabled(False)
+        self.btn_remove.clicked.connect(self._on_remove_item)
 
-        edit_icon = QgsApplication.instance().getThemeIcon(
-            "mActionToggleEditing.svg"
-        )
+        edit_icon = QgsApplication.instance().getThemeIcon("mActionToggleEditing.svg")
         self.btn_edit.setIcon(edit_icon)
+        self.btn_edit.setEnabled(False)
+        self.btn_edit.clicked.connect(self._on_edit_item)
+
+    @property
+    def item_model(self) -> ComponentItemModelType:
+        """Returns the component item model for managing items the list view.
+
+        :returns: Component item model for managing items the list view.
+        :rtype: ComponentItemModel
+        """
+        return self._item_model
+
+    @item_model.setter
+    def item_model(self, model: ComponentItemModelType):
+        """Sets the component item model for managing items in the list view.
+
+        :param model: The component item model for managing items.
+        :type model: ComponentItemModel
+        """
+        if self._item_model is None:
+            self._item_model = model
+            self.lst_model_items.setModel(self._item_model)
+            self.lst_model_items.selectionModel().selectionChanged.connect(
+                self._on_selection_changed
+            )
 
     @property
     def title(self) -> str:
@@ -62,3 +94,173 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
         :type text: str
         """
         self.lbl_title.setText(text)
+
+    def _on_add_item(self):
+        """Slot raised when add item button has been clicked.
+
+        Default implementation does nothing. To be implemented by
+        subclasses.
+        """
+        pass
+
+    def _on_edit_item(self):
+        """Slot raised when edit item button has been clicked.
+
+        Default implementation does nothing. To be implemented by
+        subclasses.
+        """
+        pass
+
+    def _on_remove_item(self):
+        """Slot raised when remove item button has been clicked.
+
+        Default implementation does nothing. To be implemented by
+        subclasses.
+        """
+        pass
+
+    def set_description(self, description: str):
+        """Updates the text for the selected item.
+
+        :param description: Description for the selected item.
+        :type description: str
+        """
+        self.txt_item_description.setText(description)
+
+    def clear_description(self):
+        """Clears the content in the description text box."""
+        self.txt_item_description.clear()
+
+    def _on_selection_changed(
+        self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection
+    ):
+        """Slot raised when selection in the list view has changed.
+
+        :param selected: Current item selection.
+        :type selected: QtCore.QItemSelection
+
+        :param deselected: Previously selected items that have been
+        deselected.
+        :type deselected: QtCore.QItemSelection
+        """
+        self._update_ui_on_selection_changed()
+
+    def _update_ui_on_selection_changed(self):
+        """Update UI properties on selection changed."""
+        self.btn_remove.setEnabled(True)
+        self.btn_edit.setEnabled(True)
+
+        # Remove description and disable edit and remove buttons if
+        # more than one item has been selected.
+        selected_items = self.selected_items()
+        if len(selected_items) == 0 or len(selected_items) > 1:
+            self.clear_description()
+            self.btn_remove.setEnabled(False)
+            self.btn_edit.setEnabled(False)
+            return
+
+        self.set_description(selected_items[0].description)
+
+    def selected_items(self) -> typing.List[ModelComponentItemType]:
+        """Returns the selected items in the list view.
+
+        :returns: A collection of the selected model component items. Returns
+        an empty list if the item model has not been set.
+        :rtype: list
+        """
+        if self._item_model is None:
+            return []
+
+        selection_model = self.lst_model_items.selectionModel()
+        idxs = selection_model.selectedRows()
+
+        return [self._item_model.item(idx.row()) for idx in idxs]
+
+
+class NcsComponentWidget(ModelComponentWidget):
+    """Widget for displaying and managing NCS pathways."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.item_model = NcsPathwayItemModel(parent)
+
+        self.lst_model_items.setDragEnabled(True)
+
+        ncs = NcsPathway(
+            uuid.uuid4(),
+            "Animal Management",
+            "Suitable sites for grazing animals",
+            "D:/Downloads/Data/Countries_SS.shp",
+            LayerType.VECTOR,
+            True,
+        )
+
+        ncs1 = NcsPathway(
+            uuid.uuid4(),
+            "Grassland Restoration",
+            "Grassland areas",
+            "D:/Downloads/Data/Countries_S.shp",
+            LayerType.VECTOR,
+            True,
+        )
+
+        self.item_model.add_ncs_pathway(ncs)
+        self.item_model.add_ncs_pathway(ncs1)
+
+    def pathways(self, valid_only=False) -> typing.List[NcsPathway]:
+        """Returns a collection of NcsPathway objects in the list view.
+
+        :param valid_only: True to only return those NcsPathway objects that
+        are valid, default is False.
+        :type valid_only: bool
+
+        :returns: Collection of NcsPathway objects in the list view.
+        :rtype: list
+        """
+        return self.item_model.pathways(valid_only)
+
+    def _on_add_item(self):
+        """Show NCS pathway editor."""
+        ncs_editor = NcsPathwayEditorDialog(self)
+        if ncs_editor.exec_() == QtWidgets.QDialog.Accepted:
+            ncs_pathway = ncs_editor.ncs_pathway
+            self.item_model.add_ncs_pathway(ncs_pathway)
+
+    def _on_edit_item(self):
+        """Edit selected NCS pathway object."""
+        selected_items = self.selected_items()
+        if len(selected_items) == 0 or len(selected_items) > 1:
+            return
+
+        item = selected_items[0]
+        ncs_editor = NcsPathwayEditorDialog(self, item.ncs_pathway)
+        if ncs_editor.exec_() == QtWidgets.QDialog.Accepted:
+            ncs_pathway = ncs_editor.ncs_pathway
+            self.item_model.update_ncs_pathway(ncs_pathway)
+            self._update_ui_on_selection_changed()
+
+    def _on_remove_item(self):
+        """Delete NcsPathway object."""
+        selected_items = self.selected_items()
+        if len(selected_items) == 0 or len(selected_items) > 1:
+            return
+
+        ncs = selected_items[0].ncs_pathway
+
+        msg = self.tr(
+            f"Do you want to remove '{ncs.name}'?\nClick Yes to "
+            f"proceed or No to cancel."
+        )
+
+        if (
+            QtWidgets.QMessageBox.question(
+                self,
+                self.tr("Remove NCS Pathway"),
+                msg,
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            )
+            == QtWidgets.QMessageBox.Yes
+        ):
+            self.item_model.remove_ncs_pathway(str(ncs.uuid))
+            self.clear_description()
