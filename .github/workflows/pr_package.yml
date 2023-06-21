@@ -95,11 +95,11 @@ jobs:
           echo "Artifact ID: $ARTIFACT_ID"
           echo "ARTIFACT_ID=$ARTIFACT_ID" >> "$GITHUB_ENV"
         
-         ARTIFACT_URL_6=$(gh api "/repos/$OWNER/$REPO/actions/artifacts" \
-          --jq ".artifacts.[] |
-          select(.pull_request.id==${PREVIOUS_JOB_ID_2}) |
-          select(.expired==false) |
-          .archive_download_url")
+          ARTIFACT_URL_6=$(gh api "/repos/$OWNER/$REPO/actions/artifacts" \
+            --jq ".artifacts.[] |
+            select(.pull_request.id==${PREVIOUS_JOB_ID_2}) |
+            select(.expired==false) |
+            .archive_download_url")
 
           echo "ARTIFACT URL 6: $ARTIFACT_URL_6"
           echo "ARTIFACT_URL_6=$ARTIFACT_URL_6" >> "$GITHUB_ENV"
@@ -114,7 +114,7 @@ jobs:
           echo "ARTIFACT_URL_8=$ARTIFACT_URL_8" >> "$GITHUB_ENV"
 
           PR_NUMBER=$(jq -r '.pull_requests[0].number' \
-            <<< "$WORKFLOW_RUN_EVENT_OBJ")
+            <<< "$WORKFLOW_RUN_EVENT_OBJ_2")
 
           echo "Pull request Number: $PR_NUMBER"
           echo "PR_NUMBER=$PR_NUMBER" >> "$GITHUB_ENV"
