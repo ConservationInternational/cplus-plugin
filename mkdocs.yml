@@ -11,17 +11,21 @@ nav:
   - User:
       - CPLUS model: user/models.md
       - Installation: user/installation.md
+      - Plugin guide: user/cplus_ui_guide.md
       - Settings: user/settings.md
       - Tutorials: user/tutorials.md
   - Admin:
       - Bugs and suggestions: admin/tasks.md
   - Developer:
       - Setup: developer/setup.md
-      - Design: developer/design.md
-  - DevOps:
-      - devops/devops.md
+      - Architecture: developer/architecture.md
+      - Workflows: developer/workflows.md
+      - Code automatic documentation: developer/code_auto_docs.md
+  - DevOps: devops/devops.md
   - About:
-      - About: about/about.md
+      - Conservation International: about/ci.md
+      - Kartoza: about/kartoza.md
+      - License: about/license.md
 
 plugins:
   - search
