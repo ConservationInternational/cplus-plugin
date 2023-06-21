@@ -59,8 +59,8 @@ jobs:
           PR_NUMBER=$(jq -r '.pull_requests[0].number' \
             <<< "$WORKFLOW_RUN_EVENT_OBJ")
           
-          echo "Pull request Number: PULL_REQUEST_EVENT_NUMBER"
-          echo "PR_NUMBER=PULL_REQUEST_EVENT_NUMBER" >> "$GITHUB_ENV"
+          echo "Pull request Number: $PULL_REQUEST_EVENT_NUMBER"
+          echo "PR_NUMBER=$PULL_REQUEST_EVENT_NUMBER" >> "$GITHUB_ENV"
           
           echo "Pull request event number :$PULL_REQUEST_EVENT_NUMBER"
           
