@@ -19,6 +19,7 @@ from .component_item_model import (
     ComponentItemModelType,
     IMItemModel,
     ModelComponentItemType,
+    NcsPathwayItem,
     NcsPathwayItemModel,
 )
 from .implementation_model_editor_dialog import ImplementationModelEditorDialog
@@ -378,3 +379,24 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         ):
             self.item_model.remove_implementation_model(str(model_component.uuid))
             self.clear_description()
+
+    def add_ncs_pathway_item(self, ncs_item: NcsPathwayItem) -> bool:
+        """Adds an NCS pathway item to the collection.
+
+        One, and only one, target implementation model item needs
+        to have been selected.
+
+        :param ncs_item: NCS pathway item to be added to the
+        implementation model.
+        :type ncs_item: NcsPathwayItem
+
+        :returns: True if the item was successfully added, else False.
+        :rtype: bool
+        """
+        selected_models = self.selected_items()
+        if len(selected_models) == 0 or len(selected_models) > 1:
+            return False
+
+        sel_model = selected_models[0]
+
+        return self.item_model.add_ncs_pathway(ncs_item, sel_model)
