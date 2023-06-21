@@ -66,6 +66,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           WORKFLOW_RUN_EVENT_OBJ: ${{ toJSON(github.event.pull_request) }}
           WORKFLOW_RUN_EVENT_OBJ_2: ${{ toJSON(github.event.workflow_run) }}
+          WORKFLOW_RUN_EVENT_OBJ_3: ${{ toJSON(github.event) }}
           OWNER: ${{ github.repository_owner }}
           REPO: ${{ github.event.repository.name }}
           HEAD_SHA: ${{ github.event.pull_request.base.sha }}
@@ -85,6 +86,7 @@ jobs:
           echo "work flow run $WORKFLOW_RUN_EVENT_OBJ"
           echo "work flow run 2 $WORKFLOW_RUN_EVENT_OBJ_2"
           echo "work flow run 2 ${{ env.WORKFLOW_RUN_EVENT_OBJ_2 }}"
+          echo "work flow run 3 $WORKFLOW_RUN_EVENT_OBJ_3"
           
           SUITE_ID_2=$(jq -r '.check_suite_id' <<< "$WORKFLOW_RUN_EVENT_OBJ_2")
           echo "Previous Suite ID 2: $SUITE_ID_2"
