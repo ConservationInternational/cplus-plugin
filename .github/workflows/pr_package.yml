@@ -77,6 +77,8 @@ jobs:
           
           PREVIOUS_JOB_ID=$(jq -r '.id' <<< "$WORKFLOW_RUN_EVENT_OBJ")
           PREVIOUS_JOB_ID_2=$(jq -r '.id' <<< "$WORKFLOW_RUN_EVENT_OBJ_2")
+               
+          echo "work flow run $WORKFLOW_RUN_EVENT_OBJ_2"
           
           SUITE_ID_2=$(jq -r '.check_suite_id' <<< "$WORKFLOW_RUN_EVENT_OBJ_2")
           echo "Previous Suite ID 2: $SUITE_ID_2"
@@ -103,15 +105,15 @@ jobs:
 
           echo "ARTIFACT URL 6: $ARTIFACT_URL_6"
           echo "ARTIFACT_URL_6=$ARTIFACT_URL_6" >> "$GITHUB_ENV"
-          
-          ARTIFACT_URL_8=$(gh api "/repos/$OWNER/$REPO/actions/artifacts" \
-            --jq ".artifacts.[] |
-            select(.github.run_id=${EVENT_ID}) |
-            select(.expired==false) |
-            .archive_download_url")
-
-          echo "ARTIFACT URL 8: $ARTIFACT_URL_8"
-          echo "ARTIFACT_URL_8=$ARTIFACT_URL_8" >> "$GITHUB_ENV"
+#
+#          ARTIFACT_URL_8=$(gh api "/repos/$OWNER/$REPO/actions/artifacts" \
+#            --jq ".artifacts.[] |
+#            select(.github.run_id=${EVENT_ID}) |
+#            select(.expired==false) |
+#            .archive_download_url")
+#
+#          echo "ARTIFACT URL 8: $ARTIFACT_URL_8"
+#          echo "ARTIFACT_URL_8=$ARTIFACT_URL_8" >> "$GITHUB_ENV"
 
           PR_NUMBER=$(jq -r '.pull_requests[0].number' \
             <<< "$WORKFLOW_RUN_EVENT_OBJ_2")
@@ -132,7 +134,7 @@ jobs:
           comment-author: 'github-actions[bot]'
       - name: Update Comment
         env:
-          JOB_PATH: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ env.EVENT_ID }}"
+          JOB_PATH: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ env.PREVIOUS_JOB_ID_2 }}"
           ARTIFACT_URL: "${{ github.server_url }}/${{ github.repository }}/suites/${{ env.SUITE_ID_2 }}/artifacts/${{ env.ARTIFACT_ID }}"
           HEAD_SHA: "${{ env.HEAD_SHA }}"
         uses: peter-evans/create-or-update-comment@v3
