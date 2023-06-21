@@ -223,7 +223,7 @@ class ImplementationModelItem(ModelComponentItem):
 
         return True
 
-    def add_ncs_pathway(self, ncs_item: NcsPathwayItem) -> bool:
+    def add_ncs_pathway_item(self, ncs_item: NcsPathwayItem) -> bool:
         """Adds an NCS pathway item to this item.
 
         :param ncs_item: NCS pathway item to the collection.
@@ -243,8 +243,6 @@ class ImplementationModelItem(ModelComponentItem):
             return False
 
         self._implementation_model.add_ncs_pathway(ncs_item.ncs_pathway)
-        self.appendRow(ncs_item)
-
         self._ncs_items.append(ncs_item)
 
         return True
@@ -282,18 +280,27 @@ class ComponentItemModel(QtGui.QStandardItemModel):
 
         self._uuid_row_idx = {}
 
-    def add_component_item(self, component_item: ModelComponentItem) -> bool:
+    def add_component_item(
+            self,
+            component_item: ModelComponentItem,
+            position=-1
+    ) -> bool:
         """Adds a model component item to the view model.
 
         :param component_item: Model component item to be added to the view
         model.
         :type component_item: ModelComponentItem
 
+        :param position: Reference row to insert the item.
+        :type position: int
+
         :returns: True if the component item was successfully added, else
         False if there is an existing component item with the same UUID.
         :rtype: bool
         """
-        idx = self.rowCount()
+        idx = position
+        if position == -1:
+            idx = self.rowCount()
 
         if self.contains_item(str(component_item.uuid)):
             return False
@@ -501,16 +508,36 @@ class IMItemModel(ComponentItemModel):
 
         return self.add_component_item(implementation_model_item)
 
-    def add_ncs_pathway(self, ncs_item: NcsPathwayItem) -> bool:
+    def add_ncs_pathway(
+        self,
+        ncs_item: NcsPathwayItem,
+        target_model: ImplementationModelItem
+    ) -> bool:
         """Adds an NCS pathway item to the model.
 
         :param ncs_item: NCS pathway item to the collection.
         :type ncs_item: NcsPathwayItem
 
+        :param target_model: Target implementation model for the NCS item.
+        :type target_model: ImplementationModelItem
+
         :returns: True if the NCS pathway item was successfully added, else
         False if there underlying NCS pathway object was invalid or there
         is an existing item with the same UUID.
         """
+        idx = target_model.index()
+        if not idx.isValid():
+            return False
+
+        clone_ncs = ncs_item.clone()
+
+        status = target_model.add_ncs_pathway_item(clone_ncs)
+        if not status:
+            return False
+
+        row = idx.row() + 1
+        self.add_component_item(clone_ncs, row)
+
         return True
 
     def update_implementation_model(
