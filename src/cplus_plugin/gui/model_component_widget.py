@@ -309,21 +309,15 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         self.lst_model_items.setAcceptDrops(True)
 
         model = ImplementationModel(
-            uuid.uuid4(),
-            "Herding for Health",
-            "Description of Herding for Health"
+            uuid.uuid4(), "Herding for Health", "Description of Herding for Health"
         )
 
         model1 = ImplementationModel(
-            uuid.uuid4(),
-            "Eat Fresh",
-            "Description of Eat Fresh"
+            uuid.uuid4(), "Eat Fresh", "Description of Eat Fresh"
         )
 
         model2 = ImplementationModel(
-            uuid.uuid4(),
-            "Charcoal Naturally",
-            "Description of Charcoal Naturally"
+            uuid.uuid4(), "Charcoal Naturally", "Description of Charcoal Naturally"
         )
 
         self.item_model.add_implementation_model(model)
@@ -354,10 +348,7 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
             return
 
         item = selected_items[0]
-        editor = ImplementationModelEditorDialog(
-            self,
-            item.implementation_model
-        )
+        editor = ImplementationModelEditorDialog(self, item.implementation_model)
         if editor.exec_() == QtWidgets.QDialog.Accepted:
             model = editor.implementation_model
             self.item_model.update_implementation_model(model)
@@ -385,7 +376,5 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
             )
             == QtWidgets.QMessageBox.Yes
         ):
-            self.item_model.remove_implementation_model(
-                str(model_component.uuid)
-            )
+            self.item_model.remove_implementation_model(str(model_component.uuid))
             self.clear_description()

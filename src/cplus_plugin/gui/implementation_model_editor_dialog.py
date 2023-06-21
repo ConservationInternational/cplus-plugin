@@ -59,8 +59,8 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
 
     def _update_controls(self):
         """Update controls with data from the ImplementationModel
-         object.
-         """
+        object.
+        """
         if self._implementation_model is None:
             return
 
@@ -84,9 +84,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         """Create or update NcsPathway from user input."""
         if self._implementation_model is None:
             self._implementation_model = ImplementationModel(
-                uuid.uuid4(),
-                self.txt_name.text(),
-                self.txt_description.text()
+                uuid.uuid4(), self.txt_name.text(), self.txt_description.text()
             )
         else:
             # Update mode
