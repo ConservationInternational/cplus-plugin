@@ -105,15 +105,6 @@ jobs:
 
           echo "ARTIFACT URL 6: $ARTIFACT_URL_6"
           echo "ARTIFACT_URL_6=$ARTIFACT_URL_6" >> "$GITHUB_ENV"
-#
-#          ARTIFACT_URL_8=$(gh api "/repos/$OWNER/$REPO/actions/artifacts" \
-#            --jq ".artifacts.[] |
-#            select(.github.run_id=${EVENT_ID}) |
-#            select(.expired==false) |
-#            .archive_download_url")
-#
-#          echo "ARTIFACT URL 8: $ARTIFACT_URL_8"
-#          echo "ARTIFACT_URL_8=$ARTIFACT_URL_8" >> "$GITHUB_ENV"
 
           PR_NUMBER=$(jq -r '.pull_requests[0].number' \
             <<< "$WORKFLOW_RUN_EVENT_OBJ_2")
