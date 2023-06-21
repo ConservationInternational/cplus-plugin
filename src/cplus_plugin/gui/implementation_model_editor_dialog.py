@@ -15,7 +15,9 @@ from qgis.core import QgsApplication
 from ..models.base import ImplementationModel
 
 WidgetUi, _ = loadUiType(
-    os.path.join(os.path.dirname(__file__), "../ui/ncs_pathway_editor_dialog.ui")
+    os.path.join(
+        os.path.dirname(__file__), "../ui/implementation_model_editor_dialog.ui"
+    )
 )
 
 
@@ -88,8 +90,8 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
             )
         else:
             # Update mode
-            self._ncs_pathway.name = self.txt_name.text()
-            self._ncs_pathway.description = self.txt_description.text()
+            self._implementation_model.name = self.txt_name.text()
+            self._implementation_model.description = self.txt_description.text()
 
     def _on_accepted(self):
         """Validates user input before closing."""
