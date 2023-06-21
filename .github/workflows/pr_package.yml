@@ -57,6 +57,7 @@ jobs:
           echo "::set-output name=ARTIFACT_URL::${{ env.ARTIFACT_URL }}"
 
   comment:
+    needs: create-package
     runs-on: ubuntu-latest
     steps:
       - name: Get Artifact and Pull request info
