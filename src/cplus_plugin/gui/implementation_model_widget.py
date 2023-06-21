@@ -10,7 +10,10 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
-from .model_component_widget import ModelComponentWidget, NcsComponentWidget
+from .model_component_widget import (
+    ImplementationModelComponentWidget,
+    NcsComponentWidget,
+)
 
 from ..models.base import ImplementationModel, NcsPathway
 
@@ -45,7 +48,7 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         self.ncs_layout.addWidget(self.ncs_pathway_view)
 
         # Implementation model view
-        self.implementation_model_view = ModelComponentWidget()
+        self.implementation_model_view = ImplementationModelComponentWidget()
         self.ipm_layout.addWidget(self.implementation_model_view)
         self.implementation_model_view.title = self.tr("Implementation Models")
 
@@ -79,4 +82,4 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         :returns: User-defined implementation models for the current scenario.
         :rtype: list
         """
-        pass
+        return self.implementation_model_view.models()
