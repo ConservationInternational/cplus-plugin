@@ -10,10 +10,11 @@ nav:
   - Home: index.md
   - User:
       - CPLUS model: user/models.md
-      - QGIS: user/qgis_manual.md
+      - Installation: user/installation.md
+      - Settings: user/settings.md
       - Tutorials: user/tutorials.md
   - Admin:
-      - Issues: admin/github.md
+      - Bugs and suggestions: admin/tasks.md
   - Developer:
       - Setup: developer/setup.md
       - Design: developer/design.md
