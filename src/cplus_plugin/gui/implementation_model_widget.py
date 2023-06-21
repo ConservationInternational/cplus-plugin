@@ -6,28 +6,20 @@ Container widget for configuring the implementation widget.
 import os
 import typing
 
-from qgis.PyQt import (
-    QtCore,
-    QtGui,
-    QtWidgets
-)
+from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
-from .model_component_widget import ModelComponentWidget
+from .model_component_widget import ModelComponentWidget, NcsComponentWidget
 
-from ..models.base import (
-    ImplementationModel,
-    NcsPathway
-)
+from ..models.base import ImplementationModel, NcsPathway
 
 from ..utils import FileUtils
 
 
 WidgetUi, _ = loadUiType(
     os.path.join(
-        os.path.dirname(__file__),
-        "../ui/implementation_model_container_widget.ui"
+        os.path.dirname(__file__), "../ui/implementation_model_container_widget.ui"
     )
 )
 
@@ -48,16 +40,14 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         self.btn_add_all.setToolTip(self.tr("Add all NCS pathways"))
 
         # NCS pathway view
-        self.ncs_pathway_view = ModelComponentWidget()
+        self.ncs_pathway_view = NcsComponentWidget()
         self.ncs_pathway_view.title = self.tr("NCS Pathways")
         self.ncs_layout.addWidget(self.ncs_pathway_view)
 
         # Implementation model view
         self.implementation_model_view = ModelComponentWidget()
         self.ipm_layout.addWidget(self.implementation_model_view)
-        self.implementation_model_view.title = self.tr(
-            "Implementation Models"
-        )
+        self.implementation_model_view.title = self.tr("Implementation Models")
 
     def load(self):
         """Load NCS pathways and implementation models to the views.
@@ -80,7 +70,7 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         :returns: NCS pathway objects, both default and user-defined.
         :rtype: list
         """
-        pass
+        return self.ncs_pathway_view.pathways()
 
     def implementation_models(self) -> typing.List[ImplementationModel]:
         """Returns the user-defined implementation models in the
