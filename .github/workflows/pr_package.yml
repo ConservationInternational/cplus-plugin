@@ -49,13 +49,6 @@ jobs:
         with:
           name: ${{ steps.get-zip-details.outputs.ZIP_NAME }}
           path: ${{ steps.get-zip-details.outputs.ZIP_PATH }}
-          env-url: ARTIFACT_URL
-
-      - name: Get artifact url
-        id: get-artifact_url
-        run: |
-          echo "${{ env.ARTIFACT_URL }}"
-          echo "::set-output name=ARTIFACT_URL::${{ env.ARTIFACT_URL }}"
 
   comment:
     needs: create-package
@@ -73,7 +66,6 @@ jobs:
           PULL_REQUEST_EVENT_NUMBER: ${{ github.event.pull_request.number }}
           PULL_REQUEST_EVENT_NUMBER_2: ${{ github.event.number }}
           EVENT_ID: ${{ github.run_id }}
-          ARTIFACT_URL: ${{ steps.get_artifact_url.outputs.ARTIFACT_URL }}
         run: |
           
           PREVIOUS_JOB_ID=$(jq -r '.id' <<< "$WORKFLOW_RUN_EVENT_OBJ")
@@ -125,6 +117,16 @@ jobs:
 
           echo "Head SHA: $HEAD_SHA"
           echo "HEAD_SHA=$HEAD_SHA" >> "$GITHUB_ENV"
+          
+          SUITE_ID_3=$(gh api "/repos/$OWNER/$REPO/check-suites" \
+            --jq ".[] |
+            select(.head_sha==${HEAD_SHA}) |
+            .id")
+          
+          echo "Previous Suite ID 3: $SUITE_ID_3"
+          echo "SUITE_ID_3=$SUITE_ID_3" >> "$GITHUB_ENV"
+          
+
       - name: Find Comment
         uses: peter-evans/find-comment@v2
         id: find-comment
