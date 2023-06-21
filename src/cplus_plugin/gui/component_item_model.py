@@ -281,9 +281,7 @@ class ComponentItemModel(QtGui.QStandardItemModel):
         self._uuid_row_idx = {}
 
     def add_component_item(
-            self,
-            component_item: ModelComponentItem,
-            position=-1
+        self, component_item: ModelComponentItem, position=-1
     ) -> bool:
         """Adds a model component item to the view model.
 
@@ -509,9 +507,7 @@ class IMItemModel(ComponentItemModel):
         return self.add_component_item(implementation_model_item)
 
     def add_ncs_pathway(
-        self,
-        ncs_item: NcsPathwayItem,
-        target_model: ImplementationModelItem
+        self, ncs_item: NcsPathwayItem, target_model: ImplementationModelItem
     ) -> bool:
         """Adds an NCS pathway item to the model.
 
