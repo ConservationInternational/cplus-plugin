@@ -10,6 +10,7 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 from ..models.base import (
     BaseModelComponent,
     BaseModelComponentType,
+    ImplementationModel,
     LayerType,
     NcsPathway,
 )
@@ -89,6 +90,21 @@ class ModelComponentItem(QtGui.QStandardItem):
         """
         pass
 
+    @abstractmethod
+    def clone(self) -> "ModelComponentItemType":
+        """Creates a deep copied version of the model item.
+
+        :returns: Cloned version of the model item containing all
+        the properties as the source.
+        :rtype: ModelComponentItem
+        """
+        pass
+
+
+ModelComponentItemType = typing.TypeVar(
+    "ModelComponentItemType", bound=ModelComponentItem
+)
+
 
 class NcsPathwayItem(ModelComponentItem):
     """Standard item for an NCS pathway object."""
@@ -136,10 +152,125 @@ class NcsPathwayItem(ModelComponentItem):
         """
         return NcsPathwayItem(ncs)
 
+    def clone(self) -> "NcsPathwayItem":
+        """Creates a cloned version of this item."""
+        return NcsPathwayItem(self.ncs_pathway)
 
-ModelComponentItemType = typing.TypeVar(
-    "ModelComponentItemType", bound=ModelComponentItem
-)
+
+class ImplementationModelItem(ModelComponentItem):
+    """Standard item for an implementation model object."""
+
+    def __init__(self, implementation_model: ImplementationModel):
+        super().__init__(implementation_model)
+        self._implementation_model = implementation_model
+
+        font = self.font()
+        font.setBold(True)
+        self.setFont(font)
+
+        self._ncs_items = []
+
+    @property
+    def implementation_model(self) -> ImplementationModel:
+        """Returns an instance of the underlying ImplementationModel object.
+
+        :returns: The underlying ImplementationModel object.
+        :rtype: ImplementationModel
+        """
+        return self._implementation_model
+
+    @property
+    def ncs_items(self) -> typing.List[NcsPathwayItem]:
+        """Returns a collection of NcsPathwayItem in this implementation
+        model.
+
+        :returns: Collection of NcsPathwayItem objects in this
+        implementation model.
+        :rtype: list
+        """
+        return self._ncs_items
+
+    def ncs_item_by_uuid(self, uuid: str) -> typing.Union[NcsPathwayItem, None]:
+        """Returns an NcsPathway item matching the given UUID.
+
+        :param uuid: UUID of the NcsPathway item to retrieve.
+        :type uuid: str
+
+        :returns: NcsPathwayItem matching the given UUID, else None
+        if not found.
+        :rtype: NcsPathwayItem
+        """
+        ncs_items = [n for n in self._ncs_items if n.uuid == uuid]
+
+        if len(ncs_items) == 0:
+            return None
+
+        return ncs_items[0]
+
+    def contains_ncs_item(self, uuid: str) -> bool:
+        """Checks whether this items contains an NcsPathway item with
+        the given UUID.
+
+        :param uuid: UUID of the NcsPathway item to search for.
+        :type uuid: str
+
+        :returns: True if there is an NcsPathwayItem matching the
+        given UUID, else False.
+        :rtype: bool
+        """
+        if self.ncs_item_by_uuid(uuid) is None:
+            return False
+
+        return True
+
+    def add_ncs_pathway(self, ncs_item: NcsPathwayItem) -> bool:
+        """Adds an NCS pathway item to this item.
+
+        :param ncs_item: NCS pathway item to the collection.
+        :type ncs_item: NcsPathwayItem
+
+        :returns: True if the NCS pathway item was successfully added, else
+        False if there underlying NCS pathway object was invalid or there
+        is an existing item with the same UUID.
+        """
+        if self.contains_ncs_item(ncs_item.uuid):
+            return False
+
+        if not ncs_item.is_valid():
+            return False
+
+        if self._implementation_model.contains_pathway(ncs_item.uuid):
+            return False
+
+        self._implementation_model.add_ncs_pathway(ncs_item.ncs_pathway)
+        self.appendRow(ncs_item)
+
+        self._ncs_items.append(ncs_item)
+
+        return True
+
+    def type(self) -> int:
+        """Returns the type of the standard item.
+
+        :returns: Type identifier of the standard item.
+        :rtype: int
+        """
+        return IMPLEMENTATION_MODEL_TYPE
+
+    @staticmethod
+    def create(implementation_model: ImplementationModel) -> "ImplementationModelItem":
+        """Creates an instance of the ImplementationModelItem from
+        the model object.
+
+        :returns: An instance of the ImplementationModelItem item to
+        be used in a standard model.
+        :rtype: ImplementationModel
+        """
+        return ImplementationModelItem(implementation_model)
+
+    def clone(self) -> "ImplementationModelItem":
+        """Creates a cloned version of this item."""
+        return ImplementationModelItem(self.implementation_model)
 
 
 class ComponentItemModel(QtGui.QStandardItemModel):
@@ -286,7 +417,7 @@ class NcsPathwayItemModel(ComponentItemModel):
         return self.add_component_item(ncs_item)
 
     def update_ncs_pathway(self, ncs: NcsPathway) -> bool:
-        """Updates the item for the corresponding item in the model.
+        """Updates the NCS pathway item in the model.
 
         :param ncs: NcsPathway whose corresponding item is to be updated.
         :type ncs: NcsPathway
@@ -344,6 +475,82 @@ class NcsPathwayItemModel(ComponentItemModel):
         :type uuid: str
 
         :returns: True if the NCS pathway item as successfully
+        removed, else False if there was not matching UUID.
+        :rtype: bool
+        """
+        return self.remove_component_item(uuid)
+
+
+class IMItemModel(ComponentItemModel):
+    """View model for implementation model."""
+
+    def add_implementation_model(
+        self, implementation_model: ImplementationModel
+    ) -> bool:
+        """Add an ImplementationModel object to the model.
+
+        :param implementation_model: ImplementationModel object to be
+        added to the view.
+        :type implementation_model: ImplementationModel
+
+        :returns: True if ImplementationModel object was added
+        successfully, else False.
+        :rtype: bool
+        """
+        implementation_model_item = ImplementationModelItem.create(implementation_model)
+
+        return self.add_component_item(implementation_model_item)
+
+    def add_ncs_pathway(self, ncs_item: NcsPathwayItem) -> bool:
+        """Adds an NCS pathway item to the model.
+
+        :param ncs_item: NCS pathway item to the collection.
+        :type ncs_item: NcsPathwayItem
+
+        :returns: True if the NCS pathway item was successfully added, else
+        False if there underlying NCS pathway object was invalid or there
+        is an existing item with the same UUID.
+        """
+        return True
+
+    def update_implementation_model(
+        self, implementation_model: ImplementationModel
+    ) -> bool:
+        """Updates the implementation model item in the model.
+
+        :param implementation_model: implementation_model object whose
+        corresponding item is to be updated.
+        :type implementation_model: ImplementationModel
+
+        :returns: Returns True if the operation was successful else False
+        if the matching item was not found in the model.
+        """
+        item = self.component_item_by_uuid(str(implementation_model.uuid))
+        if item is None:
+            return False
+
+        status = self.update_item(item)
+        if not status:
+            return False
+
+        return True
+
+    def models(self) -> typing.List[ImplementationModel]:
+        """Returns implementation model objects in the model.
+
+        :returns: All implementation model objects in the model.
+        :rtype: list
+        """
+        return self.model_components()
+
+    def remove_implementation_model(self, uuid: str) -> bool:
+        """Remove an implementation model item from the model.
+
+        param uuid: UUID of the implementation model item to
+        be removed.
+        :type uuid: str
+
+        :returns: True if the implementation model item as successfully
         removed, else False if there was not matching UUID.
         :rtype: bool
         """

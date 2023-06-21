@@ -17,11 +17,13 @@ from qgis.core import QgsApplication
 from .component_item_model import (
     ComponentItemModel,
     ComponentItemModelType,
+    IMItemModel,
     ModelComponentItemType,
     NcsPathwayItemModel,
 )
+from implementation_model_editor_dialog import ImplementationModelEditorDialog
 from .ncs_pathway_editor_dialog import NcsPathwayEditorDialog
-from ..models.base import LayerType, NcsPathway
+from ..models.base import ImplementationModel, LayerType, NcsPathway
 
 
 WidgetUi, _ = loadUiType(
@@ -205,8 +207,38 @@ class NcsComponentWidget(ModelComponentWidget):
             True,
         )
 
+        ncs2 = NcsPathway(
+            uuid.uuid4(),
+            "Avoided Deforestation",
+            "Description of Grassland areas",
+            "D:/Downloads/Data/Countries_SS.shp",
+            LayerType.VECTOR,
+            True,
+        )
+
+        ncs3 = NcsPathway(
+            uuid.uuid4(),
+            "Avoided Grassland Conversion",
+            "Description of Avoided Grassland Conversion",
+            "D:/Downloads/Data/Countries_SS.shp",
+            LayerType.VECTOR,
+            True,
+        )
+
+        ncs4 = NcsPathway(
+            uuid.uuid4(),
+            "Woody Encroachment Control",
+            "Description of Woody Encroachment Control",
+            "D:/Downloads/Data/Countries_SS.shp",
+            LayerType.VECTOR,
+            True,
+        )
+
         self.item_model.add_ncs_pathway(ncs)
         self.item_model.add_ncs_pathway(ncs1)
+        self.item_model.add_ncs_pathway(ncs2)
+        self.item_model.add_ncs_pathway(ncs3)
+        self.item_model.add_ncs_pathway(ncs4)
 
     def pathways(self, valid_only=False) -> typing.List[NcsPathway]:
         """Returns a collection of NcsPathway objects in the list view.
@@ -263,4 +295,97 @@ class NcsComponentWidget(ModelComponentWidget):
             == QtWidgets.QMessageBox.Yes
         ):
             self.item_model.remove_ncs_pathway(str(ncs.uuid))
+            self.clear_description()
+
+
+class ImplementationModelComponentWidget(ModelComponentWidget):
+    """Widget for displaying and managing implementation models."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.item_model = IMItemModel(parent)
+
+        self.lst_model_items.setAcceptDrops(True)
+
+        model = ImplementationModel(
+            uuid.uuid4(),
+            "Herding for Health",
+            "Description of Herding for Health"
+        )
+
+        model1 = ImplementationModel(
+            uuid.uuid4(),
+            "Eat Fresh",
+            "Description of Eat Fresh"
+        )
+
+        model2 = ImplementationModel(
+            uuid.uuid4(),
+            "Charcoal Naturally",
+            "Description of Charcoal Naturally"
+        )
+
+        self.item_model.add_implementation_model(model)
+        self.item_model.add_implementation_model(model1)
+        self.item_model.add_implementation_model(model2)
+
+    def models(self) -> typing.List[ImplementationModel]:
+        """Returns a collection of ImplementationModel objects in the
+        list view.
+
+        :returns: Collection of ImplementationModel objects in the
+        list view.
+        :rtype: list
+        """
+        return self.item_model.models()
+
+    def _on_add_item(self):
+        """Show implementation model editor."""
+        editor = ImplementationModelEditorDialog(self)
+        if editor.exec_() == QtWidgets.QDialog.Accepted:
+            model = editor.implementation_model
+            self.item_model.add_implementation_model(model)
+
+    def _on_edit_item(self):
+        """Edit selected implementation model object."""
+        selected_items = self.selected_items()
+        if len(selected_items) == 0 or len(selected_items) > 1:
+            return
+
+        item = selected_items[0]
+        editor = ImplementationModelEditorDialog(
+            self,
+            item.implementation_model
+        )
+        if editor.exec_() == QtWidgets.QDialog.Accepted:
+            model = editor.implementation_model
+            self.item_model.update_implementation_model(model)
+            self._update_ui_on_selection_changed()
+
+    def _on_remove_item(self):
+        """Delete implementation model object."""
+        selected_items = self.selected_items()
+        if len(selected_items) == 0 or len(selected_items) > 1:
+            return
+
+        model_component = selected_items[0].model_component
+
+        msg = self.tr(
+            f"Do you want to remove '{model_component.name}'?\nClick Yes to "
+            f"proceed or No to cancel."
+        )
+
+        if (
+            QtWidgets.QMessageBox.question(
+                self,
+                self.tr("Remove Implementation Model item"),
+                msg,
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            )
+            == QtWidgets.QMessageBox.Yes
+        ):
+            self.item_model.remove_implementation_model(
+                str(model_component.uuid)
+            )
             self.clear_description()
