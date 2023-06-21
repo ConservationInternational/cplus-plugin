@@ -77,8 +77,14 @@ jobs:
           
           PREVIOUS_JOB_ID=$(jq -r '.id' <<< "$WORKFLOW_RUN_EVENT_OBJ")
           PREVIOUS_JOB_ID_2=$(jq -r '.id' <<< "$WORKFLOW_RUN_EVENT_OBJ_2")
+          
+          echo "previous run $PREVIOUS_JOB_ID"
+          echo "previous run 2 $PREVIOUS_JOB_ID_2"
+          echo "event id $EVENT_ID"
                
-          echo "work flow run $WORKFLOW_RUN_EVENT_OBJ_2"
+          echo "work flow run $WORKFLOW_RUN_EVENT_OBJ"
+          echo "work flow run 2 $WORKFLOW_RUN_EVENT_OBJ_2"
+          echo "work flow run 2 ${{ env.WORKFLOW_RUN_EVENT_OBJ_2 }}"
           
           SUITE_ID_2=$(jq -r '.check_suite_id' <<< "$WORKFLOW_RUN_EVENT_OBJ_2")
           echo "Previous Suite ID 2: $SUITE_ID_2"
@@ -127,7 +133,7 @@ jobs:
         env:
           JOB_PATH: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ env.PREVIOUS_JOB_ID_2 }}"
           ARTIFACT_URL: "${{ github.server_url }}/${{ github.repository }}/suites/${{ env.SUITE_ID_2 }}/artifacts/${{ env.ARTIFACT_ID }}"
-          HEAD_SHA: "${{ env.HEAD_SHA }}"
+          HEAD_SHA: ""
         uses: peter-evans/create-or-update-comment@v3
         with:
           token: ${{ github.token }}
