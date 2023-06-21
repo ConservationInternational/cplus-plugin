@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>456</width>
+    <width>479</width>
     <height>237</height>
    </rect>
   </property>
@@ -74,6 +74,12 @@
         <height>81</height>
        </rect>
       </property>
+      <property name="maximumSize">
+       <size>
+        <width>91</width>
+        <height>81</height>
+       </size>
+      </property>
       <property name="text">
        <string/>
       </property>
@@ -104,7 +110,7 @@
     </widget>
    </item>
    <item row="4" column="0" colspan="3">
-    <widget class="QLineEdit" name="lineEdit_2"/>
+    <widget class="QLineEdit" name="txt_description"/>
    </item>
    <item row="5" column="0">
     <widget class="QPushButton" name="btn_help">
@@ -120,7 +126,7 @@
      </property>
      <property name="sizeHint" stdset="0">
       <size>
-       <width>192</width>
+       <width>198</width>
        <height>20</height>
       </size>
      </property>

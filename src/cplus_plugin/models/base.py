@@ -14,6 +14,8 @@ from uuid import UUID
 
 from qgis.core import QgsMapLayer, QgsRasterLayer, QgsVectorLayer
 
+from ..utils import tr
+
 
 class PRIORITY_GROUP(enum.Enum):
     """Represents the STAC API resource types"""
@@ -107,7 +109,83 @@ class NcsPathway(BaseModelComponent):
 class ImplementationModel(BaseModelComponent):
     """Contains information about the implementation model for a scenario."""
 
-    pathways: typing.List[NcsPathway]
+    pathways: typing.List[NcsPathway] = dataclasses.field(default_factory=list)
+
+    def __post_init__(self):
+        """Ensure there are no duplicate pathways."""
+        uuids = [str(p.uuid) for p in self.pathways]
+
+        if len(set(uuids)) != len(uuids):
+            msg = tr("Duplicate pathways found in implementation model")
+            raise ValueError(f"{msg} {self.name}")
+
+    def contains_pathway(self, pathway_uuid: str) -> bool:
+        """Checks if there is an NCS pathway matching the given UUID.
+
+        :param pathway_uuid: UUID to search for in the collection.
+        :type pathway_uuid: str
+
+        :returns: True if there is a matching NCS pathway, else False.
+        :rtype: bool
+        """
+        ncs_pathway = self.pathway_by_uuid(pathway_uuid)
+        if ncs_pathway is None:
+            return False
+
+        return True
+
+    def add_ncs_pathway(self, ncs: NcsPathway) -> bool:
+        """Adds an NCS pathway object to the collection.
+
+        :param ncs: NCS pathway to be added to the model.
+        :type ncs: NcsPathway
+
+        :returns: True if the NCS pathway was successfully added, else False
+        if there was an existing NCS pathway object with a similar UUID.
+        """
+        if self.contains_pathway(str(ncs.uuid)):
+            return False
+
+        self.pathways.append(ncs)
+
+        return True
+
+    def remove_ncs_pathway(self, pathway_uuid: str) -> bool:
+        """Removes the NCS pathway with a matching UUID from the collection.
+
+        :param pathway_uuid: UUID for the NCS pathway to be removed.
+        :type pathway_uuid: str
+
+        :returns: True if the NCS pathway object was successfully removed,
+         else False if there is no object matching the given UUID.
+        :rtype: bool
+        """
+        idxs = [i for i, p in enumerate(self.pathways) if str(p.uuid) == pathway_uuid]
+
+        if len(idxs) == 0:
+            return False
+
+        rem_idx = idxs[0]
+        _ = self.pathways.pop(rem_idx)
+
+        return True
+
+    def pathway_by_uuid(self, pathway_uuid: str) -> typing.Union[NcsPathway, None]:
+        """Returns an NCS pathway matching the given UUID.
+
+        :param pathway_uuid: UUID for the NCS pathway to retrieve.
+        :type pathway_uuid: str
+
+        :returns: NCS pathway object matching the given UUID else None if
+        not found.
+        :rtype: NcsPathway
+        """
+        pathways = [p for p in self.pathways if str(p.uuid) == pathway_uuid]
+
+        if len(pathways) == 0:
+            return None
+
+        return pathways[0]
 
 
 @dataclasses.dataclass
