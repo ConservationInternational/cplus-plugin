@@ -12,11 +12,7 @@ import typing
 
 from uuid import UUID
 
-from qgis.core import (
-    QgsMapLayer,
-    QgsRasterLayer,
-    QgsVectorLayer
-)
+from qgis.core import QgsMapLayer, QgsRasterLayer, QgsVectorLayer
 
 
 class PRIORITY_GROUP(enum.Enum):
@@ -50,6 +46,11 @@ class BaseModelComponent:
     uuid: UUID
     name: str
     description: str
+
+
+BaseModelComponentType = typing.TypeVar(
+    "BaseModelComponentType", bound=BaseModelComponent
+)
 
 
 class LayerType(Enum):

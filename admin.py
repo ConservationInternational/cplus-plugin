@@ -299,7 +299,9 @@ def compile_resources(
         resources_path = resources_path.as_posix()
 
     _log(f"compile_resources target_path: {target_path}", context=context)
-    subprocess.run(shlex.split(f"pyrcc5 -o {target_path.as_posix()} {resources_path.as_posix()}"))
+    subprocess.run(
+        shlex.split(f"pyrcc5 -o {target_path.as_posix()} {resources_path.as_posix()}")
+    )
 
 
 @app.command()

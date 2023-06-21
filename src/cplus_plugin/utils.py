@@ -7,7 +7,7 @@
 import os
 
 from qgis.PyQt import QtCore, QtGui
-from qgis.core import Qgis, QgsMessageLog
+from qgis.core import Qgis, QgsApplication, QgsMessageLog
 
 from .definitions.defaults import DOCUMENTATION_SITE, PRIORITY_LAYERS, PRIORITY_GROUPS
 from .conf import settings_manager
@@ -111,11 +111,21 @@ class FileUtils:
         :returns: Icon object matching the file name.
         :rtype: QtGui.QIcon
         """
-        icon_path = os.path.normpath(
-            f"{FileUtils.plugin_dir()}/icons/{file_name}"
-        )
+        icon_path = os.path.normpath(f"{FileUtils.plugin_dir()}/icons/{file_name}")
 
         if not os.path.exists(icon_path):
             return QtGui.QIcon()
 
         return QtGui.QIcon(icon_path)
+
+
+def is_dark_theme() -> bool:
+    """Checks if the current QGIS UI theme is dark mode.
+
+    :returns: True if the current UI theme is on dark mode, else False.
+    :rtype: bool
+    """
+    if QgsApplication.instance().themeName() == "Night Mapping":
+        return True
+
+    return False
