@@ -13,7 +13,6 @@ nav:
       - Installation: user/installation.md
       - Plugin guide: user/cplus_ui_guide.md
       - Settings: user/settings.md
-      - Tutorials: user/tutorials.md
   - Admin:
       - Bugs and suggestions: admin/tasks.md
   - Developer:
