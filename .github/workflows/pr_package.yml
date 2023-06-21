@@ -49,6 +49,12 @@ jobs:
         with:
           name: ${{ steps.get-zip-details.outputs.ZIP_NAME }}
           path: ${{ steps.get-zip-details.outputs.ZIP_PATH }}
+          env-url: ARTIFACT_URL
+
+      - name: Get artifact url
+        id: get-artifact_url
+        run: |
+          echo "::set-output name=ARTIFACT_URL::${{ env.ARTIFACT_URL }}"
 
   comment:
     runs-on: ubuntu-latest
@@ -59,10 +65,11 @@ jobs:
           WORKFLOW_RUN_EVENT_OBJ: ${{ toJSON(github.event.pull_request) }}
           OWNER: ${{ github.repository_owner }}
           REPO: ${{ github.event.repository.name }}
-          HEAD_SHA: ${{ github.event.pull_request.base.sha
+          HEAD_SHA: ${{ github.event.pull_request.base.sha }}
           PULL_REQUEST_EVENT_NUMBER: ${{ github.event.pull_request.number }}
           PULL_REQUEST_EVENT_NUMBER_2: ${{ github.event.number }}
           EVENT_ID: ${{ github.run_id }}
+          ARTIFACT_URL: ${{ steps.get_artifact_url.outputs.ARTIFACT_URL }}
         run: |
 
           SUITE_ID=$(jq -r '.check_suite_id' <<< "$WORKFLOW_RUN_EVENT_OBJ")
@@ -77,12 +84,6 @@ jobs:
 
           echo "Artifact ID: $ARTIFACT_ID"
           echo "ARTIFACT_ID=$ARTIFACT_ID" >> "$GITHUB_ENV"
-          
-           ARTIFACT_URL=$(gh api "/repos/$OWNER/$REPO/actions/artifacts" \
-            --jq ".artifacts.[] |
-            select(.pull_request.id==${EVENT_ID}) |
-            select(.expired==false) |
-            .archive_download_url")
 
           echo "ARTIFACT URL: $ARTIFACT_URL"
           echo "ARTIFACT_URL=$ARTIFACT_URL" >> "$GITHUB_ENV"
