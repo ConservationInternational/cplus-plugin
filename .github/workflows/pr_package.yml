@@ -118,8 +118,10 @@ jobs:
           echo "Head SHA: $HEAD_SHA"
           echo "HEAD_SHA=$HEAD_SHA" >> "$GITHUB_ENV"
           
-          SUITE_ID_3=$(gh api "/repos/$OWNER/$REPO/check-suites" \
-            --jq ".[] |
+          echo "/repos/$OWNER/$REPO/commits/${{ github.ref }}/check-suites" 
+          
+          SUITE_ID_3=$(gh api "/repos/$OWNER/$REPO/commits/REF/check-suites" \
+            --jq ".suites.[] |
             select(.head_sha==${HEAD_SHA}) |
             .id")
           
