@@ -8,36 +8,35 @@ site_author: Kartoza
 
 nav:
   - Home: index.md
-  - Quickstart:
-      - Installation: quickstart/installation.md
-  - Manual:
-      - CPLUS model: manual/models.md
-      - QGIS: manual/qgis_manual.md
-  - Tutorials:
-      - Tutorials: tutorials/tutorials.md
-  - FAQ: faq/faq.md
-  - Develop:
-      - Setup: develop/setup.md
-      - Design: develop/design.md
+  - User:
+      - CPLUS model: user/models.md
+      - QGIS: user/qgis_manual.md
+      - Tutorials: user/tutorials.md
+  - Admin:
+      - Issues: admin/github.md
+  - Developer:
+      - Setup: developer/setup.md
+      - Design: developer/design.md
+  - DevOps:
+      - devops/devops.md
   - About:
       - About: about/about.md
-  - Reference: api/reference.md
 
 plugins:
   - search
   - git-revision-date-localized
   - mkdocs-video
-  - mkdocstrings:
-      handlers:
-        python:
-          import:
-            - https://docs.python.org/3/objects.inv
-            - https://mkdocstrings.github.io/autorefs/objects.inv
-          options:
-            separate_signature: true
-            merge_init_into_class: true
-            docstring_options:
-              ignore_init_summary: true
+#  - mkdocstrings:
+#      handlers:
+#        python:
+#          import:
+#            - https://docs.python.org/3/objects.inv
+#            - https://mkdocstrings.github.io/autorefs/objects.inv
+#          options:
+#            separate_signature: true
+#            merge_init_into_class: true
+#            docstring_options:
+#              ignore_init_summary: true
 
 theme:
   name: material
