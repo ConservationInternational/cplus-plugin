@@ -21,7 +21,7 @@ from .component_item_model import (
     ModelComponentItemType,
     NcsPathwayItemModel,
 )
-from implementation_model_editor_dialog import ImplementationModelEditorDialog
+from .implementation_model_editor_dialog import ImplementationModelEditorDialog
 from .ncs_pathway_editor_dialog import NcsPathwayEditorDialog
 from ..models.base import ImplementationModel, LayerType, NcsPathway
 
