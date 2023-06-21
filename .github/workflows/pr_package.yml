@@ -77,6 +77,10 @@ jobs:
           
           PREVIOUS_JOB_ID=$(jq -r '.id' <<< "$WORKFLOW_RUN_EVENT_OBJ")
           PREVIOUS_JOB_ID_2=$(jq -r '.id' <<< "$WORKFLOW_RUN_EVENT_OBJ_2")
+          
+          SUITE_ID_2=$(jq -r '.check_suite_id' <<< "$WORKFLOW_RUN_EVENT_OBJ_2")
+          echo "Previous Suite ID 2: $SUITE_ID_2"
+          echo "SUITE_ID_2=$SUITE_ID_2" >> "$GITHUB_ENV"
 
           SUITE_ID=$(jq -r '.check_suite_id' <<< "$WORKFLOW_RUN_EVENT_OBJ")
           echo "Previous Suite ID: $SUITE_ID"
@@ -84,75 +88,21 @@ jobs:
 
           ARTIFACT_ID=$(gh api "/repos/$OWNER/$REPO/actions/artifacts" \
             --jq ".artifacts.[] |
-            select(.workflow_run.id==${EVENT_ID}) |
+            select(.pull_request.id==${PREVIOUS_JOB_ID_2})  |
             select(.expired==false) |
             .id")
 
           echo "Artifact ID: $ARTIFACT_ID"
           echo "ARTIFACT_ID=$ARTIFACT_ID" >> "$GITHUB_ENV"
-          
-          ARTIFACT_URL=$(gh api "/repos/$OWNER/$REPO/actions/artifacts" \
-            --jq ".artifacts.[] |
-            select(.workflow_run.id==${PREVIOUS_JOB_ID}) |
-            select(.expired==false) |
-            .archive_download_url")
-
-          echo "ARTIFACT URL: $ARTIFACT_URL"
-          echo "ARTIFACT_URL=$ARTIFACT_URL" >> "$GITHUB_ENV"
-          
-          ARTIFACT_URL_2=$(gh api "/repos/$OWNER/$REPO/actions/artifacts" \
-            --jq ".artifacts.[] |
-            select(.workflow_run.id==${EVENT_ID}) |
-            select(.expired==false) |
-            .archive_download_url")
-
-          echo "ARTIFACT URL 2: $ARTIFACT_URL_2"
-          echo "ARTIFACT_URL_2=$ARTIFACT_URL_2" >> "$GITHUB_ENV"
-          
-           ARTIFACT_URL_3=$(gh api "/repos/$OWNER/$REPO/actions/artifacts" \
-            --jq ".artifacts.[] |
-            select(.pull_request.id==${PREVIOUS_JOB_ID}) |
-            select(.expired==false) |
-            .archive_download_url")
-
-          echo "ARTIFACT URL 3: $ARTIFACT_URL_3"
-          echo "ARTIFACT_URL_3=$ARTIFACT_URL_3" >> "$GITHUB_ENV"
-          
-          ARTIFACT_URL_4=$(gh api "/repos/$OWNER/$REPO/actions/artifacts" \
-            --jq ".artifacts.[] |
-            select(.pull_request.id==${EVENT_ID}) |
-            select(.expired==false) |
-            .archive_download_url")
-
-          echo "ARTIFACT URL 4: $ARTIFACT_URL_4"
-          echo "ARTIFACT_URL_4=$ARTIFACT_URL_4" >> "$GITHUB_ENV"
-          
-          ARTIFACT_URL_5=$(gh api "/repos/$OWNER/$REPO/actions/artifacts" \
-            --jq ".artifacts.[] |
-            select(.workflow_run.id==${PREVIOUS_JOB_ID_2}) |
-            select(.expired==false) |
-            .archive_download_url")
-
-          echo "ARTIFACT URL 5: $ARTIFACT_URL_5"
-          echo "ARTIFACT_URL_5=$ARTIFACT_URL_5" >> "$GITHUB_ENV"
-          
-           ARTIFACT_URL_6=$(gh api "/repos/$OWNER/$REPO/actions/artifacts" \
-            --jq ".artifacts.[] |
-            select(.pull_request.id==${PREVIOUS_JOB_ID_2}) |
-            select(.expired==false) |
-            .archive_download_url")
+        
+         ARTIFACT_URL_6=$(gh api "/repos/$OWNER/$REPO/actions/artifacts" \
+          --jq ".artifacts.[] |
+          select(.pull_request.id==${PREVIOUS_JOB_ID_2}) |
+          select(.expired==false) |
+          .archive_download_url")
 
           echo "ARTIFACT URL 6: $ARTIFACT_URL_6"
           echo "ARTIFACT_URL_6=$ARTIFACT_URL_6" >> "$GITHUB_ENV"
-          
-          ARTIFACT_URL_7=$(gh api "/repos/$OWNER/$REPO/actions/artifacts" \
-            --jq ".artifacts.[] |
-            select(.github.run_id==${PREVIOUS_JOB_ID}) |
-            select(.expired==false) |
-            .archive_download_url")
-
-          echo "ARTIFACT URL 7: $ARTIFACT_URL_7"
-          echo "ARTIFACT_URL_7=$ARTIFACT_URL_7" >> "$GITHUB_ENV"
           
           ARTIFACT_URL_8=$(gh api "/repos/$OWNER/$REPO/actions/artifacts" \
             --jq ".artifacts.[] |
@@ -183,7 +133,7 @@ jobs:
       - name: Update Comment
         env:
           JOB_PATH: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ env.EVENT_ID }}"
-          ARTIFACT_URL: "${{ env.ARTIFACT_URL }}"
+          ARTIFACT_URL: "${{ github.server_url }}/${{ github.repository }}/suites/${{ env.SUITE_ID_2 }}/artifacts/${{ env.ARTIFACT_ID }}"
           HEAD_SHA: "${{ env.HEAD_SHA }}"
         uses: peter-evans/create-or-update-comment@v3
         with:
