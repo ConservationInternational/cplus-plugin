@@ -29,8 +29,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           WORKFLOW_RUN_EVENT_OBJ: ${{ toJSON(github.event.workflow_run) }}
-          WORKFLOW_RUN_EVENT_OBJ_2: ${{ toJSON(github.event.pull_request) }}
-          WORKFLOW_RUN_EVENT_OBJ_3: ${{ toJSON(github.event) }}
           OWNER: ${{ github.repository_owner }}
           REPO: ${{ github.event.repository.name }}
         run: |
@@ -39,8 +37,6 @@ jobs:
           echo "PREVIOUS_JOB_ID=$PREVIOUS_JOB_ID" >> "$GITHUB_ENV"
           
           echo "Workflow run : $WORKFLOW_RUN_EVENT_OBJ"
-          echo "Workflow run 2: $WORKFLOW_RUN_EVENT_OBJ_2"
-          echo "Workflow run 3: $WORKFLOW_RUN_EVENT_OBJ_3"
           
           SUITE_ID=$(jq -r '.check_suite_id' <<< "$WORKFLOW_RUN_EVENT_OBJ")
           echo "Previous Suite ID: $SUITE_ID"
@@ -54,8 +50,6 @@ jobs:
           
           echo "Artifact ID: $ARTIFACT_ID"
           echo "ARTIFACT_ID=$ARTIFACT_ID" >> "$GITHUB_ENV"
-          
-          echo "Pull request Number: ${{ steps.pr_number_reader.outputs.content }}"
           
           echo "Head SHA: ${{ github.event.head_sha }}"
 
