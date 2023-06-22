@@ -3,15 +3,16 @@
 Contains item models for view widgets such as NCS pathway or IM views.
 """
 from abc import abstractmethod
+from copy import deepcopy
 import typing
+from uuid import uuid4
 
-from qgis.PyQt import QtCore, QtGui, QtWidgets
+from qgis.PyQt import QtCore, QtGui
 
 from ..models.base import (
     BaseModelComponent,
     BaseModelComponentType,
     ImplementationModel,
-    LayerType,
     NcsPathway,
 )
 
@@ -112,6 +113,7 @@ class NcsPathwayItem(ModelComponentItem):
     def __init__(self, ncs: NcsPathway):
         super().__init__(ncs)
         self._ncs_pathway = ncs
+        self._parent = None
 
     def is_valid(self) -> bool:
         """Checks whether the map layer of the underlying NcsPathway object is valid.
@@ -134,6 +136,16 @@ class NcsPathwayItem(ModelComponentItem):
         """
         return self._ncs_pathway
 
+    @property
+    def parent(self) -> "ImplementationModelItem":
+        """Returns the parent ImplementationModelItem if specified.
+
+        :returns: Returns the parent item if set when this item is
+        mapped to an ImplementationModelItem.
+        :rtype: ImplementationModelItem
+        """
+        return self._parent
+
     def type(self) -> int:
         """Returns the type of the standard item.
 
@@ -153,8 +165,11 @@ class NcsPathwayItem(ModelComponentItem):
         return NcsPathwayItem(ncs)
 
     def clone(self) -> "NcsPathwayItem":
-        """Creates a cloned version of this item."""
-        return NcsPathwayItem(self.ncs_pathway)
+        """Creates a cloned version of this item.
+        """
+        ncs = deepcopy(self.ncs_pathway)
+
+        return NcsPathwayItem(ncs)
 
 
 class ImplementationModelItem(ModelComponentItem):
@@ -169,6 +184,10 @@ class ImplementationModelItem(ModelComponentItem):
         self.setFont(font)
 
         self._ncs_items = []
+
+        # Remap pathway uuids so that there are no duplicate
+        # pathways under each implementation model.
+        self._uuid_remap = {}
 
     @property
     def implementation_model(self) -> ImplementationModel:
@@ -190,6 +209,16 @@ class ImplementationModelItem(ModelComponentItem):
         """
         return self._ncs_items
 
+    @property
+    def ncs_pathways(self) -> typing.List[NcsPathway]:
+        """Returns a collection of NcsPathway objects.
+
+        :returns: Collection of NcsPathway objects linked to the
+        underlying ImplementationModel object.
+        :rtype: list
+        """
+        return [ncs_item.ncs_pathway for ncs_item in self.ncs_items]
+
     def ncs_item_by_uuid(self, uuid: str) -> typing.Union[NcsPathwayItem, None]:
         """Returns an NcsPathway item matching the given UUID.
 
@@ -208,7 +237,7 @@ class ImplementationModelItem(ModelComponentItem):
         return ncs_items[0]
 
     def contains_ncs_item(self, uuid: str) -> bool:
-        """Checks whether this items contains an NcsPathway item with
+        """Checks whether this item contains an NcsPathway item with
         the given UUID.
 
         :param uuid: UUID of the NcsPathway item to search for.
@@ -233,6 +262,13 @@ class ImplementationModelItem(ModelComponentItem):
         False if there underlying NCS pathway object was invalid or there
         is an existing item with the same UUID.
         """
+        old_uuid = ncs_item.uuid
+        new_uuid = uuid4()
+        ncs_item.ncs_pathway.uuid = new_uuid
+
+        if old_uuid in self._uuid_remap:
+            return False
+
         if self.contains_ncs_item(ncs_item.uuid):
             return False
 
@@ -244,8 +280,59 @@ class ImplementationModelItem(ModelComponentItem):
 
         self._implementation_model.add_ncs_pathway(ncs_item.ncs_pathway)
         self._ncs_items.append(ncs_item)
+        ncs_item._parent = self
+
+        self._uuid_remap[old_uuid] = str(new_uuid)
 
         return True
+
+    def remove_ncs_pathway_item(self, uuid: str) -> bool:
+        """Removes the NcsPathwayItem matching the given UUID.
+
+        :param uuid: The UUID of the NcsPathwayItem to remove.
+        :type uuid: str
+
+        :returns: True if the item was successfully removed, else
+        False.
+        :rtype: bool
+        """
+        if not self.contains_ncs_item(uuid):
+            return False
+
+        idxs = [
+            i for i, n in enumerate(self._ncs_items) if n.uuid == uuid
+        ]
+        if len(idxs) == 0:
+            return False
+
+        item = self._ncs_items.pop(idxs[0])
+        item._parent = None
+        del item
+
+        self._implementation_model.remove_ncs_pathway(uuid)
+
+        old_uuids = [k for k, v in self._uuid_remap.items() if v == uuid]
+        if len(old_uuids) > 0:
+            del self._uuid_remap[old_uuids[0]]
+
+        return True
+
+    def bottom_ncs_item_index(self) -> typing.Union[QtCore.QModelIndex, None]:
+        """Returns the model index of the bottom-most NcsPathwayItem
+        under this implementation model item.
+
+        :returns: Model index of the bottom-most NcsPathwayItem.
+        :rtype: QModelIndex
+        """
+        if len(self._ncs_items) == 0:
+            return None
+
+        bottom_ncs_item = max(
+            self._ncs_items,
+            key=lambda n: n.index().row()
+        )
+
+        return bottom_ncs_item.index()
 
     def type(self) -> int:
         """Returns the type of the standard item.
@@ -267,8 +354,13 @@ class ImplementationModelItem(ModelComponentItem):
         return ImplementationModelItem(implementation_model)
 
     def clone(self) -> "ImplementationModelItem":
-        """Creates a cloned version of this item."""
-        return ImplementationModelItem(self.implementation_model)
+        """Creates a cloned version of this item.
+
+        Please note that the UUID of the cloned item will change.
+        """
+        implementation_model = deepcopy(self.implementation_model)
+
+        return ImplementationModelItem(implementation_model)
 
 
 class ComponentItemModel(QtGui.QStandardItemModel):
@@ -305,7 +397,7 @@ class ComponentItemModel(QtGui.QStandardItemModel):
 
         self.insertRow(idx, component_item)
 
-        self._uuid_row_idx[component_item.uuid] = idx
+        self._re_index_rows()
 
         return True
 
@@ -531,10 +623,36 @@ class IMItemModel(ComponentItemModel):
         if not status:
             return False
 
-        row = idx.row() + 1
-        self.add_component_item(clone_ncs, row)
+        bottom_idx = target_model.bottom_ncs_item_index()
+        reference_row = max(bottom_idx.row(), idx.row())
+        self.add_component_item(clone_ncs, reference_row + 1)
 
         return True
+
+    def remove_ncs_pathway_item(
+            self,
+            ncs_uuid: str,
+            parent: ImplementationModelItem
+    ) -> bool:
+        """Remove an NCS pathway item from the model.
+
+        param uuid: UUID of the NCS pathway item to be removed.
+        :type ncs_uuid: str
+
+        :param parent: Reference implementation model item that
+        is the parent to the NCS pathway item.
+        :type parent: ImplementationModelItem
+
+        :returns: True if the NCS pathway item has been 
+        successfully removed, else False if there was 
+        no matching UUID.
+        :rtype: bool
+        """
+        status = parent.remove_ncs_pathway_item(ncs_uuid)
+        if not status:
+            return False
+
+        return self.remove_component_item(ncs_uuid)
 
     def update_implementation_model(
         self, implementation_model: ImplementationModel
