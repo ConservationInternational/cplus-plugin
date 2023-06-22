@@ -23,7 +23,6 @@
 
 ### Installation
 
-
 During the development phase the plugin is available to install via
 a dedicated plugin repository 
 
