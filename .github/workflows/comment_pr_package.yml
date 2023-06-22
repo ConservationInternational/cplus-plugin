@@ -19,7 +19,7 @@ jobs:
           workflow: peek_icons.yml
           run_id: ${{ github.event.workflow_run.id }}
 
-      - name: Read the pr_num file
+      - name: Read the PR number file
         id: pr_number_reader
         uses: juliangruber/read-file-action@v1.0.0
         with:
@@ -43,8 +43,6 @@ jobs:
           
           echo "Previous Job ID: $PREVIOUS_JOB_ID"
           echo "PREVIOUS_JOB_ID=$PREVIOUS_JOB_ID" >> "$GITHUB_ENV"
-          
-          echo "Workflow run : $WORKFLOW_RUN_EVENT_OBJ"
           
           SUITE_ID=$(jq -r '.check_suite_id' <<< "$WORKFLOW_RUN_EVENT_OBJ")
           echo "Previous Suite ID: $SUITE_ID"
