@@ -5,6 +5,7 @@ on:
     types:
       - opened
       - reopened
+      - synchronize
     branches:
       - main
 
@@ -48,3 +49,15 @@ jobs:
         with:
           name: ${{ steps.get-zip-details.outputs.ZIP_NAME }}
           path: ${{ steps.get-zip-details.outputs.ZIP_PATH }}
+
+      - name: Save the PR number in an artifact
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+        run: echo $PR_NUMBER > pr_number.txt
+
+      - name: Upload the PR number
+        uses: actions/upload-artifact@v3
+        with:
+          name: pr_number
+          path: ./pr_number.txt
