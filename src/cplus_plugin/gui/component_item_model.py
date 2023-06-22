@@ -165,8 +165,7 @@ class NcsPathwayItem(ModelComponentItem):
         return NcsPathwayItem(ncs)
 
     def clone(self) -> "NcsPathwayItem":
-        """Creates a cloned version of this item.
-        """
+        """Creates a cloned version of this item."""
         ncs = deepcopy(self.ncs_pathway)
 
         return NcsPathwayItem(ncs)
@@ -299,9 +298,7 @@ class ImplementationModelItem(ModelComponentItem):
         if not self.contains_ncs_item(uuid):
             return False
 
-        idxs = [
-            i for i, n in enumerate(self._ncs_items) if n.uuid == uuid
-        ]
+        idxs = [i for i, n in enumerate(self._ncs_items) if n.uuid == uuid]
         if len(idxs) == 0:
             return False
 
@@ -327,10 +324,7 @@ class ImplementationModelItem(ModelComponentItem):
         if len(self._ncs_items) == 0:
             return None
 
-        bottom_ncs_item = max(
-            self._ncs_items,
-            key=lambda n: n.index().row()
-        )
+        bottom_ncs_item = max(self._ncs_items, key=lambda n: n.index().row())
 
         return bottom_ncs_item.index()
 
@@ -630,9 +624,7 @@ class IMItemModel(ComponentItemModel):
         return True
 
     def remove_ncs_pathway_item(
-            self,
-            ncs_uuid: str,
-            parent: ImplementationModelItem
+        self, ncs_uuid: str, parent: ImplementationModelItem
     ) -> bool:
         """Remove an NCS pathway item from the model.
 
@@ -643,8 +635,8 @@ class IMItemModel(ComponentItemModel):
         is the parent to the NCS pathway item.
         :type parent: ImplementationModelItem
 
-        :returns: True if the NCS pathway item has been 
-        successfully removed, else False if there was 
+        :returns: True if the NCS pathway item has been
+        successfully removed, else False if there was
         no matching UUID.
         :rtype: bool
         """
