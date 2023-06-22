@@ -73,7 +73,6 @@ theme:
 extra:
   social:
     - icon: fontawesome/brands/github-alt
-      link: https://github.com/vermeulendivan
 
 markdown_extensions:
   - pymdownx.highlight:

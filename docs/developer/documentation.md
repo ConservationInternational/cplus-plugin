@@ -12,7 +12,7 @@ A detailed description on getting-started with mkdocs is available <a href="http
 ## Creating a new project
 
 This should not be required as the mkdocs has been created already, but serves more of a guide for
-a user whom are new to mkdocs
+a user whom are new to mkdocs.
 
 - Open the terminal
 - Run "mkdocs new ."
