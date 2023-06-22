@@ -22,7 +22,7 @@ from .component_item_model import (
     ModelComponentItemType,
     NcsPathwayItem,
     NcsPathwayItemModel,
-    NCS_PATHWAY_TYPE
+    NCS_PATHWAY_TYPE,
 )
 from .implementation_model_editor_dialog import ImplementationModelEditorDialog
 from .ncs_pathway_editor_dialog import NcsPathwayEditorDialog
@@ -397,15 +397,10 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
             # NCS pathway item
             if item.type() == NCS_PATHWAY_TYPE:
                 parent = item.parent
-                self.item_model.remove_ncs_pathway_item(
-                    item.uuid,
-                    parent
-                )
+                self.item_model.remove_ncs_pathway_item(item.uuid, parent)
             else:
                 # Implementation model item
-                self.item_model.remove_implementation_model(
-                    str(model_component.uuid)
-                )
+                self.item_model.remove_implementation_model(str(model_component.uuid))
 
             self.clear_description()
 
