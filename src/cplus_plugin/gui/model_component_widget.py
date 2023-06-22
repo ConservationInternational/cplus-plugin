@@ -18,13 +18,16 @@ from .component_item_model import (
     ComponentItemModel,
     ComponentItemModelType,
     IMItemModel,
+    IMPLEMENTATION_MODEL_TYPE,
     ModelComponentItemType,
     NcsPathwayItem,
     NcsPathwayItemModel,
+    NCS_PATHWAY_TYPE
 )
 from .implementation_model_editor_dialog import ImplementationModelEditorDialog
 from .ncs_pathway_editor_dialog import NcsPathwayEditorDialog
 from ..models.base import ImplementationModel, LayerType, NcsPathway
+from ..utils import log
 
 
 WidgetUi, _ = loadUiType(
@@ -190,8 +193,10 @@ class NcsComponentWidget(ModelComponentWidget):
 
         self.lst_model_items.setDragEnabled(True)
 
+        am_uuid = uuid.uuid4()
+
         ncs = NcsPathway(
-            uuid.uuid4(),
+            am_uuid,
             "Animal Management",
             "Suitable sites for grazing animals",
             "D:/Downloads/Data/Countries_SS.shp",
@@ -361,7 +366,8 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         if len(selected_items) == 0 or len(selected_items) > 1:
             return
 
-        model_component = selected_items[0].model_component
+        item = selected_items[0]
+        model_component = item.model_component
 
         msg = self.tr(
             f"Do you want to remove '{model_component.name}'?\nClick Yes to "
@@ -377,7 +383,19 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
             )
             == QtWidgets.QMessageBox.Yes
         ):
-            self.item_model.remove_implementation_model(str(model_component.uuid))
+            # NCS pathway item
+            if item.type() == NCS_PATHWAY_TYPE:
+                parent = item.parent
+                self.item_model.remove_ncs_pathway_item(
+                    item.uuid,
+                    parent
+                )
+            else:
+                # Implementation model item
+                self.item_model.remove_implementation_model(
+                    str(model_component.uuid)
+                )
+
             self.clear_description()
 
     def add_ncs_pathway_item(self, ncs_item: NcsPathwayItem) -> bool:
@@ -399,4 +417,24 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
 
         sel_model = selected_models[0]
 
+        # Use the parent to add the NCS item
+        if sel_model.type() == NCS_PATHWAY_TYPE:
+            if sel_model.parent is None:
+                return False
+
+            sel_model = sel_model.parent
+
         return self.item_model.add_ncs_pathway(ncs_item, sel_model)
+
+    def _update_ui_on_selection_changed(self):
+        """Check type of item selected and update UI
+        controls accordingly.
+        """
+        super()._update_ui_on_selection_changed()
+
+        selected_items = self.selected_items()
+        if len(selected_items) == 0:
+            return
+
+        if selected_items[0].type() == NCS_PATHWAY_TYPE:
+            self.btn_edit.setEnabled(False)
