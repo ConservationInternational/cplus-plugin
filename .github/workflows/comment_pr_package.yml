@@ -45,6 +45,7 @@ jobs:
           ARTIFACT_ID=$(gh api "/repos/$OWNER/$REPO/actions/artifacts" \
             --jq ".artifacts.[] |
             select(.workflow_run.id==${PREVIOUS_JOB_ID}) |
+            select(.name | endswith("zip")) |
             select(.expired==false) |
             .id")
           
