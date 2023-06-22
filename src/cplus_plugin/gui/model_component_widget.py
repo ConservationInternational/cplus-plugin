@@ -246,6 +246,17 @@ class NcsComponentWidget(ModelComponentWidget):
         self.item_model.add_ncs_pathway(ncs3)
         self.item_model.add_ncs_pathway(ncs4)
 
+        # Disable add, edit, remove controls for now
+        self.btn_add.setEnabled(False)
+        self.btn_remove.setEnabled(False)
+        self.btn_edit.setEnabled(False)
+
+    def _update_ui_on_selection_changed(self):
+        """Temporarily disable edit, remove buttons."""
+        super()._update_ui_on_selection_changed()
+        self.btn_remove.setEnabled(False)
+        self.btn_edit.setEnabled(False)
+
     def pathways(self, valid_only=False) -> typing.List[NcsPathway]:
         """Returns a collection of NcsPathway objects in the list view.
 
