@@ -55,14 +55,9 @@ jobs:
           echo "Artifact ID: $ARTIFACT_ID"
           echo "ARTIFACT_ID=$ARTIFACT_ID" >> "$GITHUB_ENV"
           
-          PR_NUMBER=$(jq -r '.pull_requests[0].number' \
-            <<< "$WORKFLOW_RUN_EVENT_OBJ")
+          echo "Pull request Number: ${{ steps.pr_number_reader.outputs.content }}"
           
-          echo "Pull request Number: $PULL_REQUEST_EVENT_NUMBER"
-          
-          HEAD_SHA="${{ github.event.head_sha }}"
-          
-          echo "Head SHA: $HEAD_SHA"
+          echo "Head SHA: ${{ github.event.head_sha }}"
 
       - name: Find Comment
         uses: peter-evans/find-comment@v2
