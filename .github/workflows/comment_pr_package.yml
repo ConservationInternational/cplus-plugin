@@ -25,12 +25,19 @@ jobs:
         with:
           path: ./pr_number/pr_number.txt
 
+      - name: Read the zip file name
+        id: zip_file_name_reader
+        uses: juliangruber/read-file-action@v1.0.0
+        with:
+          path: ./zip_file_name/zip_file_name.txt
+
       - name: Get Artifact and Pull request info
         env:
           GITHUB_TOKEN: ${{ github.token }}
           WORKFLOW_RUN_EVENT_OBJ: ${{ toJSON(github.event.workflow_run) }}
           OWNER: ${{ github.repository_owner }}
           REPO: ${{ github.event.repository.name }}
+          ZIP_FILENAME: ${{ steps.zip_file_name_reader.outputs.content }}
         run: |
           PREVIOUS_JOB_ID=$(jq -r '.id' <<< "$WORKFLOW_RUN_EVENT_OBJ")
           echo "Previous Job ID: $PREVIOUS_JOB_ID"
@@ -45,7 +52,7 @@ jobs:
           ARTIFACT_ID=$(gh api "/repos/$OWNER/$REPO/actions/artifacts" \
             --jq ".artifacts.[] |
             select(.workflow_run.id==${PREVIOUS_JOB_ID}) |
-            select(.name | endswith("zip")) |
+            select(.["name"]==${ZIP_FILENAME}) |
             select(.expired==false) |
             .id")
           

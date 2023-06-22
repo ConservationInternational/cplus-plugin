@@ -50,14 +50,23 @@ jobs:
           name: ${{ steps.get-zip-details.outputs.ZIP_NAME }}
           path: ${{ steps.get-zip-details.outputs.ZIP_PATH }}
 
-      - name: Save the PR number in an artifact
+      - name: Save the PR number and zip file name into artifacts
         shell: bash
         env:
           PR_NUMBER: ${{ github.event.number }}
-        run: echo $PR_NUMBER > pr_number.txt
+          ZIP_FILE_NAME: ${{ steps.get-zip-details.outputs.ZIP_NAME }}
+        run: |
+          echo $PR_NUMBER > pr_number.txt
+          echo $ZIP_FILE_NAME > zip_file_name.txt
 
       - name: Upload the PR number
         uses: actions/upload-artifact@v3
         with:
           name: pr_number
           path: ./pr_number.txt
+
+      - name: Upload the zip file name
+        uses: actions/upload-artifact@v3
+        with:
+          name: zip_file_name
+          path: ./zip_file_name.txt
