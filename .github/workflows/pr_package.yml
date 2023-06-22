@@ -30,7 +30,7 @@ jobs:
       - name: Get unique identifier
         id: get-identifier
         run: |
-          echo "::set-output name=PACKAGE_ID::$(python -c "import uuid; print(str(uuid.uuid4())[:5])")"
+          echo "::set-output name=PACKAGE_ID::$(python -c "import uuid; print(str(uuid.uuid4())[:4])")"
 
       - name: Generate zip file
         run: |

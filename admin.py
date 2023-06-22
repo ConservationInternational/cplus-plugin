@@ -136,6 +136,7 @@ def uninstall(context: typer.Context):
 def generate_zip(
     context: typer.Context,
     version: str = None,
+    file_name: str = None,
     output_directory: typing.Optional[Path] = LOCAL_ROOT_DIR / "dist",
 ):
     """Generates plugin zip folder, that can be used to installed the
@@ -147,6 +148,9 @@ def generate_zip(
     :param version: Plugin version
     :type version: str
 
+    :param file_name: Plugin zip file name
+    :type file_name: str
+
     :param output_directory: Directory where the zip folder will be saved.
     :type context: Path
     """
@@ -154,7 +158,10 @@ def generate_zip(
     metadata = _get_metadata()
     plugin_version = metadata["version"] if version is None else version
     output_directory.mkdir(parents=True, exist_ok=True)
-    zip_path = output_directory / f"{SRC_NAME}.{plugin_version}.zip"
+    zip_file_name = (
+        f"{SRC_NAME}.{plugin_version}.zip" if file_name is None else file_name
+    )
+    zip_path = output_directory / f"{zip_file_name}"
     with zipfile.ZipFile(zip_path, "w") as fh:
         _add_to_zip(build_dir, fh, arc_path_base=build_dir.parent)
     typer.echo(

@@ -31,7 +31,7 @@ jobs:
         with:
           path: ./zip_file_name/zip_file_name.txt
 
-      - name: Get Artifact and Pull request info
+      - name: Get artifact and pull request info
         env:
           GITHUB_TOKEN: ${{ github.token }}
           WORKFLOW_RUN_EVENT_OBJ: ${{ toJSON(github.event.workflow_run) }}
@@ -40,6 +40,7 @@ jobs:
           ZIP_FILENAME: ${{ steps.zip_file_name_reader.outputs.content }}
         run: |
           PREVIOUS_JOB_ID=$(jq -r '.id' <<< "$WORKFLOW_RUN_EVENT_OBJ")
+          
           echo "Previous Job ID: $PREVIOUS_JOB_ID"
           echo "PREVIOUS_JOB_ID=$PREVIOUS_JOB_ID" >> "$GITHUB_ENV"
           
@@ -49,17 +50,25 @@ jobs:
           echo "Previous Suite ID: $SUITE_ID"
           echo "SUITE_ID=$SUITE_ID" >> "$GITHUB_ENV"
           
-          ARTIFACT_ID=$(gh api "/repos/$OWNER/$REPO/actions/artifacts" \
-            --jq ".artifacts.[] |
-            select(.workflow_run.id==${PREVIOUS_JOB_ID}) |
-            select(.["name"]==${ZIP_FILENAME}) |
-            select(.expired==false) |
-            .id")
+          echo "ARTIFACT_NAME=$ZIP_FILENAME" >> "$GITHUB_ENV"
           
-          echo "Artifact ID: $ARTIFACT_ID"
-          echo "ARTIFACT_ID=$ARTIFACT_ID" >> "$GITHUB_ENV"
+          ARTIFACT_IDS=$(gh api "/repos/$OWNER/$REPO/actions/artifacts" \
+            --jq [".artifacts.[] |
+            select(.workflow_run.id==$PREVIOUS_JOB_ID) |
+            select(.expired==false) | {id, name}"]
+          )
+          echo "ARTIFACT_IDS=$ARTIFACT_IDS" >> "$GITHUB_ENV"
           
           echo "Head SHA: ${{ github.event.head_sha }}"
+
+      - name: Get upload zip artifact id
+        run: |          
+          echo "ARTIFACT_ID=$(python -c "import os, json; 
+          [print(str(art['id'])) for art in json.loads(
+          os.getenv('ARTIFACT_IDS').replace('\'', '\"'))
+          if art['name'] == os.getenv('ARTIFACT_NAME') ]")" >> "$GITHUB_ENV"
+          
+          echo "The ARTIFACT ID: $ARTIFACT_ID"
 
       - name: Find Comment
         uses: peter-evans/find-comment@v2
