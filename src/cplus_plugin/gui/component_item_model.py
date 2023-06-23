@@ -475,6 +475,16 @@ class ComponentItemModel(QtGui.QStandardItemModel):
 
         return [self.item(r).model_component for r in range(rows)]
 
+    def model_component_items(self) -> typing.List[ModelComponentItem]:
+        """Returns all model component items in the model.
+
+        :returns: Model component items in the model.
+        :rtype: list
+        """
+        rows = self.rowCount()
+
+        return [self.item(r) for r in range(rows)]
+
     def _re_index_rows(self):
         """Remap UUIDs with corresponding row numbers.
 
@@ -748,7 +758,17 @@ class IMItemModel(ComponentItemModel):
         :returns: All implementation model objects in the model.
         :rtype: list
         """
-        return self.model_components()
+        return [model_item.implementation_model for model_item in self.model_items()]
+
+    def model_items(self) -> typing.List[ImplementationModelItem]:
+        """Returns all ImplementationModelItem objects in the model.
+
+        :returns: All implementation model items in the model.
+        :rtype: list
+        """
+        component_items = self.model_component_items()
+
+        return [ci for ci in component_items if ci.type() == IMPLEMENTATION_MODEL_TYPE]
 
     def remove_implementation_model(self, uuid: str) -> bool:
         """Remove an implementation model item from the model.

@@ -272,6 +272,15 @@ class NcsComponentWidget(ModelComponentWidget):
         """
         return self.item_model.pathways(valid_only)
 
+    def ncs_items(self) -> typing.List[NcsPathwayItem]:
+        """Returns a collection of all NcsPathwayItem objects in the
+        list view.
+
+        :returns: Collection of NcsPathwayItem objects in the list view.
+        :rtype: list
+        """
+        return self.item_model.model_component_items()
+
     def _on_add_item(self):
         """Show NCS pathway editor."""
         ncs_editor = NcsPathwayEditorDialog(self)
@@ -356,6 +365,16 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         """
         return self.item_model.models()
 
+    def model_items(self) -> typing.List[ImplementationModelItem]:
+        """Returns a collection of all ImplementationModelItem objects
+        in the list view.
+
+        :returns: Collection of ImplementationModelItem objects in
+        the list view.
+        :rtype: list
+        """
+        return self.item_model.model_items()
+
     def _on_add_item(self):
         """Show implementation model editor."""
         editor = ImplementationModelEditorDialog(self)
@@ -409,15 +428,15 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
 
             self.clear_description()
 
-    def add_ncs_pathway_item(self, ncs_item: NcsPathwayItem) -> bool:
+    def add_ncs_pathway_items(self, ncs_items: typing.List[NcsPathwayItem]) -> bool:
         """Adds an NCS pathway item to the collection.
 
         One, and only one, target implementation model item needs
         to have been selected.
 
-        :param ncs_item: NCS pathway item to be added to the
+        :param ncs_items: NCS pathway items to be added to the
         implementation model.
-        :type ncs_item: NcsPathwayItem
+        :type ncs_items: list
 
         :returns: True if the item was successfully added, else False.
         :rtype: bool
@@ -435,7 +454,11 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
 
             sel_model = sel_model.parent
 
-        return self.item_model.add_ncs_pathway(ncs_item, sel_model)
+        status = True
+        for ncs_item in ncs_items:
+            status = self.item_model.add_ncs_pathway(ncs_item, sel_model)
+
+        return status
 
     def _update_ui_on_selection_changed(self):
         """Check type of item selected and update UI
