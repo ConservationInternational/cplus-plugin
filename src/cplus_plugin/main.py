@@ -48,7 +48,7 @@ class QgisCplus:
         self.actions = []
         self.pluginIsActive = False
 
-        self.menu = QMenu("&Trends.Earth")
+        self.menu = QMenu("&CPLUS")
         self.menu.setIcon(QIcon(ICON_PATH))
 
         self.raster_menu = self.iface.rasterMenu()
