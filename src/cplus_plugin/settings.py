@@ -40,14 +40,12 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.folder_data.fileChanged.connect(self.base_dir_exists)
 
     def apply(self) -> None:
-        """This is called on OK click in the QGIS options panel.
-        """
+        """This is called on OK click in the QGIS options panel."""
 
         self.save_settings()
 
     def logo_state_change(self) -> None:
-        """Called when the custom logo option is disabled or enabled.
-        """
+        """Called when the custom logo option is disabled or enabled."""
 
         custom_logo = self.cb_custom_logo.checkState()
 
