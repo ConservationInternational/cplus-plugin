@@ -42,6 +42,7 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
 
         self.btn_add_all.setIcon(FileUtils.get_icon("forward.svg"))
         self.btn_add_all.setToolTip(self.tr("Add all NCS pathways"))
+        self.btn_add_all.clicked.connect(self._on_add_all_ncs_pathways)
 
         # NCS pathway view
         self.ncs_pathway_view = NcsComponentWidget()
@@ -92,4 +93,14 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
             return
 
         ncs_item = selected_ncs_items[0]
-        self.implementation_model_view.add_ncs_pathway_item(ncs_item)
+        self.implementation_model_view.add_ncs_pathway_items([ncs_item])
+
+    def _on_add_all_ncs_pathways(self):
+        """Slot raised to add all NCS pathway item to an
+        implementation model view.
+        """
+        all_ncs_items = self.ncs_pathway_view.ncs_items()
+        if len(all_ncs_items) == 0:
+            return
+
+        self.implementation_model_view.add_ncs_pathway_items(all_ncs_items)
