@@ -3,9 +3,10 @@
 """ QGIS CPLUS plugin models
 """
 
-import dataclasses
+import dataclasse
 import enum
 from enum import Enum
+from enum import IntEnum
 import os.path
 import typing
 
@@ -55,12 +56,12 @@ BaseModelComponentType = typing.TypeVar(
 )
 
 
-class LayerType(Enum):
+class LayerType(IntEnum):
     """QGIS spatial layer type."""
 
     RASTER = 0
     VECTOR = 1
-    UNDEFINED = 2
+    UNDEFINED = -1
 
 
 @dataclasses.dataclass
@@ -68,7 +69,7 @@ class NcsPathway(BaseModelComponent):
     """Contains information about an NCS pathway layer."""
 
     path: str
-    layer_type: LayerType
+    layer_type: LayerType = LayerType.UNDEFINED
     user_defined: bool = False
 
     def to_map_layer(self) -> typing.Union[QgsMapLayer, None]:

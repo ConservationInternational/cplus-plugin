@@ -2,8 +2,10 @@
 """
 Contains item models for view widgets such as NCS pathway or IM views.
 """
+import uuid
 from abc import abstractmethod
 from copy import deepcopy
+import json
 import typing
 from uuid import uuid4
 
@@ -13,12 +15,15 @@ from ..models.base import (
     BaseModelComponent,
     BaseModelComponentType,
     ImplementationModel,
+    LayerType,
     NcsPathway,
 )
 
 
 NCS_PATHWAY_TYPE = QtGui.QStandardItem.UserType + 2
 IMPLEMENTATION_MODEL_TYPE = QtGui.QStandardItem.UserType + 3
+
+NCS_MIME_TYPE = "application/x-qabstractitemmodeldatalist"
 
 
 class ModelComponentItem(QtGui.QStandardItem):
@@ -169,6 +174,25 @@ class NcsPathwayItem(ModelComponentItem):
         ncs = deepcopy(self.ncs_pathway)
 
         return NcsPathwayItem(ncs)
+
+    def json_data(self) -> str:
+        """Creates a mapping of NCS pathway property names
+        and their corresponding values.
+
+        :returns: JSON representation of property name-value
+        pairs for an NCS pathway object.
+        :rtype: str
+        """
+        ncs_attrs = {
+            "uuid": str(self.ncs_pathway.uuid),
+            "name": self.ncs_pathway.name,
+            "description": self.ncs_pathway.description,
+            "path": self.ncs_pathway.path,
+            "layer_type": self.ncs_pathway.layer_type,
+            "user_defined": self.ncs_pathway.user_defined,
+        }
+
+        return json.dumps(ncs_attrs)
 
 
 class ImplementationModelItem(ModelComponentItem):
@@ -571,6 +595,56 @@ class NcsPathwayItemModel(ComponentItemModel):
         """
         return self.remove_component_item(uuid)
 
+    def supportedDropActions(self) -> QtCore.Qt.DropActions:
+        """Configure the model to only support copying items in a
+        drag-and-drop operation.
+
+        :returns: Supported drag-and-drop action for NCS pathway
+        items.
+        :rtype: QtCore.Qt.DropActions
+        """
+        return QtCore.Qt.CopyAction
+
+    def mimeTypes(self) -> typing.List[str]:
+        """Returns supported MIME types that can be used to
+        describe a list of model indexes for NCS pathway items.
+
+        :returns: MIME type for NCS pathway items which is JSON
+        string but MIME type is the default datalist type for Qt
+        since it does not allow custom types.
+        :rtype: list
+        """
+        return [NCS_MIME_TYPE]
+
+    def mimeData(self, indexes: typing.List[QtCore.QModelIndex]) -> QtCore.QMimeData:
+        """Serializes the NCS items corresponding to the specified indexes.
+
+        :param indexes: NCS items stored in the specified indexes.
+        :type indexes: list
+
+        :returns: Mime object containing serialized NCS items.
+        :rtype: QtCore.QMimeData
+        """
+        mime_data = QtCore.QMimeData()
+        item_data = QtCore.QByteArray()
+        data_stream = QtCore.QDataStream(item_data, QtCore.QIODevice.WriteOnly)
+
+        for idx in indexes:
+            if not idx.isValid():
+                continue
+
+            ncs_item = self.itemFromIndex(idx)
+            if ncs_item is None:
+                continue
+
+            ncs_data = QtCore.QByteArray()
+            ncs_data.append(ncs_item.json_data())
+            data_stream << ncs_data
+
+        mime_data.setData(NCS_MIME_TYPE, item_data)
+
+        return mime_data
+
 
 class IMItemModel(ComponentItemModel):
     """View model for implementation model."""
@@ -688,3 +762,89 @@ class IMItemModel(ComponentItemModel):
         :rtype: bool
         """
         return self.remove_component_item(uuid)
+
+    def flags(self, index):
+        flags = super().flags(index)
+
+        return QtCore.Qt.ItemIsDropEnabled | flags
+
+    def dropMimeData(
+        self,
+        data: QtCore.QMimeData,
+        action: QtCore.Qt.DropAction,
+        row: int,
+        column: int,
+        parent: QtCore.QModelIndex,
+    ) -> bool:
+        """Implements behaviour for handling data supplied by drag
+        and drop operation.
+
+        :param data: Object containing data from the drag operation.
+        :type data: QtCore.QMimeData
+
+        :param action: Type of the drag and drop operation.
+        :type action: QtCore.Qt.DropAction
+
+        :param row: Row location of dropped data.
+        :type row: int
+
+        :param column: Column location of dropped data.
+        :type column: int
+
+        :param parent: Index location for target item where the
+        operation ended.
+        :type parent: QtCore.QModelIndex
+
+        :returns: True if the data and action can be handled by the
+        model, else False.
+        :rtype: bool
+        """
+        if action == QtCore.Qt.IgnoreAction:
+            return True
+
+        if not data.hasFormat(NCS_MIME_TYPE):
+            return False
+
+        encoded_data = data.data(NCS_MIME_TYPE)
+        data_stream = QtCore.QDataStream(encoded_data, QtCore.QIODevice.ReadOnly)
+
+        ncs_items = []
+
+        while not data_stream.atEnd():
+            byte_data = QtCore.QByteArray()
+            data_stream >> byte_data
+
+            item_data = json.loads(byte_data.data())
+            ncs_pathway = NcsPathway(
+                uuid.UUID(item_data["uuid"]),
+                item_data["name"],
+                item_data["description"],
+                item_data["path"],
+                LayerType(int(item_data["layer_type"])),
+                bool(item_data["user_defined"]),
+            )
+
+            ncs_item = NcsPathwayItem(ncs_pathway)
+            ncs_items.append(ncs_item)
+
+        # Get reference ImplementationModel item
+        if parent.isValid():
+            model_component = self.itemFromIndex(parent)
+        else:
+            row_count = self.rowCount()
+            model_component = self.item(row_count - 1)
+
+        if model_component is None:
+            return False
+
+        if model_component.type() == NCS_PATHWAY_TYPE:
+            target_im_item = model_component.parent
+        else:
+            target_im_item = model_component
+
+        # Add NCS items to model.
+        status = True
+        for item in ncs_items:
+            status = self.add_ncs_pathway(item, target_im_item)
+
+        return status
