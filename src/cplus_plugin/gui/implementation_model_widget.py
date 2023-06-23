@@ -104,3 +104,26 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
             return
 
         self.implementation_model_view.add_ncs_pathway_items(all_ncs_items)
+
+    def is_valid(self) -> bool:
+        """Check if the user input is valid.
+
+        This checks if there is one implementation model defined with at
+        least one NCS pathway under it.
+
+        :returns: True if the implementation model configuration is
+        valid, else False at least until there is one implementation
+        model defined with at least one NCS pathway under it.
+        :rtype: bool
+        """
+        implementation_models = self.implementation_models()
+        if len(implementation_models) == 0:
+            return False
+
+        status = False
+        for im in implementation_models:
+            if len(im.pathways) > 0:
+                status = True
+                break
+
+        return status
