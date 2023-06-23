@@ -196,59 +196,6 @@ class NcsComponentWidget(ModelComponentWidget):
         self.lst_model_items.setDragDropMode(QtWidgets.QAbstractItemView.DragOnly)
         self.lst_model_items.setAcceptDrops(False)
 
-        am_uuid = uuid.uuid4()
-
-        ncs = NcsPathway(
-            am_uuid,
-            "Animal Management",
-            "Suitable sites for grazing animals",
-            "D:/Downloads/Data/Countries_SS.shp",
-            LayerType.VECTOR,
-            True,
-        )
-
-        ncs1 = NcsPathway(
-            uuid.uuid4(),
-            "Grassland Restoration",
-            "Grassland areas",
-            "D:/Downloads/Data/Countries_S.shp",
-            LayerType.VECTOR,
-            True,
-        )
-
-        ncs2 = NcsPathway(
-            uuid.uuid4(),
-            "Avoided Deforestation",
-            "Description of Grassland areas",
-            "D:/Downloads/Data/Countries_SS.shp",
-            LayerType.VECTOR,
-            True,
-        )
-
-        ncs3 = NcsPathway(
-            uuid.uuid4(),
-            "Avoided Grassland Conversion",
-            "Description of Avoided Grassland Conversion",
-            "D:/Downloads/Data/Countries_SS.shp",
-            LayerType.VECTOR,
-            True,
-        )
-
-        ncs4 = NcsPathway(
-            uuid.uuid4(),
-            "Woody Encroachment Control",
-            "Description of Woody Encroachment Control",
-            "D:/Downloads/Data/Countries_SS.shp",
-            LayerType.VECTOR,
-            True,
-        )
-
-        self.item_model.add_ncs_pathway(ncs)
-        self.item_model.add_ncs_pathway(ncs1)
-        self.item_model.add_ncs_pathway(ncs2)
-        self.item_model.add_ncs_pathway(ncs3)
-        self.item_model.add_ncs_pathway(ncs4)
-
         # Disable add, edit, remove controls for now
         self.btn_add.setEnabled(False)
         self.btn_remove.setEnabled(False)
@@ -338,22 +285,6 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         self.lst_model_items.setAcceptDrops(True)
         self.lst_model_items.setDragDropMode(QtWidgets.QAbstractItemView.DropOnly)
         self.lst_model_items.setDropIndicatorShown(True)
-
-        model = ImplementationModel(
-            uuid.uuid4(), "Herding for Health", "Description of Herding for Health"
-        )
-
-        model1 = ImplementationModel(
-            uuid.uuid4(), "Eat Fresh", "Description of Eat Fresh"
-        )
-
-        model2 = ImplementationModel(
-            uuid.uuid4(), "Charcoal Naturally", "Description of Charcoal Naturally"
-        )
-
-        self.item_model.add_implementation_model(model)
-        self.item_model.add_implementation_model(model1)
-        self.item_model.add_implementation_model(model2)
 
     def models(self) -> typing.List[ImplementationModel]:
         """Returns a collection of ImplementationModel objects in the
