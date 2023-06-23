@@ -9,7 +9,6 @@ site_author: Kartoza
 nav:
   - Home: index.md
   - User:
-      - CPLUS model: user/models.md
       - Installation: user/installation.md
       - Plugin guide: user/cplus_ui_guide.md
       - Settings: user/settings.md

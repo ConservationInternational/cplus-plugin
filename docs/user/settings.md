@@ -2,22 +2,28 @@
 
 ## Open CPLUS settings
 
-**QGIS options**:
+**QGIS options** (**Figure 1**):
 - Click on **Settings** -> **Options**
 
 ![QGIS settings](../img/settings/settings-qgis.png)
 
+*Figure 1: QGIS settings*
+
 - Select the CPLUS tab to the left
-- This will open the CPLUS settings dialog
+- This will open the CPLUS settings dialog. See **Figure 2** for an example
 
 ![CPLUS settings](../img/settings/settings-cplus-tab.png)
 
-**Toolbar**:
+*Figure 2: CPLUS section as loaded in the QGIS settings dialog*
+
+**Toolbar** (**Figure 3**):
 - Click on the CPLUS toolbar drop-down
 - Select **Settings**
 - This will take you directly to the CPLUS settings dialog in the QGIS options
 
 ![CPLUS settings button](../img/settings/settings-toolbar-button.png)
+
+*Figure 3: CPLUS toolbar button*
 
 ## CPLUS settings
 
@@ -42,5 +48,3 @@ A short description of each available setting a user can change. Most are option
 **Advanced**:
 
 - *Base data directory* (required): Data accessed and download by the plugin will be stored here
-
-![CPLUS settings](../img/settings/settings-cplus-tab.png)
