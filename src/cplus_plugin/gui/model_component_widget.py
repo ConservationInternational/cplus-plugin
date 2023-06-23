@@ -404,15 +404,19 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         item = selected_items[0]
         model_component = item.model_component
 
+        additional_note = ""
+        if item.type() == IMPLEMENTATION_MODEL_TYPE:
+            additional_note = self.tr("and the children pathways")
+
         msg = self.tr(
-            f"Do you want to remove '{model_component.name}'?\nClick Yes to "
-            f"proceed or No to cancel."
+            f"Do you want to remove '{model_component.name}' {additional_note}?"
+            f"\nClick Yes to proceed or No to cancel."
         )
 
         if (
             QtWidgets.QMessageBox.question(
                 self,
-                self.tr("Remove Implementation Model item"),
+                self.tr("Remove Implementation Model Item"),
                 msg,
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
             )
