@@ -18,6 +18,7 @@ from .component_item_model import (
     ComponentItemModel,
     ComponentItemModelType,
     IMItemModel,
+    ImplementationModelItem,
     IMPLEMENTATION_MODEL_TYPE,
     ModelComponentItemType,
     NcsPathwayItem,
@@ -192,6 +193,8 @@ class NcsComponentWidget(ModelComponentWidget):
         self.item_model = NcsPathwayItemModel(parent)
 
         self.lst_model_items.setDragEnabled(True)
+        self.lst_model_items.setDragDropMode(QtWidgets.QAbstractItemView.DragOnly)
+        self.lst_model_items.setAcceptDrops(False)
 
         am_uuid = uuid.uuid4()
 
@@ -324,6 +327,8 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         self.item_model = IMItemModel(parent)
 
         self.lst_model_items.setAcceptDrops(True)
+        self.lst_model_items.setDragDropMode(QtWidgets.QAbstractItemView.DropOnly)
+        self.lst_model_items.setDropIndicatorShown(True)
 
         model = ImplementationModel(
             uuid.uuid4(), "Herding for Health", "Description of Herding for Health"
