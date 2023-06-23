@@ -781,6 +781,14 @@ class IMItemModel(ComponentItemModel):
         removed, else False if there was not matching UUID.
         :rtype: bool
         """
+        implementation_model = self.component_item_by_uuid(uuid)
+        if implementation_model is None:
+            return False
+
+        ncs_items = implementation_model.ncs_items
+        for item in ncs_items:
+            self.remove_component_item(item.uuid)
+
         return self.remove_component_item(uuid)
 
     def flags(self, index):
