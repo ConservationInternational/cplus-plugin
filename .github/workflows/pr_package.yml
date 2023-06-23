@@ -35,7 +35,7 @@ jobs:
       - name: Generate zip file
         run: |
           python admin.py build --output-directory ${{ format(
-          'docs/plugin/package/{0}_{1}',
+          'docs/plugin/package/cplus_plugin_{0}_{1}/cplus_plugin/',
           github.event.pull_request.head.ref,
           steps.get-identifier.outputs.PACKAGE_ID) }}
 
