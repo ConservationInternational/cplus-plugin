@@ -66,13 +66,15 @@ class QgisCplus:
         self.options_factory = None
 
     # noinspection PyMethodMayBeStatic
-    def tr(self, message):
+    def tr(self, message) -> str:
         """Get the translation for a string using Qt translation API.
         We implement this ourselves since we do not inherit QObject.
-        :param message: String for translation.
-        :type message: str, QString
-        :returns: Translated version of message.
-        :rtype: QString
+
+        Args:
+            message (str): String for translation
+
+        Returns:
+            TranslatedMessage (QString): Translated version of the message
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate("CPLUS", message)
@@ -164,7 +166,7 @@ class QgisCplus:
         self.iface.registerOptionsWidgetFactory(self.options_factory)
 
     def onClosePlugin(self):
-        """Cleanup necessary items here when plugin widget is closed"""
+        """Cleanup necessary items here when plugin widget is closed."""
         self.pluginIsActive = False
 
     def unload(self):
@@ -179,6 +181,7 @@ class QgisCplus:
             pass
 
     def run(self):
+        """Creates the main widget for the plugin."""
         if self.main_widget == None:
             self.main_widget = QgisCplusMain(
                 iface=self.iface, parent=self.iface.mainWindow()

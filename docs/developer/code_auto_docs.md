@@ -1,4 +1,4 @@
 # Code automatic documentation
 
-mkdocstrings will be added for this section
+::: src.cplus_plugin.main.QgisCplus
 
