@@ -26,6 +26,8 @@ from qgis.PyQt.QtWidgets import QMenu
 from .definitions.defaults import ICON_PATH, OPTIONS_TITLE
 from .settings import CplusOptionsFactory
 
+from .conf import initialize_default_settings
+
 
 class QgisCplus:
     """QGIS CPLUS Plugin Implementation."""
@@ -162,6 +164,8 @@ class QgisCplus:
         # Adds the settings to the QGIS options panel
         self.options_factory = CplusOptionsFactory()
         self.iface.registerOptionsWidgetFactory(self.options_factory)
+        # Initialize default model components
+        initialize_default_settings()
 
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin widget is closed"""
