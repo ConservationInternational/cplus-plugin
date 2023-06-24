@@ -3,13 +3,10 @@
 Composite list view-based widgets for displaying implementation model
 and NCS pathway items.
 """
-
 import os
 import typing
-import uuid
 
-from qgis.PyQt import QtCore, QtGui, QtWidgets
-
+from qgis.PyQt import QtCore, QtWidgets
 from qgis.PyQt.uic import loadUiType
 
 from qgis.core import QgsApplication
@@ -28,7 +25,6 @@ from .component_item_model import (
 from .implementation_model_editor_dialog import ImplementationModelEditorDialog
 from .ncs_pathway_editor_dialog import NcsPathwayEditorDialog
 from ..models.base import ImplementationModel, LayerType, NcsPathway
-from ..utils import log
 
 
 WidgetUi, _ = loadUiType(
@@ -133,10 +129,12 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
         :type description: str
         """
         self.txt_item_description.setText(description)
+        self.txt_item_description.setToolTip(description)
 
     def clear_description(self):
         """Clears the content in the description text box."""
         self.txt_item_description.clear()
+        self.txt_item_description.setToolTip("")
 
     def _on_selection_changed(
         self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection
@@ -200,6 +198,14 @@ class NcsComponentWidget(ModelComponentWidget):
         self.btn_add.setEnabled(False)
         self.btn_remove.setEnabled(False)
         self.btn_edit.setEnabled(False)
+
+    def add_ncs_pathway(self, ncs_pathway: NcsPathway):
+        """Adds an NCS pathway object to the view.
+
+        :param ncs_pathway: NCS pathway object to be added to the view.
+        :type ncs_pathway: NcsPathway
+        """
+        self.item_model.add_ncs_pathway(ncs_pathway)
 
     def _update_ui_on_selection_changed(self):
         """Temporarily disable edit, remove buttons."""

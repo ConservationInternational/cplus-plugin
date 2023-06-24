@@ -21,6 +21,8 @@ from .resources import *
 
 from .gui.qgis_cplus_main import QgisCplusMain
 
+from .conf import initialize_default_settings
+
 
 class QgisCplus:
     """QGIS CPLUS Plugin Implementation."""
@@ -148,6 +150,9 @@ class QgisCplus:
             callback=self.run,
             parent=self.iface.mainWindow(),
         )
+
+        # Initialize default model components
+        initialize_default_settings()
 
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin widget is closed"""
