@@ -64,6 +64,7 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         """
         if not self._items_loaded:
             self._load_default_ncs_pathways()
+            self._load_default_implementation_models()
             self._items_loaded = True
 
     def _load_default_ncs_pathways(self):
@@ -71,6 +72,14 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         ncs_pathways = settings_manager.get_all_ncs_pathways()
         for ncs in ncs_pathways:
             self.ncs_pathway_view.add_ncs_pathway(ncs)
+
+    def _load_default_implementation_models(self):
+        """Load default and user-defined implementation models from
+        settings.
+        """
+        imp_models = settings_manager.get_all_implementation_models()
+        for imp_model in imp_models:
+            self.implementation_model_view.add_implementation_model(imp_model)
 
     def ncs_pathways(self) -> typing.List[NcsPathway]:
         """Gets the NCS pathway objects in the NCS Pathways view.
