@@ -12,11 +12,13 @@ from uuid import uuid4
 from qgis.PyQt import QtCore, QtGui
 
 from ..models.base import (
+    create_ncs_pathway,
     BaseModelComponent,
     BaseModelComponentType,
     ImplementationModel,
     LayerType,
     NcsPathway,
+    ncs_pathway_to_dict,
 )
 
 
@@ -183,14 +185,7 @@ class NcsPathwayItem(ModelComponentItem):
         pairs for an NCS pathway object.
         :rtype: str
         """
-        ncs_attrs = {
-            "uuid": str(self.ncs_pathway.uuid),
-            "name": self.ncs_pathway.name,
-            "description": self.ncs_pathway.description,
-            "path": self.ncs_pathway.path,
-            "layer_type": self.ncs_pathway.layer_type,
-            "user_defined": self.ncs_pathway.user_defined,
-        }
+        ncs_attrs = ncs_pathway_to_dict(self._ncs_pathway)
 
         return json.dumps(ncs_attrs)
 
@@ -843,14 +838,7 @@ class IMItemModel(ComponentItemModel):
             data_stream >> byte_data
 
             item_data = json.loads(byte_data.data())
-            ncs_pathway = NcsPathway(
-                uuid.UUID(item_data["uuid"]),
-                item_data["name"],
-                item_data["description"],
-                item_data["path"],
-                LayerType(int(item_data["layer_type"])),
-                bool(item_data["user_defined"]),
-            )
+            ncs_pathway = create_ncs_pathway(item_data)
 
             ncs_item = NcsPathwayItem(ncs_pathway)
             ncs_items.append(ncs_item)

@@ -7,6 +7,10 @@ import contextlib
 import dataclasses
 import enum
 import json
+<<<<<<< HEAD
+=======
+import typing
+>>>>>>> e96a869 (Add default NCS pathways.)
 import uuid
 
 from qgis.PyQt import (
@@ -15,7 +19,17 @@ from qgis.PyQt import (
 )
 from qgis.core import QgsRectangle, QgsSettings
 
-from .models.base import Scenario, SpatialExtent
+from .definitions.defaults import DEFAULT_NCS_PATHWAYS
+
+from .models.base import (
+    create_ncs_pathway,
+    NcsPathway,
+    ncs_pathway_to_dict,
+    Scenario,
+    SpatialExtent,
+)
+
+from .utils import log
 
 
 @contextlib.contextmanager
@@ -113,7 +127,11 @@ class SettingsManager(QtCore.QObject):
 
     BASE_GROUP_NAME: str = "cplus_plugin"
     SCENARIO_GROUP_NAME: str = "scenarios"
+<<<<<<< HEAD
     PRIORITY_LAYERS_GROUP_NAME: str = "priority_layers"
+=======
+    NCS_PATHWAY_BASE: str = "ncs_pathways"
+>>>>>>> e96a869 (Add default NCS pathways.)
 
     settings = QgsSettings()
 
@@ -275,6 +293,7 @@ class SettingsManager(QtCore.QObject):
             for scenario_name in settings.childGroups():
                 settings.remove(scenario_name)
 
+<<<<<<< HEAD
     def _get_priority_layers_settings_base(self, identifier):
         """Gets the priority layers settings base url.
 
@@ -462,6 +481,97 @@ def log(
         level=level,
         notifyUser=notify,
     )
+=======
+    def _get_ncs_pathway_settings_base(self) -> str:
+        """Returns the path for NCS pathway settings.
+
+        :returns: Base path to NCS pathway group.
+        :rtype: str
+        """
+        return f"{self.BASE_GROUP_NAME}/" f"{self.NCS_PATHWAY_BASE}"
+
+    def save_ncs_pathway(self, ncs_pathway: typing.Union[NcsPathway, dict]):
+        """Saves an NCS pathway object serialized to a json string
+        indexed by the UUID.
+
+        :param ncs_pathway: NCS pathway object or attribute values
+        in a dictionary which are then serialized to a JSON string.
+        :type ncs_pathway: NcsPathway, dict
+        """
+        if isinstance(ncs_pathway, NcsPathway):
+            ncs_pathway = ncs_pathway_to_dict(ncs_pathway)
+
+        ncs_str = json.dumps(ncs_pathway)
+
+        ncs_uuid = ncs_pathway["uuid"]
+        ncs_root = self._get_ncs_pathway_settings_base()
+
+        with qgis_settings(ncs_root) as settings:
+            settings.setValue(ncs_uuid, ncs_str)
+
+    def get_ncs_pathway(self, ncs_uuid: str) -> typing.Union[NcsPathway, None]:
+        """Gets an NCS pathway object matching the given unique identified.
+
+        :param ncs_uuid: Unique identifier for the NCS pathway object.
+        :type ncs_uuid: str
+
+        :returns: Returns the NCS pathway object matching the given
+        identifier else None if not found.
+        :rtype: NcsPathway
+        """
+        ncs_pathway = None
+
+        ncs_root = self._get_ncs_pathway_settings_base()
+
+        with qgis_settings(ncs_root) as settings:
+            ncs_model = settings.value(ncs_uuid, None)
+            if ncs_model is not None:
+                ncs_pathway = create_ncs_pathway(json.loads(ncs_model))
+
+        return ncs_pathway
+
+    def get_all_ncs_pathways(self) -> typing.List[NcsPathway]:
+        """Get all the NCS pathway objects stored in settings.
+
+        :returns: Returns all the NCS pathway objects.
+        :rtype: list
+        """
+        ncs_pathways = []
+
+        ncs_root = self._get_ncs_pathway_settings_base()
+
+        with qgis_settings(ncs_root) as settings:
+            keys = settings.childKeys()
+            for k in keys:
+                ncs_pathway = self.get_ncs_pathway(k)
+                if ncs_pathway is not None:
+                    ncs_pathways.append(ncs_pathway)
+
+        return sorted(ncs_pathways, key=lambda ncs: ncs.name)
+>>>>>>> e96a869 (Add default NCS pathways.)
 
 
 settings_manager = SettingsManager()
+
+
+def initialize_default_settings():
+    """Initialize default model components such as NCS pathways."""
+    # Add default pathways
+    for ncs_dict in DEFAULT_NCS_PATHWAYS:
+        try:
+            ncs_uuid = ncs_dict["uuid"]
+            ncs = settings_manager.get_ncs_pathway(ncs_uuid)
+            if ncs is None:
+                # Update dir
+                # TODO: Update logic for fetching base dir
+                base_dir = ""
+                file_name = ncs_dict["path"]
+                absolute_path = (
+                    f"{base_dir}/" f"{SettingsManager.NCS_PATHWAY_BASE}/" f"{file_name}"
+                )
+                ncs_dict["path"] = absolute_path
+                ncs_dict["user_defined"] = False
+                settings_manager.save_ncs_pathway(ncs_dict)
+        except KeyError as ke:
+            log(f"Default NCS configuration load error - {str(ke)}")
+            continue
