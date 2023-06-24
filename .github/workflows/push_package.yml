@@ -26,21 +26,21 @@ jobs:
       - name: Get unique identifier
         id: get-identifier
         run: |
-          echo "::set-output name=PACKAGE_ID::$(python -c "import uuid; print(str(uuid.uuid4())[:5])")"
+          echo "::set-output name=PACKAGE_ID::$(python -c "import uuid; print(str(uuid.uuid4())[:4])")"
 
       - name: Generate zip file
         run: |
-          python admin.py generate-zip --version ${{ format('{0}_{1}', 
-          'main',
-          steps.get-identifier.outputs.PACKAGE_ID) }} --output-directory docs/plugin/package
+          python admin.py build --output-directory ${{ format(
+          'docs/plugin/package/cplus_plugin_main_{0}/cplus_plugin/',
+          steps.get-identifier.outputs.PACKAGE_ID) }}
 
-      - name: Zip file path details
+      - name: Plugin path details
         id: get-zip-details
         run: |
           echo "::set-output name=ZIP_PATH::docs/plugin/package/$(ls docs/plugin/package)\n"
           echo "::set-output name=ZIP_NAME::$(ls docs/plugin/package)"
 
-      - name: Uploading plugin zip
+      - name: Uploading plugin build
         uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.get-zip-details.outputs.ZIP_NAME }}
