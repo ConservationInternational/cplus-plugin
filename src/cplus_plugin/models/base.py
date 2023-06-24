@@ -4,6 +4,7 @@
 """
 
 import dataclasses
+import uuid
 from enum import IntEnum
 import os.path
 import typing
@@ -86,6 +87,50 @@ class NcsPathway(BaseModelComponent):
             return False
 
         return layer.isValid()
+
+
+def create_ncs_pathway(source_dict) -> NcsPathway:
+    """Factory method for creating an NcsPathway object using
+    attribute values defined in a dictionary.
+
+    :param source_dict: Dictionary containing property values.
+    :type source_dict: dict
+
+    :returns: NCS pathway object with property values set
+    from the dictionary.
+    :rtype: NcsPathway
+    """
+    return NcsPathway(
+        uuid.UUID(source_dict["uuid"]),
+        source_dict["name"],
+        source_dict["description"],
+        source_dict["path"],
+        LayerType(int(source_dict["layer_type"])),
+        bool(source_dict["user_defined"]),
+    )
+
+
+def ncs_pathway_to_dict(ncs_pathway: NcsPathway) -> dict:
+    """Creates a dictionary containing attribute
+    name-value pairs from an NCS pathway object.
+
+    :param ncs_pathway: Source NCS pathway object whose
+    values are to be mapped to the corresponding
+    attribute names.
+    :type ncs_pathway: NcsPathway
+
+    :returns: Returns a dictionary item containing attribute
+    name-value pairs.
+    :rtype: dict
+    """
+    return {
+        "uuid": str(ncs_pathway.uuid),
+        "name": ncs_pathway.name,
+        "description": ncs_pathway.description,
+        "path": ncs_pathway.path,
+        "layer_type": int(ncs_pathway.layer_type),
+        "user_defined": ncs_pathway.user_defined,
+    }
 
 
 @dataclasses.dataclass

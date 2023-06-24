@@ -46,6 +46,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.implementation_model_widget = ImplementationModelContainerWidget(self)
         self.tabWidget.insertTab(1, self.implementation_model_widget, self.tr("Step 2"))
 
+        self.tabWidget.currentChanged.connect(self.on_tab_step_changed)
+
         self.prepare_input()
 
     def prepare_input(self):
@@ -77,7 +79,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.extent_box.setChecked(False)
         self.extent_box.setEnabled(False)
 
-    def on_step_changed(self, index: int):
+    def on_tab_step_changed(self, index: int):
         """Slot raised when the current tab changes.
 
         :param index: Zero-based index position of new current tab.

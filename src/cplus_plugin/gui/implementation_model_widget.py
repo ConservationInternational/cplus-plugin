@@ -10,6 +10,8 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
+from ..conf import settings_manager
+
 from .model_component_widget import (
     ImplementationModelComponentWidget,
     NcsComponentWidget,
@@ -59,15 +61,16 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
 
         This function is idempotent as items will only be loaded once
         on initial call.
-
         """
         if not self._items_loaded:
-            self._load_persisted_ncs_pathways()
+            self._load_default_ncs_pathways()
             self._items_loaded = True
 
-    def _load_persisted_ncs_pathways(self):
-        """Load default and user-defined NCS pathways."""
-        pass
+    def _load_default_ncs_pathways(self):
+        """Load default and user-defined NCS pathways from settings."""
+        ncs_pathways = settings_manager.get_all_ncs_pathways()
+        for ncs in ncs_pathways:
+            self.ncs_pathway_view.add_ncs_pathway(ncs)
 
     def ncs_pathways(self) -> typing.List[NcsPathway]:
         """Gets the NCS pathway objects in the NCS Pathways view.
