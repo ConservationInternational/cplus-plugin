@@ -401,6 +401,15 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
 
         return status
 
+    def add_implementation_model(self, implementation_model: ImplementationModel):
+        """Adds an implementation model object to the view.
+
+        :param implementation_model: Implementation model object
+        to be added to the view.
+        :type implementation_model: ImplementationModel
+        """
+        self.item_model.add_implementation_model(implementation_model)
+
     def _update_ui_on_selection_changed(self):
         """Check type of item selected and update UI
         controls accordingly.
