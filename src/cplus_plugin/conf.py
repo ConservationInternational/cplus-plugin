@@ -7,10 +7,7 @@ import contextlib
 import dataclasses
 import enum
 import json
-<<<<<<< HEAD
-=======
 import typing
->>>>>>> e96a869 (Add default NCS pathways.)
 import uuid
 
 from qgis.PyQt import (
@@ -19,10 +16,13 @@ from qgis.PyQt import (
 )
 from qgis.core import QgsRectangle, QgsSettings
 
-from .definitions.defaults import DEFAULT_NCS_PATHWAYS
+from .definitions.defaults import DEFAULT_IMPLEMENTATION_MODELS, DEFAULT_NCS_PATHWAYS
 
 from .models.base import (
+    create_model_component,
     create_ncs_pathway,
+    ImplementationModel,
+    model_component_to_dict,
     NcsPathway,
     ncs_pathway_to_dict,
     Scenario,
@@ -127,11 +127,10 @@ class SettingsManager(QtCore.QObject):
 
     BASE_GROUP_NAME: str = "cplus_plugin"
     SCENARIO_GROUP_NAME: str = "scenarios"
-<<<<<<< HEAD
     PRIORITY_LAYERS_GROUP_NAME: str = "priority_layers"
-=======
     NCS_PATHWAY_BASE: str = "ncs_pathways"
->>>>>>> e96a869 (Add default NCS pathways.)
+
+    IMPLEMENTATION_MODEL_BASE: str = "implementation_models"
 
     settings = QgsSettings()
 
@@ -293,7 +292,6 @@ class SettingsManager(QtCore.QObject):
             for scenario_name in settings.childGroups():
                 settings.remove(scenario_name)
 
-<<<<<<< HEAD
     def _get_priority_layers_settings_base(self, identifier):
         """Gets the priority layers settings base url.
 
@@ -448,40 +446,6 @@ class SettingsManager(QtCore.QObject):
                 if str(priority_layer) == str(identifier):
                     settings.remove(priority_layer)
 
-
-def log(
-    message: str,
-    name: str = "qgis_cplus",
-    info: bool = True,
-    notify: bool = True,
-):
-    """Logs the message into QGIS logs using qgis_cplus as the default
-    log instance.
-    If notify_user is True, user will be notified about the log.
-
-    :param message: The log message
-    :type message: str
-
-    :param name: Name of te log instance, qgis_cplus is the default
-    :type message: str
-
-    :param info: Whether the message is about info or a
-    warning
-    :type info: bool
-
-    :param notify: Whether to notify user about the log
-    :type notify: bool
-    """
-    from qgis.core import Qgis, QgsMessageLog
-
-    level = Qgis.Info if info else Qgis.Warning
-    QgsMessageLog.logMessage(
-        message,
-        name,
-        level=level,
-        notifyUser=notify,
-    )
-=======
     def _get_ncs_pathway_settings_base(self) -> str:
         """Returns the path for NCS pathway settings.
 
@@ -548,19 +512,134 @@ def log(
                     ncs_pathways.append(ncs_pathway)
 
         return sorted(ncs_pathways, key=lambda ncs: ncs.name)
->>>>>>> e96a869 (Add default NCS pathways.)
+
+    def _get_implementation_model_settings_base(self) -> str:
+        """Returns the path for implementation model settings.
+
+        :returns: Base path to implementation model group.
+        :rtype: str
+        """
+        return f"{self.BASE_GROUP_NAME}/" f"{self.IMPLEMENTATION_MODEL_BASE}"
+
+    def save_implementation_model(
+        self, implementation_model: typing.Union[ImplementationModel, dict]
+    ):
+        """Saves an implementation model object serialized to a json string
+        indexed by the UUID.
+
+        :param implementation_model: Implementation model object or attribute
+        values in a dictionary which are then serialized to a JSON string.
+        :type implementation_model: ImplementationModel, dict
+        """
+        if isinstance(implementation_model, ImplementationModel):
+            implementation_model = model_component_to_dict(implementation_model)
+
+        implementation_model_str = json.dumps(implementation_model)
+
+        implementation_model_uuid = implementation_model["uuid"]
+        implementation_model_root = self._get_implementation_model_settings_base()
+
+        with qgis_settings(implementation_model_root) as settings:
+            settings.setValue(implementation_model_uuid, implementation_model_str)
+
+    def get_implementation_model(
+        self, implementation_model_uuid: str
+    ) -> typing.Union[ImplementationModel, None]:
+        """Gets an implementation model object matching the given unique
+        identified.
+
+        :param implementation_model_uuid: Unique identifier for the
+        implementation model object.
+        :type implementation_model_uuid: str
+
+        :returns: Returns the implementation model object matching the given
+        identifier else None if not found.
+        :rtype: ImplementationModel
+        """
+        implementation_model = None
+
+        implementation_model_root = self._get_implementation_model_settings_base()
+
+        with qgis_settings(implementation_model_root) as settings:
+            implementation_model = settings.value(implementation_model_uuid, None)
+            if implementation_model is not None:
+                implementation_model = create_model_component(
+                    json.loads(implementation_model), ImplementationModel
+                )
+
+        return implementation_model
+
+    def get_all_implementation_models(self) -> typing.List[ImplementationModel]:
+        """Get all the implementation model objects stored in settings.
+
+        :returns: Returns all the implementation model objects.
+        :rtype: list
+        """
+        implementation_models = []
+
+        implementation_model_root = self._get_implementation_model_settings_base()
+
+        with qgis_settings(implementation_model_root) as settings:
+            keys = settings.childKeys()
+            for k in keys:
+                implementation_model = self.get_implementation_model(k)
+                if implementation_model is not None:
+                    implementation_models.append(implementation_model)
+
+        return sorted(implementation_models, key=lambda imp_model: imp_model.name)
 
 
 settings_manager = SettingsManager()
 
 
+
+def log(
+    message: str,
+    name: str = "qgis_cplus",
+    info: bool = True,
+    notify: bool = True,
+):
+    """Logs the message into QGIS logs using qgis_cplus as the default
+    log instance.
+    If notify_user is True, user will be notified about the log.
+
+    :param message: The log message
+    :type message: str
+
+    :param name: Name of te log instance, qgis_cplus is the default
+    :type message: str
+
+    :param info: Whether the message is about info or a
+    warning
+    :type info: bool
+
+    :param notify: Whether to notify user about the log
+    :type notify: bool
+    """
+    from qgis.core import Qgis, QgsMessageLog
+
+    level = Qgis.Info if info else Qgis.Warning
+    QgsMessageLog.logMessage(
+        message,
+        name,
+        level=level,
+        notifyUser=notify,
+    )
+
 def initialize_default_settings():
-    """Initialize default model components such as NCS pathways."""
+    """Initialize default model components such as NCS pathways
+    and implementation models.
+
+    It will check if there are existing components using the UUID
+    and only add those ones that do not exist in the settings.
+
+    This is normally called during plugin startup.
+    """
     # Add default pathways
     for ncs_dict in DEFAULT_NCS_PATHWAYS:
         try:
             ncs_uuid = ncs_dict["uuid"]
-            ncs = settings_manager.get_ncs_pathway(ncs_uuid)
+            ncs = settings_manager.get_implementation_model(ncs_uuid)
             if ncs is None:
                 # Update dir
                 # TODO: Update logic for fetching base dir
@@ -574,4 +653,15 @@ def initialize_default_settings():
                 settings_manager.save_ncs_pathway(ncs_dict)
         except KeyError as ke:
             log(f"Default NCS configuration load error - {str(ke)}")
+            continue
+
+    # Add default implementation models
+    for imp_model_dict in DEFAULT_IMPLEMENTATION_MODELS:
+        try:
+            imp_model_uuid = imp_model_dict["uuid"]
+            imp_model = settings_manager.get_implementation_model(imp_model_uuid)
+            if imp_model is None:
+                settings_manager.save_implementation_model(imp_model_dict)
+        except KeyError as ke:
+            log(f"Default implementation model configuration load error - {str(ke)}")
             continue

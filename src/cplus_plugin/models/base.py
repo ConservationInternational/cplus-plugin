@@ -109,6 +109,52 @@ class NcsPathway(BaseModelComponent):
         return layer.isValid()
 
 
+def model_component_to_dict(model_component: BaseModelComponentType) -> dict:
+    """Creates a dictionary containing the base attribute
+    name-value pairs from a model component object.
+
+    :param model_component: Source model component object whose
+    values are to be mapped to the corresponding
+    attribute names.
+    :type model_component: BaseModelComponent
+
+    :returns: Returns a dictionary item containing attribute
+    name-value pairs.
+    :rtype: dict
+    """
+    return {
+        "uuid": str(model_component.uuid),
+        "name": model_component.name,
+        "description": model_component.description,
+    }
+
+
+def create_model_component(
+    source_dict: dict,
+    model_cls: typing.Callable[[uuid.UUID, str, str], BaseModelComponentType],
+) -> typing.Union[BaseModelComponentType, None]:
+    """Factory method for creating and setting attribute values
+    for a base model component object.
+
+    :param source_dict: Dictionary containing attribute values.
+    :type source_dict: dict
+
+    :param model_cls: Callable class that will be created based on the
+    input argument values from the dictionary.
+    :type model_cls: BaseModelComponent
+
+    :returns: Base model component object with property values
+    derived from the dictionary.
+    :rtype: BaseModelComponent
+    """
+    if not issubclass(model_cls, BaseModelComponent):
+        return None
+
+    return model_cls(
+        uuid.UUID(source_dict["uuid"]), source_dict["name"], source_dict["description"]
+    )
+
+
 def create_ncs_pathway(source_dict) -> NcsPathway:
     """Factory method for creating an NcsPathway object using
     attribute values defined in a dictionary.
@@ -143,14 +189,12 @@ def ncs_pathway_to_dict(ncs_pathway: NcsPathway) -> dict:
     name-value pairs.
     :rtype: dict
     """
-    return {
-        "uuid": str(ncs_pathway.uuid),
-        "name": ncs_pathway.name,
-        "description": ncs_pathway.description,
-        "path": ncs_pathway.path,
-        "layer_type": int(ncs_pathway.layer_type),
-        "user_defined": ncs_pathway.user_defined,
-    }
+    base_attrs = model_component_to_dict(ncs_pathway)
+    base_attrs["path"] = ncs_pathway.path
+    base_attrs["layer_type"] = int(ncs_pathway.layer_type)
+    base_attrs["user_defined"] = ncs_pathway.user_defined
+
+    return base_attrs
 
 
 @dataclasses.dataclass
