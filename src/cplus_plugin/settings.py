@@ -1,4 +1,5 @@
 import os
+import typing
 from pathlib import Path
 
 import qgis.core
@@ -23,6 +24,8 @@ from .definitions.defaults import (
     ICON_PATH,
     DEFAULT_LOGO_PATH,
 )
+from .definitions.defaults import OPTIONS_TITLE, ICON_PATH
+from .utils import FileUtils
 
 Ui_DlgSettings, _ = uic.loadUiType(str(Path(__file__).parent / "ui/qgis_settings.ui"))
 
@@ -38,11 +41,30 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.layout().insertWidget(0, self.message_bar)
 
         self.settings = qgis.core.QgsSettings()
+        settings_manager.settings_updated.connect(self._on_settings_updated)
 
         # Connections
         self.cb_custom_logo.stateChanged.connect(self.logo_state_changed)
         self.logo_file.fileChanged.connect(self.logo_file_changed)
         self.folder_data.fileChanged.connect(self.base_dir_exists)
+
+    def _on_settings_updated(
+            self,
+            setting_type: Settings,
+            settings_value: typing.Any
+    ):
+        """Slot raised when a settings value has been saved.
+
+        :param setting_type: Type of setting that has been saved.
+        :type setting_type: Settings
+
+        :param settings_value: New value of the given setting type.
+        :type settings_value: object
+        """
+        # Update NCS pathways if BASE_DIR has changed.
+        if setting_type == Settings.BASE_DIR:
+            FileUtils.create_ncs_pathways_dir(settings_value)
+            settings_manager.update_ncs_pathways()
 
     def apply(self) -> None:
         """This is called on OK click in the QGIS options panel."""

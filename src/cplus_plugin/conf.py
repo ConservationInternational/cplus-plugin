@@ -7,14 +7,15 @@ import contextlib
 import dataclasses
 import enum
 import json
+import os.path
+from pathlib import Path
 import typing
 import uuid
 
-from qgis.PyQt import (
-    QtCore,
-    QtWidgets,
-)
+from qgis.PyQt import QtCore
 from qgis.core import QgsRectangle, QgsSettings
+
+from .definitions.constants import NCS_PATHWAY_DIR_SEGMENT
 
 from .definitions.defaults import DEFAULT_IMPLEMENTATION_MODELS, DEFAULT_NCS_PATHWAYS
 
@@ -136,6 +137,7 @@ class SettingsManager(QtCore.QObject):
 
     scenarios_settings_updated = QtCore.pyqtSignal()
     priority_layers_changed = QtCore.pyqtSignal()
+    settings_updated = QtCore.pyqtSignal(Settings, object)
 
     def set_value(self, name: str, value):
         """Adds a new setting key and value on the plugin specific settings.
@@ -148,6 +150,7 @@ class SettingsManager(QtCore.QObject):
 
         """
         self.settings.setValue(f"{self.BASE_GROUP_NAME}/{name}", value)
+        self.settings_updated.emit(name, value)
 
     def get_value(self, name: str, default=None, setting_type=None):
         """Gets value of the setting with the passed name.
@@ -513,6 +516,51 @@ class SettingsManager(QtCore.QObject):
 
         return sorted(ncs_pathways, key=lambda ncs: ncs.name)
 
+    def update_ncs_pathways(self):
+        """Updates the path attribute of all NCS pathway settings
+        based on the BASE_DIR settings to reflect the absolute path
+        of each NCS pathway layer.
+        If BASE_DIR is empty then the NCS pathway settings will not
+        be updated.
+        """
+        ncs_pathways = self.get_all_ncs_pathways()
+        for ncs in ncs_pathways:
+            self.update_ncs_pathway(ncs)
+
+    def update_ncs_pathway(self, ncs_pathway: NcsPathway):
+        """Updates the attributes of the NCS pathway object
+        in settings. On the path, the BASE_DIR in settings
+        is used to reflect the absolute path of each NCS
+        pathway layer. If BASE_DIR is empty then the NCS
+        pathway setting will not be updated.
+
+        :param ncs_pathway: NCS pathway object to be updated.
+        :type ncs_pathway: NcsPathway
+        """
+        base_dir = self.get_value(Settings.BASE_DIR)
+        if not base_dir:
+            return
+
+        p = Path(ncs_pathway.path)
+        abs_path = f"{base_dir}/{NCS_PATHWAY_DIR_SEGMENT}/" \
+                   f"{p.name}"
+        abs_path = str(os.path.normpath(abs_path))
+        ncs_pathway.path = abs_path
+
+        # Remove then re-insert
+        self.remove_ncs_pathway(str(ncs_pathway.uuid))
+        self.save_ncs_pathway(ncs_pathway)
+
+    def remove_ncs_pathway(self, ncs_uuid: str):
+        """Removes an NCS pathway settings entry using the UUID.
+
+        :param ncs_uuid: Unique identifier of the NCS pathway entry
+        to removed.
+        :type ncs_uuid: str
+        """
+        if self.get_ncs_pathway(ncs_uuid) is not None:
+            self.remove(f"{self.NCS_PATHWAY_BASE}/{ncs_uuid}")
+
     def _get_implementation_model_settings_base(self) -> str:
         """Returns the path for implementation model settings.
 
@@ -639,16 +687,17 @@ def initialize_default_settings():
     for ncs_dict in DEFAULT_NCS_PATHWAYS:
         try:
             ncs_uuid = ncs_dict["uuid"]
-            ncs = settings_manager.get_implementation_model(ncs_uuid)
+            ncs = settings_manager.get_ncs_pathway(ncs_uuid)
             if ncs is None:
                 # Update dir
-                # TODO: Update logic for fetching base dir
-                base_dir = ""
-                file_name = ncs_dict["path"]
-                absolute_path = (
-                    f"{base_dir}/" f"{SettingsManager.NCS_PATHWAY_BASE}/" f"{file_name}"
-                )
-                ncs_dict["path"] = absolute_path
+                base_dir = settings_manager.get_value(Settings.BASE_DIR, None)
+                if base_dir is not None:
+                    file_name = ncs_dict["path"]
+                    absolute_path = (
+                        f"{base_dir}/{SettingsManager.NCS_PATHWAY_BASE}/{file_name}"
+                    )
+                    abs_path = str(os.path.normpath(absolute_path))
+                    ncs_dict["path"] = abs_path
                 ncs_dict["user_defined"] = False
                 settings_manager.save_ncs_pathway(ncs_dict)
         except KeyError as ke:

@@ -26,6 +26,20 @@
    <property name="bottomMargin">
     <number>6</number>
    </property>
+   <item row="2" column="3">
+    <widget class="QToolButton" name="btn_edit">
+     <property name="text">
+      <string>...</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="2">
+    <widget class="QToolButton" name="btn_remove">
+     <property name="text">
+      <string>...</string>
+     </property>
+    </widget>
+   </item>
    <item row="2" column="0">
     <spacer name="horizontalSpacer">
      <property name="orientation">
@@ -39,6 +53,13 @@
      </property>
     </spacer>
    </item>
+   <item row="0" column="0" colspan="4">
+    <widget class="QLabel" name="lbl_title">
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
    <item row="2" column="1">
     <widget class="QToolButton" name="btn_add">
      <property name="text">
@@ -46,7 +67,14 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="0" colspan="4">
+   <item row="2" column="4">
+    <widget class="QToolButton" name="btn_reload">
+     <property name="text">
+      <string>...</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0" colspan="5">
     <widget class="QListView" name="lst_model_items">
      <property name="editTriggers">
       <set>QAbstractItemView::NoEditTriggers</set>
@@ -68,38 +96,17 @@
      </property>
     </widget>
    </item>
-   <item row="2" column="2">
-    <widget class="QToolButton" name="btn_remove">
-     <property name="text">
-      <string>...</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="3">
-    <widget class="QToolButton" name="btn_edit">
-     <property name="text">
-      <string>...</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="0">
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>Description</string>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="0" colspan="4">
+   <item row="4" column="0" colspan="5">
     <widget class="QLineEdit" name="txt_item_description">
      <property name="maxLength">
       <number>200</number>
      </property>
     </widget>
    </item>
-   <item row="0" column="0" colspan="4">
-    <widget class="QLabel" name="lbl_title">
+   <item row="3" column="0" colspan="5">
+    <widget class="QLabel" name="label">
      <property name="text">
-      <string/>
+      <string>Description</string>
      </property>
     </widget>
    </item>
