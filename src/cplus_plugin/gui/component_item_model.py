@@ -561,7 +561,6 @@ class NcsPathwayItemModel(ComponentItemModel):
 
     def _update_foreground(self, item: NcsPathwayItem):
         """Update icon based on whether an item is valid or invalid."""
-        # Set to red color if NCS pathway object is invalid.
         ncs = item.ncs_pathway
 
         if ncs.is_valid():

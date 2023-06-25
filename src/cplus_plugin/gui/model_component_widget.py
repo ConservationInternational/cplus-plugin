@@ -22,9 +22,10 @@ from .component_item_model import (
     NcsPathwayItemModel,
     NCS_PATHWAY_TYPE,
 )
+from ..conf import settings_manager
 from .implementation_model_editor_dialog import ImplementationModelEditorDialog
 from .ncs_pathway_editor_dialog import NcsPathwayEditorDialog
-from ..models.base import ImplementationModel, LayerType, NcsPathway
+from ..models.base import ImplementationModel, NcsPathway
 
 
 WidgetUi, _ = loadUiType(
@@ -45,17 +46,25 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
 
         add_icon = QgsApplication.instance().getThemeIcon("symbologyAdd.svg")
         self.btn_add.setIcon(add_icon)
+        self.btn_add.setToolTip(self.tr("Add item"))
         self.btn_add.clicked.connect(self._on_add_item)
 
         remove_icon = QgsApplication.instance().getThemeIcon("symbologyRemove.svg")
         self.btn_remove.setIcon(remove_icon)
+        self.btn_remove.setToolTip(self.tr("Remove item"))
         self.btn_remove.setEnabled(False)
         self.btn_remove.clicked.connect(self._on_remove_item)
 
         edit_icon = QgsApplication.instance().getThemeIcon("mActionToggleEditing.svg")
         self.btn_edit.setIcon(edit_icon)
+        self.btn_edit.setToolTip(self.tr("Edit item"))
         self.btn_edit.setEnabled(False)
         self.btn_edit.clicked.connect(self._on_edit_item)
+
+        reload_icon = QgsApplication.instance().getThemeIcon("mActionRefresh.svg")
+        self.btn_reload.setIcon(reload_icon)
+        self.btn_reload.setToolTip(self.tr("Refresh view"))
+        self.btn_reload.clicked.connect(self._on_reload)
 
     @property
     def item_model(self) -> ComponentItemModelType:
@@ -122,6 +131,10 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
         """
         pass
 
+    def load(self):
+        """Subclass to determine how to initialize the items."""
+        pass
+
     def set_description(self, description: str):
         """Updates the text for the selected item.
 
@@ -181,6 +194,18 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
 
         return [self._item_model.item(idx.row()) for idx in idxs]
 
+    def clear(self):
+        """Remove all items in the view. To be implemented
+        by the subclass."""
+        pass
+
+    def _on_reload(self):
+        """Slot raised when the reload button has been clicked.
+        Default implementation is to call the load the items
+        afresh.
+        """
+        self.load()
+
 
 class NcsComponentWidget(ModelComponentWidget):
     """Widget for displaying and managing NCS pathways."""
@@ -233,6 +258,20 @@ class NcsComponentWidget(ModelComponentWidget):
         :rtype: list
         """
         return self.item_model.model_component_items()
+
+    def clear(self):
+        """Removes all NCS pathway items in the view."""
+        items = self.ncs_items()
+        for item in items:
+            self.item_model.remove_ncs_pathway(item.uuid)
+
+    def load(self):
+        """Load items from settings."""
+        self.clear()
+
+        ncs_pathways = settings_manager.get_all_ncs_pathways()
+        for ncs in ncs_pathways:
+            self.add_ncs_pathway(ncs)
 
     def _on_add_item(self):
         """Show NCS pathway editor."""
@@ -292,6 +331,8 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         self.lst_model_items.setDragDropMode(QtWidgets.QAbstractItemView.DropOnly)
         self.lst_model_items.setDropIndicatorShown(True)
 
+        self.btn_reload.setVisible(False)
+
     def models(self) -> typing.List[ImplementationModel]:
         """Returns a collection of ImplementationModel objects in the
         list view.
@@ -311,6 +352,21 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         :rtype: list
         """
         return self.item_model.model_items()
+
+    def clear(self):
+        """Removes all implementation model items in the view."""
+        items = self.model_items()
+        for item in items:
+            self.item_model.remove_implementation_model(item.uuid)
+
+    def load(self):
+        """Load implementation models from settings.
+        """
+        self.clear()
+
+        imp_models = settings_manager.get_all_implementation_models()
+        for imp_model in imp_models:
+            self.add_implementation_model(imp_model)
 
     def _on_add_item(self):
         """Show implementation model editor."""
