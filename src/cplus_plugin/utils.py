@@ -5,10 +5,12 @@
 
 
 import os
+from pathlib import Path
 
 from qgis.PyQt import QtCore, QtGui
 from qgis.core import Qgis, QgsApplication, QgsMessageLog
 
+from .definitions.constants import NCS_PATHWAY_DIR_SEGMENT
 from .definitions.defaults import DOCUMENTATION_SITE
 
 
@@ -95,6 +97,16 @@ class FileUtils:
             return QtGui.QIcon()
 
         return QtGui.QIcon(icon_path)
+
+    @staticmethod
+    def create_ncs_pathways_dir(base_dir: str):
+        """Creates an NCS sub-directory under BASE_DIR. Skips
+        creation of the sub-directory if it already exists.
+        """
+        ncs_pathway_dir = f"{base_dir}/{NCS_PATHWAY_DIR_SEGMENT}"
+        p = Path(ncs_pathway_dir)
+        if not p.exists():
+            p.mkdir(parents=True)
 
 
 def is_dark_theme() -> bool:
