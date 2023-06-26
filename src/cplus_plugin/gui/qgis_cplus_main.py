@@ -32,6 +32,7 @@ from qgis.utils import iface
 from .priority_group_widget import PriorityGroupWidget
 from .priority_layer_group import PriorityLayerDialog
 from .implementation_model_widget import ImplementationModelContainerWidget
+from .priority_group_widget import PriorityGroupWidget
 
 from ..resources import *
 
@@ -67,6 +68,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
         self.tab_widget.currentChanged.connect(self.on_tab_step_changed)
 
+        self.initialize_priority_layers()
+
         self.prepare_input()
 
     def initialize_priority_layers(self):
@@ -83,7 +86,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             if layer.get("selected"):
                 selected_groups = layer["groups"]
                 self.priority_layers_list.setCurrentItem(item)
-
         scroll_container = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(1, 1, 1, 1)
@@ -100,7 +102,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             group_widget.set_group(layer_group)
 
             self.priority_groups_widgets[group["name"]] = group_widget
-
             layout.addWidget(group_widget)
             layout.setAlignment(group_widget, QtCore.Qt.AlignTop)
 
@@ -141,6 +142,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             if layer.get("selected"):
                 self.priority_layers_list.setCurrentItem(item)
                 self.update_priority_groups(item, None)
+        for layer in PRIORITY_LAYERS:
+            self.priority_layers_list.addItem(layer["name"])
 
     def prepare_input(self):
         """Initializes plugin input widgets"""
