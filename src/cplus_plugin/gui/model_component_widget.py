@@ -360,8 +360,7 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
             self.item_model.remove_implementation_model(item.uuid)
 
     def load(self):
-        """Load implementation models from settings.
-        """
+        """Load implementation models from settings."""
         self.clear()
 
         imp_models = settings_manager.get_all_implementation_models()

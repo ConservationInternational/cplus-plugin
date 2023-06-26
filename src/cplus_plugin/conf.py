@@ -542,8 +542,7 @@ class SettingsManager(QtCore.QObject):
             return
 
         p = Path(ncs_pathway.path)
-        abs_path = f"{base_dir}/{NCS_PATHWAY_DIR_SEGMENT}/" \
-                   f"{p.name}"
+        abs_path = f"{base_dir}/{NCS_PATHWAY_DIR_SEGMENT}/" f"{p.name}"
         abs_path = str(os.path.normpath(abs_path))
         ncs_pathway.path = abs_path
 
