@@ -534,7 +534,7 @@ class NcsPathwayItemModel(ComponentItemModel):
         :rtype: bool
         """
         ncs_item = NcsPathwayItem.create(ncs)
-        self._update_foreground(ncs_item)
+        self._update_display(ncs_item)
 
         return self.add_component_item(ncs_item)
 
@@ -555,11 +555,11 @@ class NcsPathwayItemModel(ComponentItemModel):
         if not status:
             return False
 
-        self._update_foreground(item)
+        self._update_display(item)
 
         return True
 
-    def _update_foreground(self, item: NcsPathwayItem):
+    def _update_display(self, item: NcsPathwayItem):
         """Update icon based on whether an item is valid or invalid."""
         ncs = item.ncs_pathway
 
