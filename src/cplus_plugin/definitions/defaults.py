@@ -100,7 +100,6 @@ DEFAULT_LOGO_PATH = (
 )
 
 # Path just contains the file name and is relative to {download_folder}/ncs_pathways
-# TODO: Insert file names for each NCS pathway configuration
 DEFAULT_NCS_PATHWAYS = [
     {
         "uuid": "bd381140-64f0-43d0-be6c-50120dd6c174",
