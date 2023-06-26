@@ -149,16 +149,23 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         # Analysis configuration settings
 
         # Report settings
-        organization = settings_manager.get_value(Settings.REPORT_ORGANIZATION)
+        organization = settings_manager.get_value(
+            Settings.REPORT_ORGANIZATION, default=""
+        )
         self.txt_organization.setText(organization)
 
-        email = settings_manager.get_value(Settings.REPORT_CONTACT_EMAIL)
+        email = settings_manager.get_value(Settings.REPORT_CONTACT_EMAIL, default="")
         self.txt_email.setText(email)
 
-        website = settings_manager.get_value(Settings.REPORT_WEBSITE)
+        website = settings_manager.get_value(Settings.REPORT_WEBSITE, default="")
         self.txt_website.setText(website)
 
-        custom_logo = int(settings_manager.get_value(Settings.REPORT_CUSTOM_LOGO))
+        custom_logo = int(
+            settings_manager.get_value(
+                Settings.REPORT_CUSTOM_LOGO,
+                default=0,  # False is 0 for the checkbox state
+            )
+        )
         self.cb_custom_logo.setCheckState(custom_logo)
 
         # Disables/enables the logo file widget
@@ -167,21 +174,23 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         else:
             self.logo_file.setEnabled(False)
 
-        custom_logo_dir = settings_manager.get_value(Settings.REPORT_LOGO_DIR)
+        custom_logo_dir = settings_manager.get_value(
+            Settings.REPORT_LOGO_DIR, default=""
+        )
         self.logo_file.setFilePath(custom_logo_dir)
         self.logo_file_exists()
 
-        footer = settings_manager.get_value(Settings.REPORT_FOOTER)
+        footer = settings_manager.get_value(Settings.REPORT_FOOTER, default="")
         self.txt_footer.setPlainText(footer)
 
-        disclaimer = settings_manager.get_value(Settings.REPORT_DISLAIMER)
+        disclaimer = settings_manager.get_value(Settings.REPORT_DISLAIMER, default="")
         self.txt_disclaimer.setPlainText(disclaimer)
 
-        report_license = settings_manager.get_value(Settings.REPORT_LICENSE)
+        report_license = settings_manager.get_value(Settings.REPORT_LICENSE, default="")
         self.txt_license.setText(report_license)
 
         # Advanced settings
-        base_dir = settings_manager.get_value(Settings.BASE_DIR)
+        base_dir = settings_manager.get_value(Settings.BASE_DIR, default="")
         self.folder_data.setFilePath(base_dir)
         self.base_dir_exists()
 
