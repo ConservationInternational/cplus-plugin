@@ -30,12 +30,13 @@ from qgis.gui import (
 from qgis.utils import iface
 
 from .implementation_model_widget import ImplementationModelContainerWidget
+from .priority_group_widget import PriorityGroupWidget
 
 from ..resources import *
 
 from ..utils import open_documentation, tr, log
 
-from ..definitions.defaults import PILOT_AREA_EXTENT
+from ..definitions.defaults import PILOT_AREA_EXTENT, PRIORITY_GROUPS, PRIORITY_LAYERS
 
 
 WidgetUi, _ = loadUiType(
@@ -62,7 +63,35 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
         self.tab_widget.currentChanged.connect(self.on_tab_step_changed)
 
+        self.initialize_priority_layers()
+
         self.prepare_input()
+
+    def initialize_priority_layers(self):
+        """Prepares the priority weighted layers UI with the defaults"""
+
+        scroll_container = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout()
+        layout.setContentsMargins(1, 1, 1, 1)
+        layout.setSpacing(1)
+
+        for group in PRIORITY_GROUPS:
+            log(f"Initializing {group['name']}")
+            group_widget = PriorityGroupWidget(group)
+            layout.addWidget(group_widget)
+            layout.setAlignment(group_widget, QtCore.Qt.AlignTop)
+
+        vertical_spacer = QtWidgets.QSpacerItem(
+            20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding
+        )
+        layout.addItem(vertical_spacer)
+        scroll_container.setLayout(layout)
+        self.scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setWidget(scroll_container)
+
+        for layer in PRIORITY_LAYERS:
+            self.priority_layers_list.addItem(layer["name"])
 
     def prepare_input(self):
         """Initializes plugin input widgets"""
