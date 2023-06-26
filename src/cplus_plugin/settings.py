@@ -42,11 +42,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.logo_file.fileChanged.connect(self.logo_file_exists)
         self.folder_data.fileChanged.connect(self.base_dir_exists)
 
-    def _on_settings_updated(
-            self,
-            setting_type: Settings,
-            settings_value: typing.Any
-    ):
+    def _on_settings_updated(self, setting_type: Settings, settings_value: typing.Any):
         """Slot raised when a settings value has been saved.
 
         :param setting_type: Type of setting that has been saved.
