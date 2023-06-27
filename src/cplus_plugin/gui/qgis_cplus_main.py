@@ -41,6 +41,8 @@ from ..conf import settings_manager
 
 from ..definitions.defaults import PILOT_AREA_EXTENT, PRIORITY_GROUPS, PRIORITY_LAYERS, OPTIONS_TITLE
 
+from ..algorithms.base import run_alg
+
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/qgis_cplus_main_dockwidget.ui")
 )
@@ -237,16 +239,20 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             passed_extent
         )
 
-        if not contains:
+        if contains:
             self.show_message(
-                tr(f"Selected area of interest is " f"outside the pilot area."),
+                tr(f"Selected area of interest is " f"inside the pilot area."),
                 level=Qgis.Info,
             )
+            self.run_analysis()
         else:
             self.show_message(
-                tr("Selected area of interest " "is inside the pilot area."),
+                tr("Selected area of interest " "is outside the pilot area."),
                 level=Qgis.Info,
             )
+
+    def run_analysis(self):
+        results = run_alg()
 
     def show_message(self, message, level=Qgis.Warning):
         """Shows message on the main widget message bar

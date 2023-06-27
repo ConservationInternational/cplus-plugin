@@ -171,9 +171,24 @@ DEFAULT_IMPLEMENTATION_MODELS = [
         "description": "Placeholder text for eat fresh",
     },
     {
-        "uuid": "de9597b2-f082-4299-9620-1da3bad8ab62",
-        "name": "Charcoal Naturally",
-        "description": "Placeholder text for charcoal naturally",
+        "uuid": "3714288d-1b58-4231-b0f6-18adf7f5b037",
+        "name": "Wattle naturally",
+        "description": "Placeholder text for eat fresh",
+    },
+    {
+        "uuid": "6143ca4c-f7ad-48aa-9bc3-cfeef7acf425",
+        "name": "Assisted natural regeneration",
+        "description": "Placeholder text for eat fresh",
+    },
+    {
+        "uuid": "b313c098-3b5b-4b09-b04a-53b7bad9b8e0",
+        "name": "Alien plant removal",
+        "description": "Placeholder text for eat fresh",
+    },
+    {
+        "uuid": "a372af1d-2f10-4e9a-9052-638bf1ca11ec",
+        "name": "Bush thinning",
+        "description": "Placeholder text for eat fresh",
     },
 ]
 
