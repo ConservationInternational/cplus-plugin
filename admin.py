@@ -285,12 +285,14 @@ def compile_resources(
     resources_path = LOCAL_ROOT_DIR / "resources" / "resources.qrc"
     target_path = output_directory / "resources.py"
     target_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Windows handling of paths for shlex.split function
+    if sys.platform == "win32":
+        target_path = target_path.as_posix()
+        resources_path = resources_path.as_posix()
+
     _log(f"compile_resources target_path: {target_path}", context=context)
-    subprocess.run(
-        shlex.split(
-            f"pyrcc5 -o {target_path.as_posix()} " f"{resources_path.as_posix()}"
-        )
-    )
+    subprocess.run(shlex.split(f"pyrcc5 -o {target_path} {resources_path}"))
 
 
 @app.command()
