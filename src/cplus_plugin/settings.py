@@ -163,16 +163,11 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         custom_logo = int(
             settings_manager.get_value(
                 Settings.REPORT_CUSTOM_LOGO,
-                default=0,  # False is 0 for the checkbox state
+                default=True,
             )
         )
         self.cb_custom_logo.setCheckState(custom_logo)
-
-        # Disables/enables the logo file widget
-        if custom_logo > 0:
-            self.logo_file.setEnabled(True)
-        else:
-            self.logo_file.setEnabled(False)
+        self.logo_file.setEnabled(custom_logo)
 
         custom_logo_dir = settings_manager.get_value(
             Settings.REPORT_LOGO_DIR, default=""
