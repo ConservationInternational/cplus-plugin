@@ -1,0 +1,74 @@
+name: Creating plugin package in the PR
+
+on:
+  pull_request:
+    types:
+      - edited
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - main
+
+jobs:
+  create-package:
+    runs-on: ubuntu-22.04
+    container:
+      image: qgis/qgis:release-3_30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Fix Python command
+        run: apt-get install python-is-python3
+
+      - name: Install python
+        uses: actions/setup-python@v4
+
+      - name: Install plugin dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Get unique identifier
+        id: get-identifier
+        run: |
+          echo "::set-output name=PACKAGE_ID::$(python -c "import uuid; print(str(uuid.uuid4())[:4])")"
+
+      - name: Generate zip file
+        run: |
+          python admin.py build --output-directory ${{ format(
+          'docs/plugin/package/cplus_plugin_{0}_{1}/cplus_plugin/',
+          github.event.pull_request.head.ref,
+          steps.get-identifier.outputs.PACKAGE_ID) }}
+
+      - name: Plugin path details
+        id: get-zip-details
+        run: |
+          echo "::set-output name=ZIP_PATH::docs/plugin/package/$(ls docs/plugin/package)\n"
+          echo "::set-output name=ZIP_NAME::$(ls docs/plugin/package)"
+
+      - name: Uploading plugin build
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.get-zip-details.outputs.ZIP_NAME }}
+          path: ${{ steps.get-zip-details.outputs.ZIP_PATH }}
+
+      - name: Save the PR number and plugin folder name into artifacts
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+          ZIP_FILE_NAME: ${{ steps.get-zip-details.outputs.ZIP_NAME }}
+        run: |
+          echo $PR_NUMBER > pr_number.txt
+          echo $ZIP_FILE_NAME > zip_file_name.txt
+
+      - name: Upload the PR number
+        uses: actions/upload-artifact@v3
+        with:
+          name: pr_number
+          path: ./pr_number.txt
+
+      - name: Upload the zip file name
+        uses: actions/upload-artifact@v3
+        with:
+          name: zip_file_name
+          path: ./zip_file_name.txt
