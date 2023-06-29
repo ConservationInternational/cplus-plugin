@@ -201,4 +201,5 @@ class QgisCplus:
             self.pluginIsActive = True
 
     def run_settings(self):
+        """Options the CPLUS settings in the QGIS options dialog."""
         self.iface.showOptionsDialog(currentPage=OPTIONS_TITLE)

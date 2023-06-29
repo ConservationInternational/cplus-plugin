@@ -36,9 +36,7 @@ from ..resources import *
 from ..utils import open_documentation, tr, log
 from ..conf import settings_manager
 
-
-from ..definitions.defaults import PILOT_AREA_EXTENT, PRIORITY_GROUPS, PRIORITY_LAYERS
-
+from ..definitions.defaults import PILOT_AREA_EXTENT, PRIORITY_GROUPS, PRIORITY_LAYERS, OPTIONS_TITLE
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/qgis_cplus_main_dockwidget.ui")
@@ -144,6 +142,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.help_btn.clicked.connect(open_documentation)
         self.pilot_area_btn.clicked.connect(self.zoom_pilot_area)
         self.run_scenario_btn.clicked.connect(self.run_scenario_analysis)
+        self.options_btn.clicked.connect(self.open_settings)
 
         self.save_groups_btn.clicked.connect(self.save_current_groups)
 
@@ -293,3 +292,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             default_extent,
             QgsCoordinateReferenceSystem("EPSG:4326"),
         )
+
+    def open_settings(self):
+        """Options the CPLUS settings in the QGIS options dialog."""
+        self.iface.showOptionsDialog(currentPage=OPTIONS_TITLE)
