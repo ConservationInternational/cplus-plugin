@@ -17,21 +17,21 @@ DEFAULT_NCS_PATHWAYS = [
         "name": "Animal Management",
         "description": "Placeholder text for animal management",
         "path": "Animal_Management_carbon_norm.tif",
-        "layer_type": 0
+        "layer_type": 0,
     },
     {
         "uuid": "fc36dd06-aea3-4067-9626-2d73916d79b0",
         "name": "Avoided Deforestation",
         "description": "Placeholder text for avoided deforestation",
         "path": "Avoided_Forest_carbon_norm.tif",
-        "layer_type": 0
+        "layer_type": 0,
     },
     {
         "uuid": "f7084946-6617-4c5d-97e8-de21059ca0d2",
         "name": "Avoided Grassland Conversion",
         "description": "Placeholder text for avoided grassland conversion",
         "path": "Avoided_Grassland_carbon_norm.tif",
-        "layer_type": 0
+        "layer_type": 0,
     },
     {
         "uuid": "00db44cf-a2e7-428a-86bb-0afedb9719ec",
@@ -45,28 +45,28 @@ DEFAULT_NCS_PATHWAYS = [
         "name": "Forest Restoration",
         "description": "Placeholder text for forest restoration",
         "path": "Restoration_Forest_carbon_norm.tif",
-        "layer_type": 0
+        "layer_type": 0,
     },
     {
         "uuid": "5475dd4a-5efc-4fb4-ae90-68ff4102591e",
         "name": "Grassland Fire Management",
         "description": "Placeholder text for grassland fire management",
         "path": "Fire_Management_Krugerhalf_carbon_norm.tif",
-        "layer_type": 0
+        "layer_type": 0,
     },
     {
         "uuid": "384863e3-08d1-453b-ac5f-94ad6a6aa1fd",
         "name": "Grassland Restoration",
         "description": "Placeholder text for grassland restoration",
         "path": "Restoration_Savanna_carbon_norm.tif",
-        "layer_type": 0
+        "layer_type": 0,
     },
     {
         "uuid": "71de0448-46c4-4163-a124-3d88cdcbba42",
         "name": "Woody Encroachment Control",
         "description": "Placeholder text for woody encroachment control",
         "path": "Woody_Encroachment_norm.tif",
-        "layer_type": 0
+        "layer_type": 0,
     },
 ]
 
