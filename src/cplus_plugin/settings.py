@@ -9,6 +9,7 @@ from qgis.PyQt import uic
 from qgis.PyQt.QtGui import (
     QIcon,
     QShowEvent,
+    QPixmap,
 )
 from qgis.utils import iface
 from qgis.PyQt.QtWidgets import QWidget
@@ -17,7 +18,11 @@ from .conf import (
     settings_manager,
     Settings,
 )
-from .definitions.defaults import OPTIONS_TITLE, ICON_PATH
+from .definitions.defaults import (
+    OPTIONS_TITLE,
+    ICON_PATH,
+    DEFAULT_LOGO_PATH,
+)
 
 Ui_DlgSettings, _ = uic.loadUiType(str(Path(__file__).parent / "ui/qgis_settings.ui"))
 
@@ -35,8 +40,8 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.settings = qgis.core.QgsSettings()
 
         # Connections
-        self.cb_custom_logo.stateChanged.connect(self.logo_state_change)
-        self.logo_file.fileChanged.connect(self.logo_file_exists)
+        self.cb_custom_logo.stateChanged.connect(self.logo_state_changed)
+        self.logo_file.fileChanged.connect(self.logo_file_changed)
         self.folder_data.fileChanged.connect(self.base_dir_exists)
 
     def apply(self) -> None:
@@ -44,36 +49,69 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         self.save_settings()
 
-    def logo_state_change(self) -> None:
-        """Called when the custom logo option is disabled or enabled."""
+    def update_logo(self, custom_logo, logo_dir=DEFAULT_LOGO_PATH):
+        """Updates the logo preview. If the logo is not found,
+        the default logo will be used.
+        """
+        logo_found = False
+        if custom_logo:
+            # If custom logo is active, check if the provided directory exists
+            logo_found = self.logo_file_exists()
 
+        if custom_logo and logo_found:
+            # If custom logo is enabled and the logo file exists
+            pixmap = QPixmap(logo_dir)
+        else:
+            # If custom logo is disabled. The default logo will also be used when the custom logo does not exist
+            pixmap = QPixmap(DEFAULT_LOGO_PATH)
+        self.lbl_logo_image.setPixmap(pixmap)
+
+    def logo_state_changed(self) -> None:
+        """Called when the custom logo option is disabled or enabled.
+        Will update the logo preview.
+        """
         custom_logo = self.cb_custom_logo.checkState()
+        custom_logo_path = self.logo_file.filePath()
 
         # Enables/disables the file widget for the logo directory
-        if custom_logo > 0:
+        if custom_logo:
             self.logo_file.setEnabled(True)
-            self.logo_file_exists()
         else:
             self.logo_file.setEnabled(False)
 
-    def logo_file_exists(self) -> None:
+        self.update_logo(custom_logo, custom_logo_path)
+
+    def logo_file_changed(self):
+        """Called when the logo file directory changes.
+        Will update the logo preview.
+        """
+        custom_logo = self.cb_custom_logo.checkState()
+        custom_logo_path = self.logo_file.filePath()
+
+        self.update_logo(custom_logo, custom_logo_path)
+
+    def logo_file_exists(self) -> bool:
         """Checks if the provided logo directory exists.
         A warning messages is presented if the file cannot be found.
+
+        Returns:
+            file_found (bool): Whether the logo file exists
         """
-
-        # Check is skipped if custom logo is disabled
-        if not self.cb_custom_logo.checkState():
-            return
-
         # Clears the error messages when doing next check
         self.message_bar.clearWidgets()
 
+        file_found = False
         custom_logo_path = self.logo_file.filePath()
         if not os.path.exists(custom_logo_path):
             # File not found
             self.message_bar.pushWarning(
                 "CPLUS - Custom logo not found: ", custom_logo_path
             )
+        else:
+            file_found = True
+
+        # File found
+        return file_found
 
     def base_dir_exists(self) -> None:
         """Checks if the provided base directory exists.
@@ -170,10 +208,10 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.logo_file.setEnabled(custom_logo)
 
         custom_logo_dir = settings_manager.get_value(
-            Settings.REPORT_LOGO_DIR, default=""
+            Settings.REPORT_LOGO_DIR, default=DEFAULT_LOGO_PATH
         )
         self.logo_file.setFilePath(custom_logo_dir)
-        self.logo_file_exists()
+        self.update_logo(custom_logo, custom_logo_dir)
 
         footer = settings_manager.get_value(Settings.REPORT_FOOTER, default="")
         self.txt_footer.setPlainText(footer)
