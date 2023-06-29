@@ -11,7 +11,6 @@ PILOT_AREA_EXTENT = {
 DOCUMENTATION_SITE = "https://kartoza.github.io/cplus-plugin"
 
 # Path just contains the file name and is relative to {download_folder}/ncs_pathways
-# TODO: Insert file names for each NCS pathway configuration
 DEFAULT_NCS_PATHWAYS = [
     {
         "uuid": "bd381140-64f0-43d0-be6c-50120dd6c174",
@@ -52,7 +51,7 @@ DEFAULT_NCS_PATHWAYS = [
         "uuid": "5475dd4a-5efc-4fb4-ae90-68ff4102591e",
         "name": "Grassland Fire Management",
         "description": "Placeholder text for grassland fire management",
-        "path": "Fire_Management_Krugerhalf_carbon_norm",
+        "path": "Fire_Management_Krugerhalf_carbon_norm.tif",
         "layer_type": 0
     },
     {
