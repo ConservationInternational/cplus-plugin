@@ -152,7 +152,7 @@ class QgisCplus:
         )
 
         self.add_action(
-            os.path.join(os.path.dirname(__file__), "icons", "wrench.svg"),
+            os.path.join(os.path.dirname(__file__), "icons", "settings.svg"),
             text=self.tr("Settings"),
             callback=self.run_settings,
             parent=self.iface.mainWindow(),
