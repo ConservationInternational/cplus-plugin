@@ -77,7 +77,10 @@ official plugin [repository](https://plugins.qgis.org/plugins).
 ### Development 
 
 To use the plugin for development purposes, clone the repository locally,
-install pip, a python dependencies management tool see https://pypi.org/project/pip/
+install pip, a python dependencies management tool, see https://pypi.org/project/pip/.
+
+
+Also ensure you are running Python 3.10.x as the `pre-commit` tool is configured to use this specific version.
 
 #### Create virtual environment
 
