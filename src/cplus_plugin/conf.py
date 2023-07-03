@@ -6,6 +6,7 @@
 import contextlib
 import dataclasses
 import enum
+import json
 import uuid
 
 from qgis.PyQt import (
@@ -99,6 +100,7 @@ class SettingsManager(QtCore.QObject):
 
     BASE_GROUP_NAME: str = "cplus_plugin"
     SCENARIO_GROUP_NAME: str = "scenarios"
+    PRIORITY_LAYERS_GROUP_NAME: str = "priority_layers"
 
     settings = QgsSettings()
 
@@ -258,6 +260,96 @@ class SettingsManager(QtCore.QObject):
         ) as settings:
             for scenario_name in settings.childGroups():
                 settings.remove(scenario_name)
+
+    def _get_priority_layers_settings_base(self, identifier):
+        """Gets the priority layers settings base url.
+
+        :param identifier: Priority layers settings identifier
+        :type identifier: uuid.UUID
+
+        :returns Priority layers settings base group
+        :rtype str
+        """
+        return (
+            f"{self.BASE_GROUP_NAME}/"
+            f"{self.PRIORITY_LAYERS_GROUP_NAME}/"
+            f"{str(identifier)}"
+        )
+
+    def get_priority_layer(self, identifier):
+        """Retrieves the priority layer that matches the passed identifier.
+
+        :param identifier: Priority identifier
+        :type identifier: str
+
+        :returns Priority layer
+        :rtype dict
+        """
+
+        settings_key = self._get_priority_layers_settings_base(identifier)
+        with qgis_settings(settings_key) as settings:
+            groups = settings.get("groups").split(",")
+            groups = [float(group) for group in groups]
+
+            priority_layer = {"uuid": identifier}
+            priority_layer["name"] = settings.get("name")
+            priority_layer["description"] = settings.get("description")
+            priority_layer["groups"] = groups
+        return priority_layer or None
+
+    def save_priority_layer(self, priority_layer):
+        """Save the priority layer into the plugin settings
+
+        :param priority_layer: Priority layer
+        :type priority_layer:  dict
+        """
+        settings_key = self._get_priority_layers_settings_base(priority_layer["uuid"])
+
+        with qgis_settings(settings_key) as settings:
+            groups = ",".join(str(group) for group in priority_layer["groups"])
+            settings.setValue("name", priority_layer["name"])
+            settings.setValue("description", priority_layer["description"])
+            settings.setValue("groups", groups)
+
+    def get_priority_layers(self):
+        """Gets all the available priority layers in the plugin.
+
+        :returns List of the priority layers instances
+        :rtype list
+        """
+        result = []
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_LAYERS_GROUP_NAME}"
+        ) as settings:
+            for uuid in settings.childGroups():
+                priority_layer_settings = self._get_priority_layers_settings_base(uuid)
+                with qgis_settings(priority_layer_settings) as priority_settings:
+                    groups = priority_settings.get("groups").split(",")
+                    groups = [float(group) for group in groups]
+                    layer = {
+                        "uuid": uuid,
+                        "name": priority_settings.get("name"),
+                        "description": priority_settings.get("description"),
+                        "groups": groups,
+                    }
+                    result.append(layer)
+        return result
+
+    def delete_priority_layers(self):
+        """Deletes all the plugin priority settings."""
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_LAYERS_GROUP_NAME}"
+        ) as settings:
+            for priority_layer in settings.childGroups():
+                settings.remove(priority_layer)
+
+    def delete_priority_layer(self, identifier):
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_LAYERS_GROUP_NAME}/"
+        ) as settings:
+            for priority_layer in settings.childGroups():
+                if priority_layer == identifier:
+                    settings.remove(priority_layer)
 
 
 settings_manager = SettingsManager()

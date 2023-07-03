@@ -69,7 +69,7 @@ PRIORITY_GROUPS = [
     {
         "uuid": "3a66c845-2f9b-482c-b9a9-bcfca8395ad5",
         "name": "Finance - Years Experience",
-        "description": "Placeholder text for years of exprience",
+        "description": "Placeholder text for years of experience",
     },
     {
         "uuid": "c6dbfe09-b05c-4cfc-8fc0-fb63cfe0ceee",
