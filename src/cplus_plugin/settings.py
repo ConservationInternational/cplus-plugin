@@ -113,20 +113,28 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         # File found
         return file_found
 
-    def base_dir_exists(self) -> None:
+    def base_dir_exists(self) -> bool:
         """Checks if the provided base directory exists.
         A warning messages is presented if the directory does not exist.
+
+        Returns:
+            folder_found (bool): Whether the base directory exists
         """
 
         # Clears the error messages when doing next check
         self.message_bar.clearWidgets()
 
+        folder_found = False
         base_dir_path = self.folder_data.filePath()
         if not os.path.exists(base_dir_path):
             # File not found
             self.message_bar.pushWarning(
                 "CPLUS - Base directory not found: ", base_dir_path
             )
+        else:
+            folder_found = True
+
+        return folder_found
 
     def save_settings(self) -> None:
         """Saves the settings.
