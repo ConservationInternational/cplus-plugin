@@ -15,7 +15,6 @@ OPTIONS_TITLE = "CPLUS"
 
 
 class CplusPluginSettingsTest(unittest.TestCase):
-
     def test_save(self):
         """A test which will check if all CPLUS settings is saved correctly
         when the save_settings function is called.
@@ -94,7 +93,9 @@ class CplusPluginSettingsTest(unittest.TestCase):
         settings_manager.set_value(Settings.REPORT_ORGANIZATION, save_organization)
         settings_manager.set_value(Settings.REPORT_CONTACT_EMAIL, save_email)
         settings_manager.set_value(Settings.REPORT_WEBSITE, save_website)
-        settings_manager.set_value(Settings.REPORT_CUSTOM_LOGO, save_custom_logo_enabled)
+        settings_manager.set_value(
+            Settings.REPORT_CUSTOM_LOGO, save_custom_logo_enabled
+        )
         settings_manager.set_value(Settings.REPORT_LOGO_DIR, save_custom_logo_dir)
         settings_manager.set_value(Settings.REPORT_CUSTOM_LOGO, save_custom_logo_dir)
         settings_manager.set_value(Settings.REPORT_FOOTER, save_footer)
