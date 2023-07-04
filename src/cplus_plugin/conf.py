@@ -288,14 +288,49 @@ class SettingsManager(QtCore.QObject):
 
         settings_key = self._get_priority_layers_settings_base(identifier)
         with qgis_settings(settings_key) as settings:
-            groups = settings.get("groups").split(",")
-            groups = [float(group) for group in groups]
+            groups_key = f"{settings}/groups"
+            groups = []
+
+            with qgis_settings(groups_key) as groups_settings:
+                for name in groups_settings.childGroups():
+                    group_settings_key = f"{groups_key}/{name}"
+                    with qgis_settings(group_settings_key) as group_settings:
+                        stored_group = {}
+                        stored_group["name"] = group_settings.value("name")
+                        stored_group["value"] = group_settings.value("value")
+                        groups.append(stored_group)
 
             priority_layer = {"uuid": identifier}
-            priority_layer["name"] = settings.get("name")
-            priority_layer["description"] = settings.get("description")
+            priority_layer["name"] = settings.value("name")
+            priority_layer["description"] = settings.value("description")
+            priority_layer["selected"] = settings.value("selected")
             priority_layer["groups"] = groups
-        return priority_layer or None
+        return priority_layer
+
+    def find_layer_by_name(self, name):
+        """Finds a priority layer setting inside the plugin QgsSettings by name.
+
+        :param name: Name of the layer
+        :type: str
+
+        :returns: Priority layer dictionary
+        :rtype: dict
+        """
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_LAYERS_GROUP_NAME}"
+        ) as settings:
+            for layer_id in settings.childGroups():
+                layer_settings_key = self._get_priority_layers_settings_base(layer_id)
+                with qgis_settings(layer_settings_key) as layer_settings:
+                    layer_name = layer_settings.value("name")
+                    if layer_name == name:
+                        found_id = uuid.UUID(layer_id)
+                        break
+            else:
+                raise ValueError(
+                    f"Could not find a priority layer named " f"{name!r} in QgsSettings"
+                )
+        return self.get_priority_layer(found_id)
 
     def save_priority_layer(self, priority_layer):
         """Save the priority layer into the plugin settings
@@ -306,10 +341,16 @@ class SettingsManager(QtCore.QObject):
         settings_key = self._get_priority_layers_settings_base(priority_layer["uuid"])
 
         with qgis_settings(settings_key) as settings:
-            groups = ",".join(str(group) for group in priority_layer["groups"])
+            groups = priority_layer["groups"]
             settings.setValue("name", priority_layer["name"])
             settings.setValue("description", priority_layer["description"])
-            settings.setValue("groups", groups)
+            settings.setValue("selected", priority_layer["selected"])
+            groups_key = f"{settings_key}/groups"
+            for group in groups:
+                group_key = f"{groups_key}/{group['name']}"
+                with qgis_settings(group_key) as group_settings:
+                    group_settings.setValue("name", group["name"])
+                    group_settings.setValue("value", group["value"])
 
     def get_priority_layers(self):
         """Gets all the available priority layers in the plugin.
@@ -324,12 +365,22 @@ class SettingsManager(QtCore.QObject):
             for uuid in settings.childGroups():
                 priority_layer_settings = self._get_priority_layers_settings_base(uuid)
                 with qgis_settings(priority_layer_settings) as priority_settings:
-                    groups = priority_settings.get("groups").split(",")
-                    groups = [float(group) for group in groups]
+                    groups_key = f"{priority_layer_settings}/groups"
+                    groups = []
+
+                    with qgis_settings(groups_key) as groups_settings:
+                        for name in groups_settings.childGroups():
+                            group_settings_key = f"{groups_key}/{name}"
+                            with qgis_settings(group_settings_key) as group_settings:
+                                stored_group = {}
+                                stored_group["name"] = group_settings.value("name")
+                                stored_group["value"] = group_settings.value("value")
+                                groups.append(stored_group)
                     layer = {
                         "uuid": uuid,
-                        "name": priority_settings.get("name"),
-                        "description": priority_settings.get("description"),
+                        "name": priority_settings.value("name"),
+                        "description": priority_settings.value("description"),
+                        "selected": priority_settings.value("selected"),
                         "groups": groups,
                     }
                     result.append(layer)

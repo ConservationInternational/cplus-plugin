@@ -30,9 +30,12 @@ from qgis.gui import (
 from qgis.utils import iface
 
 from .priority_group_widget import PriorityGroupWidget
+from .priority_layer_group import PriorityLayerDialog
 from ..resources import *
 
 from ..utils import open_documentation, tr, log
+from ..conf import settings_manager
+
 
 from ..definitions.defaults import PILOT_AREA_EXTENT, PRIORITY_GROUPS, PRIORITY_LAYERS
 
@@ -61,6 +64,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def initialize_priority_layers(self):
         """Prepares the priority weighted layers UI with the defaults"""
 
+        selected_groups = []
+
+        for layer in settings_manager.get_priority_layers():
+            self.priority_layers_list.addItem(layer["name"])
+            log(f"adding item {layer['name']}")
+            if layer.get("selected"):
+                selected_groups = layer["groups"]
+
         scroll_container = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(1, 1, 1, 1)
@@ -69,6 +80,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         for group in PRIORITY_GROUPS:
             log(f"Initializing {group['name']}")
             group_widget = PriorityGroupWidget(group)
+
+            layer_group = None
+            for selected_group in selected_groups:
+                if selected_group["name"] == group["name"]:
+                    layer_group = selected_group
+
+            group_widget.set_group(layer_group)
+
             layout.addWidget(group_widget)
             layout.setAlignment(group_widget, QtCore.Qt.AlignTop)
 
@@ -81,7 +100,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setWidget(scroll_container)
 
-        for layer in PRIORITY_LAYERS:
+    def update_priority_layers(self):
+        self.priority_layers_list.clear()
+        for layer in settings_manager.get_priority_layers():
             self.priority_layers_list.addItem(layer["name"])
 
     def prepare_input(self):
@@ -93,6 +114,46 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.help_btn.clicked.connect(open_documentation)
         self.pilot_area_btn.clicked.connect(self.zoom_pilot_area)
         self.run_scenario_btn.clicked.connect(self.run_scenario_analysis)
+
+        self.add_pwl_btn.clicked.connect(self.add_priority_layer)
+        self.edit_pwl_btn.clicked.connect(self.edit_priority_layer)
+        self.remove_pwl_btn.clicked.connect(self.remove_priority_layer)
+
+    def add_priority_layer(self):
+        """Adds a new priority layer into the plugin, then updates
+        the priority list to show the new added priority layer.
+        """
+        layer_dialog = PriorityLayerDialog()
+        layer_dialog.exec_()
+        self.update_priority_layers()
+
+    def edit_priority_layer(self):
+        """Edits the passed layer and updates the layer box list."""
+        current_text = self.priority_layers_list.currentText()
+        if current_text == "":
+            return
+        layer = settings_manager.find_layer_by_name(current_text)
+        layer_dialog = PriorityLayerDialog(layer)
+        layer_dialog.exec_()
+
+        self.update_priority_layers()
+
+    def remove_priority_layer(self):
+        """Removes the current active priority layer."""
+        current_text = self.priority_layers_list.currentText()
+        if current_text == "":
+            return
+        layer = settings_manager.find_layer_by_name(current_text)
+        reply = QtWidgets.QMessageBox.warning(
+            self,
+            tr("QGIS CPLUS PLUGIN"),
+            tr('Remove the priority layer "{}"?').format(current_text),
+            QtWidgets.QMessageBox.Yes,
+            QtWidgets.QMessageBox.No,
+        )
+        if reply == QtWidgets.QMessageBox.Yes:
+            settings_manager.delete_priority_layer(layer.get("uuid"))
+            self.update_priority_layers()
 
     def prepare_message_bar(self):
         """Initializes the widget message bar settings"""

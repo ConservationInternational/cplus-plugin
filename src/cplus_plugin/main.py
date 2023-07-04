@@ -21,6 +21,10 @@ from .resources import *
 
 from .gui.qgis_cplus_main import QgisCplusMain
 
+from .conf import settings_manager
+
+from .utils import initialize_priority_layers
+
 
 class QgisCplus:
     """QGIS CPLUS Plugin Implementation."""
@@ -46,6 +50,11 @@ class QgisCplus:
         self.main_widget = QgisCplusMain(
             iface=self.iface, parent=self.iface.mainWindow()
         )
+
+        if not settings_manager.get_value(
+            "default_priority_layers_set", default=False, setting_type=bool
+        ):
+            initialize_priority_layers()
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -156,6 +165,8 @@ class QgisCplus:
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         try:
+            settings_manager.delete_priority_layers()
+            settings_manager.set_value("default_priority_layers_set", False)
             for action in self.actions:
                 self.iface.removePluginMenu(self.tr("&CPLUS"), action)
                 self.iface.removePluginWebMenu(self.tr("&CPLUS"), action)

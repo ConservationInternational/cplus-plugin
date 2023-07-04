@@ -6,7 +6,8 @@
 from qgis.PyQt import QtCore, QtGui
 from qgis.core import Qgis, QgsMessageLog
 
-from .definitions.defaults import DOCUMENTATION_SITE
+from .definitions.defaults import DOCUMENTATION_SITE, PRIORITY_LAYERS, PRIORITY_GROUPS
+from .conf import settings_manager
 
 
 def tr(message):
@@ -60,3 +61,18 @@ def open_documentation(url=None):
     url = DOCUMENTATION_SITE if url is None else url
     result = QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
     return result
+
+
+def initialize_priority_layers():
+    """Prepares the priority weighted layers UI with the defaults"""
+
+    groups = []
+    for group in PRIORITY_GROUPS:
+        stored_group = {}
+        stored_group["name"] = group["name"]
+        stored_group["value"] = 0
+        groups.append(stored_group)
+
+    for layer in PRIORITY_LAYERS:
+        layer["groups"] = groups
+        settings_manager.save_priority_layer(layer)

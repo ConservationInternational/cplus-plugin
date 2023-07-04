@@ -4,6 +4,7 @@
 """
 
 import os
+import typing
 
 from qgis.PyQt import (
     QtCore,
@@ -40,3 +41,26 @@ class PriorityGroupWidget(QtWidgets.QWidget, WidgetUi):
         """Populate UI inputs when loading the widget"""
 
         self.group_la.setText(self.group["name"])
+        self.group_slider.valueChanged.connect(self.update_spin_box)
+        self.group_spin_box.valueChanged.connect(self.update_slider)
+
+    def set_group(self, group: typing.List):
+        """Sets the priority layer group and updates the slider and
+        input values
+        """
+        self.group = group
+        if group is not None:
+            self.group_slider.setValue(int(group["value"]))
+            self.group_spin_box.setValue(int(group["value"]))
+
+    def update_slider(self, value):
+        """Changes the current slider value"""
+        self.group_slider.blockSignals(True)
+        self.group_slider.setValue(value)
+        self.group_slider.blockSignals(False)
+
+    def update_spin_box(self, value):
+        """Changes the input value of the spin box"""
+        self.group_spin_box.blockSignals(True)
+        self.group_spin_box.setValue(value)
+        self.group_spin_box.blockSignals(False)
