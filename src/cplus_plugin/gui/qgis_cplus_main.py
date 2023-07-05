@@ -152,8 +152,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             if layer.get("selected"):
                 self.priority_layers_list.setCurrentItem(item)
                 self.update_priority_groups(item, None)
-        for layer in PRIORITY_LAYERS:
-            self.priority_layers_list.addItem(layer["name"])
 
     def prepare_input(self):
         """Initializes plugin input widgets"""
