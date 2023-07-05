@@ -124,3 +124,6 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
                 break
 
         return status
+
+    def selected_items(self):
+        return self.implementation_model_view.selected_items()

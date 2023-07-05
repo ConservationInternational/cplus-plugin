@@ -13,11 +13,19 @@ from qgis.PyQt import (
     QtNetwork,
 )
 from qgis.PyQt.uic import loadUiType
+
+
+from qgis import processing
+
 from qgis.core import (
     Qgis,
+    QgsApplication,
     QgsCoordinateReferenceSystem,
     QgsGeometry,
+    QgsProcessing,
+    QgsProcessingFeedback,
     QgsRectangle,
+    QgsTask,
     QgsWkbTypes,
 )
 
@@ -245,20 +253,136 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             passed_extent
         )
 
+        scenario_name = self.scenario_name.text()
+        scenario_description = self.scenario_description.text()
+
+        implementation_models = self.implementation_model_widget.implementation_models()
+
+        priority_weight_layers = self.priority_layers_list.selectedItems()
+
+        if scenario_name == "" or scenario_name is None:
+            self.show_message(
+                tr(f"Scenario name cannot be blank."),
+                level=Qgis.Info,
+            )
+            return
+        if scenario_description == "" or scenario_description is None:
+            self.show_message(
+                tr(f"Scenario description cannot be blank."),
+                level=Qgis.Info,
+            )
+            return
+        if implementation_models == [] or implementation_models is None:
+            self.show_message(
+                tr("Select at least one implementation models from step two."),
+                level=Qgis.Info,
+            )
+            return
+        if priority_weight_layers == [] or priority_weight_layers is None:
+            self.show_message(
+                tr(f"Select at least one priority weight layer models from step two."),
+                level=Qgis.Info,
+            )
+            return
+
         if contains:
             self.show_message(
-                tr(f"Selected area of interest is " f"inside the pilot area."),
+                tr(f"Selected area of interest is inside the pilot area."),
                 level=Qgis.Info,
             )
-            self.run_analysis()
+            try:
+                run_task = QgsTask.fromFunction(
+                    "Run analysis function",
+                    self.run_analysis(
+                        scenario_name,
+                        scenario_description,
+                        passed_extent,
+                        implementation_models,
+                        priority_weight_layers,
+                    ),
+                )
+                QgsApplication.taskManager().addTask(run_task)
+            except Exception as err:
+                log(
+                    tr(
+                        "An error occurred when running task for "
+                        'Run analysis function, error message "{}" '.format(err)
+                    )
+                )
+
         else:
             self.show_message(
-                tr("Selected area of interest " "is outside the pilot area."),
+                tr("Selected area of interest is outside the pilot area."),
                 level=Qgis.Info,
             )
+            return
 
-    def run_analysis(self):
-        results = run_alg()
+    def run_analysis(
+        self,
+        scenario_name,
+        scenario_description,
+        passed_extent,
+        implementation_models,
+        priority_weight_layers,
+    ):
+        outputs = {}
+
+        for model in implementation_models:
+            pathways = model.pathways
+            expression = ""
+            layer = None
+            for pathway in pathways:
+                layer = pathway.path
+                expression = expression + f" + {pathway.path}@1"
+
+            alg_params = {
+                "CELLSIZE": 0,
+                "CRS": None,
+                "EXPRESSION": expression,
+                "EXTENT": None,
+                "LAYERS": layer,
+                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+            }
+            feedback = QgsProcessingFeedback()
+
+            self.show_message(
+                tr("Analysis for scenario {} has started.").format(scenario_name),
+                level=Qgis.Info,
+            )
+            self.show_progress(
+                f"Analysis progress",
+                minimum=0,
+                maximum=100,
+            )
+
+            feedback.progressChanged.connect(self.update_progress_bar)
+            feedback.progressChanged.connect(self.analysis_progress)
+
+            outputs[model.name] = processing.run(
+                "qgis:rastercalculator", alg_params, feedback=feedback
+            )
+
+    def update_progress_bar(self, value):
+        """Sets the value of the progress bar
+
+        :param value: Value to be set on the progress bar
+        :type value: float
+        """
+        if self.progress_bar:
+            try:
+                self.progress_bar.setValue(int(value))
+            except RuntimeError:
+                log(tr("Error setting value to a progress bar"), notify=False)
+
+    def analysis_progress(self, value):
+        """Tracks the analysis progress of value and updates
+        the info message when the analysis has finished
+
+        :param value: Analysis progress value
+        :type value: int
+        """
+        if value == 100:
+            self.show_message(tr("Analysis has finished."), level=Qgis.Info)
 
     def show_message(self, message, level=Qgis.Warning):
         """Shows message on the main widget message bar
@@ -271,6 +395,27 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
         self.message_bar.clearWidgets()
         self.message_bar.pushMessage(message, level=level)
+
+    def show_progress(self, message, minimum=0, maximum=0):
+        """Shows the progress message on the main widget message bar
+
+        :param message: Progress message
+        :type message: str
+
+        :param minimum: Minimum value that can be set on the progress bar
+        :type minimum: int
+
+        :param maximum: Maximum value that can be set on the progress bar
+        :type maximum: int
+        """
+        self.message_bar.clearWidgets()
+        message_bar_item = self.message_bar.createMessage(message)
+        self.progress_bar = QtWidgets.QProgressBar()
+        self.progress_bar.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        self.progress_bar.setMinimum(minimum)
+        self.progress_bar.setMaximum(maximum)
+        message_bar_item.layout().addWidget(self.progress_bar)
+        self.message_bar.pushWidget(message_bar_item, Qgis.Info)
 
     def zoom_pilot_area(self):
         """Zoom the current main map canvas to the pilot area extent."""
