@@ -19,6 +19,8 @@ from ..models.base import PRIORITY_GROUP
 
 from ..conf import settings_manager
 
+from ..utils import log
+
 
 DialogUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/priority_layer_dialog.ui")
@@ -33,7 +35,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
 
     def __init__(
         self,
-        layer,
+        layer=None,
         parent=None,
     ):
         super().__init__(parent)
@@ -56,13 +58,13 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         """Responsible for changing the state of the
         connection dialog OK button.
         """
-        enabled_state = self.layer_name.text() != "" and self.layer_name.text() != ""
-        self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(enabled_state)
-        self.get_conformances_btn.setEnabled(enabled_state)
-        self.test_btn.setEnabled(enabled_state)
+        enabled_state = (
+            self.layer_name.text() != "" and self.layer_description.toPlainText() != ""
+        )
+        self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(enabled_state)
 
     def initialize_ui(self):
-        """Populate UI inputs when loading the widget"""
+        """Populate UI inputs when loading the dialog"""
         layer = self.layer
         if layer is not None:
             self.layer_name.setText(layer["name"])
@@ -72,7 +74,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
                 if group["name"] == PRIORITY_GROUP.CARBON_IMPORTANCE.value:
                     self.carbon_importance_box.setValue(int(group["value"]))
                 elif group["name"] == PRIORITY_GROUP.BIODIVERSITY.value:
-                    self.biodivesity_box.setValue(int(group["value"]))
+                    self.biodiversity_box.setValue(int(group["value"]))
                 elif group["name"] == PRIORITY_GROUP.LIVELIHOOD.value:
                     self.livelihood_box.setValue(int(group["value"]))
                 elif group["name"] == PRIORITY_GROUP.CLIMATE_RESILIENCE.value:
@@ -99,32 +101,52 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
 
         groups = [
             {
-                PRIORITY_GROUP.CARBON_IMPORTANCE.value: self.carbon_importance_box.value()
-            },
-            {PRIORITY_GROUP.BIODIVERSITY.value: self.biodiversity_box.value()},
-            {PRIORITY_GROUP.LIVELIHOOD.value: self.livelihood_box.value()},
-            {
-                PRIORITY_GROUP.CLIMATE_RESILIENCE.value: self.climate_resilience_box.value()
+                "name": PRIORITY_GROUP.CARBON_IMPORTANCE.value,
+                "value": self.carbon_importance_box.value(),
             },
             {
-                PRIORITY_GROUP.ECOLOGICAL_INFRASTRUCTURE.value: self.ecological_box.value()
-            },
-            {PRIORITY_GROUP.POLICY.value: self.policy_box.value()},
-            {
-                PRIORITY_GROUP.FINANCE_YEARS_EXPERIENCE.value: self.finance_experience_box.value()
+                "name": PRIORITY_GROUP.BIODIVERSITY.value,
+                "value": self.biodiversity_box.value(),
             },
             {
-                PRIORITY_GROUP.FINANCE_MARKET_TRENDS.value: self.finance_market_box.value()
+                "name": PRIORITY_GROUP.LIVELIHOOD.value,
+                "value": self.livelihood_box.value(),
             },
             {
-                PRIORITY_GROUP.FINANCE_NET_PRESENT_VALUE.value: self.finance_present_value_box.value()
+                "name": PRIORITY_GROUP.CLIMATE_RESILIENCE.value,
+                "value": self.climate_resilience_box.value(),
             },
-            {PRIORITY_GROUP.FINANCE_CARBON.value: self.finance_carbon_box.value()},
+            {
+                "name": PRIORITY_GROUP.ECOLOGICAL_INFRASTRUCTURE.value,
+                "value": self.ecological_box.value(),
+            },
+            {"name": PRIORITY_GROUP.POLICY.value, "value": self.policy_box.value()},
+            {
+                "name": PRIORITY_GROUP.FINANCE_YEARS_EXPERIENCE.value,
+                "value": self.finance_experience_box.value(),
+            },
+            {
+                "name": PRIORITY_GROUP.FINANCE_MARKET_TRENDS.value,
+                "value": self.finance_market_box.value(),
+            },
+            {
+                "name": PRIORITY_GROUP.FINANCE_NET_PRESENT_VALUE.value,
+                "value": self.finance_present_value_box.value(),
+            },
+            {
+                "name": PRIORITY_GROUP.FINANCE_CARBON.value,
+                "value": self.finance_carbon_box.value(),
+            },
         ]
         layer["uuid"] = str(layer_id)
         layer["name"] = self.layer_name.text()
-        layer["description"] = self.layer_name.toPlainText()
+        layer["description"] = self.layer_description.toPlainText()
+        layer["selected"] = True
         layer["groups"] = groups
 
+        settings_manager.save_priority_layer(layer)
+        settings_manager.set_current_priority_layer(layer_id)
+
+        # TODO remove this hack for fixing the 'selected' attribute value
         settings_manager.save_priority_layer(layer)
         super().accept()

@@ -63,16 +63,23 @@ def open_documentation(url=None):
     return result
 
 
-def initialize_priority_layers():
+def create_priority_layers():
     """Prepares the priority weighted layers UI with the defaults"""
 
-    groups = []
-    for group in PRIORITY_GROUPS:
-        stored_group = {}
-        stored_group["name"] = group["name"]
-        stored_group["value"] = 0
-        groups.append(stored_group)
+    if not settings_manager.get_value(
+        "default_priority_layers_set", default=False, setting_type=bool
+    ):
+        log("Creating plugin priority layers")
 
-    for layer in PRIORITY_LAYERS:
-        layer["groups"] = groups
-        settings_manager.save_priority_layer(layer)
+        groups = []
+        for group in PRIORITY_GROUPS:
+            stored_group = {}
+            stored_group["name"] = group["name"]
+            stored_group["value"] = 0
+            groups.append(stored_group)
+
+        for layer in PRIORITY_LAYERS:
+            layer["groups"] = groups
+            settings_manager.save_priority_layer(layer)
+
+        settings_manager.set_value("default_priority_layers_set", True)

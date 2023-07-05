@@ -105,6 +105,7 @@ class SettingsManager(QtCore.QObject):
     settings = QgsSettings()
 
     scenarios_settings_updated = QtCore.pyqtSignal()
+    priority_layers_changed = QtCore.pyqtSignal()
 
     def set_value(self, name: str, value):
         """Adds a new setting key and value on the plugin specific settings.
@@ -288,7 +289,7 @@ class SettingsManager(QtCore.QObject):
 
         settings_key = self._get_priority_layers_settings_base(identifier)
         with qgis_settings(settings_key) as settings:
-            groups_key = f"{settings}/groups"
+            groups_key = f"{settings_key}/groups"
             groups = []
 
             with qgis_settings(groups_key) as groups_settings:
@@ -303,9 +304,43 @@ class SettingsManager(QtCore.QObject):
             priority_layer = {"uuid": identifier}
             priority_layer["name"] = settings.value("name")
             priority_layer["description"] = settings.value("description")
-            priority_layer["selected"] = settings.value("selected")
+            priority_layer["selected"] = settings.value("selected", type=bool)
             priority_layer["groups"] = groups
         return priority_layer
+
+    def get_priority_layers(self):
+        """Gets all the available priority layers in the plugin.
+
+        :returns List of the priority layers instances
+        :rtype list
+        """
+        result = []
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_LAYERS_GROUP_NAME}"
+        ) as settings:
+            for uuid in settings.childGroups():
+                priority_layer_settings = self._get_priority_layers_settings_base(uuid)
+                with qgis_settings(priority_layer_settings) as priority_settings:
+                    groups_key = f"{priority_layer_settings}/groups"
+                    groups = []
+
+                    with qgis_settings(groups_key) as groups_settings:
+                        for name in groups_settings.childGroups():
+                            group_settings_key = f"{groups_key}/{name}"
+                            with qgis_settings(group_settings_key) as group_settings:
+                                stored_group = {}
+                                stored_group["name"] = group_settings.value("name")
+                                stored_group["value"] = group_settings.value("value")
+                                groups.append(stored_group)
+                    layer = {
+                        "uuid": uuid,
+                        "name": priority_settings.value("name"),
+                        "description": priority_settings.value("description"),
+                        "selected": priority_settings.value("selected", type=bool),
+                        "groups": groups,
+                    }
+                    result.append(layer)
+        return result
 
     def find_layer_by_name(self, name):
         """Finds a priority layer setting inside the plugin QgsSettings by name.
@@ -352,39 +387,18 @@ class SettingsManager(QtCore.QObject):
                     group_settings.setValue("name", group["name"])
                     group_settings.setValue("value", group["value"])
 
-    def get_priority_layers(self):
-        """Gets all the available priority layers in the plugin.
+        self.priority_layers_changed.emit()
 
-        :returns List of the priority layers instances
-        :rtype list
-        """
-        result = []
+    def set_current_priority_layer(self, identifier):
         with qgis_settings(
-            f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_LAYERS_GROUP_NAME}"
+            f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_LAYERS_GROUP_NAME}/"
         ) as settings:
-            for uuid in settings.childGroups():
-                priority_layer_settings = self._get_priority_layers_settings_base(uuid)
-                with qgis_settings(priority_layer_settings) as priority_settings:
-                    groups_key = f"{priority_layer_settings}/groups"
-                    groups = []
-
-                    with qgis_settings(groups_key) as groups_settings:
-                        for name in groups_settings.childGroups():
-                            group_settings_key = f"{groups_key}/{name}"
-                            with qgis_settings(group_settings_key) as group_settings:
-                                stored_group = {}
-                                stored_group["name"] = group_settings.value("name")
-                                stored_group["value"] = group_settings.value("value")
-                                groups.append(stored_group)
-                    layer = {
-                        "uuid": uuid,
-                        "name": priority_settings.value("name"),
-                        "description": priority_settings.value("description"),
-                        "selected": priority_settings.value("selected"),
-                        "groups": groups,
-                    }
-                    result.append(layer)
-        return result
+            for priority_layer in settings.childGroups():
+                settings_key = self._get_priority_layers_settings_base(identifier)
+                with qgis_settings(settings_key) as layer_settings:
+                    layer_settings.setValue(
+                        "selected", str(priority_layer) == str(identifier)
+                    )
 
     def delete_priority_layers(self):
         """Deletes all the plugin priority settings."""
@@ -399,8 +413,42 @@ class SettingsManager(QtCore.QObject):
             f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_LAYERS_GROUP_NAME}/"
         ) as settings:
             for priority_layer in settings.childGroups():
-                if priority_layer == identifier:
+                if str(priority_layer) == str(identifier):
                     settings.remove(priority_layer)
+
+
+def log(
+    message: str,
+    name: str = "qgis_cplus",
+    info: bool = True,
+    notify: bool = True,
+):
+    """Logs the message into QGIS logs using qgis_cplus as the default
+    log instance.
+    If notify_user is True, user will be notified about the log.
+
+    :param message: The log message
+    :type message: str
+
+    :param name: Name of te log instance, qgis_cplus is the default
+    :type message: str
+
+    :param info: Whether the message is about info or a
+    warning
+    :type info: bool
+
+    :param notify: Whether to notify user about the log
+    :type notify: bool
+    """
+    from qgis.core import Qgis, QgsMessageLog
+
+    level = Qgis.Info if info else Qgis.Warning
+    QgsMessageLog.logMessage(
+        message,
+        name,
+        level=level,
+        notifyUser=notify,
+    )
 
 
 settings_manager = SettingsManager()

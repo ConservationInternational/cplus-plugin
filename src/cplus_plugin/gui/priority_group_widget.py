@@ -44,7 +44,7 @@ class PriorityGroupWidget(QtWidgets.QWidget, WidgetUi):
         self.group_slider.valueChanged.connect(self.update_spin_box)
         self.group_spin_box.valueChanged.connect(self.update_slider)
 
-    def set_group(self, group: typing.List):
+    def set_group(self, group: typing.Dict):
         """Sets the priority layer group and updates the slider and
         input values
         """
@@ -52,6 +52,12 @@ class PriorityGroupWidget(QtWidgets.QWidget, WidgetUi):
         if group is not None:
             self.group_slider.setValue(int(group["value"]))
             self.group_spin_box.setValue(int(group["value"]))
+
+    def name(self):
+        return self.group.get("name")
+
+    def group_value(self):
+        return self.group_slider.value()
 
     def update_slider(self, value):
         """Changes the current slider value"""

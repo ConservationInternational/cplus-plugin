@@ -23,7 +23,7 @@ from .gui.qgis_cplus_main import QgisCplusMain
 
 from .conf import settings_manager
 
-from .utils import initialize_priority_layers
+from .utils import create_priority_layers
 
 
 class QgisCplus:
@@ -47,14 +47,14 @@ class QgisCplus:
         self.toolbar = self.iface.addToolBar("Open CPLUS")
         self.toolbar.setObjectName("CPLUS")
 
-        self.main_widget = QgisCplusMain(
-            iface=self.iface, parent=self.iface.mainWindow()
-        )
-
         if not settings_manager.get_value(
             "default_priority_layers_set", default=False, setting_type=bool
         ):
-            initialize_priority_layers()
+            create_priority_layers()
+
+        self.main_widget = QgisCplusMain(
+            iface=self.iface, parent=self.iface.mainWindow()
+        )
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):

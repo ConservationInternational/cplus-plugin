@@ -56,6 +56,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         super().__init__(parent)
         self.setupUi(self)
         self.iface = iface
+        self.priority_groups_widgets = {}
 
         self.initialize_priority_layers()
 
@@ -65,12 +66,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Prepares the priority weighted layers UI with the defaults"""
 
         selected_groups = []
-
         for layer in settings_manager.get_priority_layers():
-            self.priority_layers_list.addItem(layer["name"])
-            log(f"adding item {layer['name']}")
+            item = QtWidgets.QListWidgetItem()
+            item.setData(QtCore.Qt.DisplayRole, layer.get("name"))
+            item.setData(QtCore.Qt.UserRole, layer.get("uuid"))
+
+            self.priority_layers_list.addItem(item)
+            log(f"adding item {layer['name']} groups - {layer['groups']}")
             if layer.get("selected"):
                 selected_groups = layer["groups"]
+                self.priority_layers_list.setCurrentItem(item)
 
         scroll_container = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout()
@@ -78,7 +83,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         layout.setSpacing(1)
 
         for group in PRIORITY_GROUPS:
-            log(f"Initializing {group['name']}")
             group_widget = PriorityGroupWidget(group)
 
             layer_group = None
@@ -87,6 +91,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     layer_group = selected_group
 
             group_widget.set_group(layer_group)
+
+            self.priority_groups_widgets[group["name"]] = group_widget
 
             layout.addWidget(group_widget)
             layout.setAlignment(group_widget, QtCore.Qt.AlignTop)
@@ -100,10 +106,34 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setWidget(scroll_container)
 
+    def save_current_groups(self):
+        item = self.priority_layers_list.currentItem()
+        groups = []
+        for key, group_widget in self.priority_groups_widgets.items():
+            group = {
+                "name": group_widget.name(),
+                "value": int(group_widget.group_value() or 0),
+            }
+            groups.append(group)
+        layer_id = item.data(QtCore.Qt.UserRole)
+        layer = settings_manager.get_priority_layer(layer_id)
+        layer["groups"] = groups
+        layer["selected"] = True
+        settings_manager.save_priority_layer(layer)
+        settings_manager.set_current_priority_layer(layer_id)
+
     def update_priority_layers(self):
         self.priority_layers_list.clear()
         for layer in settings_manager.get_priority_layers():
-            self.priority_layers_list.addItem(layer["name"])
+            item = QtWidgets.QListWidgetItem()
+            item.setData(QtCore.Qt.DisplayRole, layer.get("name"))
+            item.setData(QtCore.Qt.UserRole, layer.get("uuid"))
+
+            self.priority_layers_list.addItem(item)
+
+            if layer.get("selected"):
+                self.priority_layers_list.setCurrentItem(item)
+                self.update_priority_groups(item, None)
 
     def prepare_input(self):
         """Initializes plugin input widgets"""
@@ -115,9 +145,26 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.pilot_area_btn.clicked.connect(self.zoom_pilot_area)
         self.run_scenario_btn.clicked.connect(self.run_scenario_analysis)
 
+        self.save_groups_btn.clicked.connect(self.save_current_groups)
+
+        settings_manager.priority_layers_changed.connect(self.update_priority_layers)
+
         self.add_pwl_btn.clicked.connect(self.add_priority_layer)
         self.edit_pwl_btn.clicked.connect(self.edit_priority_layer)
         self.remove_pwl_btn.clicked.connect(self.remove_priority_layer)
+
+        self.priority_layers_list.currentItemChanged.connect(
+            self.update_priority_groups
+        )
+
+    def update_priority_groups(self, item, previous):
+        if item is not None:
+            layer_id = item.data(QtCore.Qt.UserRole)
+            layer = settings_manager.get_priority_layer(layer_id)
+
+            for group in layer.get("groups", []):
+                group_widget = self.priority_groups_widgets.get(group["name"])
+                group_widget.set_group(group)
 
     def add_priority_layer(self):
         """Adds a new priority layer into the plugin, then updates
@@ -129,7 +176,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def edit_priority_layer(self):
         """Edits the passed layer and updates the layer box list."""
-        current_text = self.priority_layers_list.currentText()
+        current_text = self.priority_layers_list.currentItem().data(
+            QtCore.Qt.DisplayRole
+        )
         if current_text == "":
             return
         layer = settings_manager.find_layer_by_name(current_text)
@@ -140,7 +189,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def remove_priority_layer(self):
         """Removes the current active priority layer."""
-        current_text = self.priority_layers_list.currentText()
+        current_text = self.priority_layers_list.currentItem().data(
+            QtCore.Qt.DisplayRole
+        )
         if current_text == "":
             return
         layer = settings_manager.find_layer_by_name(current_text)

@@ -48,7 +48,7 @@
     <widget class="QTextEdit" name="layer_description"/>
    </item>
    <item>
-    <widget class="QgsCollapsibleGroupBox" name="groub_box">
+    <widget class="QgsCollapsibleGroupBox" name="group_box">
      <property name="title">
       <string>Priority groups</string>
      </property>
@@ -61,7 +61,11 @@
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QgsSpinBox" name="carbon_importance_box"/>
+       <widget class="QgsSpinBox" name="carbon_importance_box">
+        <property name="maximum">
+         <number>100</number>
+        </property>
+       </widget>
       </item>
       <item row="1" column="0">
        <widget class="QLabel" name="label_4">
@@ -71,7 +75,11 @@
        </widget>
       </item>
       <item row="1" column="1">
-       <widget class="QgsSpinBox" name="biodiversity_box"/>
+       <widget class="QgsSpinBox" name="biodiversity_box">
+        <property name="maximum">
+         <number>100</number>
+        </property>
+       </widget>
       </item>
       <item row="2" column="0">
        <widget class="QLabel" name="label_5">
@@ -81,7 +89,11 @@
        </widget>
       </item>
       <item row="2" column="1">
-       <widget class="QgsSpinBox" name="livelihood_box"/>
+       <widget class="QgsSpinBox" name="livelihood_box">
+        <property name="maximum">
+         <number>100</number>
+        </property>
+       </widget>
       </item>
       <item row="3" column="0">
        <widget class="QLabel" name="label_6">
@@ -91,7 +103,11 @@
        </widget>
       </item>
       <item row="3" column="1">
-       <widget class="QgsSpinBox" name="climate_resilience_box"/>
+       <widget class="QgsSpinBox" name="climate_resilience_box">
+        <property name="maximum">
+         <number>100</number>
+        </property>
+       </widget>
       </item>
       <item row="4" column="0">
        <widget class="QLabel" name="label_7">
@@ -101,7 +117,11 @@
        </widget>
       </item>
       <item row="4" column="1">
-       <widget class="QgsSpinBox" name="ecological_box"/>
+       <widget class="QgsSpinBox" name="ecological_box">
+        <property name="maximum">
+         <number>100</number>
+        </property>
+       </widget>
       </item>
       <item row="5" column="0">
        <widget class="QLabel" name="label_8">
@@ -111,7 +131,11 @@
        </widget>
       </item>
       <item row="5" column="1">
-       <widget class="QgsSpinBox" name="policy_box"/>
+       <widget class="QgsSpinBox" name="policy_box">
+        <property name="maximum">
+         <number>100</number>
+        </property>
+       </widget>
       </item>
       <item row="6" column="0">
        <widget class="QLabel" name="label_9">
@@ -121,7 +145,11 @@
        </widget>
       </item>
       <item row="6" column="1">
-       <widget class="QgsSpinBox" name="finance_experience_box"/>
+       <widget class="QgsSpinBox" name="finance_experience_box">
+        <property name="maximum">
+         <number>100</number>
+        </property>
+       </widget>
       </item>
       <item row="7" column="0">
        <widget class="QLabel" name="label_10">
@@ -131,7 +159,11 @@
        </widget>
       </item>
       <item row="7" column="1">
-       <widget class="QgsSpinBox" name="finance_market_box"/>
+       <widget class="QgsSpinBox" name="finance_market_box">
+        <property name="maximum">
+         <number>100</number>
+        </property>
+       </widget>
       </item>
       <item row="8" column="0">
        <widget class="QLabel" name="label_11">
@@ -141,7 +173,11 @@
        </widget>
       </item>
       <item row="8" column="1">
-       <widget class="QgsSpinBox" name="finance_present_value"/>
+       <widget class="QgsSpinBox" name="finance_present_value_box">
+        <property name="maximum">
+         <number>100</number>
+        </property>
+       </widget>
       </item>
       <item row="9" column="0">
        <widget class="QLabel" name="label_12">
@@ -151,7 +187,11 @@
        </widget>
       </item>
       <item row="9" column="1">
-       <widget class="QgsSpinBox" name="finance_carbon_box"/>
+       <widget class="QgsSpinBox" name="finance_carbon_box">
+        <property name="maximum">
+         <number>100</number>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>
