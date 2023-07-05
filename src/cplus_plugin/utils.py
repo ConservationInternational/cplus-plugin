@@ -11,7 +11,6 @@ from qgis.PyQt import QtCore, QtGui
 from qgis.core import Qgis, QgsApplication, QgsMessageLog
 
 from .definitions.defaults import DOCUMENTATION_SITE, PRIORITY_LAYERS, PRIORITY_GROUPS
-from .conf import settings_manager
 from .definitions.constants import NCS_PATHWAY_DIR_SEGMENT
 from .definitions.defaults import DOCUMENTATION_SITE
 
@@ -68,27 +67,6 @@ def open_documentation(url=None):
     result = QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
     return result
 
-
-def create_priority_layers():
-    """Prepares the priority weighted layers UI with the defaults"""
-
-    if not settings_manager.get_value(
-        "default_priority_layers_set", default=False, setting_type=bool
-    ):
-        log("Creating plugin priority layers")
-
-        groups = []
-        for group in PRIORITY_GROUPS:
-            stored_group = {}
-            stored_group["name"] = group["name"]
-            stored_group["value"] = 0
-            groups.append(stored_group)
-
-        for layer in PRIORITY_LAYERS:
-            layer["groups"] = groups
-            settings_manager.save_priority_layer(layer)
-
-        settings_manager.set_value("default_priority_layers_set", True)
 
 class FileUtils:
     """

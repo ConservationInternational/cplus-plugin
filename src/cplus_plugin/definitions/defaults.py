@@ -192,27 +192,30 @@ DEFAULT_IMPLEMENTATION_MODELS = [
     },
 ]
 
-
 PRIORITY_LAYERS = [
     {
         "uuid": "c931282f-db2d-4644-9786-6720b3ab206a",
         "name": "Carbon importance herding for health",
         "description": "Placeholder text for herding for health",
+        "selected": True,
     },
     {
         "uuid": "f5687ced-af18-4cfc-9bc3-8006e40420b6",
         "name": "Carbon importance eat fresh",
         "description": "Placeholder text for eat fresh",
+        "selected": False,
     },
     {
         "uuid": "fef3c7e4-0cdf-477f-823b-a99da42f931e",
         "name": "Biodiversity herding for health",
         "description": "Placeholder text for herding for health",
+        "selected": False,
     },
     {
         "uuid": "fce41934-5196-45d5-80bd-96423ff0e74e",
         "name": "Biodiversity eat fresh",
         "description": "Placeholder text for eat fresh",
+        "selected": False,
     },
 ]
 

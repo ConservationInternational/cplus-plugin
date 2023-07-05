@@ -4,10 +4,7 @@
 """
 
 import os
-<<<<<<< HEAD
 import typing
-=======
->>>>>>> 434a618 (functionality for the step 3 tab)
 
 from qgis.PyQt import (
     QtCore,

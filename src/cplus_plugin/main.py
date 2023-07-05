@@ -31,6 +31,10 @@ from .settings import CplusOptionsFactory
 
 from .conf import initialize_default_settings
 
+from .utils import log
+
+from .definitions.defaults import PRIORITY_GROUPS, PRIORITY_LAYERS
+
 
 class QgisCplus:
     """QGIS CPLUS Plugin Implementation."""
@@ -207,3 +211,25 @@ class QgisCplus:
     def run_settings(self):
         """Options the CPLUS settings in the QGIS options dialog."""
         self.iface.showOptionsDialog(currentPage=OPTIONS_TITLE)
+
+
+def create_priority_layers():
+    """Prepares the priority weighted layers UI with the defaults"""
+
+    if not settings_manager.get_value(
+        "default_priority_layers_set", default=False, setting_type=bool
+    ):
+        log("Creating plugin priority layers")
+
+        groups = []
+        for group in PRIORITY_GROUPS:
+            stored_group = {}
+            stored_group["name"] = group["name"]
+            stored_group["value"] = 0
+            groups.append(stored_group)
+
+        for layer in PRIORITY_LAYERS:
+            layer["groups"] = groups
+            settings_manager.save_priority_layer(layer)
+
+        settings_manager.set_value("default_priority_layers_set", True)

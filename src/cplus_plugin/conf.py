@@ -137,7 +137,7 @@ class SettingsManager(QtCore.QObject):
 
     scenarios_settings_updated = QtCore.pyqtSignal()
     priority_layers_changed = QtCore.pyqtSignal()
-    settings_updated = QtCore.pyqtSignal(Settings, object)
+    settings_updated = QtCore.pyqtSignal(str, object)
 
     def set_value(self, name: str, value):
         """Adds a new setting key and value on the plugin specific settings.
@@ -639,7 +639,6 @@ class SettingsManager(QtCore.QObject):
 settings_manager = SettingsManager()
 
 
-
 def log(
     message: str,
     name: str = "qgis_cplus",
@@ -672,6 +671,7 @@ def log(
         level=level,
         notifyUser=notify,
     )
+
 
 def initialize_default_settings():
     """Initialize default model components such as NCS pathways
