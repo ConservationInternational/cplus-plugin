@@ -39,7 +39,13 @@ from ..resources import *
 from ..utils import open_documentation, tr, log
 from ..conf import settings_manager
 
-from ..definitions.defaults import PILOT_AREA_EXTENT, PRIORITY_GROUPS, PRIORITY_LAYERS, OPTIONS_TITLE
+from ..definitions.defaults import (
+    PILOT_AREA_EXTENT,
+    PRIORITY_GROUPS,
+    PRIORITY_LAYERS,
+    OPTIONS_TITLE,
+    ICON_PATH,
+)
 
 from ..algorithms.base import run_alg
 
@@ -61,8 +67,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.iface = iface
         self.priority_groups_widgets = {}
 
-        self.initialize_priority_layers()
-
         # Insert widget for step 2
         self.implementation_model_widget = ImplementationModelContainerWidget(self)
         self.tab_widget.insertTab(
@@ -74,8 +78,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.prepare_input()
 
+        icon_pixmap = QtGui.QPixmap(ICON_PATH)
+        self.icon_la.setPixmap(icon_pixmap)
+
     def initialize_priority_layers(self):
         """Prepares the priority weighted layers UI with the defaults"""
+        self.priority_layers_list.clear()
 
         selected_groups = []
         for layer in settings_manager.get_priority_layers():
