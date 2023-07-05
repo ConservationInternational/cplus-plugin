@@ -137,8 +137,7 @@ class SettingsManager(QtCore.QObject):
 
     scenarios_settings_updated = QtCore.pyqtSignal()
     priority_layers_changed = QtCore.pyqtSignal()
-    settings_updated = QtCore.pyqtSignal(str, object)
-    settings_updated = QtCore.pyqtSignal(Settings, object)
+    settings_updated = QtCore.pyqtSignal([str, object], [Settings, object])
 
     def set_value(self, name: str, value):
         """Adds a new setting key and value on the plugin specific settings.
@@ -151,7 +150,10 @@ class SettingsManager(QtCore.QObject):
 
         """
         self.settings.setValue(f"{self.BASE_GROUP_NAME}/{name}", value)
-        self.settings_updated.emit(name, value)
+        if isinstance(name, Settings):
+            self.settings_updated[Settings, object].emit(name, value)
+        else:
+            self.settings_updated[str, object].emit(name, value)
 
     def get_value(self, name: str, default=None, setting_type=None):
         """Gets value of the setting with the passed name.
