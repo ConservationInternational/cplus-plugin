@@ -159,7 +159,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.grid_layout = QtWidgets.QGridLayout()
         self.message_bar = QgsMessageBar()
         self.prepare_message_bar()
-        self.help_btn.clicked.connect(open_documentation)
+        self.help_btn.clicked.connect(lambda checked: open_documentation())
         self.pilot_area_btn.clicked.connect(self.zoom_pilot_area)
         self.run_scenario_btn.clicked.connect(self.run_scenario_analysis)
         self.options_btn.clicked.connect(self.open_settings)
