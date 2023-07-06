@@ -5,11 +5,7 @@ Functions for providing model test data.
 import os
 from uuid import UUID
 
-from cplus_plugin.models.base import (
-    ImplementationModel,
-    LayerType,
-    NcsPathway
-)
+from cplus_plugin.models.base import ImplementationModel, LayerType, NcsPathway
 
 
 VALID_NCS_UUID_STR = "b5338edf-f3cc-4040-867d-be9651a28b63"
@@ -25,7 +21,7 @@ def get_valid_ncs_pathway() -> NcsPathway:
         "Valid NCS Pathway",
         "Description for valid NCS",
         path,
-        LayerType.RASTER
+        LayerType.RASTER,
     )
 
 
@@ -35,5 +31,5 @@ def get_invalid_ncs_pathway() -> NcsPathway:
         UUID(INVALID_NCS_UUID_STR),
         "Invalid NCS Pathway",
         "Description for invalid NCS",
-        ""
+        "",
     )
