@@ -4,8 +4,8 @@ from utilities_for_testing import get_qgis_app
 
 # from qgis.utils import iface
 
-from ..src.cplus_plugin.settings import CplusSettings
-from ..src.cplus_plugin.conf import (
+from cplus_plugin.settings import CplusSettings
+from cplus_plugin.conf import (
     settings_manager,
     Settings,
 )
@@ -25,7 +25,7 @@ class CplusPluginSettingsTest(unittest.TestCase):
         save_email = "an email"
         save_website = "a website"
         save_custom_logo_enabled = True
-        save_custom_logo_dir = "a custom logo"
+        save_custom_logo_dir = "logos/ci_logo.png"
         save_footer = "a footer"
         save_disclaimer = "a disclaimer"
         save_report_license = "license"
@@ -55,7 +55,7 @@ class CplusPluginSettingsTest(unittest.TestCase):
         website = settings_manager.get_value(Settings.REPORT_WEBSITE)
         self.assertEqual(save_website, website)
 
-        custom_logo = int(settings_manager.get_value(Settings.REPORT_CUSTOM_LOGO))
+        custom_logo = settings_manager.get_value(Settings.REPORT_CUSTOM_LOGO)
         self.assertEqual(save_custom_logo_enabled, custom_logo)
 
         custom_logo_dir = settings_manager.get_value(Settings.REPORT_LOGO_DIR)
@@ -83,7 +83,7 @@ class CplusPluginSettingsTest(unittest.TestCase):
         save_email = "an email 2"
         save_website = "a website 2"
         save_custom_logo_enabled = False
-        save_custom_logo_dir = "a custom logo 2"
+        save_custom_logo_dir = "logos/ci_logo.png"
         save_footer = "a footer 2"
         save_disclaimer = "a disclaimer 2"
         save_report_license = "license 2"
@@ -97,7 +97,6 @@ class CplusPluginSettingsTest(unittest.TestCase):
             Settings.REPORT_CUSTOM_LOGO, save_custom_logo_enabled
         )
         settings_manager.set_value(Settings.REPORT_LOGO_DIR, save_custom_logo_dir)
-        settings_manager.set_value(Settings.REPORT_CUSTOM_LOGO, save_custom_logo_dir)
         settings_manager.set_value(Settings.REPORT_FOOTER, save_footer)
         settings_manager.set_value(Settings.REPORT_DISLAIMER, save_disclaimer)
         settings_manager.set_value(Settings.REPORT_LICENSE, save_report_license)
@@ -141,8 +140,8 @@ class CplusPluginSettingsTest(unittest.TestCase):
         """
         settings_dialog = CplusSettings(PARENT)
 
-        dir_exist = ""
-        dir_does_not_exist = ""
+        dir_exist = "logos/"
+        dir_does_not_exist = "not_exist"
 
         settings_dialog.folder_data.setFilePath(dir_exist)
         file_exist = settings_dialog.base_dir_exists()
@@ -159,8 +158,8 @@ class CplusPluginSettingsTest(unittest.TestCase):
         """
         settings_dialog = CplusSettings(PARENT)
 
-        logo_exist = ""
-        logo_does_not_exist = ""
+        logo_exist = "logos/ci_logo.png"
+        logo_does_not_exist = "logos/does_not_exist.png"
 
         settings_dialog.logo_file.setFilePath(logo_exist)
         file_exist = settings_dialog.logo_file_exists()

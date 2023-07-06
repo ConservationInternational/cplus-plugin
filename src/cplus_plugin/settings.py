@@ -158,13 +158,13 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         settings_manager.set_value(Settings.REPORT_CUSTOM_LOGO, custom_logo)
 
         # Checks if the logo file exists if custom logo is enabled
-        if custom_logo > 0:
+        if custom_logo:
             custom_logo_path = self.logo_file.filePath()
             settings_manager.set_value(Settings.REPORT_LOGO_DIR, custom_logo_path)
 
             if not os.path.exists(custom_logo_path):
                 # File not found, disable custom logo
-                settings_manager.set_value(Settings.REPORT_CUSTOM_LOGO, 0)
+                settings_manager.set_value(Settings.REPORT_CUSTOM_LOGO, False)
 
                 iface.messageBar().pushWarning(
                     "CPLUS - Custom logo not found, disabled: ", custom_logo_path
