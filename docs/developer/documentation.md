@@ -50,6 +50,18 @@ Here is an explanation on how the **nav** should be updated:
 - The section itself can have a more detailed description
 - Add screenshots where possible. This will make the guide(s) user-friendly
 
+## mkdocstrings
+
+This is an important aspect of documenting code. Using mkdocstrings is an easy and effective way of keeping
+track of classes, functions, etc. Any changes to the code will automatically update here, but the developer
+needs to make the changes in the code (comments) for this to happen.
+
+The comments for mkdocstrings is three sections:
+
+- Description: A description on what the function does. A destailed description are welcome
+- Args: The list of parameters for the function.
+- Returns:
+
 ## Serving the pages locally
 
 This step is useful when making changes and the user wants to test and review their changes to the mkdocs
