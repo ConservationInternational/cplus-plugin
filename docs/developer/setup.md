@@ -6,7 +6,7 @@
 To use the plugin for development purposes, clone the repository locally,
 install pip, a python dependencies management tool see https://pypi.org/project/pip/
 
-#### Create virtual environment
+## Create virtual environment
 
 Using any python virtual environment manager create project environment. 
 Recommending to use [virtualenv-wrapper](https://virtualenvwrapper.readthedocs.io/en/latest/).

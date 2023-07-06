@@ -20,6 +20,11 @@ from qgis.PyQt.QtWidgets import QAction, QDockWidget, QMainWindow, QVBoxLayout
 from .resources import *
 
 from .gui.qgis_cplus_main import QgisCplusMain
+from qgis.PyQt.QtWidgets import QToolButton
+from qgis.PyQt.QtWidgets import QMenu
+
+from .definitions.defaults import ICON_PATH, OPTIONS_TITLE
+from .settings import CplusOptionsFactory
 
 from .conf import initialize_default_settings
 
@@ -40,23 +45,38 @@ class QgisCplus:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr("&CPLUS")
         self.pluginIsActive = False
+
+        self.menu = QMenu("&CPLUS")
+        self.menu.setIcon(QIcon(ICON_PATH))
+
+        self.raster_menu = self.iface.rasterMenu()
+        self.raster_menu.addMenu(self.menu)
+
         self.toolbar = self.iface.addToolBar("Open CPLUS")
         self.toolbar.setObjectName("CPLUS")
+        self.toolButton = QToolButton()
+        self.toolButton.setMenu(QMenu())
+        self.toolButton.setPopupMode(QToolButton.MenuButtonPopup)
+        self.toolBtnAction = self.toolbar.addWidget(self.toolButton)
+        self.actions.append(self.toolBtnAction)
 
         self.main_widget = QgisCplusMain(
             iface=self.iface, parent=self.iface.mainWindow()
         )
 
+        self.options_factory = None
+
     # noinspection PyMethodMayBeStatic
-    def tr(self, message):
+    def tr(self, message) -> str:
         """Get the translation for a string using Qt translation API.
         We implement this ourselves since we do not inherit QObject.
-        :param message: String for translation.
-        :type message: str, QString
-        :returns: Translated version of message.
-        :rtype: QString
+
+        Args:
+            message (str): String for translation
+
+        Returns:
+            TranslatedMessage (QString): Translated version of the message
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate("CPLUS", message)
@@ -70,51 +90,28 @@ class QgisCplus:
         add_to_menu=True,
         add_to_web_menu=True,
         add_to_toolbar=True,
+        set_as_default_action=False,
         status_tip=None,
         whats_this=None,
         parent=None,
     ):
         """Add a toolbar icon to the toolbar.
 
-        :param icon_path: Path to the icon for this action. Can be a resource
-            path (e.g. ':/plugins/foo/bar.png') or a normal file system path.
-        :type icon_path: str
+        Args:
+            icon_path (str): Path to the icon for this action
+            text (str): Text that should be shown in menu items for this action
+            callback (function): Function to be called when the action is triggered
+            enabled_flag (bool): A flag indicating if the action should be enabled
+            add_to_menu (bool): Flag indicating whether the action should also be added to the menu
+            add_to_web_menu (bool): Flag indicating whether the action should also be added to the web menu
+            add_to_toolbar (bool): Flag indicating whether the action should also be added to the toolbar
+            set_as_default_action (bool): Flag indicating whether the action is the default action
+            status_tip (str): Optional text to show in a popup when mouse pointer hovers over the action
+            parent (QWidget): Parent widget for the new action
+            whats_this (str): Optional text to show in the status bar when the mouse pointer hovers over the action
 
-        :param text: Text that should be shown in menu items for this action.
-        :type text: str
-
-        :param callback: Function to be called when the action is triggered.
-        :type callback: function
-
-        :param enabled_flag: A flag indicating if the action should be enabled
-            by default. Defaults to True.
-        :type enabled_flag: bool
-
-        :param add_to_menu: Flag indicating whether the action should also
-            be added to the menu. Defaults to True.
-        :type add_to_menu: bool
-
-        :param add_to_web_menu: Flag indicating whether the action
-            should also be added to the web menu. Defaults to True.
-        :type add_to_web_menu: bool
-
-        :param add_to_toolbar: Flag indicating whether the action should also
-            be added to the toolbar. Defaults to True.
-        :type add_to_toolbar: bool
-
-        :param status_tip: Optional text to show in a popup when mouse pointer
-            hovers over the action.
-        :type status_tip: str
-
-        :param parent: Parent widget for the new action. Defaults None.
-        :type parent: QWidget
-
-        :param whats_this: Optional text to show in the status bar when the
-            mouse pointer hovers over the action.
-
-        :returns: The action that was created. Note that the action is also
-            added to self.actions list.
-        :rtype: QAction
+        Returns:
+            Action (QAction): The action that was created
         """
 
         icon = QIcon(icon_path)
@@ -129,13 +126,20 @@ class QgisCplus:
             action.setWhatsThis(whats_this)
 
         if add_to_menu:
-            self.iface.addPluginToMenu(self.menu, action)
+            self.menu.addAction(action)
 
-        if add_to_web_menu:
-            self.iface.addPluginToWebMenu(self.menu, action)
+        # If we want to read this
+        # if add_to_web_menu:
+        #     self.iface.addPluginToWebMenu(self.menu, action)
 
         if add_to_toolbar:
-            self.toolbar.addAction(action)
+            self.toolButton.menu().addAction(action)
+
+            if set_as_default_action:
+                self.toolButton.setDefaultAction(action)
+
+        if add_to_menu:
+            self.menu.addAction(action)
 
         self.actions.append(action)
 
@@ -143,19 +147,31 @@ class QgisCplus:
 
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
-        icon_path = ":/plugins/cplus_plugin/icon.svg"
         self.add_action(
-            icon_path,
-            text=self.tr("Open CPLUS"),
+            ICON_PATH,
+            text=self.tr("CPLUS"),
             callback=self.run,
             parent=self.iface.mainWindow(),
+            set_as_default_action=True,
         )
+
+        self.add_action(
+            os.path.join(os.path.dirname(__file__), "icons", "settings.svg"),
+            text=self.tr("Settings"),
+            callback=self.run_settings,
+            parent=self.iface.mainWindow(),
+            status_tip=self.tr("CPLUS Settings"),
+        )
+
+        # Adds the settings to the QGIS options panel
+        self.options_factory = CplusOptionsFactory()
+        self.iface.registerOptionsWidgetFactory(self.options_factory)
 
         # Initialize default model components
         initialize_default_settings()
 
     def onClosePlugin(self):
-        """Cleanup necessary items here when plugin widget is closed"""
+        """Cleanup necessary items here when plugin widget is closed."""
         self.pluginIsActive = False
 
     def unload(self):
@@ -170,7 +186,8 @@ class QgisCplus:
             pass
 
     def run(self):
-        if self.main_widget == None:
+        """Creates the main widget for the plugin."""
+        if self.main_widget is None:
             self.main_widget = QgisCplusMain(
                 iface=self.iface, parent=self.iface.mainWindow()
             )
@@ -180,3 +197,7 @@ class QgisCplus:
 
         if not self.pluginIsActive:
             self.pluginIsActive = True
+
+    def run_settings(self):
+        """Options the CPLUS settings in the QGIS options dialog."""
+        self.iface.showOptionsDialog(currentPage=OPTIONS_TITLE)

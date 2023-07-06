@@ -35,8 +35,7 @@ from ..resources import *
 
 from ..utils import open_documentation, tr, log
 
-from ..definitions.defaults import PILOT_AREA_EXTENT
-
+from ..definitions.defaults import PILOT_AREA_EXTENT, OPTIONS_TITLE
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/qgis_cplus_main_dockwidget.ui")
@@ -59,7 +58,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.implementation_model_widget = ImplementationModelContainerWidget(self)
         self.tabWidget.insertTab(1, self.implementation_model_widget, self.tr("Step 2"))
 
-        self.tabWidget.currentChanged.connect(self.on_tab_step_changed)
+        self.tab_widget.currentChanged.connect(self.on_tab_step_changed)
 
         self.prepare_input()
 
@@ -72,6 +71,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.help_btn.clicked.connect(open_documentation)
         self.pilot_area_btn.clicked.connect(self.zoom_pilot_area)
         self.run_scenario_btn.clicked.connect(self.run_scenario_analysis)
+        self.options_btn.clicked.connect(self.open_settings)
 
     def prepare_message_bar(self):
         """Initializes the widget message bar settings"""
@@ -169,3 +169,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
         if index == 1:
             self.implementation_model_widget.load()
+
+    def open_settings(self):
+        """Options the CPLUS settings in the QGIS options dialog."""
+        self.iface.showOptionsDialog(currentPage=OPTIONS_TITLE)
