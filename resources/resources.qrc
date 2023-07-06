@@ -2,4 +2,10 @@
     <qresource prefix="/plugins/cplus_plugin">
         <file>icon.svg</file>
     </qresource>
+     <qresource prefix="/plugins/cplus_plugin">
+        <file>cplus_left_arrow.svg</file>
+    </qresource>
+     <qresource prefix="/plugins/cplus_plugin">
+        <file>cplus_right_arrow.svg</file>
+    </qresource>
 </RCC>

@@ -37,7 +37,6 @@ from qgis.gui import (
 
 from qgis.utils import iface
 
-from .priority_group_widget import PriorityGroupWidget
 from .priority_layer_group import PriorityLayerDialog
 from .implementation_model_widget import ImplementationModelContainerWidget
 from .priority_group_widget import PriorityGroupWidget
@@ -100,17 +99,20 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             item.setData(QtCore.Qt.UserRole, layer.get("uuid"))
 
             self.priority_layers_list.addItem(item)
-            log(f"adding item {layer['name']} groups - {layer['groups']}")
             if layer.get("selected"):
                 selected_groups = layer["groups"]
                 self.priority_layers_list.setCurrentItem(item)
-        scroll_container = QtWidgets.QWidget()
-        layout = QtWidgets.QVBoxLayout()
-        layout.setContentsMargins(1, 1, 1, 1)
-        layout.setSpacing(1)
 
+        item_count = 0
+        list_items = []
+        items_only = []
         for group in PRIORITY_GROUPS:
-            group_widget = PriorityGroupWidget(group)
+            group_widget = PriorityGroupWidget(
+                group,
+            )
+
+            group_widget.input_value_changed.connect(self.group_value_changed)
+            group_widget.slider_value_changed.connect(self.group_value_changed)
 
             layer_group = None
             for selected_group in selected_groups:
@@ -120,17 +122,40 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             group_widget.set_group(layer_group)
 
             self.priority_groups_widgets[group["name"]] = group_widget
-            layout.addWidget(group_widget)
-            layout.setAlignment(group_widget, QtCore.Qt.AlignTop)
 
-        vertical_spacer = QtWidgets.QSpacerItem(
-            20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding
-        )
-        layout.addItem(vertical_spacer)
-        scroll_container.setLayout(layout)
-        self.scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setWidget(scroll_container)
+            self.priority_groups_list.clear()
+
+            item = QtWidgets.QTreeWidgetItem()
+            item.setSizeHint(0, group_widget.sizeHint())
+            item.setExpanded(True)
+
+            list_items.append((item, group_widget))
+            items_only.append(item)
+
+            # Add widget to QListWidget priority groups list
+            # self.priority_groups_list.addTopLevelItem(item)
+            # self.priority_groups_list.setItemWidget(item, 0, group_widget)
+            # item_count = item_count + 1
+            # self.priority_groups_list.setItemWidget(item, 0, QtWidgets.QLabel("Test"))
+
+        self.priority_groups_list.addTopLevelItems(items_only)
+        for item in list_items:
+            self.priority_groups_list.setItemWidget(item[0], 0, item[1])
+
+    def group_value_changed(self, group_name, group_value):
+        for index in range(self.priority_groups_list.topLevelItemCount()):
+            item = self.priority_groups_list.topLevelItem(index)
+
+            for child_index in range(item.childCount()):
+                child = item.child(child_index)
+                layer = settings_manager.find_layer_by_name(child.text(0))
+                new_groups = []
+                for group in layer.get("groups"):
+                    if group.get("name") == group_name:
+                        group["value"] = group_value
+                    new_groups.append(group)
+                layer["groups"] = new_groups
+                settings_manager.save_priority_layer(layer)
 
     def save_current_groups(self):
         item = self.priority_layers_list.currentItem()
@@ -172,17 +197,20 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.run_scenario_btn.clicked.connect(self.run_scenario_analysis)
         self.options_btn.clicked.connect(self.open_settings)
 
-        self.save_groups_btn.clicked.connect(self.save_current_groups)
+        # self.save_groups_btn.clicked.connect(self.save_current_groups)
 
-        settings_manager.priority_layers_changed.connect(self.update_priority_layers)
+        # settings_manager.priority_layers_changed.connect(self.update_priority_layers)
 
         self.add_pwl_btn.clicked.connect(self.add_priority_layer)
         self.edit_pwl_btn.clicked.connect(self.edit_priority_layer)
         self.remove_pwl_btn.clicked.connect(self.remove_priority_layer)
 
-        self.priority_layers_list.currentItemChanged.connect(
-            self.update_priority_groups
-        )
+        self.layer_add_btn.clicked.connect(self.add_priority_layer_group)
+        self.layer_remove_btn.clicked.connect(self.remove_priority_layer_group)
+
+        # self.priority_layers_list.currentItemChanged.connect(
+        #     self.update_priority_groups
+        # )
 
     def update_priority_groups(self, item, previous):
         if item is not None:
@@ -192,6 +220,60 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             for group in layer.get("groups", []):
                 group_widget = self.priority_groups_widgets.get(group["name"])
                 group_widget.set_group(group)
+
+    def add_priority_layer_group(self):
+        selected_priority_layer = self.priority_layers_list.currentItem()
+        selected_group = self.priority_groups_list.currentItem()
+
+        if selected_group.parent() is None:
+            children = selected_group.takeChildren()
+            item_found = False
+            text = selected_priority_layer.data(QtCore.Qt.DisplayRole)
+            for child in children:
+                if child.text(0) == text:
+                    item_found = True
+                    break
+            selected_group.addChildren(children)
+
+            if not item_found:
+                selected_group.setExpanded(True)
+                item = QtWidgets.QTreeWidgetItem(selected_group)
+                item.setText(0, text)
+                group_widget = self.priority_groups_list.itemWidget(selected_group, 0)
+                layer_id = selected_priority_layer.data(QtCore.Qt.UserRole)
+                log(f" {layer_id} ")
+                priority_layer = settings_manager.get_priority_layer(layer_id)
+                groups = priority_layer.get("groups")
+                target_group_name = group_widget.group.get("name")
+                log(
+                    f"{len(groups)} found groups {groups} group name from widget {target_group_name}"
+                )
+                new_groups = []
+                for group in groups:
+                    if group.get("name") == target_group_name:
+                        group["value"] = group_widget.group_value()
+                    new_groups.append(group)
+                priority_layer["groups"] = new_groups
+                settings_manager.save_priority_layer(priority_layer)
+
+    def remove_priority_layer_group(self):
+        selected_group = self.priority_groups_list.currentItem()
+        parent_item = selected_group.parent()
+
+        if parent_item:
+            priority_layer = settings_manager.find_layer_by_name(selected_group.text(0))
+
+            group_widget = self.priority_groups_list.itemWidget(parent_item, 0)
+            groups = priority_layer.get("groups")
+            new_groups = []
+            for group in groups:
+                if group.get("name") == group_widget.group.get("name"):
+                    group["value"] = 0
+                new_groups.append(group)
+            priority_layer["group"] = new_groups
+            settings_manager.save_priority_layer(priority_layer)
+
+            parent_item.removeChild(selected_group)
 
     def add_priority_layer(self):
         """Adds a new priority layer into the plugin, then updates

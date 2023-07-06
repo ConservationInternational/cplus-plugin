@@ -87,7 +87,7 @@
     <item>
      <widget class="QTabWidget" name="tab_widget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="step_3">
        <attribute name="title">
@@ -175,6 +175,19 @@
         <string>Step 3</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_78">
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string> Weighting priorities</string>
+          </property>
+         </widget>
+        </item>
         <item row="1" column="0" colspan="3">
          <widget class="QLabel" name="label_77">
           <property name="text">
@@ -183,93 +196,6 @@
           <property name="wordWrap">
            <bool>true</bool>
           </property>
-         </widget>
-        </item>
-        <item row="5" column="0">
-         <layout class="QHBoxLayout" name="horizontalLayout_5">
-          <item>
-           <widget class="QPushButton" name="save_groups_btn">
-            <property name="toolTip">
-             <string>Save the priority groups values for the current selected priority weight layer.</string>
-            </property>
-            <property name="toolTipDuration">
-             <number>1</number>
-            </property>
-            <property name="text">
-             <string>Save</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer_4">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
-        </item>
-        <item row="3" column="1">
-         <widget class="QLabel" name="label_122">
-          <property name="font">
-           <font>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string>Priority Weighting Layers</string>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="0">
-         <widget class="QFrame" name="priority_groups_frame">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>215</height>
-           </size>
-          </property>
-          <property name="autoFillBackground">
-           <bool>false</bool>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">background-color: rgb(255, 255, 255)</string>
-          </property>
-          <property name="frameShape">
-           <enum>QFrame::StyledPanel</enum>
-          </property>
-          <property name="frameShadow">
-           <enum>QFrame::Raised</enum>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout_2">
-           <item>
-            <widget class="QScrollArea" name="scroll_area">
-             <property name="frameShape">
-              <enum>QFrame::NoFrame</enum>
-             </property>
-             <property name="widgetResizable">
-              <bool>true</bool>
-             </property>
-             <widget class="QWidget" name="scrollAreaWidgetContents_2">
-              <property name="geometry">
-               <rect>
-                <x>0</x>
-                <y>0</y>
-                <width>354</width>
-                <height>234</height>
-               </rect>
-              </property>
-             </widget>
-            </widget>
-           </item>
-          </layout>
          </widget>
         </item>
         <item row="2" column="0" colspan="3">
@@ -292,8 +218,8 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_78">
+        <item row="3" column="2">
+         <widget class="QLabel" name="label_122">
           <property name="font">
            <font>
             <weight>75</weight>
@@ -301,44 +227,29 @@
            </font>
           </property>
           <property name="text">
-           <string> Weighting priorities</string>
+           <string>Priority Weighting Layers</string>
           </property>
          </widget>
         </item>
-        <item row="4" column="1">
+        <item row="4" column="0">
+         <widget class="QTreeWidget" name="priority_groups_list">
+          <property name="columnCount">
+           <number>1</number>
+          </property>
+          <attribute name="headerVisible">
+           <bool>false</bool>
+          </attribute>
+          <column>
+           <property name="text">
+            <string notr="true">1</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+        <item row="4" column="2">
          <widget class="QListWidget" name="priority_layers_list"/>
         </item>
-        <item row="6" column="1">
-         <layout class="QHBoxLayout" name="horizontalLayout_3">
-          <item>
-           <spacer name="horizontalSpacer_2">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QPushButton" name="run_scenario_btn">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-              <horstretch>10</horstretch>
-              <verstretch>3</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>Run Scenario</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="5" column="1">
+        <item row="5" column="2">
          <layout class="QHBoxLayout" name="horizontalLayout_4">
           <item>
            <spacer name="horizontalSpacer_3">
@@ -397,6 +308,94 @@
               <normaloff>.</normaloff>.</iconset>
             </property>
            </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="6" column="2">
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="run_scenario_btn">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+              <horstretch>10</horstretch>
+              <verstretch>3</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Run Scenario</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="4" column="1">
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <spacer name="verticalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QToolButton" name="layer_remove_btn">
+            <property name="toolTip">
+             <string>Remove selected priority weighting layer from the group.</string>
+            </property>
+            <property name="text">
+             <string>-&gt;</string>
+            </property>
+            <property name="icon">
+             <iconset>
+              <normaloff>../../../resources/cplus_right_arrow.svg</normaloff>../../../resources/cplus_right_arrow.svg</iconset>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QToolButton" name="layer_add_btn">
+            <property name="toolTip">
+             <string>Add the selected priority weighting layer to the group.</string>
+            </property>
+            <property name="text">
+             <string>&lt;-</string>
+            </property>
+            <property name="icon">
+             <iconset>
+              <normaloff>../../../resources/cplus_left_arrow.svg</normaloff>../../../resources/cplus_left_arrow.svg</iconset>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="verticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
           </item>
          </layout>
         </item>

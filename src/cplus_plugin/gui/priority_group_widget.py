@@ -23,8 +23,8 @@ WidgetUi, _ = loadUiType(
 class PriorityGroupWidget(QtWidgets.QWidget, WidgetUi):
     """Widget that provide UI for priority group details."""
 
-    slider_value_changed = QtCore.pyqtSignal()
-    input_value_changed = QtCore.pyqtSignal()
+    slider_value_changed = QtCore.pyqtSignal(str, int)
+    input_value_changed = QtCore.pyqtSignal(str, int)
 
     def __init__(
         self,
@@ -61,12 +61,14 @@ class PriorityGroupWidget(QtWidgets.QWidget, WidgetUi):
 
     def update_slider(self, value):
         """Changes the current slider value"""
+        self.input_value_changed.emit(self.group["name"], value)
         self.group_slider.blockSignals(True)
         self.group_slider.setValue(value)
         self.group_slider.blockSignals(False)
 
     def update_spin_box(self, value):
         """Changes the input value of the spin box"""
+        self.slider_value_changed.emit(self.group["name"], value)
         self.group_spin_box.blockSignals(True)
         self.group_spin_box.setValue(value)
         self.group_spin_box.blockSignals(False)
