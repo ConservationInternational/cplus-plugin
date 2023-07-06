@@ -2,7 +2,8 @@
 
 ![Simplified analysis model](../img/logos/kartoza_logo.svg){style="display: block; margin: 0 auto; border: 1px solid grey; width: 50%; height: 50%"}
 
-Make geospatial data and technology work for you by partnering with us for training,
+<a href="https://kartoza.com/">Kartoza</a>
+will make geospatial data and technology work for you by partnering with us for training,
 development and maintenance of GIS systems.
 
 Kartoza is a South Africa-based Free and Open Source GIS (FOSSGIS) service provider.
