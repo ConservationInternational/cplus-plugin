@@ -1,4 +1,4 @@
-# About
+# Conservation International
 
 ![Simplified analysis model](../img/logos/ci_logo.svg){style="display: block; margin: 0 auto; border: 1px solid grey" }
 

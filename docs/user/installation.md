@@ -9,9 +9,11 @@ a dedicated plugin repository
 ## Install from QGIS plugin repository
 
 - Open QGIS application and open plugin manager.
-- Click on **Plugins** -> **Manage and Install Plugins**
+- Click on **Plugins** -> **Manage and Install Plugins** (see **Figure 1**)
 
-![Simplified analysis model](../img/installation/install-qgis-plugins.png)
+![QGIS plugin manager](../img/installation/install-qgis-plugins.png)
+
+*Figure 1: QGIS plugin manager*
 
 - Search for `CPLUS` in the **All** page of the plugin manager.
 - From the found results, click on the `CPLUS` result item and a page with plugin information will show up.
@@ -25,13 +27,15 @@ QGIS plugin manager.
 - Download zip file from the required plugin released version
 https://github.com/kartoza/cplus-plugin/releases/download/{tagname}/cplus.{version}.zip
 
-- Open QGIS application and open plugin manager.
+- Open QGIS application and open plugin manager
 - Click on **Plugins** -> **Manage and Install Plugins**
-- Click on **Install from ZIP**
+- Click on **Install from ZIP** (**Figure 2**)
 - Select the zip file which contains the plugin
 - Click **Install Plugin**
 
 ![QGIS install from ZIP](../img/installation/installation-from-zip.png)
+
+*Figure 2: Plugin manager install from zip option*
 
 - From the **Install from ZIP** page, select the zip file and click the **Install** button to install plugin
 
@@ -39,11 +43,13 @@ https://github.com/kartoza/cplus-plugin/releases/download/{tagname}/cplus.{versi
 
 Current repository: [https://raw.githubusercontent.com/kartoza/cplus-plugin/release/docs/repository/plugins.xml](https://raw.githubusercontent.com/kartoza/cplus-plugin/release/docs/repository/plugins.xml)
 
-- Open the QGIS plugin manager, then select the **Settings** page
+- Open the QGIS plugin manager, then select the **Settings** page (**Figure 3**)
 
 **NOTE:** The plugin is currently in experimental phase, so enable **Show also Experimental Plugins**
 
 ![QGIS plugin settings](../img/installation/installation-plugin-settings.png)
+
+*Figure 3: Custom repository installation*
 
 - Click **Add** button on the **Plugin Repositories** group box and use the above url to create the new plugin repository.
 - The plugin should now be available from the list of all plugins that can be installed.

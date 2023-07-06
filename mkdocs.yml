@@ -8,20 +8,24 @@ site_author: Kartoza
 
 nav:
   - Home: index.md
-  - Quickstart:
-      - Installation: quickstart/installation.md
-  - Manual:
-      - CPLUS model: manual/models.md
-      - QGIS: manual/qgis_manual.md
-  - Tutorials:
-      - Tutorials: tutorials/tutorials.md
-  - FAQ: faq/faq.md
-  - Develop:
-      - Setup: develop/setup.md
-      - Design: develop/design.md
+  - User:
+      - Installation: user/installation.md
+      - Plugin guide: user/cplus_ui_guide.md
+      - Settings: user/settings.md
+  - Admin:
+      - Bugs and suggestions: admin/tasks.md
+      - Staging version: admin/staging_version.md
+  - Developer:
+      - Setup: developer/setup.md
+      - Architecture: developer/architecture.md
+      - Workflows: developer/workflows.md
+      - Documentation: developer/documentation.md
+      - Code automatic documentation: developer/code_auto_docs.md
+  - DevOps: devops/devops.md
   - About:
-      - About: about/about.md
-  - Reference: api/reference.md
+      - Conservation International: about/ci.md
+      - Kartoza: about/kartoza.md
+      - License: about/license.md
 
 plugins:
   - search
@@ -69,7 +73,6 @@ theme:
 extra:
   social:
     - icon: fontawesome/brands/github-alt
-      link: https://github.com/vermeulendivan
 
 markdown_extensions:
   - pymdownx.highlight:
