@@ -59,8 +59,14 @@ needs to make the changes in the code (comments) for this to happen.
 The comments for mkdocstrings is three sections:
 
 - Description: A description on what the function does. A destailed description are welcome
-- Args: The list of parameters for the function.
-- Returns:
+- Args: List of parameters for the function. Type and description should be included
+- Returns: A list of values which the function would return. Type should be included, with a description
+
+![Documentation mkdocstrings comments](../img/documentation/mkdocstrings-comments.png)
+
+Here is an example of the end-result:
+
+![Documentation mkdocstrings example](../img/documentation/mkdocstrings-example.png)
 
 ## Serving the pages locally
 
