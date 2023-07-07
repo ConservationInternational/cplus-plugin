@@ -9,7 +9,7 @@ from model_data_for_testing import (
     get_implementation_model,
     get_invalid_ncs_pathway,
     get_valid_ncs_pathway,
-    VALID_NCS_UUID_STR
+    VALID_NCS_UUID_STR,
 )
 
 

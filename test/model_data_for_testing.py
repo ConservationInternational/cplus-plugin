@@ -42,5 +42,5 @@ def get_implementation_model() -> ImplementationModel:
     return ImplementationModel(
         UUID(IMPLEMENTATION_MODEL_UUID_STR),
         "Test Implementation Model",
-        "Description for test implementation model"
+        "Description for test implementation model",
     )
