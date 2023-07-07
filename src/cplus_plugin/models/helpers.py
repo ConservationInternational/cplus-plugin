@@ -66,7 +66,7 @@ def create_model_component(
     )
 
 
-def create_ncs_pathway(source_dict) -> NcsPathway:
+def create_ncs_pathway(source_dict) -> typing.Union[NcsPathway, None]:
     """Factory method for creating an NcsPathway object using
     attribute values defined in a dictionary.
 
@@ -77,8 +77,15 @@ def create_ncs_pathway(source_dict) -> NcsPathway:
     from the dictionary.
     :rtype: NcsPathway
     """
+    if "uuid" not in source_dict:
+        return None
+
+    source_uuid = source_dict["uuid"]
+    if isinstance(source_uuid, str):
+        source_uuid = uuid.UUID(source_uuid)
+
     return NcsPathway(
-        uuid.UUID(source_dict["uuid"]),
+        source_uuid,
         source_dict["name"],
         source_dict["description"],
         source_dict["path"],
