@@ -9,8 +9,7 @@ from .base import BaseModelComponent, BaseModelComponentType, NcsPathway, LayerT
 
 
 def model_component_to_dict(
-        model_component: BaseModelComponentType,
-        uuid_to_str=True
+    model_component: BaseModelComponentType, uuid_to_str=True
 ) -> dict:
     """Creates a dictionary containing the base attribute
     name-value pairs from a model component object.
