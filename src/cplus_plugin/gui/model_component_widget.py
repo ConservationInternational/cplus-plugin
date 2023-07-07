@@ -222,13 +222,17 @@ class NcsComponentWidget(ModelComponentWidget):
         self.btn_remove.setEnabled(False)
         self.btn_edit.setEnabled(False)
 
-    def add_ncs_pathway(self, ncs_pathway: NcsPathway):
+    def add_ncs_pathway(self, ncs_pathway: NcsPathway) -> bool:
         """Adds an NCS pathway object to the view.
 
         :param ncs_pathway: NCS pathway object to be added to the view.
         :type ncs_pathway: NcsPathway
+
+        :returns: Returns True if the NcsPathway was successfully added,
+        else False.
+        :rtype: bool
         """
-        self.item_model.add_ncs_pathway(ncs_pathway)
+        return self.item_model.add_ncs_pathway(ncs_pathway)
 
     def clear(self):
         """Removes all NCS pathway items in the view."""

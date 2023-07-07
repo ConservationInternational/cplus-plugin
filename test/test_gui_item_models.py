@@ -3,7 +3,6 @@
 Unit tests for GUI item models for model components.
 """
 
-
 from unittest import TestCase
 
 from cplus_plugin.gui.component_item_model import (
