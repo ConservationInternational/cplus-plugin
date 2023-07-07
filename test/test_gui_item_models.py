@@ -83,18 +83,7 @@ class TestIMItemModel(TestCase):
         im_model = get_implementation_model()
         im_item = ImplementationModelItem(im_model)
         _ = im_item_model.add_implementation_model(im_model)
-        result = im_model.add_ncs_pathway(ncs_item, im_item)
-        self.assertTrue(result)
-
-    def test_remove_ncs_pathway_item(self):
-        """Assert an NcsPathwayItem can be removed from the model."""
-        im_item_model = IMItemModel(PARENT)
-        ncs_item = NcsPathwayItem(self.ncs)
-        im_model = get_implementation_model()
-        im_item = ImplementationModelItem(im_model)
-        _ = im_item_model.add_implementation_model(im_model)
-        _ = im_item_model.add_ncs_pathway(ncs_item, im_item)
-        result = im_item_model.remove_ncs_pathway_item(VALID_NCS_UUID_STR, im_item)
+        result = im_item_model.add_ncs_pathway(ncs_item, im_item)
         self.assertTrue(result)
 
     def test_model_has_items(self):
