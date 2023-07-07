@@ -88,6 +88,15 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
             )
 
     @property
+    def selection_model(self) -> QtCore.QItemSelectionModel:
+        """Gets the item's view selection model.
+
+        :returns: The item's view selection model.
+        :rtype: QtCore.QItemSelectionModel
+        """
+        return self.lst_model_items.selectionModel()
+
+    @property
     def title(self) -> str:
         """Returns the title of the view.
 

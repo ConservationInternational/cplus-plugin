@@ -426,22 +426,40 @@ class ComponentItemModel(QtGui.QStandardItemModel):
         return True if self.component_item_by_uuid(uuid) is not None else False
 
     def component_item_by_uuid(
-        self, uuid: str
+        self, uuid_str: str
     ) -> typing.Union[ModelComponentItemType, None]:
         """Retrieves a ModelComponentItem based on a matching UUID.
 
-        :param uuid: UUID of the model item.
-        :type uuid: str
+        :param uuid_str: UUID of the model item.
+        :type uuid_str: str
 
         :returns: Component item matching the given UUID or None if not found.
         :rtype: ModelComponentItem
         """
-        if uuid not in self._uuid_row_idx:
+        if uuid_str not in self._uuid_row_idx:
             return None
 
-        idx = self._uuid_row_idx[uuid]
+        row = self._uuid_row_idx[uuid_str]
 
-        return self.item(idx)
+        return self.item(row)
+
+    def index_by_uuid(self, uuid_str) -> QtCore.QModelIndex:
+        """Get the QModelIndex object for the component item matching the
+        given UUID identifier.
+
+        :param uuid_str: UUID of the model item.
+        :type uuid_str: str
+
+        :returns: QModelIndex for the component item matching the given
+        UUID or an invalid QModelIndex if not found.
+        :rtype: QtCore.QModelIndex
+        """
+        if uuid_str not in self._uuid_row_idx:
+            return QtCore.QModelIndex()
+
+        row = self._uuid_row_idx[uuid_str]
+
+        return self.index(row, 0)
 
     def update_item(self, item: ModelComponentItemType) -> bool:
         """Update an existing ModelComponentItem if it exists in the model.
