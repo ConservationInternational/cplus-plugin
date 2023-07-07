@@ -18,7 +18,7 @@ class TestDataModelHelpers(TestCase):
         """Assert an NcsPathway object can be converted into
         the corresponding dictionary.
         """
-        ncs_dict = ncs_pathway_to_dict(self.ncs)
+        ncs_dict = ncs_pathway_to_dict(self.ncs, False)
         self.assertDictEqual(ncs_dict, NCS_PATHWAY_DICT)
 
     def test_create_ncs_pathway(self):
