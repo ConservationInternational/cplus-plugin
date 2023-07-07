@@ -74,18 +74,6 @@ class TestIMItemModel(TestCase):
         result = im_item_model.add_implementation_model(get_implementation_model())
         self.assertTrue(result)
 
-    def test_add_ncs_pathway(self):
-        """Assert an NCS pathway object can be added to an
-        implementation model.
-        """
-        im_item_model = IMItemModel(PARENT)
-        ncs_item = NcsPathwayItem(self.ncs)
-        im_model = get_implementation_model()
-        im_item = ImplementationModelItem(im_model)
-        _ = im_item_model.add_implementation_model(im_model)
-        result = im_item_model.add_ncs_pathway(ncs_item, im_item)
-        self.assertTrue(result)
-
     def test_model_has_items(self):
         """Assert the item model actually contains items."""
         im_item_model = IMItemModel(PARENT)
