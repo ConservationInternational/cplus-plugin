@@ -59,7 +59,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.tab_widget.insertTab(
             1, self.implementation_model_widget, self.tr("Step 2")
         )
-
         self.tab_widget.currentChanged.connect(self.on_tab_step_changed)
 
         self.prepare_input()

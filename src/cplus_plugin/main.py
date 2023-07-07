@@ -26,7 +26,7 @@ from qgis.PyQt.QtWidgets import QMenu
 from .definitions.defaults import ICON_PATH, OPTIONS_TITLE
 from .settings import CplusOptionsFactory
 
-from .conf import initialize_default_settings
+from .utils import initialize_default_settings
 
 
 class QgisCplus:

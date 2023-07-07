@@ -4,4 +4,4 @@ Definitions for application constants.
 """
 
 
-NCS_PATHWAY_DIR_SEGMENT = "ncs_pathways"
+NCS_PATHWAY_SEGMENT = "ncs_pathways"

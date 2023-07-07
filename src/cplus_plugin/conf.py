@@ -12,28 +12,23 @@ from pathlib import Path
 import typing
 import uuid
 
-from qgis.PyQt import (
-    QtCore,
-    QtWidgets,
-)
+from qgis.PyQt import QtCore
 from qgis.core import QgsRectangle, QgsSettings
 
-from .definitions.constants import NCS_PATHWAY_DIR_SEGMENT
-
-from .definitions.defaults import DEFAULT_IMPLEMENTATION_MODELS, DEFAULT_NCS_PATHWAYS
+from .definitions.constants import NCS_PATHWAY_SEGMENT
 
 from .models.base import (
-    create_model_component,
-    create_ncs_pathway,
     ImplementationModel,
-    model_component_to_dict,
     NcsPathway,
-    ncs_pathway_to_dict,
     Scenario,
     SpatialExtent,
 )
-
-from .utils import log
+from .models.helpers import (
+    create_model_component,
+    create_ncs_pathway,
+    model_component_to_dict,
+    ncs_pathway_to_dict,
+)
 
 
 @contextlib.contextmanager
@@ -131,7 +126,6 @@ class SettingsManager(QtCore.QObject):
 
     BASE_GROUP_NAME: str = "cplus_plugin"
     SCENARIO_GROUP_NAME: str = "scenarios"
-    NCS_PATHWAY_BASE: str = "ncs_pathways"
     IMPLEMENTATION_MODEL_BASE: str = "implementation_models"
 
     settings = QgsSettings()
@@ -301,7 +295,7 @@ class SettingsManager(QtCore.QObject):
         :returns: Base path to NCS pathway group.
         :rtype: str
         """
-        return f"{self.BASE_GROUP_NAME}/" f"{self.NCS_PATHWAY_BASE}"
+        return f"{self.BASE_GROUP_NAME}/" f"{NCS_PATHWAY_SEGMENT}"
 
     def save_ncs_pathway(self, ncs_pathway: typing.Union[NcsPathway, dict]):
         """Saves an NCS pathway object serialized to a json string
@@ -388,7 +382,7 @@ class SettingsManager(QtCore.QObject):
             return
 
         p = Path(ncs_pathway.path)
-        abs_path = f"{base_dir}/{NCS_PATHWAY_DIR_SEGMENT}/" f"{p.name}"
+        abs_path = f"{base_dir}/{NCS_PATHWAY_SEGMENT}/" f"{p.name}"
         abs_path = str(os.path.normpath(abs_path))
         ncs_pathway.path = abs_path
 
@@ -483,46 +477,3 @@ class SettingsManager(QtCore.QObject):
 
 
 settings_manager = SettingsManager()
-
-
-def initialize_default_settings():
-    """Initialize default model components such as NCS pathways
-    and implementation models.
-
-    It will check if there are existing components using the UUID
-    and only add those ones that do not exist in the settings.
-
-    This is normally called during plugin startup.
-    """
-    # Add default pathways
-    for ncs_dict in DEFAULT_NCS_PATHWAYS:
-        try:
-            ncs_uuid = ncs_dict["uuid"]
-            ncs = settings_manager.get_ncs_pathway(ncs_uuid)
-            if ncs is None:
-                # Update dir
-                # base_dir = settings_manager.get_value(Settings.BASE_DIR, None)
-                base_dir = None
-                if base_dir is not None:
-                    file_name = ncs_dict["path"]
-                    absolute_path = (
-                        f"{base_dir}/{SettingsManager.NCS_PATHWAY_BASE}/{file_name}"
-                    )
-                    abs_path = str(os.path.normpath(absolute_path))
-                    ncs_dict["path"] = abs_path
-                ncs_dict["user_defined"] = False
-                settings_manager.save_ncs_pathway(ncs_dict)
-        except KeyError as ke:
-            log(f"Default NCS configuration load error - {str(ke)}")
-            continue
-
-    # Add default implementation models
-    for imp_model_dict in DEFAULT_IMPLEMENTATION_MODELS:
-        try:
-            imp_model_uuid = imp_model_dict["uuid"]
-            imp_model = settings_manager.get_implementation_model(imp_model_uuid)
-            if imp_model is None:
-                settings_manager.save_implementation_model(imp_model_dict)
-        except KeyError as ke:
-            log(f"Default implementation model configuration load error - {str(ke)}")
-            continue

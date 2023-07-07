@@ -12,14 +12,14 @@ from uuid import uuid4
 from qgis.PyQt import QtCore, QtGui
 
 from ..models.base import (
-    create_ncs_pathway,
     BaseModelComponent,
     BaseModelComponentType,
     ImplementationModel,
-    LayerType,
     NcsPathway,
-    ncs_pathway_to_dict,
 )
+from ..models.helpers import create_ncs_pathway, ncs_pathway_to_dict
+
+from ..utils import FileUtils
 
 
 NCS_PATHWAY_TYPE = QtGui.QStandardItem.UserType + 2
@@ -532,7 +532,7 @@ class NcsPathwayItemModel(ComponentItemModel):
         :rtype: bool
         """
         ncs_item = NcsPathwayItem.create(ncs)
-        self._update_foreground(ncs_item)
+        self._update_display(ncs_item)
 
         return self.add_component_item(ncs_item)
 
@@ -553,22 +553,20 @@ class NcsPathwayItemModel(ComponentItemModel):
         if not status:
             return False
 
-        self._update_foreground(item)
+        self._update_display(item)
 
         return True
 
-    def _update_foreground(self, item: NcsPathwayItem):
-        """Update text colour based on whether an item is valid or invalid."""
-        # Set to red color if NCS pathway object is invalid.
+    def _update_display(self, item: NcsPathwayItem):
+        """Update icon based on whether an item is valid or invalid."""
         ncs = item.ncs_pathway
-        foreground = item.foreground()
 
         if ncs.is_valid():
-            foreground.setColor(QtCore.Qt.black)
-            item.setForeground(foreground)
+            item.setIcon(QtGui.QIcon())
         else:
-            foreground.setColor(QtCore.Qt.red)
-            item.setForeground(foreground)
+            error_icon = FileUtils.get_icon("mIndicatorLayerError.svg")
+            item.setToolTip(self.tr("Invalid data source"))
+            item.setIcon(error_icon)
 
     def pathways(self, valid_only: bool = False) -> typing.List[NcsPathway]:
         """Returns NCS pathway objects in the model.

@@ -4,7 +4,6 @@ Dialog for creating or editing an NCS pathway entry.
 """
 
 import os
-import typing
 import uuid
 
 from qgis.PyQt import QtCore, QtGui, QtWidgets

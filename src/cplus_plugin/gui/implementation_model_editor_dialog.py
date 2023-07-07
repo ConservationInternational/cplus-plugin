@@ -13,6 +13,7 @@ from qgis.PyQt.uic import loadUiType
 from qgis.core import QgsApplication
 
 from ..models.base import ImplementationModel
+from ..utils import FileUtils
 
 WidgetUi, _ = loadUiType(
     os.path.join(
@@ -36,7 +37,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._update_controls()
             self._edit_mode = True
 
-        help_icon = QgsApplication.instance().getThemeIcon("mActionHelpContents.svg")
+        help_icon = FileUtils.get_icon("mActionHelpContents.svg")
         self.btn_help.setIcon(help_icon)
 
     @property

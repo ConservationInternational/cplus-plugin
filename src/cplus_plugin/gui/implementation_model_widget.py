@@ -38,11 +38,11 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
 
         self._items_loaded = False
 
-        self.btn_add_one.setIcon(FileUtils.get_icon("play.svg"))
+        self.btn_add_one.setIcon(FileUtils.get_icon("mActionPlay.svg"))
         self.btn_add_one.setToolTip(self.tr("Add selected NCS pathway"))
         self.btn_add_one.clicked.connect(self._on_add_ncs_pathway)
 
-        self.btn_add_all.setIcon(FileUtils.get_icon("forward.svg"))
+        self.btn_add_all.setIcon(FileUtils.get_icon("skipToEnd.svg"))
         self.btn_add_all.setToolTip(self.tr("Add all NCS pathways"))
         self.btn_add_all.clicked.connect(self._on_add_all_ncs_pathways)
 
@@ -63,23 +63,9 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         on initial call.
         """
         if not self._items_loaded:
-            self._load_default_ncs_pathways()
-            self._load_default_implementation_models()
+            self.ncs_pathway_view.load()
+            self.implementation_model_view.load()
             self._items_loaded = True
-
-    def _load_default_ncs_pathways(self):
-        """Load default and user-defined NCS pathways from settings."""
-        ncs_pathways = settings_manager.get_all_ncs_pathways()
-        for ncs in ncs_pathways:
-            self.ncs_pathway_view.add_ncs_pathway(ncs)
-
-    def _load_default_implementation_models(self):
-        """Load default and user-defined implementation models from
-        settings.
-        """
-        imp_models = settings_manager.get_all_implementation_models()
-        for imp_model in imp_models:
-            self.implementation_model_view.add_implementation_model(imp_model)
 
     def ncs_pathways(self) -> typing.List[NcsPathway]:
         """Gets the NCS pathway objects in the NCS Pathways view.
@@ -139,3 +125,6 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
                 break
 
         return status
+
+    def selected_items(self):
+        return self.implementation_model_view.selected_items()
