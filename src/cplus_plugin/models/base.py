@@ -125,6 +125,9 @@ class ImplementationModel(BaseModelComponent):
         :returns: True if the NCS pathway was successfully added, else False
         if there was an existing NCS pathway object with a similar UUID.
         """
+        if not ncs.is_valid():
+            return False
+
         if self.contains_pathway(str(ncs.uuid)):
             return False
 
