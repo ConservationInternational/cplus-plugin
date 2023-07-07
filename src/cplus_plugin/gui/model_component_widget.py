@@ -103,7 +103,7 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
         :param text: Title of the view.
         :type text: str
         """
-        self.lbl_title.setText(text)
+        self.lbl_title.setText(f"<b>{text}</b>")
 
     def load(self):
         """Subclass to determine how to initialize the items."""

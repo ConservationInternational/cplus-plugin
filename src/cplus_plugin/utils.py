@@ -10,8 +10,7 @@ from pathlib import Path
 from qgis.PyQt import QtCore, QtGui
 from qgis.core import Qgis, QgsApplication, QgsMessageLog
 
-from .conf import settings_manager
-from .definitions.constants import NCS_PATHWAY_SEGMENT
+from .conf import Settings, settings_manager
 from .definitions.defaults import (
     DEFAULT_IMPLEMENTATION_MODELS,
     DEFAULT_NCS_PATHWAYS,
@@ -101,8 +100,7 @@ def initialize_default_settings():
             ncs = settings_manager.get_ncs_pathway(ncs_uuid)
             if ncs is None:
                 # Update dir
-                # base_dir = settings_manager.get_value(Settings.BASE_DIR, None)
-                base_dir = None
+                base_dir = settings_manager.get_value(Settings.BASE_DIR, None)
                 if base_dir is not None:
                     file_name = ncs_dict["path"]
                     absolute_path = f"{base_dir}/{NCS_PATHWAY_SEGMENT}/{file_name}"
