@@ -170,6 +170,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
         if index == 1:
             self.implementation_model_widget.load()
+        elif index == 2:
+            # Validate NCS pathway - implementation model mapping
+            valid = self.implementation_model_widget.is_valid()
+            if not valid:
+                msg = self.tr(
+                    "Define one or more NCS pathways for at least one implementation model."
+                )
+                self.show_message(msg)
+                self.tab_widget.setCurrentIndex(1)
+
+            else:
+                self.message_bar.clearWidgets()
 
     def open_settings(self):
         """Options the CPLUS settings in the QGIS options dialog."""
