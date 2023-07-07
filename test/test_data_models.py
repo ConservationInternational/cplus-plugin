@@ -5,7 +5,7 @@ Unit tests for base data models.
 
 from unittest import TestCase
 
-from ..model_data_for_testing import get_invalid_ncs_pathway, get_valid_ncs_pathway
+from model_data_for_testing import get_invalid_ncs_pathway, get_valid_ncs_pathway
 
 
 class TestNcsPathway(TestCase):
