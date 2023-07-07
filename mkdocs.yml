@@ -18,7 +18,6 @@ nav:
   - Developer:
       - Setup: developer/setup.md
       - Architecture: developer/architecture.md
-      - Workflows: developer/workflows.md
       - Documentation: developer/documentation.md
       - Code automatic documentation: developer/code_auto_docs.md
   - DevOps: devops/devops.md
