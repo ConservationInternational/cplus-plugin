@@ -528,9 +528,12 @@ class NcsPathwayItemModel(ComponentItemModel):
         :type ncs: NcsPathway
 
         :returns: True if the NCS pathway object was added successfully,
-        else False.
+        else False if the NcsPathway object is invalid.
         :rtype: bool
         """
+        if not ncs.is_valid():
+            return False
+
         ncs_item = NcsPathwayItem.create(ncs)
         self._update_display(ncs_item)
 
