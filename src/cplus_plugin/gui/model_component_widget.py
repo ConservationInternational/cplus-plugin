@@ -473,8 +473,12 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         :param implementation_model: Implementation model object
         to be added to the view.
         :type implementation_model: ImplementationModel
+
+        :returns: True if the implementation model was successfully added, else
+        False.
+        :rtype: bool
         """
-        self.item_model.add_implementation_model(implementation_model)
+        return self.item_model.add_implementation_model(implementation_model)
 
     def _update_ui_on_selection_changed(self):
         """Check type of item selected and update UI
