@@ -2,6 +2,7 @@
 
 Documentation is written using <a href="https://mkdocs.org/">mkdocs</a>.
 A detailed description on getting-started with mkdocs is available <a href="https://www.mkdocs.org/getting-started/">here</a>.
+Developer documentation will be created and generated using <a href="https://mkdocstrings.github.io/">mkdocstrings</a>.
 
 ## Install mkdocs
 
@@ -67,6 +68,29 @@ The comments for mkdocstrings is three sections:
 Here is an example of the end-result:
 
 ![Documentation mkdocstrings example](../img/documentation/mkdocstrings-example.png)
+
+### mkdocstrings options
+
+The user can also do fine-tuning of the resulting site. Here is a list of important options to be
+aware of: members, show_root_directory, and show_source.
+
+- **members**: Only these function/classes will be shown
+
+![Documentation mkdocstrings members](../img/documentation/mkdocstrings-members-example.png)
+
+- **show_root_directory**: The root directory of the code
+  - Best will be to disable this, as it looks neater
+  - Here is an example of show_root_directory enabled, followed by an example when it is disabled:
+
+![Documentation mkdocstrings root enabled](../img/documentation/mkdocstrings-root-dir-enabled.png)
+
+![Documentation mkdocstrings root disabled](../img/documentation/mkdocstrings-root-dir-disabled.png)
+
+- **show_source**: Shows the directory of the source code and a snippet of the code
+
+![Documentation mkdocstrings source](../img/documentation/mkdocstrings-source.png)
+
+More information on this can be found <a href="https://mkdocstrings.github.io/usage/">here</a>.
 
 ## Serving the pages locally
 
