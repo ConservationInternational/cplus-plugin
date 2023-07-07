@@ -70,43 +70,45 @@ class TestIMItemModel(TestCase):
 
     def test_add_implementation_model(self):
         """Assert an implementation model can be added."""
-        im_model = IMItemModel(PARENT)
-        result = im_model.add_implementation_model(get_implementation_model())
+        im_item_model = IMItemModel(PARENT)
+        result = im_item_model.add_implementation_model(get_implementation_model())
         self.assertTrue(result)
 
     def test_add_ncs_pathway(self):
         """Assert an NCS pathway object can be added to an
         implementation model.
         """
-        im_model = IMItemModel(PARENT)
+        im_item_model = IMItemModel(PARENT)
         ncs_item = NcsPathwayItem(self.ncs)
         im_model = get_implementation_model()
         im_item = ImplementationModelItem(im_model)
-        _ = im_model.add_implementation_model(im_model)
+        _ = im_item_model.add_implementation_model(im_model)
         result = im_model.add_ncs_pathway(ncs_item, im_item)
         self.assertTrue(result)
 
     def test_remove_ncs_pathway_item(self):
         """Assert an NcsPathwayItem can be removed from the model."""
-        im_model = IMItemModel(PARENT)
+        im_item_model = IMItemModel(PARENT)
         ncs_item = NcsPathwayItem(self.ncs)
         im_model = get_implementation_model()
         im_item = ImplementationModelItem(im_model)
-        _ = im_model.add_implementation_model(im_model)
-        _ = im_model.add_ncs_pathway(ncs_item, im_item)
-        result = im_model.remove_ncs_pathway_item(VALID_NCS_UUID_STR, im_item)
+        _ = im_item_model.add_implementation_model(im_model)
+        _ = im_item_model.add_ncs_pathway(ncs_item, im_item)
+        result = im_item_model.remove_ncs_pathway_item(VALID_NCS_UUID_STR, im_item)
         self.assertTrue(result)
 
     def test_model_has_items(self):
         """Assert the item model actually contains items."""
-        im_model = IMItemModel(PARENT)
-        _ = im_model.add_implementation_model(get_implementation_model())
-        models = im_model.models()
+        im_item_model = IMItemModel(PARENT)
+        _ = im_item_model.add_implementation_model(get_implementation_model())
+        models = im_item_model.models()
         self.assertEqual(len(models), 1)
 
     def test_remove_implementation_model(self):
         """Assert an implementation model can be removed."""
-        im_model = IMItemModel(PARENT)
-        _ = im_model.add_implementation_model(get_implementation_model())
-        result = im_model.remove_implementation_model(IMPLEMENTATION_MODEL_UUID_STR)
+        im_item_model = IMItemModel(PARENT)
+        _ = im_item_model.add_implementation_model(get_implementation_model())
+        result = im_item_model.remove_implementation_model(
+            IMPLEMENTATION_MODEL_UUID_STR
+        )
         self.assertTrue(result)
