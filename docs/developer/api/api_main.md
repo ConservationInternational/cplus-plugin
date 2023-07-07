@@ -1,4 +1,4 @@
-# Code automatic documentation
+# Main
 
 ::: src.cplus_plugin.main.QgisCplus
 

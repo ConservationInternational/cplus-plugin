@@ -52,6 +52,10 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
     def update_logo(self, custom_logo, logo_dir=DEFAULT_LOGO_PATH):
         """Updates the logo preview. If the logo is not found,
         the default logo will be used.
+
+        Args:
+            custom_logo (bool): If a custom logo should be used
+            logo_dir (str): The custom logo directory
         """
         logo_found = False
         if custom_logo:
