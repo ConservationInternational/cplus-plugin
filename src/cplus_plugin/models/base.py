@@ -4,11 +4,9 @@
 """
 
 import dataclasses
-import uuid
 from enum import IntEnum
 import os.path
 import typing
-
 from uuid import UUID
 
 from qgis.core import QgsMapLayer, QgsRasterLayer, QgsVectorLayer
@@ -30,6 +28,27 @@ class BaseModelComponent:
     uuid: UUID
     name: str
     description: str
+
+    def __eq__(self, other: "BaseModelComponent") -> bool:
+        """Test equality of object with another BaseModelComponent
+        object using the attributes.
+
+        :param other: BaseModelComponent object to compare with this object.
+        :type other: BaseModelComponent
+
+        :returns: True if the all the attribute values match, else False.
+        :rtype: bool
+        """
+        if self.uuid != other.uuid:
+            return False
+
+        if self.name != other.name:
+            return False
+
+        if self.description != other.description:
+            return False
+
+        return True
 
 
 BaseModelComponentType = typing.TypeVar(
@@ -85,6 +104,31 @@ class NcsPathway(BaseModelComponent):
             return False
 
         return layer.isValid()
+
+    def __eq__(self, other: "NcsPathway") -> bool:
+        """Test equality of object with another NcsPathway
+        object using the attributes.
+
+        :param other: NcsPathway object to compare with this object.
+        :type other: NcsPathway
+
+        :returns: True if the all the attribute values match, else False.
+        :rtype: bool
+        """
+        base_equality = super().__eq__(other)
+        if not base_equality:
+            return False
+
+        if self.path != other.path:
+            return False
+
+        if self.layer_type != other.layer_type:
+            return False
+
+        if self.user_defined != other.user_defined:
+            return False
+
+        return True
 
 
 @dataclasses.dataclass
