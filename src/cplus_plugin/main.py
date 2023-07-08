@@ -11,7 +11,7 @@
 
 import os.path
 
-from qgis.core import QgsMasterLayoutInterface,QgsSettings
+from qgis.core import QgsMasterLayoutInterface, QgsSettings
 from qgis.gui import QgsLayoutDesignerInterface
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
@@ -172,9 +172,7 @@ class QgisCplus:
         initialize_default_settings()
 
         # Register custom report variables when a layout is opened
-        self.iface.layoutDesignerOpened.connect(
-            self.on_layout_designer_opened
-        )
+        self.iface.layoutDesignerOpened.connect(self.on_layout_designer_opened)
 
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin widget is closed."""
@@ -214,4 +212,3 @@ class QgisCplus:
         if layout_type == QgsMasterLayoutInterface.PrintLayout:
             layout = designer.layout()
             report_manager.register_variables(layout)
-
