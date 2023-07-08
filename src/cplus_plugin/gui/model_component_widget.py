@@ -325,6 +325,7 @@ class NcsComponentWidget(ModelComponentWidget):
         """Load items from settings."""
         self.clear()
 
+        settings_manager.update_ncs_pathways()
         ncs_pathways = settings_manager.get_all_ncs_pathways()
         for ncs in ncs_pathways:
             self.add_ncs_pathway(ncs)

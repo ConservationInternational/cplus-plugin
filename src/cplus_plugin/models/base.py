@@ -69,6 +69,7 @@ class NcsPathway(BaseModelComponent):
     """Contains information about an NCS pathway layer."""
 
     path: str
+    remote_uri: str
     layer_type: LayerType = LayerType.UNDEFINED
     user_defined: bool = False
 
