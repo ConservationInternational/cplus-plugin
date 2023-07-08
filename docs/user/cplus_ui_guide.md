@@ -10,12 +10,12 @@ Open the CPLUS dockwidget by clicking on the CPLUS toolbar icon (**Figure 1**).
 
 ### Step 1: Scenario Information
 
-The first step focusses on the **Scenario Information**. A *Scenario* refers to an overall analysis
+The first step focuses on the **Scenario Information**. A *Scenario* refers to an overall analysis
 done in an area of interest (AOI). Different criteria and priorities for spatial decision-making and
 comparison will be considered for each scenario.
 
 - **Scenario name**: A name for the analysis to be performed
-- **Scenario description**: A detailed desription of the analysis
+- **Scenario description**: A detailed description of the analysis
 - **Extent**: The area of interest for this analysis. This can be calculated from the current
   canvas view extent, a layer, or an extent drawn by the user
 - **Figure 2** shows an example of Step 1
@@ -75,6 +75,11 @@ step 3.
 
 *Figure 6: Implementation Model creator/editor*
 
+<blockquote>Before proceeding to Step 3, a user needs to define at least one NCS pathway layer for an implementation 
+model else a warning message will be displayed as shown in Figure 7 below: </blockquote>
+
+TODO: DV - Insert screenshot
+
 ### Step 3: Priority weighting
 
 The final step deals with the **Weighting priorities** and **Priority groups**. These weights
@@ -82,7 +87,7 @@ will be applied when the user starts running the scenario. An example is shown i
 
 ![CPLUS step 3](../img/plugin/plugin-step3.png)
 
-*Figure 7: Step 3 allows the user to set the Weights of each Priority Group*
+*Figure 8: Step 3 allows the user to set the Weights of each Priority Group*
 
 - Move the slider to adjust the weight of each group
 - The user can also manually set the value
