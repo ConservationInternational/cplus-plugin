@@ -11,7 +11,8 @@
 
 import os.path
 
-from qgis.core import QgsSettings
+from qgis.core import QgsMasterLayoutInterface,QgsSettings
+from qgis.gui import QgsLayoutDesignerInterface
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QDockWidget, QMainWindow, QVBoxLayout
@@ -24,8 +25,8 @@ from qgis.PyQt.QtWidgets import QToolButton
 from qgis.PyQt.QtWidgets import QMenu
 
 from .definitions.defaults import ICON_PATH, OPTIONS_TITLE
+from .lib.reports.report_manager import report_manager
 from .settings import CplusOptionsFactory
-
 from .utils import initialize_default_settings
 
 
@@ -170,6 +171,11 @@ class QgisCplus:
         # Initialize default model components
         initialize_default_settings()
 
+        # Register custom report variables when a layout is opened
+        self.iface.layoutDesignerOpened.connect(
+            self.on_layout_designer_opened
+        )
+
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin widget is closed."""
         self.pluginIsActive = False
@@ -201,3 +207,11 @@ class QgisCplus:
     def run_settings(self):
         """Options the CPLUS settings in the QGIS options dialog."""
         self.iface.showOptionsDialog(currentPage=OPTIONS_TITLE)
+
+    def on_layout_designer_opened(self, designer: QgsLayoutDesignerInterface):
+        """Register custom report variables in a print layout only."""
+        layout_type = designer.masterLayout().layoutType()
+        if layout_type == QgsMasterLayoutInterface.PrintLayout:
+            layout = designer.layout()
+            report_manager.register_variables(layout)
+
