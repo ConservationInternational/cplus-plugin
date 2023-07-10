@@ -26,8 +26,7 @@ class CplusMapItem(QgsLayoutItemMap):
         super().__init__(*args, **kwargs)
         self._model_component_id = kwargs.pop("model_component_id", "")
         self._model_component_type = kwargs.pop(
-            "model_component_type",
-            ModelComponentType.UNKNOWN
+            "model_component_type", ModelComponentType.UNKNOWN
         )
 
     @property
@@ -66,10 +65,7 @@ class CplusMapItem(QgsLayoutItemMap):
         return self._model_component_type
 
     @model_component_type.setter
-    def model_component_type(
-            self,
-            component_type: ModelComponentType
-    ):
+    def model_component_type(self, component_type: ModelComponentType):
         """Set the model component type associated with
         this map item i.e. NCS pathway or implementation
         model.
@@ -99,14 +95,8 @@ class CplusMapItem(QgsLayoutItemMap):
         """Override saving of item properties."""
         status = super().writePropertiesToElement(el, document, context)
         if status:
-            el.setAttribute(
-                "modelComponentId",
-                self._model_component_id
-            )
-            el.setAttribute(
-                "modelComponentType",
-                self._model_component_type.value
-            )
+            el.setAttribute("modelComponentId", self._model_component_id)
+            el.setAttribute("modelComponentType", self._model_component_type.value)
 
         return status
 
@@ -114,10 +104,7 @@ class CplusMapItem(QgsLayoutItemMap):
         """Override reading of item properties."""
         status = super().readPropertiesFromElement(element, document, context)
         if status:
-            self._model_component_id = element.attribute(
-                "modelComponentId",
-                ""
-            )
+            self._model_component_id = element.attribute("modelComponentId", "")
             model_component_type = element.attribute("modelComponentType", "")
             self._model_component_type = ModelComponentType.from_string(
                 model_component_type

@@ -68,6 +68,7 @@ class ModelComponentType(Enum):
     """Type of model component i.e. NCS pathway or
     implementation model.
     """
+
     NCS_PATHWAY = "ncs_pathway"
     IMPLEMENTATION_MODEL = "implementation_model"
     UNKNOWN = "unknown"
