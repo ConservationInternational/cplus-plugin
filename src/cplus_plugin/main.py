@@ -11,8 +11,8 @@
 
 import os.path
 
-from qgis.core import QgsMasterLayoutInterface, QgsSettings
-from qgis.gui import QgsLayoutDesignerInterface
+from qgis.core import QgsApplication, QgsMasterLayoutInterface, QgsSettings
+from qgis.gui import QgsGui, QgsLayoutDesignerInterface
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QDockWidget, QMainWindow, QVBoxLayout
@@ -25,6 +25,8 @@ from qgis.PyQt.QtWidgets import QToolButton
 from qgis.PyQt.QtWidgets import QMenu
 
 from .definitions.defaults import ICON_PATH, OPTIONS_TITLE
+from .gui.map_item_widget import CplusMapLayoutItemGuiMetadata
+from .lib.reports.layout_items import CplusMapItemLayoutItemMetadata
 from .lib.reports.report_manager import report_manager
 from .settings import CplusOptionsFactory
 from .utils import initialize_default_settings
@@ -171,6 +173,9 @@ class QgisCplus:
         # Initialize default model components
         initialize_default_settings()
 
+        # Register custom layout items
+        self.register_layout_items()
+
         # Register custom report variables when a layout is opened
         self.iface.layoutDesignerOpened.connect(self.on_layout_designer_opened)
 
@@ -212,3 +217,15 @@ class QgisCplus:
         if layout_type == QgsMasterLayoutInterface.PrintLayout:
             layout = designer.layout()
             report_manager.register_variables(layout)
+
+    def register_layout_items(self):
+        """Register custom layout items."""
+        # Register map layout item
+        QgsApplication.layoutItemRegistry().addLayoutItemType(
+            CplusMapItemLayoutItemMetadata()
+        )
+
+        # Register map GUI metadata
+        item_gui_registry = QgsGui.layoutItemGuiRegistry()
+        map_item_gui_metadata = CplusMapLayoutItemGuiMetadata()
+        item_gui_registry.addLayoutItemGuiMetadata(map_item_gui_metadata)

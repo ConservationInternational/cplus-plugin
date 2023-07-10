@@ -4,7 +4,7 @@
 """
 
 import dataclasses
-from enum import IntEnum
+from enum import Enum, IntEnum
 import os.path
 import typing
 from uuid import UUID
@@ -62,6 +62,33 @@ class LayerType(IntEnum):
     RASTER = 0
     VECTOR = 1
     UNDEFINED = -1
+
+
+class ModelComponentType(Enum):
+    """Type of model component i.e. NCS pathway or
+    implementation model.
+    """
+    NCS_PATHWAY = "ncs_pathway"
+    IMPLEMENTATION_MODEL = "implementation_model"
+    UNKNOWN = "unknown"
+
+    @staticmethod
+    def from_string(str_enum: str) -> "ModelComponentType":
+        """Creates an enum from the corresponding string equivalent.
+
+        :param str_enum: String representing the model component type.
+        :type str_enum: str
+
+        :returns: Component type enum corresponding to the given
+        string else unknown if not found.
+        :rtype: ModelComponentType
+        """
+        if str_enum.lower() == "ncs_pathway":
+            return ModelComponentType.NCS_PATHWAY
+        elif str_enum.lower() == "implementation_model":
+            return ModelComponentType.IMPLEMENTATION_MODEL
+
+        return ModelComponentType.UNKNOWN
 
 
 @dataclasses.dataclass
