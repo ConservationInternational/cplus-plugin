@@ -89,7 +89,7 @@ class CplusMapItem(QgsLayoutItemMap):
 
     def icon(self) -> QtGui.QIcon:
         """Override for custom CPLUS map item."""
-        return FileUtils.get_icon("mLayoutItemMap_temp.png")
+        return FileUtils.get_icon("mLayoutItemMap_cplus.svg")
 
     def writePropertiesToElement(self, el, document, context):
         """Override saving of item properties."""

@@ -14,7 +14,7 @@ from qgis.gui import (
 )
 from qgis.utils import iface
 
-from qgis.PyQt import QtCore, QtGui, QtWidgets
+from qgis.PyQt import QtGui, QtWidgets
 from qgis.PyQt.uic import loadUiType
 
 from ..conf import settings_manager
@@ -141,7 +141,7 @@ class CplusMapLayoutItemGuiMetadata(QgsLayoutItemAbstractGuiMetadata):
 
     def creationIcon(self) -> QtGui.QIcon:
         """Factory override for item icon."""
-        return FileUtils.get_icon("mLayoutItemMap_temp.png")
+        return FileUtils.get_icon("mLayoutItemMap_cplus.svg")
 
     def newItemAddedToLayout(self, map_item: CplusMapItem):
         """Define action that is called when the CplusMapItem
