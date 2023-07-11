@@ -223,10 +223,8 @@ def create_priority_layers():
 
         groups = []
         for group in PRIORITY_GROUPS:
-            stored_group = {}
-            stored_group["name"] = group["name"]
-            stored_group["value"] = 0
-            groups.append(stored_group)
+            group["value"] = 0
+            settings_manager.save_priority_group(group)
 
         for layer in PRIORITY_LAYERS:
             layer["groups"] = groups

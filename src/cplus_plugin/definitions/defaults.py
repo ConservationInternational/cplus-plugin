@@ -95,6 +95,10 @@ PRIORITY_GROUPS = [
 
 OPTIONS_TITLE = "CPLUS"  # Title in the QGIS settings
 ICON_PATH = ":/plugins/cplus_plugin/icon.svg"
+
+ADD_LAYER_ICON_PATH = ":/plugins/cplus_plugin/cplus_left_arrow.svg"
+REMOVE_LAYER_ICON_PATH = ":/plugins/cplus_plugin/cplus_right_arrow.svg"
+
 DEFAULT_LOGO_PATH = (
     os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/logos/ci_logo.png"
 )

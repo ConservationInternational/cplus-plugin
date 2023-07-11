@@ -128,6 +128,7 @@ class SettingsManager(QtCore.QObject):
 
     BASE_GROUP_NAME: str = "cplus_plugin"
     SCENARIO_GROUP_NAME: str = "scenarios"
+    PRIORITY_GROUP_NAME: str = "priority_groups"
     PRIORITY_LAYERS_GROUP_NAME: str = "priority_layers"
     NCS_PATHWAY_BASE: str = "ncs_pathways"
 
@@ -398,10 +399,47 @@ class SettingsManager(QtCore.QObject):
                         found_id = uuid.UUID(layer_id)
                         break
             else:
-                raise ValueError(
+                log(
                     f"Could not find a priority layer named " f"{name!r} in QgsSettings"
                 )
         return self.get_priority_layer(found_id)
+
+    def find_layers_by_group(self, group) -> typing.List:
+        """Finds a priority layer setting
+         inside the plugin QgsSettings by the passed group.
+
+        :param group: Priority group name
+        :type: str
+
+        :returns: Priority layers list
+        :rtype: list
+        """
+        layers = []
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_LAYERS_GROUP_NAME}"
+        ) as settings:
+            for layer_id in settings.childGroups():
+                priority_layer_settings = self._get_priority_layers_settings_base(
+                    layer_id
+                )
+                with qgis_settings(priority_layer_settings) as priority_settings:
+                    groups_key = f"{priority_layer_settings}/groups"
+
+                    with qgis_settings(groups_key) as groups_settings:
+                        for name in groups_settings.childGroups():
+                            group_settings_key = f"{groups_key}/{name}"
+                            with qgis_settings(group_settings_key) as group_settings:
+                                if group == group_settings.value("name"):
+                                    layers.append(self.get_priority_layer(layer_id))
+            else:
+                # raise ValueError(
+                #     f"Could not find a priority layer with group " f"{group!r} in QgsSettings"
+                # )
+                log(
+                    f"Could not find any priority layer with group "
+                    f"{group!r} in QgsSettings"
+                )
+        return layers
 
     def save_priority_layer(self, priority_layer):
         """Save the priority layer into the plugin settings
@@ -451,6 +489,97 @@ class SettingsManager(QtCore.QObject):
             for priority_layer in settings.childGroups():
                 if str(priority_layer) == str(identifier):
                     settings.remove(priority_layer)
+
+    def _get_priority_groups_settings_base(self, identifier) -> str:
+        """Gets the priority group settings base url.
+
+        :param identifier: Priority group settings identifier
+        :type identifier: uuid.UUID
+
+        :returns Priority groups settings base group
+        :rtype str
+        """
+        return (
+            f"{self.BASE_GROUP_NAME}/"
+            f"{self.PRIORITY_GROUP_NAME}/"
+            f"{str(identifier)}"
+        )
+
+    def find_group_by_name(self, name) -> typing.Dict:
+        """Finds a priority group setting inside the plugin QgsSettings by name.
+
+        :param name: Name of the group
+        :type: str
+
+        :returns: Priority group dictionary
+        :rtype: dict
+        """
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_GROUP_NAME}"
+        ) as settings:
+            for group_id in settings.childGroups():
+                group_settings_key = self._get_priority_groups_settings_base(group_id)
+                with qgis_settings(group_settings_key) as group_settings_key:
+                    group_name = group_settings_key.value("name")
+                    if group_name == name:
+                        found_id = uuid.UUID(group_id)
+                        break
+            else:
+                log(
+                    f"Could not find a priority group named " f"{name!r} in QgsSettings"
+                )
+        return self.get_priority_group(found_id)
+
+    def get_priority_group(self, identifier) -> typing.Dict:
+        """Retrieves the priority group that matches the passed identifier.
+
+        :param identifier: Priority group identifier
+        :type identifier: str
+
+        :returns priority_group: Priority group
+        :rtype dict
+        """
+
+        settings_key = self._get_priority_groups_settings_base(identifier)
+        with qgis_settings(settings_key) as settings:
+            priority_group = {"uuid": identifier}
+            priority_group["name"] = settings.value("name")
+            priority_group["value"] = settings.value("value")
+        return priority_group
+
+    def get_priority_groups(self):
+        """Gets all the available priority groups in the plugin.
+
+        :returns priority_groups: List of the priority groups instances
+        :rtype list
+        """
+        priority_groups = []
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_GROUP_NAME}"
+        ) as settings:
+            for uuid in settings.childGroups():
+                priority_layer_settings = self._get_priority_groups_settings_base(uuid)
+                with qgis_settings(priority_layer_settings) as priority_settings:
+                    group = {
+                        "uuid": uuid,
+                        "name": priority_settings.value("name"),
+                        "value": priority_settings.value("value"),
+                    }
+                    priority_groups.append(group)
+        return priority_groups
+
+    def save_priority_group(self, priority_group):
+        """Save the priority group into the plugin settings
+
+        :param priority_group: group
+        :type priority_group:  dict
+        """
+
+        settings_key = self._get_priority_groups_settings_base(priority_group["uuid"])
+
+        with qgis_settings(settings_key) as settings:
+            settings.setValue("name", priority_group["name"])
+            settings.setValue("value", priority_group["value"])
 
     def _get_ncs_pathway_settings_base(self) -> str:
         """Returns the path for NCS pathway settings.

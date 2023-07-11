@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>496</width>
-    <height>576</height>
+    <height>586</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -53,143 +53,255 @@
       <string>Priority groups</string>
      </property>
      <layout class="QGridLayout" name="gridLayout">
-      <item row="0" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>Carbon importance</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QgsSpinBox" name="carbon_importance_box">
-        <property name="maximum">
-         <number>100</number>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_4">
-        <property name="text">
-         <string>Biodiversity</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QgsSpinBox" name="biodiversity_box">
-        <property name="maximum">
-         <number>100</number>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_5">
-        <property name="text">
-         <string>Livelihood</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QgsSpinBox" name="livelihood_box">
-        <property name="maximum">
-         <number>100</number>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
+      <item row="3" column="1">
        <widget class="QLabel" name="label_6">
         <property name="text">
          <string>Climate Resilience</string>
         </property>
        </widget>
       </item>
-      <item row="3" column="1">
-       <widget class="QgsSpinBox" name="climate_resilience_box">
-        <property name="maximum">
-         <number>100</number>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="0">
-       <widget class="QLabel" name="label_7">
-        <property name="text">
-         <string>Ecological infrastructure</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="1">
-       <widget class="QgsSpinBox" name="ecological_box">
-        <property name="maximum">
-         <number>100</number>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="0">
-       <widget class="QLabel" name="label_8">
-        <property name="text">
-         <string>Policy</string>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="1">
-       <widget class="QgsSpinBox" name="policy_box">
-        <property name="maximum">
-         <number>100</number>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="0">
+      <item row="6" column="1">
        <widget class="QLabel" name="label_9">
         <property name="text">
          <string>Finance - Years Experience</string>
         </property>
        </widget>
       </item>
-      <item row="6" column="1">
-       <widget class="QgsSpinBox" name="finance_experience_box">
-        <property name="maximum">
-         <number>100</number>
+      <item row="0" column="1">
+       <widget class="QLabel" name="label_3">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
-       </widget>
-      </item>
-      <item row="7" column="0">
-       <widget class="QLabel" name="label_10">
         <property name="text">
-         <string>Finance - Market Trends</string>
+         <string>Carbon importance</string>
         </property>
        </widget>
       </item>
-      <item row="7" column="1">
-       <widget class="QgsSpinBox" name="finance_market_box">
-        <property name="maximum">
-         <number>100</number>
-        </property>
-       </widget>
-      </item>
-      <item row="8" column="0">
-       <widget class="QLabel" name="label_11">
+      <item row="1" column="1">
+       <widget class="QLabel" name="label_4">
         <property name="text">
-         <string>Finance - Net Present value</string>
+         <string>Biodiversity</string>
         </property>
        </widget>
       </item>
-      <item row="8" column="1">
-       <widget class="QgsSpinBox" name="finance_present_value_box">
-        <property name="maximum">
-         <number>100</number>
-        </property>
-       </widget>
-      </item>
-      <item row="9" column="0">
+      <item row="9" column="1">
        <widget class="QLabel" name="label_12">
         <property name="text">
          <string>Finance - Carbon</string>
         </property>
        </widget>
       </item>
-      <item row="9" column="1">
+      <item row="9" column="2">
        <widget class="QgsSpinBox" name="finance_carbon_box">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
         <property name="maximum">
          <number>100</number>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="2">
+       <widget class="QgsSpinBox" name="finance_market_box">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QCheckBox" name="carbon_importance_chk">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QLabel" name="label_8">
+        <property name="text">
+         <string>Policy</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="1">
+       <widget class="QLabel" name="label_11">
+        <property name="text">
+         <string>Finance - Net Present value</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="2">
+       <widget class="QgsSpinBox" name="climate_resilience_box">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="QgsSpinBox" name="livelihood_box">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QgsSpinBox" name="carbon_importance_box">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="2">
+       <widget class="QgsSpinBox" name="finance_experience_box">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="2">
+       <widget class="QgsSpinBox" name="finance_present_value_box">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QLabel" name="label_7">
+        <property name="text">
+         <string>Ecological infrastructure</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="2">
+       <widget class="QgsSpinBox" name="policy_box">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QgsSpinBox" name="biodiversity_box">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="2">
+       <widget class="QgsSpinBox" name="ecological_box">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLabel" name="label_5">
+        <property name="text">
+         <string>Livelihood</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="1">
+       <widget class="QLabel" name="label_10">
+        <property name="text">
+         <string>Finance - Market Trends</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QCheckBox" name="biodiversity_chk">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QCheckBox" name="livelihood_chk">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QCheckBox" name="climate_resilience_chk">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QCheckBox" name="ecological_chk">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QCheckBox" name="policy_chk">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QCheckBox" name="finance_experience_chk">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0">
+       <widget class="QCheckBox" name="finance_market_chk">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="0">
+       <widget class="QCheckBox" name="finance_present_value_chk">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="0">
+       <widget class="QCheckBox" name="finance_carbon_chk">
+        <property name="text">
+         <string/>
         </property>
        </widget>
       </item>

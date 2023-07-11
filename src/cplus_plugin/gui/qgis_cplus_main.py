@@ -47,11 +47,12 @@ from ..utils import open_documentation, tr, log
 from ..conf import settings_manager
 
 from ..definitions.defaults import (
+    ADD_LAYER_ICON_PATH,
     PILOT_AREA_EXTENT,
     PRIORITY_GROUPS,
-    PRIORITY_LAYERS,
     OPTIONS_TITLE,
     ICON_PATH,
+    REMOVE_LAYER_ICON_PATH,
 )
 
 from ..algorithms.base import run_alg
@@ -88,11 +89,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         icon_pixmap = QtGui.QPixmap(ICON_PATH)
         self.icon_la.setPixmap(icon_pixmap)
 
+        add_layer_icon = QtGui.QIcon(ADD_LAYER_ICON_PATH)
+        self.layer_add_btn.setIcon(add_layer_icon)
+
+        remove_layer_icon = QtGui.QIcon(REMOVE_LAYER_ICON_PATH)
+        self.layer_remove_btn.setIcon(remove_layer_icon)
+
     def initialize_priority_layers(self):
         """Prepares the priority weighted layers UI with the defaults"""
         self.priority_layers_list.clear()
 
-        selected_groups = []
         for layer in settings_manager.get_priority_layers():
             item = QtWidgets.QListWidgetItem()
             item.setData(QtCore.Qt.DisplayRole, layer.get("name"))
@@ -102,32 +108,34 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             if layer.get("selected"):
                 selected_groups = layer["groups"]
                 self.priority_layers_list.setCurrentItem(item)
-
-        item_count = 0
         list_items = []
         items_only = []
-        for group in PRIORITY_GROUPS:
+        stored_priority_groups = settings_manager.get_priority_groups()
+        for group in stored_priority_groups:
             group_widget = PriorityGroupWidget(
                 group,
             )
-
             group_widget.input_value_changed.connect(self.group_value_changed)
             group_widget.slider_value_changed.connect(self.group_value_changed)
 
-            layer_group = None
-            for selected_group in selected_groups:
-                if selected_group["name"] == group["name"]:
-                    layer_group = selected_group
-
-            group_widget.set_group(layer_group)
-
             self.priority_groups_widgets[group["name"]] = group_widget
+
+            pw_layers = settings_manager.find_layers_by_group(group["name"])
 
             self.priority_groups_list.clear()
 
             item = QtWidgets.QTreeWidgetItem()
             item.setSizeHint(0, group_widget.sizeHint())
             item.setExpanded(True)
+
+            for layer in pw_layers:
+                if item.parent() is None:
+                    children = item.takeChildren()
+                    text = layer["name"]
+                    for child in children:
+                        if child.text(0) == text:
+                            break
+                    item.addChildren(children)
 
             list_items.append((item, group_widget))
             items_only.append(item)
@@ -143,6 +151,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.priority_groups_list.setItemWidget(item[0], 0, item[1])
 
     def group_value_changed(self, group_name, group_value):
+        group = settings_manager.find_group_by_name(group_name)
+        group["value"] = group_value
+        settings_manager.save_priority_group(group)
+
         for index in range(self.priority_groups_list.topLevelItemCount()):
             item = self.priority_groups_list.topLevelItem(index)
 
@@ -181,6 +193,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             item.setData(QtCore.Qt.UserRole, layer.get("uuid"))
 
             self.priority_layers_list.addItem(item)
+            for index in range(self.priority_groups_list.topLevelItemCount()):
+                group = self.priority_groups_list.topLevelItem(index)
+                if group.text(0) in layer.get("groups"):
+                    self.add_priority_layer_group(group, item)
 
             if layer.get("selected"):
                 self.priority_layers_list.setCurrentItem(item)
@@ -221,9 +237,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 group_widget = self.priority_groups_widgets.get(group["name"])
                 group_widget.set_group(group)
 
-    def add_priority_layer_group(self):
-        selected_priority_layer = self.priority_layers_list.currentItem()
-        selected_group = self.priority_groups_list.currentItem()
+    def add_priority_layer_group(self, target_group=None, priority_layer=None):
+        selected_priority_layer = (
+            priority_layer or self.priority_layers_list.currentItem()
+        )
+        selected_group = target_group or self.priority_groups_list.currentItem()
 
         if selected_group.parent() is None:
             children = selected_group.takeChildren()
@@ -241,18 +259,31 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 item.setText(0, text)
                 group_widget = self.priority_groups_list.itemWidget(selected_group, 0)
                 layer_id = selected_priority_layer.data(QtCore.Qt.UserRole)
-                log(f" {layer_id} ")
+
                 priority_layer = settings_manager.get_priority_layer(layer_id)
-                groups = priority_layer.get("groups")
-                target_group_name = group_widget.group.get("name")
-                log(
-                    f"{len(groups)} found groups {groups} group name from widget {target_group_name}"
+                target_group_name = (
+                    group_widget.group.get("name") if group_widget.group else None
                 )
+
+                groups = priority_layer.get("groups")
                 new_groups = []
+                group_found = False
+
                 for group in groups:
-                    if group.get("name") == target_group_name:
-                        group["value"] = group_widget.group_value()
-                    new_groups.append(group)
+                    if target_group_name == group["name"]:
+                        group_found = True
+                        new_group = settings_manager.find_group_by_name(
+                            target_group_name
+                        )
+                    else:
+                        new_group = group
+                    new_groups.append(new_group)
+                if not group_found:
+                    searched_group = settings_manager.find_group_by_name(
+                        target_group_name
+                    )
+                    new_groups.append(searched_group)
+
                 priority_layer["groups"] = new_groups
                 settings_manager.save_priority_layer(priority_layer)
 

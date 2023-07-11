@@ -48,8 +48,9 @@ class PriorityGroupWidget(QtWidgets.QWidget, WidgetUi):
         """Sets the priority layer group and updates the slider and
         input values
         """
-        self.group = group
+
         if group is not None:
+            self.group = group
             self.group_slider.setValue(int(group["value"]))
             self.group_spin_box.setValue(int(group["value"]))
 
@@ -61,14 +62,16 @@ class PriorityGroupWidget(QtWidgets.QWidget, WidgetUi):
 
     def update_slider(self, value):
         """Changes the current slider value"""
-        self.input_value_changed.emit(self.group["name"], value)
-        self.group_slider.blockSignals(True)
-        self.group_slider.setValue(value)
-        self.group_slider.blockSignals(False)
+        if self.group is not None:
+            self.input_value_changed.emit(self.group["name"], value)
+            self.group_slider.blockSignals(True)
+            self.group_slider.setValue(value)
+            self.group_slider.blockSignals(False)
 
     def update_spin_box(self, value):
         """Changes the input value of the spin box"""
-        self.slider_value_changed.emit(self.group["name"], value)
-        self.group_spin_box.blockSignals(True)
-        self.group_spin_box.setValue(value)
-        self.group_spin_box.blockSignals(False)
+        if self.group is not None:
+            self.slider_value_changed.emit(self.group["name"], value)
+            self.group_spin_box.blockSignals(True)
+            self.group_spin_box.setValue(value)
+            self.group_spin_box.blockSignals(False)

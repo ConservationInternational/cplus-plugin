@@ -87,7 +87,7 @@
     <item>
      <widget class="QTabWidget" name="tab_widget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="step_3">
        <attribute name="title">
@@ -274,7 +274,7 @@
             </property>
             <property name="icon">
              <iconset theme="add">
-              <normaloff>.</normaloff>.</iconset>
+              <normaloff>../../../../../../.designer/backup</normaloff>../../../../../../.designer/backup</iconset>
             </property>
            </widget>
           </item>
@@ -291,7 +291,7 @@
             </property>
             <property name="icon">
              <iconset theme="edit">
-              <normaloff>.</normaloff>.</iconset>
+              <normaloff>../../../../../../.designer/backup</normaloff>../../../../../../.designer/backup</iconset>
             </property>
            </widget>
           </item>
@@ -305,7 +305,7 @@
             </property>
             <property name="icon">
              <iconset theme="remove">
-              <normaloff>.</normaloff>.</iconset>
+              <normaloff>../../../../../../.designer/backup</normaloff>../../../../../../.designer/backup</iconset>
             </property>
            </widget>
           </item>
@@ -366,7 +366,7 @@
             </property>
             <property name="icon">
              <iconset>
-              <normaloff>../../../resources/cplus_right_arrow.svg</normaloff>../../../resources/cplus_right_arrow.svg</iconset>
+              <normaloff>../../../../../../../resources/cplus_right_arrow.svg</normaloff>../../../../../../../resources/cplus_right_arrow.svg</iconset>
             </property>
            </widget>
           </item>
@@ -380,7 +380,7 @@
             </property>
             <property name="icon">
              <iconset>
-              <normaloff>../../../resources/cplus_left_arrow.svg</normaloff>../../../resources/cplus_left_arrow.svg</iconset>
+              <normaloff>../../../../../../../resources/cplus_left_arrow.svg</normaloff>../../../../../../../resources/cplus_left_arrow.svg</iconset>
             </property>
            </widget>
           </item>
