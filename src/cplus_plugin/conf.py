@@ -35,14 +35,12 @@ from .models.helpers import (
 def qgis_settings(group_root: str, settings=None):
     """Context manager to help defining groups when creating QgsSettings.
 
-    :param group_root: Name of the root group for the settings.
-    :type group_root: str
+    Args:
+        group_root (str): Name of the root group for the settings
+        settings (QgsSettings): QGIS settings to use
 
-    :param settings: QGIS settings to use
-    :type settings: QgsSettings
-
-    :yields: Instance of the created settings.
-    :type: QgsSettings
+    Yields:
+        settings (QgsSettings): Instance of the created settings
     """
     if settings is None:
         settings = QgsSettings()
@@ -55,21 +53,19 @@ def qgis_settings(group_root: str, settings=None):
 
 @dataclasses.dataclass
 class ScenarioSettings(Scenario):
-    """Plugin Scenario settings"""
+    """Plugin Scenario settings."""
 
     @classmethod
     def from_qgs_settings(cls, identifier: str, settings: QgsSettings):
         """Reads QGIS settings and parses them into a scenario
         settings instance with the respective settings values as properties.
 
-        :param identifier: Scenario identifier
-        :type identifier: str
+        Args:
+            identifier (str): Scenario identifier
+            settings (QgsSettings): Scenario identifier
 
-        :param settings: QGIS settings.
-        :type settings: QgsSettings
-
-        :returns: Scenario settings object
-        :rtype: ScenarioSettings
+        Returns:
+            scenarioSettings (ScenarioSettings): Scenario settings object
         """
 
         return cls(
@@ -83,11 +79,11 @@ class ScenarioSettings(Scenario):
         """Fetches Scenario extent from
          the passed scenario settings.
 
-        :param scenario_settings: Scenario settings instance
-        :type scenario_settings: ScenarioSettings
+        Args:
+            scenario_settings (ScenarioSettings): Scenario settings instance
 
-        :returns: Spatial extent instance extent
-        :rtype: SpatialExtent
+        Returns:
+            spatialExtent (SpatialExtent): Spatial extent instance extent
         """
         spatial_key = "extent/spatial"
 
@@ -99,7 +95,7 @@ class ScenarioSettings(Scenario):
 
 
 class Settings(enum.Enum):
-    """Plugin settings names"""
+    """Plugin settings names."""
 
     DOWNLOAD_FOLDER = "download_folder"
     REFRESH_FREQUENCY = "refresh/period"
@@ -136,12 +132,9 @@ class SettingsManager(QtCore.QObject):
     def set_value(self, name: str, value):
         """Adds a new setting key and value on the plugin specific settings.
 
-        :param name: Name of setting key
-        :type name: str
-
-        :param value: Value of the setting
-        :type value: Any
-
+        Args:
+            name (str): Name of setting key
+            value (Any): Value of the setting
         """
         self.settings.setValue(f"{self.BASE_GROUP_NAME}/{name}", value)
         self.settings_updated.emit(name, value)
@@ -149,18 +142,13 @@ class SettingsManager(QtCore.QObject):
     def get_value(self, name: str, default=None, setting_type=None):
         """Gets value of the setting with the passed name.
 
-        :param name: Name of the setting key
-        :type name: str
+        Args:
+            name (str): Name of setting key
+            default (Any): Default value returned when the setting key does not exist
+            setting_type (Any): Type of the store setting
 
-        :param default: Default value returned when the
-         setting key does not exists
-        :type default: Any
-
-        :param setting_type: Type of the store setting
-        :type setting_type: Any
-
-        :returns: Value of the setting
-        :rtype: Any
+        Returns:
+            value (Any): Value of the setting
         """
         if setting_type:
             return self.settings.value(
@@ -171,19 +159,19 @@ class SettingsManager(QtCore.QObject):
     def remove(self, name):
         """Remove the setting with the specified name.
 
-        :param name: Name of the setting key
-        :type name: str
+        Args:
+            name (str): Name of the setting key
         """
         self.settings.remove(f"{self.BASE_GROUP_NAME}/{name}")
 
     def _get_scenario_settings_base(self, identifier):
         """Gets the scenario settings base url.
 
-        :param identifier: Scenario settings identifier
-        :type identifier: uuid.UUID
+        Args:
+            identifier (uuid.UUID): Scenario settings identifier
 
-        :returns Scenario settings base group
-        :rtype str
+        Returns:
+            baseGroup (str): Scenario settings base group
         """
         return (
             f"{self.BASE_GROUP_NAME}/"
@@ -194,8 +182,8 @@ class SettingsManager(QtCore.QObject):
     def save_scenario(self, scenario_settings):
         """Save the passed scenario settings into the plugin settings
 
-        :param scenario_settings: Scenario settings
-        :type scenario_settings:  ScenarioSettings
+        Args:
+            scenario_settings (ScenarioSettings): Scenario settings
         """
         settings_key = self._get_scenario_settings_base(scenario_settings.uuid)
 
@@ -210,11 +198,9 @@ class SettingsManager(QtCore.QObject):
         """Saves the scenario extent into plugin settings
         using the provided settings group key.
 
-        :param extent: Scenario extent
-        :type extent: SpatialExtent
-
-        :param key: QgsSettings group key.
-        :type key: str
+        Args:
+            extent (SpatialExtent): Scenario extent
+            key (str): QgsSettings group key
         """
         spatial_extent = extent.spatial.bbox
 
@@ -225,11 +211,11 @@ class SettingsManager(QtCore.QObject):
     def get_scenario(self, identifier):
         """Retrieves the scenario that matches the passed identifier.
 
-        :param identifier: Scenario identifier
-        :type identifier: str
+        Args:
+            identifier (str): Scenario identifier
 
-        :returns Scenario settings instance
-        :rtype ScenarioSettings
+        Returns:
+            settingsInstance (ScenarioSettings): Scenario settings instance
         """
 
         settings_key = self._get_scenario_settings_base(identifier)
@@ -242,11 +228,11 @@ class SettingsManager(QtCore.QObject):
     def get_scenario(self, scenario_id):
         """Retrieves the first scenario that matched the passed scenario id.
 
-        :param scenario_id: Scenario id
-        :type scenario_id: str
+        Args:
+            scenario_id (str): Scenario id
 
-        :returns Scenario settings instance
-        :rtype ScenarioSettings
+        Returns:
+            settingsInstance (ScenarioSettings): Scenario settings instance
         """
 
         result = []
@@ -266,8 +252,8 @@ class SettingsManager(QtCore.QObject):
     def get_scenarios(self):
         """Gets all the available scenarios settings in the plugin.
 
-        :returns List of the scenario settings instances
-        :rtype list
+        Returns:
+            settingsInstancesList (list): List of the scenario settings instances
         """
         result = []
         with qgis_settings(

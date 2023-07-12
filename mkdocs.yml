@@ -18,10 +18,13 @@ nav:
   - Developer:
       - Setup: developer/setup.md
       - Architecture: developer/architecture.md
-      - Workflows: developer/workflows.md
       - Documentation: developer/documentation.md
-      - Code automatic documentation: developer/code_auto_docs.md
-  - DevOps: devops/devops.md
+      - API:
+          - Main: developer/api/api_main.md
+          - GUI main: developer/api/api_gui_main.md
+          - Configuration: developer/api/api_conf.md
+          - Model base: developer/api/api_base.md
+          - Settings: developer/api/api_settings.md
   - About:
       - Conservation International: about/ci.md
       - Kartoza: about/kartoza.md

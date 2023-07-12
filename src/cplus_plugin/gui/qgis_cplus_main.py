@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
- The plugin main window class file
+ The plugin main window class.
 """
 
 import os
@@ -85,6 +85,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.dock_widget_contents.layout().insertLayout(0, self.grid_layout)
 
     def run_scenario_analysis(self):
+        """Performs the scenario analysis. This covers the pilot study area,
+        and whether the AOI is outside the pilot study area.
+        """
         extent_list = PILOT_AREA_EXTENT["coordinates"]
         default_extent = QgsRectangle(
             extent_list[3], extent_list[2], extent_list[1], extent_list[0]
@@ -106,13 +109,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
 
     def show_message(self, message, level=Qgis.Warning):
-        """Shows message on the main widget message bar
+        """Shows message on the main widget message bar.
 
-        :param message: Message text
-        :type message: str
-
-        :param level: Message level type
-        :type level: Qgis.MessageLevel
+        Args:
+            message (str): Text message
+            level (Qgis.MessageLevel): Message level type
         """
         self.message_bar.clearWidgets()
         self.message_bar.pushMessage(message, level=level)

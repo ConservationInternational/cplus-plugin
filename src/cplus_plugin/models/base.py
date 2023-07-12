@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-""" QGIS CPLUS plugin models
+""" QGIS CPLUS plugin models.
 """
 
 import dataclasses
