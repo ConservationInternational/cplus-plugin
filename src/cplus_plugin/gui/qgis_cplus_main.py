@@ -197,6 +197,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 group = self.priority_groups_list.topLevelItem(index)
                 if group.text(0) in layer.get("groups"):
                     self.add_priority_layer_group(group, item)
+                else:
+                    group_children = group.takeChildren()
+                    children = []
+                    for child in group_children:
+                        if child.text(0) == layer.get("name"):
+                            continue
+                        children.append(child)
+                    group.addChildren(children)
 
             if layer.get("selected"):
                 self.priority_layers_list.setCurrentItem(item)
@@ -243,7 +251,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
         selected_group = target_group or self.priority_groups_list.currentItem()
 
-        if selected_group.parent() is None:
+        if selected_group is not None and selected_group.parent() is None:
             children = selected_group.takeChildren()
             item_found = False
             text = selected_priority_layer.data(QtCore.Qt.DisplayRole)
