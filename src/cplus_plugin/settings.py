@@ -1,3 +1,21 @@
+# coding=utf-8
+
+"""Impact function utilities.
+
+Extended description goes here
+
+/***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ ***************************************************************************/
+
+.. versionadded:: 2.1
+"""
+
 import os
 from pathlib import Path
 
@@ -30,7 +48,15 @@ Ui_DlgSettings, _ = uic.loadUiType(str(Path(__file__).parent / "ui/qgis_settings
 class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
     message_bar: qgis.gui.QgsMessageBar
 
+    """Impact function utilities.
+
+    Extended description goes here
+
+    .. versionadded:: 2.1
+    """
+
     def __init__(self, parent=None) -> None:
+        """QGIS CPLUS Plugin Settings dialog."""
         QgsOptionsPageWidget.__init__(self, parent)
 
         self.setupUi(self)
@@ -50,8 +76,9 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.save_settings()
 
     def update_logo(self, custom_logo, logo_dir=DEFAULT_LOGO_PATH):
-        """Updates the logo preview. If the logo is not found,
-        the default logo will be used.
+        """Updates the logo preview.
+
+        If the logo is not found, the default logo will be used.
 
         Args:
             custom_logo (bool): If a custom logo should be used
@@ -262,6 +289,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
 class CplusOptionsFactory(QgsOptionsWidgetFactory):
     def __init__(self) -> None:
+        """QGIS CPLUS Plugin Settings factory."""
         super().__init__()
 
         self.setTitle(OPTIONS_TITLE)
