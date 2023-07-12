@@ -44,6 +44,7 @@ from ..definitions.defaults import (
     OPTIONS_TITLE,
     ICON_PATH,
     REMOVE_LAYER_ICON_PATH,
+    USER_DOCUMENTATION_SITE,
 )
 
 WidgetUi, _ = loadUiType(
@@ -83,7 +84,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.grid_layout = QtWidgets.QGridLayout()
         self.message_bar = QgsMessageBar()
         self.prepare_message_bar()
-        self.help_btn.clicked.connect(open_documentation)
+        self.help_btn.clicked.connect(self.open_help)
         self.pilot_area_btn.clicked.connect(self.zoom_pilot_area)
         self.run_scenario_btn.clicked.connect(self.run_scenario_analysis)
         self.options_btn.clicked.connect(self.open_settings)
@@ -297,6 +298,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             settings_manager.save_priority_layer(priority_layer)
 
             parent_item.removeChild(selected_group)
+
+    def open_help(self):
+        """Opens the user documentation for the plugin in a browser"""
+        open_documentation(USER_DOCUMENTATION_SITE)
 
     def prepare_message_bar(self):
         """Initializes the widget message bar settings"""

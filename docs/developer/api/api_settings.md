@@ -5,4 +5,4 @@
     options:
         heading_level: 1
         show_source: true
-        show_root_heading: true
+        show_root_heading: false

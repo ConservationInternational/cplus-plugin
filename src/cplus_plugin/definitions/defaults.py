@@ -11,6 +11,8 @@ PILOT_AREA_EXTENT = {
 }
 
 DOCUMENTATION_SITE = "https://kartoza.github.io/cplus-plugin"
+USER_DOCUMENTATION_SITE = "https://kartoza.github.io/cplus-plugin/user/cplus_ui_guide"
+ABOUT_DOCUMENTATION_SITE = "https://kartoza.github.io/cplus-plugin/about/ci"
 
 OPTIONS_TITLE = "CPLUS"  # Title in the QGIS settings
 ICON_PATH = ":/plugins/cplus_plugin/icon.svg"

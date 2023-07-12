@@ -1,4 +1,7 @@
-"""
+# coding=utf-8
+
+"""Plugin main/core.
+
 /***************************************************************************
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -23,10 +26,19 @@ from .gui.qgis_cplus_main import QgisCplusMain
 from qgis.PyQt.QtWidgets import QToolButton
 from qgis.PyQt.QtWidgets import QMenu
 
-from .definitions.defaults import ICON_PATH, OPTIONS_TITLE
+from .definitions.defaults import (
+    ABOUT_DOCUMENTATION_SITE,
+    DOCUMENTATION_SITE,
+    USER_DOCUMENTATION_SITE,
+    ICON_PATH,
+    OPTIONS_TITLE,
+)
 from .settings import CplusOptionsFactory
 
-from .utils import log
+from .utils import (
+    log,
+    open_documentation,
+)
 
 from .conf import Settings, settings_manager
 from .definitions.defaults import (
@@ -177,6 +189,22 @@ class QgisCplus:
             status_tip=self.tr("CPLUS Settings"),
         )
 
+        self.add_action(
+            os.path.join(os.path.dirname(__file__), "icons", "mActionHelpContents_green.svg"),
+            text=self.tr("Help"),
+            callback=self.open_help,
+            parent=self.iface.mainWindow(),
+            status_tip=self.tr("CPLUS Help"),
+        )
+
+        self.add_action(
+            os.path.join(os.path.dirname(__file__), "icons", "info_green.svg"),
+            text=self.tr("About"),
+            callback=self.open_about,
+            parent=self.iface.mainWindow(),
+            status_tip=self.tr("CPLUS About"),
+        )
+
         # Adds the settings to the QGIS options panel
         self.options_factory = CplusOptionsFactory()
         self.iface.registerOptionsWidgetFactory(self.options_factory)
@@ -275,3 +303,12 @@ def initialize_default_settings():
         except KeyError as ke:
             log(f"Default implementation model configuration load error - {str(ke)}")
             continue
+
+    def open_help(self):
+        """Opens documentation home page for the plugin in a browser"""
+        open_documentation(DOCUMENTATION_SITE)
+
+    def open_about(self):
+        """Opens the about documentation for the plugin in a browser"""
+        open_documentation(ABOUT_DOCUMENTATION_SITE)
+

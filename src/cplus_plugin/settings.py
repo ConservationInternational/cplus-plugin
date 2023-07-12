@@ -1,8 +1,10 @@
 # coding=utf-8
 
-"""Impact function utilities.
+"""Plugin global settings.
 
-Extended description goes here
+Covers the plugin global settings which a user can set and save. The settings
+will be saved using QgsSettings. Settings can be accessed via the QGIS options,
+a button on the docking widget, and from the toolbar menu.
 
 /***************************************************************************
  *                                                                         *
@@ -13,7 +15,6 @@ Extended description goes here
  *                                                                         *
  ***************************************************************************/
 
-.. versionadded:: 2.1
 """
 
 import os
@@ -48,11 +49,10 @@ Ui_DlgSettings, _ = uic.loadUiType(str(Path(__file__).parent / "ui/qgis_settings
 class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
     message_bar: qgis.gui.QgsMessageBar
 
-    """Impact function utilities.
+    """CPLUS plugin settings class.
 
-    Extended description goes here
-
-    .. versionadded:: 2.1
+    Class which manages the CPLUS settings. Initilizes the UI, which can be accessed
+    from the menu drop-down or the QGIS settings.
     """
 
     def __init__(self, parent=None) -> None:
@@ -288,6 +288,12 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
 
 class CplusOptionsFactory(QgsOptionsWidgetFactory):
+    """Options factory initializes the CPLUS settings.
+
+    Class which creates the widget requied for the CPLUS settings.
+    QgsOptionsWidgetFactory is used to accomplish this.
+    """
+
     def __init__(self) -> None:
         """QGIS CPLUS Plugin Settings factory."""
         super().__init__()
