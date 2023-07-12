@@ -6,15 +6,29 @@
 import contextlib
 import dataclasses
 import enum
+import json
+import os.path
+from pathlib import Path
+import typing
 import uuid
 
-from qgis.PyQt import (
-    QtCore,
-    QtWidgets,
-)
+from qgis.PyQt import QtCore
 from qgis.core import QgsRectangle, QgsSettings
 
-from .models.base import Scenario, SpatialExtent
+from .definitions.constants import NCS_PATHWAY_SEGMENT
+
+from .models.base import (
+    ImplementationModel,
+    NcsPathway,
+    Scenario,
+    SpatialExtent,
+)
+from .models.helpers import (
+    create_model_component,
+    create_ncs_pathway,
+    model_component_to_dict,
+    ncs_pathway_to_dict,
+)
 
 
 @contextlib.contextmanager
@@ -112,10 +126,12 @@ class SettingsManager(QtCore.QObject):
 
     BASE_GROUP_NAME: str = "cplus_plugin"
     SCENARIO_GROUP_NAME: str = "scenarios"
+    IMPLEMENTATION_MODEL_BASE: str = "implementation_models"
 
     settings = QgsSettings()
 
     scenarios_settings_updated = QtCore.pyqtSignal()
+    settings_updated = QtCore.pyqtSignal(Settings, object)
 
     def set_value(self, name: str, value):
         """Adds a new setting key and value on the plugin specific settings.
@@ -128,6 +144,7 @@ class SettingsManager(QtCore.QObject):
 
         """
         self.settings.setValue(f"{self.BASE_GROUP_NAME}/{name}", value)
+        self.settings_updated.emit(name, value)
 
     def get_value(self, name: str, default=None, setting_type=None):
         """Gets value of the setting with the passed name.
@@ -271,6 +288,192 @@ class SettingsManager(QtCore.QObject):
         ) as settings:
             for scenario_name in settings.childGroups():
                 settings.remove(scenario_name)
+
+    def _get_ncs_pathway_settings_base(self) -> str:
+        """Returns the path for NCS pathway settings.
+
+        :returns: Base path to NCS pathway group.
+        :rtype: str
+        """
+        return f"{self.BASE_GROUP_NAME}/" f"{NCS_PATHWAY_SEGMENT}"
+
+    def save_ncs_pathway(self, ncs_pathway: typing.Union[NcsPathway, dict]):
+        """Saves an NCS pathway object serialized to a json string
+        indexed by the UUID.
+
+        :param ncs_pathway: NCS pathway object or attribute values
+        in a dictionary which are then serialized to a JSON string.
+        :type ncs_pathway: NcsPathway, dict
+        """
+        if isinstance(ncs_pathway, NcsPathway):
+            ncs_pathway = ncs_pathway_to_dict(ncs_pathway)
+
+        ncs_str = json.dumps(ncs_pathway)
+
+        ncs_uuid = ncs_pathway["uuid"]
+        ncs_root = self._get_ncs_pathway_settings_base()
+
+        with qgis_settings(ncs_root) as settings:
+            settings.setValue(ncs_uuid, ncs_str)
+
+    def get_ncs_pathway(self, ncs_uuid: str) -> typing.Union[NcsPathway, None]:
+        """Gets an NCS pathway object matching the given unique identified.
+
+        :param ncs_uuid: Unique identifier for the NCS pathway object.
+        :type ncs_uuid: str
+
+        :returns: Returns the NCS pathway object matching the given
+        identifier else None if not found.
+        :rtype: NcsPathway
+        """
+        ncs_pathway = None
+
+        ncs_root = self._get_ncs_pathway_settings_base()
+
+        with qgis_settings(ncs_root) as settings:
+            ncs_model = settings.value(ncs_uuid, None)
+            if ncs_model is not None:
+                ncs_pathway = create_ncs_pathway(json.loads(ncs_model))
+
+        return ncs_pathway
+
+    def get_all_ncs_pathways(self) -> typing.List[NcsPathway]:
+        """Get all the NCS pathway objects stored in settings.
+
+        :returns: Returns all the NCS pathway objects.
+        :rtype: list
+        """
+        ncs_pathways = []
+
+        ncs_root = self._get_ncs_pathway_settings_base()
+
+        with qgis_settings(ncs_root) as settings:
+            keys = settings.childKeys()
+            for k in keys:
+                ncs_pathway = self.get_ncs_pathway(k)
+                if ncs_pathway is not None:
+                    ncs_pathways.append(ncs_pathway)
+
+        return sorted(ncs_pathways, key=lambda ncs: ncs.name)
+
+    def update_ncs_pathways(self):
+        """Updates the path attribute of all NCS pathway settings
+        based on the BASE_DIR settings to reflect the absolute path
+        of each NCS pathway layer.
+        If BASE_DIR is empty then the NCS pathway settings will not
+        be updated.
+        """
+        ncs_pathways = self.get_all_ncs_pathways()
+        for ncs in ncs_pathways:
+            self.update_ncs_pathway(ncs)
+
+    def update_ncs_pathway(self, ncs_pathway: NcsPathway):
+        """Updates the attributes of the NCS pathway object
+        in settings. On the path, the BASE_DIR in settings
+        is used to reflect the absolute path of each NCS
+        pathway layer. If BASE_DIR is empty then the NCS
+        pathway setting will not be updated.
+
+        :param ncs_pathway: NCS pathway object to be updated.
+        :type ncs_pathway: NcsPathway
+        """
+        base_dir = self.get_value(Settings.BASE_DIR)
+        if not base_dir:
+            return
+
+        p = Path(ncs_pathway.path)
+        abs_path = f"{base_dir}/{NCS_PATHWAY_SEGMENT}/" f"{p.name}"
+        abs_path = str(os.path.normpath(abs_path))
+        ncs_pathway.path = abs_path
+
+        # Remove then re-insert
+        self.remove_ncs_pathway(str(ncs_pathway.uuid))
+        self.save_ncs_pathway(ncs_pathway)
+
+    def remove_ncs_pathway(self, ncs_uuid: str):
+        """Removes an NCS pathway settings entry using the UUID.
+
+        :param ncs_uuid: Unique identifier of the NCS pathway entry
+        to removed.
+        :type ncs_uuid: str
+        """
+        if self.get_ncs_pathway(ncs_uuid) is not None:
+            self.remove(f"{self.NCS_PATHWAY_BASE}/{ncs_uuid}")
+
+    def _get_implementation_model_settings_base(self) -> str:
+        """Returns the path for implementation model settings.
+
+        :returns: Base path to implementation model group.
+        :rtype: str
+        """
+        return f"{self.BASE_GROUP_NAME}/" f"{self.IMPLEMENTATION_MODEL_BASE}"
+
+    def save_implementation_model(
+        self, implementation_model: typing.Union[ImplementationModel, dict]
+    ):
+        """Saves an implementation model object serialized to a json string
+        indexed by the UUID.
+
+        :param implementation_model: Implementation model object or attribute
+        values in a dictionary which are then serialized to a JSON string.
+        :type implementation_model: ImplementationModel, dict
+        """
+        if isinstance(implementation_model, ImplementationModel):
+            implementation_model = model_component_to_dict(implementation_model)
+
+        implementation_model_str = json.dumps(implementation_model)
+
+        implementation_model_uuid = implementation_model["uuid"]
+        implementation_model_root = self._get_implementation_model_settings_base()
+
+        with qgis_settings(implementation_model_root) as settings:
+            settings.setValue(implementation_model_uuid, implementation_model_str)
+
+    def get_implementation_model(
+        self, implementation_model_uuid: str
+    ) -> typing.Union[ImplementationModel, None]:
+        """Gets an implementation model object matching the given unique
+        identified.
+
+        :param implementation_model_uuid: Unique identifier for the
+        implementation model object.
+        :type implementation_model_uuid: str
+
+        :returns: Returns the implementation model object matching the given
+        identifier else None if not found.
+        :rtype: ImplementationModel
+        """
+        implementation_model = None
+
+        implementation_model_root = self._get_implementation_model_settings_base()
+
+        with qgis_settings(implementation_model_root) as settings:
+            implementation_model = settings.value(implementation_model_uuid, None)
+            if implementation_model is not None:
+                implementation_model = create_model_component(
+                    json.loads(implementation_model), ImplementationModel
+                )
+
+        return implementation_model
+
+    def get_all_implementation_models(self) -> typing.List[ImplementationModel]:
+        """Get all the implementation model objects stored in settings.
+
+        :returns: Returns all the implementation model objects.
+        :rtype: list
+        """
+        implementation_models = []
+
+        implementation_model_root = self._get_implementation_model_settings_base()
+
+        with qgis_settings(implementation_model_root) as settings:
+            keys = settings.childKeys()
+            for k in keys:
+                implementation_model = self.get_implementation_model(k)
+                if implementation_model is not None:
+                    implementation_models.append(implementation_model)
+
+        return sorted(implementation_models, key=lambda imp_model: imp_model.name)
 
 
 settings_manager = SettingsManager()

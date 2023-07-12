@@ -29,6 +29,8 @@ from qgis.gui import (
 
 from qgis.utils import iface
 
+from .implementation_model_widget import ImplementationModelContainerWidget
+
 from ..resources import *
 
 from ..utils import open_documentation, tr, log
@@ -51,6 +53,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         super().__init__(parent)
         self.setupUi(self)
         self.iface = iface
+
+        # Insert widget for step 2
+        self.implementation_model_widget = ImplementationModelContainerWidget(self)
+        self.tab_widget.insertTab(
+            1, self.implementation_model_widget, self.tr("Step 2")
+        )
+        self.tab_widget.currentChanged.connect(self.on_tab_step_changed)
 
         self.prepare_input()
 
@@ -152,6 +161,27 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             default_extent,
             QgsCoordinateReferenceSystem("EPSG:4326"),
         )
+
+    def on_tab_step_changed(self, index: int):
+        """Slot raised when the current tab changes.
+
+        :param index: Zero-based index position of new current tab.
+        :type index: int
+        """
+        if index == 1:
+            self.implementation_model_widget.load()
+        elif index == 2:
+            # Validate NCS pathway - implementation model mapping
+            valid = self.implementation_model_widget.is_valid()
+            if not valid:
+                msg = self.tr(
+                    "Define one or more NCS pathways for at least one implementation model."
+                )
+                self.show_message(msg)
+                self.tab_widget.setCurrentIndex(1)
+
+            else:
+                self.message_bar.clearWidgets()
 
     def open_settings(self):
         """Options the CPLUS settings in the QGIS options dialog."""

@@ -26,6 +26,8 @@ from qgis.PyQt.QtWidgets import QMenu
 from .definitions.defaults import ICON_PATH, OPTIONS_TITLE
 from .settings import CplusOptionsFactory
 
+from .utils import initialize_default_settings
+
 
 class QgisCplus:
     """QGIS CPLUS Plugin Implementation."""
@@ -126,7 +128,7 @@ class QgisCplus:
         if add_to_menu:
             self.menu.addAction(action)
 
-        # If we want to readd this
+        # If we want to read this
         # if add_to_web_menu:
         #     self.iface.addPluginToWebMenu(self.menu, action)
 
@@ -165,6 +167,9 @@ class QgisCplus:
         self.options_factory = CplusOptionsFactory()
         self.iface.registerOptionsWidgetFactory(self.options_factory)
 
+        # Initialize default model components
+        initialize_default_settings()
+
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin widget is closed."""
         self.pluginIsActive = False
@@ -182,7 +187,7 @@ class QgisCplus:
 
     def run(self):
         """Creates the main widget for the plugin."""
-        if self.main_widget == None:
+        if self.main_widget is None:
             self.main_widget = QgisCplusMain(
                 iface=self.iface, parent=self.iface.mainWindow()
             )
