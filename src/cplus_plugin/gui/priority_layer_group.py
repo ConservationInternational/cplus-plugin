@@ -127,6 +127,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         self.finance_carbon_chk.toggled.connect(self.group_toggle)
 
     def group_toggle(self):
+        """Slot that handles group widget toggle changes."""
         sender = self.sender()
         name = None
 
@@ -155,6 +156,13 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
             self.add_group(name, 0)
 
     def add_group(self, name, value):
+        """Adds group with the passed name and value into
+        the settings manager.
+
+        Args
+            name (str): Group name
+            value (int): Group value
+        """
         if self.layer is not None:
             groups = self.layer.get("groups")
             group = {}

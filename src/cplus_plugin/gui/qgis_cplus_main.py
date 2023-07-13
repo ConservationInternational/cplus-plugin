@@ -102,7 +102,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.layer_remove_btn.clicked.connect(self.remove_priority_layer_group)
 
     def initialize_priority_layers(self):
-        """Prepares the priority weighted layers UI with the defaults"""
+        """Prepares the priority weighted layers UI with the defaults.
+
+        Gets the store priority layers from plugin settings and populates
+        them into the QListWidget as QListWidgetItems then fetches the
+        priority groups and adds them to the QTreeWidget as QTreeWidgetItems
+        with their corresponding priority layers as their child items.
+        """
         self.priority_layers_list.clear()
 
         for layer in settings_manager.get_priority_layers():
@@ -132,6 +138,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             item.setSizeHint(0, group_widget.sizeHint())
             item.setExpanded(True)
 
+            # Add priority layer into the group as a child item.
             for layer in pw_layers:
                 if item.parent() is None:
                     children = item.takeChildren()
@@ -149,6 +156,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.priority_groups_list.setItemWidget(item[0], 0, item[1])
 
     def group_value_changed(self, group_name, group_value):
+        """Slot to handle priority group widget changes.
+
+        Args
+            group_name (str): Group name
+            group_value (int): Group value
+        """
+
         group = settings_manager.find_group_by_name(group_name)
         group["value"] = group_value
         settings_manager.save_priority_group(group)
@@ -168,6 +182,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 settings_manager.save_priority_layer(layer)
 
     def update_priority_layers(self):
+        """Updates the priority weighting layers list in the UI."""
         self.priority_layers_list.clear()
         for layer in settings_manager.get_priority_layers():
             item = QtWidgets.QListWidgetItem()
@@ -189,6 +204,20 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     group.addChildren(children)
 
     def add_priority_layer_group(self, target_group=None, priority_layer=None):
+        """Adds priority layer from the weighting layers into a priority group
+           If no target_group or priority_layer is passed then the current selected
+           group or priority layer from their respective list will be used.
+
+           Checks if priority layer is already in the target group and if so no
+           addition is done.
+
+           After addition is done the respective priority layer plugin settings
+           are updated to store the new information.
+
+        Args
+            target_group (dict): Priority group where layer will be added to.
+            priority_layer (dict): Priority weighting layer to be added.
+        """
         selected_priority_layer = (
             priority_layer or self.priority_layers_list.currentItem()
         )
@@ -238,7 +267,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 priority_layer["groups"] = new_groups
                 settings_manager.save_priority_layer(priority_layer)
 
-    def remove_priority_layer_group(self):
+    def remove_priority_layer_group(self, target_group=None, priority_layer=None):
+        """Remove priority layer from a priority group.
+           If no target_group or priority_layer is passed then the current selected
+           group or priority layer from their respective list will be used.
+
+           Checks if priority layer is already in the target group and if no,
+           the removal is not perfomed.
+
+        Args
+            target_group (dict): Priority group where layer will be removed from.
+            priority_layer (dict): Priority weighting layer to be removed.
+        """
         selected_group = self.priority_groups_list.currentItem()
         parent_item = selected_group.parent()
 
