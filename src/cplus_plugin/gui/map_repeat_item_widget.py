@@ -6,35 +6,43 @@ Widget for the custom CPLUS layout map item.
 import os
 import typing
 
-from qgis.core import QgsLayoutItem, QgsProject
+from qgis.core import (
+    QgsLayoutItem,
+    QgsLayoutMeasurement
+)
 from qgis.gui import (
     QgsLayoutItemAbstractGuiMetadata,
     QgsLayoutItemBaseWidget,
     QgsLayoutItemPropertiesWidget,
 )
-from qgis.utils import iface
 
-from qgis.PyQt import QtGui, QtWidgets
+from qgis.PyQt import QtCore, QtGui, QtWidgets
 from qgis.PyQt.uic import loadUiType
 
 from ..conf import settings_manager
-from ..lib.reports.layout_items import CplusMapItem, CPLUS_MAP_ITEM_TYPE
+from ..lib.reports.layout_items import (
+    CplusMapRepeatItem,
+    CPLUS_MAP_REPEAT_ITEM_TYPE
+)
 from ..models.base import ModelComponentType
 from ..utils import FileUtils, tr
 
 
 WidgetUi, _ = loadUiType(
-    os.path.join(os.path.dirname(__file__), "../ui/map_layout_item_widget.ui")
+    os.path.join(
+        os.path.dirname(__file__),
+        "../ui/map_layout_item_widget.ui"
+    )
 )
 
 
-CPLUS_ITEM_NAME = tr("CPLUS Map")
+CPLUS_ITEM_NAME = tr("CPLUS Map Repeat Area")
 
 
-class CplusMapItemWidget(QgsLayoutItemBaseWidget, WidgetUi):
-    """Widget for configuring the CPLUS layout map item."""
+class CplusMapRepeatItemWidget(QgsLayoutItemBaseWidget, WidgetUi):
+    """Widget for configuring the CPLUS layout map repeatitem."""
 
-    def __init__(self, parent, layout_object: CplusMapItem):
+    def __init__(self, parent, layout_object: CplusMapRepeatItem):
         super().__init__(parent, layout_object)
         self.setupUi(self)
 
@@ -62,16 +70,6 @@ class CplusMapItemWidget(QgsLayoutItemBaseWidget, WidgetUi):
 
         elif component_type == ModelComponentType.IMPLEMENTATION_MODEL:
             self.rb_implementation_model.setChecked(True)
-
-        component_id = self._map_item.model_component_id
-        if not component_id:
-            return
-
-        idx = self.cbo_model_items.findData(component_id)
-        if idx == -1:
-            return
-
-        self.cbo_model_items.setCurrentIndex(idx)
 
     def on_select_ncs_pathway(self, state):
         """Slot raised when NCS pathway radio button has been toggled.
@@ -125,15 +123,18 @@ class CplusMapLayoutItemGuiMetadata(QgsLayoutItemAbstractGuiMetadata):
     """GUI metadata for a CPLUS map layout item."""
 
     def __init__(self):
-        super().__init__(CPLUS_MAP_ITEM_TYPE, CPLUS_ITEM_NAME)
+        super().__init__(
+            CPLUS_MAP_REPEAT_ITEM_TYPE,
+            CPLUS_ITEM_NAME
+        )
 
     def createItemWidget(self, item) -> QtWidgets.QWidget:
         """Factory override for the item widget."""
-        return CplusMapItemWidget(None, item)
+        return CplusMapRepeatItemWidget(None, item)
 
     def createItem(self, layout) -> QgsLayoutItem:
         """Factory override that returns the map item."""
-        return CplusMapItem(layout)
+        return CplusMapRepeatItem(layout)
 
     def visibleName(self) -> str:
         """Override for user-visible name identifying the item."""
@@ -141,28 +142,29 @@ class CplusMapLayoutItemGuiMetadata(QgsLayoutItemAbstractGuiMetadata):
 
     def creationIcon(self) -> QtGui.QIcon:
         """Factory override for item icon."""
-        return FileUtils.get_icon("mLayoutItemMap_cplus.svg")
+        return FileUtils.get_icon("mLayoutItemMap_cplus_add.svg")
 
-    def newItemAddedToLayout(self, map_item: CplusMapItem):
+    def newItemAddedToLayout(self, map_repeat_item: CplusMapRepeatItem):
         """Define action that is called when the CplusMapItem
         is added to a layout through the GUI.
 
-        :param map_item: Mao item to be added to the layout.
-        :type map_item: QgsLayoutItem
+        :param map_repeat_item: Map repeat item to be added to the layout.
+        :type map_repeat_item: CplusMapRepeatItem
         """
-        map_item.setBackgroundColor(QgsProject.instance().backgroundColor())
-        map_canvas = iface.mapCanvas()
-        if map_canvas is not None:
-            map_item.setMapRotation(map_canvas.rotation())
-            map_item.zoomToExtent(map_canvas.mapSettings().visibleExtent())
-
-        items = map_item.layout().items()
+        items = map_repeat_item.layout().items()
         counter = 1
         for item in items:
-            if isinstance(item, CplusMapItem):
+            if isinstance(item, CplusMapRepeatItem):
                 counter += 1
 
-        map_item.setId(f"{CPLUS_ITEM_NAME} {counter!s}")
+        # Set frame properties
+        map_repeat_item.setFrameEnabled(True)
+        map_repeat_item.setFrameJoinStyle(QtCore.Qt.MiterJoin)
+        map_repeat_item.setFrameStrokeColor(
+            QtGui.QColor(132,192,68)
+        )
+        map_repeat_item.setFrameStrokeWidth(
+            QgsLayoutMeasurement(0.4)
+        )
 
-        # Use project CRS as default
-        map_item.setCrs(QgsProject.instance().crs())
+        map_repeat_item.setId(f"{CPLUS_ITEM_NAME} {counter!s}")

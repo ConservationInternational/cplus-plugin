@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Custom layout items."""
+"""Custom CPLUS layout items."""
 
 import typing
 
 from qgis.core import (
+    QgsFillSymbol,
     QgsLayoutItemAbstractMetadata,
-    QgsLayoutItemMap,
     QgsLayoutItemRegistry,
+    QgsLayoutItemShape
 )
 from qgis.PyQt import QtGui
 
@@ -14,44 +15,36 @@ from ...models.base import ModelComponentType
 from ...utils import FileUtils, tr
 
 
-CPLUS_MAP_ITEM_TYPE = QgsLayoutItemRegistry.PluginItem + 2350
+CPLUS_MAP_REPEAT_ITEM_TYPE = QgsLayoutItemRegistry.PluginItem + 2350
 
 
-class CplusMapItem(QgsLayoutItemMap):
-    """Renders NCS pathway or implementation
-    model.
+class CplusMapRepeatItem(QgsLayoutItemShape):
+    """Defines an outline area within a layout where map items
+    containing NCS pathway or implementation model will be
+    drawn.
     """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._model_component_id = kwargs.pop("model_component_id", "")
+        self.setShapeType(QgsLayoutItemShape.Shape.Rectangle)
+
+        # We shall use a frame so that it can be turned off / on
+        # using the item properties UI. The symbol is just a proxy.
+        # Symbol properties
+        symbol_props = {
+            "color": "229,182,54,0",
+            "style": "solid",
+            "outline_style": "dash",
+            "line_color": "132,192,68",
+            "outline_width": "0",
+            "joinstyle": "miter"
+        }
+        symbol = QgsFillSymbol.createSimple(symbol_props)
+        self.setSymbol(symbol)
+
         self._model_component_type = kwargs.pop(
             "model_component_type", ModelComponentType.UNKNOWN
         )
-
-    @property
-    def model_component_id(self) -> str:
-        """Gets the unique identifier for the NCS
-        pathway or implementation model component that
-        is linked to this map item.
-
-        :returns: The unique identifier of the
-        model component.
-        :rtype: str
-        """
-        return self._model_component_id
-
-    @model_component_id.setter
-    def model_component_id(self, component_id: str):
-        """Set the unique identifier of the NCS pathway
-        or implementation model component associated
-        with this map item.
-
-        :param component_id: Unique identifier of the
-        model component.
-        :type component_id: str
-        """
-        self._model_component_id = component_id
 
     @property
     def model_component_type(self) -> ModelComponentType:
@@ -77,15 +70,15 @@ class CplusMapItem(QgsLayoutItemMap):
 
     def type(self):
         """Return item's unique type identifier."""
-        return CPLUS_MAP_ITEM_TYPE
+        return CPLUS_MAP_REPEAT_ITEM_TYPE
 
     def visibleName(self) -> str:
         """Override for visible name of the item."""
-        return tr("CPLUS Map Item")
+        return tr("CPLUS Map Repeat Area Item")
 
     def visiblePluralName(self) -> str:
         """Override for plural name of the items."""
-        return tr("CPLUS Map Items")
+        return tr("CPLUS Map Repeat Area Items")
 
     def icon(self) -> QtGui.QIcon:
         """Override for custom CPLUS map item."""
@@ -95,7 +88,6 @@ class CplusMapItem(QgsLayoutItemMap):
         """Override saving of item properties."""
         status = super().writePropertiesToElement(el, document, context)
         if status:
-            el.setAttribute("modelComponentId", self._model_component_id)
             el.setAttribute("modelComponentType", self._model_component_type.value)
 
         return status
@@ -104,7 +96,6 @@ class CplusMapItem(QgsLayoutItemMap):
         """Override reading of item properties."""
         status = super().readPropertiesFromElement(element, document, context)
         if status:
-            self._model_component_id = element.attribute("modelComponentId", "")
             model_component_type = element.attribute("modelComponentType", "")
             self._model_component_type = ModelComponentType.from_string(
                 model_component_type
@@ -113,12 +104,17 @@ class CplusMapItem(QgsLayoutItemMap):
         return status
 
 
-class CplusMapItemLayoutItemMetadata(QgsLayoutItemAbstractMetadata):
-    """Metadata info of the cplus map item."""
+class CplusMapRepeatItemLayoutItemMetadata(
+    QgsLayoutItemAbstractMetadata
+):
+    """Metadata info of the cplus map repeat item."""
 
     def __init__(self):
-        super().__init__(CPLUS_MAP_ITEM_TYPE, tr("CPLUS Map Item"))
+        super().__init__(
+            CPLUS_MAP_REPEAT_ITEM_TYPE,
+            tr("CPLUS Map Repeat Area Item")
+        )
 
-    def createItem(self, layout) -> CplusMapItem:
-        """Factory method that return the Cplus map item."""
-        return CplusMapItem(layout)
+    def createItem(self, layout) -> CplusMapRepeatItem:
+        """Factory method that return the cplus map item."""
+        return CplusMapRepeatItem(layout)
