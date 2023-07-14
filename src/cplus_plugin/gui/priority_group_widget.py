@@ -54,6 +54,7 @@ class PriorityGroupWidget(QtWidgets.QWidget, WidgetUi):
 
         if group is not None:
             self.group = group
+            self.group_la.setText(group.get("name"))
             self.group_slider.setValue(int(group["value"]))
             self.group_spin_box.setValue(int(group["value"]))
 
@@ -99,3 +100,11 @@ class PriorityGroupWidget(QtWidgets.QWidget, WidgetUi):
             self.group_spin_box.blockSignals(True)
             self.group_spin_box.setValue(value)
             self.group_spin_box.blockSignals(False)
+
+    def widgets(self) -> typing.List[QtWidgets.QWidget]:
+        """
+        Returns
+            widget_list (list): List of component
+            widgets for the priority group widget
+        """
+        return [self.group_la, self.group_slider, self.group_spin_box]

@@ -428,7 +428,7 @@ class SettingsManager(QtCore.QObject):
         settings_key = self._get_priority_layers_settings_base(priority_layer["uuid"])
 
         with qgis_settings(settings_key) as settings:
-            groups = priority_layer["groups"]
+            groups = priority_layer.get("groups", [])
             settings.setValue("name", priority_layer["name"])
             settings.setValue("description", priority_layer["description"])
             settings.setValue("selected", priority_layer["selected"])
