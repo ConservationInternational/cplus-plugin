@@ -50,73 +50,12 @@ class CplusMapRepeatItemWidget(QgsLayoutItemBaseWidget, WidgetUi):
 
         # Common item properties widget
         self._prop_widget = QgsLayoutItemPropertiesWidget(self, layout_object)
-        self.layout.insertWidget(2, self._prop_widget)
+        self.layout.addWidget(self._prop_widget, 2, 0, 1, 2)
 
-        self.rb_ncs_pathways.toggled.connect(self.on_select_ncs_pathway)
-        self.rb_implementation_model.toggled.connect(
-            self.on_select_implementation_model
+        self.cbo_map_type.addItem(
+            self.tr("Implementation model"),
+            ModelComponentType.IMPLEMENTATION_MODEL.value
         )
-        self.rb_ncs_pathways.setChecked(True)
-
-        self.cbo_model_items.currentIndexChanged.connect(self.on_layer_source_changed)
-
-        self._update_ui()
-
-    def _update_ui(self):
-        """Update UI based on map item properties."""
-        component_type = self._map_item.model_component_type
-        if component_type == ModelComponentType.NCS_PATHWAY:
-            self.rb_ncs_pathways.setChecked(True)
-
-        elif component_type == ModelComponentType.IMPLEMENTATION_MODEL:
-            self.rb_implementation_model.setChecked(True)
-
-    def on_select_ncs_pathway(self, state):
-        """Slot raised when NCS pathway radio button has been toggled.
-
-        :param state: True is the button is checked, else False.
-        :type state: bool
-        """
-        self.cbo_model_items.clear()
-        if state:
-            ncs_pathways = settings_manager.get_all_ncs_pathways()
-            self._add_model_component_items(ncs_pathways)
-
-    def on_select_implementation_model(self, state):
-        """Slot raised when implementation model radio button has been toggled.
-
-        :param state: True is the button is checked, else False.
-        :type state: bool
-        """
-        self.cbo_model_items.clear()
-        if state:
-            imp_models = settings_manager.get_all_implementation_models()
-            self._add_model_component_items(imp_models)
-
-    def _add_model_component_items(self, model_items: typing.List):
-        """Add model component items to the combobox."""
-        self.cbo_model_items.blockSignals(True)
-
-        self.cbo_model_items.clear()
-
-        self.cbo_model_items.addItem("")
-        for mi in model_items:
-            self.cbo_model_items.addItem(mi.name, str(mi.uuid))
-
-        self.cbo_model_items.blockSignals(False)
-
-    def on_layer_source_changed(self, index: int):
-        """Slot raised when the user has changed the layer source
-        for the map item.
-
-        :param index: Current index of the select item.
-        :type index: int
-        """
-        if index == -1:
-            return
-
-        item_uuid = self.cbo_model_items.itemData(index)
-        self._map_item.model_component_id = item_uuid
 
 
 class CplusMapLayoutItemGuiMetadata(QgsLayoutItemAbstractGuiMetadata):
