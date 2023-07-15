@@ -83,14 +83,36 @@ TODO: DV - Insert screenshot
 ### Step 3: Priority weighting
 
 The final step deals with the **Weighting priorities** and **Priority groups**. These weights
-will be applied when the user starts running the scenario. An example is shown in **Figure 7**.
+will be applied when the user starts running the scenario. An example is shown in **Figure 9**.
 
-![CPLUS step 3](../img/plugin/plugin-step3.png)
+![CPLUS step 3](../img/plugin/plugin-step3_2.png)
 
 *Figure 8: Step 3 allows the user to set the Weights of each Priority Group*
 
-- Move the slider to adjust the weight of each group
-- The user can also manually set the value
-- Once the user is done selecting weights, click **Run Scenario**
+The priority weighting layers can be selected and added and removed into each priority group by using the 
+arrow buttons. 
+
+### Add priority layers
+
+Select the target layer from the priority weighting layers list and the destination group from
+the priority groups and use the left arrow button ![left arrow](../img/plugin/cplus_left_arrow.svg) 
+to add the layer into the group.
+
+
+### Remove priority layers
+
+Select the target layer from the priority weighting layers list from its priority group and 
+use the right arrow button ![right arrow](../img/plugin/cplus_right_arrow.svg) to remove the layer into the group.
+
+### Setting groups values 
+Move the slider to adjust the weight of each group, User can also manually set the value using the left input spin box. 
+Once the user is done selecting weights, click **Run Scenario** button to run the analysis.
+
+
+![example](../img/plugin/step_3_example.gif)
+
+*Figure 9: Showing how to use step 3 components to select priority weighting layers 
+and their respective weights of each Priority Group*
+
 
 ## Report generating
