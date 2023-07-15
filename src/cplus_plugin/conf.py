@@ -418,7 +418,8 @@ class SettingsManager(QtCore.QObject):
         return layers
 
     def save_priority_layer(self, priority_layer):
-        """Save the priority layer into the plugin settings
+        """Save the priority layer into the plugin settings.
+           Updates the layer with new priority groups.
 
         Args:
             priority_layer (dict): Priority layer
@@ -433,6 +434,9 @@ class SettingsManager(QtCore.QObject):
             settings.setValue("description", priority_layer["description"])
             settings.setValue("selected", priority_layer["selected"])
             groups_key = f"{settings_key}/groups"
+            with qgis_settings(groups_key) as groups_settings:
+                for group_id in groups_settings.childGroups():
+                    groups_settings.remove(group_id)
             for group in groups:
                 group_key = f"{groups_key}/{group['name']}"
                 with qgis_settings(group_key) as group_settings:
@@ -566,6 +570,14 @@ class SettingsManager(QtCore.QObject):
         with qgis_settings(settings_key) as settings:
             settings.setValue("name", priority_group["name"])
             settings.setValue("value", priority_group["value"])
+
+    def delete_priority_groups(self):
+        """Deletes all the plugin priority groups settings."""
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_GROUP_NAME}"
+        ) as settings:
+            for priority_group in settings.childGroups():
+                settings.remove(priority_group)
 
     def _get_ncs_pathway_settings_base(self) -> str:
         """Returns the path for NCS pathway settings.

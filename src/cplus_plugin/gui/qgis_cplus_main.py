@@ -121,6 +121,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         list_items = []
         items_only = []
         stored_priority_groups = settings_manager.get_priority_groups()
+        self.priority_groups_list.clear()
+        self.priority_groups_widgets
+
         for group in stored_priority_groups:
             group_widget = PriorityGroupWidget(
                 group,
@@ -132,21 +135,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             pw_layers = settings_manager.find_layers_by_group(group["name"])
 
-            self.priority_groups_list.clear()
-
             item = QtWidgets.QTreeWidgetItem()
             item.setSizeHint(0, group_widget.sizeHint())
             item.setExpanded(True)
 
-            # Add priority layer into the group as a child item.
+            # Add priority layers into the group as a child items.
+
+            item.setExpanded(True) if len(pw_layers) > 0 else None
+
             for layer in pw_layers:
                 if item.parent() is None:
-                    children = item.takeChildren()
-                    text = layer["name"]
-                    for child in children:
-                        if child.text(0) == text:
-                            break
-                    item.addChildren(children)
+                    layer_item = QtWidgets.QTreeWidgetItem(item)
+                    layer_item.setText(0, layer.get("name"))
 
             list_items.append((item, group_widget))
             items_only.append(item)
@@ -223,7 +223,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
         selected_group = target_group or self.priority_groups_list.currentItem()
 
-        if selected_group is not None and selected_group.parent() is None:
+        if (
+            selected_group is not None and selected_group.parent() is None
+        ) and selected_priority_layer is not None:
             children = selected_group.takeChildren()
             item_found = False
             text = selected_priority_layer.data(QtCore.Qt.DisplayRole)
@@ -273,26 +275,26 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
            group or priority layer from their respective list will be used.
 
            Checks if priority layer is already in the target group and if no,
-           the removal is not perfomed.
+           the removal is not performed.
 
         Args
             target_group (dict): Priority group where layer will be removed from.
             priority_layer (dict): Priority weighting layer to be removed.
         """
         selected_group = self.priority_groups_list.currentItem()
-        parent_item = selected_group.parent()
+        parent_item = selected_group.parent() if selected_group is not None else None
 
         if parent_item:
             priority_layer = settings_manager.find_layer_by_name(selected_group.text(0))
-
             group_widget = self.priority_groups_list.itemWidget(parent_item, 0)
+
             groups = priority_layer.get("groups")
             new_groups = []
             for group in groups:
                 if group.get("name") == group_widget.group.get("name"):
-                    group["value"] = 0
+                    continue
                 new_groups.append(group)
-            priority_layer["group"] = new_groups
+            priority_layer["groups"] = new_groups
             settings_manager.save_priority_layer(priority_layer)
 
             parent_item.removeChild(selected_group)

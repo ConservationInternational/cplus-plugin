@@ -40,7 +40,11 @@ class PriorityGroupWidget(QtWidgets.QWidget, WidgetUi):
     def initialize_ui(self):
         """Populate UI inputs when loading the widget"""
 
-        self.group_la.setText(self.group["name"])
+        if self.group is not None:
+            self.group_la.setText(self.group.get("name"))
+            self.group_slider.setValue(int(self.group.get("value", 0)))
+            self.group_spin_box.setValue(int(self.group.get("value", 0)))
+
         self.group_slider.valueChanged.connect(self.update_spin_box)
         self.group_spin_box.valueChanged.connect(self.update_slider)
 
