@@ -29,7 +29,6 @@ from qgis.gui import (
 
 from qgis.utils import iface
 
-from .priority_layer_group import PriorityLayerDialog
 from .implementation_model_widget import ImplementationModelContainerWidget
 from .priority_group_widget import PriorityGroupWidget
 
