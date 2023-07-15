@@ -10,10 +10,7 @@ from pathlib import Path
 from qgis.PyQt import QtCore, QtGui
 from qgis.core import Qgis, QgsApplication, QgsMessageLog
 
-from .conf import Settings, settings_manager
 from .definitions.defaults import (
-    DEFAULT_IMPLEMENTATION_MODELS,
-    DEFAULT_NCS_PATHWAYS,
     DOCUMENTATION_SITE,
 )
 from .definitions.constants import NCS_PATHWAY_SEGMENT
@@ -82,46 +79,6 @@ def is_dark_theme() -> bool:
         return True
 
     return False
-
-
-def initialize_default_settings():
-    """Initialize default model components such as NCS pathways
-    and implementation models.
-
-    It will check if there are existing components using the UUID
-    and only add the ones that do not exist in the settings.
-
-    This is normally called during plugin startup.
-    """
-    # Add default pathways
-    for ncs_dict in DEFAULT_NCS_PATHWAYS:
-        try:
-            ncs_uuid = ncs_dict["uuid"]
-            ncs = settings_manager.get_ncs_pathway(ncs_uuid)
-            if ncs is None:
-                # Update dir
-                base_dir = settings_manager.get_value(Settings.BASE_DIR, None)
-                if base_dir is not None:
-                    file_name = ncs_dict["path"]
-                    absolute_path = f"{base_dir}/{NCS_PATHWAY_SEGMENT}/{file_name}"
-                    abs_path = str(os.path.normpath(absolute_path))
-                    ncs_dict["path"] = abs_path
-                ncs_dict["user_defined"] = False
-                settings_manager.save_ncs_pathway(ncs_dict)
-        except KeyError as ke:
-            log(f"Default NCS configuration load error - {str(ke)}")
-            continue
-
-    # Add default implementation models
-    for imp_model_dict in DEFAULT_IMPLEMENTATION_MODELS:
-        try:
-            imp_model_uuid = imp_model_dict["uuid"]
-            imp_model = settings_manager.get_implementation_model(imp_model_uuid)
-            if imp_model is None:
-                settings_manager.save_implementation_model(imp_model_dict)
-        except KeyError as ke:
-            log(f"Default implementation model configuration load error - {str(ke)}")
-            continue
 
 
 class FileUtils:

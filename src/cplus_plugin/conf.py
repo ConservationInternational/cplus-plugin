@@ -30,15 +30,16 @@ from .models.helpers import (
     ncs_pathway_to_dict,
 )
 
+from .utils import log
+
 
 @contextlib.contextmanager
 def qgis_settings(group_root: str, settings=None):
     """Context manager to help defining groups when creating QgsSettings.
 
-    Args:
+    :    Args:
         group_root (str): Name of the root group for the settings
         settings (QgsSettings): QGIS settings to use
-
     Yields:
         settings (QgsSettings): Instance of the created settings
     """
@@ -63,7 +64,6 @@ class ScenarioSettings(Scenario):
         Args:
             identifier (str): Scenario identifier
             settings (QgsSettings): Scenario identifier
-
         Returns:
             scenarioSettings (ScenarioSettings): Scenario settings object
         """
@@ -79,11 +79,11 @@ class ScenarioSettings(Scenario):
         """Fetches Scenario extent from
          the passed scenario settings.
 
-        Args:
-            scenario_settings (ScenarioSettings): Scenario settings instance
+        :param scenario_settings: Scenario settings instance
+        :type scenario_settings: ScenarioSettings
 
-        Returns:
-            spatialExtent (SpatialExtent): Spatial extent instance extent
+        :returns: Spatial extent instance extent
+        :rtype: SpatialExtent
         """
         spatial_key = "extent/spatial"
 
@@ -95,7 +95,7 @@ class ScenarioSettings(Scenario):
 
 
 class Settings(enum.Enum):
-    """Plugin settings names."""
+    """Plugin settings names"""
 
     DOWNLOAD_FOLDER = "download_folder"
     REFRESH_FREQUENCY = "refresh/period"
@@ -122,27 +122,36 @@ class SettingsManager(QtCore.QObject):
 
     BASE_GROUP_NAME: str = "cplus_plugin"
     SCENARIO_GROUP_NAME: str = "scenarios"
+    PRIORITY_GROUP_NAME: str = "priority_groups"
+    PRIORITY_LAYERS_GROUP_NAME: str = "priority_layers"
+    NCS_PATHWAY_BASE: str = "ncs_pathways"
+
     IMPLEMENTATION_MODEL_BASE: str = "implementation_models"
 
     settings = QgsSettings()
 
     scenarios_settings_updated = QtCore.pyqtSignal()
-    settings_updated = QtCore.pyqtSignal(Settings, object)
+    priority_layers_changed = QtCore.pyqtSignal()
+    settings_updated = QtCore.pyqtSignal([str, object], [Settings, object])
 
     def set_value(self, name: str, value):
         """Adds a new setting key and value on the plugin specific settings.
 
         Args:
-            name (str): Name of setting key
-            value (Any): Value of the setting
+         name (str): Name of setting key
+         value (Any): Value of the setting
+
         """
         self.settings.setValue(f"{self.BASE_GROUP_NAME}/{name}", value)
-        self.settings_updated.emit(name, value)
+        if isinstance(name, Settings):
+            self.settings_updated[Settings, object].emit(name, value)
+        else:
+            self.settings_updated[str, object].emit(name, value)
 
     def get_value(self, name: str, default=None, setting_type=None):
         """Gets value of the setting with the passed name.
 
-        Args:
+         Args:
             name (str): Name of setting key
             default (Any): Default value returned when the setting key does not exist
             setting_type (Any): Type of the store setting
@@ -160,7 +169,7 @@ class SettingsManager(QtCore.QObject):
         """Remove the setting with the specified name.
 
         Args:
-            name (str): Name of the setting key
+           name (str): Name of the setting key
         """
         self.settings.remove(f"{self.BASE_GROUP_NAME}/{name}")
 
@@ -169,7 +178,6 @@ class SettingsManager(QtCore.QObject):
 
         Args:
             identifier (uuid.UUID): Scenario settings identifier
-
         Returns:
             baseGroup (str): Scenario settings base group
         """
@@ -213,7 +221,6 @@ class SettingsManager(QtCore.QObject):
 
         Args:
             identifier (str): Scenario identifier
-
         Returns:
             settingsInstance (ScenarioSettings): Scenario settings instance
         """
@@ -230,7 +237,6 @@ class SettingsManager(QtCore.QObject):
 
         Args:
             scenario_id (str): Scenario id
-
         Returns:
             settingsInstance (ScenarioSettings): Scenario settings instance
         """
@@ -274,6 +280,304 @@ class SettingsManager(QtCore.QObject):
         ) as settings:
             for scenario_name in settings.childGroups():
                 settings.remove(scenario_name)
+
+    def _get_priority_layers_settings_base(self, identifier) -> str:
+        """Gets the priority layers settings base url.
+
+        Args:
+            identifier (uuid.UUID): Priority layers settings identifier
+        Returns:
+            settings_base_group (str):  Priority layers settings base group
+        """
+        return (
+            f"{self.BASE_GROUP_NAME}/"
+            f"{self.PRIORITY_LAYERS_GROUP_NAME}/"
+            f"{str(identifier)}"
+        )
+
+    def get_priority_layer(self, identifier) -> typing.Dict:
+        """Retrieves the priority layer that matches the passed identifier.
+
+        Args:
+            identifier (uuid.UUID): Priority layers identifier
+        Returns:
+            priority_layer (dict):  Priority layers dict
+        """
+
+        settings_key = self._get_priority_layers_settings_base(identifier)
+        with qgis_settings(settings_key) as settings:
+            groups_key = f"{settings_key}/groups"
+            groups = []
+
+            with qgis_settings(groups_key) as groups_settings:
+                for name in groups_settings.childGroups():
+                    group_settings_key = f"{groups_key}/{name}"
+                    with qgis_settings(group_settings_key) as group_settings:
+                        stored_group = {}
+                        stored_group["name"] = group_settings.value("name")
+                        stored_group["value"] = group_settings.value("value")
+                        groups.append(stored_group)
+
+            priority_layer = {"uuid": identifier}
+            priority_layer["name"] = settings.value("name")
+            priority_layer["description"] = settings.value("description")
+            priority_layer["selected"] = settings.value("selected", type=bool)
+            priority_layer["groups"] = groups
+        return priority_layer
+
+    def get_priority_layers(self) -> typing.List:
+        """Gets all the available priority layers in the plugin.
+
+        Returns:
+           priority_layer_list (list):  Priority layers list
+        """
+        priority_layer_list = []
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_LAYERS_GROUP_NAME}"
+        ) as settings:
+            for uuid in settings.childGroups():
+                priority_layer_settings = self._get_priority_layers_settings_base(uuid)
+                with qgis_settings(priority_layer_settings) as priority_settings:
+                    groups_key = f"{priority_layer_settings}/groups"
+                    groups = []
+
+                    with qgis_settings(groups_key) as groups_settings:
+                        for name in groups_settings.childGroups():
+                            group_settings_key = f"{groups_key}/{name}"
+                            with qgis_settings(group_settings_key) as group_settings:
+                                stored_group = {}
+                                stored_group["name"] = group_settings.value("name")
+                                stored_group["value"] = group_settings.value("value")
+                                groups.append(stored_group)
+                    layer = {
+                        "uuid": uuid,
+                        "name": priority_settings.value("name"),
+                        "description": priority_settings.value("description"),
+                        "selected": priority_settings.value("selected", type=bool),
+                        "groups": groups,
+                    }
+                    priority_layer_list.append(layer)
+        return priority_layer_list
+
+    def find_layer_by_name(self, name) -> typing.Dict:
+        """Finds a priority layer setting inside
+        the plugin QgsSettings by name.
+
+         Args:
+            name (str): Priority layers identifier
+        Returns:
+            priority_layer (dict):  Priority layers dict
+        """
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_LAYERS_GROUP_NAME}"
+        ) as settings:
+            for layer_id in settings.childGroups():
+                layer_settings_key = self._get_priority_layers_settings_base(layer_id)
+                with qgis_settings(layer_settings_key) as layer_settings:
+                    layer_name = layer_settings.value("name")
+                    if layer_name == name:
+                        found_id = uuid.UUID(layer_id)
+                        break
+            else:
+                log(
+                    f"Could not find a priority layer named " f"{name!r} in QgsSettings"
+                )
+        return self.get_priority_layer(found_id)
+
+    def find_layers_by_group(self, group) -> typing.List:
+        """Finds priority layers inside the plugin QgsSettings
+         that contain the passed group.
+
+        Args:
+            group (str): Priority group name
+        Returns:
+            layers (list):  Priority layers list
+        """
+        layers = []
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_LAYERS_GROUP_NAME}"
+        ) as settings:
+            for layer_id in settings.childGroups():
+                priority_layer_settings = self._get_priority_layers_settings_base(
+                    layer_id
+                )
+                with qgis_settings(priority_layer_settings) as priority_settings:
+                    groups_key = f"{priority_layer_settings}/groups"
+
+                    with qgis_settings(groups_key) as groups_settings:
+                        for name in groups_settings.childGroups():
+                            group_settings_key = f"{groups_key}/{name}"
+                            with qgis_settings(group_settings_key) as group_settings:
+                                if group == group_settings.value("name"):
+                                    layers.append(self.get_priority_layer(layer_id))
+            else:
+                log(
+                    f"Could not find any priority layer with group "
+                    f"{group!r} in QgsSettings"
+                )
+        return layers
+
+    def save_priority_layer(self, priority_layer):
+        """Save the priority layer into the plugin settings.
+           Updates the layer with new priority groups.
+
+        Args:
+            priority_layer (dict): Priority layer
+        Note:
+            Emits priority_layers_changed signal
+        """
+        settings_key = self._get_priority_layers_settings_base(priority_layer["uuid"])
+
+        with qgis_settings(settings_key) as settings:
+            groups = priority_layer.get("groups", [])
+            settings.setValue("name", priority_layer["name"])
+            settings.setValue("description", priority_layer["description"])
+            settings.setValue("selected", priority_layer["selected"])
+            groups_key = f"{settings_key}/groups"
+            with qgis_settings(groups_key) as groups_settings:
+                for group_id in groups_settings.childGroups():
+                    groups_settings.remove(group_id)
+            for group in groups:
+                group_key = f"{groups_key}/{group['name']}"
+                with qgis_settings(group_key) as group_settings:
+                    group_settings.setValue("name", group["name"])
+                    group_settings.setValue("value", group["value"])
+
+        self.priority_layers_changed.emit()
+
+    def set_current_priority_layer(self, identifier):
+        """
+        Args:
+            identifier (str): Priority layer identifier
+        """
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_LAYERS_GROUP_NAME}/"
+        ) as settings:
+            for priority_layer in settings.childGroups():
+                settings_key = self._get_priority_layers_settings_base(identifier)
+                with qgis_settings(settings_key) as layer_settings:
+                    layer_settings.setValue(
+                        "selected", str(priority_layer) == str(identifier)
+                    )
+
+    def delete_priority_layers(self):
+        """Deletes all the plugin priority settings."""
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_LAYERS_GROUP_NAME}"
+        ) as settings:
+            for priority_layer in settings.childGroups():
+                settings.remove(priority_layer)
+
+    def delete_priority_layer(self, identifier):
+        """Removes priority layer that match the passed identifier
+
+        Args:
+            identifier (str): Priority layer identifier
+        """
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_LAYERS_GROUP_NAME}/"
+        ) as settings:
+            for priority_layer in settings.childGroups():
+                if str(priority_layer) == str(identifier):
+                    settings.remove(priority_layer)
+
+    def _get_priority_groups_settings_base(self, identifier) -> str:
+        """Gets the priority group settings base url.
+
+        Args:
+            identifier (str): Priority group settings identifier
+
+        Returns
+            priority_group_settings_base (str): Priority groups settings base group
+
+        """
+        return (
+            f"{self.BASE_GROUP_NAME}/"
+            f"{self.PRIORITY_GROUP_NAME}/"
+            f"{str(identifier)}"
+        )
+
+    def find_group_by_name(self, name) -> typing.Dict:
+        """Finds a priority group setting inside the plugin QgsSettings by name.
+
+        Args:
+            name (str): Name of the group
+        Returns
+            priority_group (dict): Priority group
+        """
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_GROUP_NAME}"
+        ) as settings:
+            for group_id in settings.childGroups():
+                group_settings_key = self._get_priority_groups_settings_base(group_id)
+                with qgis_settings(group_settings_key) as group_settings_key:
+                    group_name = group_settings_key.value("name")
+                    if group_name == name:
+                        found_id = uuid.UUID(group_id)
+                        break
+            else:
+                log(
+                    f"Could not find a priority group named " f"{name!r} in QgsSettings"
+                )
+        return self.get_priority_group(found_id)
+
+    def get_priority_group(self, identifier) -> typing.Dict:
+        """Retrieves the priority group that matches the passed identifier.
+
+        Args:
+            identifier (str): Priority group identifier
+        Returns
+            priority_group (dict): Priority group
+        """
+
+        settings_key = self._get_priority_groups_settings_base(identifier)
+        with qgis_settings(settings_key) as settings:
+            priority_group = {"uuid": identifier}
+            priority_group["name"] = settings.value("name")
+            priority_group["value"] = settings.value("value")
+        return priority_group
+
+    def get_priority_groups(self) -> typing.List[typing.Dict]:
+        """Gets all the available priority groups in the plugin.
+
+        Returns
+            priority_groups (list): List of the priority groups instances
+        """
+        priority_groups = []
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_GROUP_NAME}"
+        ) as settings:
+            for uuid in settings.childGroups():
+                priority_layer_settings = self._get_priority_groups_settings_base(uuid)
+                with qgis_settings(priority_layer_settings) as priority_settings:
+                    group = {
+                        "uuid": uuid,
+                        "name": priority_settings.value("name"),
+                        "value": priority_settings.value("value"),
+                    }
+                    priority_groups.append(group)
+        return priority_groups
+
+    def save_priority_group(self, priority_group):
+        """Save the priority group into the plugin settings
+
+        Args:
+            priority_group (dict): Priority group
+        """
+
+        settings_key = self._get_priority_groups_settings_base(priority_group["uuid"])
+
+        with qgis_settings(settings_key) as settings:
+            settings.setValue("name", priority_group["name"])
+            settings.setValue("value", priority_group["value"])
+
+    def delete_priority_groups(self):
+        """Deletes all the plugin priority groups settings."""
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_GROUP_NAME}"
+        ) as settings:
+            for priority_group in settings.childGroups():
+                settings.remove(priority_group)
 
     def _get_ncs_pathway_settings_base(self) -> str:
         """Returns the path for NCS pathway settings.

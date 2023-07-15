@@ -4,7 +4,7 @@
 """
 
 import dataclasses
-from enum import IntEnum
+from enum import Enum, IntEnum
 import os.path
 import typing
 from uuid import UUID
@@ -19,6 +19,21 @@ class SpatialExtent:
     """
 
     bbox: typing.List[float]
+
+
+class PRIORITY_GROUP(Enum):
+    """Represents the STAC API resource types"""
+
+    CARBON_IMPORTANCE = "Carbon importance"
+    BIODIVERSITY = "Biodiversity"
+    LIVELIHOOD = "Livelihood"
+    CLIMATE_RESILIENCE = "Climate Resilience"
+    ECOLOGICAL_INFRASTRUCTURE = "Ecological infrastructure"
+    POLICY = "Policy"
+    FINANCE_YEARS_EXPERIENCE = "Finance - Years Experience"
+    FINANCE_MARKET_TRENDS = "Finance - Market Trends"
+    FINANCE_NET_PRESENT_VALUE = "Finance - Net Present value"
+    FINANCE_CARBON = "Finance - Carbon"
 
 
 @dataclasses.dataclass
