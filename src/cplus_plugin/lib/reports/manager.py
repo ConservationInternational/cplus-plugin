@@ -9,7 +9,9 @@ from qgis.PyQt import QtCore
 
 from qgis.core import QgsPrintLayout
 
-from .variable_register import LayoutVariableRegister
+from ...models.report import ReportContext, ReportResult
+from ...utils import tr
+from .variables import LayoutVariableRegister
 
 
 class ReportManager(QtCore.QObject):
@@ -23,6 +25,7 @@ class ReportManager(QtCore.QObject):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._variable_register = LayoutVariableRegister()
+        self.report_name = tr("Scenario Analysis Report")
 
     @property
     def variable_register(self) -> LayoutVariableRegister:
@@ -93,19 +96,40 @@ class ReportManager(QtCore.QObject):
             _ = layout_var_names.pop(idx)
             _ = layout_var_values.pop(idx)
 
-    def load_template(self, template_name=None) -> QgsPrintLayout:
-        """Loads the template with the given file name in the
-        app_data directory and returns the corresponding layout
-        object.
+    def generate(self) -> ReportResult:
+        """Initiates the report generation process using information
+        resulting from the scenario analysis.
 
-        :param template_name: Template name as defined in the
-        app_data/reports directory.
-        :type template_name: str
+        :returns: Result from the report generation process.
+        :rtype: ReportResult
+        """
+        pass
 
-        :returns: The layout object corresponding to the template
-        file else None if the file does not exist or could not be
-        loaded.
-        :rtype: QgsPrintLayout
+    def open_layout_designer(self, result: ReportResult) -> bool:
+        """Opens the analysis report in the layout designer. The
+        layout needs to exist in the currently loaded project.
+
+        :param result: Result object from the report generation
+        process.
+        :type result: ReportResult
+
+        :returns: True if the layout was successfully loaded, else
+        False if the result from the generation process was False
+        or if the layout does not exist in the current project.
+        :rtype: bool
+        """
+        pass
+
+    def view_pdf(self, result: ReportResult) -> bool:
+        """Opens the analysis in the host's default PDF viewer.
+
+        :param result: Result object from the report generation
+        process.
+        :type result: ReportResult
+
+        :returns: True if the PDF was successfully loaded, else
+        False if the result from the generation process was False.
+        :rtype: bool
         """
         pass
 

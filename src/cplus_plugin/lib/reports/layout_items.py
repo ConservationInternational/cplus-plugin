@@ -7,7 +7,7 @@ from qgis.core import (
     QgsFillSymbol,
     QgsLayoutItemAbstractMetadata,
     QgsLayoutItemRegistry,
-    QgsLayoutItemShape
+    QgsLayoutItemShape,
 )
 from qgis.PyQt import QtGui
 
@@ -37,7 +37,7 @@ class CplusMapRepeatItem(QgsLayoutItemShape):
             "outline_style": "dash",
             "line_color": "132,192,68",
             "outline_width": "0",
-            "joinstyle": "miter"
+            "joinstyle": "miter",
         }
         symbol = QgsFillSymbol.createSimple(symbol_props)
         self.setSymbol(symbol)
@@ -104,16 +104,11 @@ class CplusMapRepeatItem(QgsLayoutItemShape):
         return status
 
 
-class CplusMapRepeatItemLayoutItemMetadata(
-    QgsLayoutItemAbstractMetadata
-):
+class CplusMapRepeatItemLayoutItemMetadata(QgsLayoutItemAbstractMetadata):
     """Metadata info of the cplus map repeat item."""
 
     def __init__(self):
-        super().__init__(
-            CPLUS_MAP_REPEAT_ITEM_TYPE,
-            tr("CPLUS Map Repeat Area Item")
-        )
+        super().__init__(CPLUS_MAP_REPEAT_ITEM_TYPE, tr("CPLUS Map Repeat Area Item"))
 
     def createItem(self, layout) -> CplusMapRepeatItem:
         """Factory method that return the cplus map item."""

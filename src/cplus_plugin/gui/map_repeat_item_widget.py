@@ -6,10 +6,7 @@ Widget for the custom CPLUS layout map item.
 import os
 import typing
 
-from qgis.core import (
-    QgsLayoutItem,
-    QgsLayoutMeasurement
-)
+from qgis.core import QgsLayoutItem, QgsLayoutMeasurement
 from qgis.gui import (
     QgsLayoutItemAbstractGuiMetadata,
     QgsLayoutItemBaseWidget,
@@ -20,19 +17,13 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 from qgis.PyQt.uic import loadUiType
 
 from ..conf import settings_manager
-from ..lib.reports.layout_items import (
-    CplusMapRepeatItem,
-    CPLUS_MAP_REPEAT_ITEM_TYPE
-)
+from ..lib.reports.layout_items import CplusMapRepeatItem, CPLUS_MAP_REPEAT_ITEM_TYPE
 from ..models.base import ModelComponentType
 from ..utils import FileUtils, tr
 
 
 WidgetUi, _ = loadUiType(
-    os.path.join(
-        os.path.dirname(__file__),
-        "../ui/map_layout_item_widget.ui"
-    )
+    os.path.join(os.path.dirname(__file__), "../ui/map_layout_item_widget.ui")
 )
 
 
@@ -54,7 +45,7 @@ class CplusMapRepeatItemWidget(QgsLayoutItemBaseWidget, WidgetUi):
 
         self.cbo_map_type.addItem(
             self.tr("Implementation model"),
-            ModelComponentType.IMPLEMENTATION_MODEL.value
+            ModelComponentType.IMPLEMENTATION_MODEL.value,
         )
 
 
@@ -62,10 +53,7 @@ class CplusMapLayoutItemGuiMetadata(QgsLayoutItemAbstractGuiMetadata):
     """GUI metadata for a CPLUS map layout item."""
 
     def __init__(self):
-        super().__init__(
-            CPLUS_MAP_REPEAT_ITEM_TYPE,
-            CPLUS_ITEM_NAME
-        )
+        super().__init__(CPLUS_MAP_REPEAT_ITEM_TYPE, CPLUS_ITEM_NAME)
 
     def createItemWidget(self, item) -> QtWidgets.QWidget:
         """Factory override for the item widget."""
@@ -99,11 +87,7 @@ class CplusMapLayoutItemGuiMetadata(QgsLayoutItemAbstractGuiMetadata):
         # Set frame properties
         map_repeat_item.setFrameEnabled(True)
         map_repeat_item.setFrameJoinStyle(QtCore.Qt.MiterJoin)
-        map_repeat_item.setFrameStrokeColor(
-            QtGui.QColor(132,192,68)
-        )
-        map_repeat_item.setFrameStrokeWidth(
-            QgsLayoutMeasurement(0.4)
-        )
+        map_repeat_item.setFrameStrokeColor(QtGui.QColor(132, 192, 68))
+        map_repeat_item.setFrameStrokeWidth(QgsLayoutMeasurement(0.4))
 
         map_repeat_item.setId(f"{CPLUS_ITEM_NAME} {counter!s}")

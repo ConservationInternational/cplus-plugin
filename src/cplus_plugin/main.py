@@ -27,7 +27,7 @@ from qgis.PyQt.QtWidgets import QMenu
 from .definitions.defaults import ICON_PATH, OPTIONS_TITLE
 from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
 from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
-from .lib.reports.report_manager import report_manager
+from .lib.reports.manager import report_manager
 from .settings import CplusOptionsFactory
 from .utils import initialize_default_settings
 
