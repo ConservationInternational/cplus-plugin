@@ -1,6 +1,6 @@
-# Configuration
+# Implementation model widget
 
-::: src.cplus_plugin.conf
+::: src.cplus_plugin.gui.implementation_model_widget
     handler: python
     options:
         docstring_style: sphinx

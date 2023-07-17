@@ -158,9 +158,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def group_value_changed(self, group_name, group_value):
         """Slot to handle priority group widget changes.
 
-        Args
-            group_name (str): Group name
-            group_value (int): Group value
+        :param group_name: Group name
+        :type group_name: str
+
+        :param group_value: Group value
+        :type group_value: int
         """
 
         group = settings_manager.find_group_by_name(group_name)
@@ -214,9 +216,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
            After addition is done the respective priority layer plugin settings
            are updated to store the new information.
 
-        Args
-            target_group (dict): Priority group where layer will be added to.
-            priority_layer (dict): Priority weighting layer to be added.
+        :param target_group: Priority group where layer will be added to
+        :type target_group: dict
+
+        :param priority_layer: Priority weighting layer to be added
+        :type priority_layer: dict
         """
         selected_priority_layer = (
             priority_layer or self.priority_layers_list.currentItem()
@@ -277,9 +281,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
            Checks if priority layer is already in the target group and if no,
            the removal is not performed.
 
-        Args
-            target_group (dict): Priority group where layer will be removed from.
-            priority_layer (dict): Priority weighting layer to be removed.
+        :param target_group: Priority group where layer will be removed from
+        :type target_group: dict
+
+        :param priority_layer: Priority weighting layer to be removed
+        :type priority_layer: dict
         """
         selected_group = self.priority_groups_list.currentItem()
         parent_item = selected_group.parent() if selected_group is not None else None
@@ -340,9 +346,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def show_message(self, message, level=Qgis.Warning):
         """Shows message on the main widget message bar.
 
-        Args:
-            message (str): Text message
-            level (Qgis.MessageLevel): Message level type
+        :param message: Text message
+        :type message: str
+
+        :param level: Message level type
+        :type level: Qgis.MessageLevel
         """
         self.message_bar.clearWidgets()
         self.message_bar.pushMessage(message, level=level)
@@ -395,7 +403,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def on_tab_step_changed(self, index: int):
         """Slot raised when the current tab changes.
 
-        :param index: Zero-based index position of new current tab.
+        :param index: Zero-based index position of new current tab
         :type index: int
         """
         if index == 1:

@@ -37,11 +37,14 @@ from .utils import log
 def qgis_settings(group_root: str, settings=None):
     """Context manager to help defining groups when creating QgsSettings.
 
-    :    Args:
-        group_root (str): Name of the root group for the settings
-        settings (QgsSettings): QGIS settings to use
-    Yields:
-        settings (QgsSettings): Instance of the created settings
+    :param group_root: Name of the root group for the settings
+    :type group_root: str
+
+    :param settings: QGIS settings to use
+    :type settings: QgsSettings
+
+    :yields: Instance of the created settings
+    :ytype: QgsSettings
     """
     if settings is None:
         settings = QgsSettings()
@@ -61,11 +64,14 @@ class ScenarioSettings(Scenario):
         """Reads QGIS settings and parses them into a scenario
         settings instance with the respective settings values as properties.
 
-        Args:
-            identifier (str): Scenario identifier
-            settings (QgsSettings): Scenario identifier
-        Returns:
-            scenarioSettings (ScenarioSettings): Scenario settings object
+        :param identifier: Scenario identifier
+        :type identifier: str
+
+        :param settings: Scenario identifier
+        :type settings: QgsSettings
+
+        :returns: Scenario settings object
+        :rtype: ScenarioSettings
         """
 
         return cls(
@@ -137,10 +143,11 @@ class SettingsManager(QtCore.QObject):
     def set_value(self, name: str, value):
         """Adds a new setting key and value on the plugin specific settings.
 
-        Args:
-         name (str): Name of setting key
-         value (Any): Value of the setting
+        :param name: Name of setting key
+        :type name: str
 
+        :param value: Value of the setting
+        :type value: Any
         """
         self.settings.setValue(f"{self.BASE_GROUP_NAME}/{name}", value)
         if isinstance(name, Settings):
@@ -151,13 +158,17 @@ class SettingsManager(QtCore.QObject):
     def get_value(self, name: str, default=None, setting_type=None):
         """Gets value of the setting with the passed name.
 
-         Args:
-            name (str): Name of setting key
-            default (Any): Default value returned when the setting key does not exist
-            setting_type (Any): Type of the store setting
+        :param name: Name of setting key
+        :type name: str
 
-        Returns:
-            value (Any): Value of the setting
+        :param default: Default value returned when the setting key does not exist
+        :type default: Any
+
+        :param setting_type: Type of the store setting
+        :type setting_type: Any
+
+        :returns: Value of the setting
+        :rtype: Any
         """
         if setting_type:
             return self.settings.value(
@@ -168,18 +179,19 @@ class SettingsManager(QtCore.QObject):
     def remove(self, name):
         """Remove the setting with the specified name.
 
-        Args:
-           name (str): Name of the setting key
+        :param name: Name of the setting key
+        :type name: str
         """
         self.settings.remove(f"{self.BASE_GROUP_NAME}/{name}")
 
     def _get_scenario_settings_base(self, identifier):
         """Gets the scenario settings base url.
 
-        Args:
-            identifier (uuid.UUID): Scenario settings identifier
-        Returns:
-            baseGroup (str): Scenario settings base group
+        :param identifier: Scenario settings identifier
+        :type identifier: uuid.UUID
+
+        :returns: Scenario settings base group
+        :rtype: str
         """
         return (
             f"{self.BASE_GROUP_NAME}/"
@@ -190,8 +202,8 @@ class SettingsManager(QtCore.QObject):
     def save_scenario(self, scenario_settings):
         """Save the passed scenario settings into the plugin settings
 
-        Args:
-            scenario_settings (ScenarioSettings): Scenario settings
+        :param scenario_settings: Scenario settings
+        :type scenario_settings: ScenarioSettings
         """
         settings_key = self._get_scenario_settings_base(scenario_settings.uuid)
 
@@ -206,6 +218,12 @@ class SettingsManager(QtCore.QObject):
         """Saves the scenario extent into plugin settings
         using the provided settings group key.
 
+        :param key: Scenario extent
+        :type key: SpatialExtent
+
+        :param extent: QgsSettings group key
+        :type extent: str
+
         Args:
             extent (SpatialExtent): Scenario extent
             key (str): QgsSettings group key
@@ -219,10 +237,11 @@ class SettingsManager(QtCore.QObject):
     def get_scenario(self, identifier):
         """Retrieves the scenario that matches the passed identifier.
 
-        Args:
-            identifier (str): Scenario identifier
-        Returns:
-            settingsInstance (ScenarioSettings): Scenario settings instance
+        :param identifier: Scenario identifier
+        :type identifier: str
+
+        :returns: Scenario settings instance
+        :rtype: ScenarioSettings
         """
 
         settings_key = self._get_scenario_settings_base(identifier)
@@ -235,10 +254,11 @@ class SettingsManager(QtCore.QObject):
     def get_scenario(self, scenario_id):
         """Retrieves the first scenario that matched the passed scenario id.
 
-        Args:
-            scenario_id (str): Scenario id
-        Returns:
-            settingsInstance (ScenarioSettings): Scenario settings instance
+        :param scenario_id: Scenario id
+        :type scenario_id: str
+
+        :returns: Scenario settings instance
+        :rtype: ScenarioSettings
         """
 
         result = []
@@ -258,8 +278,8 @@ class SettingsManager(QtCore.QObject):
     def get_scenarios(self):
         """Gets all the available scenarios settings in the plugin.
 
-        Returns:
-            settingsInstancesList (list): List of the scenario settings instances
+        :returns: List of the scenario settings instances
+        :rtype: list
         """
         result = []
         with qgis_settings(
@@ -284,10 +304,11 @@ class SettingsManager(QtCore.QObject):
     def _get_priority_layers_settings_base(self, identifier) -> str:
         """Gets the priority layers settings base url.
 
-        Args:
-            identifier (uuid.UUID): Priority layers settings identifier
-        Returns:
-            settings_base_group (str):  Priority layers settings base group
+        :param identifier: Priority layers settings identifier
+        :type identifier: uuid.UUID
+
+        :returns: Priority layers settings base group
+        :rtype: str
         """
         return (
             f"{self.BASE_GROUP_NAME}/"
@@ -298,10 +319,11 @@ class SettingsManager(QtCore.QObject):
     def get_priority_layer(self, identifier) -> typing.Dict:
         """Retrieves the priority layer that matches the passed identifier.
 
-        Args:
-            identifier (uuid.UUID): Priority layers identifier
-        Returns:
-            priority_layer (dict):  Priority layers dict
+        :param identifier: Priority layers identifier
+        :type identifier: uuid.UUID
+
+        :returns: Priority layers dict
+        :rtype: dict
         """
 
         settings_key = self._get_priority_layers_settings_base(identifier)
@@ -328,8 +350,8 @@ class SettingsManager(QtCore.QObject):
     def get_priority_layers(self) -> typing.List:
         """Gets all the available priority layers in the plugin.
 
-        Returns:
-           priority_layer_list (list):  Priority layers list
+        :returns: Priority layers list
+        :rtype: list
         """
         priority_layer_list = []
         with qgis_settings(
@@ -363,10 +385,11 @@ class SettingsManager(QtCore.QObject):
         """Finds a priority layer setting inside
         the plugin QgsSettings by name.
 
-         Args:
-            name (str): Priority layers identifier
-        Returns:
-            priority_layer (dict):  Priority layers dict
+        :param name: Priority layers identifier
+        :type name: str
+
+        :returns: Priority layers dict
+        :rtype: dict
         """
         with qgis_settings(
             f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_LAYERS_GROUP_NAME}"
@@ -388,10 +411,11 @@ class SettingsManager(QtCore.QObject):
         """Finds priority layers inside the plugin QgsSettings
          that contain the passed group.
 
-        Args:
-            group (str): Priority group name
-        Returns:
-            layers (list):  Priority layers list
+        :param group: Priority group name
+        :type group: str
+
+        :returns: Priority layers list
+        :rtype: list
         """
         layers = []
         with qgis_settings(
@@ -419,12 +443,12 @@ class SettingsManager(QtCore.QObject):
 
     def save_priority_layer(self, priority_layer):
         """Save the priority layer into the plugin settings.
-           Updates the layer with new priority groups.
+        Updates the layer with new priority groups.
 
-        Args:
-            priority_layer (dict): Priority layer
-        Note:
-            Emits priority_layers_changed signal
+        Note: Emits priority_layers_changed signal
+
+        :param priority_layer: Priority layer
+        :type priority_layer: dict
         """
         settings_key = self._get_priority_layers_settings_base(priority_layer["uuid"])
 
@@ -446,9 +470,10 @@ class SettingsManager(QtCore.QObject):
         self.priority_layers_changed.emit()
 
     def set_current_priority_layer(self, identifier):
-        """
-        Args:
-            identifier (str): Priority layer identifier
+        """ Set current priority layer
+
+        :param identifier: Priority layer identifier
+        :type identifier: str
         """
         with qgis_settings(
             f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_LAYERS_GROUP_NAME}/"
@@ -471,8 +496,8 @@ class SettingsManager(QtCore.QObject):
     def delete_priority_layer(self, identifier):
         """Removes priority layer that match the passed identifier
 
-        Args:
-            identifier (str): Priority layer identifier
+        :param identifier: Priority layer identifier
+        :type identifier: str
         """
         with qgis_settings(
             f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_LAYERS_GROUP_NAME}/"
@@ -484,11 +509,11 @@ class SettingsManager(QtCore.QObject):
     def _get_priority_groups_settings_base(self, identifier) -> str:
         """Gets the priority group settings base url.
 
-        Args:
-            identifier (str): Priority group settings identifier
+        :param identifier: Priority group settings identifier
+        :type identifier: str
 
-        Returns
-            priority_group_settings_base (str): Priority groups settings base group
+        :returns: Priority groups settings base group
+        :rtype: str
 
         """
         return (
@@ -500,10 +525,11 @@ class SettingsManager(QtCore.QObject):
     def find_group_by_name(self, name) -> typing.Dict:
         """Finds a priority group setting inside the plugin QgsSettings by name.
 
-        Args:
-            name (str): Name of the group
-        Returns
-            priority_group (dict): Priority group
+        :param name: Name of the group
+        :type name: str
+
+        :returns: Priority group
+        :rtype: typing.Dict
         """
         with qgis_settings(
             f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_GROUP_NAME}"
@@ -524,10 +550,11 @@ class SettingsManager(QtCore.QObject):
     def get_priority_group(self, identifier) -> typing.Dict:
         """Retrieves the priority group that matches the passed identifier.
 
-        Args:
-            identifier (str): Priority group identifier
-        Returns
-            priority_group (dict): Priority group
+        :param identifier: Priority group identifier
+        :type identifier: str
+
+        :returns: Priority group
+        :rtype: typing.Dict
         """
 
         settings_key = self._get_priority_groups_settings_base(identifier)
@@ -540,8 +567,8 @@ class SettingsManager(QtCore.QObject):
     def get_priority_groups(self) -> typing.List[typing.Dict]:
         """Gets all the available priority groups in the plugin.
 
-        Returns
-            priority_groups (list): List of the priority groups instances
+        :returns: List of the priority groups instances
+        :rtype: list
         """
         priority_groups = []
         with qgis_settings(
@@ -561,8 +588,8 @@ class SettingsManager(QtCore.QObject):
     def save_priority_group(self, priority_group):
         """Save the priority group into the plugin settings
 
-        Args:
-            priority_group (dict): Priority group
+        :param priority_group: Priority group
+        :type priority_group: str
         """
 
         settings_key = self._get_priority_groups_settings_base(priority_group["uuid"])
