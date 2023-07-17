@@ -244,6 +244,14 @@ class QgisCplus:
         """Options the CPLUS settings in the QGIS options dialog."""
         self.iface.showOptionsDialog(currentPage=OPTIONS_TITLE)
 
+    def open_help(self):
+        """Opens documentation home page for the plugin in a browser"""
+        open_documentation(DOCUMENTATION_SITE)
+
+    def open_about(self):
+        """Opens the about documentation for the plugin in a browser"""
+        open_documentation(ABOUT_DOCUMENTATION_SITE)
+
 
 def create_priority_layers():
     """Prepares the priority weighted layers UI with the defaults priority groups"""
@@ -303,12 +311,4 @@ def initialize_default_settings():
         except KeyError as ke:
             log(f"Default implementation model configuration load error - {str(ke)}")
             continue
-
-    def open_help(self):
-        """Opens documentation home page for the plugin in a browser"""
-        open_documentation(DOCUMENTATION_SITE)
-
-    def open_about(self):
-        """Opens the about documentation for the plugin in a browser"""
-        open_documentation(ABOUT_DOCUMENTATION_SITE)
 
