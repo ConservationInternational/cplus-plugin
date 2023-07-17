@@ -210,7 +210,9 @@ class QgisCplus:
         )
 
         self.add_action(
-            os.path.join(os.path.dirname(__file__), "icons", "mActionHelpContents_green.svg"),
+            os.path.join(
+                os.path.dirname(__file__), "icons", "mActionHelpContents_green.svg"
+            ),
             text=self.tr("Help"),
             callback=self.open_help,
             parent=self.iface.mainWindow(),
@@ -331,4 +333,3 @@ def initialize_default_settings():
         except KeyError as ke:
             log(f"Default implementation model configuration load error - {str(ke)}")
             continue
-

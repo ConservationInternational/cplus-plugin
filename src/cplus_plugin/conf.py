@@ -470,7 +470,7 @@ class SettingsManager(QtCore.QObject):
         self.priority_layers_changed.emit()
 
     def set_current_priority_layer(self, identifier):
-        """ Set current priority layer
+        """Set current priority layer
 
         :param identifier: Priority layer identifier
         :type identifier: str
