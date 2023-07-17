@@ -22,7 +22,7 @@ class SpatialExtent:
 
 
 class PRIORITY_GROUP(Enum):
-    """Represents the STAC API resource types"""
+    """Represents priority groups types"""
 
     CARBON_IMPORTANCE = "Carbon importance"
     BIODIVERSITY = "Biodiversity"
