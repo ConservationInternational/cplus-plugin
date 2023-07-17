@@ -346,13 +346,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if scenario_name == "" or scenario_name is None:
             self.show_message(
                 tr(f"Scenario name cannot be blank."),
-                level=Qgis.Info,
+                level=Qgis.Critical,
             )
             return
         if scenario_description == "" or scenario_description is None:
             self.show_message(
                 tr(f"Scenario description cannot be blank."),
-                level=Qgis.Info,
+                level=Qgis.Critical,
             )
             return
         if implementation_models == [] or implementation_models is None:
@@ -405,7 +405,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         else:
             self.show_message(
                 tr("Selected area of interest is outside the pilot area."),
-                level=Qgis.Info,
+                level=Qgis.Critical,
             )
             return
 
@@ -417,17 +417,34 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         implementation_models,
         priority_weight_layers,
     ):
+        """Runs the actual scenario analysis by executing processing algorithms
+
+        :param scenario_name: Scenario name
+        :type scenario_name: str
+
+        :param scenario_description: Scenario description
+        :type scenario_description: str
+
+        :param passed_extent: Area of interest
+        :type passed_extent: list
+
+        :param implementation_models: List of the selected implementation models
+        :type implementation_models: list
+
+        :param priority_weight_layers: List of the priority weight layers
+        :type priority_weight_layers: list
+
+        """
         outputs = {}
 
         for model in implementation_models:
             pathways = model.pathways
-            expression = ""
             layer = None
-            for pathway in pathways:
-                layer = pathway.path
-                expression = expression + f" + {pathway.path}@1"
+            pathway_paths = [str(pathway.path) for pathway in pathways]
 
-                log(f"expression {expression}")
+            expression = " + ".join(pathway_paths)
+
+            log(f"expression {expression}")
 
             alg_params = {
                 "CELLSIZE": 0,
@@ -489,6 +506,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.analysis_finished.emit(outputs)
 
     def post_analysis(self, outputs):
+        """Handles analysis outputs from the final analysis results
+
+        :param outputs: Dictionary of output layers
+        :type outputs: dict
+        """
         layer = outputs.get("cplus_qgis_model_output")
 
         layer = QgsRasterLayer(layer, "cplus_qgis_model_output")
