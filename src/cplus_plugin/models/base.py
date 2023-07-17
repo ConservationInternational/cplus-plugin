@@ -4,6 +4,7 @@
 """
 
 import dataclasses
+import datetime
 from enum import Enum, IntEnum
 import os.path
 import typing
@@ -232,6 +233,16 @@ class ImplementationModel(BaseModelComponent):
         return pathways[0]
 
 
+class ScenarioState(Enum):
+    """Defines scenario analysis process states"""
+
+    IDLE = 0
+    RUNNING = 1
+    STOPPED = 3
+    FINISHED = 4
+    TERMINATED = 5
+
+
 @dataclasses.dataclass
 class Scenario(BaseModelComponent):
     """Object for the handling
@@ -241,3 +252,13 @@ class Scenario(BaseModelComponent):
     extent: SpatialExtent
     # TODO: Confirm if this should be weighted model instead.
     models: typing.List[ImplementationModel]
+    state: ScenarioState = ScenarioState.IDLE
+
+
+@dataclasses.dataclass
+class ScenarioResult:
+    """Scenario result details."""
+
+    scenario: Scenario
+    layers: typing.Dict[str, QgsMapLayer]
+    created_date: datetime.datetime
