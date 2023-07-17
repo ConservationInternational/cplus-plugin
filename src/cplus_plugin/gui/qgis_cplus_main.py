@@ -41,6 +41,7 @@ from .priority_group_widget import PriorityGroupWidget
 from .priority_layer_group import PriorityLayerDialog
 from .implementation_model_widget import ImplementationModelContainerWidget
 from .priority_group_widget import PriorityGroupWidget
+from .progress_dialog import ProgressDialog
 
 from ..resources import *
 

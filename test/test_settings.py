@@ -2,8 +2,6 @@ import unittest
 
 from utilities_for_testing import get_qgis_app
 
-# from qgis.utils import iface
-
 from ..src.cplus_plugin.settings import CplusSettings
 from ..src.cplus_plugin.conf import (
     settings_manager,
