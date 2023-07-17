@@ -76,20 +76,25 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
     def get_processing_status(self) -> bool:
         """Returns the status of the processing.
 
-        :return value: Value to be set on the progress bar
-        :type value: float
+        :returns: Status of processing.
+        :rtype: bool
         """
 
         return self.analysis_running
 
     def get_progress_bar(self) -> QProgressBar:
+        """Returns a reference to the Progress bar object.
+
+        :returns: Progress bar
+        :rtype: QProgressBar
+        """
+
         return self.progress_bar
 
     def update_progress_bar(self, value) -> None:
         """Sets the value of the progress bar
 
         :param value: Value to be set on the progress bar
-        :type value: float
         """
         if self.progress_bar:
             try:
