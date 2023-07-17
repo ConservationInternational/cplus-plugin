@@ -304,8 +304,8 @@ class CplusOptionsFactory(QgsOptionsWidgetFactory):
     def createWidget(self, parent: QWidget) -> CplusSettings:
         """Creates a widget for CPLUS settings.
 
-        :param: Parent widget (e.g. dockwidget)
-        :type: QWidget
+        :param parent: Parent widget
+        :type parent: QWidget
 
         :returns: Widget to be used in the QGIS options
         :rtype: CplusSettings
