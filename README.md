@@ -140,7 +140,8 @@ from the plugin root.
 ```
 
 The script builds a testable plugin code and then it spins up Docker containers that contain QGIS version 3.26 
-and latest version images respectively, finally it run the available test suite.
+and latest version images respectively, finally it run the available test suite. The script requires Python to
+have been installed in the system.
 
 When using the script for the first time it will pull the QGIS Docker images if there are not available 
-locally. After the tests have finished running the Docker containers create for the tests will be stopped and removed.
+locally. After the tests have finished running the Docker containers created for the tests will be stopped and removed.
