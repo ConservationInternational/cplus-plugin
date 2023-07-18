@@ -5,12 +5,7 @@ from qgis.PyQt import (
     QtCore,
     QtWidgets,
 )
-from qgis.PyQt.QtWidgets import (
-    QMenu,
-    QAction,
-    QStyle,
-    QProgressBar
-)
+from qgis.PyQt.QtWidgets import QMenu, QAction, QStyle, QProgressBar
 from qgis.PyQt.QtGui import QIcon
 
 from ..utils import open_documentation, tr, log
@@ -28,13 +23,12 @@ Ui_DlgProgress, _ = uic.loadUiType(
 
 
 class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
-
     def __init__(
-            self,
-            init_message="Processing...",
-            minimum=0,
-            maximum=100,
-            parent=None,
+        self,
+        init_message="Processing...",
+        minimum=0,
+        maximum=100,
+        parent=None,
     ):
         super().__init__(parent)
         self.setupUi(self)
@@ -122,12 +116,12 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
     def view_report_pdf(self) -> None:
         """Opens a PDF version of the report"""
 
-        print('view report pdf')
+        print("view report pdf")
 
     def view_report_layout_designer(self) -> None:
         """Opens the report in layout designer"""
 
-        print('layout designer')
+        print("layout designer")
 
     def open_report_help(self) -> None:
         """Opens the Report guide in a browser"""
@@ -160,7 +154,7 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
     def stop_processing(self) -> None:
         """The user cancelled the processing."""
 
-        self.change_status_message('Processing has been cancelled by the user.')
+        self.change_status_message("Processing has been cancelled by the user.")
 
         # Steps to stop analysis from running
 
@@ -172,6 +166,6 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         self.analysis_running = False
 
         # Change cancel button to the close button status
-        self.btn_cancel.setText(tr('Close'))
+        self.btn_cancel.setText(tr("Close"))
         icon = self.style().standardIcon(QStyle.SP_DialogCloseButton)
         self.btn_cancel.setIcon(icon)

@@ -13,14 +13,28 @@ PILOT_AREA_EXTENT = {
 DOCUMENTATION_SITE = "https://kartoza.github.io/cplus-plugin"
 USER_DOCUMENTATION_SITE = "https://kartoza.github.io/cplus-plugin/user/cplus_ui_guide"
 ABOUT_DOCUMENTATION_SITE = "https://kartoza.github.io/cplus-plugin/about/ci"
-REPORT_DOCUMENTATION = "https://kartoza.github.io/cplus-plugin/user/cplus_ui_guide/#report-generating"
+REPORT_DOCUMENTATION = (
+    "https://kartoza.github.io/cplus-plugin/user/cplus_ui_guide/#report-generating"
+)
 
 OPTIONS_TITLE = "CPLUS"  # Title in the QGIS settings
 ICON_PATH = ":/plugins/cplus_plugin/icon.svg"
-ICON_PDF = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/icons/mActionSaveAsPDF.svg"
-ICON_LAYOUT = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/icons/mActionNewLayout.svg"
-ICON_REPORT = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/icons/mIconReport.svg"
-ICON_HELP = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/icons/mActionHelpContents_green.svg"
+ICON_PDF = (
+    os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    + "/icons/mActionSaveAsPDF.svg"
+)
+ICON_LAYOUT = (
+    os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    + "/icons/mActionNewLayout.svg"
+)
+ICON_REPORT = (
+    os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    + "/icons/mIconReport.svg"
+)
+ICON_HELP = (
+    os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    + "/icons/mActionHelpContents_green.svg"
+)
 
 ADD_LAYER_ICON_PATH = ":/plugins/cplus_plugin/cplus_left_arrow.svg"
 REMOVE_LAYER_ICON_PATH = ":/plugins/cplus_plugin/cplus_right_arrow.svg"
