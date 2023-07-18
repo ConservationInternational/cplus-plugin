@@ -62,6 +62,7 @@ from ..definitions.defaults import (
     SCENARIO_OUTPUT_LAYER_NAME,
     USER_DOCUMENTATION_SITE,
 )
+from .progress_dialog import ProgressDialog
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/qgis_cplus_main_dockwidget.ui")
