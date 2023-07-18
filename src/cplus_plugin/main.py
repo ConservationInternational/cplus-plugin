@@ -1,4 +1,7 @@
-"""
+# coding=utf-8
+
+"""Plugin main/core.
+
 /***************************************************************************
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -23,10 +26,19 @@ from .gui.qgis_cplus_main import QgisCplusMain
 from qgis.PyQt.QtWidgets import QToolButton
 from qgis.PyQt.QtWidgets import QMenu
 
-from .definitions.defaults import ICON_PATH, OPTIONS_TITLE
+from .definitions.defaults import (
+    ABOUT_DOCUMENTATION_SITE,
+    DOCUMENTATION_SITE,
+    USER_DOCUMENTATION_SITE,
+    ICON_PATH,
+    OPTIONS_TITLE,
+)
 from .settings import CplusOptionsFactory
 
-from .utils import log
+from .utils import (
+    log,
+    open_documentation,
+)
 
 from .conf import Settings, settings_manager
 from .definitions.defaults import (
@@ -86,11 +98,11 @@ class QgisCplus:
         """Get the translation for a string using Qt translation API.
         We implement this ourselves since we do not inherit QObject.
 
-        Args:
-            message (str): String for translation
+        :param message: String for translation
+        :type message: str
 
-        Returns:
-            TranslatedMessage (QString): Translated version of the message
+        :returns: Translated version of the message
+        :rtype: QString
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate("CPLUS", message)
@@ -111,21 +123,41 @@ class QgisCplus:
     ):
         """Add a toolbar icon to the toolbar.
 
-        Args:
-            icon_path (str): Path to the icon for this action
-            text (str): Text that should be shown in menu items for this action
-            callback (function): Function to be called when the action is triggered
-            enabled_flag (bool): A flag indicating if the action should be enabled
-            add_to_menu (bool): Flag indicating whether the action should also be added to the menu
-            add_to_web_menu (bool): Flag indicating whether the action should also be added to the web menu
-            add_to_toolbar (bool): Flag indicating whether the action should also be added to the toolbar
-            set_as_default_action (bool): Flag indicating whether the action is the default action
-            status_tip (str): Optional text to show in a popup when mouse pointer hovers over the action
-            parent (QWidget): Parent widget for the new action
-            whats_this (str): Optional text to show in the status bar when the mouse pointer hovers over the action
+        :param icon_path: Path to the icon for this action
+        :type icon_path: str
 
-        Returns:
-            Action (QAction): The action that was created
+        :param text: Text that should be shown in menu items for this action
+        :type text: str
+
+        :param callback: Function to be called when the action is triggered
+        :type callback: function
+
+        :param enabled_flag: A flag indicating if the action should be enabled
+        :type enabled_flag: bool
+
+        :param add_to_menu: Flag indicating whether the action should also be added to the menu
+        :type add_to_menu: bool
+
+        :param add_to_web_menu: Flag indicating whether the action should also be added to the web menu
+        :type add_to_web_menu: bool
+
+        :param add_to_toolbar: Flag indicating whether the action should also be added to the toolbar
+        :type add_to_toolbar: bool
+
+        :param set_as_default_action: Flag indicating whether the action is the default action
+        :type set_as_default_action: bool
+
+        :param status_tip: Optional text to show in a popup when mouse pointer hovers over the action
+        :type status_tip: str
+
+        :param parent: Parent widget for the new action
+        :type parent: QWidget
+
+        :param whats_this: Optional text to show in the status bar when the mouse pointer hovers over the action
+        :type whats_this: str
+
+        :returns: The action that was created
+        :rtype: QAction
         """
 
         icon = QIcon(icon_path)
@@ -177,6 +209,24 @@ class QgisCplus:
             status_tip=self.tr("CPLUS Settings"),
         )
 
+        self.add_action(
+            os.path.join(
+                os.path.dirname(__file__), "icons", "mActionHelpContents_green.svg"
+            ),
+            text=self.tr("Help"),
+            callback=self.open_help,
+            parent=self.iface.mainWindow(),
+            status_tip=self.tr("CPLUS Help"),
+        )
+
+        self.add_action(
+            os.path.join(os.path.dirname(__file__), "icons", "info_green.svg"),
+            text=self.tr("About"),
+            callback=self.open_about,
+            parent=self.iface.mainWindow(),
+            status_tip=self.tr("CPLUS About"),
+        )
+
         # Adds the settings to the QGIS options panel
         self.options_factory = CplusOptionsFactory()
         self.iface.registerOptionsWidgetFactory(self.options_factory)
@@ -215,6 +265,14 @@ class QgisCplus:
     def run_settings(self):
         """Options the CPLUS settings in the QGIS options dialog."""
         self.iface.showOptionsDialog(currentPage=OPTIONS_TITLE)
+
+    def open_help(self):
+        """Opens documentation home page for the plugin in a browser"""
+        open_documentation(DOCUMENTATION_SITE)
+
+    def open_about(self):
+        """Opens the about documentation for the plugin in a browser"""
+        open_documentation(ABOUT_DOCUMENTATION_SITE)
 
 
 def create_priority_layers():

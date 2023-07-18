@@ -20,11 +20,22 @@ nav:
       - Architecture: developer/architecture.md
       - Documentation: developer/documentation.md
       - API:
-          - Main: developer/api/api_main.md
-          - GUI main: developer/api/api_gui_main.md
-          - Configuration: developer/api/api_conf.md
-          - Model base: developer/api/api_base.md
-          - Settings: developer/api/api_settings.md
+          - Core:
+            - Main: developer/api/api_main.md
+            - Configuration: developer/api/api_conf.md
+            - Settings: developer/api/api_settings.md
+            - Utilities: developer/api/api_utils.md
+          - Models:
+            - Model base: developer/api/api_base.md
+            - Helpers: developer/api/api_helpers.md
+          - GUI:
+            - GUI main: developer/api/api_gui_main.md
+            - Component item model: developer/api/api_component_items.md
+            - Implementation model editor: developer/api/api_im_editor_dialog.md
+            - Implementation model widget: developer/api/api_im_widget.md
+            - Model component widget: developer/api/api_model_component_widget.md
+            - NCS Pathway editor: developer/api/api_ncs_pathway_editor.md
+            - Priority group: developer/api/api_priority_group.md
   - About:
       - Conservation International: about/ci.md
       - Kartoza: about/kartoza.md
@@ -41,6 +52,7 @@ plugins:
             - https://docs.python.org/3/objects.inv
             - https://mkdocstrings.github.io/autorefs/objects.inv
           options:
+            docstring_style: sphinx
             separate_signature: true
             merge_init_into_class: true
             docstring_options:

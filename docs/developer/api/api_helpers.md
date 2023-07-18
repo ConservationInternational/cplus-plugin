@@ -1,6 +1,6 @@
-# Configuration
+# Helpers
 
-::: src.cplus_plugin.conf
+::: src.cplus_plugin.models.helpers
     handler: python
     options:
         docstring_style: sphinx

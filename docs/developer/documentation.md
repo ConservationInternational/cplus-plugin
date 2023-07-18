@@ -72,8 +72,9 @@ Here is an example of the end-result:
 ### mkdocstrings options
 
 The user can also do fine-tuning of the resulting site. Here is a list of important options to be
-aware of: members, show_root_directory, and show_source.
+aware of: members, show_root_directory, show_source, and heading_level.
 
+- **heading_level**: The header level of the content (functions, etc.) which will be added
 - **members**: Only these function/classes will be shown
 
 ![Documentation mkdocstrings members](../img/documentation/mkdocstrings-members-example.png)

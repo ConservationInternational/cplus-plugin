@@ -1,3 +1,12 @@
+# coding=utf-8
+
+"""Plugin global settings.
+
+Covers the plugin global settings which a user can set and save. The settings
+will be saved using QgsSettings. Settings can be accessed via the QGIS options,
+a button on the docking widget, and from the toolbar menu.
+"""
+
 import os
 from pathlib import Path
 
@@ -30,7 +39,14 @@ Ui_DlgSettings, _ = uic.loadUiType(str(Path(__file__).parent / "ui/qgis_settings
 class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
     message_bar: qgis.gui.QgsMessageBar
 
+    """CPLUS plugin settings class.
+
+    Class which manages the CPLUS settings. Initilizes the UI, which can be accessed
+    from the menu drop-down or the QGIS settings.
+    """
+
     def __init__(self, parent=None) -> None:
+        """QGIS CPLUS Plugin Settings dialog."""
         QgsOptionsPageWidget.__init__(self, parent)
 
         self.setupUi(self)
@@ -50,12 +66,15 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.save_settings()
 
     def update_logo(self, custom_logo, logo_dir=DEFAULT_LOGO_PATH):
-        """Updates the logo preview. If the logo is not found,
-        the default logo will be used.
+        """Updates the logo preview.
 
-        Args:
-            custom_logo (bool): If a custom logo should be used
-            logo_dir (str): The custom logo directory
+        If the logo is not found, the default logo will be used.
+
+        :param custom_logo: If a custom logo should be used
+        :type custom_logo: bool
+
+        :param logo_dir: The custom logo directory
+        :type logo_dir: str
         """
         logo_found = False
         if custom_logo:
@@ -98,8 +117,8 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         """Checks if the provided logo directory exists.
         A warning messages is presented if the file cannot be found.
 
-        Returns:
-            file_found (bool): Whether the logo file exists
+        :returns: Whether the logo file exists
+        :rtype: bool
         """
         # Clears the error messages when doing next check
         self.message_bar.clearWidgets()
@@ -121,8 +140,8 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         """Checks if the provided base directory exists.
         A warning messages is presented if the directory does not exist.
 
-        Returns:
-            folder_found (bool): Whether the base directory exists
+        :returns: Whether the base directory exists
+        :rtype: bool
         """
 
         # Clears the error messages when doing next check
@@ -243,8 +262,8 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         """Show event being called. This will display the plugin settings.
         The stored/saved settings will be loaded.
 
-        Args:
-            event (QShowEvent): Event that has been triggered
+        :param event: Event that has been triggered
+        :type event: QShowEvent
         """
 
         super().showEvent(event)
@@ -253,15 +272,22 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
     def closeEvent(self, event: QShowEvent) -> None:
         """When closing the setings.
 
-        Args:
-            event (QShowEvent): Event that has been triggered
+        :param event: Event that has been triggered
+        :type event: QShowEvent
         """
 
         super().closeEvent(event)
 
 
 class CplusOptionsFactory(QgsOptionsWidgetFactory):
+    """Options factory initializes the CPLUS settings.
+
+    Class which creates the widget requied for the CPLUS settings.
+    QgsOptionsWidgetFactory is used to accomplish this.
+    """
+
     def __init__(self) -> None:
+        """QGIS CPLUS Plugin Settings factory."""
         super().__init__()
 
         self.setTitle(OPTIONS_TITLE)
@@ -269,8 +295,8 @@ class CplusOptionsFactory(QgsOptionsWidgetFactory):
     def icon(self) -> QIcon:
         """Returns the icon which will be used for the CPLUS options tab.
 
-        Returns:
-            Icon (QIcon): An icon object which contains the provided custom icon
+        :returns: An icon object which contains the provided custom icon
+        :rtype: QIcon
         """
 
         return QIcon(ICON_PATH)
@@ -278,11 +304,11 @@ class CplusOptionsFactory(QgsOptionsWidgetFactory):
     def createWidget(self, parent: QWidget) -> CplusSettings:
         """Creates a widget for CPLUS settings.
 
-        Args:
-            parent (QWidget): Parent widget (e.g. dockwidget)
+        :param parent: Parent widget
+        :type parent: QWidget
 
-        Returns:
-            SettingsWidget (CplusSettings): Widget to be used in the QGIS options
+        :returns: Widget to be used in the QGIS options
+        :rtype: CplusSettings
         """
 
         return CplusSettings(parent)

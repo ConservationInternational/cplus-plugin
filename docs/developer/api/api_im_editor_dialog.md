@@ -1,6 +1,6 @@
-# Configuration
+# Implementation model editor
 
-::: src.cplus_plugin.conf
+::: src.cplus_plugin.gui.implementation_model_editor_dialog
     handler: python
     options:
         docstring_style: sphinx

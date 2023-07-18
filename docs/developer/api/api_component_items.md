@@ -1,6 +1,6 @@
-# Configuration
+# Component item model
 
-::: src.cplus_plugin.conf
+::: src.cplus_plugin.gui.component_item_model
     handler: python
     options:
         docstring_style: sphinx
