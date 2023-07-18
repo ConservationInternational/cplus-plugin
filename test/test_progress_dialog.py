@@ -1,12 +1,7 @@
 import unittest
 
 from utilities_for_testing import get_qgis_app
-from qgis.PyQt.QtWidgets import (
-    QMenu,
-    QAction,
-    QStyle,
-    QProgressBar
-)
+from qgis.PyQt.QtWidgets import QMenu, QAction, QStyle, QProgressBar
 
 from cplus_plugin.gui.progress_dialog import ProgressDialog
 
@@ -14,7 +9,6 @@ QGIS_APP, CANVAS, IFACE, PARENT = get_qgis_app()
 
 
 class CplusPluginProgressDialogTest(unittest.TestCase):
-
     def test_get_progress_status(self) -> None:
         """Tests if the progress is correctly set to True after
         initializing the progress dialog.
@@ -26,8 +20,7 @@ class CplusPluginProgressDialogTest(unittest.TestCase):
         self.assertEqual(processing_status, True)
 
     def test_get_progressbar(self) -> None:
-        """Test if the progress bar is there.
-        """
+        """Test if the progress bar is there."""
         progress_dialog = ProgressDialog(parent=PARENT)
         progress_bar = progress_dialog.get_progress_bar()
 
@@ -43,8 +36,7 @@ class CplusPluginProgressDialogTest(unittest.TestCase):
         self.assertEqual(test_message, current_message)
 
     def test_progress_bar(self) -> None:
-        """Test if progress bar updating/changes works correctly.
-        """
+        """Test if progress bar updating/changes works correctly."""
         progress_dialog = ProgressDialog(parent=PARENT)
 
         # Checks value at non-100%
@@ -72,8 +64,7 @@ class CplusPluginProgressDialogTest(unittest.TestCase):
         self.assertEqual(True, True)
 
     def test_view_report_layout_designer(self) -> None:
-        """A check on whether the report is opened correctly in layout view.
-        """
+        """A check on whether the report is opened correctly in layout view."""
 
         # view_report_layout_designer()
         print("Not sure if this will require a test in the future")
@@ -81,16 +72,14 @@ class CplusPluginProgressDialogTest(unittest.TestCase):
         self.assertEqual(True, True)
 
     def test_stop_processing(self) -> None:
-        """Checks if processing has been stopped correctly.
-        """
+        """Checks if processing has been stopped correctly."""
         # stop_processing()
         print("Not sure if this will require a test in the future")
 
         self.assertEqual(True, True)
 
     def test_processing_stopped(self) -> None:
-        """Checks if post-stopped changes occurs.
-        """
+        """Checks if post-stopped changes occurs."""
 
         progress_dialog = ProgressDialog(parent=PARENT)
 
@@ -100,5 +89,5 @@ class CplusPluginProgressDialogTest(unittest.TestCase):
         self.assertEqual(processing_status, False)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
