@@ -38,11 +38,10 @@ class TestNcsPathwayItemModel(TestCase):
         result = ncs_item_model.add_ncs_pathway(self.ncs)
         self.assertTrue(result)
 
-    def test_add_duplicate_ncs_pathway(self):
-        """Assert a duplicate NCS pathway object cannot be added."""
+    def test_add_invalid_ncs_pathway(self):
+        """Assert a invalid NCS pathway object cannot be added."""
         ncs_item_model = NcsPathwayItemModel(PARENT)
-        _ = ncs_item_model.add_ncs_pathway(self.ncs)
-        result = ncs_item_model.add_ncs_pathway(self.ncs)
+        result = ncs_item_model.add_ncs_pathway(self.invalid_ncs)
         self.assertFalse(result)
 
     def test_get_valid_pathways(self):
