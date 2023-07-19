@@ -131,7 +131,7 @@ on the `dist` folder under the plugin root folder.
 python admin.py generate-zip
 ```
 
-### 🧰 Testing
+### 🔧 Testing
 
 The plugin currently support running tests on Linux environment only, to run plugin tests use the below script
 from the plugin root.
