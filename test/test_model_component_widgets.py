@@ -37,13 +37,6 @@ class TestNcsComponentWidget(TestCase):
         result = ncs_widget.add_ncs_pathway(ncs)
         self.assertTrue(result)
 
-    def test_add_invalid_ncs_pathway(self):
-        """Assert an invalid NCS pathway cannot be added to the widget."""
-        ncs = get_invalid_ncs_pathway()
-        ncs_widget = NcsComponentWidget(PARENT)
-        result = ncs_widget.add_ncs_pathway(ncs)
-        self.assertFalse(result)
-
     def test_get_valid_ncs_pathways(self):
         """Assert number of NcsPathway objects retrieved."""
         valid_ncs = get_valid_ncs_pathway()

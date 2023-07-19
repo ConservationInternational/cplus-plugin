@@ -8,6 +8,7 @@ a button on the docking widget, and from the toolbar menu.
 """
 
 import os
+import typing
 from pathlib import Path
 
 import qgis.core
@@ -32,6 +33,7 @@ from .definitions.defaults import (
     ICON_PATH,
     DEFAULT_LOGO_PATH,
 )
+from .utils import FileUtils
 
 Ui_DlgSettings, _ = uic.loadUiType(str(Path(__file__).parent / "ui/qgis_settings.ui"))
 
@@ -54,6 +56,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.layout().insertWidget(0, self.message_bar)
 
         self.settings = qgis.core.QgsSettings()
+        settings_manager.settings_updated[str, object].connect(self.on_settings_changed)
 
         # Connections
         self.cb_custom_logo.stateChanged.connect(self.logo_state_changed)
@@ -64,6 +67,22 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         """This is called on OK click in the QGIS options panel."""
 
         self.save_settings()
+
+    def on_settings_changed(self, name: str, value: typing.Any):
+        """Slot raised when settings has been changed.
+
+        :param name: Name of the setting that has changed.
+        :type name: str
+
+        :param value: New value for the given settings name.
+        :type value: Any
+        """
+        # Create NCS pathway subdirectory if base directory has changed.
+        if name == Settings.BASE_DIR.value:
+            if not value:
+                return
+
+            FileUtils.create_ncs_pathways_dir(value)
 
     def update_logo(self, custom_logo, logo_dir=DEFAULT_LOGO_PATH):
         """Updates the logo preview.

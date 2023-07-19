@@ -151,9 +151,9 @@ class SettingsManager(QtCore.QObject):
         """
         self.settings.setValue(f"{self.BASE_GROUP_NAME}/{name}", value)
         if isinstance(name, Settings):
-            self.settings_updated[Settings, object].emit(name, value)
-        else:
-            self.settings_updated[str, object].emit(name, value)
+            name = name.value
+
+        self.settings_updated.emit(name, value)
 
     def get_value(self, name: str, default=None, setting_type=None):
         """Gets value of the setting with the passed name.

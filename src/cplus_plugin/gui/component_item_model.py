@@ -549,9 +549,6 @@ class NcsPathwayItemModel(ComponentItemModel):
         else False if the NcsPathway object is invalid.
         :rtype: bool
         """
-        if not ncs.is_valid():
-            return False
-
         ncs_item = NcsPathwayItem.create(ncs)
         self._update_display(ncs_item)
 
@@ -607,17 +604,17 @@ class NcsPathwayItemModel(ComponentItemModel):
 
         return ncs_pathways
 
-    def remove_ncs_pathway(self, uuid: str) -> bool:
+    def remove_ncs_pathway(self, ncs_uuid: str) -> bool:
         """Remove an NCS pathway item from the model.
 
         param uuid: UUID of the NCS pathway item to be removed.
-        :type uuid: str
+        :type ncs_uuid: str
 
         :returns: True if the NCS pathway item as successfully
         removed, else False if there was not matching UUID.
         :rtype: bool
         """
-        return self.remove_component_item(uuid)
+        return self.remove_component_item(ncs_uuid)
 
     def supportedDropActions(self) -> QtCore.Qt.DropActions:
         """Configure the model to only support copying items in a
