@@ -62,7 +62,7 @@ plugins:
 
 theme:
   name: material
-  logo: img/logos/cplus_logo.svg
+  logo: img/logos/cplus_logo_white_background.svg
   features:
     - navigation.tabs
     - navigation.sections
