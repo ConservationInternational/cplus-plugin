@@ -415,7 +415,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 log(
                     tr(
                         "An error occurred when running task for "
-                        'scernario analysis, error message "{}" '.format(err)
+                        'scenario analysis, error message "{}" '.format(err)
                     )
                 )
 
@@ -542,13 +542,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param maximum: Maximum value that can be set on the progress bar
         :type maximum: int
         """
-        self.message_bar.clearWidgets()
-        message_bar_item = self.message_bar.createMessage(message)
-        self.progress_bar.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
-        self.progress_bar.setMinimum(minimum)
-        self.progress_bar.setMaximum(maximum)
-        message_bar_item.layout().addWidget(self.progress_bar)
-        self.message_bar.pushWidget(message_bar_item, Qgis.Info)
+
+        try:
+            self.message_bar.clearWidgets()
+            message_bar_item = self.message_bar.createMessage(message)
+            self.progress_bar.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+            self.progress_bar.setMinimum(minimum)
+            self.progress_bar.setMaximum(maximum)
+            message_bar_item.layout().addWidget(self.progress_bar)
+            self.message_bar.pushWidget(message_bar_item, Qgis.Info)
+
+        except Exception as e:
+            log(f"Error showing progress bar, {e}")
 
     def show_message(self, message, level=Qgis.Warning):
         """Shows message on the main widget message bar.
