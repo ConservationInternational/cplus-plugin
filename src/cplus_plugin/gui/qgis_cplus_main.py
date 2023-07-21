@@ -82,6 +82,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         super().__init__(parent)
         self.setupUi(self)
         self.iface = iface
+        self.progress_dialog = None
 
         # Insert widget for step 2
         self.implementation_model_widget = ImplementationModelContainerWidget(self)
@@ -393,6 +394,25 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Performs the scenario analysis. This covers the pilot study area,
         and checks whether the AOI is outside the pilot study area.
         """
+
+        # print('run scenario')
+        #
+        # # Create progress dialog ===========================================================================================
+        # self.progress_dialog = ProgressDialog("Starting processing...", 0, 100)
+        # run_progress_dialog = QgsTask.fromFunction(
+        #     "Progress dialog",
+        #     self.progress_dialog.run,
+        # )
+        # QgsApplication.taskManager().addTask(run_progress_dialog)
+        #
+        # # Just a test
+        # y = 0
+        # while y <= 10:
+        #     self.progress_dialog.update_progress_bar(y * 10)
+        #     y = y + 1
+        #
+        # print('after dialog')
+
         extent_list = PILOT_AREA_EXTENT["coordinates"]
         default_extent = QgsRectangle(
             extent_list[3], extent_list[2], extent_list[1], extent_list[0]
@@ -550,6 +570,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if self.progress_bar:
             try:
                 self.progress_bar.setValue(int(value))
+                self.progress_dialog.update_progress_bar(int(value))
             except RuntimeError:
                 log(tr("Error setting value to a progress bar"), notify=False)
 

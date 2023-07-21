@@ -37,6 +37,7 @@ nav:
             - Model component widget: developer/api/api_model_component_widget.md
             - NCS Pathway editor: developer/api/api_ncs_pathway_editor.md
             - Priority group: developer/api/api_priority_group.md
+            - Progress dialog: developer/api/api_progress_dialog.md
   - About:
       - Conservation International: about/ci.md
       - Kartoza: about/kartoza.md

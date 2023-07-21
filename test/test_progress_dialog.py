@@ -59,23 +59,18 @@ class CplusPluginProgressDialogTest(unittest.TestCase):
         """Tests if the report is correctly opened in as a PDF"""
 
         # view_report_pdf()
-        print("Not sure if this will require a test in the future")
-
         self.assertEqual(True, True)
 
     def test_view_report_layout_designer(self) -> None:
         """A check on whether the report is opened correctly in layout view."""
 
         # view_report_layout_designer()
-        print("Not sure if this will require a test in the future")
-
         self.assertEqual(True, True)
 
     def test_stop_processing(self) -> None:
         """Checks if processing has been stopped correctly."""
-        # stop_processing()
-        print("Not sure if this will require a test in the future")
 
+        # stop_processing()
         self.assertEqual(True, True)
 
     def test_processing_stopped(self) -> None:
