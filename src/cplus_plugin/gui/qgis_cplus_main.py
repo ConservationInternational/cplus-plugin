@@ -466,34 +466,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             for pathway in pathways:
                 layers.append(QgsRasterLayer(pathway.path))
 
-            # alg_params = {
-            #     "CELLSIZE": 0,
-            #     "CRS": None,
-            #     "EXPRESSION": expression,
-            #     "EXTENT": extent,
-            #     "LAYERS": layers,
-            #     "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            # }
-            # feedback = QgsProcessingFeedback()
-            #
-            # self.show_message(
-            #     tr("Analysis for scenario {} has started.").format(scenario_name),
-            #     level=Qgis.Info,
-            # )
-            # self.show_progress(
-            #     f"Analysis progress",
-            #     minimum=0,
-            #     maximum=100,
-            # )
-            #
-            # feedback.progressChanged.connect(self.update_progress_bar)
-            # feedback.progressChanged.connect(self.analysis_progress)
-            #
-            # outputs[model.name] = processing.run(
-            #     "qgis:rastercalculator", alg_params, feedback=feedback
-            # )
-            #
-
         self.show_progress(
             f"Calculating the highest position",
             minimum=0,
