@@ -99,6 +99,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.grid_layout = QtWidgets.QGridLayout()
         self.message_bar = QgsMessageBar()
         self.prepare_message_bar()
+
+        self.progress_bar = QtWidgets.QProgressBar()
+
         self.help_btn.clicked.connect(self.open_help)
         self.pilot_area_btn.clicked.connect(self.zoom_pilot_area)
         self.run_scenario_btn.clicked.connect(self.run_scenario_analysis)
@@ -350,7 +353,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         scenario_name = self.scenario_name.text()
         scenario_description = self.scenario_description.text()
 
-        implementation_models = self.implementation_model_widget.implementation_models()
+        implementation_models = [
+            item.implementation_model
+            for item in self.implementation_model_widget.selected_items()
+        ]
 
         priority_weight_layers = self.priority_layers_list.selectedItems()
 
@@ -409,7 +415,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 log(
                     tr(
                         "An error occurred when running task for "
-                        'Run analysis function, error message "{}" '.format(err)
+                        'scernario analysis, error message "{}" '.format(err)
                     )
                 )
 
@@ -437,7 +443,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type scenario_description: str
 
         :param passed_extent: Area of interest
-        :type passed_extent: list
+        :type passed_extent: QgsRectangle
 
         :param implementation_models: List of the selected implementation models
         :type implementation_models: list
@@ -447,74 +453,76 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         """
         outputs = {}
+        layers = []
+
+        extent = (
+            f"{passed_extent.xMinimum()}, {passed_extent.xMaximum()},"
+            f"{passed_extent.yMinimum()}, {passed_extent.yMaximum()}"
+        )
 
         for model in implementation_models:
             pathways = model.pathways
-            layer = None
-            pathway_paths = [str(pathway.path) for pathway in pathways]
 
-            expression = " + ".join(pathway_paths)
+            for pathway in pathways:
+                layers.append(QgsRasterLayer(pathway.path))
 
-            log(f"expression {expression}")
+            # alg_params = {
+            #     "CELLSIZE": 0,
+            #     "CRS": None,
+            #     "EXPRESSION": expression,
+            #     "EXTENT": extent,
+            #     "LAYERS": layers,
+            #     "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+            # }
+            # feedback = QgsProcessingFeedback()
+            #
+            # self.show_message(
+            #     tr("Analysis for scenario {} has started.").format(scenario_name),
+            #     level=Qgis.Info,
+            # )
+            # self.show_progress(
+            #     f"Analysis progress",
+            #     minimum=0,
+            #     maximum=100,
+            # )
+            #
+            # feedback.progressChanged.connect(self.update_progress_bar)
+            # feedback.progressChanged.connect(self.analysis_progress)
+            #
+            # outputs[model.name] = processing.run(
+            #     "qgis:rastercalculator", alg_params, feedback=feedback
+            # )
+            #
 
-            alg_params = {
-                "CELLSIZE": 0,
-                "CRS": None,
-                "EXPRESSION": expression,
-                "EXTENT": None,
-                "LAYERS": layer,
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            }
-            feedback = QgsProcessingFeedback()
+        self.show_progress(
+            f"Calculating the highest position",
+            minimum=0,
+            maximum=100,
+        )
 
-            self.show_message(
-                tr("Analysis for scenario {} has started.").format(scenario_name),
-                level=Qgis.Info,
-            )
-            self.show_progress(
-                f"Analysis progress",
-                minimum=0,
-                maximum=100,
-            )
+        position_feedback = QgsProcessingFeedback()
 
-            feedback.progressChanged.connect(self.update_progress_bar)
-            feedback.progressChanged.connect(self.analysis_progress)
+        position_feedback.progressChanged.connect(self.update_progress_bar)
+        position_feedback.progressChanged.connect(self.analysis_progress)
 
-            outputs[model.name] = processing.run(
-                "qgis:rastercalculator", alg_params, feedback=feedback
-            )
+        alg_params = {
+            "IGNORE_NODATA": True,
+            "INPUT_RASTERS": layers,
+            "EXTENT": extent,
+            "OUTPUT_NODATA_VALUE": -9999,
+            "REFERENCE_LAYER": layers[0] if len(layers) > 1 else None,
+            "OUTPUT": "cplus_scenario_output.tif",
+        }
+        outputs["HighestPositionInRasterStack"] = processing.run(
+            "native:highestpositioninrasterstack",
+            alg_params,
+            feedback=position_feedback,
+        )
+        outputs["cplus_scenario_output"] = outputs["HighestPositionInRasterStack"][
+            "OUTPUT"
+        ]
 
-            self.show_progress(
-                f"Calculating highest position in rasters",
-                minimum=0,
-                maximum=100,
-            )
-
-            position_feedback = QgsProcessingFeedback()
-
-            position_feedback.progressChanged.connect(self.update_progress_bar)
-            position_feedback.progressChanged.connect(self.analysis_progress)
-
-            alg_params = {
-                "IGNORE_NODATA": True,
-                "INPUT_RASTERS": [
-                    output["OUTPUT"] for model, output in outputs.items()
-                ],
-                "OUTPUT_NODATA_VALUE": -9999,
-                "REFERENCE_LAYER": outputs[list[outputs][0]]["OUTPUT"],
-                "OUTPUT": "cplus_qgis_model_output.tif",
-            }
-            outputs["HighestPositionInRasterStack"] = processing.run(
-                "native:highestpositioninrasterstack",
-                alg_params,
-                feedback=feedback,
-                is_child_algorithm=True,
-            )
-            outputs["cplus_qgis_model_output"] = outputs[
-                "HighestPositionInRasterStack"
-            ]["OUTPUT"]
-
-            self.analysis_finished.emit(outputs)
+        self.analysis_finished.emit(outputs)
 
     def post_analysis(self, outputs):
         """Handles analysis outputs from the final analysis results
@@ -522,9 +530,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param outputs: Dictionary of output layers
         :type outputs: dict
         """
-        layer = outputs.get("cplus_qgis_model_output")
+        layer = outputs.get("cplus_scenario_output")
 
-        layer = QgsRasterLayer(layer, "cplus_qgis_model_output")
+        layer = QgsRasterLayer(layer, "cplus_scenario_output")
 
         QgsProject.instance().addMapLayer(layer)
 
@@ -564,7 +572,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
         self.message_bar.clearWidgets()
         message_bar_item = self.message_bar.createMessage(message)
-        self.progress_bar = QtWidgets.QProgressBar()
         self.progress_bar.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
         self.progress_bar.setMinimum(minimum)
         self.progress_bar.setMaximum(maximum)
