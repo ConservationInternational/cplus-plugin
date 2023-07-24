@@ -252,5 +252,4 @@ class Scenario(BaseModelComponent):
     """
 
     extent: SpatialExtent
-    # TODO: Confirm if this should be weighted model instead.
-    models: typing.List[ImplementationModel]
+    models: typing.List[ImplementationModel] = dataclasses.field(default_factory=list)

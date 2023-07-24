@@ -15,6 +15,7 @@ from .definitions.defaults import (
     DEFAULT_IMPLEMENTATION_MODELS,
     DEFAULT_NCS_PATHWAYS,
     DOCUMENTATION_SITE,
+    TEMPLATE_NAME,
 )
 from .definitions.constants import NCS_PATHWAY_SEGMENT
 
@@ -154,6 +155,26 @@ class FileUtils:
             return QtGui.QIcon()
 
         return QtGui.QIcon(icon_path)
+
+    @staticmethod
+    def report_template_path(file_name=None) -> str:
+        """Get the absolute path to the template file with the given name.
+        Caller needs to verify that the file actually exists.
+
+        :param file_name: Template file name including the extension. If
+        none is specified then it will use `main.qpt` as the default
+        template name.
+        :type file_name: str
+
+        :returns: The absolute path to the template file with the given name.
+        :rtype: str
+        """
+        if file_name is None:
+            file_name = TEMPLATE_NAME
+
+        absolute_path = f"{FileUtils.plugin_dir()}/app_data/reports/{file_name}"
+
+        return os.path.normpath(absolute_path)
 
     @staticmethod
     def create_ncs_pathways_dir(base_dir: str):

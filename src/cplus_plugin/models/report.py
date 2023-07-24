@@ -14,9 +14,9 @@ class ReportContext:
     """Context information for generating a report."""
 
     template_path: str
-    output_dir: str
     scenario: Scenario
     name: str
+    project_file: str = ""
 
 
 @dataclasses.dataclass
@@ -28,4 +28,24 @@ class ReportResult:
     success: bool
     scenario_id: UUID
     output_dir: str
-    messages: typing.List[str] = dataclasses.field(default_factory=list)
+    # Error messages
+    messages: typing.Tuple[str] = dataclasses.field(default_factory=tuple)
+    # Layout name
+    name: str = ""
+
+    @property
+    def pdf_path(self) -> str:
+        """Returns the absolute path to the PDF file if the process
+        completed successfully.
+
+         Caller needs to verify if the file actually exists in the
+         given location.
+
+         :returns: Absolute path to the PDF file if the process
+        completed successfully else an empty string.
+        :rtype: str
+        """
+        if not self.output_dir or not self.name:
+            return ""
+
+        return f"{self.output_dir}/{self.name}.pdf"

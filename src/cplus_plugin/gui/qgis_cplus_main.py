@@ -31,6 +31,8 @@ from qgis.utils import iface
 
 from .implementation_model_widget import ImplementationModelContainerWidget
 
+from ..lib.reports.manager import report_manager
+
 from ..resources import *
 
 from ..utils import open_documentation, tr, log
@@ -62,6 +64,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.tab_widget.currentChanged.connect(self.on_tab_step_changed)
 
         self.prepare_input()
+
+        # Temporary to remove
+        self.btn_layout.clicked.connect(self.open_designer)
+        self.btn_pdf.clicked.connect(self.open_pdf)
 
     def prepare_input(self):
         """Initializes plugin input widgets"""
@@ -186,3 +192,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def open_settings(self):
         """Options the CPLUS settings in the QGIS options dialog."""
         self.iface.showOptionsDialog(currentPage=OPTIONS_TITLE)
+
+    def open_designer(self):
+        result = report_manager.generate()
+
+    def open_pdf(self):
+        pass

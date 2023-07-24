@@ -18,6 +18,9 @@ DEFAULT_LOGO_PATH = (
     os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/logos/ci_logo.png"
 )
 
+# Default template file name
+TEMPLATE_NAME = "main.qpt"
+
 # Path just contains the file name and is relative to {download_folder}/ncs_pathways
 DEFAULT_NCS_PATHWAYS = [
     {
