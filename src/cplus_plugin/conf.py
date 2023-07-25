@@ -184,6 +184,10 @@ class SettingsManager(QtCore.QObject):
         """
         self.settings.remove(f"{self.BASE_GROUP_NAME}/{name}")
 
+    def delete_settings(self):
+        """Deletes the all the plugin settings."""
+        self.settings.remove(f"{self.BASE_GROUP_NAME}")
+
     def _get_scenario_settings_base(self, identifier):
         """Gets the scenario settings base url.
 
@@ -401,10 +405,7 @@ class SettingsManager(QtCore.QObject):
                     if layer_name == name:
                         found_id = uuid.UUID(layer_id)
                         break
-            else:
-                log(
-                    f"Could not find a priority layer named " f"{name!r} in QgsSettings"
-                )
+
         return self.get_priority_layer(found_id)
 
     def find_layers_by_group(self, group) -> typing.List:
@@ -434,11 +435,6 @@ class SettingsManager(QtCore.QObject):
                             with qgis_settings(group_settings_key) as group_settings:
                                 if group == group_settings.value("name"):
                                     layers.append(self.get_priority_layer(layer_id))
-            else:
-                log(
-                    f"Could not find any priority layer with group "
-                    f"{group!r} in QgsSettings"
-                )
         return layers
 
     def save_priority_layer(self, priority_layer):
@@ -541,10 +537,7 @@ class SettingsManager(QtCore.QObject):
                     if group_name == name:
                         found_id = uuid.UUID(group_id)
                         break
-            else:
-                log(
-                    f"Could not find a priority group named " f"{name!r} in QgsSettings"
-                )
+
         return self.get_priority_group(found_id)
 
     def get_priority_group(self, identifier) -> typing.Dict:
