@@ -21,6 +21,21 @@ class SpatialExtent:
     bbox: typing.List[float]
 
 
+class PRIORITY_GROUP(Enum):
+    """Represents priority groups types"""
+
+    CARBON_IMPORTANCE = "Carbon importance"
+    BIODIVERSITY = "Biodiversity"
+    LIVELIHOOD = "Livelihood"
+    CLIMATE_RESILIENCE = "Climate Resilience"
+    ECOLOGICAL_INFRASTRUCTURE = "Ecological infrastructure"
+    POLICY = "Policy"
+    FINANCE_YEARS_EXPERIENCE = "Finance - Years Experience"
+    FINANCE_MARKET_TRENDS = "Finance - Market Trends"
+    FINANCE_NET_PRESENT_VALUE = "Finance - Net Present value"
+    FINANCE_CARBON = "Finance - Carbon"
+
+
 @dataclasses.dataclass
 class BaseModelComponent:
     """Base class for common model item properties."""
@@ -245,6 +260,16 @@ class ImplementationModel(BaseModelComponent):
         return pathways[0]
 
 
+class ScenarioState(Enum):
+    """Defines scenario analysis process states"""
+
+    IDLE = 0
+    RUNNING = 1
+    STOPPED = 3
+    FINISHED = 4
+    TERMINATED = 5
+
+
 @dataclasses.dataclass
 class Scenario(BaseModelComponent):
     """Object for the handling
@@ -252,4 +277,5 @@ class Scenario(BaseModelComponent):
     """
 
     extent: SpatialExtent
-    models: typing.List[ImplementationModel] = dataclasses.field(default_factory=list)
+    # TODO: Confirm if this should be weighted model instead.
+    models: typing.List[ImplementationModel]

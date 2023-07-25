@@ -1,4 +1,7 @@
-"""
+# coding=utf-8
+
+"""Plugin main/core.
+
 /***************************************************************************
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -28,7 +31,28 @@ from .definitions.defaults import ICON_PATH, OPTIONS_TITLE
 from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
 from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
 from .lib.reports.manager import report_manager
+from .definitions.defaults import (
+    ABOUT_DOCUMENTATION_SITE,
+    DOCUMENTATION_SITE,
+    USER_DOCUMENTATION_SITE,
+    ICON_PATH,
+    OPTIONS_TITLE,
+)
 from .settings import CplusOptionsFactory
+
+from .utils import (
+    log,
+    open_documentation,
+)
+
+from .conf import Settings, settings_manager
+from .definitions.defaults import (
+    DEFAULT_IMPLEMENTATION_MODELS,
+    DEFAULT_NCS_PATHWAYS,
+    PRIORITY_GROUPS,
+    PRIORITY_LAYERS,
+)
+from .definitions.constants import NCS_PATHWAY_SEGMENT
 from .utils import initialize_default_settings
 
 
@@ -64,6 +88,11 @@ class QgisCplus:
         self.toolBtnAction = self.toolbar.addWidget(self.toolButton)
         self.actions.append(self.toolBtnAction)
 
+        if not settings_manager.get_value(
+            "default_priority_layers_set", default=False, setting_type=bool
+        ):
+            create_priority_layers()
+
         self.main_widget = QgisCplusMain(
             iface=self.iface, parent=self.iface.mainWindow()
         )
@@ -75,11 +104,11 @@ class QgisCplus:
         """Get the translation for a string using Qt translation API.
         We implement this ourselves since we do not inherit QObject.
 
-        Args:
-            message (str): String for translation
+        :param message: String for translation
+        :type message: str
 
-        Returns:
-            TranslatedMessage (QString): Translated version of the message
+        :returns: Translated version of the message
+        :rtype: QString
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate("CPLUS", message)
@@ -100,21 +129,41 @@ class QgisCplus:
     ):
         """Add a toolbar icon to the toolbar.
 
-        Args:
-            icon_path (str): Path to the icon for this action
-            text (str): Text that should be shown in menu items for this action
-            callback (function): Function to be called when the action is triggered
-            enabled_flag (bool): A flag indicating if the action should be enabled
-            add_to_menu (bool): Flag indicating whether the action should also be added to the menu
-            add_to_web_menu (bool): Flag indicating whether the action should also be added to the web menu
-            add_to_toolbar (bool): Flag indicating whether the action should also be added to the toolbar
-            set_as_default_action (bool): Flag indicating whether the action is the default action
-            status_tip (str): Optional text to show in a popup when mouse pointer hovers over the action
-            parent (QWidget): Parent widget for the new action
-            whats_this (str): Optional text to show in the status bar when the mouse pointer hovers over the action
+        :param icon_path: Path to the icon for this action
+        :type icon_path: str
 
-        Returns:
-            Action (QAction): The action that was created
+        :param text: Text that should be shown in menu items for this action
+        :type text: str
+
+        :param callback: Function to be called when the action is triggered
+        :type callback: function
+
+        :param enabled_flag: A flag indicating if the action should be enabled
+        :type enabled_flag: bool
+
+        :param add_to_menu: Flag indicating whether the action should also be added to the menu
+        :type add_to_menu: bool
+
+        :param add_to_web_menu: Flag indicating whether the action should also be added to the web menu
+        :type add_to_web_menu: bool
+
+        :param add_to_toolbar: Flag indicating whether the action should also be added to the toolbar
+        :type add_to_toolbar: bool
+
+        :param set_as_default_action: Flag indicating whether the action is the default action
+        :type set_as_default_action: bool
+
+        :param status_tip: Optional text to show in a popup when mouse pointer hovers over the action
+        :type status_tip: str
+
+        :param parent: Parent widget for the new action
+        :type parent: QWidget
+
+        :param whats_this: Optional text to show in the status bar when the mouse pointer hovers over the action
+        :type whats_this: str
+
+        :returns: The action that was created
+        :rtype: QAction
         """
 
         icon = QIcon(icon_path)
@@ -164,6 +213,24 @@ class QgisCplus:
             callback=self.run_settings,
             parent=self.iface.mainWindow(),
             status_tip=self.tr("CPLUS Settings"),
+        )
+
+        self.add_action(
+            os.path.join(
+                os.path.dirname(__file__), "icons", "mActionHelpContents_green.svg"
+            ),
+            text=self.tr("Help"),
+            callback=self.open_help,
+            parent=self.iface.mainWindow(),
+            status_tip=self.tr("CPLUS Help"),
+        )
+
+        self.add_action(
+            os.path.join(os.path.dirname(__file__), "icons", "info_green.svg"),
+            text=self.tr("About"),
+            callback=self.open_about,
+            parent=self.iface.mainWindow(),
+            status_tip=self.tr("CPLUS About"),
         )
 
         # Adds the settings to the QGIS options panel
@@ -229,3 +296,71 @@ class QgisCplus:
         item_gui_registry = QgsGui.layoutItemGuiRegistry()
         map_item_gui_metadata = CplusMapLayoutItemGuiMetadata()
         item_gui_registry.addLayoutItemGuiMetadata(map_item_gui_metadata)
+
+    def open_help(self):
+        """Opens documentation home page for the plugin in a browser"""
+        open_documentation(DOCUMENTATION_SITE)
+
+    def open_about(self):
+        """Opens the about documentation for the plugin in a browser"""
+        open_documentation(ABOUT_DOCUMENTATION_SITE)
+
+
+def create_priority_layers():
+    """Prepares the priority weighted layers UI with the defaults priority groups"""
+
+    if not settings_manager.get_value(
+        "default_priority_layers_set", default=False, setting_type=bool
+    ):
+        log(f"Initializing priority layers and groups")
+
+        groups = []
+        for group in PRIORITY_GROUPS:
+            group["value"] = 0
+            settings_manager.save_priority_group(group)
+
+        for layer in PRIORITY_LAYERS:
+            layer["groups"] = groups
+            settings_manager.save_priority_layer(layer)
+
+        settings_manager.set_value("default_priority_layers_set", True)
+
+
+def initialize_default_settings():
+    """Initialize default model components such as NCS pathways
+    and implementation models.
+
+    It will check if there are existing components using the UUID
+    and only add the ones that do not exist in the settings.
+
+    This is normally called during plugin startup.
+    """
+    # Add default pathways
+    for ncs_dict in DEFAULT_NCS_PATHWAYS:
+        try:
+            ncs_uuid = ncs_dict["uuid"]
+            ncs = settings_manager.get_ncs_pathway(ncs_uuid)
+            if ncs is None:
+                # Update dir
+                base_dir = settings_manager.get_value(Settings.BASE_DIR, None)
+                if base_dir is not None:
+                    file_name = ncs_dict["path"]
+                    absolute_path = f"{base_dir}/{NCS_PATHWAY_SEGMENT}/{file_name}"
+                    abs_path = str(os.path.normpath(absolute_path))
+                    ncs_dict["path"] = abs_path
+                ncs_dict["user_defined"] = False
+                settings_manager.save_ncs_pathway(ncs_dict)
+        except KeyError as ke:
+            log(f"Default NCS configuration load error - {str(ke)}")
+            continue
+
+    # Add default implementation models
+    for imp_model_dict in DEFAULT_IMPLEMENTATION_MODELS:
+        try:
+            imp_model_uuid = imp_model_dict["uuid"]
+            imp_model = settings_manager.get_implementation_model(imp_model_uuid)
+            if imp_model is None:
+                settings_manager.save_implementation_model(imp_model_dict)
+        except KeyError as ke:
+            log(f"Default implementation model configuration load error - {str(ke)}")
+            continue
