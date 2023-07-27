@@ -495,6 +495,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             "OUTPUT"
         ]
 
+        # Update progress bar if processing is done
         if outputs["HighestPositionInRasterStack"] is not None:
             self.update_progress_bar(100)
 
@@ -563,7 +564,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.message_bar.clearWidgets()
             message_bar_item = self.message_bar.createMessage(message)
             self.progress_bar = QtWidgets.QProgressBar()
-
             self.progress_bar.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
             self.progress_bar.setMinimum(minimum)
             self.progress_bar.setMaximum(maximum)
