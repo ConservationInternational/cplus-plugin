@@ -9,12 +9,15 @@ import json
 import typing
 from uuid import uuid4
 
+from qgis.core import QgsMapLayer
+
 from qgis.PyQt import QtCore, QtGui
 
 from ..models.base import (
     BaseModelComponent,
     BaseModelComponentType,
     ImplementationModel,
+    LayerModelComponent,
     NcsPathway,
 )
 from ..models.helpers import create_ncs_pathway, ncs_pathway_to_dict
@@ -114,25 +117,96 @@ ModelComponentItemType = typing.TypeVar(
 )
 
 
-class NcsPathwayItem(ModelComponentItem):
+class LayerComponentItem(ModelComponentItem):
+    """Base class view item for layer-based component items."""
+
+    def __init__(self, model_component: LayerModelComponent):
+        if not isinstance(model_component, LayerModelComponent):
+            raise TypeError(
+                "'model_component' not of type LayerModelComponent"
+            )
+        super().__init__(model_component)
+
+    def is_valid(self) -> bool:
+        """Checks whether the map layer of the underlying model
+        component object is valid.
+
+        :returns: True if the map layer is valid, else False
+        if map layer is invalid or of None type.
+        :rtype: bool
+        """
+        if self._model_component is None:
+            return False
+
+        return self._model_component.is_valid()
+
+    @property
+    def layer(self) -> typing.Union[QgsMapLayer, None]:
+        """Returns the map layer from the underlying model
+        component object.
+
+        :returns: Map layer corresponding from the underlying
+        model component.
+        :rtype: QgsMapLayer
+        """
+        return self._model_component.to_map_layer()
+
+    def set_layer(self, layer: QgsMapLayer) -> bool:
+        """Set the map layer for the component item.
+
+        :param layer: Map layer for the component item.
+        :type layer: QgsMapLayer
+
+        :returns: Returns True if the layer was successfully
+        set, else False if the layer is invalid.
+        :rtype: bool
+        """
+        if not layer:
+            return False
+
+        if not layer.isValid():
+            return False
+
+        self._model_component.layer = layer
+        self._model_component.update_layer_type()
+
+        return True
+
+    @staticmethod
+    @abstractmethod
+    def create(model_component: BaseModelComponent) -> "ModelComponentItem":
+        """Factory method for creating an instance of a model item.
+
+        This is an abstract method that needs to be implemented by
+        subclasses.
+
+        :param model_component: Source model component for creating the
+        corresponding item.
+        :type model_component: BaseModelComponent
+
+        :returns: Model component item for use in a standard item model.
+        :rtype: ModelComponentItem
+        """
+        pass
+
+    @abstractmethod
+    def clone(self) -> "ModelComponentItemType":
+        """Creates a deep copied version of the model item.
+
+        :returns: Cloned version of the model item containing all
+        the properties as the source.
+        :rtype: ModelComponentItem
+        """
+        pass
+
+
+class NcsPathwayItem(LayerComponentItem):
     """Standard item for an NCS pathway object."""
 
     def __init__(self, ncs: NcsPathway):
         super().__init__(ncs)
         self._ncs_pathway = ncs
         self._parent = None
-
-    def is_valid(self) -> bool:
-        """Checks whether the map layer of the underlying NcsPathway object is valid.
-
-        :returns: True if the map layer is valid, else False if map layer is
-        invalid or of None type.
-        :rtype: bool
-        """
-        if self._ncs_pathway is None:
-            return False
-
-        return self._ncs_pathway.is_valid()
 
     @property
     def ncs_pathway(self) -> NcsPathway:
@@ -190,7 +264,7 @@ class NcsPathwayItem(ModelComponentItem):
         return json.dumps(ncs_attrs)
 
 
-class ImplementationModelItem(ModelComponentItem):
+class ImplementationModelItem(LayerComponentItem):
     """Standard item for an implementation model object."""
 
     def __init__(self, implementation_model: ImplementationModel):
@@ -206,6 +280,8 @@ class ImplementationModelItem(ModelComponentItem):
         # Remap pathway uuids so that there are no duplicate
         # pathways under each implementation model.
         self._uuid_remap = {}
+
+        self._layer_item = None
 
     @property
     def implementation_model(self) -> ImplementationModel:
@@ -237,6 +313,17 @@ class ImplementationModelItem(ModelComponentItem):
         """
         return [ncs_item.ncs_pathway for ncs_item in self.ncs_items]
 
+    @property
+    def layer_item(self) -> QtGui.QStandardItem:
+        """Returns the view item for the layer.
+
+        :returns: Returns the view item for the map layer
+        else False if no layer has been specified for the
+        model.
+        :rtype: QtGui.QStandardItem
+        """
+        return self._layer_item
+
     def ncs_item_by_uuid(self, uuid: str) -> typing.Union[NcsPathwayItem, None]:
         """Returns an NcsPathway item matching the given UUID.
 
@@ -254,32 +341,40 @@ class ImplementationModelItem(ModelComponentItem):
 
         return ncs_items[0]
 
-    def contains_ncs_item(self, uuid: str) -> bool:
+    def contains_ncs_item(self, item_uuid: str) -> bool:
         """Checks whether this item contains an NcsPathway item with
         the given UUID.
 
-        :param uuid: UUID of the NcsPathway item to search for.
-        :type uuid: str
+        :param item_uuid: UUID of the NcsPathway item to search for.
+        :type item_uuid: str
 
         :returns: True if there is an NcsPathwayItem matching the
         given UUID, else False.
         :rtype: bool
         """
-        if self.ncs_item_by_uuid(uuid) is None:
+        if self.ncs_item_by_uuid(item_uuid) is None:
             return False
 
         return True
 
     def add_ncs_pathway_item(self, ncs_item: NcsPathwayItem) -> bool:
-        """Adds an NCS pathway item to this item.
+        """Adds an NCS pathway item to this implementation model
+        item.
+
+        If the item already contains a layer, then the add operation
+        will not be successful.
 
         :param ncs_item: NCS pathway item to the collection.
         :type ncs_item: NcsPathwayItem
 
         :returns: True if the NCS pathway item was successfully added, else
-        False if there underlying NCS pathway object was invalid or there
-        is an existing item with the same UUID.
+        False if there underlying NCS pathway object was invalid, there
+        is an existing item with the same UUID or if the layer property
+        had already been set.
         """
+        if self.layer:
+            return False
+
         old_uuid = ncs_item.uuid
         new_uuid = uuid4()
         ncs_item.ncs_pathway.uuid = new_uuid
@@ -304,20 +399,20 @@ class ImplementationModelItem(ModelComponentItem):
 
         return True
 
-    def remove_ncs_pathway_item(self, uuid: str) -> bool:
+    def remove_ncs_pathway_item(self, item_uuid: str) -> bool:
         """Removes the NcsPathwayItem matching the given UUID.
 
-        :param uuid: The UUID of the NcsPathwayItem to remove.
-        :type uuid: str
+        :param item_uuid: The UUID of the NcsPathwayItem to remove.
+        :type item_uuid: str
 
         :returns: True if the item was successfully removed, else
         False.
         :rtype: bool
         """
-        if not self.contains_ncs_item(uuid):
+        if not self.contains_ncs_item(item_uuid):
             return False
 
-        idxs = [i for i, n in enumerate(self._ncs_items) if n.uuid == uuid]
+        idxs = [i for i, n in enumerate(self._ncs_items) if n.uuid == item_uuid]
         if len(idxs) == 0:
             return False
 
@@ -325,9 +420,9 @@ class ImplementationModelItem(ModelComponentItem):
         item._parent = None
         del item
 
-        self._implementation_model.remove_ncs_pathway(uuid)
+        self._implementation_model.remove_ncs_pathway(item_uuid)
 
-        old_uuids = [k for k, v in self._uuid_remap.items() if v == uuid]
+        old_uuids = [k for k, v in self._uuid_remap.items() if v == item_uuid]
         if len(old_uuids) > 0:
             del self._uuid_remap[old_uuids[0]]
 
@@ -346,6 +441,52 @@ class ImplementationModelItem(ModelComponentItem):
         bottom_ncs_item = max(self._ncs_items, key=lambda n: n.index().row())
 
         return bottom_ncs_item.index()
+
+    def remove_layer(self):
+        """Removes the layer reference from the underlying
+        implementation model.
+        """
+        if self._layer_item:
+            row = self._layer_item.row()
+            if row != -1:
+                self.removeRow(row)
+
+        self._implementation_model.clear_layer()
+
+    def set_model_layer(
+            self,
+            layer: QgsMapLayer,
+            display_name: str = ""
+    ) -> bool:
+        """Set the layer for the implementation model.
+
+        :param layer: Map layer to be set for the implementation model.
+        :type layer: QgsMapLayer
+
+        :param display_name: Display name for the layer node. If not
+        specified then the name from the map layer is used.
+        :type display_name: str
+
+        :returns: True if the layer was successfully set for the
+        implementation model, else False if the layer is invalid
+        or if there are already existing NCS pathways in the
+        implementation model.
+        :rtype: bool
+        """
+        if not super().set_layer(layer):
+            return False
+
+        if len(self._ncs_items) > 0:
+            return False
+
+        if not display_name:
+            display_name = layer.name()
+
+        icon = FileUtils.get_icon("mIconRaster.svg")
+        self._layer_item = QtGui.QStandardItem(icon, display_name)
+        self.appendRow(self._layer_item)
+
+        return True
 
     def type(self) -> int:
         """Returns the type of the standard item.
@@ -414,16 +555,16 @@ class ComponentItemModel(QtGui.QStandardItemModel):
 
         return True
 
-    def contains_item(self, uuid: str) -> bool:
+    def contains_item(self, item_uuid: str) -> bool:
         """Checks if the model contains an item with the given UUID.
 
-        :param uuid: UUID of the model item.
-        :type uuid: str
+        :param item_uuid: UUID of the model item.
+        :type item_uuid: str
 
         :returns: True if there is an existing item else False.
         :rtype: bool
         """
-        return True if self.component_item_by_uuid(uuid) is not None else False
+        return True if self.component_item_by_uuid(item_uuid) is not None else False
 
     def component_item_by_uuid(
         self, uuid_str: str
