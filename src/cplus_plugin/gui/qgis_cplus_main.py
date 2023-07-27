@@ -415,7 +415,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 log(
                     tr(
                         "An error occurred when running task for "
-                        'scenario analysis, error message "{}" '.format(err)
+                        'scenario analysis, error message "{}" type "{}"'.format(
+                            err, type(err)
+                        )
                     )
                 )
 
@@ -475,7 +477,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         position_feedback = QgsProcessingFeedback()
 
         position_feedback.progressChanged.connect(self.update_progress_bar)
-        position_feedback.progressChanged.connect(self.analysis_progress)
+        # position_feedback.progressChanged.connect(self.analysis_progress)
 
         alg_params = {
             "IGNORE_NODATA": True,
@@ -494,7 +496,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             "OUTPUT"
         ]
 
+        if outputs["HighestPositionInRasterStack"] is not None:
+            self.update_progress_bar(100)
+
         self.analysis_finished.emit(outputs)
+
+        return True
 
     def post_analysis(self, outputs):
         """Handles analysis outputs from the final analysis results
@@ -530,6 +537,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if value == 100:
             self.show_message(tr("Analysis has finished."), level=Qgis.Info)
 
+    def update_message_bar(self, message):
+        message_bar_item = self.message_bar.createMessage(message)
+        message_bar_item.layout().addWidget(self.progress_bar)
+        self.message_bar.pushWidget(message_bar_item, Qgis.Info)
+
     def show_progress(self, message, minimum=0, maximum=0):
         """Shows the progress message on the main widget message bar
 
@@ -546,6 +558,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         try:
             self.message_bar.clearWidgets()
             message_bar_item = self.message_bar.createMessage(message)
+            self.progress_bar = QtWidgets.QProgressBar()
+
             self.progress_bar.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
             self.progress_bar.setMinimum(minimum)
             self.progress_bar.setMaximum(maximum)
