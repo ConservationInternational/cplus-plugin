@@ -477,7 +477,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         position_feedback = QgsProcessingFeedback()
 
         position_feedback.progressChanged.connect(self.update_progress_bar)
-        # position_feedback.progressChanged.connect(self.analysis_progress)
 
         alg_params = {
             "IGNORE_NODATA": True,
@@ -538,6 +537,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.show_message(tr("Analysis has finished."), level=Qgis.Info)
 
     def update_message_bar(self, message):
+        """Changes the message in the message bar item.
+
+        :param message: Message to be updated
+        :type message: str
+        """
         message_bar_item = self.message_bar.createMessage(message)
         message_bar_item.layout().addWidget(self.progress_bar)
         self.message_bar.pushWidget(message_bar_item, Qgis.Info)
