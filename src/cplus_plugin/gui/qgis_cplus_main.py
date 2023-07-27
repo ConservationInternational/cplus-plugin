@@ -415,9 +415,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 log(
                     tr(
                         "An error occurred when running task for "
-                        'scenario analysis, error message "{}" type "{}"'.format(
-                            err, type(err)
-                        )
+                        'scenario analysis, error message "{}"'.format(err)
                     )
                 )
 
