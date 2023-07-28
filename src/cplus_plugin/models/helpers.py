@@ -12,7 +12,7 @@ from .base import (
     LayerModelComponent,
     LayerModelComponentType,
     NcsPathway,
-    LayerType
+    LayerType,
 )
 
 
@@ -130,8 +130,8 @@ def ncs_pathway_to_dict(ncs_pathway: NcsPathway, uuid_to_str=True) -> dict:
 
 
 def clone_layer_component(
-        layer_component: LayerModelComponent,
-        model_cls: typing.Callable[[uuid.UUID, str, str], LayerModelComponentType]
+    layer_component: LayerModelComponent,
+    model_cls: typing.Callable[[uuid.UUID, str, str], LayerModelComponentType],
 ) -> typing.Union[LayerModelComponent, None]:
     """Clones a layer-based model component.
 
@@ -151,9 +151,7 @@ def clone_layer_component(
         return None
 
     cloned_component = model_cls(
-        layer_component.uuid,
-        layer_component.name,
-        layer_component.description
+        layer_component.uuid, layer_component.name, layer_component.description
     )
 
     for f in fields(layer_component):
@@ -166,4 +164,3 @@ def clone_layer_component(
         setattr(cloned_component, f.name, attr_val)
 
     return cloned_component
-

@@ -23,7 +23,7 @@ from ..models.base import (
 from ..models.helpers import (
     clone_layer_component,
     create_ncs_pathway,
-    ncs_pathway_to_dict
+    ncs_pathway_to_dict,
 )
 
 from ..utils import FileUtils
@@ -467,8 +467,7 @@ class ImplementationModelItem(LayerComponentItem):
         Please note that the UUID of the cloned item will change.
         """
         implementation_model = clone_layer_component(
-            self.implementation_model,
-            ImplementationModel
+            self.implementation_model, ImplementationModel
         )
 
         return ImplementationModelItem(implementation_model)
@@ -790,10 +789,7 @@ class IMItemModel(ComponentItemModel):
 
         return self.add_component_item(implementation_model_item)
 
-    def remove_layer(
-            self,
-            implementation_model_item: ImplementationModelItem
-    ):
+    def remove_layer(self, implementation_model_item: ImplementationModelItem):
         """Removes the layer reference from the underlying
         implementation model.
 
@@ -816,10 +812,10 @@ class IMItemModel(ComponentItemModel):
         implementation_model_item.clear_layer()
 
     def set_model_layer(
-            self,
-            implementation_model_item: ImplementationModelItem,
-            layer: QgsMapLayer,
-            display_name: str = ""
+        self,
+        implementation_model_item: ImplementationModelItem,
+        layer: QgsMapLayer,
+        display_name: str = "",
     ) -> bool:
         """Set the layer for the given implementation model item.
 
