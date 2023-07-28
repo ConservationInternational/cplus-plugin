@@ -2,10 +2,18 @@
 
 """Helper functions for supporting model management."""
 
+from dataclasses import field, fields
 import typing
 import uuid
 
-from .base import BaseModelComponent, BaseModelComponentType, NcsPathway, LayerType
+from .base import (
+    BaseModelComponent,
+    BaseModelComponentType,
+    LayerModelComponent,
+    LayerModelComponentType,
+    NcsPathway,
+    LayerType
+)
 
 
 def model_component_to_dict(
@@ -119,3 +127,43 @@ def ncs_pathway_to_dict(ncs_pathway: NcsPathway, uuid_to_str=True) -> dict:
     base_attrs["user_defined"] = ncs_pathway.user_defined
 
     return base_attrs
+
+
+def clone_layer_component(
+        layer_component: LayerModelComponent,
+        model_cls: typing.Callable[[uuid.UUID, str, str], LayerModelComponentType]
+) -> typing.Union[LayerModelComponent, None]:
+    """Clones a layer-based model component.
+
+    :param layer_component: Layer-based model component to clone.
+    :type layer_component: LayerModelComponent
+
+    :param model_cls: Callable class that will be created based on the
+    input argument values from the dictionary.
+    :type model_cls: LayerModelComponent
+
+    :returns: A new instance of the cloned model component. It
+    will return None if the input is not a layer-based model
+    component.
+    :rtype: LayerModelComponent
+    """
+    if not isinstance(layer_component, LayerModelComponent):
+        return None
+
+    cloned_component = model_cls(
+        layer_component.uuid,
+        layer_component.name,
+        layer_component.description
+    )
+
+    for f in fields(layer_component):
+        attr_val = getattr(layer_component, f.name)
+
+        # Clone map layer
+        if f.name == "layer":
+            attr_val = attr_val.clone()
+
+        setattr(cloned_component, f.name, attr_val)
+
+    return cloned_component
+

@@ -6,6 +6,8 @@ Container widget for configuring the implementation widget.
 import os
 import typing
 
+from qgis.core import QgsRasterLayer
+
 from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType

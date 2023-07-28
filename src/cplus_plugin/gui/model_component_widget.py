@@ -17,6 +17,7 @@ from .component_item_model import (
     IMItemModel,
     ImplementationModelItem,
     IMPLEMENTATION_MODEL_TYPE,
+    ModelComponentItem,
     ModelComponentItemType,
     NcsPathwayItem,
     NcsPathwayItemModel,
@@ -182,6 +183,9 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
             self.clear_description()
             self.btn_remove.setEnabled(False)
             self.btn_edit.setEnabled(False)
+            return
+
+        if not isinstance(selected_items[0], ModelComponentItem):
             return
 
         self.set_description(selected_items[0].description)

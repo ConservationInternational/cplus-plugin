@@ -20,7 +20,11 @@ from ..models.base import (
     LayerModelComponent,
     NcsPathway,
 )
-from ..models.helpers import create_ncs_pathway, ncs_pathway_to_dict
+from ..models.helpers import (
+    clone_layer_component,
+    create_ncs_pathway,
+    ncs_pathway_to_dict
+)
 
 from ..utils import FileUtils
 
@@ -64,7 +68,7 @@ class ModelComponentItem(QtGui.QStandardItem):
     def uuid(self) -> str:
         """Returns the UUID of the item.
 
-        :returns: UUID of the item.
+        :returns: UUID string of the item.
         :rtype: str
         """
         if self._model_component is None:
@@ -122,9 +126,7 @@ class LayerComponentItem(ModelComponentItem):
 
     def __init__(self, model_component: LayerModelComponent):
         if not isinstance(model_component, LayerModelComponent):
-            raise TypeError(
-                "'model_component' not of type LayerModelComponent"
-            )
+            raise TypeError("'model_component' not of type LayerModelComponent")
         super().__init__(model_component)
 
     def is_valid(self) -> bool:
@@ -247,7 +249,7 @@ class NcsPathwayItem(LayerComponentItem):
 
     def clone(self) -> "NcsPathwayItem":
         """Creates a cloned version of this item."""
-        ncs = deepcopy(self.ncs_pathway)
+        ncs = clone_layer_component(self.ncs_pathway, NcsPathway)
 
         return NcsPathwayItem(ncs)
 
@@ -280,8 +282,6 @@ class ImplementationModelItem(LayerComponentItem):
         # Remap pathway uuids so that there are no duplicate
         # pathways under each implementation model.
         self._uuid_remap = {}
-
-        self._layer_item = None
 
     @property
     def implementation_model(self) -> ImplementationModel:
@@ -442,52 +442,6 @@ class ImplementationModelItem(LayerComponentItem):
 
         return bottom_ncs_item.index()
 
-    def remove_layer(self):
-        """Removes the layer reference from the underlying
-        implementation model.
-        """
-        if self._layer_item:
-            row = self._layer_item.row()
-            if row != -1:
-                self.removeRow(row)
-
-        self._implementation_model.clear_layer()
-
-    def set_model_layer(
-            self,
-            layer: QgsMapLayer,
-            display_name: str = ""
-    ) -> bool:
-        """Set the layer for the implementation model.
-
-        :param layer: Map layer to be set for the implementation model.
-        :type layer: QgsMapLayer
-
-        :param display_name: Display name for the layer node. If not
-        specified then the name from the map layer is used.
-        :type display_name: str
-
-        :returns: True if the layer was successfully set for the
-        implementation model, else False if the layer is invalid
-        or if there are already existing NCS pathways in the
-        implementation model.
-        :rtype: bool
-        """
-        if not super().set_layer(layer):
-            return False
-
-        if len(self._ncs_items) > 0:
-            return False
-
-        if not display_name:
-            display_name = layer.name()
-
-        icon = FileUtils.get_icon("mIconRaster.svg")
-        self._layer_item = QtGui.QStandardItem(icon, display_name)
-        self.appendRow(self._layer_item)
-
-        return True
-
     def type(self) -> int:
         """Returns the type of the standard item.
 
@@ -512,7 +466,10 @@ class ImplementationModelItem(LayerComponentItem):
 
         Please note that the UUID of the cloned item will change.
         """
-        implementation_model = deepcopy(self.implementation_model)
+        implementation_model = clone_layer_component(
+            self.implementation_model,
+            ImplementationModel
+        )
 
         return ImplementationModelItem(implementation_model)
 
@@ -643,29 +600,34 @@ class ComponentItemModel(QtGui.QStandardItemModel):
         """Remap UUIDs with corresponding row numbers.
 
         Not the most ideal but should suffice for a small number of
-        rows.
+        rows in the model.
         """
         rows = self.rowCount()
-        self._uuid_row_idx = {self.item(r).uuid: r for r in range(rows)}
+        for r in range(rows):
+            item = self.item(r)
+            if not isinstance(item, ModelComponentItem):
+                continue
 
-    def remove_component_item(self, uuid: str) -> bool:
+            self._uuid_row_idx[item.uuid] = r
+
+    def remove_component_item(self, uuid_str: str) -> bool:
         """Removes a ModelComponentItem based on a matching UUID.
 
-        :param uuid: UUID of the model item to be removed.
-        :type uuid: str
+        :param uuid_str: UUID of the model item to be removed.
+        :type uuid_str: str
 
         :returns: True if the component item was successfully removed, else
         False if there was not matching UUID.
         :rtype: bool
         """
-        if not self.contains_item(uuid):
+        if not self.contains_item(uuid_str):
             return False
 
-        if uuid not in self._uuid_row_idx:
+        if uuid_str not in self._uuid_row_idx:
             return False
 
-        self.removeRows(self._uuid_row_idx[uuid], 1)
-        del self._uuid_row_idx[uuid]
+        self.removeRows(self._uuid_row_idx[uuid_str], 1)
+        del self._uuid_row_idx[uuid_str]
 
         self._re_index_rows()
 
@@ -828,6 +790,77 @@ class IMItemModel(ComponentItemModel):
 
         return self.add_component_item(implementation_model_item)
 
+    def remove_layer(
+            self,
+            implementation_model_item: ImplementationModelItem
+    ):
+        """Removes the layer reference from the underlying
+        implementation model.
+
+        :param implementation_model_item: Implementation model
+        item whose layer is to be removed.
+        :type implementation_model_item: ImplementationModelItem
+        """
+        if implementation_model_item.layer is None:
+            return
+
+        if not self.contains_item(implementation_model_item.uuid):
+            return
+
+        # Remove item in model
+        item_idx = self.index_by_uuid(implementation_model_item.uuid)
+        layer_row = item_idx.row() + 1
+        self.removeRows(layer_row, 1)
+
+        # Remove underlying layer reference
+        implementation_model_item.clear_layer()
+
+    def set_model_layer(
+            self,
+            implementation_model_item: ImplementationModelItem,
+            layer: QgsMapLayer,
+            display_name: str = ""
+    ) -> bool:
+        """Set the layer for the given implementation model item.
+
+        :param implementation_model_item: Implementation model item
+        whose layer is to be specified.
+        :type implementation_model_item: ImplementationModelItem
+
+        :param layer: Map layer to be set for the implementation model.
+        :type layer: QgsMapLayer
+
+        :param display_name: Display name for the layer node. If not
+        specified then the name from the map layer is used.
+        :type display_name: str
+
+        :returns: True if the layer was successfully set for the
+        implementation model, else False if the layer is invalid, if
+        there are already existing NCS pathways in the implementation
+        model or if the item is not in the model.
+        :rtype: bool
+        """
+        if len(implementation_model_item.ncs_items) > 0:
+            return False
+
+        if not self.contains_item(implementation_model_item.uuid):
+            return False
+
+        if not implementation_model_item.set_layer(layer):
+            return False
+
+        if not display_name:
+            display_name = layer.name()
+
+        icon = FileUtils.get_icon("mIconRaster.svg")
+        item = QtGui.QStandardItem(icon, display_name)
+
+        item_idx = self.index_by_uuid(implementation_model_item.uuid)
+        layer_row = item_idx.row() + 1
+        self.insertRow(layer_row, item)
+
+        return True
+
     def add_ncs_pathway(
         self, ncs_item: NcsPathwayItem, target_model: ImplementationModelItem
     ) -> bool:
@@ -922,18 +955,18 @@ class IMItemModel(ComponentItemModel):
 
         return [ci for ci in component_items if ci.type() == IMPLEMENTATION_MODEL_TYPE]
 
-    def remove_implementation_model(self, uuid: str) -> bool:
+    def remove_implementation_model(self, uuid_str: str) -> bool:
         """Remove an implementation model item from the model.
 
         param uuid: UUID of the implementation model item to
         be removed.
-        :type uuid: str
+        :type uuid_str: str
 
         :returns: True if the implementation model item as successfully
         removed, else False if there was not matching UUID.
         :rtype: bool
         """
-        implementation_model = self.component_item_by_uuid(uuid)
+        implementation_model = self.component_item_by_uuid(uuid_str)
         if implementation_model is None:
             return False
 
@@ -941,7 +974,7 @@ class IMItemModel(ComponentItemModel):
         for item in ncs_items:
             self.remove_component_item(item.uuid)
 
-        return self.remove_component_item(uuid)
+        return self.remove_component_item(uuid_str)
 
     def flags(self, index):
         flags = super().flags(index)

@@ -85,10 +85,11 @@ class LayerModelComponent(BaseModelComponent):
     """Base class for model components that support
     a map layer.
     """
-    path: str
+
+    path: str = ""
     layer_type: LayerType = LayerType.UNDEFINED
-    layer: typing.Union[QgsMapLayer, None] = None
     user_defined: bool = False
+    layer: typing.Union[QgsMapLayer, None] = None
 
     def __post_init__(self):
         """Try to set the layer and layer type properties."""
@@ -99,6 +100,9 @@ class LayerModelComponent(BaseModelComponent):
         path properties have been set.
         """
         layer = self.to_map_layer()
+        if layer is None:
+            return
+
         if not layer.isValid():
             return
 
@@ -149,6 +153,11 @@ class LayerModelComponent(BaseModelComponent):
             return False
 
         return layer.isValid()
+
+
+LayerModelComponentType = typing.TypeVar(
+    "LayerModelComponentType", bound=LayerModelComponent
+)
 
 
 @dataclasses.dataclass
