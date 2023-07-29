@@ -119,6 +119,9 @@ class Settings(enum.Enum):
     REPORT_DISLAIMER = "report/disclaimer"
     REPORT_LICENSE = "report/license"
 
+    # Last selected data directory
+    LAST_DATA_DIR = "last_data_dir"
+
     # Advanced settings
     BASE_DIR = "advanced/base_dir"
 

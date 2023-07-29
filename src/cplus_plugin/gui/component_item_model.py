@@ -773,7 +773,9 @@ class IMItemModel(ComponentItemModel):
     """View model for implementation model."""
 
     def add_implementation_model(
-        self, implementation_model: ImplementationModel
+            self,
+            implementation_model: ImplementationModel,
+            layer: QgsMapLayer = None
     ) -> bool:
         """Add an ImplementationModel object to the model.
 
@@ -781,13 +783,19 @@ class IMItemModel(ComponentItemModel):
         added to the view.
         :type implementation_model: ImplementationModel
 
+        :param layer: Map layer for the implementation model.
+        :type layer: QgsMapLayer
+
         :returns: True if ImplementationModel object was added
         successfully, else False.
         :rtype: bool
         """
         implementation_model_item = ImplementationModelItem.create(implementation_model)
+        result = self.add_component_item(implementation_model_item)
+        if result and layer:
+            self.set_model_layer(implementation_model_item, layer)
 
-        return self.add_component_item(implementation_model_item)
+        return result
 
     def remove_layer(self, implementation_model_item: ImplementationModelItem):
         """Removes the layer reference from the underlying
@@ -850,6 +858,7 @@ class IMItemModel(ComponentItemModel):
 
         icon = FileUtils.get_icon("mIconRaster.svg")
         item = QtGui.QStandardItem(icon, display_name)
+        item.setData(implementation_model_item)
 
         item_idx = self.index_by_uuid(implementation_model_item.uuid)
         layer_row = item_idx.row() + 1
@@ -962,13 +971,17 @@ class IMItemModel(ComponentItemModel):
         removed, else False if there was not matching UUID.
         :rtype: bool
         """
-        implementation_model = self.component_item_by_uuid(uuid_str)
-        if implementation_model is None:
+        implementation_model_item = self.component_item_by_uuid(uuid_str)
+        if implementation_model_item is None:
             return False
 
-        ncs_items = implementation_model.ncs_items
-        for item in ncs_items:
-            self.remove_component_item(item.uuid)
+        if len(implementation_model_item.ncs_items) > 0:
+            ncs_items = implementation_model_item.ncs_items
+            for item in ncs_items:
+                self.remove_component_item(item.uuid)
+        else:
+            # Layer item
+            self.remove_layer(implementation_model_item)
 
         return self.remove_component_item(uuid_str)
 

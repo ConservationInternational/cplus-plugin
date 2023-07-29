@@ -410,16 +410,28 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
             return
 
         item = selected_items[0]
-        model_component = item.model_component
+        model_component = None
+        if isinstance(item, ModelComponentItem):
+            is_model_component_item = True
+            model_component = item.model_component
+        else:
+            is_model_component_item = False
 
         additional_note = ""
-        if item.type() == IMPLEMENTATION_MODEL_TYPE:
-            additional_note = self.tr("and the children pathways")
 
-        msg = self.tr(
-            f"Do you want to remove '{model_component.name}' {additional_note}?"
-            f"\nClick Yes to proceed or No to cancel."
-        )
+        if is_model_component_item:
+            if item.type() == IMPLEMENTATION_MODEL_TYPE:
+                additional_note = self.tr("and the children pathways")
+
+            msg = self.tr(
+                f"Do you want to remove '{model_component.name}' {additional_note}?"
+                f"\nClick Yes to proceed or No to cancel."
+            )
+        else:
+            msg = self.tr(
+                "Do you want to remove the layer for the implementation model?"
+                "\nClick Yes to proceed or No to cancel"
+            )
 
         if (
             QtWidgets.QMessageBox.question(
@@ -430,13 +442,18 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
             )
             == QtWidgets.QMessageBox.Yes
         ):
-            # NCS pathway item
-            if item.type() == NCS_PATHWAY_TYPE:
-                parent = item.parent
-                self.item_model.remove_ncs_pathway_item(item.uuid, parent)
+            if is_model_component_item:
+                # NCS pathway item
+                if item.type() == NCS_PATHWAY_TYPE:
+                    parent = item.parent
+                    self.item_model.remove_ncs_pathway_item(item.uuid, parent)
+                else:
+                    # Implementation model item
+                    self.item_model.remove_implementation_model(str(model_component.uuid))
             else:
-                # Implementation model item
-                self.item_model.remove_implementation_model(str(model_component.uuid))
+                implementation_model_item = item.data()
+                if implementation_model_item:
+                    self.item_model.remove_layer(implementation_model_item.uuid)
 
             self.clear_description()
 
