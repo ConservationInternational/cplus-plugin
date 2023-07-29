@@ -17,6 +17,7 @@ from .component_item_model import (
     IMItemModel,
     ImplementationModelItem,
     IMPLEMENTATION_MODEL_TYPE,
+    LAYER_ITEM_TYPE,
     ModelComponentItem,
     ModelComponentItemType,
     NcsPathwayItem,
@@ -423,7 +424,7 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
 
         if is_model_component_item:
             if item.type() == IMPLEMENTATION_MODEL_TYPE:
-                additional_note = self.tr("and its children items?")
+                additional_note = self.tr("and its children?")
 
             msg = self.tr(
                 f"Do you want to remove '{model_component.name}' {additional_note}?"
@@ -479,13 +480,17 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
             return False
 
         sel_model = selected_models[0]
+        item_type = sel_model.type()
 
         # Use the parent to add the NCS item
-        if sel_model.type() == NCS_PATHWAY_TYPE:
+        if item_type == NCS_PATHWAY_TYPE:
             if sel_model.parent is None:
                 return False
 
             sel_model = sel_model.parent
+
+        elif item_type == LAYER_ITEM_TYPE:
+            return False
 
         status = True
         for ncs_item in ncs_items:

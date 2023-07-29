@@ -31,6 +31,7 @@ from ..utils import FileUtils
 
 NCS_PATHWAY_TYPE = QtGui.QStandardItem.UserType + 2
 IMPLEMENTATION_MODEL_TYPE = QtGui.QStandardItem.UserType + 3
+LAYER_ITEM_TYPE = QtGui.QStandardItem.UserType + 4
 
 NCS_MIME_TYPE = "application/x-qabstractitemmodeldatalist"
 
@@ -477,6 +478,20 @@ class ImplementationModelItem(LayerComponentItem):
         return ImplementationModelItem(implementation_model)
 
 
+class LayerItem(QtGui.QStandardItem):
+    """Contains a custom identifier for an item used to define a
+    layer for an implementation model.
+    """
+
+    def type(self) -> int:
+        """Returns the type of the standard item.
+
+        :returns: Type identifier of the standard item.
+        :rtype: int
+        """
+        return LAYER_ITEM_TYPE
+
+
 class ComponentItemModel(QtGui.QStandardItemModel):
     """View model for ModelComponent objects."""
 
@@ -861,7 +876,7 @@ class IMItemModel(ComponentItemModel):
             display_name = layer.name()
 
         icon = FileUtils.get_icon("mIconRaster.svg")
-        item = QtGui.QStandardItem(icon, display_name)
+        item = LayerItem(icon, display_name)
         item.setToolTip(display_name)
         item.setData(implementation_model_item)
 
@@ -883,11 +898,19 @@ class IMItemModel(ComponentItemModel):
         :type target_model: ImplementationModelItem
 
         :returns: True if the NCS pathway item was successfully added, else
-        False if there underlying NCS pathway object was invalid or there
-        is an existing item with the same UUID.
+        False if there underlying NCS pathway object was invalid, there
+        is an existing item with the same UUID or if there is already
+        a map layer defined for the implementation model.
         """
         idx = target_model.index()
         if not idx.isValid():
+            return False
+
+        if not isinstance(target_model, LayerComponentItem):
+            return False
+
+        # If there is an existing layer then return
+        if target_model.layer:
             return False
 
         clone_ncs = ncs_item.clone()
@@ -1060,18 +1083,18 @@ class IMItemModel(ComponentItemModel):
 
         # Get reference ImplementationModel item
         if parent.isValid():
-            model_component = self.itemFromIndex(parent)
+            model_item = self.itemFromIndex(parent)
         else:
             row_count = self.rowCount()
-            model_component = self.item(row_count - 1)
+            model_item = self.item(row_count - 1)
 
-        if model_component is None:
+        if model_item is None or isinstance(model_item, LayerItem):
             return False
 
-        if model_component.type() == NCS_PATHWAY_TYPE:
-            target_im_item = model_component.parent
+        if model_item.type() == NCS_PATHWAY_TYPE:
+            target_im_item = model_item.parent
         else:
-            target_im_item = model_component
+            target_im_item = model_item
 
         # Add NCS items to model.
         status = True
