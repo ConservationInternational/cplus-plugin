@@ -388,7 +388,8 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         editor = ImplementationModelEditorDialog(self)
         if editor.exec_() == QtWidgets.QDialog.Accepted:
             model = editor.implementation_model
-            self.item_model.add_implementation_model(model)
+            layer = editor.layer
+            self.item_model.add_implementation_model(model, layer)
 
     def _on_edit_item(self):
         """Edit selected implementation model object."""
@@ -400,7 +401,8 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         editor = ImplementationModelEditorDialog(self, item.implementation_model)
         if editor.exec_() == QtWidgets.QDialog.Accepted:
             model = editor.implementation_model
-            self.item_model.update_implementation_model(model)
+            layer = editor.layer
+            self.item_model.update_implementation_model(model, layer)
             self._update_ui_on_selection_changed()
 
     def _on_remove_item(self):
@@ -421,7 +423,7 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
 
         if is_model_component_item:
             if item.type() == IMPLEMENTATION_MODEL_TYPE:
-                additional_note = self.tr("and the children pathways")
+                additional_note = self.tr("and its children items?")
 
             msg = self.tr(
                 f"Do you want to remove '{model_component.name}' {additional_note}?"
@@ -449,11 +451,13 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
                     self.item_model.remove_ncs_pathway_item(item.uuid, parent)
                 else:
                     # Implementation model item
-                    self.item_model.remove_implementation_model(str(model_component.uuid))
+                    self.item_model.remove_implementation_model(
+                        str(model_component.uuid)
+                    )
             else:
                 implementation_model_item = item.data()
                 if implementation_model_item:
-                    self.item_model.remove_layer(implementation_model_item.uuid)
+                    self.item_model.remove_layer(implementation_model_item)
 
             self.clear_description()
 
@@ -512,5 +516,7 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         if len(selected_items) == 0:
             return
 
-        if selected_items[0].type() == NCS_PATHWAY_TYPE:
-            self.btn_edit.setEnabled(False)
+        item = selected_items[0]
+        self.btn_edit.setEnabled(False)
+        if item.type() == IMPLEMENTATION_MODEL_TYPE:
+            self.btn_edit.setEnabled(True)

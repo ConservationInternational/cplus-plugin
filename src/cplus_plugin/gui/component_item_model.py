@@ -324,6 +324,10 @@ class ImplementationModelItem(LayerComponentItem):
         """
         return self._layer_item
 
+    def clear_layer(self):
+        """Clears the layer reference in the model component."""
+        self._implementation_model.clear_layer()
+
     def ncs_item_by_uuid(self, uuid: str) -> typing.Union[NcsPathwayItem, None]:
         """Returns an NcsPathway item matching the given UUID.
 
@@ -773,9 +777,7 @@ class IMItemModel(ComponentItemModel):
     """View model for implementation model."""
 
     def add_implementation_model(
-            self,
-            implementation_model: ImplementationModel,
-            layer: QgsMapLayer = None
+        self, implementation_model: ImplementationModel, layer: QgsMapLayer = None
     ) -> bool:
         """Add an ImplementationModel object to the model.
 
@@ -793,7 +795,9 @@ class IMItemModel(ComponentItemModel):
         implementation_model_item = ImplementationModelItem.create(implementation_model)
         result = self.add_component_item(implementation_model_item)
         if result and layer:
-            self.set_model_layer(implementation_model_item, layer)
+            status = self.set_model_layer(implementation_model_item, layer)
+            if not status:
+                result = False
 
         return result
 
@@ -858,6 +862,7 @@ class IMItemModel(ComponentItemModel):
 
         icon = FileUtils.get_icon("mIconRaster.svg")
         item = QtGui.QStandardItem(icon, display_name)
+        item.setToolTip(display_name)
         item.setData(implementation_model_item)
 
         item_idx = self.index_by_uuid(implementation_model_item.uuid)
@@ -921,13 +926,17 @@ class IMItemModel(ComponentItemModel):
         return self.remove_component_item(ncs_uuid)
 
     def update_implementation_model(
-        self, implementation_model: ImplementationModel
+        self, implementation_model: ImplementationModel, layer: QgsMapLayer = None
     ) -> bool:
         """Updates the implementation model item in the model.
 
         :param implementation_model: implementation_model object whose
         corresponding item is to be updated.
         :type implementation_model: ImplementationModel
+
+        :param layer: Map layer to be updated for the
+        implementation if specified.
+        :type layer: QgsMapLayer
 
         :returns: Returns True if the operation was successful else False
         if the matching item was not found in the model.
@@ -939,6 +948,13 @@ class IMItemModel(ComponentItemModel):
         status = self.update_item(item)
         if not status:
             return False
+
+        # Update layer information
+        self.remove_layer(item)
+        if layer:
+            layer_status = self.set_model_layer(item, layer)
+            if not layer_status:
+                return False
 
         return True
 

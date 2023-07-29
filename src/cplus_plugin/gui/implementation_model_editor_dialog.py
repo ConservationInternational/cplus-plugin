@@ -41,18 +41,16 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         icon_pixmap = QtGui.QPixmap(ICON_PATH)
         self.icon_la.setPixmap(icon_pixmap)
 
-        self.cbo_layer.setFilters(
-            QgsMapLayerProxyModel.Filter.RasterLayer
-        )
+        self.cbo_layer.setFilters(QgsMapLayerProxyModel.Filter.RasterLayer)
 
         self._edit_mode = False
         self._layer = None
 
         self._implementation_model = implementation_model
         if self._implementation_model is not None:
-            self._update_controls()
             self._edit_mode = True
             self._layer = self._implementation_model.to_map_layer()
+            self._update_controls()
 
         help_icon = FileUtils.get_icon("mActionHelpContents.svg")
         self.btn_help.setIcon(help_icon)
@@ -99,6 +97,8 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.txt_name.setText(self._implementation_model.name)
         self.txt_description.setText(self._implementation_model.description)
 
+        self.layer_gb.setCollapsed(True)
+
         if len(self._implementation_model.pathways) > 0:
             self.layer_gb.setEnabled(False)
         else:
@@ -107,7 +107,8 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         if self._layer:
             self.layer_gb.setCollapsed(False)
             self.layer_gb.setChecked(True)
-            self.cbo_layer.setLayer(self._layer)
+            layer_path = self._layer.dataProvider().dataSourceUri()
+            self.cbo_layer.setAdditionalItems([layer_path])
 
     def validate(self) -> bool:
         """Validates if name has been specified.
@@ -133,10 +134,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
 
     def _show_warning_message(self, message):
         """Shows a warning message in the message bar."""
-        self._message_bar.pushMessage(
-            message,
-            Qgis.MessageLevel.Warning
-        )
+        self._message_bar.pushMessage(message, Qgis.MessageLevel.Warning)
 
     def _create_implementation_model(self):
         """Create or update NcsPathway from user input."""
@@ -180,9 +178,11 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         if not layer_path:
             return
 
+        existing_paths = self.cbo_layer.additionalItems()
+        if layer_path in existing_paths:
+            return
+
         self.cbo_layer.setAdditionalItems([layer_path])
-        self._layer = QgsRasterLayer(layer_path)
-        settings_manager.set_value(
-            Settings.LAST_DATA_DIR,
-            os.path.dirname(layer_path)
-        )
+        layer_name = os.path.basename(layer_path)
+        self._layer = QgsRasterLayer(layer_path, layer_name)
+        settings_manager.set_value(Settings.LAST_DATA_DIR, os.path.dirname(layer_path))

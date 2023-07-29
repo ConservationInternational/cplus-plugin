@@ -91,6 +91,9 @@
      <property name="collapsed">
       <bool>true</bool>
      </property>
+     <property name="saveCollapsedState">
+      <bool>false</bool>
+     </property>
      <layout class="QGridLayout" name="gridLayout_6">
       <item row="0" column="0">
        <widget class="QgsMapLayerComboBox" name="cbo_layer"/>
@@ -195,6 +198,12 @@
    <header>qgsmaplayercombobox.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>txt_name</tabstop>
+  <tabstop>txt_description</tabstop>
+  <tabstop>layer_gb</tabstop>
+  <tabstop>btn_help</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>
