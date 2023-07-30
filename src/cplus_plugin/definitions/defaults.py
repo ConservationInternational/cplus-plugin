@@ -191,7 +191,7 @@ DEFAULT_NCS_PATHWAYS = [
         "greater than 2.5m), and natural wooded lands (vegetation "
         "density greater than 75% and a tree canopy between 2.5m "
         "and 6m). ",
-        "path": "Final_Savanna_Restoration_priority_norm.tif",
+        "path": "Final_Sananna_Restoration_priority_norm.tif",
         "layer_type": 0,
     },
     {
@@ -256,7 +256,7 @@ DEFAULT_IMPLEMENTATION_MODELS = [
     },
     {
         "uuid": "43f96ed8-cd2f-4b91-b6c8-330d3b93bcc1",
-        "name": "Avoided deforestation and degradation",
+        "name": "Avoided Deforestation and Degradation",
         "description": " This model focuses on preventing "
         "the conversion of forested areas "
         "into other land uses and minimizing "
@@ -269,7 +269,7 @@ DEFAULT_IMPLEMENTATION_MODELS = [
     },
     {
         "uuid": "c3c5a381-2b9f-4ddc-8a77-708239314fb6",
-        "name": "Avoided wetland conversion/restoration",
+        "name": "Avoided Wetland Conversion/Restoration",
         "description": " This model aims to prevent the "
         "conversion of wetland ecosystems "
         "into other land uses and, where possible, "
@@ -355,7 +355,7 @@ DEFAULT_IMPLEMENTATION_MODELS = [
     },
     {
         "uuid": "92054916-e8ea-45a0-992c-b6273d1b75a7",
-        "name": "Sustainable crop farming & aquaponics ",
+        "name": "Sustainable Crop Farming & Aquaponics ",
         "description": " This model combines sustainable "
         "crop farming practices such as "
         "agroecology, Permaculture and "

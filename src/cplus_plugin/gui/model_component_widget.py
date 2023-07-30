@@ -424,7 +424,7 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
 
         if is_model_component_item:
             if item.type() == IMPLEMENTATION_MODEL_TYPE:
-                additional_note = self.tr("and its children?")
+                additional_note = self.tr("and its children")
 
             msg = self.tr(
                 f"Do you want to remove '{model_component.name}' {additional_note}?"

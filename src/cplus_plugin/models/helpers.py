@@ -102,13 +102,21 @@ def create_layer_component(
     if isinstance(source_uuid, str):
         source_uuid = uuid.UUID(source_uuid)
 
+    kwargs = {}
+    path_attr = "path"
+    if path_attr in source_dict:
+        kwargs[path_attr] = source_dict[path_attr]
+
+    layer_type_attr = "layer_type"
+    if layer_type_attr in source_dict:
+        kwargs[layer_type_attr] = LayerType(int(source_dict["layer_type"]))
+
+    user_defined_attr = "user_defined"
+    if user_defined_attr in source_dict:
+        kwargs[user_defined_attr] = bool(source_dict[user_defined_attr])
+
     return model_cls(
-        source_uuid,
-        source_dict["name"],
-        source_dict["description"],
-        source_dict["path"],
-        LayerType(int(source_dict["layer_type"])),
-        bool(source_dict["user_defined"]),
+        source_uuid, source_dict["name"], source_dict["description"], **kwargs
     )
 
 
