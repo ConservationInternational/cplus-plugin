@@ -887,39 +887,39 @@ class IMItemModel(ComponentItemModel):
         return True
 
     def add_ncs_pathway(
-        self, ncs_item: NcsPathwayItem, target_model: ImplementationModelItem
+        self, ncs_item: NcsPathwayItem, target_model_item: ImplementationModelItem
     ) -> bool:
         """Adds an NCS pathway item to the model.
 
         :param ncs_item: NCS pathway item to the collection.
         :type ncs_item: NcsPathwayItem
 
-        :param target_model: Target implementation model for the NCS item.
-        :type target_model: ImplementationModelItem
+        :param target_model_item: Target implementation model for the NCS item.
+        :type target_model_item: ImplementationModelItem
 
         :returns: True if the NCS pathway item was successfully added, else
         False if there underlying NCS pathway object was invalid, there
         is an existing item with the same UUID or if there is already
         a map layer defined for the implementation model.
         """
-        idx = target_model.index()
+        idx = target_model_item.index()
         if not idx.isValid():
             return False
 
-        if not isinstance(target_model, LayerComponentItem):
+        if not isinstance(target_model_item, LayerComponentItem):
             return False
 
         # If there is an existing layer then return
-        if target_model.layer:
+        if target_model_item.layer:
             return False
 
         clone_ncs = ncs_item.clone()
 
-        status = target_model.add_ncs_pathway_item(clone_ncs)
+        status = target_model_item.add_ncs_pathway_item(clone_ncs)
         if not status:
             return False
 
-        bottom_idx = target_model.bottom_ncs_item_index()
+        bottom_idx = target_model_item.bottom_ncs_item_index()
         reference_row = max(bottom_idx.row(), idx.row())
         self.add_component_item(clone_ncs, reference_row + 1)
 

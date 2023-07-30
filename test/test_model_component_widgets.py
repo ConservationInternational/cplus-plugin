@@ -110,4 +110,6 @@ class TestImplementationModelComponentWidget(TestCase):
         ncs = get_valid_ncs_pathway()
         ncs_item = NcsPathwayItem(ncs)
         result = im_widget.add_ncs_pathway_items([ncs_item])
+        self.assertTrue(model_idx.isValid())
+        self.assertIsNone(im_model.layer)
         self.assertTrue(result)
