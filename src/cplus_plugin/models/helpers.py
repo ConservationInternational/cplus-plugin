@@ -158,7 +158,7 @@ def clone_layer_component(
         attr_val = getattr(layer_component, f.name)
 
         # Clone map layer
-        if f.name == "layer":
+        if f.name == "layer" and attr_val is not None:
             attr_val = attr_val.clone()
 
         setattr(cloned_component, f.name, attr_val)
