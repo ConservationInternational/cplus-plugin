@@ -26,12 +26,22 @@ from .gui.qgis_cplus_main import QgisCplusMain
 from qgis.PyQt.QtWidgets import QToolButton
 from qgis.PyQt.QtWidgets import QMenu
 
+from .conf import Settings, settings_manager
+from .definitions.constants import NCS_PATHWAY_SEGMENT
 from .definitions.defaults import (
     ABOUT_DOCUMENTATION_SITE,
+    DEFAULT_IMPLEMENTATION_MODELS,
+    DEFAULT_NCS_PATHWAYS,
     DOCUMENTATION_SITE,
-    USER_DOCUMENTATION_SITE,
     ICON_PATH,
     OPTIONS_TITLE,
+    PRIORITY_GROUPS,
+    PRIORITY_LAYERS,
+)
+from .models.helpers import (
+    copy_layer_component_attributes,
+    create_implementation_model,
+    create_ncs_pathway,
 )
 from .settings import CplusOptionsFactory
 
@@ -39,15 +49,6 @@ from .utils import (
     log,
     open_documentation,
 )
-
-from .conf import Settings, settings_manager
-from .definitions.defaults import (
-    DEFAULT_IMPLEMENTATION_MODELS,
-    DEFAULT_NCS_PATHWAYS,
-    PRIORITY_GROUPS,
-    PRIORITY_LAYERS,
-)
-from .definitions.constants import NCS_PATHWAY_SEGMENT
 
 
 class QgisCplus:
@@ -319,6 +320,13 @@ def initialize_default_settings():
                     ncs_dict["path"] = abs_path
                 ncs_dict["user_defined"] = False
                 settings_manager.save_ncs_pathway(ncs_dict)
+            else:
+                # Update values
+                source_ncs = create_ncs_pathway(ncs_dict)
+                if source_ncs is None:
+                    continue
+                ncs = copy_layer_component_attributes(ncs, source_ncs)
+                settings_manager.update_ncs_pathway(ncs)
         except KeyError as ke:
             log(f"Default NCS configuration load error - {str(ke)}")
             continue
@@ -330,6 +338,14 @@ def initialize_default_settings():
             imp_model = settings_manager.get_implementation_model(imp_model_uuid)
             if imp_model is None:
                 settings_manager.save_implementation_model(imp_model_dict)
+            else:
+                # Update values
+                source_im = create_implementation_model(imp_model_dict)
+                if source_im is None:
+                    continue
+                imp_model = copy_layer_component_attributes(imp_model, source_im)
+                settings_manager.remove_implementation_model(str(imp_model.uuid))
+                settings_manager.save_implementation_model(imp_model)
         except KeyError as ke:
             log(f"Default implementation model configuration load error - {str(ke)}")
             continue

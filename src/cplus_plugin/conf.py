@@ -24,9 +24,9 @@ from .models.base import (
     SpatialExtent,
 )
 from .models.helpers import (
-    create_model_component,
+    create_implementation_model,
     create_ncs_pathway,
-    model_component_to_dict,
+    layer_component_to_dict,
     ncs_pathway_to_dict,
 )
 
@@ -118,6 +118,9 @@ class Settings(enum.Enum):
     REPORT_FOOTER = "report/footer"
     REPORT_DISLAIMER = "report/disclaimer"
     REPORT_LICENSE = "report/license"
+
+    # Last selected data directory
+    LAST_DATA_DIR = "last_data_dir"
 
     # Advanced settings
     BASE_DIR = "advanced/base_dir"
@@ -729,7 +732,7 @@ class SettingsManager(QtCore.QObject):
         :type implementation_model: ImplementationModel, dict
         """
         if isinstance(implementation_model, ImplementationModel):
-            implementation_model = model_component_to_dict(implementation_model)
+            implementation_model = layer_component_to_dict(implementation_model)
 
         implementation_model_str = json.dumps(implementation_model)
 
@@ -760,8 +763,8 @@ class SettingsManager(QtCore.QObject):
         with qgis_settings(implementation_model_root) as settings:
             implementation_model = settings.value(implementation_model_uuid, None)
             if implementation_model is not None:
-                implementation_model = create_model_component(
-                    json.loads(implementation_model), ImplementationModel
+                implementation_model = create_implementation_model(
+                    json.loads(implementation_model)
                 )
 
         return implementation_model
@@ -784,6 +787,16 @@ class SettingsManager(QtCore.QObject):
                     implementation_models.append(implementation_model)
 
         return sorted(implementation_models, key=lambda imp_model: imp_model.name)
+
+    def remove_implementation_model(self, implementation_model_uuid: str):
+        """Removes an implementation model settings entry using the UUID.
+
+        :param implementation_model_uuid: Unique identifier of the
+        implementation model entry to removed.
+        :type implementation_model_uuid: str
+        """
+        if self.get_implementation_model(implementation_model_uuid) is not None:
+            self.remove(f"{self.IMPLEMENTATION_MODEL_BASE}/{implementation_model_uuid}")
 
 
 settings_manager = SettingsManager()

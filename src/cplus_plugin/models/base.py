@@ -81,21 +81,51 @@ class LayerType(IntEnum):
 
 
 @dataclasses.dataclass
-class NcsPathway(BaseModelComponent):
-    """Contains information about an NCS pathway layer."""
+class LayerModelComponent(BaseModelComponent):
+    """Base class for model components that support
+    a map layer.
+    """
 
-    path: str
+    path: str = ""
     layer_type: LayerType = LayerType.UNDEFINED
     user_defined: bool = False
+    layer: typing.Union[QgsMapLayer, None] = None
+
+    def __post_init__(self):
+        """Try to set the layer and layer type properties."""
+        self.update_layer_type()
+
+    def update_layer_type(self):
+        """Update the layer type if either the layer or
+        path properties have been set.
+        """
+        layer = self.to_map_layer()
+        if layer is None:
+            return
+
+        if not layer.isValid():
+            return
+
+        if isinstance(layer, QgsRasterLayer):
+            self.layer_type = LayerType.RASTER
+
+        elif isinstance(layer, QgsVectorLayer):
+            self.layer_type = LayerType.VECTOR
 
     def to_map_layer(self) -> typing.Union[QgsMapLayer, None]:
         """Constructs a map layer from the specified path.
 
-        If the path does not exist, it will return None.
+        It will first check if the layer property has been set
+        else try to construct the layer from the path else return
+        None.
 
-        :returns: Map layer corresponding to the specified path.
+        :returns: Map layer corresponding to the set layer
+        property or specified path.
         :rtype: QgsMapLayer
         """
+        if self.layer:
+            return self.layer
+
         if not os.path.exists(self.path):
             return None
 
@@ -105,6 +135,9 @@ class NcsPathway(BaseModelComponent):
 
         elif self.layer_type == LayerType.VECTOR:
             ncs_layer = QgsVectorLayer(self.path, self.name)
+
+        if ncs_layer:
+            self.layer = ncs_layer
 
         return ncs_layer
 
@@ -121,14 +154,32 @@ class NcsPathway(BaseModelComponent):
 
         return layer.isValid()
 
+    def __eq__(self, other) -> bool:
+        """Uses BaseModelComponent equality test rather than
+        what the dataclass default implementation will provide.
+        """
+        return super().__eq__(other)
+
+
+LayerModelComponentType = typing.TypeVar(
+    "LayerModelComponentType", bound=LayerModelComponent
+)
+
+
+@dataclasses.dataclass
+class NcsPathway(LayerModelComponent):
+    """Contains information about an NCS pathway layer."""
+
     def __eq__(self, other: "NcsPathway") -> bool:
-        """Test equality of object with another NcsPathway
-        object using the attributes.
+        """Test equality of NcsPathway object with another
+        NcsPathway object using the attributes.
+
+        Excludes testing the map layer for equality.
 
         :param other: NcsPathway object to compare with this object.
         :type other: NcsPathway
 
-        :returns: True if the all the attribute values match, else False.
+        :returns: True if all the attribute values match, else False.
         :rtype: bool
         """
         base_equality = super().__eq__(other)
@@ -148,18 +199,30 @@ class NcsPathway(BaseModelComponent):
 
 
 @dataclasses.dataclass
-class ImplementationModel(BaseModelComponent):
-    """Contains information about the implementation model for a scenario."""
+class ImplementationModel(LayerModelComponent):
+    """Contains information about the implementation model
+    for a scenario. If the layer has been set then it will
+    not be possible to add NCS pathways unless the layer
+    is cleared.
+    Priority will be given to the layer property.
+    """
 
     pathways: typing.List[NcsPathway] = dataclasses.field(default_factory=list)
 
     def __post_init__(self):
-        """Ensure there are no duplicate pathways."""
+        """Pre-checks on initialization."""
+        super().__post_init__()
+
+        # Ensure there are no duplicate pathways.
         uuids = [str(p.uuid) for p in self.pathways]
 
         if len(set(uuids)) != len(uuids):
             msg = "Duplicate pathways found in implementation model"
-            raise ValueError(f"{msg} {self.name}")
+            raise ValueError(f"{msg} {self.name}.")
+
+        # Reset pathways if layer has also been set.
+        if self.layer and len(self.pathways) > 0:
+            self.pathways = []
 
     def contains_pathway(self, pathway_uuid: str) -> bool:
         """Checks if there is an NCS pathway matching the given UUID.
@@ -183,8 +246,10 @@ class ImplementationModel(BaseModelComponent):
         :type ncs: NcsPathway
 
         :returns: True if the NCS pathway was successfully added, else False
-        if there was an existing NCS pathway object with a similar UUID.
+        if there was an existing NCS pathway object with a similar UUID or
+        the layer property had already been set.
         """
+
         if not ncs.is_valid():
             return False
 
@@ -194,6 +259,12 @@ class ImplementationModel(BaseModelComponent):
         self.pathways.append(ncs)
 
         return True
+
+    def clear_layer(self):
+        """Simply sets the layer property so that NCS pathway objects
+        can be added.
+        """
+        self.layer = None
 
     def remove_ncs_pathway(self, pathway_uuid: str) -> bool:
         """Removes the NCS pathway with a matching UUID from the collection.
@@ -231,6 +302,21 @@ class ImplementationModel(BaseModelComponent):
             return None
 
         return pathways[0]
+
+    def is_valid(self) -> bool:
+        """Includes an additional check to assert if NCS pathways have
+        been specified if the layer has not been set or is not valid.
+
+        Does not check for validity of individual NCS pathways in the
+        collection.
+        """
+        if self.layer:
+            return super().is_valid()
+        else:
+            if len(self.pathways) == 0:
+                return False
+
+            return True
 
 
 class ScenarioState(Enum):
