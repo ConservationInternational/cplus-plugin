@@ -208,17 +208,17 @@ DEFAULT_NCS_PATHWAYS = [
 DEFAULT_IMPLEMENTATION_MODELS = [
     {
         "uuid": "a0b8fd2d-1259-4141-9ad6-d4369cf0dfd4",
-        "name": "Herding for Health",
+        "name": "Agroforestry",
         "description": "Placeholder text for herding for health",
     },
     {
         "uuid": "1c8db48b-717b-451b-a644-3af1bee984ea",
-        "name": "Eat Fresh",
+        "name": "Alien Plant Removal",
         "description": "Placeholder text for eat fresh",
     },
     {
         "uuid": "de9597b2-f082-4299-9620-1da3bad8ab62",
-        "name": "Charcoal Naturally",
+        "name": "Applied Nucleation",
         "description": "Placeholder text for charcoal naturally",
     },
 ]
