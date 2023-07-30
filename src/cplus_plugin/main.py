@@ -36,12 +36,12 @@ from .definitions.defaults import (
     ICON_PATH,
     OPTIONS_TITLE,
     PRIORITY_GROUPS,
-    PRIORITY_LAYERS
+    PRIORITY_LAYERS,
 )
 from .models.helpers import (
     copy_layer_component_attributes,
     create_implementation_model,
-    create_ncs_pathway
+    create_ncs_pathway,
 )
 from .settings import CplusOptionsFactory
 

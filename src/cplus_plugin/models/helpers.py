@@ -76,8 +76,10 @@ def create_model_component(
 
 
 def create_layer_component(
-        source_dict,
-        model_cls: typing.Callable[[uuid.UUID, str, str, str, LayerType, bool], LayerModelComponentType]
+    source_dict,
+    model_cls: typing.Callable[
+        [uuid.UUID, str, str, str, LayerType, bool], LayerModelComponentType
+    ],
 ) -> typing.Union[LayerModelComponent, None]:
     """Factory method for creating a layer model component using
     attribute values defined in a dictionary.
@@ -138,7 +140,9 @@ def create_implementation_model(source_dict) -> typing.Union[Im, None]:
     return create_layer_component(source_dict, ImplementationModel)
 
 
-def layer_component_to_dict(layer_component: LayerModelComponentType, uuid_to_str=True) -> dict:
+def layer_component_to_dict(
+    layer_component: LayerModelComponentType, uuid_to_str=True
+) -> dict:
     """Creates a dictionary containing attribute
     name-value pairs from a layer model component object.
 
@@ -227,8 +231,7 @@ def clone_layer_component(
 
 
 def copy_layer_component_attributes(
-        target: LayerModelComponent,
-        source: LayerModelComponent
+    target: LayerModelComponent, source: LayerModelComponent
 ) -> LayerModelComponent:
     """Copies the attribute values of source to target. The uuid
     attribute value is not copied as well as the layer attribute.
@@ -245,8 +248,12 @@ def copy_layer_component_attributes(
     for the uuid whose value will not change.
     :rtype: LayerModelComponent
     """
-    if not isinstance(target, LayerModelComponent) or not isinstance(source, LayerModelComponent):
-        raise TypeError("Source or target objects are not of type 'LayerModelComponent'")
+    if not isinstance(target, LayerModelComponent) or not isinstance(
+        source, LayerModelComponent
+    ):
+        raise TypeError(
+            "Source or target objects are not of type 'LayerModelComponent'"
+        )
 
     for f in fields(source):
         # Exclude uuid and map layer
