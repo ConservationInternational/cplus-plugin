@@ -126,7 +126,7 @@ def create_ncs_pathway(source_dict) -> typing.Union[NcsPathway, None]:
     return create_layer_component(source_dict, NcsPathway)
 
 
-def create_implementation_model(source_dict) -> typing.Union[Im, None]:
+def create_implementation_model(source_dict) -> typing.Union[ImplementationModel, None]:
     """Factory method for creating an implementation model using
     attribute values defined in a dictionary.
 

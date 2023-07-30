@@ -209,16 +209,163 @@ DEFAULT_IMPLEMENTATION_MODELS = [
     {
         "uuid": "a0b8fd2d-1259-4141-9ad6-d4369cf0dfd4",
         "name": "Agroforestry",
-        "description": "Placeholder text for herding for health",
+        "description": " Agroforestry is an integrated land use "
+        "system that combines the cultivation of trees with "
+        "agricultural crops and/or livestock. It promotes "
+        "sustainable land management, biodiversity conservation, "
+        "soil health improvement, and diversified income "
+        "sources for farmers.",
     },
     {
         "uuid": "1c8db48b-717b-451b-a644-3af1bee984ea",
         "name": "Alien Plant Removal",
-        "description": "Placeholder text for eat fresh",
+        "description": "This model involves the removal of "
+        "invasive alien plant species that "
+        "negatively impact native ecosystems. "
+        "By eradicating these plants, natural "
+        "habitats can be restored, allowing "
+        "native flora and fauna to thrive.",
     },
     {
         "uuid": "de9597b2-f082-4299-9620-1da3bad8ab62",
         "name": "Applied Nucleation",
-        "description": "Placeholder text for charcoal naturally",
+        "description": " Applied nucleation is a technique "
+        "that jump-starts the restoration "
+        "process by creating focal points "
+        "of vegetation growth within degraded "
+        'areas. These "nuclei" serve as '
+        "centers for biodiversity recovery, "
+        "attracting seeds, dispersers, and "
+        "other ecological processes, ultimately "
+        "leading to the regeneration of the "
+        "surrounding landscape.",
+    },
+    {
+        "uuid": "40f04ea6-1f91-4695-830a-7d46f821f5db",
+        "name": "Assisted Natural Regeneration",
+        "description": " This model focuses on facilitating "
+        "the natural regeneration of forests "
+        "and degraded lands by removing "
+        "barriers (such as alien plants or "
+        "hard crusted soils) and providing "
+        "support for native plant species to "
+        "regrow. It involves activities such "
+        "as removing competing vegetation, "
+        "protecting young seedlings, and "
+        "restoring ecosystem functions.",
+    },
+    {
+        "uuid": "43f96ed8-cd2f-4b91-b6c8-330d3b93bcc1",
+        "name": "Avoided deforestation and degradation",
+        "description": " This model focuses on preventing "
+        "the conversion of forested areas "
+        "into other land uses and minimizing "
+        "degradation of existing forests. It "
+        "involves implementing measures to "
+        "protect and sustainably manage "
+        "forests, preserving their "
+        "biodiversity, carbon sequestration "
+        "potential, and ecosystem services.",
+    },
+    {
+        "uuid": "c3c5a381-2b9f-4ddc-8a77-708239314fb6",
+        "name": "Avoided wetland conversion/restoration",
+        "description": " This model aims to prevent the "
+        "conversion of wetland ecosystems "
+        "into other land uses and, where possible, "
+        "restore degraded wetlands. It involves "
+        "implementing conservation measures, "
+        "such as land-use planning, regulatory "
+        "frameworks, and restoration efforts, "
+        "to safeguard the ecological functions "
+        "and biodiversity of wetland habitats",
+    },
+    {
+        "uuid": "3defbd0e-2b12-4ab2-a7d4-a035152396a7",
+        "name": "Bioproducts",
+        "description": " The bioproducts model focuses on "
+        "utilizing natural resources sustainably "
+        "to create value-added products. It "
+        "involves the development and production "
+        "of renewable and biodegradable materials, "
+        "such as biofuels, bio-based chemicals, "
+        "and bio-based materials, to reduce "
+        "reliance on fossil fuels and promote "
+        "a more sustainable economy.",
+    },
+    {
+        "uuid": "22f9e555-0356-4b18-b292-c2d516dcdba5",
+        "name": "Bush Thinning",
+        "description": "Bush thinning refers to the controlled "
+        "removal of excess woody vegetation in "
+        "certain ecosystems and using that biomass "
+        "to brush pack bare soil areas to promote "
+        "regrowth of grass. This practice helps "
+        "restore natural balance, prevent "
+        "overgrowth, and enhance biodiversity.",
+    },
+    {
+        "uuid": "177f1f27-cace-4f3e-9c3c-ef2cf54fc283",
+        "name": "Direct Tree Seeding",
+        "description": " This model involves planting tree "
+        "seeds directly into the ground, allowing "
+        "them to grow and establish without the "
+        "need for nursery cultivation. It is a "
+        "cost-effective and environmentally "
+        "friendly approach to reforestation and "
+        "afforestation efforts, promoting forest "
+        "restoration and carbon sequestration.",
+    },
+    {
+        "uuid": "d9d00a77-3db1-4390-944e-09b27bcbb981",
+        "name": "Livestock Rangeland Management",
+        "description": "This model focuses on sustainable "
+        "management practices for livestock "
+        "grazing on rangelands. It includes "
+        "rotational grazing, monitoring of "
+        "vegetation health, and implementing "
+        "grazing strategies that promote "
+        "biodiversity, soil health, and "
+        "sustainable land use.",
+    },
+    {
+        "uuid": "4fbfcb1c-bfd7-4305-b216-7a1077a2ccf7",
+        "name": "Livestock Market Access",
+        "description": " This model aims to improve market "
+        "access for livestock producers practicing "
+        "sustainable and regenerative farming "
+        "methods. It involves creating networks, "
+        "certifications, and partnerships that "
+        "support the sale of sustainably produced "
+        "livestock products, promoting economic "
+        "viability and incentivizing environmentally "
+        "friendly practices.",
+    },
+    {
+        "uuid": "20491092-e665-4ee7-b92f-b0ed864c7312",
+        "name": "Natural Woodland Livestock Management",
+        "description": " This model emphasizes the sustainable "
+        "management of livestock within natural "
+        "woodland environments. It involves "
+        "implementing practices that balance "
+        "livestock grazing with the protection "
+        "and regeneration of native woodlands, "
+        "ensuring ecological integrity while "
+        "meeting livestock production goals.",
+    },
+    {
+        "uuid": "92054916-e8ea-45a0-992c-b6273d1b75a7",
+        "name": "Sustainable crop farming & aquaponics ",
+        "description": " This model combines sustainable "
+        "crop farming practices such as "
+        "agroecology, Permaculture and "
+        "aquaponics, a system that integrates "
+        "aquaculture (fish farming) with hydroponics "
+        "(soil-less crop cultivation). It enables "
+        "the production of crops with sustainable "
+        "practices in a mutually beneficial and "
+        "resource-efficient manner, reducing "
+        "water usage and chemical inputs while "
+        "maximizing productivity.",
     },
 ]
