@@ -5,6 +5,8 @@ Functions for providing model test data.
 import os
 from uuid import UUID
 
+from qgis.core import QgsRasterLayer
+
 from cplus_plugin.models.base import ImplementationModel, LayerType, NcsPathway
 
 
@@ -42,7 +44,15 @@ def get_implementation_model() -> ImplementationModel:
         UUID(IMPLEMENTATION_MODEL_UUID_STR),
         "Test Implementation Model",
         "Description for test implementation model",
+        TEST_RASTER_PATH,
+        LayerType.RASTER,
+        True,
     )
+
+
+def get_test_layer() -> QgsRasterLayer:
+    """Returns the test raster layer."""
+    return QgsRasterLayer(TEST_RASTER_PATH, "Test Layer")
 
 
 NCS_PATHWAY_DICT = {

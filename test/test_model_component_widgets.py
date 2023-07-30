@@ -17,7 +17,7 @@ from cplus_plugin.gui.model_component_widget import (
 
 from model_data_for_testing import (
     get_implementation_model,
-    get_invalid_ncs_pathway,
+    get_test_layer,
     get_valid_ncs_pathway,
     IMPLEMENTATION_MODEL_UUID_STR,
 )
@@ -65,6 +65,16 @@ class TestImplementationModelComponentWidget(TestCase):
         im_model = get_implementation_model()
         im_widget = ImplementationModelComponentWidget(PARENT)
         result = im_widget.add_implementation_model(im_model)
+        self.assertTrue(result)
+
+    def test_add_implementation_model_with_layer(self):
+        """Assert an ImplementationModel object with a layer
+        can be added to the widget.
+        """
+        im_model = get_implementation_model()
+        layer = get_test_layer()
+        im_widget = ImplementationModelComponentWidget(PARENT)
+        result = im_widget.add_implementation_model(im_model, layer)
         self.assertTrue(result)
 
     def test_get_implementation_models(self):

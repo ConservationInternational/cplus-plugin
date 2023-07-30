@@ -9,7 +9,7 @@ import typing
 from qgis.PyQt import QtCore, QtWidgets
 from qgis.PyQt.uic import loadUiType
 
-from qgis.core import QgsApplication
+from qgis.core import QgsApplication, QgsMapLayer
 
 from .component_item_model import (
     ComponentItemModel,
@@ -498,18 +498,24 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
 
         return status
 
-    def add_implementation_model(self, implementation_model: ImplementationModel):
-        """Adds an implementation model object to the view.
+    def add_implementation_model(
+        self, implementation_model: ImplementationModel, layer: QgsMapLayer = None
+    ):
+        """Adds an implementation model object to the view with the option of
+        specifying the layer.
 
         :param implementation_model: Implementation model object
         to be added to the view.
         :type implementation_model: ImplementationModel
 
+        :param layer: Optional map layer to be added to the model.
+        :type layer: QgsMapLayer
+
         :returns: True if the implementation model was successfully added, else
         False.
         :rtype: bool
         """
-        return self.item_model.add_implementation_model(implementation_model)
+        return self.item_model.add_implementation_model(implementation_model, layer)
 
     def _update_ui_on_selection_changed(self):
         """Check type of item selected and update UI
