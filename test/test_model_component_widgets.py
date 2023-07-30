@@ -96,8 +96,7 @@ class TestImplementationModelComponentWidget(TestCase):
 
     def test_can_add_ncs_pathway_items(self):
         """Assert ncsPathwayItem objects can be added to the
-        widget as the implementation model does not have a
-        layer defined.
+        widget to an implementation model without a layer.
         """
         im_model = get_implementation_model()
         im_model.clear_layer()
