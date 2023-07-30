@@ -154,6 +154,12 @@ class LayerModelComponent(BaseModelComponent):
 
         return layer.isValid()
 
+    def __eq__(self, other) -> bool:
+        """Uses BaseModelComponent equality test rather than
+        what the dataclass default implementation will provide.
+        """
+        return super().__eq__(other)
+
 
 LayerModelComponentType = typing.TypeVar(
     "LayerModelComponentType", bound=LayerModelComponent
@@ -165,13 +171,15 @@ class NcsPathway(LayerModelComponent):
     """Contains information about an NCS pathway layer."""
 
     def __eq__(self, other: "NcsPathway") -> bool:
-        """Test equality of object with another NcsPathway
-        object using the attributes.
+        """Test equality of NcsPathway object with another
+        NcsPathway object using the attributes.
+
+        Excludes testing the map layer for equality.
 
         :param other: NcsPathway object to compare with this object.
         :type other: NcsPathway
 
-        :returns: True if the all the attribute values match, else False.
+        :returns: True if all the attribute values match, else False.
         :rtype: bool
         """
         base_equality = super().__eq__(other)
