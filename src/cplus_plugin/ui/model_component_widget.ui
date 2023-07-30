@@ -99,7 +99,7 @@
    <item row="4" column="0" colspan="5">
     <widget class="QLineEdit" name="txt_item_description">
      <property name="maxLength">
-      <number>200</number>
+      <number>500</number>
      </property>
     </widget>
    </item>
