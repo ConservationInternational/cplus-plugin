@@ -94,8 +94,32 @@ class TestImplementationModelComponentWidget(TestCase):
         imp_models = im_widget.models()
         self.assertEqual(len(imp_models), 0)
 
-    def test_add_ncs_pathway_items(self):
-        """Assert ncsPathwayItem objects can be added to the widget."""
+    def test_can_add_ncs_pathway_items(self):
+        """Assert ncsPathwayItem objects can be added to the
+        widget as the implementation model does not have a
+        layer defined.
+        """
+        im_model = get_implementation_model()
+        im_model.clear_layer()
+        im_widget = ImplementationModelComponentWidget(PARENT)
+        _ = im_widget.add_implementation_model(im_model)
+
+        # Select the added implementation model.
+        sel_model = im_widget.selection_model
+        item_model = im_widget.item_model
+        model_idx = item_model.index_by_uuid(IMPLEMENTATION_MODEL_UUID_STR)
+        sel_model.select(model_idx, QtCore.QItemSelectionModel.ClearAndSelect)
+
+        # Now we can add the NcsPathwayItem
+        ncs = get_valid_ncs_pathway()
+        ncs_item = NcsPathwayItem(ncs)
+        result = im_widget.add_ncs_pathway_items([ncs_item])
+        self.assertFalse(result)
+
+    def test_cannot_add_ncs_pathway_items(self):
+        """Assert ncsPathwayItem objects cannot be added to the
+        widget as the implementation model has a layer defined.
+        """
         im_model = get_implementation_model()
         im_widget = ImplementationModelComponentWidget(PARENT)
         _ = im_widget.add_implementation_model(im_model)
@@ -110,6 +134,4 @@ class TestImplementationModelComponentWidget(TestCase):
         ncs = get_valid_ncs_pathway()
         ncs_item = NcsPathwayItem(ncs)
         result = im_widget.add_ncs_pathway_items([ncs_item])
-        self.assertTrue(model_idx.isValid())
-        self.assertIsNone(im_model.layer)
-        self.assertTrue(result)
+        self.assertFalse(result)
