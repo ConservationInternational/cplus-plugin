@@ -43,6 +43,12 @@ class TestImplementationModel(TestCase):
         result = imp_model.add_ncs_pathway(self.ncs)
         self.assertTrue(result)
 
+    def test_to_map_layer(self):
+        """Confirm that the map layer is not None."""
+        imp_model = get_implementation_model()
+        map_layer = imp_model.to_map_layer()
+        self.assertIsNotNone(map_layer)
+
     def test_add_invalid_ncs_pathway(self):
         """Assert an invalid NCS pathway cannot be added to the model."""
         imp_model = get_implementation_model()

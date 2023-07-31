@@ -15,6 +15,7 @@ from cplus_plugin.gui.component_item_model import (
 from model_data_for_testing import (
     get_implementation_model,
     get_invalid_ncs_pathway,
+    get_test_layer,
     get_valid_ncs_pathway,
     IMPLEMENTATION_MODEL_UUID_STR,
     VALID_NCS_UUID_STR,
@@ -84,6 +85,25 @@ class TestIMItemModel(TestCase):
         """Assert an implementation model can be removed."""
         im_item_model = IMItemModel(PARENT)
         _ = im_item_model.add_implementation_model(get_implementation_model())
+        result = im_item_model.remove_implementation_model(
+            IMPLEMENTATION_MODEL_UUID_STR
+        )
+        self.assertTrue(result)
+
+    def test_add_implementation_model_with_layer(self):
+        """Assert can add map layer to implementation model."""
+        im_item_model = IMItemModel(PARENT)
+        im_model = get_implementation_model()
+        layer = get_test_layer()
+        result = im_item_model.add_implementation_model(im_model, layer)
+        self.assertTrue(result)
+
+    def test_remove_implementation_model_with_layer(self):
+        """Assert an implementation model with layer can be removed."""
+        im_item_model = IMItemModel(PARENT)
+        im_model = get_implementation_model()
+        layer = get_test_layer()
+        _ = im_item_model.add_implementation_model(im_model, layer)
         result = im_item_model.remove_implementation_model(
             IMPLEMENTATION_MODEL_UUID_STR
         )
