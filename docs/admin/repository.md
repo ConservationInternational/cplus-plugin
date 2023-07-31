@@ -162,6 +162,14 @@ for (const pull_artifact of pulls_artifacts){
      pulls_tbody.appendChild(tr)
 }
 
+const response = await fetch(
+"https://raw.githubusercontent.com/kartoza/cplus-plugin/docs/docs/admin/artifacts_list.txt"
+);
+
+const file_text = response.text();
+
+console.log(file_text);
+
 for (const commit_artifact of commits_artifacts){
 
      if (commit_artifact['commit'] == undefined)
