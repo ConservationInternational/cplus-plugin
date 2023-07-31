@@ -50,6 +50,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           EVENT_OBJ: ${{ toJSON(github.event) }}
+          PUSH_EVENT_OBJ: ${{ toJSON(github.event.push_event) }}
           OWNER: ${{ github.repository_owner }}
           REPO: ${{ github.event.repository.name }}
           ZIP_FILENAME: ${{ steps.get-zip-details.outputs.ZIP_NAME }}
