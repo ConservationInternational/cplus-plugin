@@ -53,7 +53,6 @@ from .definitions.defaults import (
     PRIORITY_LAYERS,
 )
 from .definitions.constants import NCS_PATHWAY_SEGMENT
-from .utils import initialize_default_settings
 
 
 class QgisCplus:
