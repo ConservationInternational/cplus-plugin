@@ -20,6 +20,11 @@ ICON_PATH = ":/plugins/cplus_plugin/icon.svg"
 ADD_LAYER_ICON_PATH = ":/plugins/cplus_plugin/cplus_left_arrow.svg"
 REMOVE_LAYER_ICON_PATH = ":/plugins/cplus_plugin/cplus_right_arrow.svg"
 
+SCENARIO_OUTPUT_FILE_NAME = "cplus_scenario_output"
+SCENARIO_OUTPUT_LAYER_NAME = "scenario_result"
+
+QGIS_GDAL_PROVIDER = "gdal"
+
 DEFAULT_LOGO_PATH = (
     os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/logos/ci_logo.png"
 )
