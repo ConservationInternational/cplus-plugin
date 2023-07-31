@@ -670,9 +670,6 @@ class NcsPathwayItemModel(ComponentItemModel):
         else False if the NcsPathway object is invalid.
         :rtype: bool
         """
-        if not ncs.is_valid():
-            return False
-
         ncs_item = NcsPathwayItem.create(ncs)
         self._update_display(ncs_item)
 
