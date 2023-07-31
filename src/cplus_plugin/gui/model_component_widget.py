@@ -390,7 +390,9 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         if editor.exec_() == QtWidgets.QDialog.Accepted:
             model = editor.implementation_model
             layer = editor.layer
-            self.item_model.add_implementation_model(model, layer)
+            result = self.item_model.add_implementation_model(model, layer)
+            if result:
+                settings_manager.save_implementation_model(model)
 
     def _on_edit_item(self):
         """Edit selected implementation model object."""
@@ -403,7 +405,10 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         if editor.exec_() == QtWidgets.QDialog.Accepted:
             model = editor.implementation_model
             layer = editor.layer
-            self.item_model.update_implementation_model(model, layer)
+            result = self.item_model.update_implementation_model(model, layer)
+            if result:
+                settings_manager.remove_implementation_model(str(model.uuid))
+                settings_manager.save_implementation_model(model)
             self._update_ui_on_selection_changed()
 
     def _on_remove_item(self):
@@ -452,9 +457,14 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
                     self.item_model.remove_ncs_pathway_item(item.uuid, parent)
                 else:
                     # Implementation model item
-                    self.item_model.remove_implementation_model(
-                        str(model_component.uuid)
+                    implementation_model_uuid = str(model_component.uuid)
+                    result = self.item_model.remove_implementation_model(
+                        implementation_model_uuid
                     )
+                    if result:
+                        settings_manager.remove_implementation_model(
+                            implementation_model_uuid
+                        )
             else:
                 implementation_model_item = item.data()
                 if implementation_model_item:
