@@ -26,14 +26,15 @@ class CplusPluginProgressDialogTest(unittest.TestCase):
 
         self.assertIsInstance(progress_bar, QProgressBar)
 
-    def test_change_status_messaage(self) -> None:
+    def test_change_status_message(self) -> None:
         """A test to see if the status message is correctly set"""
         progress_dialog = ProgressDialog(parent=PARENT)
 
         test_message = "This is a status message"
+        test_final_message = "Scenario: This is a status message"
         progress_dialog.change_status_message(test_message)
         current_message = progress_dialog.lbl_status.text()
-        self.assertEqual(test_message, current_message)
+        self.assertEqual(test_final_message, current_message)
 
     def test_progress_bar(self) -> None:
         """Test if progress bar updating/changes works correctly."""
@@ -79,7 +80,7 @@ class CplusPluginProgressDialogTest(unittest.TestCase):
         progress_dialog = ProgressDialog(parent=PARENT)
 
         # Processing should have been stopped
-        progress_dialog.processing_stopped()
+        progress_dialog.stop_processing()
         processing_status = progress_dialog.get_processing_status()
         self.assertEqual(processing_status, False)
 
