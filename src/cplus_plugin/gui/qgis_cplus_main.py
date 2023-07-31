@@ -16,8 +16,6 @@ from qgis.PyQt import (
 from qgis.PyQt.uic import loadUiType
 
 
-from qgis import processing
-
 from qgis.core import (
     Qgis,
     QgsApplication,
@@ -25,6 +23,8 @@ from qgis.core import (
     QgsGeometry,
     QgsProject,
     QgsProcessing,
+    QgsProcessingAlgRunnerTask,
+    QgsProcessingContext,
     QgsProcessingFeedback,
     QgsRasterLayer,
     QgsRectangle,
@@ -43,7 +43,7 @@ from qgis.utils import iface
 from .implementation_model_widget import ImplementationModelContainerWidget
 from .priority_group_widget import PriorityGroupWidget
 
-from ..conf import settings_manager
+from ..conf import settings_manager, Settings
 
 from ..resources import *
 
@@ -54,7 +54,10 @@ from ..definitions.defaults import (
     PILOT_AREA_EXTENT,
     OPTIONS_TITLE,
     ICON_PATH,
+    QGIS_GDAL_PROVIDER,
     REMOVE_LAYER_ICON_PATH,
+    SCENARIO_OUTPUT_FILE_NAME,
+    SCENARIO_OUTPUT_LAYER_NAME,
     USER_DOCUMENTATION_SITE,
 )
 
@@ -90,6 +93,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.priority_groups_widgets = {}
 
         self.initialize_priority_layers()
+
+        self.position_feedback = QgsProcessingFeedback()
+        self.processing_context = QgsProcessingContext()
 
         self.analysis_finished.connect(self.post_analysis)
 
@@ -358,7 +364,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             for item in self.implementation_model_widget.selected_items()
         ]
 
-        priority_weight_layers = self.priority_layers_list.selectedItems()
+        priority_layers_groups = [
+            layer.get("groups")
+            for layer in settings_manager.get_priority_layers()
+            if layer.get("groups") is not [] or layer.get("groups") is not None
+        ]
 
         if scenario_name == "" or scenario_name is None:
             self.show_message(
@@ -375,15 +385,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if implementation_models == [] or implementation_models is None:
             self.show_message(
                 tr("Select at least one implementation models from step two."),
-                level=Qgis.Info,
+                level=Qgis.Critical,
             )
             return
-        if priority_weight_layers == [] or priority_weight_layers is None:
+        if not any(priority_layers_groups):
             self.show_message(
                 tr(
-                    f"Select at least one priority weight layer models from step three."
+                    f"At least one priority weight layer should be added "
+                    f"into one of the priority groups from step three."
                 ),
-                level=Qgis.Info,
+                level=Qgis.Critical,
             )
             return
 
@@ -393,17 +404,54 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 level=Qgis.Info,
             )
             try:
-                run_task = QgsTask.fromFunction(
-                    "Run analysis function",
-                    self.run_analysis(
-                        scenario_name,
-                        scenario_description,
-                        passed_extent,
-                        implementation_models,
-                        priority_weight_layers,
-                    ),
+                layers = []
+                extent = (
+                    f"{passed_extent.xMinimum()}, {passed_extent.xMaximum()},"
+                    f"{passed_extent.yMinimum()}, {passed_extent.yMaximum()}"
                 )
-                QgsApplication.taskManager().addTask(run_task)
+
+                for model in implementation_models:
+                    pathways = model.pathways
+
+                    for pathway in pathways:
+                        log(f"adding pathway path {pathway.path}")
+                        layers.append(QgsRasterLayer(pathway.path))
+
+                self.show_progress(
+                    f"Calculating the highest position",
+                    minimum=0,
+                    maximum=100,
+                )
+
+                self.position_feedback.progressChanged.connect(self.update_progress_bar)
+
+                output_file = (
+                    f"{settings_manager.get_value(Settings.BASE_DIR)}/"
+                    f"{SCENARIO_OUTPUT_FILE_NAME}.tif"
+                )
+
+                alg_params = {
+                    "IGNORE_NODATA": True,
+                    "INPUT_RASTERS": layers,
+                    "EXTENT": extent,
+                    "OUTPUT_NODATA_VALUE": -9999,
+                    "REFERENCE_LAYER": layers[0] if len(layers) >= 1 else None,
+                    "OUTPUT": output_file,
+                }
+
+                alg = QgsApplication.processingRegistry().algorithmById(
+                    "native:highestpositioninrasterstack"
+                )
+
+                task = QgsProcessingAlgRunnerTask(
+                    alg,
+                    alg_params,
+                    self.processing_context,
+                    feedback=self.position_feedback,
+                )
+                task.executed.connect(self.scenario_results)
+                QgsApplication.taskManager().addTask(task)
+
             except Exception as err:
                 self.show_message(
                     tr(
@@ -426,80 +474,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             return
 
-    def run_analysis(
-        self,
-        scenario_name,
-        scenario_description,
-        passed_extent,
-        implementation_models,
-        priority_weight_layers,
-    ):
-        """Runs the actual scenario analysis by executing processing algorithms
-
-        :param scenario_name: Scenario name
-        :type scenario_name: str
-
-        :param scenario_description: Scenario description
-        :type scenario_description: str
-
-        :param passed_extent: Area of interest
-        :type passed_extent: QgsRectangle
-
-        :param implementation_models: List of the selected implementation models
-        :type implementation_models: list
-
-        :param priority_weight_layers: List of the priority weight layers
-        :type priority_weight_layers: list
-
-        """
-        outputs = {}
-        layers = []
-
-        extent = (
-            f"{passed_extent.xMinimum()}, {passed_extent.xMaximum()},"
-            f"{passed_extent.yMinimum()}, {passed_extent.yMaximum()}"
-        )
-
-        for model in implementation_models:
-            pathways = model.pathways
-
-            for pathway in pathways:
-                layers.append(QgsRasterLayer(pathway.path))
-
-        self.show_progress(
-            f"Calculating the highest position",
-            minimum=0,
-            maximum=100,
-        )
-
-        position_feedback = QgsProcessingFeedback()
-
-        position_feedback.progressChanged.connect(self.update_progress_bar)
-
-        alg_params = {
-            "IGNORE_NODATA": True,
-            "INPUT_RASTERS": layers,
-            "EXTENT": extent,
-            "OUTPUT_NODATA_VALUE": -9999,
-            "REFERENCE_LAYER": layers[0] if len(layers) > 1 else None,
-            "OUTPUT": "cplus_scenario_output.tif",
-        }
-        outputs["HighestPositionInRasterStack"] = processing.run(
-            "native:highestpositioninrasterstack",
-            alg_params,
-            feedback=position_feedback,
-        )
-        outputs["cplus_scenario_output"] = outputs["HighestPositionInRasterStack"][
-            "OUTPUT"
-        ]
-
-        # Update progress bar if processing is done
-        if outputs["HighestPositionInRasterStack"] is not None:
+    def scenario_results(self, success, output):
+        if output is not None:
             self.update_progress_bar(100)
-
-        self.analysis_finished.emit(outputs)
-
-        return True
+            self.analysis_finished.emit(output)
+        else:
+            log(f"No valid output from the processing results.")
 
     def post_analysis(self, outputs):
         """Handles analysis outputs from the final analysis results
@@ -507,9 +487,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param outputs: Dictionary of output layers
         :type outputs: dict
         """
-        layer = outputs.get("cplus_scenario_output")
+        layer_file = outputs.get("OUTPUT")
 
-        layer = QgsRasterLayer(layer, "cplus_scenario_output")
+        layer = QgsRasterLayer(
+            layer_file, SCENARIO_OUTPUT_LAYER_NAME, QGIS_GDAL_PROVIDER
+        )
 
         QgsProject.instance().addMapLayer(layer)
 
