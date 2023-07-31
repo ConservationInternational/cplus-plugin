@@ -3,10 +3,17 @@
     Plugin utilities
 """
 
-from qgis.PyQt import QtCore, QtGui
-from qgis.core import Qgis, QgsMessageLog
 
-from .definitions.defaults import DOCUMENTATION_SITE
+import os
+from pathlib import Path
+
+from qgis.PyQt import QtCore, QtGui
+from qgis.core import Qgis, QgsApplication, QgsMessageLog
+
+from .definitions.defaults import (
+    DOCUMENTATION_SITE,
+)
+from .definitions.constants import NCS_PATHWAY_SEGMENT
 
 
 def tr(message):
@@ -56,7 +63,75 @@ def log(
 
 
 def open_documentation(url=None):
-    """Opens documentation website in the default browser"""
+    """Opens documentation website in the default browser
+
+    :param url: URL link to documentation site (e.g. gh pages site)
+    :type url: str
+
+    """
     url = DOCUMENTATION_SITE if url is None else url
     result = QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
     return result
+
+
+def is_dark_theme() -> bool:
+    """Checks if the current QGIS UI theme is dark mode.
+
+    :returns: True if the current UI theme is on dark mode, else False.
+    :rtype: bool
+    """
+    if QgsApplication.instance().themeName() == "Night Mapping":
+        return True
+
+    return False
+
+
+class FileUtils:
+    """
+    Provides functionality for commonly used file-related operations.
+    """
+
+    @staticmethod
+    def plugin_dir() -> str:
+        """Returns the root directory of the plugin.
+
+        :returns: Root directory of the plugin.
+        :rtype: str
+        """
+        return os.path.join(os.path.dirname(os.path.realpath(__file__)))
+
+    @staticmethod
+    def get_icon(file_name: str) -> QtGui.QIcon:
+        """Creates an icon based on the icon name in the 'icons' folder.
+
+        :param file_name: File name which should include the extension.
+        :type file_name: str
+
+        :returns: Icon object matching the file name.
+        :rtype: QtGui.QIcon
+        """
+        icon_path = os.path.normpath(f"{FileUtils.plugin_dir()}/icons/{file_name}")
+
+        if not os.path.exists(icon_path):
+            return QtGui.QIcon()
+
+        return QtGui.QIcon(icon_path)
+
+    @staticmethod
+    def create_ncs_pathways_dir(base_dir: str):
+        """Creates an NCS subdirectory under BASE_DIR. Skips
+        creation of the subdirectory if it already exists.
+        """
+        if not Path(base_dir).is_dir():
+            return
+
+        ncs_pathway_dir = f"{base_dir}/{NCS_PATHWAY_SEGMENT}"
+        p = Path(ncs_pathway_dir)
+        if not p.exists():
+            try:
+                p.mkdir()
+            except FileNotFoundError:
+                log(
+                    "Missing parent directory when creating NCS pathways "
+                    "subdirectory."
+                )

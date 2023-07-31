@@ -11,6 +11,7 @@ import json
 import shlex
 import shutil
 import subprocess
+import sys
 import typing
 import zipfile
 from dataclasses import dataclass
@@ -61,6 +62,20 @@ def main(context: typer.Context, verbose: bool = False, qgis_profile: str = "def
     }
 
 
+def _qgis_profile_path() -> str:
+    """Returns the path segment to QGIS profiles folder based on the platform.
+
+    :returns: Correct path segment corresponding to the current platform.
+    :rtype: str
+    """
+    if sys.platform == "win32":
+        app_data_dir = "AppData/Roaming"
+    else:
+        app_data_dir = ".local/share"
+
+    return f"{app_data_dir}/QGIS/QGIS3/profiles/"
+
+
 @app.command()
 def install(context: typer.Context, build_src: bool = True):
     """Deploys plugin to QGIS plugins directory
@@ -80,8 +95,7 @@ def install(context: typer.Context, build_src: bool = True):
     )
 
     root_directory = (
-        Path.home() / f".local/share/QGIS/QGIS3/profiles/"
-        f"{context.obj['qgis_profile']}"
+        Path.home() / f"{_qgis_profile_path()}{context.obj['qgis_profile']}"
     )
 
     base_target_directory = root_directory / "python/plugins" / SRC_NAME
@@ -104,8 +118,7 @@ def symlink(context: typer.Context):
     build_path = LOCAL_ROOT_DIR / "build" / SRC_NAME
 
     root_directory = (
-        Path.home() / f".local/share/QGIS/QGIS3/profiles/"
-        f"{context.obj['qgis_profile']}"
+        Path.home() / f"{_qgis_profile_path()}{context.obj['qgis_profile']}"
     )
 
     destination_path = root_directory / "python/plugins" / SRC_NAME
@@ -124,8 +137,7 @@ def uninstall(context: typer.Context):
     :type context: typer.Context
     """
     root_directory = (
-        Path.home() / f".local/share/QGIS/QGIS3/profiles/"
-        f"{context.obj['qgis_profile']}"
+        Path.home() / f"{_qgis_profile_path()}{context.obj['qgis_profile']}"
     )
     base_target_directory = root_directory / "python/plugins" / SRC_NAME
     shutil.rmtree(str(base_target_directory), ignore_errors=True)
@@ -280,6 +292,12 @@ def compile_resources(
     resources_path = LOCAL_ROOT_DIR / "resources" / "resources.qrc"
     target_path = output_directory / "resources.py"
     target_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Windows handling of paths for shlex.split function
+    if sys.platform == "win32":
+        target_path = target_path.as_posix()
+        resources_path = resources_path.as_posix()
+
     _log(f"compile_resources target_path: {target_path}", context=context)
     subprocess.run(shlex.split(f"pyrcc5 -o {target_path} {resources_path}"))
 

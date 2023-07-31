@@ -10,10 +10,10 @@
 
 ### QGIS plugin for the CPLUS framework.
 
-![image](https://raw.githubusercontent.com/kartoza/cplus-plugin/master/docs/img/logos/cplus_logo.svg)
+<img src="https://raw.githubusercontent.com/kartoza/cplus-plugin/master/docs/img/logos/cplus_logo.svg" alt="CPLUS logo" width=200 height=200>
 
 
-### Versions
+### 📚 Versions
 
 * Available and supported in all the QGIS 3.x versions
 
@@ -21,8 +21,8 @@
 |-------------|----------|------|
 | 0.0.1   | 3.0          | 3.99 |
 
-### Installation
 
+### ⚙️ Installation
 
 During the development phase the plugin is available to install via
 a dedicated plugin repository 
@@ -74,10 +74,13 @@ When the development work is complete the plugin will be available on the QGIS
 official plugin [repository](https://plugins.qgis.org/plugins).
 
 
-### Development 
+### 🛠️ Development 
 
 To use the plugin for development purposes, clone the repository locally,
-install pip, a python dependencies management tool see https://pypi.org/project/pip/
+install pip, a python dependencies management tool, see https://pypi.org/project/pip/.
+
+
+Also ensure you are running Python 3.10.x as the `pre-commit` tool is configured to use this specific version.
 
 #### Create virtual environment
 
@@ -114,21 +117,21 @@ pip install virtualenvwrapper
    ```
 
 #### Plugin admin interface
-The plugin contain an admin script that can be used for various development tasks.
+The plugin contains a script that can be used for various development tasks.
 
 Install the plugin into the QGIS application, activate virtual environment the use the below command.
 ```
  python admin.py install
 ```
 
-Generate a plugin zip file using the below command, after successful run a plugin zip file will be located
+Generate a plugin zip file using the below command, after a successful run the plugin zip file will be located
 on the `dist` folder under the plugin root folder.
 
 ```
 python admin.py generate-zip
 ```
 
-### Testing
+### 🔧 Testing
 
 The plugin currently support running tests on Linux environment only, to run plugin tests use the below script
 from the plugin root.
@@ -137,7 +140,13 @@ from the plugin root.
 ```
 
 The script builds a testable plugin code and then it spins up Docker containers that contain QGIS version 3.26 
-and latest version images respectively, finally it run the available test suite.
+and latest version images respectively, finally it runs the available test suite. The script requires Python to
+have been installed in the system.
 
 When using the script for the first time it will pull the QGIS Docker images if there are not available 
-locally. After the tests have finished running the Docker containers create for the tests will be stopped and removed.
+locally. After the tests have finished running the Docker containers created for the tests will be stopped and removed.
+
+
+### 📃 Documentation
+
+The plugin documentation page is available at https://kartoza.github.io/cplus-plugin

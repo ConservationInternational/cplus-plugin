@@ -8,20 +8,38 @@ site_author: Kartoza
 
 nav:
   - Home: index.md
-  - Quickstart:
-      - Installation: quickstart/installation.md
-  - Manual:
-      - CPLUS model: manual/models.md
-      - QGIS: manual/qgis_manual.md
-  - Tutorials:
-      - Tutorials: tutorials/tutorials.md
-  - FAQ: faq/faq.md
-  - Develop:
-      - Setup: develop/setup.md
-      - Design: develop/design.md
+  - User:
+      - Installation: user/installation.md
+      - Plugin guide: user/cplus_ui_guide.md
+      - Settings: user/settings.md
+  - Admin:
+      - Bugs and suggestions: admin/tasks.md
+      - Staging version: admin/staging_version.md
+  - Developer:
+      - Setup: developer/setup.md
+      - Architecture: developer/architecture.md
+      - Documentation: developer/documentation.md
+      - API:
+          - Core:
+            - Main: developer/api/api_main.md
+            - Configuration: developer/api/api_conf.md
+            - Settings: developer/api/api_settings.md
+            - Utilities: developer/api/api_utils.md
+          - Models:
+            - Model base: developer/api/api_base.md
+            - Helpers: developer/api/api_helpers.md
+          - GUI:
+            - GUI main: developer/api/api_gui_main.md
+            - Component item model: developer/api/api_component_items.md
+            - Implementation model editor: developer/api/api_im_editor_dialog.md
+            - Implementation model widget: developer/api/api_im_widget.md
+            - Model component widget: developer/api/api_model_component_widget.md
+            - NCS Pathway editor: developer/api/api_ncs_pathway_editor.md
+            - Priority group: developer/api/api_priority_group.md
   - About:
-      - About: about/about.md
-  - Reference: api/reference.md
+      - Conservation International: about/ci.md
+      - Kartoza: about/kartoza.md
+      - License: about/license.md
 
 plugins:
   - search
@@ -34,6 +52,7 @@ plugins:
             - https://docs.python.org/3/objects.inv
             - https://mkdocstrings.github.io/autorefs/objects.inv
           options:
+            docstring_style: sphinx
             separate_signature: true
             merge_init_into_class: true
             docstring_options:
@@ -69,7 +88,6 @@ theme:
 extra:
   social:
     - icon: fontawesome/brands/github-alt
-      link: https://github.com/vermeulendivan
 
 markdown_extensions:
   - pymdownx.highlight:

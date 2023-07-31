@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>796</width>
-    <height>569</height>
+    <width>799</width>
+    <height>642</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>CPLUS</string>
   </property>
-  <widget class="QWidget" name="dockWidgetContents">
+  <widget class="QWidget" name="dock_widget_contents">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <widget class="QFrame" name="frame">
@@ -52,8 +52,8 @@
         <rect>
          <x>120</x>
          <y>10</y>
-         <width>641</width>
-         <height>80</height>
+         <width>651</width>
+         <height>81</height>
         </rect>
        </property>
        <property name="text">
@@ -71,15 +71,12 @@
         <rect>
          <x>10</x>
          <y>10</y>
-         <width>91</width>
+         <width>81</width>
          <height>81</height>
         </rect>
        </property>
        <property name="text">
         <string/>
-       </property>
-       <property name="pixmap">
-        <pixmap>../icons/cplus_logo.svg</pixmap>
        </property>
        <property name="scaledContents">
         <bool>true</bool>
@@ -88,7 +85,7 @@
      </widget>
     </item>
     <item>
-     <widget class="QTabWidget" name="tabWidget">
+     <widget class="QTabWidget" name="tab_widget">
       <property name="currentIndex">
        <number>0</number>
       </property>
@@ -97,25 +94,12 @@
         <string>Step 1</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_8">
-        <item row="3" column="0">
-         <widget class="QLabel" name="label_71">
+        <item row="4" column="0" colspan="2">
+         <widget class="QLineEdit" name="scenario_description">
           <property name="text">
-           <string>Scenario description</string>
+           <string/>
           </property>
          </widget>
-        </item>
-        <item row="6" column="0" colspan="2">
-         <spacer name="verticalSpacer_3">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>182</height>
-           </size>
-          </property>
-         </spacer>
         </item>
         <item row="2" column="0" colspan="2">
          <widget class="QLineEdit" name="scenario_name">
@@ -124,10 +108,10 @@
           </property>
          </widget>
         </item>
-        <item row="4" column="0" colspan="2">
-         <widget class="QLineEdit" name="scenario_description">
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_71">
           <property name="text">
-           <string/>
+           <string>Scenario description</string>
           </property>
          </widget>
         </item>
@@ -135,16 +119,6 @@
          <widget class="QLabel" name="label_64">
           <property name="text">
            <string>Scenario name</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_10">
-          <property name="styleSheet">
-           <string notr="true">font-weight:bold;</string>
-          </property>
-          <property name="text">
-           <string>Scenario Information</string>
           </property>
          </widget>
         </item>
@@ -161,450 +135,36 @@
           </property>
          </widget>
         </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="step_4">
-       <attribute name="title">
-        <string>Step 2</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout_10">
-        <item row="4" column="8">
-         <widget class="QToolButton" name="toolButton_15">
-          <property name="text">
-           <string>+</string>
+        <item row="8" column="0" colspan="2">
+         <spacer name="verticalSpacer_3">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
           </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyAdd.png</normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyAdd.png</iconset>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>182</height>
+           </size>
           </property>
-         </widget>
-        </item>
-        <item row="7" column="11" colspan="5">
-         <widget class="QLineEdit" name="lineEdit_15">
-          <property name="text">
-           <string>Provides additional soil carbon sequestration, reductio</string>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="9">
-         <widget class="QToolButton" name="toolButton_16">
-          <property name="text">
-           <string>-</string>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyRemove.png</normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyRemove.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="11">
-         <widget class="QLabel" name="label_72">
-          <property name="text">
-           <string>NCS Pathways</string>
-          </property>
-         </widget>
+         </spacer>
         </item>
         <item row="0" column="0">
-         <widget class="QLabel" name="label_73">
+         <widget class="QLabel" name="label_10">
+          <property name="styleSheet">
+           <string notr="true">font-weight:bold;</string>
+          </property>
           <property name="text">
-           <string/>
+           <string>Scenario Information</string>
           </property>
          </widget>
         </item>
-        <item row="3" column="11" colspan="5">
-         <widget class="QListWidget" name="listWidget_4">
-          <property name="minimumSize">
-           <size>
-            <width>375</width>
-            <height>0</height>
-           </size>
+        <item row="7" column="0">
+         <widget class="QPushButton" name="pilot_area_btn">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;pre style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; background-color:#ffffff;&quot;&gt;&lt;span style=&quot; font-family:'JetBrains Mono','monospace'; font-size:9.8pt; color:#067d17;&quot;&gt;Changes the current map canvas extent to the pilot area extent. Zoom only occurs&lt;/span&gt;&lt;/pre&gt;&lt;pre style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; background-color:#ffffff;&quot;&gt;&lt;span style=&quot; font-family:'JetBrains Mono','monospace'; font-size:9.8pt; color:#067d17;&quot;&gt;if the map canvas is using EPSG:4326 coordinate system.&lt;/span&gt;&lt;/pre&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
-          <property name="maximumSize">
-           <size>
-            <width>375</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <item>
-           <property name="text">
-            <string>Animal Management</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Avoided Deforestation</string>
-           </property>
-           <property name="background">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Avoided Grassland Conversion</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Avoided Open Woodland Conversion</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Forest Restoration</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Grassland Fire Management </string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Grassland Restoration</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Woody Encroachment Control</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-         </widget>
-        </item>
-        <item row="6" column="11">
-         <widget class="QLabel" name="label_74">
           <property name="text">
-           <string>Description</string>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="10">
-         <widget class="QToolButton" name="toolButton_17">
-          <property name="text">
-           <string>P</string>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/mActionToggleEditing.png</normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/mActionToggleEditing.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item row="7" column="0" colspan="11">
-         <widget class="QLineEdit" name="lineEdit_16"/>
-        </item>
-        <item row="6" column="0">
-         <widget class="QLabel" name="label_75">
-          <property name="text">
-           <string>Description</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0" colspan="11">
-         <widget class="QListWidget" name="listWidget_5">
-          <property name="minimumSize">
-           <size>
-            <width>375</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>375</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <item>
-           <property name="text">
-            <string>Herding for Health</string>
-           </property>
-           <property name="font">
-            <font>
-             <weight>75</weight>
-             <italic>true</italic>
-             <bold>true</bold>
-            </font>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Animal Management</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Avoided Deforestation</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Avoided Grassland Conversion</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Avoided Open Woodland Conversion</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Grassland Fire Management</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Grassland Restoration</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Woody Encroachment Control</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Eat Fresh</string>
-           </property>
-           <property name="font">
-            <font>
-             <weight>75</weight>
-             <italic>true</italic>
-             <bold>true</bold>
-            </font>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Avoided Deforestation</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Avoided Grassland Conversion</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Avoided Open Woodland Conversion</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Charcoal Naturally</string>
-           </property>
-           <property name="font">
-            <font>
-             <weight>75</weight>
-             <italic>true</italic>
-             <bold>true</bold>
-            </font>
-           </property>
-          </item>
-         </widget>
-        </item>
-        <item row="2" column="0" colspan="8">
-         <widget class="QLabel" name="label_76">
-          <property name="text">
-           <string>Implementation Models</string>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="15">
-         <widget class="QToolButton" name="toolButton_18">
-          <property name="text">
-           <string>P</string>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/mActionToggleEditing.png</normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/mActionToggleEditing.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="14">
-         <widget class="QToolButton" name="toolButton_19">
-          <property name="text">
-           <string>-</string>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyRemove.png</normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyRemove.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="13">
-         <widget class="QToolButton" name="toolButton_20">
-          <property name="text">
-           <string>+</string>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyAdd.png</normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyAdd.png</iconset>
+           <string>Zoom to Pilot Area</string>
           </property>
          </widget>
         </item>
@@ -614,70 +174,9 @@
        <attribute name="title">
         <string>Step 3</string>
        </attribute>
-       <layout class="QGridLayout" name="gridLayout_11">
-        <item row="1" column="0" colspan="9">
-         <widget class="QLabel" name="label_77">
-          <property name="text">
-           <string>Assign priority weights using the sliders. Add the priority weighting layers unique to each implementation model by clicking and dragging the layer under a group title.</string>
-          </property>
-          <property name="wordWrap">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="6">
-         <widget class="QToolButton" name="toolButton_21">
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyAdd.png</normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyAdd.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="8">
-         <widget class="QToolButton" name="toolButton_22">
-          <property name="text">
-           <string>P</string>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/mActionToggleEditing.png</normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/mActionToggleEditing.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="0">
-         <widget class="QToolButton" name="toolButton_23">
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyAdd.png</normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyAdd.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0" rowspan="2" colspan="9">
-         <widget class="Line" name="line_4">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="7">
-         <widget class="QToolButton" name="toolButton_24">
-          <property name="text">
-           <string>-</string>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyRemove.png</normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyRemove.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0" colspan="4">
-         <widget class="QLabel" name="label_78">
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="3" column="2">
+         <widget class="QLabel" name="label_122">
           <property name="font">
            <font>
             <weight>75</weight>
@@ -685,679 +184,18 @@
            </font>
           </property>
           <property name="text">
-           <string> Weighting priorities</string>
+           <string>Priority Weighting Layers</string>
           </property>
          </widget>
         </item>
-        <item row="5" column="0" colspan="4">
-         <widget class="QFrame" name="frame_4">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>215</height>
-           </size>
+        <item row="2" column="0" colspan="3">
+         <widget class="Line" name="line_4">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
           </property>
-          <property name="autoFillBackground">
-           <bool>false</bool>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">background-color: rgb(255, 255, 255)</string>
-          </property>
-          <property name="frameShape">
-           <enum>QFrame::StyledPanel</enum>
-          </property>
-          <property name="frameShadow">
-           <enum>QFrame::Raised</enum>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_12">
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_79">
-             <property name="maximumSize">
-              <size>
-               <width>16</width>
-               <height>16</height>
-              </size>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="pixmap">
-              <pixmap>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/drop-down-arrow 2.png</pixmap>
-             </property>
-             <property name="scaledContents">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QLabel" name="label_80">
-             <property name="font">
-              <font>
-               <weight>75</weight>
-               <bold>true</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string>Biodiversity</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_81">
-             <property name="maximumSize">
-              <size>
-               <width>16</width>
-               <height>16</height>
-              </size>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="pixmap">
-              <pixmap>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/drop-down-arrow.png</pixmap>
-             </property>
-             <property name="scaledContents">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="3">
-            <widget class="QSlider" name="horizontalSlider_12">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="11" column="3">
-            <widget class="QSlider" name="horizontalSlider_13">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="5">
-            <widget class="QgsSpinBox" name="mQgsSpinBox_10">
-             <property name="suffix">
-              <string>%</string>
-             </property>
-             <property name="maximum">
-              <number>100</number>
-             </property>
-            </widget>
-           </item>
-           <item row="8" column="5">
-            <widget class="QgsSpinBox" name="mQgsSpinBox_12">
-             <property name="suffix">
-              <string>%</string>
-             </property>
-             <property name="maximum">
-              <number>100</number>
-             </property>
-            </widget>
-           </item>
-           <item row="8" column="3">
-            <widget class="QSlider" name="horizontalSlider_14">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="9" column="5">
-            <widget class="QgsSpinBox" name="mQgsSpinBox_13">
-             <property name="suffix">
-              <string>%</string>
-             </property>
-             <property name="maximum">
-              <number>100</number>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="1">
-            <widget class="QLabel" name="label_82">
-             <property name="text">
-              <string>Biodiversity Eat Fresh</string>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="0">
-            <widget class="QLabel" name="label_83">
-             <property name="maximumSize">
-              <size>
-               <width>16</width>
-               <height>16</height>
-              </size>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="pixmap">
-              <pixmap>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/drop-down-arrow 2.png</pixmap>
-             </property>
-             <property name="scaledContents">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="5">
-            <widget class="QgsSpinBox" name="mQgsSpinBox_14">
-             <property name="suffix">
-              <string>%</string>
-             </property>
-             <property name="maximum">
-              <number>100</number>
-             </property>
-            </widget>
-           </item>
-           <item row="8" column="2">
-            <widget class="QLabel" name="label_84">
-             <property name="text">
-              <string>Low</string>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="2">
-            <widget class="QLabel" name="label_85">
-             <property name="text">
-              <string>Low</string>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="2">
-            <widget class="QLabel" name="label_86">
-             <property name="text">
-              <string>Low</string>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="0">
-            <widget class="QLabel" name="label_87">
-             <property name="maximumSize">
-              <size>
-               <width>16</width>
-               <height>16</height>
-              </size>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="pixmap">
-              <pixmap>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/drop-down-arrow 2.png</pixmap>
-             </property>
-             <property name="scaledContents">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="9" column="4">
-            <widget class="QLabel" name="label_88">
-             <property name="text">
-              <string>High</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="5">
-            <widget class="QgsSpinBox" name="mQgsSpinBox_15">
-             <property name="suffix">
-              <string>%</string>
-             </property>
-             <property name="maximum">
-              <number>100</number>
-             </property>
-            </widget>
-           </item>
-           <item row="10" column="3">
-            <widget class="QSlider" name="horizontalSlider_15">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="1">
-            <widget class="QLabel" name="label_89">
-             <property name="font">
-              <font>
-               <weight>75</weight>
-               <bold>true</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string>Ecological Infrastructure</string>
-             </property>
-            </widget>
-           </item>
-           <item row="11" column="0">
-            <widget class="QLabel" name="label_90">
-             <property name="maximumSize">
-              <size>
-               <width>16</width>
-               <height>16</height>
-              </size>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="pixmap">
-              <pixmap>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/drop-down-arrow 2.png</pixmap>
-             </property>
-             <property name="scaledContents">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="3">
-            <widget class="QSlider" name="horizontalSlider_16">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="4">
-            <widget class="QLabel" name="label_91">
-             <property name="text">
-              <string>High</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="2">
-            <widget class="QLabel" name="label_92">
-             <property name="text">
-              <string>Low</string>
-             </property>
-            </widget>
-           </item>
-           <item row="11" column="2">
-            <widget class="QLabel" name="label_93">
-             <property name="text">
-              <string>Low</string>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="4">
-            <widget class="QLabel" name="label_94">
-             <property name="text">
-              <string>High</string>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="3">
-            <widget class="QSlider" name="horizontalSlider_17">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="8" column="0">
-            <widget class="QLabel" name="label_95">
-             <property name="maximumSize">
-              <size>
-               <width>16</width>
-               <height>16</height>
-              </size>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="pixmap">
-              <pixmap>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/drop-down-arrow 2.png</pixmap>
-             </property>
-             <property name="scaledContents">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="9" column="2">
-            <widget class="QLabel" name="label_96">
-             <property name="text">
-              <string>Low</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="3">
-            <widget class="QSlider" name="horizontalSlider_18">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="2">
-            <widget class="QLabel" name="label_97">
-             <property name="text">
-              <string>Low</string>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="1">
-            <widget class="QLabel" name="label_98">
-             <property name="font">
-              <font>
-               <weight>75</weight>
-               <bold>true</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string>Livelihoods</string>
-             </property>
-            </widget>
-           </item>
-           <item row="8" column="1">
-            <widget class="QLabel" name="label_99">
-             <property name="font">
-              <font>
-               <weight>75</weight>
-               <bold>true</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string>Finance- Years Experience</string>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="4">
-            <widget class="QLabel" name="label_100">
-             <property name="text">
-              <string>High</string>
-             </property>
-            </widget>
-           </item>
-           <item row="10" column="1">
-            <widget class="QLabel" name="label_101">
-             <property name="font">
-              <font>
-               <weight>75</weight>
-               <bold>true</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string>Finance - Net Present Value</string>
-             </property>
-            </widget>
-           </item>
-           <item row="10" column="0">
-            <widget class="QLabel" name="label_102">
-             <property name="maximumSize">
-              <size>
-               <width>16</width>
-               <height>16</height>
-              </size>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="pixmap">
-              <pixmap>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/drop-down-arrow 2.png</pixmap>
-             </property>
-             <property name="scaledContents">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="4">
-            <widget class="QLabel" name="label_103">
-             <property name="text">
-              <string>High</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QLabel" name="label_104">
-             <property name="font">
-              <font>
-               <weight>75</weight>
-               <bold>true</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string>Carbon importance</string>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="3">
-            <widget class="QSlider" name="horizontalSlider_19">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="9" column="3">
-            <widget class="QSlider" name="horizontalSlider_20">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="4">
-            <widget class="QLabel" name="label_105">
-             <property name="text">
-              <string>High</string>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="5">
-            <widget class="QgsSpinBox" name="mQgsSpinBox_16">
-             <property name="suffix">
-              <string>%</string>
-             </property>
-             <property name="maximum">
-              <number>100</number>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="5">
-            <widget class="QgsSpinBox" name="mQgsSpinBox_17">
-             <property name="suffix">
-              <string>%</string>
-             </property>
-             <property name="maximum">
-              <number>100</number>
-             </property>
-            </widget>
-           </item>
-           <item row="10" column="4">
-            <widget class="QLabel" name="label_106">
-             <property name="text">
-              <string>High</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QLabel" name="label_107">
-             <property name="text">
-              <string>Biodiversity Herding for Health</string>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="0">
-            <widget class="QLabel" name="label_108">
-             <property name="maximumSize">
-              <size>
-               <width>16</width>
-               <height>16</height>
-              </size>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="pixmap">
-              <pixmap>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/drop-down-arrow 2.png</pixmap>
-             </property>
-             <property name="scaledContents">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="1">
-            <widget class="QLabel" name="label_109">
-             <property name="font">
-              <font>
-               <weight>75</weight>
-               <bold>true</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string>Policy</string>
-             </property>
-            </widget>
-           </item>
-           <item row="8" column="4">
-            <widget class="QLabel" name="label_110">
-             <property name="text">
-              <string>High</string>
-             </property>
-            </widget>
-           </item>
-           <item row="10" column="2">
-            <widget class="QLabel" name="label_111">
-             <property name="text">
-              <string>Low</string>
-             </property>
-            </widget>
-           </item>
-           <item row="11" column="5">
-            <widget class="QgsSpinBox" name="mQgsSpinBox_18">
-             <property name="suffix">
-              <string>%</string>
-             </property>
-             <property name="maximum">
-              <number>100</number>
-             </property>
-            </widget>
-           </item>
-           <item row="9" column="0">
-            <widget class="QLabel" name="label_112">
-             <property name="maximumSize">
-              <size>
-               <width>16</width>
-               <height>16</height>
-              </size>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="pixmap">
-              <pixmap>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/drop-down-arrow 2.png</pixmap>
-             </property>
-             <property name="scaledContents">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="9" column="1">
-            <widget class="QLabel" name="label_113">
-             <property name="font">
-              <font>
-               <weight>75</weight>
-               <bold>true</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string>Finance - Market Trends</string>
-             </property>
-            </widget>
-           </item>
-           <item row="10" column="5">
-            <widget class="QgsSpinBox" name="mQgsSpinBox_19">
-             <property name="suffix">
-              <string>%</string>
-             </property>
-             <property name="maximum">
-              <number>100</number>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="2">
-            <widget class="QLabel" name="label_114">
-             <property name="text">
-              <string>Low</string>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="1">
-            <widget class="QLabel" name="label_115">
-             <property name="font">
-              <font>
-               <weight>75</weight>
-               <bold>true</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string>Climate Resilience </string>
-             </property>
-            </widget>
-           </item>
-           <item row="11" column="1">
-            <widget class="QLabel" name="label_116">
-             <property name="font">
-              <font>
-               <weight>75</weight>
-               <bold>true</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string>Finance - Carbon</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="2">
-            <widget class="QLabel" name="label_117">
-             <property name="text">
-              <string>Low</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="4">
-            <widget class="QLabel" name="label_118">
-             <property name="text">
-              <string>High</string>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="5">
-            <widget class="QgsSpinBox" name="mQgsSpinBox_20">
-             <property name="suffix">
-              <string>%</string>
-             </property>
-             <property name="maximum">
-              <number>100</number>
-             </property>
-            </widget>
-           </item>
-           <item row="11" column="4">
-            <widget class="QLabel" name="label_119">
-             <property name="text">
-              <string>High</string>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="0">
-            <widget class="QLabel" name="label_120">
-             <property name="maximumSize">
-              <size>
-               <width>16</width>
-               <height>16</height>
-              </size>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="pixmap">
-              <pixmap>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/drop-down-arrow 2.png</pixmap>
-             </property>
-             <property name="scaledContents">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="3">
-            <widget class="QSlider" name="horizontalSlider_21">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-          </layout>
          </widget>
         </item>
-        <item row="4" column="0" colspan="4">
+        <item row="3" column="0">
          <widget class="QLabel" name="label_121">
           <property name="font">
            <font>
@@ -1370,146 +208,18 @@
           </property>
          </widget>
         </item>
-        <item row="6" column="1">
-         <widget class="QToolButton" name="toolButton_25">
+        <item row="1" column="0" colspan="3">
+         <widget class="QLabel" name="label_77">
           <property name="text">
-           <string>-</string>
+           <string>Assign priority weights using the sliders. Add the priority weighting layers unique to each implementation model by clicking and dragging the layer under a group title.</string>
           </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyRemove.png</normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/symbologyRemove.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="2">
-         <widget class="QToolButton" name="toolButton_26">
-          <property name="text">
-           <string>P</string>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/mActionToggleEditing.png</normaloff>../../../../../../Nextcloud/Projects (2)/Conservation International/CPLUS - work/Downloads/mActionToggleEditing.png</iconset>
+          <property name="wordWrap">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
-        <item row="5" column="4" colspan="5">
-         <widget class="QListWidget" name="listWidget_6">
-          <item>
-           <property name="text">
-            <string>Carbon importance Herding for Health</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Carbon importance Eat Fresh</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Biodiversity Herding for Health</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Biodiversity Eat Fresh</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>PWL 1</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>PWL 2</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>PWL 3</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>PWL 4</string>
-           </property>
-           <property name="foreground">
-            <brush brushstyle="NoBrush">
-             <color alpha="255">
-              <red>154</red>
-              <green>153</green>
-              <blue>150</blue>
-             </color>
-            </brush>
-           </property>
-          </item>
-         </widget>
-        </item>
-        <item row="4" column="4">
-         <widget class="QLabel" name="label_122">
+        <item row="0" column="0" colspan="2">
+         <widget class="QLabel" name="label_78">
           <property name="font">
            <font>
             <weight>75</weight>
@@ -1517,9 +227,115 @@
            </font>
           </property>
           <property name="text">
-           <string>Priority Weighting Layers</string>
+           <string> Weighting priorities</string>
           </property>
          </widget>
+        </item>
+        <item row="5" column="2">
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="run_scenario_btn">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+              <horstretch>10</horstretch>
+              <verstretch>3</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Run Scenario</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="4" column="0">
+         <widget class="QTreeWidget" name="priority_groups_list">
+          <property name="columnCount">
+           <number>1</number>
+          </property>
+          <attribute name="headerVisible">
+           <bool>false</bool>
+          </attribute>
+          <column>
+           <property name="text">
+            <string notr="true">1</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <spacer name="verticalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QToolButton" name="layer_remove_btn">
+            <property name="toolTip">
+             <string>Remove selected priority weighting layer from the group.</string>
+            </property>
+            <property name="text">
+             <string>-&gt;</string>
+            </property>
+            <property name="icon">
+             <iconset>
+              <normaloff>../../../../../../../../../../../../resources/cplus_right_arrow.svg</normaloff>../../../../../../../../../../../../resources/cplus_right_arrow.svg</iconset>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QToolButton" name="layer_add_btn">
+            <property name="toolTip">
+             <string>Add the selected priority weighting layer to the group.</string>
+            </property>
+            <property name="text">
+             <string>&lt;-</string>
+            </property>
+            <property name="icon">
+             <iconset>
+              <normaloff>../../../../../../../../../../../../resources/cplus_left_arrow.svg</normaloff>../../../../../../../../../../../../resources/cplus_left_arrow.svg</iconset>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="verticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item row="4" column="2">
+         <widget class="QListWidget" name="priority_layers_list"/>
         </item>
        </layout>
       </widget>
@@ -1562,19 +378,6 @@
           </property>
          </spacer>
         </item>
-        <item>
-         <widget class="QPushButton" name="run_btn">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>Run </string>
-          </property>
-         </widget>
-        </item>
        </layout>
       </item>
      </layout>
@@ -1594,11 +397,6 @@
    <extends>QgsCollapsibleGroupBox</extends>
    <header>qgsextentgroupbox.h</header>
    <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>QgsSpinBox</class>
-   <extends>QSpinBox</extends>
-   <header>qgsspinbox.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

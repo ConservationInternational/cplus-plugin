@@ -3,6 +3,7 @@ name: Creating plugin package in the PR
 on:
   pull_request:
     types:
+      - edited
       - opened
       - reopened
       - synchronize
