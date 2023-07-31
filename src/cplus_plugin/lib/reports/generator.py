@@ -17,8 +17,6 @@ from qgis.core import (
 
 from qgis.PyQt import QtCore, QtXml
 
-from ...conf import Settings, settings_manager
-from ...definitions.constants import OUTPUTS_SEGMENT
 from ...models.report import ReportContext, ReportResult
 from ...utils import log, tr
 from .variables import LayoutVariableRegister
@@ -32,33 +30,6 @@ class ReportGeneratorTask(QgsTask):
         self._context = context
         self._result = None
         self._generator = ReportGenerator(self._context)
-
-        # Save active project instance to file and have it
-        # recreated by the generator since QgsProject
-        # instances are not thread safe.
-        proj_file = QtCore.QTemporaryFile()
-        if proj_file.open():
-            file_path = proj_file.fileName()
-            project_file_path = f"{file_path}.qgz"
-            storage_type = QgsProject.instance().filePathStorage()
-            QgsProject.instance().setFilePathStorage(Qgis.FilePathType.Absolute)
-            result = QgsProject.instance().write(project_file_path)
-            QgsProject.instance().setFilePathStorage(storage_type)
-            if result:
-                self._context.project_file = project_file_path
-
-        # Set base name for the layout and PDF file suffixed with a number
-        # depending on the number of runs.
-        layout_manager = QgsProject.instance().layoutManager()
-        counter = 1
-        scenario_name = self._context.scenario.name
-        while True:
-            layout_name = f"{scenario_name} {counter!s}"
-            matching_layout = layout_manager.layoutByName(layout_name)
-            if matching_layout is None:
-                self._context.name = layout_name
-                break
-            counter += 1
 
     @property
     def context(self) -> ReportContext:
@@ -115,21 +86,28 @@ class ReportGeneratorTask(QgsTask):
                 f"Successfully generated the report for "
                 f"{self._context.scenario.name} scenario."
             )
-            layout = self._generator.layout
-            if layout is None:
+
+            layout_path = self._generator.output_layout_path
+            if not layout_path:
+                log("Output layout could not be saved.", info=False)
                 return
 
-            # Force ownership to main thread by cloning layout
-            reference_layout = layout.clone()
-            QgsProject.instance().layoutManager().addLayout(reference_layout)
+            project = QgsProject.instance()
+            layout = _load_layout_from_file(layout_path, project)
+            if layout is None:
+                log("Could not load layout from file.", info=False)
+                return
+
+            project.layoutManager().addLayout(layout)
 
         else:
             log(
                 f"Error occurred when generating the "
                 f"report for {self._context.scenario.name} "
-                f"scenario. See details below:"
+                f"scenario. See details below:",
+                info=False,
             )
-            for err in self.result.messages:
+            for err in self._result.messages:
                 err_msg = f"{self._context.scenario.name} - {err}"
                 log(err_msg, info=False)
 
@@ -143,7 +121,8 @@ class ReportGenerator:
         self._layout = None
         self._project = None
         self._variable_register = LayoutVariableRegister()
-        self._output_dir = ""
+        self._report_output_dir = ""
+        self._output_layout_path = ""
 
     @property
     def context(self) -> ReportContext:
@@ -163,6 +142,21 @@ class ReportGenerator:
         :rtype: QgsPrintLayout
         """
         return self._layout
+
+    @property
+    def output_layout_path(self) -> str:
+        """Absolute path to a temporary file containing the
+        layout as a QPT file.
+
+        When this object is used within a QgsTask, it is
+        recommended to use this layout path to reconstruct
+        the layout rather calling the `layout` attribute since
+        it was created in a separate thread.
+
+        :returns: Path to the layout template file.
+        :rtype: str
+        """
+        return self._output_layout_path
 
     def _set_project(self):
         """Deserialize the project from the report context."""
@@ -212,54 +206,10 @@ class ReportGenerator:
         will be saved.
         :rtype: str
         """
-        if not self._output_dir:
-            base_dir = settings_manager.get_value(Settings.BASE_DIR, "")
-            if not base_dir:
-                tr_msg = tr("Base directory has not yet been specified.")
-                self._error_messages.append(tr_msg)
-                return ""
+        output_dir = f"{self._context.scenario_output_dir}/reports"
 
-            if not Path(base_dir).exists():
-                tr_msg = tr("Base directory does not exist")
-                self._error_messages.append(f"{tr_msg} {base_dir}.")
-                return ""
-
-            if not os.access(base_dir, os.W_OK):
-                tr_msg = tr("No permission to write to base directory")
-                self._error_messages.append(f"{tr_msg} {base_dir}.")
-                return ""
-
-            # Create outputs directory
-            p = Path(f"{base_dir}/{OUTPUTS_SEGMENT}")
-            if not p.exists():
-                try:
-                    p.mkdir()
-                except FileNotFoundError:
-                    tr_msg = (
-                        "Missing parent directory when creating "
-                        "outputs subdirectory in the base directory."
-                    )
-                    self._error_messages.append(tr_msg)
-                    return ""
-
-            scenario_id = str(self._context.scenario.uuid)
-
-            # Create scenario directory
-            p = Path(f"{base_dir}/{OUTPUTS_SEGMENT}/{scenario_id}")
-            if not p.exists():
-                try:
-                    p.mkdir()
-                except FileNotFoundError:
-                    tr_msg = (
-                        "Missing parent directory when creating "
-                        "subdirectory for scenario"
-                    )
-                    self._error_messages.append(f"{tr_msg} {scenario_id}.")
-                    return ""
-
-            # Create reports directory
-            output_dir = f"{base_dir}/{OUTPUTS_SEGMENT}/" f"{scenario_id}/reports"
-
+        # Create reports directory
+        if not self._report_output_dir:
             p = Path(output_dir)
             if not p.exists():
                 try:
@@ -272,9 +222,9 @@ class ReportGenerator:
                     self._error_messages.append(tr_msg)
                     return ""
 
-                self._output_dir = output_dir
+        self._report_output_dir = output_dir
 
-        return self._output_dir
+        return self._report_output_dir
 
     def run(self) -> ReportResult:
         """Initiates the report generation process and returns
@@ -299,6 +249,10 @@ class ReportGenerator:
 
         self._export_to_pdf()
 
+        result = self._save_layout_to_file()
+        if not result:
+            return self._get_failed_result()
+
         return ReportResult(
             True,
             self._context.scenario.uuid,
@@ -306,6 +260,27 @@ class ReportGenerator:
             tuple(self._error_messages),
             self._context.name,
         )
+
+    def _save_layout_to_file(self) -> bool:
+        """Serialize the layout to a temporary file."""
+        temp_layout_file = QtCore.QTemporaryFile()
+        if not temp_layout_file.open():
+            tr_msg = tr("Could not open temporary file to write the layout.")
+            self._error_messages.append(tr_msg)
+            return False
+
+        file_name = temp_layout_file.fileName()
+        self._output_layout_path = f"{file_name}.qpt"
+
+        result = self._layout.saveAsTemplate(
+            self._output_layout_path, QgsReadWriteContext()
+        )
+        if not result:
+            tr_msg = tr("Could not save the layout template.")
+            self._error_messages.append(tr_msg)
+            return False
+
+        return True
 
     def _get_failed_result(self) -> ReportResult:
         """Creates the report result object."""
@@ -342,43 +317,60 @@ class ReportGenerator:
         else False.
         :rtype: bool
         """
-        p = Path(self._context.template_path)
-        if not p.exists():
-            tr_msg = tr("Template file does not exist")
-            self._error_messages.append(f"{tr_msg} {self._context.template_path}.")
+        layout = _load_layout_from_file(
+            self._context.template_path, self._project, self._error_messages
+        )
+        if layout is None:
             return False
 
-        template_file = QtCore.QFile(self._context.template_path)
-        doc = QtXml.QDomDocument()
-        doc_status = True
-        try:
-            if not template_file.open(QtCore.QIODevice.ReadOnly):
-                tr_msg = tr("Unable to read template file")
-                self._error_messages.append(f"{tr_msg} {self._context.template_path}.")
-                doc_status = False
-
-            if doc_status:
-                if not doc.setContent(template_file):
-                    tr_msg = tr("Failed to parse template file contents")
-                    self._error_messages.append(
-                        f"{tr_msg} {self._context.template_path}."
-                    )
-                    doc_status = False
-        finally:
-            template_file.close()
-
-        if not doc_status:
-            return False
-
-        self._layout = QgsPrintLayout(self._project)
-        _, load_status = self._layout.loadFromTemplate(doc, QgsReadWriteContext())
-        if not load_status:
-            tr_msg = tr("Could not load template from")
-            self._error_messages.append(f"{tr_msg} {self._context.template_path}.")
-            return False
-
+        self._layout = layout
         self._variable_register.register_variables(self._layout)
-
         self._layout.setName(self._context.name)
 
         return True
+
+
+def _load_layout_from_file(
+    template_path: str, project: QgsProject, error_messages: list = None
+) -> typing.Union[QgsPrintLayout, None]:
+    """Util for loading layout templates from a file. It supports
+    an optional argument for list to write error messages.
+    """
+    p = Path(template_path)
+    if not p.exists():
+        if error_messages:
+            tr_msg = tr("Template file does not exist")
+            error_messages.append(f"{tr_msg} {template_path}.")
+        return None
+
+    template_file = QtCore.QFile(template_path)
+    doc = QtXml.QDomDocument()
+    doc_status = True
+    try:
+        if not template_file.open(QtCore.QIODevice.ReadOnly):
+            if error_messages:
+                tr_msg = tr("Unable to read template file")
+                error_messages.append(f"{tr_msg} {template_path}.")
+            doc_status = False
+
+        if doc_status:
+            if not doc.setContent(template_file):
+                if error_messages:
+                    tr_msg = tr("Failed to parse template file contents")
+                    error_messages.append(f"{tr_msg} {template_path}.")
+                doc_status = False
+    finally:
+        template_file.close()
+
+    if not doc_status:
+        return None
+
+    layout = QgsPrintLayout(project)
+    _, load_status = layout.loadFromTemplate(doc, QgsReadWriteContext())
+    if not load_status:
+        if error_messages:
+            tr_msg = tr("Could not load template from")
+            error_messages.append(f"{tr_msg} {template_path}.")
+        return None
+
+    return layout

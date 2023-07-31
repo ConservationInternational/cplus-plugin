@@ -366,6 +366,13 @@
          </widget>
         </item>
         <item>
+         <widget class="QPushButton" name="btn_rpt_run">
+          <property name="text">
+           <string>Run (Temp)</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="btn_layout">
           <property name="text">
            <string>Designer (Temp)</string>

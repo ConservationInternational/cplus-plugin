@@ -91,6 +91,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         # Temporary to remove
         self.btn_layout.clicked.connect(self.open_designer)
         self.btn_pdf.clicked.connect(self.open_pdf)
+        self.btn_rpt_run.clicked.connect(self.run_report)
 
         # Step 3, priority weighting layers initialization
         self.priority_groups_widgets = {}
@@ -660,7 +661,20 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.iface.showOptionsDialog(currentPage=OPTIONS_TITLE)
 
     def open_designer(self):
-        result = report_manager.generate()
+        sid = "aec4e7f3-b5c6-434c-bf0a-2f6ebf0db926"
+        result = report_manager.report_result(sid)
+        if result is None:
+            log("Result not found")
+        else:
+            status = report_manager.open_layout_designer(result)
 
     def open_pdf(self):
-        pass
+        sid = "aec4e7f3-b5c6-434c-bf0a-2f6ebf0db926"
+        result = report_manager.report_result(sid)
+        if result is None:
+            log("Result not found")
+        else:
+            status = report_manager.view_pdf(result)
+
+    def run_report(self):
+        report_manager.generate()

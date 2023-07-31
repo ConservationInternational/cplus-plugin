@@ -3,16 +3,21 @@
 Registers custom report variables for layout design
 and handles report generation.
 """
+import os
+from pathlib import Path
 import typing
 import uuid
 
-from qgis.PyQt import QtCore
+from qgis.core import Qgis, QgsApplication, QgsProject, QgsPrintLayout, QgsTask
+from qgis.utils import iface
 
-from qgis.core import QgsApplication, QgsPrintLayout, QgsTask
+from qgis.PyQt import QtCore, QtGui
 
+from ...conf import settings_manager, Settings
+from ...definitions.constants import OUTPUTS_SEGMENT
 from ...models.base import Scenario, SpatialExtent
 from ...models.report import ReportContext, ReportResult
-from ...utils import FileUtils, tr
+from ...utils import FileUtils, log, tr
 
 from .generator import ReportGeneratorTask
 from .variables import LayoutVariableRegister
@@ -33,10 +38,17 @@ class ReportManager(QtCore.QObject):
 
         # Task id (value) indexed by scenario id (key)
         self._report_tasks = {}
+
         # Report results (value) indexed by scenario id (key)
         self._report_results = {}
+
         self.tm = QgsApplication.instance().taskManager()
         self.tm.statusChanged.connect(self.on_task_status_changed)
+
+        self.root_output_dir = ""
+        base_dir = settings_manager.get_value(Settings.BASE_DIR, "")
+        if base_dir:
+            self.root_output_dir = f"{base_dir}/{OUTPUTS_SEGMENT}"
 
     @property
     def variable_register(self) -> LayoutVariableRegister:
@@ -109,11 +121,11 @@ class ReportManager(QtCore.QObject):
                 self._report_results[scenario_id] = result
 
             # Remove task
-            self.remove_scenario_task(scenario_id)
+            self.remove_report_task(scenario_id)
 
             self.generate_completed.emit(scenario_id)
 
-    def remove_scenario_task(self, scenario_id: str) -> bool:
+    def remove_report_task(self, scenario_id: str) -> bool:
         """Remove report task associated with the given scenario.
 
         :param scenario_id: Identified of the scenario whose report
@@ -143,6 +155,54 @@ class ReportManager(QtCore.QObject):
 
         return True
 
+    def create_scenario_dir(self, scenario: Scenario) -> str:
+        """Creates an output directory (within BASE_DIR) for saving the
+        analysis outputs for the given scenario.
+
+        :param scenario: Reference scenario object.
+        :type scenario: Scenario
+
+        :returns: The absolute path to the output directory. If
+        BASE_DIR does not exist, it will not create the directory and
+        will return an empty string. If the current user does not have
+        write permissions to the base directory, it will return an
+        empty string.
+        :rtype: str
+        """
+        if not self.root_output_dir:
+            return ""
+
+        if not os.access(self.root_output_dir, os.W_OK):
+            log("No permission to write to output directory.")
+            return ""
+
+        output_path = Path(self.root_output_dir)
+        if not output_path.exists():
+            try:
+                output_path.mkdir()
+            except FileNotFoundError:
+                msg = (
+                    "Missing parent directory when creating "
+                    "outputs subdirectory in the base directory."
+                )
+                log(msg)
+                return ""
+
+        scenario_path_str = f"{self.root_output_dir}/{str(scenario.uuid)}"
+        scenario_output_path = Path(scenario_path_str)
+        if not scenario_output_path.exists():
+            try:
+                scenario_output_path.mkdir()
+            except FileNotFoundError:
+                msg = (
+                    "Missing parent directory when creating "
+                    "scenario subdirectory in the outputs directory."
+                )
+                log(msg)
+                return ""
+
+        return scenario_path_str
+
     def generate(self) -> bool:
         """Initiates the report generation process using information
         resulting from the scenario analysis.
@@ -153,15 +213,15 @@ class ReportManager(QtCore.QObject):
         """
         # TODO: Code below needs to be refactored based on how the
         #  results of the output are packaged.
-        template_path = FileUtils.report_template_path()
         scenario = Scenario(
-            uuid.uuid4(),
+            uuid.UUID("aec4e7f3-b5c6-434c-bf0a-2f6ebf0db926"),
             "Test Scenario",
             "This is a temporary scenario object for testing report production.",
             SpatialExtent([-23.960197335, 32.069186664, -25.201606226, 30.743498637]),
+            models=[],
         )
 
-        ctx = ReportContext(template_path, scenario, self.report_name)
+        ctx = self.create_report_context(scenario)
 
         scenario_id = str(ctx.scenario.uuid)
         if scenario_id in self._report_tasks:
@@ -195,7 +255,64 @@ class ReportManager(QtCore.QObject):
 
         return self._report_results[scenario_id]
 
-    def open_layout_designer(self, result: ReportResult) -> bool:
+    def create_report_context(
+        self, scenario: Scenario
+    ) -> typing.Union[ReportContext, None]:
+        """Creates the report context for use in the report
+        generator task.
+
+        :param scenario: Scenario whose report context will be created
+        under BASE_DIR.
+        :type scenario: Scenario
+
+        :returns: A report context object containing the information
+        for generating the report else None if it could not be created.
+        :rtype: ReportContext
+        """
+        output_dir = self.create_scenario_dir(scenario)
+        if not output_dir:
+            return None
+
+        project_file_path = f"{output_dir}/{scenario.name}.qgz"
+        if os.path.exists(project_file_path):
+            counter = 1
+            while True:
+                project_file_path = f"{output_dir}/{scenario.name}_{counter!s}.qgz"
+                if not os.path.exists(project_file_path):
+                    break
+                counter += 1
+
+        # Write project to file for use in the task since QgsProject
+        # instances are not thread safe.
+        storage_type = QgsProject.instance().filePathStorage()
+        QgsProject.instance().setFilePathStorage(Qgis.FilePathType.Absolute)
+        result = QgsProject.instance().write(project_file_path)
+        QgsProject.instance().setFilePathStorage(storage_type)
+
+        if not result:
+            return None
+
+        # Set base name for the layout and PDF file suffixed with a number
+        # depending on the number of runs.
+        layout_manager = QgsProject.instance().layoutManager()
+        counter = 1
+        context_name = ""
+        while True:
+            layout_name = f"{scenario.name} {counter!s}"
+            matching_layout = layout_manager.layoutByName(layout_name)
+            if matching_layout is None:
+                context_name = layout_name
+                break
+            counter += 1
+
+        template_path = FileUtils.report_template_path()
+
+        return ReportContext(
+            template_path, scenario, context_name, output_dir, project_file_path
+        )
+
+    @classmethod
+    def open_layout_designer(cls, result: ReportResult) -> bool:
         """Opens the analysis report in the layout designer. The
         layout needs to exist in the currently loaded project.
 
@@ -208,9 +325,19 @@ class ReportManager(QtCore.QObject):
         or if the layout does not exist in the current project.
         :rtype: bool
         """
-        pass
+        if not result.success:
+            return False
 
-    def view_pdf(self, result: ReportResult) -> bool:
+        layout = QgsProject.instance().layoutManager().layoutByName(result.name)
+        if layout is None:
+            return False
+
+        iface.openLayoutDesigner(layout)
+
+        return True
+
+    @classmethod
+    def view_pdf(cls, result: ReportResult) -> bool:
         """Opens the analysis in the host's default PDF viewer.
 
         :param result: Result object from the report generation
@@ -221,7 +348,14 @@ class ReportManager(QtCore.QObject):
         False if the result from the generation process was False.
         :rtype: bool
         """
-        pass
+        if not result.success:
+            return False
+
+        pdf_url = QtCore.QUrl.fromLocalFile(result.pdf_path)
+        if pdf_url.isEmpty():
+            return False
+
+        return QtGui.QDesktopServices.openUrl(pdf_url)
 
 
 report_manager = ReportManager()

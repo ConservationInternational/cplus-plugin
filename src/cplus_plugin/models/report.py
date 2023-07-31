@@ -16,7 +16,8 @@ class ReportContext:
     template_path: str
     scenario: Scenario
     name: str
-    project_file: str = ""
+    scenario_output_dir: str
+    project_file: str
 
 
 @dataclasses.dataclass

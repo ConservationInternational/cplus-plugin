@@ -18,7 +18,14 @@ from qgis.core import QgsApplication, QgsMasterLayoutInterface, QgsSettings
 from qgis.gui import QgsGui, QgsLayoutDesignerInterface
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QDockWidget, QMainWindow, QMenu, QToolButton, QVBoxLayout
+from qgis.PyQt.QtWidgets import (
+    QAction,
+    QDockWidget,
+    QMainWindow,
+    QMenu,
+    QToolButton,
+    QVBoxLayout,
+)
 
 # Initialize Qt resources from file resources.py
 from .resources import *

@@ -4,6 +4,7 @@
 """
 
 import dataclasses
+import datetime
 from enum import Enum, IntEnum
 import os.path
 import typing
@@ -365,3 +366,13 @@ class Scenario(BaseModelComponent):
     extent: SpatialExtent
     # TODO: Confirm if this should be weighted model instead.
     models: typing.List[ImplementationModel]
+    state: ScenarioState = ScenarioState.IDLE
+
+
+@dataclasses.dataclass
+class ScenarioResult:
+    """Scenario result details."""
+
+    scenario: Scenario
+    layers: typing.Dict[str, QgsMapLayer]
+    created_date: datetime.datetime
