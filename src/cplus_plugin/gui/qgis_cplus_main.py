@@ -111,6 +111,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.prepare_message_bar()
 
         self.progress_bar = QtWidgets.QProgressBar()
+        self.progress_dialog = None
 
         self.help_btn.clicked.connect(self.open_help)
         self.pilot_area_btn.clicked.connect(self.zoom_pilot_area)
@@ -395,24 +396,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         and checks whether the AOI is outside the pilot study area.
         """
 
-        # print('run scenario')
-        #
-        # # Create progress dialog ===========================================================================================
-        # self.progress_dialog = ProgressDialog("Starting processing...", 0, 100)
-        # run_progress_dialog = QgsTask.fromFunction(
-        #     "Progress dialog",
-        #     self.progress_dialog.run,
-        # )
-        # QgsApplication.taskManager().addTask(run_progress_dialog)
-        #
-        # # Just a test
-        # y = 0
-        # while y <= 10:
-        #     self.progress_dialog.update_progress_bar(y * 10)
-        #     y = y + 1
-        #
-        # print('after dialog')
-
         extent_list = PILOT_AREA_EXTENT["coordinates"]
         default_extent = QgsRectangle(
             extent_list[3], extent_list[2], extent_list[1], extent_list[0]
@@ -469,6 +452,33 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 tr(f"Selected area of interest is inside the pilot area."),
                 level=Qgis.Info,
             )
+            try:
+                # Creates and opens the progress dialog for the analysis
+                self.progress_dialog = ProgressDialog(
+                    "Calculating the highest position...",
+                    scenario_name,
+                    0,
+                    100,
+                )
+                run_progress_dialog = QgsTask.fromFunction(
+                    "Progress dialog",
+                    self.progress_dialog.run,
+                )
+                QgsApplication.taskManager().addTask(run_progress_dialog)
+            except Exception as err:
+                self.show_message(
+                    tr(
+                        "An error occurred when opening the progress dialog, "
+                        "check logs for more information"
+                    ),
+                    level=Qgis.Info,
+                )
+                log(
+                    tr(
+                        "An error occurred when opening the progress dialog for "
+                        'scenario analysis, error message "{}"'.format(err)
+                    )
+                )
             try:
                 layers = []
                 extent = (

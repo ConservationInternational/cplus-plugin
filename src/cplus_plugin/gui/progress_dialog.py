@@ -32,27 +32,35 @@ Ui_DlgProgress, _ = uic.loadUiType(
 
 class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
     """This progress dialog"""
+
     def __init__(
         self,
         init_message="Processing...",
+        scenario_name="Scenario",
         minimum=0,
         maximum=100,
         parent=None,
     ):
         super().__init__(parent)
         self.setupUi(self)
+        self.scenario_name = scenario_name
 
         # Dialog window options
         self.setWindowIcon(QIcon(ICON_PATH))
 
         # Dialog window flags
-        flags = (QtCore.Qt.WindowMinimizeButtonHint | QtCore.Qt.WindowCloseButtonHint)
+        flags = QtCore.Qt.WindowMinimizeButtonHint | QtCore.Qt.WindowCloseButtonHint
         self.setWindowFlags(flags)
 
         # Dialog statuses
         self.task = None
         self.analysis_running = True
-        self.lbl_status.setText(init_message)
+        self.lbl_status.setText(
+            "{}: {}".format(
+                self.scenario_name,
+                tr(init_message),
+            )
+        )
 
         # Progress bar
         self.progress_bar.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
@@ -89,14 +97,12 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         # Connections
         self.btn_cancel.clicked.connect(self.cancel_clicked)
 
-    def run(self, task):
+    def run(self, task) -> None:
         """Starts the task to run in the background.
 
         :param task: QgsTask which will run the dialog
         :type task: QgsTask
         """
-
-        print('run')
 
         self.task = task
 
@@ -105,14 +111,6 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
 
         self.show()
         self.exec_()
-
-    # def test(self):
-    #
-    #     print('====================================a test=============================================')
-    #
-    # def test2(self):
-    #
-    #     print('====================================a test2=============================================')
 
     def get_processing_status(self) -> bool:
         """Returns the status of the processing.
@@ -142,19 +140,11 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
             try:
                 self.progress_bar.setValue(int(value))
 
-                if self.task:
-                    self.task.setProgress(int(value))
             except RuntimeError:
                 log(tr("Error setting value to a progress bar"), notify=False)
 
             if value >= 100:
-
-                print('analysis is done')
-
                 # Analysis has finished
-
-                # Steps when analysis stopped
-
                 self.change_status_message("Analysis has finished.")
                 self.processing_finished()
 
@@ -164,8 +154,11 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         :param message: Message to show on the status bar
         :type message: str
         """
-
-        self.lbl_status.setText(tr(message))
+        final_message = "{}: {}".format(
+            self.scenario_name,
+            tr(message),
+        )
+        self.lbl_status.setText(final_message)
 
     def view_report_pdf(self) -> None:
         """Opens a PDF version of the report"""
@@ -191,6 +184,7 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
             self.stop_processing()
         else:
             # If close has been clicked. In this case processing were already stopped
+            self.task.cancel()  # Removes from QgsTask
             super().close()
 
     def reject(self) -> None:
@@ -211,7 +205,7 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
 
         self.processing_cancelled()
 
-    def processing_cancelled(self):
+    def processing_cancelled(self) -> None:
         """Post-steps when processing were cancelled."""
 
         self.analysis_running = False
