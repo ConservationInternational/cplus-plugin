@@ -45,16 +45,3 @@ jobs:
         with:
           name: ${{ steps.get-zip-details.outputs.ZIP_NAME }}
           path: ${{ steps.get-zip-details.outputs.ZIP_PATH }}
-
-      - name: Save the plugin folder name into artifact
-        shell: bash
-        env:
-          ZIP_FILE_NAME: ${{ steps.get-zip-details.outputs.ZIP_NAME }}
-        run: |
-          echo $ZIP_FILE_NAME > zip_file_name.txt
-
-      - name: Upload the zip file name
-        uses: actions/upload-artifact@v3
-        with:
-          name: zip_file_name
-          path: ./zip_file_name.txt
