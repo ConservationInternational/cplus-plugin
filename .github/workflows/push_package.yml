@@ -50,18 +50,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           EVENT_OBJ: ${{ toJSON(github.event) }}
-          PUSH_EVENT_OBJ: ${{ toJSON(github.event.push_event) }}
+          PUSH_EVENT_OBJ: ${{ toJSON(github.event.push) }}
+          OBJ: ${{ toJSON(github) }}
           OWNER: ${{ github.repository_owner }}
           REPO: ${{ github.event.repository.name }}
           ZIP_FILENAME: ${{ steps.get-zip-details.outputs.ZIP_NAME }}
         run: |
           CURRENT_JOB_ID=$(jq -r '.id' <<< "$EVENT_OBJ")
 
-          echo "Previous Job ID: $CURRENT_JOB_ID"
+          echo "Current Job ID: $CURRENT_JOB_ID"
           echo "CURRENT_JOB_ID=$CURRENT_JOB_ID" >> "$GITHUB_ENV"
 
           SUITE_ID=$(jq -r '.check_suite_id' <<< "$EVENT_OBJ")
-          echo "Previous Suite ID: $SUITE_ID"
+          echo "Current Suite ID: $SUITE_ID"
           echo "SUITE_ID=$SUITE_ID" >> "$GITHUB_ENV"
 
           echo "ARTIFACT_NAME=$ZIP_FILENAME" >> "$GITHUB_ENV"
