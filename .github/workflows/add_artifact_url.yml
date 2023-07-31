@@ -76,7 +76,7 @@ jobs:
 
       - name: Update the documentation
         run: |
-          echo "main $ARTIFACT_NAME - $ARTIFACT_URL" >> docs/admin/artifact_list.txt
+          echo "main $ARTIFACT_NAME - $ARTIFACT_URL" >> docs/admin/artifacts_list.txt
           
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
