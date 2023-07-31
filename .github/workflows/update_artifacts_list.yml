@@ -1,5 +1,4 @@
-name: Add package comment on a pull request
-# Based on work from https://github.com/orgs/community/discussions/51403#discussioncomment-5535167
+name: Update artifacts list
 on:
   workflow_run:
     types:
@@ -67,10 +66,21 @@ jobs:
         env:
           ARTIFACT_URL: "${{ github.server_url }}/${{ github.repository }}/suites/${{ env.SUITE_ID }}/artifacts/${{ env.ARTIFACT_ID }}"
         run: |
-          echo $ARTIFACT_URL > artifact_url.txt
+          echo "ARTIFACT_URL=$ARTIFACT_URL" >> $GITHUB_ENV
 
-      - name: Upload the url text file artifact
-        uses: actions/upload-artifact@v3
+      - name: Checkout code
+        uses: actions/checkout@v2
         with:
-          name: artifact_url
-          path: ./artifact_url.txt
+          ref: docs
+
+      - name: Update the documentation
+        run: |
+          echo "$ARTIFACT_NAME - $ARTIFACT_URL" >> docs/admin/artifacts_list.txt
+          
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global --add safe.directory /__w/cplus-plugin/cplus-plugin
+          
+          git add -A
+          git commit -m "Update on the artifact_list.txt"
+          git push origin docs
