@@ -15,6 +15,7 @@ nav:
   - Admin:
       - Bugs and suggestions: admin/tasks.md
       - Staging version: admin/staging_version.md
+      - Artifacts: admin/repository.md
   - Developer:
       - Setup: developer/setup.md
       - Architecture: developer/architecture.md
