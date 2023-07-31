@@ -1,5 +1,4 @@
-name: Add package comment on a pull request
-# Based on work from https://github.com/orgs/community/discussions/51403#discussioncomment-5535167
+name: Add artifact url file as an artifact
 on:
   workflow_run:
     types:
@@ -74,3 +73,15 @@ jobs:
         with:
           name: artifact_url
           path: ./artifact_url.txt
+
+      - name: Update the documentation
+        run: |
+          echo "main $ARTIFACT_NAME - $ARTIFACT_URL" >> docs/admin/artifact_list.txt
+          
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global --add safe.directory /__w/cplus-plugin/cplus-plugin
+          
+          git add -A
+          git commit -m "Update on the artifact_list.txt"
+          git push origin docs
