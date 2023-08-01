@@ -39,11 +39,13 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         scenario_name="Scenario",
         minimum=0,
         maximum=100,
+        main_widget=None,
         parent=None,
     ):
         super().__init__(parent)
         self.setupUi(self)
         self.scenario_name = scenario_name
+        self.main_widget = main_widget
 
         # Dialog window options
         self.setWindowIcon(QIcon(ICON_PATH))
@@ -139,7 +141,6 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         if self.progress_bar:
             try:
                 self.progress_bar.setValue(int(value))
-
             except RuntimeError:
                 log(tr("Error setting value to a progress bar"), notify=False)
 
@@ -201,7 +202,9 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
 
         self.change_status_message("Processing has been cancelled by the user.")
 
-        # Steps to stop analysis from running
+        # Stops the processing task
+        if self.main_widget:
+            self.main_widget.cancel_processing_task()
 
         self.processing_cancelled()
 

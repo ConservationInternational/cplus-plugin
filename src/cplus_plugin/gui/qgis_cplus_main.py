@@ -83,6 +83,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.setupUi(self)
         self.iface = iface
         self.progress_dialog = None
+        self.task = None
+        self.processing_cancelled = False
 
         # Insert widget for step 2
         self.implementation_model_widget = ImplementationModelContainerWidget(self)
@@ -110,7 +112,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.message_bar = QgsMessageBar()
         self.prepare_message_bar()
 
-        self.progress_bar = QtWidgets.QProgressBar()
         self.progress_dialog = None
 
         self.help_btn.clicked.connect(self.open_help)
@@ -459,6 +460,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     scenario_name,
                     0,
                     100,
+                    main_widget=self,
                 )
                 run_progress_dialog = QgsTask.fromFunction(
                     "Progress dialog",
@@ -493,12 +495,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                         log(f"adding pathway path {pathway.path}")
                         layers.append(QgsRasterLayer(pathway.path))
 
-                self.show_progress(
-                    f"Calculating the highest position",
-                    minimum=0,
-                    maximum=100,
-                )
-
                 self.position_feedback.progressChanged.connect(self.update_progress_bar)
 
                 output_file = (
@@ -519,14 +515,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     "native:highestpositioninrasterstack"
                 )
 
-                task = QgsProcessingAlgRunnerTask(
+                self.processing_cancelled = False
+                self.task = QgsProcessingAlgRunnerTask(
                     alg,
                     alg_params,
                     self.processing_context,
                     feedback=self.position_feedback,
                 )
-                task.executed.connect(self.scenario_results)
-                QgsApplication.taskManager().addTask(task)
+                self.task.executed.connect(self.scenario_results)
+                QgsApplication.taskManager().addTask(self.task)
 
             except Exception as err:
                 self.show_message(
@@ -550,11 +547,22 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             return
 
+    def cancel_processing_task(self):
+        """Cancels the current processing task."""
+        self.processing_cancelled = True
+
+        if self.task.cancel():
+            self.task.cancel()
+
     def scenario_results(self, success, output):
+        """Called when the task ends. Sets the progress bar to 100 if it finished."""
         if output is not None:
             self.update_progress_bar(100)
             self.analysis_finished.emit(output)
         else:
+            self.progress_dialog.change_status_message(
+                "No valid output from the processing results."
+            )
             log(f"No valid output from the processing results.")
 
     def post_analysis(self, outputs):
@@ -563,13 +571,20 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param outputs: Dictionary of output layers
         :type outputs: dict
         """
-        layer_file = outputs.get("OUTPUT")
+        # If the processing were stopped, no file will be added
+        if not self.processing_cancelled:
+            layer_file = outputs.get("OUTPUT")
 
-        layer = QgsRasterLayer(
-            layer_file, SCENARIO_OUTPUT_LAYER_NAME, QGIS_GDAL_PROVIDER
-        )
+            layer = QgsRasterLayer(
+                layer_file, SCENARIO_OUTPUT_LAYER_NAME, QGIS_GDAL_PROVIDER
+            )
 
-        QgsProject.instance().addMapLayer(layer)
+            QgsProject.instance().addMapLayer(layer)
+        else:
+            # Reinitializes variables if processing were cancelled by the user
+            # Not doing this breaks the processing if a user tries to run the processing after cancelling or if the processing fails
+            self.position_feedback = QgsProcessingFeedback()
+            self.processing_context = QgsProcessingContext()
 
     def update_progress_bar(self, value):
         """Sets the value of the progress bar
@@ -577,9 +592,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param value: Value to be set on the progress bar
         :type value: float
         """
-        if self.progress_bar:
+        if self.progress_dialog and not self.processing_cancelled:
             try:
-                self.progress_bar.setValue(int(value))
                 self.progress_dialog.update_progress_bar(int(value))
             except RuntimeError:
                 log(tr("Error setting value to a progress bar"), notify=False)
@@ -601,34 +615,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type message: str
         """
         message_bar_item = self.message_bar.createMessage(message)
-        message_bar_item.layout().addWidget(self.progress_bar)
         self.message_bar.pushWidget(message_bar_item, Qgis.Info)
-
-    def show_progress(self, message, minimum=0, maximum=0):
-        """Shows the progress message on the main widget message bar
-
-        :param message: Progress message
-        :type message: str
-
-        :param minimum: Minimum value that can be set on the progress bar
-        :type minimum: int
-
-        :param maximum: Maximum value that can be set on the progress bar
-        :type maximum: int
-        """
-
-        try:
-            self.message_bar.clearWidgets()
-            message_bar_item = self.message_bar.createMessage(message)
-            self.progress_bar = QtWidgets.QProgressBar()
-            self.progress_bar.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
-            self.progress_bar.setMinimum(minimum)
-            self.progress_bar.setMaximum(maximum)
-            message_bar_item.layout().addWidget(self.progress_bar)
-            self.message_bar.pushWidget(message_bar_item, Qgis.Info)
-
-        except Exception as e:
-            log(f"Error showing progress bar, {e}")
 
     def show_message(self, message, level=Qgis.Warning):
         """Shows message on the main widget message bar.
