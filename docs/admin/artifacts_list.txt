@@ -1,2 +1,5 @@
 cplus_plugin_main_ebd5 - https://github.com/kartoza/cplus-plugin/suites/14711634160/artifacts/835478103
 cplus_plugin_main_8438 - https://github.com/kartoza/cplus-plugin/suites/14711473862/artifacts/835463550
+cplus_plugin_main_7e38 - https://github.com/kartoza/cplus-plugin/suites/14710215033/artifacts/835370324
+cplus_plugin_main_097a - https://github.com/kartoza/cplus-plugin/suites/14710115205/artifacts/835362404
+cplus_plugin_main_3d17 - https://github.com/kartoza/cplus-plugin/suites/14709382461/artifacts/835305683
