@@ -8,4 +8,7 @@
      <qresource prefix="/plugins/cplus_plugin">
         <file>cplus_right_arrow.svg</file>
     </qresource>
+     <qresource prefix="/plugins/cplus_plugin">
+        <file>cplus_double_right_arrows.svg</file>
+    </qresource>
 </RCC>

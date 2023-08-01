@@ -43,6 +43,8 @@ from qgis.utils import iface
 from .implementation_model_widget import ImplementationModelContainerWidget
 from .priority_group_widget import PriorityGroupWidget
 
+from ..models.base import Scenario
+
 from ..conf import settings_manager, Settings
 
 from ..resources import *
@@ -113,6 +115,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.run_scenario_btn.clicked.connect(self.run_scenario_analysis)
         self.options_btn.clicked.connect(self.open_settings)
 
+        self.scenario_name.textChanged.connect(self.save_scenario)
+
         icon_pixmap = QtGui.QPixmap(ICON_PATH)
         self.icon_la.setPixmap(icon_pixmap)
 
@@ -124,6 +128,37 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.layer_add_btn.clicked.connect(self.add_priority_layer_group)
         self.layer_remove_btn.clicked.connect(self.remove_priority_layer_group)
+
+    def save_scenario(self):
+        scenario = Scenario()
+        scenario_name = self.scenario_name.text()
+        scenario_description = self.scenario_description.text()
+        extent = self.extent_box.outputExtent()
+
+        extent_box = [
+            extent.xMinimum(),
+            extent.xMaximum(),
+            extent.yMinimum(),
+            extent.yMaximum(),
+        ]
+        scenario.name = scenario_name
+        scenario.description = scenario_description
+        scenario.extent.bbox = extent_box
+
+        settings_manager.save_scenario(scenario)
+
+    def restore_scenario(self):
+        scenario = settings_manager.get_scenarios()
+        latest_scenario = scenario[0] if scenario is not None else None
+
+        if latest_scenario:
+            self.scenario_name.setText(latest_scenario.name)
+            self.scenario_description.setText(latest_scenario.description)
+            extent = latest_scenario.get_scenario_extent()
+            extent_rectangle = QgsRectangle(
+                extent.bbox[0], extent.bbox[1], extent.bbox[2], extent.bbox[3]
+            )
+            self.extent_box.setCurrentExtent(extent_rectangle)
 
     def initialize_priority_layers(self):
         """Prepares the priority weighted layers UI with the defaults.
