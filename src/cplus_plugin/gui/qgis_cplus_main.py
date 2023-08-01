@@ -115,7 +115,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.run_scenario_btn.clicked.connect(self.run_scenario_analysis)
         self.options_btn.clicked.connect(self.open_settings)
 
+        self.restore_scenario()
+
         self.scenario_name.textChanged.connect(self.save_scenario)
+        self.scenario_description.textChanged.connect(self.save_scenario)
+        self.extent_box.extentChanged.connect(self.save_scenario)
 
         icon_pixmap = QtGui.QPixmap(ICON_PATH)
         self.icon_la.setPixmap(icon_pixmap)
@@ -130,7 +134,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.layer_remove_btn.clicked.connect(self.remove_priority_layer_group)
 
     def save_scenario(self):
-        scenario = Scenario()
+        """Save current scenario details into settings"""
         scenario_name = self.scenario_name.text()
         scenario_description = self.scenario_description.text()
         extent = self.extent_box.outputExtent()
@@ -141,24 +145,30 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             extent.yMinimum(),
             extent.yMaximum(),
         ]
-        scenario.name = scenario_name
-        scenario.description = scenario_description
-        scenario.extent.bbox = extent_box
 
-        settings_manager.save_scenario(scenario)
+        settings_manager.set_value(Settings.SCENARIO_NAME, scenario_name)
+        settings_manager.set_value(Settings.SCENARIO_DESCRIPTION, scenario_description)
+        settings_manager.set_value(Settings.SCENARIO_EXTENT, extent_box)
 
     def restore_scenario(self):
-        scenario = settings_manager.get_scenarios()
-        latest_scenario = scenario[0] if scenario is not None else None
+        """Update the first tab input with the last scenario details"""
+        scenario_name = settings_manager.get_value(Settings.SCENARIO_NAME)
+        scenario_description = settings_manager.get_value(Settings.SCENARIO_DESCRIPTION)
+        extent = settings_manager.get_value(Settings.SCENARIO_EXTENT)
 
-        if latest_scenario:
-            self.scenario_name.setText(latest_scenario.name)
-            self.scenario_description.setText(latest_scenario.description)
-            extent = latest_scenario.get_scenario_extent()
+        self.scenario_name.setText(scenario_name) if scenario_name is not None else None
+        self.scenario_description.setText(
+            scenario_description
+        ) if scenario_description is not None else None
+
+        if extent is not None:
             extent_rectangle = QgsRectangle(
-                extent.bbox[0], extent.bbox[1], extent.bbox[2], extent.bbox[3]
+                float(extent[0]), float(extent[3]), float(extent[1]), float(extent[2])
             )
-            self.extent_box.setCurrentExtent(extent_rectangle)
+            self.extent_box.setOutputExtentFromUser(
+                extent_rectangle,
+                QgsCoordinateReferenceSystem("EPSG:4326"),
+            )
 
     def initialize_priority_layers(self):
         """Prepares the priority weighted layers UI with the defaults.

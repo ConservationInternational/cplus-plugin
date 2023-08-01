@@ -123,6 +123,11 @@ class Settings(enum.Enum):
     # Advanced settings
     BASE_DIR = "advanced/base_dir"
 
+    # Scenario basic details
+    SCENARIO_NAME = "scenario_name"
+    SCENARIO_DESCRIPTION = "scenario_description"
+    SCENARIO_EXTENT = "scenario_extent"
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""
