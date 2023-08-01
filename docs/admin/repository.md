@@ -179,8 +179,6 @@ for( const artifact_comment of artifacts_comments){
             if (comment.body.indexOf("Download the plugin zip file here") != -1){
                 const artifact_link_regex = /(https?:\/\/[^ ]*)/;
                 const matches = comment.body.match(artifact_link_regex);
-                console.log("matches");
-                console.log(matches);  
                 const art_link = matches[0];
 
                 const artifact_name = artifact_comment['artifact']['name'];
@@ -201,10 +199,8 @@ for( const artifact_comment of artifacts_comments){
 
 for (const commit_artifact of commits_artifacts){
 
-     if (commit_artifact['commit'] == undefined)
-     {
+     if (commit_artifact['commit'] === undefined)
          continue;
-     }
 
      const tr = document.createElement('tr');
      const first_td = document.createElement('td');
@@ -281,8 +277,6 @@ const res = file_text_promise.then(function(result){
     const loading_div = document.getElementById('loading_div');
     loading_div.remove();
 });
-
-
 
 
 </script>
