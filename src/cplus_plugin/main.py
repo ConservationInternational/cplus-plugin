@@ -36,6 +36,9 @@ from .definitions.defaults import (
     ABOUT_DOCUMENTATION_SITE,
     DEFAULT_IMPLEMENTATION_MODELS,
     DEFAULT_NCS_PATHWAYS,
+    DEFAULT_REPORT_DISCLAIMER,
+    DEFAULT_REPORT_LICENSE,
+    CPLUS_LOGO_PATH,
     DOCUMENTATION_SITE,
     ICON_PATH,
     OPTIONS_TITLE,
@@ -235,12 +238,15 @@ class QgisCplus:
             status_tip=self.tr("CPLUS About"),
         )
 
+        # Initialize default report settings
+        initialize_report_settings()
+
         # Adds the settings to the QGIS options panel
         self.options_factory = CplusOptionsFactory()
         self.iface.registerOptionsWidgetFactory(self.options_factory)
 
         # Initialize default model components
-        initialize_default_settings()
+        initialize_model_settings()
 
         # Register custom layout items
         self.register_layout_items()
@@ -328,7 +334,7 @@ def create_priority_layers():
         settings_manager.set_value("default_priority_layers_set", True)
 
 
-def initialize_default_settings():
+def initialize_model_settings():
     """Initialize default model components such as NCS pathways
     and implementation models.
 
@@ -381,3 +387,19 @@ def initialize_default_settings():
         except KeyError as ke:
             log(f"Default implementation model configuration load error - {str(ke)}")
             continue
+
+
+def initialize_report_settings():
+    """Sets the default report settings on first time use
+    of the plugin.
+    """
+    if settings_manager.get_value(Settings.REPORT_DISCLAIMER, None) is None:
+        settings_manager.set_value(
+            Settings.REPORT_DISCLAIMER, DEFAULT_REPORT_DISCLAIMER
+        )
+
+    if settings_manager.get_value(Settings.REPORT_LICENSE, None) is None:
+        settings_manager.set_value(Settings.REPORT_LICENSE, DEFAULT_REPORT_LICENSE)
+
+    if settings_manager.get_value(Settings.REPORT_CPLUS_LOGO, None) is None:
+        settings_manager.set_value(Settings.REPORT_CPLUS_LOGO, CPLUS_LOGO_PATH)

@@ -23,6 +23,12 @@ REMOVE_LAYER_ICON_PATH = ":/plugins/cplus_plugin/cplus_right_arrow.svg"
 DEFAULT_LOGO_PATH = (
     os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/logos/ci_logo.png"
 )
+CPLUS_LOGO_PATH = str(
+    os.path.normpath(
+        os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        + "/logos/cplus_logo.svg"
+    )
+)
 
 # Default template file name
 TEMPLATE_NAME = "main.qpt"
@@ -372,3 +378,14 @@ DEFAULT_IMPLEMENTATION_MODELS = [
         "maximizing productivity.",
     },
 ]
+
+DEFAULT_REPORT_DISCLAIMER = (
+    "The boundaries, names, and designations "
+    "used in this report do not imply official "
+    "endorsement or acceptance by Conservation "
+    "International Foundation, or its partner "
+    "organizations and contributors."
+)
+DEFAULT_REPORT_LICENSE = (
+    "Creative Commons Attribution 4.0 International " "License (CC BY 4.0)"
+)

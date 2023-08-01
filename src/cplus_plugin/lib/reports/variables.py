@@ -169,8 +169,14 @@ class LayoutVariableRegister:
         self._var_infos[web_var_info.name] = web_var_info
 
         # Setting - logo
-        logo_var_info = SettingsVariableInfo("logo", Settings.REPORT_LOGO_DIR)
+        logo_var_info = SettingsVariableInfo("custom_logo", Settings.REPORT_LOGO_DIR)
         self._var_infos[logo_var_info.name] = logo_var_info
+
+        # Setting - CPLUS logo
+        cplus_logo_var_info = SettingsVariableInfo(
+            "cplus_logo", Settings.REPORT_CPLUS_LOGO
+        )
+        self._var_infos[cplus_logo_var_info.name] = cplus_logo_var_info
 
         # Setting - footer
         footer_var_info = SettingsVariableInfo("footer", Settings.REPORT_FOOTER)
@@ -178,7 +184,7 @@ class LayoutVariableRegister:
 
         # Setting - disclaimer
         disclaimer_var_info = SettingsVariableInfo(
-            "disclaimer", Settings.REPORT_DISLAIMER
+            "disclaimer", Settings.REPORT_DISCLAIMER
         )
         self._var_infos[disclaimer_var_info.name] = disclaimer_var_info
 
