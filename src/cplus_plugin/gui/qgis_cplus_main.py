@@ -5,6 +5,7 @@
 """
 
 import os
+import uuid
 
 from qgis.PyQt import (
     QtCore,
@@ -43,7 +44,7 @@ from qgis.utils import iface
 from .implementation_model_widget import ImplementationModelContainerWidget
 from .priority_group_widget import PriorityGroupWidget
 
-from ..models.base import Scenario
+from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
 
 from ..conf import settings_manager, Settings
 
@@ -72,7 +73,7 @@ WidgetUi, _ = loadUiType(
 class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     """Main plugin UI"""
 
-    analysis_finished = QtCore.pyqtSignal(dict)
+    analysis_finished = QtCore.pyqtSignal(ScenarioResult)
 
     def __init__(
         self,
@@ -102,6 +103,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.position_feedback = QgsProcessingFeedback()
         self.processing_context = QgsProcessingContext()
+
+        self.scenario_result = None
 
         self.analysis_finished.connect(self.post_analysis)
 
@@ -399,7 +402,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         extent_list = PILOT_AREA_EXTENT["coordinates"]
         default_extent = QgsRectangle(
-            extent_list[3], extent_list[2], extent_list[1], extent_list[0]
+            extent_list[3], extent_list[0], extent_list[1], extent_list[2]
         )
         passed_extent = self.extent_box.outputExtent()
         contains = default_extent == passed_extent or default_extent.contains(
@@ -447,6 +450,21 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 level=Qgis.Critical,
             )
             return
+        extent = SpatialExtent(
+            bbox=[extent_list[3], extent_list[2], extent_list[1], extent_list[0]]
+        )
+        scenario = Scenario(
+            uuid=uuid.uuid4(),
+            name=scenario_name,
+            description=scenario_description,
+            extent=extent,
+            models=implementation_models,
+            priority_layer_groups=priority_layers_groups,
+        )
+
+        self.scenario_result = ScenarioResult(
+            scenario=scenario,
+        )
 
         if contains:
             self.show_message(
@@ -545,6 +563,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 tr("Selected area of interest is outside the pilot area."),
                 level=Qgis.Critical,
             )
+
+            default_ext = (
+                f"{default_extent.xMinimum()}, {default_extent.xMaximum()},"
+                f"{default_extent.yMinimum()}, {default_extent.yMaximum()}"
+            )
+            log(
+                f"Outside the pilot area, passed extent {extent}, default extent{default_ext}"
+            )
             return
 
     def cancel_processing_task(self):
@@ -558,14 +584,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Called when the task ends. Sets the progress bar to 100 if it finished."""
         if output is not None:
             self.update_progress_bar(100)
-            self.analysis_finished.emit(output)
+            self.scenario_result.analysis_output = output
+            self.scenario_result.state = ScenarioState.FINISHED
+            self.analysis_finished.emit(self.scenario_result)
         else:
             self.progress_dialog.change_status_message(
                 "No valid output from the processing results."
             )
             log(f"No valid output from the processing results.")
 
-    def post_analysis(self, outputs):
+    def post_analysis(self, scenario_result):
         """Handles analysis outputs from the final analysis results
 
         :param outputs: Dictionary of output layers
@@ -573,7 +601,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
         # If the processing were stopped, no file will be added
         if not self.processing_cancelled:
-            layer_file = outputs.get("OUTPUT")
+            layer_file = scenario_result.analysis_output.get("OUTPUT")
 
             layer = QgsRasterLayer(
                 layer_file, SCENARIO_OUTPUT_LAYER_NAME, QGIS_GDAL_PROVIDER
