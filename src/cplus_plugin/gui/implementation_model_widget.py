@@ -36,11 +36,11 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
 
         self._items_loaded = False
 
-        self.btn_add_one.setIcon(FileUtils.get_icon("mActionPlay.svg"))
+        self.btn_add_one.setIcon(FileUtils.get_icon("cplus_right_arrow.svg"))
         self.btn_add_one.setToolTip(self.tr("Add selected NCS pathway"))
         self.btn_add_one.clicked.connect(self._on_add_ncs_pathway)
 
-        self.btn_add_all.setIcon(FileUtils.get_icon("skipToEnd.svg"))
+        self.btn_add_all.setIcon(FileUtils.get_icon("cplus_double_right_arrows.svg"))
         self.btn_add_all.setToolTip(self.tr("Add all NCS pathways"))
         self.btn_add_all.clicked.connect(self._on_add_all_ncs_pathways)
 
