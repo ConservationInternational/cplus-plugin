@@ -5,7 +5,7 @@
 <body>
 <div id="loading_div" style="align-content: center;">
 
-<img src="/img/plugin/icon_loading.gif" style="align-content: center; background:transparent;"/>
+<img src="https://kartoza.github.io/cplus-plugin/img/plugin/icon_loading.gif" style="align-content: center; background:transparent;"/>
 </div>
 <div>
     <h2><a href="#pull"> Pull requests artifacts </a></h2>
