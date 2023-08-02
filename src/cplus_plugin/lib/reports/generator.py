@@ -128,6 +128,7 @@ class ReportGenerator:
         self._output_layout_path = ""
         self._repeat_page = None
         self._repeat_page_num = -1
+        self._repeat_item = None
 
     @property
     def context(self) -> ReportContext:
@@ -261,6 +262,7 @@ class ReportGenerator:
                 page_num = item.page()
                 self._repeat_page = self._layout.pageCollection().page(page_num)
                 self._repeat_page_num = page_num
+                self._repeat_item = item
 
     def duplicate_repeat_page(
         self, position: int
@@ -329,7 +331,15 @@ class ReportGenerator:
         """Render implementation models in the layout based on the
         scenario result.
         """
-        pass
+        if self._repeat_item is None:
+            tr_msg = tr(
+                "Unable to render implementation models as no repeat "
+                "item was found."
+            )
+            self._error_messages.append(tr_msg)
+            return
+
+        repeat_rect = self._repeat_item.rectWithFrame()
 
     def run(self) -> ReportResult:
         """Initiates the report generation process and returns
