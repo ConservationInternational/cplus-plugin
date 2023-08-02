@@ -551,7 +551,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Cancels the current processing task."""
         self.processing_cancelled = True
 
-        if self.task.cancel():
+        if self.task:
             self.task.cancel()
 
     def scenario_results(self, success, output):
