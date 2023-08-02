@@ -37,6 +37,7 @@ from qgis.core import (
     QgsRectangle,
     QgsTask,
     QgsWkbTypes,
+    QgsLayerTreeLayer,
 )
 
 from qgis.gui import (
@@ -68,7 +69,7 @@ from ..definitions.defaults import (
     SCENARIO_OUTPUT_FILE_NAME,
     SCENARIO_OUTPUT_LAYER_NAME,
     USER_DOCUMENTATION_SITE,
-    SCENARIO_DEFAULT_LAYER_STYLE,
+    LAYER_STYLES,
 )
 from .progress_dialog import ProgressDialog
 
@@ -545,8 +546,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     f"{passed_extent.yMinimum()}, {passed_extent.yMaximum()}"
                 )
 
-                self.list_ims_to_run = implementation_models
-
                 for model in implementation_models:
                     if model.layer:
                         raster_layer = model.layer
@@ -764,38 +763,93 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             log(f"No valid output from the processing results.")
 
-    def post_analysis(self, scenario_result):
-        """Handles analysis outputs from the final analysis results
+    def move_layer_to_group(self, layer, group) -> None:
+        """Moves a layer open in QGIS to another group.
 
-        :param scenario_result: Dictionary of output layers
-        :type scenario_result: dict
+        :param layer: Raster layer to move
+        :type layer: QgsRasterLayer
+
+        :param group: Group to which the raster should be moved
+        :type group: QgsLayerTreeGroup
         """
+        instance_root = QgsProject.instance().layerTreeRoot()
+        layer = instance_root.findLayer(layer.id())
+        layer_clone = layer.clone()
+        parent = layer.parent()
+        group.insertChildNode(0, layer_clone)  # Add to top of group
+        parent.removeChildNode(layer)
 
-        print('post analysis')
+    def post_analysis(self, scenario_result):
+        """Handles analysis outputs from the final analysis results.
+        Adds the resulting scenario raster to the canvas with styling.
+        Adds each of the implementation models to the canvas with styling.
+        Adds each IMs pathways to the canvas.
+
+        :param scenario_result: ScenarioResult of output results
+        :type scenario_result: ScenarioResult
+        """
 
         # If the processing were stopped, no file will be added
         if not self.processing_cancelled:
+            scenario_name = scenario_result.scenario.name
+            qgis_instance = QgsProject.instance()
+            instance_root = qgis_instance.layerTreeRoot()
+
+            # Groups
+            scenario_group = instance_root.insertGroup(0, scenario_name)
+            im_group = scenario_group.addGroup("Implementation model maps")
+            pathways_group = scenario_group.addGroup("Pathways")
+
+            # Group settings
+            im_group.setExpanded(False)
+            pathways_group.setExpanded(False)
+            pathways_group.setItemVisibilityCheckedRecursive(False)
+
+            # Add scenario result layer to the canvas with styling
             layer_file = scenario_result.analysis_output.get("OUTPUT")
             layer_name = (
                 f"{SCENARIO_OUTPUT_LAYER_NAME}_"
                 f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
             )
-            layer.loadNamedStyle(SCENARIO_DEFAULT_LAYER_STYLE)
-
             layer = QgsRasterLayer(layer_file, layer_name, QGIS_GDAL_PROVIDER)
+            layer.loadNamedStyle(LAYER_STYLES["scenario_result"])
+            scenario_layer = qgis_instance.addMapLayer(layer)
 
-            QgsProject.instance().addMapLayer(layer)
+            """A workaround to add a layer to a group.
+            Adding it using group.insertChildNode or group.addLayer causes issues, but adding to the root is fine.
+            This approach adds it to the root, and then moves it to the group.
+            """
+            self.move_layer_to_group(scenario_layer, scenario_group)
 
-            # list_ims = settings_manager.get_all_implementation_models()
-            for im in self.list_ims_to_run:
-                # print(str(im))
-
+            # Add implementation models and pathways
+            list_models = scenario_result.scenario.models
+            im_index = 0
+            for im in list_models:
+                im_name = im.name
+                im_layer = im.layer
                 list_pathways = im.pathways
-                for pathway in list_pathways:
-                    im_layer = pathway.layer
 
-                    print(str(im_layer))
-                    QgsProject.instance().addMapLayer(im_layer)
+                # Add IM layer with styling, if available
+                if im_layer:
+                    im_layer.loadNamedStyle(LAYER_STYLES[im_name])
+                    added_im_layer = qgis_instance.addMapLayer(im_layer)
+                    self.move_layer_to_group(added_im_layer, im_group)
+
+                # Add IM pathways
+                if len(list_pathways) > 0:
+                    # im_pathway_group = pathways_group.addGroup(im_name)
+                    im_pathway_group = pathways_group.insertGroup(im_index, im_name)
+                    im_pathway_group.setExpanded(False)
+
+                    pw_index = 0
+                    for pathway in list_pathways:
+                        pathway_name = pathway.name
+                        pathway_layer = pathway.layer
+                        added_pw_layer = qgis_instance.addMapLayer(pathway_layer)
+                        self.move_layer_to_group(added_pw_layer, im_pathway_group)
+
+                        pw_index = pw_index + 1
+                im_index = im_index + 1
         else:
             # Reinitializes variables if processing were cancelled by the user
             # Not doing this breaks the processing if a user tries to run the processing after cancelling or if the processing fails
