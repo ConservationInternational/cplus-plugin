@@ -81,19 +81,17 @@ class ScenarioSettings(Scenario):
         )
 
     @classmethod
-    def get_scenario_extent(cls, scenario_settings):
+    def get_scenario_extent(cls):
         """Fetches Scenario extent from
          the passed scenario settings.
 
-        :param scenario_settings: Scenario settings instance
-        :type scenario_settings: ScenarioSettings
 
         :returns: Spatial extent instance extent
         :rtype: SpatialExtent
         """
         spatial_key = "extent/spatial"
 
-        with qgis_settings(spatial_key, scenario_settings) as settings:
+        with qgis_settings(spatial_key, cls) as settings:
             bbox = settings.value("bbox", None)
             spatial_extent = SpatialExtent(bbox=bbox)
 
@@ -125,6 +123,11 @@ class Settings(enum.Enum):
 
     # Advanced settings
     BASE_DIR = "advanced/base_dir"
+
+    # Scenario basic details
+    SCENARIO_NAME = "scenario_name"
+    SCENARIO_DESCRIPTION = "scenario_description"
+    SCENARIO_EXTENT = "scenario_extent"
 
 
 class SettingsManager(QtCore.QObject):
@@ -292,6 +295,10 @@ class SettingsManager(QtCore.QObject):
             for uuid in settings.childGroups():
                 scenario_settings_key = self._get_scenario_settings_base(uuid)
                 with qgis_settings(scenario_settings_key) as scenario_settings:
+                    scenario = ScenarioSettings.from_qgs_settings(
+                        uuid, scenario_settings
+                    )
+                    scenario.extent = self.get_scenario_
                     result.append(
                         ScenarioSettings.from_qgs_settings(uuid, scenario_settings)
                     )

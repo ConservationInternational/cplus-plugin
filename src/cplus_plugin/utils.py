@@ -64,7 +64,12 @@ def log(
 
 
 def open_documentation(url=None):
-    """Opens documentation website in the default browser"""
+    """Opens documentation website in the default browser
+
+    :param url: URL link to documentation site (e.g. gh pages site)
+    :type url: str
+
+    """
     url = DOCUMENTATION_SITE if url is None else url
     result = QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
     return result
@@ -138,7 +143,21 @@ class FileUtils:
         """Creates an NCS sub-directory under BASE_DIR. Skips
         creation of the sub-directory if it already exists.
         """
+        if not Path(base_dir).is_dir():
+            return
+
         ncs_pathway_dir = f"{base_dir}/{NCS_PATHWAY_SEGMENT}"
-        p = Path(ncs_pathway_dir)
+        message = tr(
+            "Missing parent directory when creating NCS pathways subdirectory."
+        )
+        FileUtils.create_new_dir(ncs_pathway_dir, message)
+
+    @staticmethod
+    def create_new_dir(directory: str, log_message: str = ""):
+        """Creates new file directory if it doesn't exist"""
+        p = Path(directory)
         if not p.exists():
-            p.mkdir(parents=True)
+            try:
+                p.mkdir()
+            except FileNotFoundError:
+                log(log_message)

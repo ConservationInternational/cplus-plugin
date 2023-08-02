@@ -5,6 +5,9 @@
 """
 
 import os
+import uuid
+
+import datetime
 
 from qgis.PyQt import (
     QtCore,
@@ -15,9 +18,6 @@ from qgis.PyQt import (
 
 from qgis.PyQt.uic import loadUiType
 
-
-from qgis import processing
-
 from qgis.core import (
     Qgis,
     QgsApplication,
@@ -25,6 +25,8 @@ from qgis.core import (
     QgsGeometry,
     QgsProject,
     QgsProcessing,
+    QgsProcessingAlgRunnerTask,
+    QgsProcessingContext,
     QgsProcessingFeedback,
     QgsRasterLayer,
     QgsRectangle,
@@ -43,22 +45,28 @@ from qgis.utils import iface
 from .implementation_model_widget import ImplementationModelContainerWidget
 from .priority_group_widget import PriorityGroupWidget
 
-from ..conf import settings_manager
+from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
+
+from ..conf import settings_manager, Settings
 
 from ..lib.reports.manager import report_manager
 
 from ..resources import *
 
-from ..utils import open_documentation, tr, log
+from ..utils import open_documentation, tr, log, FileUtils
 
 from ..definitions.defaults import (
     ADD_LAYER_ICON_PATH,
     PILOT_AREA_EXTENT,
     OPTIONS_TITLE,
     ICON_PATH,
+    QGIS_GDAL_PROVIDER,
     REMOVE_LAYER_ICON_PATH,
+    SCENARIO_OUTPUT_FILE_NAME,
+    SCENARIO_OUTPUT_LAYER_NAME,
     USER_DOCUMENTATION_SITE,
 )
+from .progress_dialog import ProgressDialog
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/qgis_cplus_main_dockwidget.ui")
@@ -68,7 +76,7 @@ WidgetUi, _ = loadUiType(
 class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     """Main plugin UI"""
 
-    analysis_finished = QtCore.pyqtSignal(dict)
+    analysis_finished = QtCore.pyqtSignal(ScenarioResult)
 
     def __init__(
         self,
@@ -78,6 +86,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         super().__init__(parent)
         self.setupUi(self)
         self.iface = iface
+        self.progress_dialog = None
+        self.task = None
+        self.processing_cancelled = False
 
         # Insert widget for step 2
         self.implementation_model_widget = ImplementationModelContainerWidget(self)
@@ -98,6 +109,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.initialize_priority_layers()
 
+        self.position_feedback = QgsProcessingFeedback()
+        self.processing_context = QgsProcessingContext()
+
+        self.scenario_result = None
+
         self.analysis_finished.connect(self.post_analysis)
 
     def prepare_input(self):
@@ -107,12 +123,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.message_bar = QgsMessageBar()
         self.prepare_message_bar()
 
-        self.progress_bar = QtWidgets.QProgressBar()
+        self.progress_dialog = None
 
         self.help_btn.clicked.connect(self.open_help)
         self.pilot_area_btn.clicked.connect(self.zoom_pilot_area)
         self.run_scenario_btn.clicked.connect(self.run_scenario_analysis)
         self.options_btn.clicked.connect(self.open_settings)
+
+        self.restore_scenario()
+
+        self.scenario_name.textChanged.connect(self.save_scenario)
+        self.scenario_description.textChanged.connect(self.save_scenario)
+        self.extent_box.extentChanged.connect(self.save_scenario)
 
         icon_pixmap = QtGui.QPixmap(ICON_PATH)
         self.icon_la.setPixmap(icon_pixmap)
@@ -125,6 +147,43 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.layer_add_btn.clicked.connect(self.add_priority_layer_group)
         self.layer_remove_btn.clicked.connect(self.remove_priority_layer_group)
+
+    def save_scenario(self):
+        """Save current scenario details into settings"""
+        scenario_name = self.scenario_name.text()
+        scenario_description = self.scenario_description.text()
+        extent = self.extent_box.outputExtent()
+
+        extent_box = [
+            extent.xMinimum(),
+            extent.xMaximum(),
+            extent.yMinimum(),
+            extent.yMaximum(),
+        ]
+
+        settings_manager.set_value(Settings.SCENARIO_NAME, scenario_name)
+        settings_manager.set_value(Settings.SCENARIO_DESCRIPTION, scenario_description)
+        settings_manager.set_value(Settings.SCENARIO_EXTENT, extent_box)
+
+    def restore_scenario(self):
+        """Update the first tab input with the last scenario details"""
+        scenario_name = settings_manager.get_value(Settings.SCENARIO_NAME)
+        scenario_description = settings_manager.get_value(Settings.SCENARIO_DESCRIPTION)
+        extent = settings_manager.get_value(Settings.SCENARIO_EXTENT)
+
+        self.scenario_name.setText(scenario_name) if scenario_name is not None else None
+        self.scenario_description.setText(
+            scenario_description
+        ) if scenario_description is not None else None
+
+        if extent is not None:
+            extent_rectangle = QgsRectangle(
+                float(extent[0]), float(extent[3]), float(extent[1]), float(extent[2])
+            )
+            self.extent_box.setOutputExtentFromUser(
+                extent_rectangle,
+                QgsCoordinateReferenceSystem("EPSG:4326"),
+            )
 
     def initialize_priority_layers(self):
         """Prepares the priority weighted layers UI with the defaults.
@@ -348,9 +407,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Performs the scenario analysis. This covers the pilot study area,
         and checks whether the AOI is outside the pilot study area.
         """
+
         extent_list = PILOT_AREA_EXTENT["coordinates"]
         default_extent = QgsRectangle(
-            extent_list[3], extent_list[2], extent_list[1], extent_list[0]
+            extent_list[3], extent_list[0], extent_list[1], extent_list[2]
         )
         passed_extent = self.extent_box.outputExtent()
         contains = default_extent == passed_extent or default_extent.contains(
@@ -365,7 +425,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             for item in self.implementation_model_widget.selected_items()
         ]
 
-        priority_weight_layers = self.priority_layers_list.selectedItems()
+        priority_layers_groups = [
+            layer.get("groups")
+            for layer in settings_manager.get_priority_layers()
+            if layer.get("groups") is not [] or layer.get("groups") is not None
+        ]
 
         if scenario_name == "" or scenario_name is None:
             self.show_message(
@@ -382,17 +446,33 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if implementation_models == [] or implementation_models is None:
             self.show_message(
                 tr("Select at least one implementation models from step two."),
-                level=Qgis.Info,
+                level=Qgis.Critical,
             )
             return
-        if priority_weight_layers == [] or priority_weight_layers is None:
+        if not any(priority_layers_groups):
             self.show_message(
                 tr(
-                    f"Select at least one priority weight layer models from step three."
+                    f"At least one priority weight layer should be added "
+                    f"into one of the priority groups from step three."
                 ),
-                level=Qgis.Info,
+                level=Qgis.Critical,
             )
             return
+        extent = SpatialExtent(
+            bbox=[extent_list[3], extent_list[2], extent_list[1], extent_list[0]]
+        )
+        scenario = Scenario(
+            uuid=uuid.uuid4(),
+            name=scenario_name,
+            description=scenario_description,
+            extent=extent,
+            models=implementation_models,
+            priority_layer_groups=priority_layers_groups,
+        )
+
+        self.scenario_result = ScenarioResult(
+            scenario=scenario,
+        )
 
         if contains:
             self.show_message(
@@ -400,17 +480,84 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 level=Qgis.Info,
             )
             try:
-                run_task = QgsTask.fromFunction(
-                    "Run analysis function",
-                    self.run_analysis(
-                        scenario_name,
-                        scenario_description,
-                        passed_extent,
-                        implementation_models,
-                        priority_weight_layers,
-                    ),
+                # Creates and opens the progress dialog for the analysis
+                self.progress_dialog = ProgressDialog(
+                    "Calculating the highest position...",
+                    scenario_name,
+                    0,
+                    100,
+                    main_widget=self,
                 )
-                QgsApplication.taskManager().addTask(run_task)
+                run_progress_dialog = QgsTask.fromFunction(
+                    "Progress dialog",
+                    self.progress_dialog.run,
+                )
+                QgsApplication.taskManager().addTask(run_progress_dialog)
+            except Exception as err:
+                self.show_message(
+                    tr(
+                        "An error occurred when opening the progress dialog, "
+                        "check logs for more information"
+                    ),
+                    level=Qgis.Info,
+                )
+                log(
+                    tr(
+                        "An error occurred when opening the progress dialog for "
+                        'scenario analysis, error message "{}"'.format(err)
+                    )
+                )
+            try:
+                layers = []
+                extent = (
+                    f"{passed_extent.xMinimum()}, {passed_extent.xMaximum()},"
+                    f"{passed_extent.yMinimum()}, {passed_extent.yMaximum()}"
+                )
+
+                for model in implementation_models:
+                    pathways = model.pathways
+
+                    for pathway in pathways:
+                        log(f"adding pathway path {pathway.path}")
+                        layers.append(QgsRasterLayer(pathway.path))
+
+                self.position_feedback.progressChanged.connect(self.update_progress_bar)
+
+                new_scenario_directory = (
+                    f"{settings_manager.get_value(Settings.BASE_DIR)}/"
+                    f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+                )
+
+                FileUtils.create_new_dir(new_scenario_directory)
+
+                output_file = (
+                    f"{new_scenario_directory}/"
+                    f"{SCENARIO_OUTPUT_FILE_NAME}_{str(scenario.uuid)[:4]}.tif"
+                )
+
+                alg_params = {
+                    "IGNORE_NODATA": True,
+                    "INPUT_RASTERS": layers,
+                    "EXTENT": extent,
+                    "OUTPUT_NODATA_VALUE": -9999,
+                    "REFERENCE_LAYER": layers[0] if len(layers) >= 1 else None,
+                    "OUTPUT": output_file,
+                }
+
+                alg = QgsApplication.processingRegistry().algorithmById(
+                    "native:highestpositioninrasterstack"
+                )
+
+                self.processing_cancelled = False
+                self.task = QgsProcessingAlgRunnerTask(
+                    alg,
+                    alg_params,
+                    self.processing_context,
+                    feedback=self.position_feedback,
+                )
+                self.task.executed.connect(self.scenario_results)
+                QgsApplication.taskManager().addTask(self.task)
+
             except Exception as err:
                 self.show_message(
                     tr(
@@ -431,94 +578,58 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 tr("Selected area of interest is outside the pilot area."),
                 level=Qgis.Critical,
             )
+
+            default_ext = (
+                f"{default_extent.xMinimum()}, {default_extent.xMaximum()},"
+                f"{default_extent.yMinimum()}, {default_extent.yMaximum()}"
+            )
+            log(
+                f"Outside the pilot area, passed extent {extent}, default extent{default_ext}"
+            )
             return
 
-    def run_analysis(
-        self,
-        scenario_name,
-        scenario_description,
-        passed_extent,
-        implementation_models,
-        priority_weight_layers,
-    ):
-        """Runs the actual scenario analysis by executing processing algorithms
+    def cancel_processing_task(self):
+        """Cancels the current processing task."""
+        self.processing_cancelled = True
 
-        :param scenario_name: Scenario name
-        :type scenario_name: str
+        if self.task:
+            self.task.cancel()
 
-        :param scenario_description: Scenario description
-        :type scenario_description: str
-
-        :param passed_extent: Area of interest
-        :type passed_extent: QgsRectangle
-
-        :param implementation_models: List of the selected implementation models
-        :type implementation_models: list
-
-        :param priority_weight_layers: List of the priority weight layers
-        :type priority_weight_layers: list
-
-        """
-        outputs = {}
-        layers = []
-
-        extent = (
-            f"{passed_extent.xMinimum()}, {passed_extent.xMaximum()},"
-            f"{passed_extent.yMinimum()}, {passed_extent.yMaximum()}"
-        )
-
-        for model in implementation_models:
-            pathways = model.pathways
-
-            for pathway in pathways:
-                layers.append(QgsRasterLayer(pathway.path))
-
-        self.show_progress(
-            f"Calculating the highest position",
-            minimum=0,
-            maximum=100,
-        )
-
-        position_feedback = QgsProcessingFeedback()
-
-        position_feedback.progressChanged.connect(self.update_progress_bar)
-
-        alg_params = {
-            "IGNORE_NODATA": True,
-            "INPUT_RASTERS": layers,
-            "EXTENT": extent,
-            "OUTPUT_NODATA_VALUE": -9999,
-            "REFERENCE_LAYER": layers[0] if len(layers) > 1 else None,
-            "OUTPUT": "cplus_scenario_output.tif",
-        }
-        outputs["HighestPositionInRasterStack"] = processing.run(
-            "native:highestpositioninrasterstack",
-            alg_params,
-            feedback=position_feedback,
-        )
-        outputs["cplus_scenario_output"] = outputs["HighestPositionInRasterStack"][
-            "OUTPUT"
-        ]
-
-        # Update progress bar if processing is done
-        if outputs["HighestPositionInRasterStack"] is not None:
+    def scenario_results(self, success, output):
+        """Called when the task ends. Sets the progress bar to 100 if it finished."""
+        if output is not None:
             self.update_progress_bar(100)
+            self.scenario_result.analysis_output = output
+            self.scenario_result.state = ScenarioState.FINISHED
+            self.analysis_finished.emit(self.scenario_result)
+        else:
+            self.progress_dialog.change_status_message(
+                "No valid output from the processing results."
+            )
+            log(f"No valid output from the processing results.")
 
-        self.analysis_finished.emit(outputs)
-
-        return True
-
-    def post_analysis(self, outputs):
+    def post_analysis(self, scenario_result):
         """Handles analysis outputs from the final analysis results
 
         :param outputs: Dictionary of output layers
         :type outputs: dict
         """
-        layer = outputs.get("cplus_scenario_output")
+        # If the processing were stopped, no file will be added
+        if not self.processing_cancelled:
+            layer_file = scenario_result.analysis_output.get("OUTPUT")
+            layer_name = (
+                f"{SCENARIO_OUTPUT_LAYER_NAME}_"
+                f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+            )
 
-        layer = QgsRasterLayer(layer, "cplus_scenario_output")
+            layer = QgsRasterLayer(layer_file, layer_name, QGIS_GDAL_PROVIDER)
 
-        QgsProject.instance().addMapLayer(layer)
+            QgsProject.instance().addMapLayer(layer)
+        else:
+            # Reinitializes variables if processing were cancelled by the user
+            # Not doing this breaks the processing if a user tries to run the processing after cancelling or if the processing fails
+            self.position_feedback = QgsProcessingFeedback()
+            self.processing_context = QgsProcessingContext()
 
     def update_progress_bar(self, value):
         """Sets the value of the progress bar
@@ -526,9 +637,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param value: Value to be set on the progress bar
         :type value: float
         """
-        if self.progress_bar:
+        if self.progress_dialog and not self.processing_cancelled:
             try:
-                self.progress_bar.setValue(int(value))
+                self.progress_dialog.update_progress_bar(int(value))
             except RuntimeError:
                 log(tr("Error setting value to a progress bar"), notify=False)
 
@@ -549,34 +660,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type message: str
         """
         message_bar_item = self.message_bar.createMessage(message)
-        message_bar_item.layout().addWidget(self.progress_bar)
         self.message_bar.pushWidget(message_bar_item, Qgis.Info)
-
-    def show_progress(self, message, minimum=0, maximum=0):
-        """Shows the progress message on the main widget message bar
-
-        :param message: Progress message
-        :type message: str
-
-        :param minimum: Minimum value that can be set on the progress bar
-        :type minimum: int
-
-        :param maximum: Maximum value that can be set on the progress bar
-        :type maximum: int
-        """
-
-        try:
-            self.message_bar.clearWidgets()
-            message_bar_item = self.message_bar.createMessage(message)
-            self.progress_bar = QtWidgets.QProgressBar()
-            self.progress_bar.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
-            self.progress_bar.setMinimum(minimum)
-            self.progress_bar.setMaximum(maximum)
-            message_bar_item.layout().addWidget(self.progress_bar)
-            self.message_bar.pushWidget(message_bar_item, Qgis.Info)
-
-        except Exception as e:
-            log(f"Error showing progress bar, {e}")
 
     def show_message(self, message, level=Qgis.Warning):
         """Shows message on the main widget message bar.
