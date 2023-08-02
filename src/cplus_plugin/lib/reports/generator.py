@@ -8,7 +8,9 @@ import typing
 
 from qgis.core import (
     Qgis,
+    QgsLayoutItemPage,
     QgsLayoutExporter,
+    QgsLayoutPoint,
     QgsPrintLayout,
     QgsProject,
     QgsReadWriteContext,
@@ -17,6 +19,7 @@ from qgis.core import (
 
 from qgis.PyQt import QtCore, QtXml
 
+from .layout_items import CplusMapRepeatItem
 from ...models.report import ReportContext, ReportResult
 from ...utils import log, tr
 from .variables import LayoutVariableRegister
@@ -123,6 +126,8 @@ class ReportGenerator:
         self._variable_register = LayoutVariableRegister()
         self._report_output_dir = ""
         self._output_layout_path = ""
+        self._repeat_page = None
+        self._repeat_page_num = -1
 
     @property
     def context(self) -> ReportContext:
@@ -157,6 +162,20 @@ class ReportGenerator:
         :rtype: str
         """
         return self._output_layout_path
+
+    @property
+    def repeat_page(self) -> typing.Union[QgsLayoutItemPage, None]:
+        """Returns the page item that will be repeated based on the
+        number of implementation models in the scenario.
+
+        A repeat page is a layout page item that contains the
+        first instance of a CplusMapRepeatItem.
+
+        :returns: Page item containing a CplusMapRepeatItem or None
+        if not found.
+        :rtype: QgsLayoutItemPage
+        """
+        return self._repeat_page
 
     def _set_project(self):
         """Deserialize the project from the report context."""
@@ -226,6 +245,92 @@ class ReportGenerator:
 
         return self._report_output_dir
 
+    def _set_repeat_page(self):
+        """Check if the layout has a map repeat item and set
+        the corresponding page item containing the map repeat item
+        or leave it as None if not found.
+
+        Current implementation only supports one repeat item.
+        """
+        if self._layout is None:
+            return
+
+        items = self._layout.items()
+        for item in items:
+            if isinstance(item, CplusMapRepeatItem):
+                page_num = item.page()
+                self._repeat_page = self._layout.pageCollection().page(page_num)
+                self._repeat_page_num = page_num
+
+    def duplicate_repeat_page(
+        self, position: int
+    ) -> typing.Union[QgsLayoutItemPage, None]:
+        """Duplicates the repeat page and adds it to the layout
+        at the given position.
+
+        :param position: Zero-based position to insert the duplicated page. If
+        the position is greater than the number of pages, then the
+        duplicated page will be inserted at the end of the layout.
+        :type position: int
+
+        :returns: A duplicate layout page item of the repeat page or
+        None if a repeat page was not found or if the layout is None.
+        :rtype: QgsLayoutItemPage
+        """
+        if self._repeat_page is None:
+            return None
+
+        if self._layout is None:
+            return None
+
+        page_collection = self._layout.pageCollection()
+        if self._repeat_page_num == -1:
+            tr_msg = "Repeat page not found in page collection"
+            self._error_messages.append(tr_msg)
+            return None
+
+        # Insert empty repeat page at the given position
+        if position < page_collection.pageCount():
+            page_collection.insertPage(self._repeat_page, position)
+        else:
+            # Add to the end
+            position = page_collection.pageCount()
+            page_collection.addPage(self._repeat_page)
+
+        doc = QtXml.QDomDocument()
+        el = doc.createElement("CopyItems")
+        ctx = QgsReadWriteContext()
+        repeat_page_items = page_collection.itemsOnPage(self._repeat_page_num)
+        for item in repeat_page_items:
+            item.writeXml(el, doc, ctx)
+            doc.appendChild(el)
+
+        # Clear element identifier references
+        nodes = doc.elementsByTagName("LayoutItem")
+        for n in range(nodes.count()):
+            node = nodes.at(n)
+            if node.isElement():
+                node.toElement().removeAttribute("uuid")
+
+        page_ref_point = page_collection.pagePositionToLayoutPosition(
+            position, QgsLayoutPoint(0, 0, self._layout.units())
+        )
+        self._layout.addItemsFromXml(el, doc, ctx, page_ref_point, True)
+
+        duplicated_page = page_collection.page(position)
+
+        # Duplicate page background
+        fill_symbol = self._repeat_page.pageStyleSymbol()
+        duplicated_page.setPageStyleSymbol(fill_symbol.clone())
+
+        return duplicated_page
+
+    def _render_repeat_items(self):
+        """Render implementation models in the layout based on the
+        scenario result.
+        """
+        pass
+
     def run(self) -> ReportResult:
         """Initiates the report generation process and returns
         a result which contains information on whether the
@@ -243,6 +348,12 @@ class ReportGenerator:
 
         # Update variable values
         self._variable_register.update_variables(self.layout, self._context)
+
+        # Set repeat page
+        self._set_repeat_page()
+
+        # Render repeat items i.e. implementation models
+        self._render_repeat_items()
 
         # Add CPLUS report flag
         self._variable_register.set_report_flag(self._layout)
