@@ -338,6 +338,7 @@ class Scenario(BaseModelComponent):
     extent: SpatialExtent
     # TODO: Confirm if this should be weighted model instead.
     models: typing.List[ImplementationModel]
+    priority_layer_groups: typing.List
     state: ScenarioState = ScenarioState.IDLE
 
 
@@ -346,5 +347,5 @@ class ScenarioResult:
     """Scenario result details."""
 
     scenario: Scenario
-    layers: typing.Dict[str, QgsMapLayer]
-    created_date: datetime.datetime
+    created_date: datetime.datetime = datetime.datetime.now()
+    analysis_output: typing.Dict = None
