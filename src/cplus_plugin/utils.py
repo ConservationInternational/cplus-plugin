@@ -126,12 +126,17 @@ class FileUtils:
             return
 
         ncs_pathway_dir = f"{base_dir}/{NCS_PATHWAY_SEGMENT}"
-        p = Path(ncs_pathway_dir)
+        message = tr(
+            "Missing parent directory when creating NCS pathways " "subdirectory."
+        )
+        FileUtils.create_new_dir(ncs_pathway_dir, message)
+
+    @staticmethod
+    def create_new_dir(directory: str, log_message: str = ""):
+        """Creates new file directory if it doesn't exist"""
+        p = Path(directory)
         if not p.exists():
             try:
                 p.mkdir()
             except FileNotFoundError:
-                log(
-                    "Missing parent directory when creating NCS pathways "
-                    "subdirectory."
-                )
+                log(log_message)

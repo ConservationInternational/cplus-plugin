@@ -7,6 +7,8 @@
 import os
 import uuid
 
+import datetime
+
 from qgis.PyQt import (
     QtCore,
     QtGui,
@@ -15,7 +17,6 @@ from qgis.PyQt import (
 )
 
 from qgis.PyQt.uic import loadUiType
-
 
 from qgis.core import (
     Qgis,
@@ -50,7 +51,7 @@ from ..conf import settings_manager, Settings
 
 from ..resources import *
 
-from ..utils import open_documentation, tr, log
+from ..utils import open_documentation, tr, log, FileUtils
 
 from ..definitions.defaults import (
     ADD_LAYER_ICON_PATH,
@@ -515,9 +516,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                 self.position_feedback.progressChanged.connect(self.update_progress_bar)
 
-                output_file = (
+                new_scenario_directory = (
                     f"{settings_manager.get_value(Settings.BASE_DIR)}/"
-                    f"{SCENARIO_OUTPUT_FILE_NAME}.tif"
+                    f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+                )
+
+                FileUtils.create_new_dir(new_scenario_directory)
+
+                output_file = (
+                    f"{new_scenario_directory}/"
+                    f"{SCENARIO_OUTPUT_FILE_NAME}_{str(scenario.uuid)[:4]}.tif"
                 )
 
                 alg_params = {
@@ -602,10 +610,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         # If the processing were stopped, no file will be added
         if not self.processing_cancelled:
             layer_file = scenario_result.analysis_output.get("OUTPUT")
-
-            layer = QgsRasterLayer(
-                layer_file, SCENARIO_OUTPUT_LAYER_NAME, QGIS_GDAL_PROVIDER
+            layer_name = (
+                f"{SCENARIO_OUTPUT_LAYER_NAME}_"
+                f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
             )
+
+            layer = QgsRasterLayer(layer_file, layer_name, QGIS_GDAL_PROVIDER)
 
             QgsProject.instance().addMapLayer(layer)
         else:
