@@ -68,6 +68,7 @@ from ..definitions.defaults import (
     SCENARIO_OUTPUT_FILE_NAME,
     SCENARIO_OUTPUT_LAYER_NAME,
     USER_DOCUMENTATION_SITE,
+    SCENARIO_DEFAULT_LAYER_STYLE,
 )
 from .progress_dialog import ProgressDialog
 
@@ -544,6 +545,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     f"{passed_extent.yMinimum()}, {passed_extent.yMaximum()}"
                 )
 
+                self.list_ims_to_run = implementation_models
+
                 for model in implementation_models:
                     if model.layer:
                         raster_layer = model.layer
@@ -767,6 +770,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param scenario_result: Dictionary of output layers
         :type scenario_result: dict
         """
+
+        print('post analysis')
+
         # If the processing were stopped, no file will be added
         if not self.processing_cancelled:
             layer_file = scenario_result.analysis_output.get("OUTPUT")
@@ -774,10 +780,22 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 f"{SCENARIO_OUTPUT_LAYER_NAME}_"
                 f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
             )
+            layer.loadNamedStyle(SCENARIO_DEFAULT_LAYER_STYLE)
 
             layer = QgsRasterLayer(layer_file, layer_name, QGIS_GDAL_PROVIDER)
 
             QgsProject.instance().addMapLayer(layer)
+
+            # list_ims = settings_manager.get_all_implementation_models()
+            for im in self.list_ims_to_run:
+                # print(str(im))
+
+                list_pathways = im.pathways
+                for pathway in list_pathways:
+                    im_layer = pathway.layer
+
+                    print(str(im_layer))
+                    QgsProject.instance().addMapLayer(im_layer)
         else:
             # Reinitializes variables if processing were cancelled by the user
             # Not doing this breaks the processing if a user tries to run the processing after cancelling or if the processing fails

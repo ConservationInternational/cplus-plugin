@@ -41,6 +41,9 @@ REMOVE_LAYER_ICON_PATH = ":/plugins/cplus_plugin/cplus_right_arrow.svg"
 
 SCENARIO_OUTPUT_FILE_NAME = "cplus_scenario_output"
 SCENARIO_OUTPUT_LAYER_NAME = "scenario_result"
+SCENARIO_DEFAULT_LAYER_STYLE = (
+    os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/styles/default_scenario_style.qml"
+)
 
 QGIS_GDAL_PROVIDER = "gdal"
 
