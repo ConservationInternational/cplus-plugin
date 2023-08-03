@@ -147,6 +147,25 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._implementation_model.name = self.txt_name.text()
             self._implementation_model.description = self.txt_description.text()
 
+        layer = self._get_selected_map_layer()
+        if layer:
+            self._layer = layer
+
+    def _get_selected_map_layer(self) -> QgsRasterLayer:
+        """Returns the currently selected map layer or None if there is
+        no item in the combobox.
+        """
+        layer = self.cbo_layer.currentLayer()
+
+        if layer is None:
+            layer_paths = self.cbo_layer.additionalItems()
+            current_path = self.cbo_layer.currentText()
+            if current_path in layer_paths:
+                layer_name = os.path.basename(current_path)
+                layer = QgsRasterLayer(current_path, layer_name)
+
+        return layer
+
     def _on_accepted(self):
         """Validates user input before closing."""
         if not self.validate():
@@ -183,6 +202,4 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
             return
 
         self.cbo_layer.setAdditionalItems([layer_path])
-        layer_name = os.path.basename(layer_path)
-        self._layer = QgsRasterLayer(layer_path, layer_name)
         settings_manager.set_value(Settings.LAST_DATA_DIR, os.path.dirname(layer_path))
