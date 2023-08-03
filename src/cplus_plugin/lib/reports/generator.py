@@ -14,6 +14,7 @@ from qgis.core import (
     QgsLayoutItemLabel,
     QgsLayoutItemMap,
     QgsLayoutItemPage,
+    QgsLayoutItemPicture,
     QgsLayoutItemShape,
     QgsLayoutPoint,
     QgsLayoutSize,
@@ -485,6 +486,22 @@ class ReportGenerator:
         }
         symbol = QgsFillSymbol.createSimple(symbol_props)
         im_shape.setSymbol(symbol)
+
+        # North arrow
+        arrow_item = QgsLayoutItemPicture(self._layout)
+        self._layout.addLayoutItem(arrow_item)
+        arrow_item.setPicturePath(
+            ":/images/north_arrows/layout_default_north_arrow.svg"
+        )
+        arrow_ref_point = QgsLayoutPoint(
+            pos_x + 0.02 * width,
+            pos_y + map_height - (0.1 * height),
+            self._layout.units()
+        )
+        arrow_item.attemptMove(arrow_ref_point, True, False, page)
+        arrow_item.attemptResize(
+            QgsLayoutSize(0.07 * width, 0.07 * height, self._layout.units())
+        )
 
         title_font_size = 9
         description_font_size = 7
