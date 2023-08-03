@@ -14,11 +14,7 @@
 
 import os.path
 
-from qgis.core import (
-    QgsApplication,
-    QgsMasterLayoutInterface,
-    QgsSettings
-)
+from qgis.core import QgsApplication, QgsMasterLayoutInterface, QgsSettings
 from qgis.gui import QgsGui, QgsLayoutDesignerInterface
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
