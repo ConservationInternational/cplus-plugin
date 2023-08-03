@@ -843,12 +843,29 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                     pw_index = 0
                     for pathway in list_pathways:
-                        pathway_name = pathway.name
-                        pathway_layer = pathway.layer
-                        added_pw_layer = qgis_instance.addMapLayer(pathway_layer)
-                        self.move_layer_to_group(added_pw_layer, im_pathway_group)
+                        try:
+                            # pathway_name = pathway.name
+                            pathway_layer = pathway.layer
 
-                        pw_index = pw_index + 1
+                            added_pw_layer = qgis_instance.addMapLayer(pathway_layer)
+                            self.move_layer_to_group(added_pw_layer, im_pathway_group)
+
+                            pw_index = pw_index + 1
+                        except Exception as err:
+                            self.show_message(
+                                tr(
+                                    "An error occurred loading a pathway, "
+                                    "check logs for more information"
+                                ),
+                                level=Qgis.Info,
+                            )
+                            log(
+                                tr(
+                                    "An error occurred loading a pathway, "
+                                    'scenario analysis, error message "{}"'.format(err)
+                                )
+                            )
+
                 im_index = im_index + 1
         else:
             # Reinitializes variables if processing were cancelled by the user
