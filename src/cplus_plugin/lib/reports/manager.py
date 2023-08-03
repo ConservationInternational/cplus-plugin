@@ -251,6 +251,22 @@ class ReportManager(QtCore.QObject):
             f"{base_dir}/ncs_pathways/Final_Agroforestry_Priority_norm.tif"
         )
         for im in range(7):
+            ncs1 = NcsPathway(
+                uuid.uuid4(),
+                "Amazing First NCS Item",
+                "Description for Amazing NCS",
+                TEST_RASTER_PATH,
+                LayerType.RASTER,
+                True
+            )
+            ncs2 = NcsPathway(
+                uuid.uuid4(),
+                "Spectacular NCS Pathway",
+                "Description for spectacular NCS pathway",
+                TEST_RASTER_PATH,
+                LayerType.RASTER,
+                True
+            )
             imp_model = ImplementationModel(
                 uuid.uuid4(),
                 f"Test Implementation Model - {im!s}",
@@ -259,6 +275,8 @@ class ReportManager(QtCore.QObject):
                 LayerType.RASTER,
                 True,
             )
+            imp_model.add_ncs_pathway(ncs1)
+            imp_model.add_ncs_pathway(ncs2)
             models.append(imp_model)
 
         return models

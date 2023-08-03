@@ -361,4 +361,7 @@ def create_bulleted_text(main_text: str, bulleted_items: typing.List[str]) -> st
     """
     bulleted_items = "\n- ".join(bulleted_items)
 
+    if not main_text:
+        return f"- {bulleted_items}"
+
     return f"{main_text}\n- {bulleted_items}"
