@@ -481,11 +481,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     100,
                     main_widget=self,
                 )
-                run_progress_dialog = QgsTask.fromFunction(
-                    "Progress dialog",
-                    self.progress_dialog.run,
-                )
-                QgsApplication.taskManager().addTask(run_progress_dialog)
+                self.progress_dialog.run_dialog()
             except Exception as err:
                 self.show_message(
                     tr(

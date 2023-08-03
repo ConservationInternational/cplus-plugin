@@ -55,7 +55,6 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         self.setWindowFlags(flags)
 
         # Dialog statuses
-        self.task = None
         self.analysis_running = True
         self.lbl_status.setText(
             "{}: {}".format(
@@ -99,20 +98,12 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         # Connections
         self.btn_cancel.clicked.connect(self.cancel_clicked)
 
-    def run(self, task) -> None:
-        """Starts the task to run in the background.
-
-        :param task: QgsTask which will run the dialog
-        :type task: QgsTask
+    def run_dialog(self):
+        """Runs/opens the dialog. Sets modal to modeless.
+        This will allow the dialog to display and not interfere with other processes.
         """
-
-        self.task = task
-
-        # self.task.taskTerminated.connect(self.test)
-        # self.task.taskCompleted.connect(self.test2)
-
+        self.setModal(False)
         self.show()
-        self.exec_()
 
     def get_processing_status(self) -> bool:
         """Returns the status of the processing.
@@ -185,7 +176,6 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
             self.stop_processing()
         else:
             # If close has been clicked. In this case processing were already stopped
-            self.task.cancel()  # Removes from QgsTask
             super().close()
 
     def reject(self) -> None:
