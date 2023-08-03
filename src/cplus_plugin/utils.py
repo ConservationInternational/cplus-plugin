@@ -10,10 +10,7 @@ from pathlib import Path
 from qgis.PyQt import QtCore, QtGui
 from qgis.core import Qgis, QgsApplication, QgsMessageLog
 
-from .definitions.defaults import (
-    DOCUMENTATION_SITE,
-    TEMPLATE_NAME
-)
+from .definitions.defaults import DOCUMENTATION_SITE, REPORT_FONT_NAME, TEMPLATE_NAME
 from .definitions.constants import NCS_PATHWAY_SEGMENT
 
 
@@ -73,6 +70,29 @@ def open_documentation(url=None):
     url = DOCUMENTATION_SITE if url is None else url
     result = QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
     return result
+
+
+def get_report_font(size=11, bold=False, italic=False) -> QtGui.QFont:
+    """Uses the default font family name to create a
+    font for use in the report.
+
+    :param size: The font point size, default is 11.
+    :type size: int
+
+    :param bold: True for bold font else False which is the default.
+    :type bold: bool
+
+    :param italic: True for font to be in italics else False which is the default.
+    :type italic: bool
+
+    :returns: Font to use in a report.
+    :rtype: QtGui.QFont
+    """
+    font_weight = 50
+    if bold is True:
+        font_weight = 75
+
+    return QtGui.QFont(REPORT_FONT_NAME, size, font_weight, italic)
 
 
 def is_dark_theme() -> bool:

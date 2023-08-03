@@ -15,7 +15,13 @@ from qgis.PyQt import QtCore, QtGui
 
 from ...conf import settings_manager, Settings
 from ...definitions.constants import OUTPUTS_SEGMENT
-from ...models.base import Scenario, SpatialExtent
+from ...models.base import (
+    ImplementationModel,
+    LayerType,
+    NcsPathway,
+    Scenario,
+    SpatialExtent,
+)
 from ...models.report import ReportContext, ReportResult
 from ...utils import FileUtils, log, tr
 
@@ -218,7 +224,7 @@ class ReportManager(QtCore.QObject):
             "Test Scenario",
             "This is a temporary scenario object for testing report production.",
             SpatialExtent([-23.960197335, 32.069186664, -25.201606226, 30.743498637]),
-            [],
+            self._imp_models(),
             [],
         )
 
@@ -236,6 +242,26 @@ class ReportManager(QtCore.QObject):
         self._report_tasks[scenario_id] = task_id
 
         return True
+
+    def _imp_models(self):
+        # Temporary for testing purposes
+        models = []
+        base_dir = settings_manager.get_value(Settings.BASE_DIR)
+        TEST_RASTER_PATH = (
+            f"{base_dir}/ncs_pathways/Final_Agroforestry_Priority_norm.tif"
+        )
+        for im in range(7):
+            imp_model = ImplementationModel(
+                uuid.uuid4(),
+                f"Test Implementation Model - {im!s}",
+                "Description for test implementation model",
+                TEST_RASTER_PATH,
+                LayerType.RASTER,
+                True,
+            )
+            models.append(imp_model)
+
+        return models
 
     def report_result(self, scenario_id: str) -> typing.Union[ReportResult, None]:
         """Gets the report result for the scenario with the given ID.

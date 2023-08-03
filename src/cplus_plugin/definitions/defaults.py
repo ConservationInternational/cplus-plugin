@@ -61,6 +61,9 @@ TEMPLATE_NAME = "main.qpt"
 MINIMUM_ITEM_WIDTH = 100
 MINIMUM_ITEM_HEIGHT = 100
 
+# Report font
+REPORT_FONT_NAME = "Ubuntu"
+
 
 PRIORITY_LAYERS = [
     {

@@ -11,7 +11,6 @@ from qgis.core import (
     Qgis,
     QgsFillSymbol,
     QgsLayoutExporter,
-    QgsLayoutItemGroup,
     QgsLayoutItemLabel,
     QgsLayoutItemMap,
     QgsLayoutItemPage,
@@ -22,15 +21,17 @@ from qgis.core import (
     QgsProject,
     QgsReadWriteContext,
     QgsTask,
+    QgsTextFormat,
 )
 
 from qgis.PyQt import QtCore, QtXml
 
 from ...definitions.defaults import MINIMUM_ITEM_HEIGHT, MINIMUM_ITEM_WIDTH
 from .layout_items import CplusMapRepeatItem
+from ...models.base import ImplementationModel
 from ...models.report import ReportContext, ReportResult
-from ...utils import log, tr
-from .variables import LayoutVariableRegister
+from ...utils import log, get_report_font, tr
+from .variables import create_bulleted_text, LayoutVariableRegister
 
 
 class ReportGeneratorTask(QgsTask):
@@ -391,7 +392,7 @@ class ReportGenerator:
         max_items_page = num_rows * num_cols
 
         # Temporary for testing
-        num_implementation_models = 7
+        num_implementation_models = len(self._context.scenario.models)
 
         if num_implementation_models == 0:
             tr_msg = "No implementation models in the scenario"
@@ -425,6 +426,7 @@ class ReportGenerator:
                     if im_count == num_implementation_models:
                         break
 
+                    imp_model = self._context.scenario.models[im_count]
                     reference_x_pos = repeat_ref_x + (c * adjusted_item_width)
                     self._add_implementation_model_items(
                         reference_x_pos,
@@ -432,6 +434,7 @@ class ReportGenerator:
                         adjusted_item_width,
                         adjusted_item_height,
                         page_pos,
+                        imp_model,
                     )
                     im_count += 1
 
@@ -443,7 +446,13 @@ class ReportGenerator:
                     item.setFrameEnabled(False)
 
     def _add_implementation_model_items(
-        self, pos_x: float, pos_y: float, width: float, height: float, page: int
+        self,
+        pos_x: float,
+        pos_y: float,
+        width: float,
+        height: float,
+        page: int,
+        imp_model: ImplementationModel,
     ):
         """Add a group item with map, labels etc. to the layout for the
         given IM.
@@ -452,6 +461,7 @@ class ReportGenerator:
         map_height = 0.8 * height
         im_map = QgsLayoutItemMap(self._layout)
         self._layout.addLayoutItem(im_map)
+        im_map.setFrameEnabled(False)
         map_ref_point = QgsLayoutPoint(pos_x, pos_y, self._layout.units())
         im_map.attemptMove(map_ref_point, True, False, page)
         im_map.attemptResize(QgsLayoutSize(width, map_height, self._layout.units()))
@@ -476,14 +486,17 @@ class ReportGenerator:
         symbol = QgsFillSymbol.createSimple(symbol_props)
         im_shape.setSymbol(symbol)
 
+        title_font_size = 9
+        description_font_size = 7
+
         # IM name label
-        margin = 0.005 * width
+        margin = 0.01 * width
         label_width = (width - (2 * margin)) / 2
         name_label_height = 0.3 * shape_height
         im_name_lbl = QgsLayoutItemLabel(self._layout)
         self._layout.addLayoutItem(im_name_lbl)
-        im_name_lbl.setFrameEnabled(True)
-        im_name_lbl.setText("Implementation Model Name")
+        im_name_lbl.setText(imp_model.name)
+        self._set_label_font(im_name_lbl, title_font_size)
         name_lbl_ref_point = QgsLayoutPoint(
             pos_x + margin, pos_y + map_height + margin, self._layout.units()
         )
@@ -496,8 +509,8 @@ class ReportGenerator:
         desc_label_height = 0.7 * shape_height - (margin * 2)
         im_desc_lbl = QgsLayoutItemLabel(self._layout)
         self._layout.addLayoutItem(im_desc_lbl)
-        im_desc_lbl.setFrameEnabled(True)
-        im_desc_lbl.setText("Implementation Model Description")
+        im_desc_lbl.setText(imp_model.description)
+        self._set_label_font(im_desc_lbl, description_font_size)
         desc_lbl_ref_point = QgsLayoutPoint(
             pos_x + margin,
             pos_y + map_height + name_label_height + margin * 2,
@@ -509,10 +522,11 @@ class ReportGenerator:
         )
 
         # NCS Pathway label
+        pathway_lbl_height = 0.15 * shape_height
         ncs_name_lbl = QgsLayoutItemLabel(self._layout)
         self._layout.addLayoutItem(ncs_name_lbl)
-        ncs_name_lbl.setFrameEnabled(True)
         ncs_name_lbl.setText(tr("NCS Pathways"))
+        self._set_label_font(ncs_name_lbl, title_font_size, True)
         ncs_lbl_ref_point = QgsLayoutPoint(
             pos_x + label_width + 2 * margin,
             pos_y + map_height + margin,
@@ -520,23 +534,47 @@ class ReportGenerator:
         )
         ncs_name_lbl.attemptMove(ncs_lbl_ref_point, True, False, page)
         ncs_name_lbl.attemptResize(
-            QgsLayoutSize(label_width, name_label_height, self._layout.units())
+            QgsLayoutSize(label_width, pathway_lbl_height, self._layout.units())
         )
 
         # NCS Pathways for IM label
+        if len(imp_model.pathways) == 0:
+            ncs_txt = tr("No NCS pathways in the implementation model")
+        else:
+            ncs_names = [ncs.name for ncs in imp_model.pathways]
+            ncs_txt = create_bulleted_text("", ncs_names)
+
+        im_pathways_lbl_height = 0.85 * shape_height - (margin * 2)
         im_ncs_desc_lbl = QgsLayoutItemLabel(self._layout)
         self._layout.addLayoutItem(im_ncs_desc_lbl)
-        im_ncs_desc_lbl.setFrameEnabled(True)
-        im_ncs_desc_lbl.setText("NCS Pathway for Implementation Model")
+        im_ncs_desc_lbl.setText(ncs_txt)
+        self._set_label_font(im_ncs_desc_lbl, description_font_size)
         im_ncs_lbl_ref_point = QgsLayoutPoint(
             pos_x + label_width + 2 * margin,
-            pos_y + map_height + name_label_height + margin * 2,
+            pos_y + map_height + pathway_lbl_height + margin * 2,
             self._layout.units(),
         )
         im_ncs_desc_lbl.attemptMove(im_ncs_lbl_ref_point, True, False, page)
         im_ncs_desc_lbl.attemptResize(
-            QgsLayoutSize(label_width, desc_label_height, self._layout.units())
+            QgsLayoutSize(label_width, im_pathways_lbl_height, self._layout.units())
         )
+
+    def _set_label_font(
+        self,
+        label: QgsLayoutItemLabel,
+        size: int,
+        bold: bool = False,
+        italic: bool = False,
+    ):
+        """Set font properties of the given layout label item."""
+        font = get_report_font(size, bold, italic)
+        version = Qgis.versionInt()
+        if version < 32400:
+            label.setFont(font)
+        else:
+            txt_format = QgsTextFormat()
+            txt_format.setFont(font)
+            label.setTextFormat(txt_format)
 
     def run(self) -> ReportResult:
         """Initiates the report generation process and returns
