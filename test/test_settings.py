@@ -64,7 +64,7 @@ class CplusPluginSettingsTest(unittest.TestCase):
         footer = settings_manager.get_value(Settings.REPORT_FOOTER)
         self.assertEqual(save_footer, footer)
 
-        disclaimer = settings_manager.get_value(Settings.REPORT_DISLAIMER)
+        disclaimer = settings_manager.get_value(Settings.REPORT_DISCLAIMER)
         self.assertEqual(save_disclaimer, disclaimer)
 
         report_license = settings_manager.get_value(Settings.REPORT_LICENSE)
@@ -98,7 +98,7 @@ class CplusPluginSettingsTest(unittest.TestCase):
         )
         settings_manager.set_value(Settings.REPORT_LOGO_DIR, save_custom_logo_dir)
         settings_manager.set_value(Settings.REPORT_FOOTER, save_footer)
-        settings_manager.set_value(Settings.REPORT_DISLAIMER, save_disclaimer)
+        settings_manager.set_value(Settings.REPORT_DISCLAIMER, save_disclaimer)
         settings_manager.set_value(Settings.REPORT_LICENSE, save_report_license)
         settings_manager.set_value(Settings.BASE_DIR, save_base_dir)
 

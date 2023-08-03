@@ -301,7 +301,7 @@
             </property>
             <property name="icon">
              <iconset>
-              <normaloff>../../../../../../../../../../../../resources/cplus_right_arrow.svg</normaloff>../../../../../../../../../../../../resources/cplus_right_arrow.svg</iconset>
+              <normaloff>../../resources/cplus_right_arrow.svg</normaloff>../../resources/cplus_right_arrow.svg</iconset>
             </property>
            </widget>
           </item>
@@ -315,7 +315,7 @@
             </property>
             <property name="icon">
              <iconset>
-              <normaloff>../../../../../../../../../../../../resources/cplus_left_arrow.svg</normaloff>../../../../../../../../../../../../resources/cplus_left_arrow.svg</iconset>
+              <normaloff>../../resources/cplus_left_arrow.svg</normaloff>../../resources/cplus_left_arrow.svg</iconset>
             </property>
            </widget>
           </item>
@@ -362,6 +362,27 @@
          <widget class="QPushButton" name="options_btn">
           <property name="text">
            <string>Options</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btn_rpt_run">
+          <property name="text">
+           <string>Run (Temp)</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btn_layout">
+          <property name="text">
+           <string>Designer (Temp)</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btn_pdf">
+          <property name="text">
+           <string>PDF (Temp)</string>
           </property>
          </widget>
         </item>

@@ -216,7 +216,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         settings_manager.set_value(Settings.REPORT_FOOTER, footer)
 
         disclaimer = self.txt_disclaimer.toPlainText()
-        settings_manager.set_value(Settings.REPORT_DISLAIMER, disclaimer)
+        settings_manager.set_value(Settings.REPORT_DISCLAIMER, disclaimer)
 
         report_license = self.txt_license.text()
         settings_manager.set_value(Settings.REPORT_LICENSE, report_license)
@@ -266,7 +266,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         footer = settings_manager.get_value(Settings.REPORT_FOOTER, default="")
         self.txt_footer.setPlainText(footer)
 
-        disclaimer = settings_manager.get_value(Settings.REPORT_DISLAIMER, default="")
+        disclaimer = settings_manager.get_value(Settings.REPORT_DISCLAIMER, default="")
         self.txt_disclaimer.setPlainText(disclaimer)
 
         report_license = settings_manager.get_value(Settings.REPORT_LICENSE, default="")

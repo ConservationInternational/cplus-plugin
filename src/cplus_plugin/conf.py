@@ -112,9 +112,10 @@ class Settings(enum.Enum):
     REPORT_CONTACT_EMAIL = "report/email"
     REPORT_WEBSITE = "report/website"
     REPORT_CUSTOM_LOGO = "report/custom_logo"
+    REPORT_CPLUS_LOGO = "report/cplus_logo"
     REPORT_LOGO_DIR = "report/logo_dir"
     REPORT_FOOTER = "report/footer"
-    REPORT_DISLAIMER = "report/disclaimer"
+    REPORT_DISCLAIMER = "report/disclaimer"
     REPORT_LICENSE = "report/license"
 
     # Last selected data directory

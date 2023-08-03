@@ -127,7 +127,7 @@ class FileUtils:
 
         ncs_pathway_dir = f"{base_dir}/{NCS_PATHWAY_SEGMENT}"
         message = tr(
-            "Missing parent directory when creating NCS pathways " "subdirectory."
+            "Missing parent directory when creating NCS pathways subdirectory."
         )
         FileUtils.create_new_dir(ncs_pathway_dir, message)
 
