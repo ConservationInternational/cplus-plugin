@@ -31,6 +31,7 @@ from .conf import Settings, settings_manager
 from .definitions.constants import NCS_PATHWAY_SEGMENT
 from .definitions.defaults import (
     ABOUT_DOCUMENTATION_SITE,
+    CI_LOGO_PATH,
     CPLUS_LOGO_PATH,
     DEFAULT_IMPLEMENTATION_MODELS,
     DEFAULT_LOGO_PATH,
@@ -401,3 +402,6 @@ def initialize_report_settings():
 
     if settings_manager.get_value(Settings.REPORT_CPLUS_LOGO, None) is None:
         settings_manager.set_value(Settings.REPORT_CPLUS_LOGO, CPLUS_LOGO_PATH)
+
+    if settings_manager.get_value(Settings.REPORT_CI_LOGO, None) is None:
+        settings_manager.set_value(Settings.REPORT_CI_LOGO, CI_LOGO_PATH)

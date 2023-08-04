@@ -178,6 +178,13 @@ class LayoutVariableRegister:
         )
         self._var_infos[cplus_logo_var_info.name] = cplus_logo_var_info
 
+        # Setting - CI logo
+        ci_logo_var_info = SettingsVariableInfo(
+            "ci_logo",
+            Settings.REPORT_CI_LOGO
+        )
+        self._var_infos[ci_logo_var_info.name] = ci_logo_var_info
+
         # Setting - footer
         footer_var_info = SettingsVariableInfo("footer", Settings.REPORT_FOOTER)
         self._var_infos[footer_var_info.name] = footer_var_info

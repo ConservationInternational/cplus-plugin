@@ -53,6 +53,12 @@ CPLUS_LOGO_PATH = str(
         + "/logos/cplus_logo.svg"
     )
 )
+CI_LOGO_PATH = str(
+    os.path.normpath(
+        os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        + "/logos/ci_logo.svg"
+    )
+)
 
 # Default template file name
 TEMPLATE_NAME = "main.qpt"

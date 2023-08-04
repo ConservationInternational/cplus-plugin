@@ -113,6 +113,7 @@ class Settings(enum.Enum):
     REPORT_WEBSITE = "report/website"
     REPORT_CUSTOM_LOGO = "report/custom_logo"
     REPORT_CPLUS_LOGO = "report/cplus_logo"
+    REPORT_CI_LOGO = "report/ci_logo"
     REPORT_LOGO_DIR = "report/logo_dir"
     REPORT_FOOTER = "report/footer"
     REPORT_DISCLAIMER = "report/disclaimer"

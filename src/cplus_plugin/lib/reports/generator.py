@@ -619,7 +619,9 @@ class ReportGenerator:
 
         label.refresh()
 
-    def _get_table_from_id(self, table_id: str) -> typing.Union[QgsLayoutItemManualTable, None]:
+    def _get_table_from_id(
+        self, table_id: str
+    ) -> typing.Union[QgsLayoutItemManualTable, None]:
         """Get the table object from the corresponding item id or return None if the table was not found."""
         table_frame = self._layout.itemById(table_id)
         if table_frame is None:
@@ -652,9 +654,7 @@ class ReportGenerator:
         """Populate table with weighting values for priority layer groups."""
         parent_table = self._get_table_from_id(PRIORITY_GROUP_WEIGHT_TABLE_ID)
         if parent_table is None:
-            tr_msg = tr(
-                "Could not find parent table for priority weighting values."
-            )
+            tr_msg = tr("Could not find parent table for priority weighting values.")
             self._error_messages.append(tr_msg)
             return
 
