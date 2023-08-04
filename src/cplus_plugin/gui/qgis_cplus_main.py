@@ -772,12 +772,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param group: Group to which the raster should be moved
         :type group: QgsLayerTreeGroup
         """
-        instance_root = QgsProject.instance().layerTreeRoot()
-        layer = instance_root.findLayer(layer.id())
-        layer_clone = layer.clone()
-        parent = layer.parent()
-        group.insertChildNode(0, layer_clone)  # Add to top of group
-        parent.removeChildNode(layer)
+        if layer:
+            instance_root = QgsProject.instance().layerTreeRoot()
+            layer = instance_root.findLayer(layer.id())
+            layer_clone = layer.clone()
+            parent = layer.parent()
+            group.insertChildNode(0, layer_clone)  # Add to top of group
+            parent.removeChildNode(layer)
 
     def post_analysis(self, scenario_result):
         """Handles analysis outputs from the final analysis results.
