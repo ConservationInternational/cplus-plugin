@@ -475,7 +475,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             try:
                 # Creates and opens the progress dialog for the analysis
                 self.progress_dialog = ProgressDialog(
-                    "Calculating the highest position...",
+                    "Calculating the highest position",
                     scenario_name,
                     0,
                     100,
