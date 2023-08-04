@@ -12,6 +12,7 @@ from qgis.core import (
     QgsFillSymbol,
     QgsLayoutExporter,
     QgsLayoutItemLabel,
+    QgsLayoutItemManualTable,
     QgsLayoutItemMap,
     QgsLayoutItemPage,
     QgsLayoutItemPicture,
@@ -22,12 +23,18 @@ from qgis.core import (
     QgsProject,
     QgsReadWriteContext,
     QgsTask,
+    QgsTableCell,
     QgsTextFormat,
 )
 
-from qgis.PyQt import QtCore, QtXml
+from qgis.PyQt import QtCore, QtGui, QtXml
 
-from ...definitions.defaults import MINIMUM_ITEM_HEIGHT, MINIMUM_ITEM_WIDTH
+from ...definitions.defaults import (
+    IMPLEMENTATION_MODEL_AREA_TABLE_ID,
+    MINIMUM_ITEM_HEIGHT,
+    MINIMUM_ITEM_WIDTH,
+    PRIORITY_GROUP_WEIGHT_TABLE_ID,
+)
 from .layout_items import CplusMapRepeatItem
 from ...models.base import ImplementationModel
 from ...models.report import ReportContext, ReportResult
@@ -496,7 +503,7 @@ class ReportGenerator:
         arrow_ref_point = QgsLayoutPoint(
             pos_x + 0.02 * width,
             pos_y + map_height - (0.1 * height),
-            self._layout.units()
+            self._layout.units(),
         )
         arrow_item.attemptMove(arrow_ref_point, True, False, page)
         arrow_item.attemptResize(
@@ -513,7 +520,7 @@ class ReportGenerator:
         im_name_lbl = QgsLayoutItemLabel(self._layout)
         self._layout.addLayoutItem(im_name_lbl)
         im_name_lbl.setText(imp_model.name)
-        self._set_label_font(im_name_lbl, title_font_size)
+        self.set_label_font(im_name_lbl, title_font_size)
         name_lbl_ref_point = QgsLayoutPoint(
             pos_x + margin, pos_y + map_height + margin, self._layout.units()
         )
@@ -527,7 +534,7 @@ class ReportGenerator:
         im_desc_lbl = QgsLayoutItemLabel(self._layout)
         self._layout.addLayoutItem(im_desc_lbl)
         im_desc_lbl.setText(imp_model.description)
-        self._set_label_font(im_desc_lbl, description_font_size)
+        self.set_label_font(im_desc_lbl, description_font_size)
         desc_lbl_ref_point = QgsLayoutPoint(
             pos_x + margin,
             pos_y + map_height + name_label_height + margin * 2,
@@ -543,7 +550,7 @@ class ReportGenerator:
         ncs_name_lbl = QgsLayoutItemLabel(self._layout)
         self._layout.addLayoutItem(ncs_name_lbl)
         ncs_name_lbl.setText(tr("NCS Pathways"))
-        self._set_label_font(ncs_name_lbl, title_font_size, True)
+        self.set_label_font(ncs_name_lbl, title_font_size, True)
         ncs_lbl_ref_point = QgsLayoutPoint(
             pos_x + label_width + 2 * margin,
             pos_y + map_height + margin,
@@ -565,7 +572,7 @@ class ReportGenerator:
         im_ncs_desc_lbl = QgsLayoutItemLabel(self._layout)
         self._layout.addLayoutItem(im_ncs_desc_lbl)
         im_ncs_desc_lbl.setText(ncs_txt)
-        self._set_label_font(im_ncs_desc_lbl, description_font_size)
+        self.set_label_font(im_ncs_desc_lbl, description_font_size)
         im_ncs_lbl_ref_point = QgsLayoutPoint(
             pos_x + label_width + 2 * margin,
             pos_y + map_height + pathway_lbl_height + margin * 2,
@@ -576,14 +583,31 @@ class ReportGenerator:
             QgsLayoutSize(label_width, im_pathways_lbl_height, self._layout.units())
         )
 
-    def _set_label_font(
-        self,
+    @classmethod
+    def set_label_font(
+        cls,
         label: QgsLayoutItemLabel,
         size: int,
         bold: bool = False,
         italic: bool = False,
     ):
-        """Set font properties of the given layout label item."""
+        """Set font properties of the given layout label item.
+
+        :param label: Label item whose font properties will
+        be updated.
+        :type label: QgsLayoutItemLabel
+
+        :param size: Point size of the font.
+        :type size: int
+
+        :param bold: True if font is to be bold, else
+        False (default).
+        :type bold: bool
+
+        :param italic: True if font is to be in italics, else
+        False (default).
+        :type italic: bool
+        """
         font = get_report_font(size, bold, italic)
         version = Qgis.versionInt()
         if version < 32400:
@@ -592,6 +616,57 @@ class ReportGenerator:
             txt_format = QgsTextFormat()
             txt_format.setFont(font)
             label.setTextFormat(txt_format)
+
+        label.refresh()
+
+    def _get_table_from_id(self, table_id: str) -> typing.Union[QgsLayoutItemManualTable, None]:
+        """Get the table object from the corresponding item id or return None if the table was not found."""
+        table_frame = self._layout.itemById(table_id)
+        if table_frame is None:
+            return None
+
+        return table_frame.multiFrame()
+
+    def _populate_im_area_table(self):
+        """Populate the table(s) for implementation models and
+        corresponding areas.
+        """
+        parent_table = self._get_table_from_id(IMPLEMENTATION_MODEL_AREA_TABLE_ID)
+        if parent_table is None:
+            tr_msg = tr(
+                "Could not find parent table for areas of implementation models."
+            )
+            self._error_messages.append(tr_msg)
+            return
+
+        rows_data = []
+        for imp_model in self._context.scenario.models:
+            name_cell = QgsTableCell(imp_model.name)
+            name_cell.setBackgroundColor(QtGui.QColor("#e9e9e9"))
+            area_cell = QgsTableCell(27.2)
+            rows_data.append([name_cell, area_cell])
+
+        parent_table.setTableContents(rows_data)
+
+    def _populate_scenario_weighting_values(self):
+        """Populate table with weighting values for priority layer groups."""
+        parent_table = self._get_table_from_id(PRIORITY_GROUP_WEIGHT_TABLE_ID)
+        if parent_table is None:
+            tr_msg = tr(
+                "Could not find parent table for priority weighting values."
+            )
+            self._error_messages.append(tr_msg)
+            return
+
+        rows_data = []
+        for priority_group in self._context.scenario.priority_layer_groups:
+            if "name" not in priority_group or "value" not in priority_group:
+                continue
+            name_cell = QgsTableCell(priority_group["name"])
+            value_cell = QgsTableCell(priority_group["value"])
+            rows_data.append([name_cell, value_cell])
+
+        parent_table.setTableContents(rows_data)
 
     def run(self) -> ReportResult:
         """Initiates the report generation process and returns
@@ -626,6 +701,12 @@ class ReportGenerator:
 
         # Render repeat items i.e. implementation models
         self._render_repeat_items()
+
+        # Populate implementation model area table
+        self._populate_im_area_table()
+
+        # Populate table with priority weighting values
+        self._populate_scenario_weighting_values()
 
         # Add CPLUS report flag
         self._variable_register.set_report_flag(self._layout)

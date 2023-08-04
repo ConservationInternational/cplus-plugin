@@ -64,6 +64,10 @@ MINIMUM_ITEM_HEIGHT = 100
 # Report font
 REPORT_FONT_NAME = "Ubuntu"
 
+# IDs for the given tables in the report template
+IMPLEMENTATION_MODEL_AREA_TABLE_ID = "implementation_model_area_table"
+PRIORITY_GROUP_WEIGHT_TABLE_ID = "assigned_weights_table"
+
 
 PRIORITY_LAYERS = [
     {

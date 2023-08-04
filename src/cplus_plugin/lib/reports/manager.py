@@ -20,6 +20,7 @@ from ...models.base import (
     LayerType,
     NcsPathway,
     Scenario,
+    ScenarioResult,
     SpatialExtent,
 )
 from ...models.report import ReportContext, ReportResult
@@ -209,26 +210,31 @@ class ReportManager(QtCore.QObject):
 
         return scenario_path_str
 
-    def generate(self) -> bool:
+    def generate(self, scenario_result: ScenarioResult = None) -> bool:
         """Initiates the report generation process using information
         resulting from the scenario analysis.
+
+        :param scenario_result: Contains details from the scenario analysis.
+        :type scenario_result: ScenarioResult
 
         :returns: True if the report generation process was successfully
         submitted else False if a running process is re-submitted.
         :rtype: bool
         """
-        # TODO: Code below needs to be refactored based on how the
-        #  results of the output are packaged.
-        scenario = Scenario(
+        # scenario = scenario_result.scenario
+
+        priority_groups = settings_manager.get_priority_groups()
+
+        scenario_test = Scenario(
             uuid.UUID("aec4e7f3-b5c6-434c-bf0a-2f6ebf0db926"),
             "Test Scenario",
             "This is a temporary scenario object for testing report production.",
             SpatialExtent([-23.960197335, 32.069186664, -25.201606226, 30.743498637]),
             self._imp_models(),
-            [],
+            priority_groups,
         )
 
-        ctx = self.create_report_context(scenario)
+        ctx = self.create_report_context(scenario_test)
 
         scenario_id = str(ctx.scenario.uuid)
         if scenario_id in self._report_tasks:
@@ -257,7 +263,7 @@ class ReportManager(QtCore.QObject):
                 "Description for Amazing NCS",
                 TEST_RASTER_PATH,
                 LayerType.RASTER,
-                True
+                True,
             )
             ncs2 = NcsPathway(
                 uuid.uuid4(),
@@ -265,7 +271,7 @@ class ReportManager(QtCore.QObject):
                 "Description for spectacular NCS pathway",
                 TEST_RASTER_PATH,
                 LayerType.RASTER,
-                True
+                True,
             )
             imp_model = ImplementationModel(
                 uuid.uuid4(),
