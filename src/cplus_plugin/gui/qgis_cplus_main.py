@@ -9,6 +9,10 @@ import uuid
 
 import datetime
 
+from functools import partial
+
+from pathlib import Path
+
 from qgis.PyQt import (
     QtCore,
     QtGui,
@@ -66,9 +70,14 @@ from ..definitions.defaults import (
 )
 from .progress_dialog import ProgressDialog
 
+from ..jobs.tasks import LayerCalculatorTask
+
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/qgis_cplus_main_dockwidget.ui")
 )
+
+position_feedback = QgsProcessingFeedback()
+processing_context = QgsProcessingContext()
 
 
 class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
@@ -120,7 +129,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.help_btn.clicked.connect(self.open_help)
         self.pilot_area_btn.clicked.connect(self.zoom_pilot_area)
-        self.run_scenario_btn.clicked.connect(self.run_scenario_analysis)
+        self.run_scenario_btn.clicked.connect(self.run_analysis)
         self.options_btn.clicked.connect(self.open_settings)
 
         self.restore_scenario()
@@ -199,7 +208,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         items_only = []
         stored_priority_groups = settings_manager.get_priority_groups()
         self.priority_groups_list.clear()
-        self.priority_groups_widgets
 
         for group in stored_priority_groups:
             group_widget = PriorityGroupWidget(
@@ -396,6 +404,36 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
         self.dock_widget_contents.layout().insertLayout(0, self.grid_layout)
 
+    def run_analysis(self):
+        """Runs the plugin analysis"""
+
+        log("Started analysis")
+
+        extent_list = PILOT_AREA_EXTENT["coordinates"]
+        default_extent = QgsRectangle(
+            extent_list[3], extent_list[0], extent_list[1], extent_list[2]
+        )
+        passed_extent = self.extent_box.outputExtent()
+        contains = default_extent == passed_extent or default_extent.contains(
+            passed_extent
+        )
+        implementation_models = [
+            item.implementation_model
+            for item in self.implementation_model_widget.selected_items()
+        ]
+        if implementation_models == [] or implementation_models is None:
+            self.show_message(
+                tr("Select at least one implementation models from step two."),
+                level=Qgis.Critical,
+            )
+            return
+            return
+        extent = SpatialExtent(
+            bbox=[extent_list[3], extent_list[2], extent_list[1], extent_list[0]]
+        )
+
+        self.run_models_analysis(implementation_models, extent)
+
     def run_scenario_analysis(self):
         """Performs the scenario analysis. This covers the pilot study area,
         and checks whether the AOI is outside the pilot study area.
@@ -504,11 +542,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 )
 
                 for model in implementation_models:
-                    pathways = model.pathways
-
-                    for pathway in pathways:
-                        log(f"adding pathway path {pathway.path}")
-                        layers.append(QgsRasterLayer(pathway.path))
+                    if model.layer:
+                        raster_layer = model.layer
+                        if isinstance(model.layer, str):
+                            raster_layer = QgsRasterLayer(model.layer, model.name)
+                        layers.append(
+                            raster_layer
+                        ) if raster_layer is not None else None
+                    else:
+                        for pathway in model.pathways:
+                            layers.append(QgsRasterLayer(pathway.path))
 
                 self.position_feedback.progressChanged.connect(self.update_progress_bar)
 
@@ -576,6 +619,60 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 f"Outside the pilot area, passed extent {extent}, default extent{default_ext}"
             )
             return
+
+    def run_models_analysis(self, models, extent):
+        model_count = 0
+        for model in models:
+            if not model.pathways:
+                return False
+
+            basenames = []
+            layers = []
+            new_ims_directory = f"{settings_manager.get_value(Settings.BASE_DIR)}/IMs"
+
+            FileUtils.create_new_dir(new_ims_directory)
+
+            output_file = (
+                f"{new_ims_directory}/" f"{model.name}_{str(uuid.uuid4())[:4]}.tif"
+            )
+            analysis_done = partial(
+                self.model_analysis_done, model_count, model, models
+            )
+            for pathway in model.pathways:
+                path_basename = Path(pathway.path).stem
+                layers.append(pathway.path)
+                basenames.append(f'"{path_basename}@1"')
+            expression = " + ".join(basenames)
+
+            # Actual processing calculation
+            alg_params = {
+                "CELLSIZE": 0,
+                "CRS": None,
+                "EXPRESSION": expression,
+                "EXTENT": None,
+                "LAYERS": layers,
+                "OUTPUT": output_file,
+            }
+
+            alg = QgsApplication.processingRegistry().algorithmById(
+                "qgis:rastercalculator"
+            )
+
+            task = QgsProcessingAlgRunnerTask(alg, alg_params, processing_context)
+
+            task.executed.connect(analysis_done)
+            QgsApplication.taskManager().addTask(task)
+
+            model_count = model_count + 1
+
+    def model_analysis_done(self, model_index, model, models, success, output):
+        if model is not None and (
+            output is not None and output.get("OUTPUT") is not None
+        ):
+            model.layer = QgsRasterLayer(output.get("OUTPUT"), model.name)
+
+        if model_index == len(models) - 1:
+            self.run_scenario_analysis()
 
     def cancel_processing_task(self):
         """Cancels the current processing task."""
