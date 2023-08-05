@@ -140,6 +140,7 @@ DEFAULT_NCS_PATHWAYS = [
         "systems by strategically planting trees in croplands.",
         "path": "Final_Agroforestry_Priority_norm.tif",
         "layer_type": 0,
+        "carbon_paths": ["bou_SOC_carbonsum_norm_inverse_null_con_clip.tif"],
     },
     {
         "uuid": "bd381140-64f0-43d0-be6c-50120dd6c174",
@@ -149,6 +150,10 @@ DEFAULT_NCS_PATHWAYS = [
         "efficiency.",
         "path": "Final_Animal_Management_Priority_norm.tif",
         "layer_type": 0,
+        "carbon_paths": [
+            "bou_SOC_carbonsum_norm_null_con_clip.tif",
+            "SOC_trend_30m_4_scaled_clip_norm_inverse_null_con_clip.tif",
+        ],
     },
     {
         "uuid": "fc36dd06-aea3-4067-9626-2d73916d79b0",
@@ -159,6 +164,7 @@ DEFAULT_NCS_PATHWAYS = [
         "tree density exceeding 75% with a canopy over 6m.",
         "path": "Final_Avoided_Indigenous_Forest_priority_norm.tif",
         "layer_type": 0,
+        "carbon_paths": ["bou_SOC_carbonsum_norm_null_con_clip.tif"],
     },
     {
         "uuid": "f7084946-6617-4c5d-97e8-de21059ca0d2",
@@ -169,6 +175,7 @@ DEFAULT_NCS_PATHWAYS = [
         "density less than 10%.",
         "path": "Final_Avoided_Grassland_priority_norm.tif",
         "layer_type": 0,
+        "carbon_paths": ["bou_SOC_carbonsum_norm_null_con_clip.tif"],
     },
     {
         "uuid": "00db44cf-a2e7-428a-86bb-0afedb9719ec",
@@ -179,9 +186,21 @@ DEFAULT_NCS_PATHWAYS = [
         "regions with open woodlands (vegetation density less than "
         "35% and a tree canopy greater than 2.5m) and natural "
         "wooded lands (vegetation density greater than 35% and a "
-        "tree canopy between 2.5m and 6m). ",
+        "tree canopy between 2.5m and 6m).",
         "path": "Final_Avoided_OpenWoodland_NaturalWoodedland_priority_norm.tif",
         "layer_type": 0,
+        "carbon_paths": ["bou_SOC_carbonsum_norm_null_con_clip.tif"],
+    },
+    {
+        "uuid": "7228ecae-8759-448d-b7ea-19366f74ee02",
+        "name": "Avoided Wetland Conversion",
+        "description": "Avoids carbon emissions by preventing the conversion "
+        "of wetlands in areas with a high risk of wetland loss. Wetlands "
+        "are defined as natural or semi-natural wetlands covered in "
+        "permanent or seasonal herbaceous vegetation.",
+        "path": "Final_Avoided_Wetland_priority_norm.tif",
+        "layer_type": 0,
+        "carbon_paths": ["bou_SOC_carbonsum_norm_null_con_clip.tif"],
     },
     {
         "uuid": "5475dd4a-5efc-4fb4-ae90-68ff4102591e",
@@ -190,6 +209,10 @@ DEFAULT_NCS_PATHWAYS = [
         "emissions by increasing resilience to catastrophic fire.",
         "path": "Final_Fire_Management_Priority_norm.tif",
         "layer_type": 0,
+        "carbon_paths": [
+            "bou_SOC_carbonsum_norm_null_con_clip.tif",
+            "SOC_trend_30m_4_scaled_clip_norm_inverse_null_con_clip.tif",
+        ],
     },
     {
         "uuid": "bede344c-9317-4c3f-801c-3117cc76be2c",
@@ -202,6 +225,10 @@ DEFAULT_NCS_PATHWAYS = [
         "tree density exceeding 75% with a canopy over 6m.",
         "path": "Final_Forest_Restoration_priority_norm.tif",
         "layer_type": 0,
+        "carbon_paths": [
+            "bou_SOC_carbonsum_norm_inverse_null_con_clip.tif",
+            "SOC_trend_30m_4_scaled_clip_norm_inverse_null_con_clip.tif",
+        ],
     },
     {
         "uuid": "384863e3-08d1-453b-ac5f-94ad6a6aa1fd",
@@ -214,9 +241,28 @@ DEFAULT_NCS_PATHWAYS = [
         "(vegetation density less than 35% and a tree canopy "
         "greater than 2.5m), and natural wooded lands (vegetation "
         "density greater than 75% and a tree canopy between 2.5m "
-        "and 6m). ",
+        "and 6m).",
         "path": "Final_Sananna_Restoration_priority_norm.tif",
         "layer_type": 0,
+        "carbon_paths": [
+            "bou_SOC_carbonsum_norm_inverse_null_con_clip.tif",
+            "SOC_trend_30m_4_scaled_clip_norm_inverse_null_con_clip.tif",
+        ],
+    },
+    {
+        "uuid": "540470c7-0ed8-48af-8d91-63c15e6d69d7",
+        "name": "Restoration - Wetland",
+        "description": "Sequesters carbon through the restoration of wetland "
+        "habitat. This pathway excludes the opportunity to "
+        "convert non-native wetland regions to wetlands. Wetlands "
+        "are defined as natural or semi-natural wetlands covered "
+        "in permanent or seasonal herbaceous vegetation.",
+        "path": "Final_Wetland_Restoration_priority_norm.tif",
+        "layer_type": 0,
+        "carbon_paths": [
+            "bou_SOC_carbonsum_norm_inverse_null_con_clip.tif",
+            "SOC_trend_30m_4_scaled_clip_norm_inverse_null_con_clip.tif",
+        ],
     },
     {
         "uuid": "71de0448-46c4-4163-a124-3d88cdcbba42",

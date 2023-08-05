@@ -170,6 +170,8 @@ LayerModelComponentType = typing.TypeVar(
 class NcsPathway(LayerModelComponent):
     """Contains information about an NCS pathway layer."""
 
+    carbon_paths: typing.List[str] = dataclasses.field(default_factory=list)
+
     def __eq__(self, other: "NcsPathway") -> bool:
         """Test equality of NcsPathway object with another
         NcsPathway object using the attributes.
@@ -196,6 +198,18 @@ class NcsPathway(LayerModelComponent):
             return False
 
         return True
+
+    def carbon_layers(self) -> typing.List[QgsRasterLayer]:
+        """Returns the list of carbon layers whose path is defined under
+        the `carbon_paths` attribute.
+
+        The caller should check the validity of the layers.
+
+        :returns: Carbon layers for the NCS pathway or an empty list
+        if the path is not defined.
+        :rtype: list
+        """
+        return [QgsRasterLayer(carbon_path) for carbon_path in self.carbon_paths]
 
 
 @dataclasses.dataclass
