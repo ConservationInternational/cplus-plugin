@@ -11,3 +11,4 @@ cplus_plugin_main_4217 - https://github.com/kartoza/cplus-plugin/suites/14752208
 cplus_plugin_main_46a7 - https://github.com/kartoza/cplus-plugin/suites/14794127167/artifacts/841775599
 cplus_plugin_main_eafb - https://github.com/kartoza/cplus-plugin/suites/14846630813/artifacts/845478188
 cplus_plugin_main_62aa - https://github.com/kartoza/cplus-plugin/suites/14848484145/artifacts/845563547
+cplus_plugin_main_c785 - https://github.com/kartoza/cplus-plugin/suites/14848488669/artifacts/845564081
