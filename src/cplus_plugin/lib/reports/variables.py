@@ -332,6 +332,7 @@ class LayoutVariableRegister:
         exp_scope = QgsExpressionContextUtils.layoutScope(layout)
         var_names = exp_scope.variableNames()
         var_values = []
+        vn = list(self._var_infos.keys())
         for name in var_names:
             if name in self._var_infos:
                 var_info = self._var_infos[name]
