@@ -25,6 +25,7 @@ def get_valid_ncs_pathway() -> NcsPathway:
         TEST_RASTER_PATH,
         LayerType.RASTER,
         True,
+        carbon_paths=[],
     )
 
 
@@ -88,4 +89,5 @@ NCS_PATHWAY_DICT = {
     "path": TEST_RASTER_PATH,
     "layer_type": 0,
     "user_defined": True,
+    "carbon_paths": [],
 }
