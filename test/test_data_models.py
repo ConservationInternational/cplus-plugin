@@ -35,21 +35,21 @@ class TestNcsPathway(TestCase):
 
     def test_ncs_is_valid_with_no_carbon_layers(self):
         """Confirm NCS item is valid when no carbon layers
-         are defined.
-         """
+        are defined.
+        """
         self.assertTrue(self.ncs.is_valid())
 
     def test_ncs_with_valid_carbon_layer(self):
         """Confirm NCS item is valid when a valid carbon
-         layer is defined.
-         """
+        layer is defined.
+        """
         valid_carbon_ncs = get_ncs_pathway_with_valid_carbon()
         self.assertTrue(valid_carbon_ncs.is_carbon_valid())
 
     def test_ncs_with_invalid_carbon_layer(self):
         """Confirm NCS item is invalid when an invalid
         carbon layer.
-         """
+        """
         invalid_carbon_ncs = get_ncs_pathway_with_invalid_carbon()
         self.assertFalse(invalid_carbon_ncs.is_carbon_valid())
 

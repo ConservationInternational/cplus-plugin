@@ -47,7 +47,7 @@ def get_ncs_pathway_with_valid_carbon() -> NcsPathway:
         TEST_RASTER_PATH,
         LayerType.RASTER,
         True,
-        carbon_paths=[TEST_RASTER_PATH]
+        carbon_paths=[TEST_RASTER_PATH],
     )
 
 
@@ -60,7 +60,7 @@ def get_ncs_pathway_with_invalid_carbon() -> NcsPathway:
         TEST_RASTER_PATH,
         LayerType.RASTER,
         True,
-        carbon_paths=["tenbytenraster"]
+        carbon_paths=["tenbytenraster"],
     )
 
 
