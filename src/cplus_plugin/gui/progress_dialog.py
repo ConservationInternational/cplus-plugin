@@ -93,9 +93,12 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         # Connections
         self.btn_cancel.clicked.connect(self.cancel_clicked)
 
+        self.analysis_finished_message = tr("Analysis has finished.")
+
     def run_dialog(self):
         """Runs/opens the dialog. Sets modal to modeless.
         This will allow the dialog to display and not interfere with other processes.
+
         """
         self.setModal(False)
         self.show()
@@ -132,7 +135,7 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
 
             if value >= 100:
                 # Analysis has finished
-                self.change_status_message("Analysis has finished")
+                self.change_status_message(self.analysis_finished_message)
                 self.processing_finished()
 
     def change_status_message(self, message="Processing") -> None:
