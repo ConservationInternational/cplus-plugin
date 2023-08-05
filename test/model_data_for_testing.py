@@ -38,6 +38,32 @@ def get_invalid_ncs_pathway() -> NcsPathway:
     )
 
 
+def get_ncs_pathway_with_valid_carbon() -> NcsPathway:
+    """Creates a valid NCS pathway object with a valid carbon layer."""
+    return NcsPathway(
+        UUID(VALID_NCS_UUID_STR),
+        "Valid NCS Pathway",
+        "Description for valid NCS",
+        TEST_RASTER_PATH,
+        LayerType.RASTER,
+        True,
+        carbon_paths=[TEST_RASTER_PATH]
+    )
+
+
+def get_ncs_pathway_with_invalid_carbon() -> NcsPathway:
+    """Creates an NCS pathway object with an invalid carbon layer."""
+    return NcsPathway(
+        UUID(VALID_NCS_UUID_STR),
+        "Invalid NCS Pathway",
+        "Description for invalid NCS",
+        TEST_RASTER_PATH,
+        LayerType.RASTER,
+        True,
+        carbon_paths=["tenbytenraster"]
+    )
+
+
 def get_implementation_model() -> ImplementationModel:
     """Creates a test ImplementationModel object."""
     return ImplementationModel(
