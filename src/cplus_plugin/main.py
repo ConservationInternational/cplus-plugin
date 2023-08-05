@@ -27,7 +27,7 @@ from qgis.PyQt.QtWidgets import QToolButton
 from qgis.PyQt.QtWidgets import QMenu
 
 from .conf import Settings, settings_manager
-from .definitions.constants import NCS_PATHWAY_SEGMENT
+from .definitions.constants import NCS_CARBON_SEGMENT, NCS_PATHWAY_SEGMENT
 from .definitions.defaults import (
     ABOUT_DOCUMENTATION_SITE,
     DEFAULT_IMPLEMENTATION_MODELS,
@@ -46,6 +46,7 @@ from .models.helpers import (
 from .settings import CplusOptionsFactory
 
 from .utils import (
+    FileUtils,
     log,
     open_documentation,
 )
@@ -305,6 +306,15 @@ def initialize_default_settings():
 
     This is normally called during plugin startup.
     """
+    # Create NCS subdirectories if BASE_DIR has been defined
+    base_dir = settings_manager.get_value(Settings.BASE_DIR)
+    if base_dir:
+        # Create NCS pathways subdirectory
+        FileUtils.create_ncs_pathways_dir(base_dir)
+
+        # Create NCS carbon subdirectory
+        FileUtils.create_ncs_carbon_dir(base_dir)
+
     # Add default pathways
     for ncs_dict in DEFAULT_NCS_PATHWAYS:
         try:
@@ -314,10 +324,23 @@ def initialize_default_settings():
                 # Update dir
                 base_dir = settings_manager.get_value(Settings.BASE_DIR, None)
                 if base_dir is not None:
+                    # Pathway location
                     file_name = ncs_dict["path"]
                     absolute_path = f"{base_dir}/{NCS_PATHWAY_SEGMENT}/{file_name}"
                     abs_path = str(os.path.normpath(absolute_path))
                     ncs_dict["path"] = abs_path
+
+                    # Carbon location
+                    carbon_file_names = ncs_dict["carbon_paths"]
+                    abs_carbon_paths = []
+                    for carbon_file_name in carbon_file_names:
+                        abs_carbon_path = (
+                            f"{base_dir}/{NCS_CARBON_SEGMENT}/{carbon_file_name}"
+                        )
+                        norm_carbon_path = str(os.path.normpath(abs_carbon_path))
+                        abs_carbon_paths.append(norm_carbon_path)
+                    ncs_dict["carbon_paths"] = abs_carbon_paths
+
                 ncs_dict["user_defined"] = False
                 settings_manager.save_ncs_pathway(ncs_dict)
             else:

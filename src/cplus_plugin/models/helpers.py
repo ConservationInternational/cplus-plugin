@@ -131,7 +131,12 @@ def create_ncs_pathway(source_dict) -> typing.Union[NcsPathway, None]:
     from the dictionary.
     :rtype: NcsPathway
     """
-    return create_layer_component(source_dict, NcsPathway)
+    ncs = create_layer_component(source_dict, NcsPathway)
+    carbon_paths_attr = "carbon_paths"
+    if carbon_paths_attr in source_dict:
+        ncs.carbon_paths = source_dict["carbon_paths"]
+
+    return ncs
 
 
 def create_implementation_model(source_dict) -> typing.Union[ImplementationModel, None]:
@@ -198,7 +203,10 @@ def ncs_pathway_to_dict(ncs_pathway: NcsPathway, uuid_to_str=True) -> dict:
     name-value pairs.
     :rtype: dict
     """
-    return layer_component_to_dict(ncs_pathway, uuid_to_str)
+    base_ncs_dict = layer_component_to_dict(ncs_pathway, uuid_to_str)
+    base_ncs_dict["carbon_paths"] = ncs_pathway.carbon_paths
+
+    return base_ncs_dict
 
 
 def clone_layer_component(

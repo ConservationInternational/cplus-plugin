@@ -266,6 +266,16 @@ class NcsPathwayItem(LayerComponentItem):
 
         return json.dumps(ncs_attrs)
 
+    def is_carbon_valid(self) -> bool:
+        """Returns the validity of the carbon layers in the
+        underlying NCSPathway model object.
+
+        :returns: True if the carbon layers are valid, else
+        False.
+        :rtype: bool
+        """
+        return self.ncs_pathway.is_carbon_valid()
+
 
 class ImplementationModelItem(LayerComponentItem):
     """Standard item for an implementation model object."""
@@ -704,8 +714,12 @@ class NcsPathwayItemModel(ComponentItemModel):
             item.setIcon(QtGui.QIcon())
         else:
             error_icon = FileUtils.get_icon("mIndicatorLayerError.svg")
-            item.setToolTip(self.tr("Invalid data source"))
             item.setIcon(error_icon)
+
+            if not ncs.is_carbon_valid():
+                item.setToolTip(self.tr("Invalid carbon layer data source"))
+            else:
+                item.setToolTip(self.tr("Invalid NCS pathway data source"))
 
     def pathways(self, valid_only: bool = False) -> typing.List[NcsPathway]:
         """Returns NCS pathway objects in the model.

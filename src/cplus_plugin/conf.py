@@ -15,7 +15,7 @@ import uuid
 from qgis.PyQt import QtCore
 from qgis.core import QgsRectangle, QgsSettings
 
-from .definitions.constants import NCS_PATHWAY_SEGMENT
+from .definitions.constants import NCS_CARBON_SEGMENT, NCS_PATHWAY_SEGMENT
 
 from .models.base import (
     ImplementationModel,
@@ -701,10 +701,20 @@ class SettingsManager(QtCore.QObject):
         if not base_dir:
             return
 
+        # Pathway location
         p = Path(ncs_pathway.path)
         abs_path = f"{base_dir}/{NCS_PATHWAY_SEGMENT}/" f"{p.name}"
         abs_path = str(os.path.normpath(abs_path))
         ncs_pathway.path = abs_path
+
+        # Carbon location
+        abs_carbon_paths = []
+        for cb_path in ncs_pathway.carbon_paths:
+            cp = Path(cb_path)
+            abs_carbon_path = f"{base_dir}/{NCS_CARBON_SEGMENT}/" f"{cp.name}"
+            abs_carbon_path = str(os.path.normpath(abs_carbon_path))
+            abs_carbon_paths.append(abs_carbon_path)
+        ncs_pathway.carbon_paths = abs_carbon_paths
 
         # Remove then re-insert
         self.remove_ncs_pathway(str(ncs_pathway.uuid))
