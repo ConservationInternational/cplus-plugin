@@ -8,6 +8,8 @@ from unittest import TestCase
 from model_data_for_testing import (
     get_implementation_model,
     get_invalid_ncs_pathway,
+    get_ncs_pathway_with_invalid_carbon,
+    get_ncs_pathway_with_valid_carbon,
     get_valid_ncs_pathway,
     VALID_NCS_UUID_STR,
 )
@@ -30,6 +32,26 @@ class TestNcsPathway(TestCase):
     def test_ncs_is_not_valid(self):
         """Confirm NCS item is not valid."""
         self.assertFalse(self.invalid_ncs.is_valid())
+
+    def test_ncs_is_valid_with_no_carbon_layers(self):
+        """Confirm NCS item is valid when no carbon layers
+        are defined.
+        """
+        self.assertTrue(self.ncs.is_valid())
+
+    def test_ncs_with_valid_carbon_layer(self):
+        """Confirm NCS item is valid when a valid carbon
+        layer is defined.
+        """
+        valid_carbon_ncs = get_ncs_pathway_with_valid_carbon()
+        self.assertTrue(valid_carbon_ncs.is_carbon_valid())
+
+    def test_ncs_with_invalid_carbon_layer(self):
+        """Confirm NCS item is invalid when an invalid
+        carbon layer.
+        """
+        invalid_carbon_ncs = get_ncs_pathway_with_invalid_carbon()
+        self.assertFalse(invalid_carbon_ncs.is_carbon_valid())
 
 
 class TestImplementationModel(TestCase):
