@@ -31,7 +31,7 @@ class CplusPluginProgressDialogTest(unittest.TestCase):
         progress_dialog = ProgressDialog(parent=PARENT)
 
         test_message = "This is a status message"
-        test_final_message = "This is a status message for scenario <b>Scenario</b>"
+        test_final_message = "This is a status message for scenario Scenario"
         progress_dialog.change_status_message(test_message)
         current_message = progress_dialog.lbl_status.text()
         self.assertEqual(test_final_message, current_message)
