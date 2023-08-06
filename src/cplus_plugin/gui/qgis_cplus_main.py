@@ -56,7 +56,7 @@ from ..conf import settings_manager, Settings
 
 from ..resources import *
 
-from ..utils import open_documentation, tr, log, FileUtils
+from ..utils import clean_filename, open_documentation, tr, log, FileUtils
 
 from ..definitions.defaults import (
     ADD_LAYER_ICON_PATH,
@@ -438,13 +438,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         try:
             # Creates and opens the progress dialog for the analysis
             self.progress_dialog = ProgressDialog(
-                "Preparing implementation models",
-                "Implemenation models",
+                "Raster calculation",
+                "implementation models",
                 0,
                 100,
                 main_widget=self,
             )
             self.progress_dialog.run_dialog()
+            self.progress_dialog.scenario_name = ""
+            self.progress_dialog.change_status_message(
+                tr("Raster calculation"), tr("models")
+            )
+
         except Exception as err:
             self.show_message(
                 tr(
@@ -542,14 +547,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             try:
                 layers = []
 
-                self.progress_dialog.progress_bar.minimum(0)
-                self.progress_dialog.progress_bar.maximum(100)
+                self.progress_dialog.progress_bar.setMinimum(0)
+                self.progress_dialog.progress_bar.setMaximum(100)
                 self.progress_dialog.progress_bar.setValue(0)
                 self.progress_dialog.analysis_finished_message = tr("Analysis finished")
+                self.progress_dialog.scenario_name = scenario.name
                 self.progress_dialog.change_status_message(
                     tr("Calculating highest position")
                 )
-                self.progress_dialog.scenario_name = scenario.name
+
+                self.position_feedback.progressChanged.connect(self.update_progress_bar)
 
                 for model in implementation_models:
                     if model.layer:
@@ -575,8 +582,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     f"{transformed_extent.yMinimum()},{transformed_extent.yMaximum()}"
                     f" [{dest_crs.authid()}]"
                 )
-
-                self.position_feedback.progressChanged.connect(self.update_progress_bar)
 
                 new_scenario_directory = (
                     f"{settings_manager.get_value(Settings.BASE_DIR)}/"
@@ -663,9 +668,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             FileUtils.create_new_dir(new_ims_directory)
 
-            output_file = (
-                f"{new_ims_directory}/" f"{model.name}_{str(uuid.uuid4())[:4]}.tif"
-            )
+            file_name = clean_filename(model.name.replace(" ", "_"))
+
+            output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
             analysis_done = partial(
                 self.model_analysis_done, model_count, model, models
             )
@@ -710,10 +715,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "qgis:rastercalculator"
             )
 
-            task = QgsProcessingAlgRunnerTask(alg, alg_params, processing_context)
+            self.processing_cancelled = False
 
-            task.executed.connect(analysis_done)
-            QgsApplication.taskManager().addTask(task)
+            self.task = QgsProcessingAlgRunnerTask(
+                alg, alg_params, self.processing_context, self.position_feedback
+            )
+
+            self.task.executed.connect(analysis_done)
+            QgsApplication.taskManager().addTask(self.task)
 
             model_count = model_count + 1
 

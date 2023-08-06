@@ -138,16 +138,18 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
                 self.change_status_message(self.analysis_finished_message)
                 self.processing_finished()
 
-    def change_status_message(self, message="Processing") -> None:
+    def change_status_message(self, message="Processing", entity="scenario") -> None:
         """Updates the status message
 
         :param message: Message to show on the status bar
         :type message: str
+
+        :param message: The current processed entity, eg analysis scenario,
+         ncs pathway or an implementation model
+        :type message: str
         """
         # Split like this so that the message gets translated, but not the scenario name
-        msg = "{} for scenario ".format(
-            message,
-        )
+        msg = "{} for {} ".format(message, entity)
         final_msg = "{}{}".format(
             tr(msg),
             self.scenario_name,
