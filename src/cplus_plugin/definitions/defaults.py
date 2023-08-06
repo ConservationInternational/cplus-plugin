@@ -10,6 +10,8 @@ PILOT_AREA_EXTENT = {
     "coordinates": [-23.960197335, 32.069186664, -25.201606226, 30.743498637],
 }
 
+DEFAULT_CRS_ID = 4326
+
 DOCUMENTATION_SITE = "https://kartoza.github.io/cplus-plugin"
 USER_DOCUMENTATION_SITE = "https://kartoza.github.io/cplus-plugin/user/cplus_ui_guide"
 ABOUT_DOCUMENTATION_SITE = "https://kartoza.github.io/cplus-plugin/about/ci"

@@ -12,8 +12,17 @@ from .base import (
     ImplementationModel,
     LayerModelComponent,
     LayerModelComponentType,
-    NcsPathway,
     LayerType,
+    NcsPathway,
+    SpatialExtent,
+)
+from ..definitions.defaults import DEFAULT_CRS_ID
+
+from qgis.core import (
+    QgsCoordinateReferenceSystem,
+    QgsCoordinateTransform,
+    QgsProject,
+    QgsRectangle,
 )
 
 
@@ -274,3 +283,67 @@ def copy_layer_component_attributes(
     target.update_layer_type()
 
     return target
+
+
+def extent_to_qgs_rectangle(
+    spatial_extent: SpatialExtent,
+) -> typing.Union[QgsRectangle, None]:
+    """Returns a QgsRectangle object from the SpatialExtent object.
+
+    If the SpatialExtent is invalid (i.e. less than four items) then it
+    will return None.
+
+    :param spatial_extent: Spatial extent data model that defines the
+    scenario bounds.
+    :type spatial_extent: SpatialExtent
+
+    :returns: QGIS rectangle defining the bounds for the scenario.
+    :rtype: QgsRectangle
+    """
+    if len(spatial_extent.bbox) < 4:
+        return None
+
+    return QgsRectangle(
+        spatial_extent.bbox[3],
+        spatial_extent.bbox[2],
+        spatial_extent.bbox[1],
+        spatial_extent.bbox[0],
+    )
+
+
+def extent_to_project_crs_extent(
+    spatial_extent: SpatialExtent, project: QgsProject = None
+) -> typing.Union[QgsRectangle, None]:
+    """Transforms SpatialExtent model to an QGIS extent based
+    on the CRS of the given project.
+
+    :param spatial_extent: Spatial extent data model that defines the
+    scenario bounds.
+    :type spatial_extent: SpatialExtent
+
+    :param project: Project whose CRS will be used to determine
+    the values of the output extent.
+    :type project: QgsProject
+
+    :returns: Output extent in the project's CRS. If the input extent
+    is invalid, this function will return None.
+    :rtype: QgsRectangle
+    """
+    input_rect = extent_to_qgs_rectangle(spatial_extent)
+    if input_rect is None:
+        return None
+
+    default_crs = QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
+    if not default_crs.isValid():
+        return None
+
+    if project is None:
+        project = QgsProject.instance()
+
+    target_crs = project.crs()
+    if default_crs == target_crs:
+        # No need for transformation
+        return input_rect
+
+    coordinate_xform = QgsCoordinateTransform(default_crs, project.crs(), project)
+    return coordinate_xform.transformBoundingBox(input_rect)

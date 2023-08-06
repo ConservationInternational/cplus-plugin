@@ -37,6 +37,7 @@ from ...definitions.defaults import (
 )
 from .layout_items import CplusMapRepeatItem
 from ...models.base import ImplementationModel
+from ...models.helpers import extent_to_project_crs_extent
 from ...models.report import ReportContext, ReportResult
 from ...utils import log, get_report_font, tr
 from .variables import create_bulleted_text, LayoutVariableRegister
@@ -146,6 +147,7 @@ class ReportGenerator:
         self._repeat_page = None
         self._repeat_page_num = -1
         self._repeat_item = None
+        self._normalized_scenario_extent = None
 
     @property
     def context(self) -> ReportContext:
@@ -280,6 +282,20 @@ class ReportGenerator:
                 self._repeat_page = self._layout.pageCollection().page(page_num)
                 self._repeat_page_num = page_num
                 self._repeat_item = item
+
+    def _set_scenario_extent(self) -> bool:
+        """Set scenario extent."""
+        extent = extent_to_project_crs_extent(
+            self._context.scenario.extent, self._project
+        )
+        if extent is None:
+            tr_msg = tr("Could not get the scenario extent as a QgsRectangle.")
+            self._error_messages.append(tr_msg)
+            return False
+
+        self._normalized_scenario_extent = extent
+
+        return True
 
     def duplicate_repeat_page(self, position: int) -> bool:
         """Duplicates the repeat page and adds it to the layout
@@ -619,6 +635,16 @@ class ReportGenerator:
 
         label.refresh()
 
+    def _update_map_extents(self):
+        """Update the extent of all map items in the layout."""
+        if self._normalized_scenario_extent is None:
+            return
+
+        items = self._layout.items()
+        for item in items:
+            if isinstance(item, QgsLayoutItemMap):
+                item.zoomToExtent(self._normalized_scenario_extent)
+
     def _get_table_from_id(
         self, table_id: str
     ) -> typing.Union[QgsLayoutItemManualTable, None]:
@@ -692,6 +718,13 @@ class ReportGenerator:
 
         if not self._load_template() or not self.output_dir:
             return self._get_failed_result()
+
+        # Set the normalized scenario extent
+        if not self._set_scenario_extent():
+            return self._get_failed_result()
+
+        # Update the extent of all map items in the layout
+        self._update_map_extents()
 
         # Update variable values
         self._variable_register.update_variables(self.layout, self._context)
