@@ -31,7 +31,7 @@ class CplusPluginProgressDialogTest(unittest.TestCase):
         progress_dialog = ProgressDialog(parent=PARENT)
 
         test_message = "This is a status message"
-        test_final_message = "This is a status message for scenario Scenario"
+        test_final_message = "This is a status message for scenario <b>Scenario</b>"
         progress_dialog.change_status_message(test_message)
         current_message = progress_dialog.lbl_status.text()
         self.assertEqual(test_final_message, current_message)
@@ -55,24 +55,6 @@ class CplusPluginProgressDialogTest(unittest.TestCase):
         # Checks if processing were stopped at 100% status
         processing_status = progress_dialog.get_processing_status()
         self.assertEqual(processing_status, False)
-
-    def test_view_report(self) -> None:
-        """Tests if the report is correctly opened in as a PDF"""
-
-        # view_report_pdf()
-        self.assertEqual(True, True)
-
-    def test_view_report_layout_designer(self) -> None:
-        """A check on whether the report is opened correctly in layout view."""
-
-        # view_report_layout_designer()
-        self.assertEqual(True, True)
-
-    def test_stop_processing(self) -> None:
-        """Checks if processing has been stopped correctly."""
-
-        # stop_processing()
-        self.assertEqual(True, True)
 
     def test_processing_stopped(self) -> None:
         """Checks if post-stopped changes occurs."""
