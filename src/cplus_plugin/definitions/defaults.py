@@ -42,6 +42,27 @@ REMOVE_LAYER_ICON_PATH = ":/plugins/cplus_plugin/cplus_right_arrow.svg"
 SCENARIO_OUTPUT_FILE_NAME = "cplus_scenario_output"
 SCENARIO_OUTPUT_LAYER_NAME = "scenario_result"
 
+STYLES_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/styles/"
+LAYER_STYLES = {
+    "scenario_result": STYLES_PATH + "0_default_scenario_style.qml",
+    "Agroforestry": STYLES_PATH + "1_agroforesty_style.qml",
+    "Alien Plant Removal": STYLES_PATH + "2_alien_plant_removal_style.qml",
+    "Applied Nucleation": STYLES_PATH + "3_applied_nucleation_style.qml",
+    "Assisted Natural Regeneration": STYLES_PATH + "4_assisted_natural_regen_style.qml",
+    "Avoided Deforestation and Degradation": STYLES_PATH
+    + "5_avoided_deforestation_style.qml",
+    "Avoided Wetland Conversion/Restoration": STYLES_PATH
+    + "6_wetland_impacts_style.qml",
+    "Bioproducts": STYLES_PATH + "7_bioproducts_style.qml",
+    "Bush Thinning": STYLES_PATH + "8_bush_thinning_style.qml",
+    "Direct Tree Seeding": STYLES_PATH + "9_tree_seedling_style.qml",
+    "Livestock Market Access": STYLES_PATH + "10_livestock_market_style.qml",
+    "Livestock Rangeland Management": STYLES_PATH + "11_livestock_rangeland_style.qml",
+    "Natural Woodland Livestock Management": STYLES_PATH
+    + "12_woodland_livestock_style.qml",
+    "Sustainable Crop Farming & Aquaponics": STYLES_PATH + "13_crop_farming_style.qml",
+}
+
 QGIS_GDAL_PROVIDER = "gdal"
 
 DEFAULT_LOGO_PATH = (
