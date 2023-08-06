@@ -11,7 +11,7 @@ from qgis.PyQt import QtCore, QtGui
 from qgis.core import Qgis, QgsApplication, QgsMessageLog
 
 from .definitions.defaults import DOCUMENTATION_SITE, REPORT_FONT_NAME, TEMPLATE_NAME
-from .definitions.constants import NCS_PATHWAY_SEGMENT
+from .definitions.constants import NCS_CARBON_SEGMENT, NCS_PATHWAY_SEGMENT
 
 
 def tr(message):
@@ -171,6 +171,18 @@ class FileUtils:
             "Missing parent directory when creating NCS pathways subdirectory."
         )
         FileUtils.create_new_dir(ncs_pathway_dir, message)
+
+    @staticmethod
+    def create_ncs_carbon_dir(base_dir: str):
+        """Creates an NCS subdirectory for carbon layers under BASE_DIR.
+        Skips creation of the subdirectory if it already exists.
+        """
+        if not Path(base_dir).is_dir():
+            return
+
+        ncs_carbon_dir = f"{base_dir}/{NCS_CARBON_SEGMENT}"
+        message = tr("Missing parent directory when creating NCS carbon subdirectory.")
+        FileUtils.create_new_dir(ncs_carbon_dir, message)
 
     @staticmethod
     def create_new_dir(directory: str, log_message: str = ""):

@@ -35,7 +35,7 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
 
     def __init__(
         self,
-        init_message="Processing...",
+        init_message="Processing",
         scenario_name="Scenario",
         minimum=0,
         maximum=100,
@@ -55,14 +55,8 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         self.setWindowFlags(flags)
 
         # Dialog statuses
-        self.task = None
         self.analysis_running = True
-        self.lbl_status.setText(
-            "{}: {}".format(
-                self.scenario_name,
-                tr(init_message),
-            )
-        )
+        self.change_status_message(init_message)
 
         # Progress bar
         self.progress_bar.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
@@ -99,20 +93,15 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         # Connections
         self.btn_cancel.clicked.connect(self.cancel_clicked)
 
-    def run(self, task) -> None:
-        """Starts the task to run in the background.
+        self.analysis_finished_message = tr("Analysis has finished.")
 
-        :param task: QgsTask which will run the dialog
-        :type task: QgsTask
+    def run_dialog(self):
+        """Runs/opens the dialog. Sets modal to modeless.
+        This will allow the dialog to display and not interfere with other processes.
+
         """
-
-        self.task = task
-
-        # self.task.taskTerminated.connect(self.test)
-        # self.task.taskCompleted.connect(self.test2)
-
+        self.setModal(False)
         self.show()
-        self.exec_()
 
     def get_processing_status(self) -> bool:
         """Returns the status of the processing.
@@ -146,20 +135,24 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
 
             if value >= 100:
                 # Analysis has finished
-                self.change_status_message("Analysis has finished.")
+                self.change_status_message(self.analysis_finished_message)
                 self.processing_finished()
 
-    def change_status_message(self, message="Processing...") -> None:
+    def change_status_message(self, message="Processing") -> None:
         """Updates the status message
 
         :param message: Message to show on the status bar
         :type message: str
         """
-        final_message = "{}: {}".format(
-            self.scenario_name,
-            tr(message),
+        # Split like this so that the message gets translated, but not the scenario name
+        msg = "{} for scenario ".format(
+            message,
         )
-        self.lbl_status.setText(final_message)
+        final_msg = "{}{}".format(
+            tr(msg),
+            self.scenario_name,
+        )
+        self.lbl_status.setText(final_msg)
 
     def view_report_pdf(self) -> None:
         """Opens a PDF version of the report"""
@@ -185,7 +178,6 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
             self.stop_processing()
         else:
             # If close has been clicked. In this case processing were already stopped
-            self.task.cancel()  # Removes from QgsTask
             super().close()
 
     def reject(self) -> None:
@@ -200,7 +192,7 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
     def stop_processing(self) -> None:
         """The user cancelled the processing."""
 
-        self.change_status_message("Processing has been cancelled by the user.")
+        self.change_status_message("Processing has been cancelled by the user")
 
         # Stops the processing task
         if self.main_widget:

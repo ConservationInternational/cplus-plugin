@@ -25,6 +25,7 @@ def get_valid_ncs_pathway() -> NcsPathway:
         TEST_RASTER_PATH,
         LayerType.RASTER,
         True,
+        carbon_paths=[],
     )
 
 
@@ -35,6 +36,32 @@ def get_invalid_ncs_pathway() -> NcsPathway:
         "Invalid NCS Pathway",
         "Description for invalid NCS",
         "",
+    )
+
+
+def get_ncs_pathway_with_valid_carbon() -> NcsPathway:
+    """Creates a valid NCS pathway object with a valid carbon layer."""
+    return NcsPathway(
+        UUID(VALID_NCS_UUID_STR),
+        "Valid NCS Pathway",
+        "Description for valid NCS",
+        TEST_RASTER_PATH,
+        LayerType.RASTER,
+        True,
+        carbon_paths=[TEST_RASTER_PATH],
+    )
+
+
+def get_ncs_pathway_with_invalid_carbon() -> NcsPathway:
+    """Creates an NCS pathway object with an invalid carbon layer."""
+    return NcsPathway(
+        UUID(VALID_NCS_UUID_STR),
+        "Invalid NCS Pathway",
+        "Description for invalid NCS",
+        TEST_RASTER_PATH,
+        LayerType.RASTER,
+        True,
+        carbon_paths=["tenbytenraster"],
     )
 
 
@@ -62,4 +89,5 @@ NCS_PATHWAY_DICT = {
     "path": TEST_RASTER_PATH,
     "layer_type": 0,
     "user_defined": True,
+    "carbon_paths": [],
 }
