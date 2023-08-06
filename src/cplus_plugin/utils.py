@@ -74,6 +74,25 @@ def open_documentation(url=None):
     return result
 
 
+def clean_filename(filename):
+    """Creates a safe filename by removing operating system
+    invalid filename characters.
+
+    :param filename: File name
+    :type filename: str
+
+    :returns A clean file name
+    :rtype str
+    """
+    characters = " %:/,\[]<>*?"
+
+    for character in characters:
+        if character in filename:
+            filename = filename.replace(character, "_")
+
+    return filename
+
+
 def is_dark_theme() -> bool:
     """Checks if the current QGIS UI theme is dark mode.
 
