@@ -92,6 +92,7 @@ def get_report_font(size=11, bold=False, italic=False) -> QtGui.QFont:
     if bold is True:
         font_weight = 75
 
+    # return QtGui.QFont(REPORT_FONT_NAME, size, font_weight, italic)
     return QtGui.QFont(REPORT_FONT_NAME, size, font_weight, italic)
 
 

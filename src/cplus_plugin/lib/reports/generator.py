@@ -486,6 +486,7 @@ class ReportGenerator:
         im_map = QgsLayoutItemMap(self._layout)
         self._layout.addLayoutItem(im_map)
         im_map.setFrameEnabled(False)
+        im_map.zoomToExtent(self._normalized_scenario_extent)
         map_ref_point = QgsLayoutPoint(pos_x, pos_y, self._layout.units())
         im_map.attemptMove(map_ref_point, True, False, page)
         im_map.attemptResize(QgsLayoutSize(width, map_height, self._layout.units()))
@@ -526,8 +527,8 @@ class ReportGenerator:
             QgsLayoutSize(0.07 * width, 0.07 * height, self._layout.units())
         )
 
-        title_font_size = 9
-        description_font_size = 7
+        title_font_size = 10
+        description_font_size = 8
 
         # IM name label
         margin = 0.01 * width
@@ -566,7 +567,7 @@ class ReportGenerator:
         ncs_name_lbl = QgsLayoutItemLabel(self._layout)
         self._layout.addLayoutItem(ncs_name_lbl)
         ncs_name_lbl.setText(tr("NCS Pathways"))
-        self.set_label_font(ncs_name_lbl, title_font_size, True)
+        self.set_label_font(ncs_name_lbl, title_font_size)
         ncs_lbl_ref_point = QgsLayoutPoint(
             pos_x + label_width + 2 * margin,
             pos_y + map_height + margin,
@@ -631,6 +632,8 @@ class ReportGenerator:
         else:
             txt_format = QgsTextFormat()
             txt_format.setFont(font)
+            txt_format.setSize(size)
+            txt_format.setSizeUnit(Qgis.RenderUnit.Points)
             label.setTextFormat(txt_format)
 
         label.refresh()
