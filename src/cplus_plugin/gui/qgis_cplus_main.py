@@ -435,6 +435,31 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             bbox=[extent_list[3], extent_list[2], extent_list[1], extent_list[0]]
         )
 
+        try:
+            # Creates and opens the progress dialog for the analysis
+            self.progress_dialog = ProgressDialog(
+                "Preparing implementation models",
+                "Implemenation models",
+                0,
+                100,
+                main_widget=self,
+            )
+            self.progress_dialog.run_dialog()
+        except Exception as err:
+            self.show_message(
+                tr(
+                    "An error occurred when opening the progress dialog, "
+                    "check logs for more information"
+                ),
+                level=Qgis.Info,
+            )
+            log(
+                tr(
+                    "An error occurred when opening the progress dialog for "
+                    'scenario analysis, error message "{}"'.format(err)
+                )
+            )
+
         self.run_models_analysis(implementation_models, extent)
 
     def run_scenario_analysis(self):
@@ -513,36 +538,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 tr(f"Selected area of interest is inside the pilot area."),
                 level=Qgis.Info,
             )
-            try:
-                # Creates and opens the progress dialog for the analysis
-                self.progress_dialog = ProgressDialog(
-                    "Calculating the highest position",
-                    scenario_name,
-                    0,
-                    100,
-                    main_widget=self,
-                )
-                self.progress_dialog.run_dialog()
-            except Exception as err:
-                self.show_message(
-                    tr(
-                        "An error occurred when opening the progress dialog, "
-                        "check logs for more information"
-                    ),
-                    level=Qgis.Info,
-                )
-                log(
-                    tr(
-                        "An error occurred when opening the progress dialog for "
-                        'scenario analysis, error message "{}"'.format(err)
-                    )
-                )
+
             try:
                 layers = []
-                extent = (
-                    f"{passed_extent.xMinimum()}, {passed_extent.xMaximum()},"
-                    f"{passed_extent.yMinimum()}, {passed_extent.yMaximum()}"
+
+                self.progress_dialog.progress_bar.minimum(0)
+                self.progress_dialog.progress_bar.maximum(100)
+                self.progress_dialog.progress_bar.setValue(0)
+                self.progress_dialog.analysis_finished_message = tr("Analysis finished")
+                self.progress_dialog.change_status_message(
+                    tr("Calculating highest position")
                 )
+                self.progress_dialog.scenario_name = scenario.name
 
                 for model in implementation_models:
                     if model.layer:
