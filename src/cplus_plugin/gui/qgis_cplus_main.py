@@ -911,4 +911,55 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             status = report_manager.view_pdf(result)
 
     def run_report(self):
-        report_manager.generate()
+        """Run report generation. This should be called after the
+        analysis is complete.
+        """
+        # if self.scenario_result is None:
+        #     log(
+        #         "Cannot run report generation, scenario result is "
+        #         "not defined",
+        #         info=False
+        #     )
+        #     return
+
+        submit_result = report_manager.generate(self.scenario_result)
+        if not submit_result:
+            msg = self.tr("Unable to submit report request for scenario")
+            self.show_message(f"{msg} {self.scenario_result.scenario.name}.")
+
+    def on_report_running(self, scenario_id: str):
+        """Slot raised when report task has started."""
+        if not self.report_job_is_for_current_scenario(scenario_id):
+            return
+
+    def on_report_finished(self, scenario_id: str):
+        """Slot raised when report task has finished."""
+        if not self.report_job_is_for_current_scenario(scenario_id):
+            return
+
+    def report_job_is_for_current_scenario(self, scenario_id: str) -> bool:
+        """Checks if the given scenario identifier is for the current
+        scenario result.
+
+        This is to ensure that signals raised by the report manager refer
+        to the current scenario result object and not for old jobs.
+
+        :param scenario_id: Scenario identifier usually from a signal
+        raised by the report manager.
+        :type scenario_id: str
+
+        :returns: True if the scenario identifier matches the current
+        scenario object in the results, else False.
+        :rtype: bool
+        """
+        if self.scenario_result is None:
+            return False
+
+        current_scenario = self.scenario_result.scenario
+        if current_scenario is None:
+            return False
+
+        if str(current_scenario.uuid) == scenario_id:
+            return True
+
+        return False
