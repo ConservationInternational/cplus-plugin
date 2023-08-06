@@ -487,6 +487,8 @@ class ReportGenerator:
         self._layout.addLayoutItem(im_map)
         im_map.setFrameEnabled(False)
         im_map.zoomToExtent(self._normalized_scenario_extent)
+        if imp_model.layer is not None:
+            im_map.setLayers([imp_model.layer])
         map_ref_point = QgsLayoutPoint(pos_x, pos_y, self._layout.units())
         im_map.attemptMove(map_ref_point, True, False, page)
         im_map.attemptResize(QgsLayoutSize(width, map_height, self._layout.units()))
