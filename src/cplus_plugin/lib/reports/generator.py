@@ -315,6 +315,7 @@ class ReportGenerator:
         extent = extent_to_project_crs_extent(
             self._context.scenario.extent, self._project
         )
+
         if extent is None:
             tr_msg = tr("Could not get the scenario extent as a QgsRectangle.")
             self._error_messages.append(tr_msg)
