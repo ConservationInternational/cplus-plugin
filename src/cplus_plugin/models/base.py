@@ -251,6 +251,7 @@ class ImplementationModel(LayerModelComponent):
     """
 
     pathways: typing.List[NcsPathway] = dataclasses.field(default_factory=list)
+    pwls_paths: typing.List[str] = dataclasses.field(default_factory=list)
 
     def __post_init__(self):
         """Pre-checks on initialization."""
@@ -346,6 +347,32 @@ class ImplementationModel(LayerModelComponent):
 
         return pathways[0]
 
+    def pw_layers(self) -> typing.List[QgsRasterLayer]:
+        """Returns the list of priority weighting layers whose path is defined under
+        the :py:attr:`~pwls_paths` attribute.
+
+        :returns: Priority layers for the implementation or an empty list
+        if the path is not defined.
+        :rtype: list
+        """
+        return [QgsRasterLayer(pwl_path) for pwl_path in self.pwls_paths]
+
+    def is_pwls_valid(self) -> bool:
+        """Checks if the priority layers are valid.
+
+        :returns: True if all priority layers are valid, else False if
+        even one is invalid. If there are no priority layers defined, it will
+        always return True.
+        :rtype: bool
+        """
+        is_valid = True
+        for cl in self.pw_layers():
+            if not cl.isValid():
+                is_valid = False
+                break
+
+        return is_valid
+
     def is_valid(self) -> bool:
         """Includes an additional check to assert if NCS pathways have
         been specified if the layer has not been set or is not valid.
@@ -357,6 +384,9 @@ class ImplementationModel(LayerModelComponent):
             return super().is_valid()
         else:
             if len(self.pathways) == 0:
+                return False
+
+            if not self.is_pwl_valid():
                 return False
 
             return True

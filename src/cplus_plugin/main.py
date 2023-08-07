@@ -27,7 +27,11 @@ from qgis.PyQt.QtWidgets import QToolButton
 from qgis.PyQt.QtWidgets import QMenu
 
 from .conf import Settings, settings_manager
-from .definitions.constants import NCS_CARBON_SEGMENT, NCS_PATHWAY_SEGMENT
+from .definitions.constants import (
+    NCS_CARBON_SEGMENT,
+    NCS_PATHWAY_SEGMENT,
+    PRIORITY_LAYERS_SEGMENT,
+)
 from .definitions.defaults import (
     ABOUT_DOCUMENTATION_SITE,
     DEFAULT_IMPLEMENTATION_MODELS,
@@ -243,6 +247,7 @@ class QgisCplus:
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         try:
+            settings_manager.delete_settings()
             for action in self.actions:
                 self.iface.removePluginMenu(self.tr("&CPLUS"), action)
                 self.iface.removePluginWebMenu(self.tr("&CPLUS"), action)
@@ -315,6 +320,9 @@ def initialize_default_settings():
         # Create NCS carbon subdirectory
         FileUtils.create_ncs_carbon_dir(base_dir)
 
+        # Create priority weighting layers subdirectory
+        FileUtils.create_pwls_dir(base_dir)
+
     # Add default pathways
     for ncs_dict in DEFAULT_NCS_PATHWAYS:
         try:
@@ -360,6 +368,20 @@ def initialize_default_settings():
             imp_model_uuid = imp_model_dict["uuid"]
             imp_model = settings_manager.get_implementation_model(imp_model_uuid)
             if imp_model is None:
+                # Update dir
+                # base_dir = settings_manager.get_value(Settings.BASE_DIR, None)
+                # if base_dir is not None:
+                #     # Priority layers location
+                #     pwl_file_names = imp_model_dict["pwls_paths"]
+                #     abs_pwls_paths = []
+                #     for pwl_file_name in pwl_file_names:
+                #         abs_pwl_path = (
+                #             f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/{pwl_file_name}"
+                #         )
+                #         norm_pwl_path = str(os.path.normpath(abs_pwl_path))
+                #         abs_pwls_paths.append(norm_pwl_path)
+                #     imp_model_dict["pwls_paths"] = abs_pwls_paths
+
                 settings_manager.save_implementation_model(imp_model_dict)
             else:
                 # Update values
