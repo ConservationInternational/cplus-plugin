@@ -71,6 +71,8 @@ from ..definitions.defaults import (
     USER_DOCUMENTATION_SITE,
     LAYER_STYLES,
 )
+from ..definitions.constants import PRIORITY_LAYERS_SEGMENT
+
 from .progress_dialog import ProgressDialog
 
 WidgetUi, _ = loadUiType(
@@ -127,6 +129,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.prepare_message_bar()
 
         self.progress_dialog = None
+        self.scenario_directory = None
 
         self.help_btn.clicked.connect(self.open_help)
         self.pilot_area_btn.clicked.connect(self.zoom_pilot_area)
@@ -153,7 +156,30 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         reload_icon = FileUtils.get_icon("mActionReload.svg")
         self.btn_reload_pwl.setIcon(reload_icon)
-        self.btn_reload_pwl.setToolTip(self.tr("Refresh and fetch new layers"))
+        self.btn_reload_pwl.setToolTip(
+            self.tr("Refresh and assign priority" " layers to implementation models")
+        )
+        update_pwl_layers = partial(self.update_pwl_layers, True)
+        self.btn_reload_pwl.clicked.connect(update_pwl_layers)
+        self.update_pwl_layers()
+
+    def update_pwl_layers(self, notify=False):
+        """Updates the priority layers path available in the store implementation models"""
+        settings_manager.update_implementation_models()
+        if notify:
+            self.show_message(
+                tr(
+                    "Updated all the implemenation models"
+                    " with their respective priority layers"
+                ),
+                Qgis.Info,
+            )
+        log(
+            tr(
+                "Updated all the implemenation models"
+                " with their respective priority layers"
+            )
+        )
 
     def save_scenario(self):
         """Save current scenario details into settings"""
@@ -479,6 +505,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
 
         try:
+            self.scenario_directory = (
+                f"{settings_manager.get_value(Settings.BASE_DIR)}/"
+                f'scenario_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+            )
+
+            FileUtils.create_new_dir(self.scenario_directory)
+
             # Creates and opens the progress dialog for the analysis
             self.progress_dialog = ProgressDialog(
                 "Raster calculation",
@@ -626,15 +659,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     f" [{dest_crs.authid()}]"
                 )
 
-                new_scenario_directory = (
-                    f"{settings_manager.get_value(Settings.BASE_DIR)}/"
-                    f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
-                )
-
-                FileUtils.create_new_dir(new_scenario_directory)
-
                 output_file = (
-                    f"{new_scenario_directory}/"
+                    f"{self.scenario_directory}/"
                     f"{SCENARIO_OUTPUT_FILE_NAME}_{str(scenario.uuid)[:4]}.tif"
                 )
 
@@ -707,7 +733,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             basenames = []
             layers = []
-            new_ims_directory = f"{settings_manager.get_value(Settings.BASE_DIR)}/IMs"
+            new_ims_directory = f"{self.scenario_directory}/implementation_models"
 
             FileUtils.create_new_dir(new_ims_directory)
 
@@ -823,39 +849,44 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             basenames = []
             layers = []
-            new_ims_directory = (
-                f"{settings_manager.get_value(Settings.BASE_DIR)}/weighted_ims"
-            )
-
-            FileUtils.create_new_dir(new_ims_directory)
-
-            file_name = clean_filename(model.name.replace(" ", "_"))
-
-            output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
             analysis_done = partial(
                 self.priority_layers_analysis_done, model_count, model, models
             )
             layers.append(model.layer.source())
-            basenames.append(f"{Path(model.layer.source()).stem}@1")
+            basenames.append(f'"{Path(model.layer.source()).stem}@1"')
 
             if model.pwls_paths is None or model.pwls_paths is []:
                 continue
 
-            log(f"pwl paths {model.pwls_paths}")
+            settings_model = settings_manager.get_implementation_model(str(model.uuid))
+            base_dir = settings_manager.get_value(Settings.BASE_DIR)
 
-            for pwl in model.pwls_paths:
-                path_basename = Path(pwl).stem
+            for pwl in settings_model.pwls_paths:
+                if base_dir not in pwl:
+                    pwl = f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/{pwl}"
+                pwl_path = Path(pwl)
+                if not pwl_path.exists():
+                    continue
+
+                path_basename = pwl_path.stem
                 layers.append(pwl)
-                for groups in priority_layers_groups:
-                    for group in groups:
-                        if group.get("name") == path_basename:
+                for layer in settings_manager.get_priority_layers():
+                    if layer.get("name") == path_basename:
+                        for group in layer.get("groups"):
                             value = group.get("value")
                             coefficient = float(value) / 100
-                            basenames.append(f'"{coefficient}*{path_basename}@1"')
-            expression = " + ".join(basenames)
+                            basenames.append(f'({coefficient}*"{path_basename}@1")')
 
-            log(f"expression {expression}")
-            log(f"layers {layers}")
+            if basenames is []:
+                return
+
+            new_ims_directory = f"{self.scenario_directory}/weighted_ims"
+
+            FileUtils.create_new_dir(new_ims_directory)
+
+            file_name = clean_filename(model.name.replace(" ", "_"))
+            output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            expression = " + ".join(basenames)
 
             # Actual processing calculation
             alg_params = {
@@ -867,7 +898,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "OUTPUT": output_file,
             }
 
-            log(f"{alg_params}")
+            log(f" Used params for weighting models {alg_params}")
 
             alg = QgsApplication.processingRegistry().algorithmById(
                 "qgis:rastercalculator"

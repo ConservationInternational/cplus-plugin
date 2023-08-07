@@ -152,8 +152,8 @@ def create_implementation_model(source_dict) -> typing.Union[ImplementationModel
     """
     implementation_model = create_layer_component(source_dict, ImplementationModel)
     pwls_paths_attr = "pwls_paths"
-    if pwls_paths_attr in source_dict:
-        implementation_model.carbon_paths = source_dict["pwls_paths"]
+    if pwls_paths_attr in source_dict.keys():
+        implementation_model.pwls_paths = source_dict["pwls_paths"]
 
     return implementation_model
 

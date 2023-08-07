@@ -361,6 +361,7 @@ class SettingsManager(QtCore.QObject):
             priority_layer = {"uuid": identifier}
             priority_layer["name"] = settings.value("name")
             priority_layer["description"] = settings.value("description")
+            priority_layer["path"] = settings.value("path")
             priority_layer["selected"] = settings.value("selected", type=bool)
             priority_layer["groups"] = groups
         return priority_layer
@@ -393,6 +394,7 @@ class SettingsManager(QtCore.QObject):
                         "uuid": uuid,
                         "name": priority_settings.value("name"),
                         "description": priority_settings.value("description"),
+                        "path": priority_settings.value("path"),
                         "selected": priority_settings.value("selected", type=bool),
                         "groups": groups,
                     }
@@ -466,6 +468,7 @@ class SettingsManager(QtCore.QObject):
             groups = priority_layer.get("groups", [])
             settings.setValue("name", priority_layer["name"])
             settings.setValue("description", priority_layer["description"])
+            settings.setValue("path", priority_layer["path"])
             settings.setValue("selected", priority_layer["selected"])
             groups_key = f"{settings_key}/groups"
             with qgis_settings(groups_key) as groups_settings:
@@ -827,16 +830,31 @@ class SettingsManager(QtCore.QObject):
 
         # PWLs location
         abs_pwls_paths = []
+        log(f"implemantation values {implementation_model.pwls_paths}")
         for layer in self.get_priority_layers():
-            if layer.path in implementation_model.pwls_paths:
-                abs_pwl_path = f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/" f"{layer.path}"
+            log(f"layer values {layer}")
+            if layer.get("path") in implementation_model.pwls_paths:
+                abs_pwl_path = (
+                    f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/" f"{layer.get('path')}"
+                )
                 abs_pwl_path = str(os.path.normpath(abs_pwl_path))
                 abs_pwls_paths.append(abs_pwl_path)
-        implementation_model.pwls_paths = abs_pwl_path
+        implementation_model.pwls_paths = abs_pwls_paths
 
         # Remove then re-insert
         self.remove_implementation_model(str(implementation_model.uuid))
         self.save_implementation_model(implementation_model)
+
+    def update_implementation_models(self):
+        """Updates the attributes of the avaialable implementation models
+
+        :param implementation_model: ImplementationModel object to be updated.
+        :type implementation_model: ImplementationModel
+        """
+        models = self.get_all_implementation_models()
+
+        for implementation_model in models:
+            self.update_implementation_model(implementation_model)
 
     def remove_implementation_model(self, implementation_model_uuid: str):
         """Removes an implementation model settings entry using the UUID.
