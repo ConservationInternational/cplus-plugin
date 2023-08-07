@@ -96,6 +96,25 @@ def get_report_font(size=11, bold=False, italic=False) -> QtGui.QFont:
     return QtGui.QFont(REPORT_FONT_NAME, size, font_weight, italic)
 
 
+def clean_filename(filename):
+    """Creates a safe filename by removing operating system
+    invalid filename characters.
+
+    :param filename: File name
+    :type filename: str
+
+    :returns A clean file name
+    :rtype str
+    """
+    characters = " %:/,\[]<>*?"
+
+    for character in characters:
+        if character in filename:
+            filename = filename.replace(character, "_")
+
+    return filename
+
+
 def is_dark_theme() -> bool:
     """Checks if the current QGIS UI theme is dark mode.
 
