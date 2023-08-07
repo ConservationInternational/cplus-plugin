@@ -557,12 +557,12 @@ class ReportGenerator:
         )
 
         title_font_size = 10
-        description_font_size = 8
+        description_font_size = 7
 
         # IM name label
         margin = 0.01 * width
         label_width = (width - (2 * margin)) / 2
-        name_label_height = 0.3 * shape_height
+        name_label_height = 0.15 * shape_height
         im_name_lbl = QgsLayoutItemLabel(self._layout)
         self._layout.addLayoutItem(im_name_lbl)
         im_name_lbl.setText(imp_model.name)
@@ -576,7 +576,7 @@ class ReportGenerator:
         )
 
         # IM description label
-        desc_label_height = 0.7 * shape_height - (margin * 2)
+        desc_label_height = 0.85 * shape_height - (margin * 2)
         im_desc_lbl = QgsLayoutItemLabel(self._layout)
         self._layout.addLayoutItem(im_desc_lbl)
         im_desc_lbl.setText(imp_model.description)
