@@ -265,7 +265,6 @@ class QgisCplus:
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         try:
-            settings_manager.delete_settings()
             for action in self.actions:
                 self.iface.removePluginMenu(self.tr("&CPLUS"), action)
                 self.iface.removePluginWebMenu(self.tr("&CPLUS"), action)
