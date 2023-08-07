@@ -635,11 +635,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
 
         if contains:
-            self.show_message(
-                tr(f"Selected area of interest is inside the pilot area."),
-                level=Qgis.Info,
-            )
-
             try:
                 layers = []
 
