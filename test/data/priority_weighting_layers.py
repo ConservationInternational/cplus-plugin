@@ -5,12 +5,14 @@ PRIORITY_LAYERS = [
             "name": "Carbon importance herding for health",
             "description": "Placeholder text for herding for health",
             "selected": True,
+            "path": [],
         },
         {
             "uuid": "f5687ced-af18-4cfc-9bc3-8006e40420b6",
             "name": "Carbon importance eat fresh",
             "description": "Placeholder text for eat fresh",
             "selected": False,
+            "path": [],
         },
     ],
     [
@@ -19,12 +21,14 @@ PRIORITY_LAYERS = [
             "name": "Biodiversity herding for health",
             "description": "Placeholder text for herding for health",
             "selected": False,
+            "path": [],
         },
         {
             "uuid": "fce41934-5196-45d5-80bd-96423ff0e74e",
             "name": "Biodiversity eat fresh",
             "description": "Placeholder text for eat fresh",
             "selected": False,
+            "path": [],
         },
     ],
     [
@@ -33,6 +37,7 @@ PRIORITY_LAYERS = [
             "name": "Test priority layer",
             "description": "Placeholder text for eat fresh",
             "selected": False,
+            "path": [],
         },
     ],
 ]

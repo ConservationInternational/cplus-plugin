@@ -1022,7 +1022,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             scenario_layer = qgis_instance.addMapLayer(layer)
 
             """A workaround to add a layer to a group.
-            Adding it using group.insertChildNode or group.addLayer causes issues, but adding to the root is fine.
+            Adding it using group.insertChildNode or group.addLayer causes issues,
+             but adding to the root is fine.
             This approach adds it to the root, and then moves it to the group.
             """
             self.move_layer_to_group(scenario_layer, scenario_group)
@@ -1075,7 +1076,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 im_index = im_index + 1
         else:
             # Reinitializes variables if processing were cancelled by the user
-            # Not doing this breaks the processing if a user tries to run the processing after cancelling or if the processing fails
+            # Not doing this breaks the processing if a user tries to run
+            # the processing after cancelling or if the processing fails
             self.position_feedback = QgsProcessingFeedback()
             self.processing_context = QgsProcessingContext()
 
