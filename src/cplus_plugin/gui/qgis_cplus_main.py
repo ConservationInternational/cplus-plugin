@@ -81,9 +81,6 @@ WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/qgis_cplus_main_dockwidget.ui")
 )
 
-position_feedback = QgsProcessingFeedback()
-processing_context = QgsProcessingContext()
-
 
 class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     """Main plugin UI"""
@@ -456,6 +453,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         scenario_name = self.scenario_name.text()
         scenario_description = self.scenario_description.text()
 
+        self.position_feedback = QgsProcessingFeedback()
+        self.processing_context = QgsProcessingContext()
+
         priority_layers_groups = [
             layer.get("groups")
             for layer in settings_manager.get_priority_layers()
@@ -694,6 +694,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     "OUTPUT": output_file,
                 }
 
+                log(f"Used parameters for highest position analysis {alg_params}")
+
                 alg = QgsApplication.processingRegistry().algorithmById(
                     "native:highestpositioninrasterstack"
                 )
@@ -805,6 +807,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "LAYERS": layers,
                 "OUTPUT": output_file,
             }
+
+            log(f"Used parameters for implementation models generation {alg_params}")
 
             alg = QgsApplication.processingRegistry().algorithmById(
                 "qgis:rastercalculator"
@@ -919,7 +923,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "OUTPUT": output_file,
             }
 
-            log(f" Used params for weighting models {alg_params}")
+            log(f" Used parameters for calculating weighting models {alg_params}")
 
             alg = QgsApplication.processingRegistry().algorithmById(
                 "qgis:rastercalculator"
