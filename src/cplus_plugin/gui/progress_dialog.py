@@ -24,6 +24,7 @@ from ..definitions.defaults import (
     ICON_HELP,
     REPORT_DOCUMENTATION,
 )
+from ..lib.reports.manager import report_manager
 
 Ui_DlgProgress, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/analysis_progress_dialog.ui")
@@ -45,6 +46,7 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         super().__init__(parent)
         self.setupUi(self)
         self.scenario_name = scenario_name
+        self.scenario_id = ""
         self.main_widget = main_widget
 
         # Dialog window options
@@ -73,16 +75,18 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         self.btn_view_report.setIcon(QIcon(ICON_REPORT))
 
         # Menu button to open report in Layout designer
-        action = QAction(QIcon(ICON_LAYOUT), "Layout designer", parent=self)
-        action.triggered.connect(self.view_report_layout_designer)
-        action.setEnabled(True)
-        self.menu.addAction(action)
+        self.designer_action = QAction(
+            QIcon(ICON_LAYOUT), "Layout designer", parent=self
+        )
+        self.designer_action.triggered.connect(self.view_report_layout_designer)
+        self.designer_action.setEnabled(False)
+        self.menu.addAction(self.designer_action)
 
         # Open a PDF version of the report
-        action = QAction(QIcon(ICON_PDF), "Open PDF", parent=self)
-        action.triggered.connect(self.view_report_pdf)
-        action.setEnabled(True)
-        self.menu.addAction(action)
+        self.pdf_action = QAction(QIcon(ICON_PDF), "Open PDF", parent=self)
+        self.pdf_action.triggered.connect(self.view_report_pdf)
+        self.pdf_action.setEnabled(False)
+        self.menu.addAction(self.pdf_action)
 
         # Open a Help for reports
         action = QAction(QIcon(ICON_HELP), "Help", parent=self)
@@ -156,13 +160,38 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         )
         self.lbl_status.setText(final_msg)
 
+    def set_report_complete(self):
+        """Enable layout designer and PDF report buttons."""
+        self.designer_action.setEnabled(True)
+        self.pdf_action.setEnabled(True)
+
     def view_report_pdf(self) -> None:
         """Opens a PDF version of the report"""
-        pass
+        if not self.scenario_id:
+            log("Scenario ID has not been set.")
+            return
+
+        result = report_manager.report_result(self.scenario_id)
+        if result is None:
+            log("Report result not found.")
+        else:
+            status = report_manager.view_pdf(result)
+            if not status:
+                log("Unable to open PDF report.")
 
     def view_report_layout_designer(self) -> None:
         """Opens the report in layout designer"""
-        pass
+        if not self.scenario_id:
+            log("Scenario ID has not been set.")
+            return
+
+        result = report_manager.report_result(self.scenario_id)
+        if result is None:
+            log("Report result not found.")
+        else:
+            status = report_manager.open_layout_designer(result)
+            if not status:
+                log("Unable to open layout designer.")
 
     def open_report_help(self) -> None:
         """Opens the Report guide in a browser"""

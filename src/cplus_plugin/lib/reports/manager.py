@@ -229,7 +229,7 @@ class ReportManager(QtCore.QObject):
         also contains feedback object for report updating and cancellation.
         :rtype: ReportSubmitStatus
         """
-        # scenario = scenario_result.scenario
+        scenario = scenario_result.scenario
 
         priority_groups = settings_manager.get_priority_groups()
 
@@ -242,7 +242,7 @@ class ReportManager(QtCore.QObject):
             priority_groups,
         )
 
-        ctx = self.create_report_context(scenario_test)
+        ctx = self.create_report_context(scenario)
 
         scenario_id = str(ctx.scenario.uuid)
         if scenario_id in self._report_tasks:

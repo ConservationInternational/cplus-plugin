@@ -109,11 +109,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.prepare_input()
 
-        # Temporary to remove
-        self.btn_layout.clicked.connect(self.open_designer)
-        self.btn_pdf.clicked.connect(self.open_pdf)
-        self.btn_rpt_run.clicked.connect(self.run_report)
-
         # Step 3, priority weighting layers initialization
         self.priority_groups_widgets = {}
 
@@ -125,6 +120,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.scenario_result = None
 
         self.analysis_finished.connect(self.post_analysis)
+
+        # Report manager
+        self.rpm = report_manager
+        self.rpm.generate_started.connect(self.on_report_running)
+        self.rpm.generate_completed.connect(self.on_report_finished)
 
     def prepare_input(self):
         """Initializes plugin input widgets"""
@@ -561,6 +561,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.progress_dialog.progress_bar.setValue(0)
                 self.progress_dialog.analysis_finished_message = tr("Analysis finished")
                 self.progress_dialog.scenario_name = scenario.name
+                self.progress_dialog.scenario_id = str(scenario.uuid)
                 self.progress_dialog.change_status_message(
                     tr("Calculating highest position")
                 )
@@ -780,6 +781,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.scenario_result.analysis_output = output
             self.scenario_result.state = ScenarioState.FINISHED
             self.analysis_finished.emit(self.scenario_result)
+
+            # Initiate report generation
+            self.run_report()
+
         else:
             self.progress_dialog.change_status_message(
                 "No valid output from the processing results."
@@ -1000,36 +1005,19 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Options the CPLUS settings in the QGIS options dialog."""
         self.iface.showOptionsDialog(currentPage=OPTIONS_TITLE)
 
-    def open_designer(self):
-        sid = "aec4e7f3-b5c6-434c-bf0a-2f6ebf0db926"
-        result = report_manager.report_result(sid)
-        if result is None:
-            log("Result not found")
-        else:
-            status = report_manager.open_layout_designer(result)
-
-    def open_pdf(self):
-        sid = "aec4e7f3-b5c6-434c-bf0a-2f6ebf0db926"
-        result = report_manager.report_result(sid)
-        if result is None:
-            log("Result not found")
-        else:
-            status = report_manager.view_pdf(result)
-
     def run_report(self):
         """Run report generation. This should be called after the
         analysis is complete.
         """
-        # if self.scenario_result is None:
-        #     log(
-        #         "Cannot run report generation, scenario result is "
-        #         "not defined",
-        #         info=False
-        #     )
-        #     return
+        if self.scenario_result is None:
+            log(
+                "Cannot run report generation, scenario result is " "not defined",
+                info=False,
+            )
+            return
 
-        submit_result = report_manager.generate(self.scenario_result)
-        if not submit_result:
+        submit_result = self.rpm.generate(self.scenario_result)
+        if not submit_result.status:
             msg = self.tr("Unable to submit report request for scenario")
             self.show_message(f"{msg} {self.scenario_result.scenario.name}.")
 
@@ -1038,10 +1026,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if not self.report_job_is_for_current_scenario(scenario_id):
             return
 
+        self.progress_dialog.change_status_message(
+            tr("Report generation"), tr("scenario")
+        )
+
     def on_report_finished(self, scenario_id: str):
         """Slot raised when report task has finished."""
         if not self.report_job_is_for_current_scenario(scenario_id):
             return
+
+        self.progress_dialog.set_report_complete()
 
     def report_job_is_for_current_scenario(self, scenario_id: str) -> bool:
         """Checks if the given scenario identifier is for the current
