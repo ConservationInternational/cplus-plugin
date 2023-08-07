@@ -227,6 +227,10 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         base_dir_path = self.folder_data.filePath()
         settings_manager.set_value(Settings.BASE_DIR, base_dir_path)
 
+        # Carbon layers coefficient saving
+        coefficient = self.carbon_coefficient_box.value()
+        settings_manager.set_value(Settings.CARBON_COEFFICIENT, coefficient)
+
         # Checks if the provided base directory exists
         if not os.path.exists(base_dir_path):
             iface.messageBar().pushCritical(
