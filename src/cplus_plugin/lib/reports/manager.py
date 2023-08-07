@@ -231,18 +231,10 @@ class ReportManager(QtCore.QObject):
         """
         scenario = scenario_result.scenario
 
-        priority_groups = settings_manager.get_priority_groups()
-
-        scenario_test = Scenario(
-            uuid.UUID("aec4e7f3-b5c6-434c-bf0a-2f6ebf0db926"),
-            "Test Scenario",
-            "This is a temporary scenario object for testing report production.",
-            SpatialExtent([-23.960197335, 32.069186664, -25.201606226, 30.743498637]),
-            self._imp_models(),
-            priority_groups,
-        )
-
         ctx = self.create_report_context(scenario)
+        if ctx is None:
+            log("Could not create report context. Check directory settings.")
+            return ReportSubmitStatus(False, None)
 
         scenario_id = str(ctx.scenario.uuid)
         if scenario_id in self._report_tasks:

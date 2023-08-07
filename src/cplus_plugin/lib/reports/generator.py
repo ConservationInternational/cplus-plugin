@@ -677,6 +677,8 @@ class ReportGenerator:
         for item in items:
             if isinstance(item, QgsLayoutItemMap):
                 item.zoomToExtent(self._normalized_scenario_extent)
+                ext = item.extent()
+                log(ext.toString())
 
     def _get_table_from_id(
         self, table_id: str
