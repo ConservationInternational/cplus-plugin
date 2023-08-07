@@ -8,7 +8,16 @@ import os
 from pathlib import Path
 
 from qgis.PyQt import QtCore, QtGui
-from qgis.core import Qgis, QgsApplication, QgsMessageLog
+from qgis.core import (
+    Qgis,
+    QgsCoordinateTransformContext,
+    QgsDistanceArea,
+    QgsGeometry,
+    QgsMessageLog,
+    QgsRasterLayer,
+    QgsUnitTypes,
+)
+from qgis import processing
 
 from .definitions.defaults import DOCUMENTATION_SITE, REPORT_FONT_NAME, TEMPLATE_NAME
 from .definitions.constants import NCS_CARBON_SEGMENT, NCS_PATHWAY_SEGMENT
@@ -115,16 +124,62 @@ def clean_filename(filename):
     return filename
 
 
-def is_dark_theme() -> bool:
-    """Checks if the current QGIS UI theme is dark mode.
+def calculate_raster_value_area(layer: QgsRasterLayer, band_number: int = 1) -> float:
+    """Calculates the area of value pixels for the given band in a raster layer.
 
-    :returns: True if the current UI theme is on dark mode, else False.
-    :rtype: bool
+    Please note that this function will run in the main application thread hence
+    for best results, caller should execute it in a background process if part
+    of a bigger workflow.
+
+    :param layer: Input layer whose area for value pixels is to be calculated.
+    :type layer: QgsRasterLayer
+
+    :param band_number: Band number to compute area, default is band one.
+    :type band_number: int
+
+    :returns: The area in hectares or -1 if it could not be
+    calculated.
+    :rtype: float
     """
-    if QgsApplication.instance().themeName() == "Night Mapping":
-        return True
+    if not layer.isValid():
+        log("Invalid layer for raster area calculation.", info=False)
+        return -1
 
-    return False
+    alg_name = "native:rasterlayeruniquevaluesreport"
+    params = {"INPUT": layer, "BAND": band_number}
+
+    output = processing.run(alg_name, params)
+
+    # Get number of pixels with values
+    total_pixel_count = output["TOTAL_PIXEL_COUNT"]
+    if total_pixel_count == 0:
+        log("Input layer for raster area calculation is empty.", info=False)
+        return -1
+
+    no_data_count = output["NODATA_PIXEL_COUNT"]
+    value_pixel_count = total_pixel_count - no_data_count
+
+    area_calc = QgsDistanceArea()
+    crs = layer.crs()
+    area_calc.setSourceCrs(crs, QgsCoordinateTransformContext())
+    if crs is not None:
+        # Use ellipsoid calculation if available
+        area_calc.setEllipsoid(crs.ellipsoidAcronym())
+
+    ext_geom = QgsGeometry.fromRect(layer.extent())
+    extents_area = area_calc.measureArea(ext_geom)
+
+    version = Qgis.versionInt()
+    if version < 33000:
+        unit_type = QgsUnitTypes.AreaHectares
+    else:
+        unit_type = Qgis.AreaUnit.Hectares
+
+    # Compute pixel size in hectares
+    area_ha = area_calc.convertAreaMeasurement(extents_area, unit_type)
+    pixel_area = area_ha / total_pixel_count
+
+    return pixel_area * value_pixel_count
 
 
 class FileUtils:

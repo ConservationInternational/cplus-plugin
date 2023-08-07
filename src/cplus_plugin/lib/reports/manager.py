@@ -8,7 +8,14 @@ from pathlib import Path
 import typing
 import uuid
 
-from qgis.core import Qgis, QgsApplication, QgsProject, QgsPrintLayout, QgsTask
+from qgis.core import (
+    Qgis,
+    QgsApplication,
+    QgsFeedback,
+    QgsProject,
+    QgsPrintLayout,
+    QgsTask,
+)
 from qgis.utils import iface
 
 from qgis.PyQt import QtCore, QtGui
@@ -23,7 +30,7 @@ from ...models.base import (
     ScenarioResult,
     SpatialExtent,
 )
-from ...models.report import ReportContext, ReportResult
+from ...models.report import ReportContext, ReportResult, ReportSubmitStatus
 from ...utils import FileUtils, log, tr
 
 from .generator import ReportGeneratorTask
@@ -210,7 +217,7 @@ class ReportManager(QtCore.QObject):
 
         return scenario_path_str
 
-    def generate(self, scenario_result: ScenarioResult = None) -> bool:
+    def generate(self, scenario_result: ScenarioResult = None) -> ReportSubmitStatus:
         """Initiates the report generation process using information
         resulting from the scenario analysis.
 
@@ -218,8 +225,9 @@ class ReportManager(QtCore.QObject):
         :type scenario_result: ScenarioResult
 
         :returns: True if the report generation process was successfully
-        submitted else False if a running process is re-submitted.
-        :rtype: bool
+        submitted else False if a running process is re-submitted. Object
+        also contains feedback object for report updating and cancellation.
+        :rtype: ReportSubmitStatus
         """
         # scenario = scenario_result.scenario
 
@@ -238,7 +246,7 @@ class ReportManager(QtCore.QObject):
 
         scenario_id = str(ctx.scenario.uuid)
         if scenario_id in self._report_tasks:
-            return False
+            return ReportSubmitStatus(False, ctx.feedback)
 
         msg_tr = tr("Generating report for")
         description = f"{msg_tr} {ctx.scenario.name}"
@@ -247,7 +255,7 @@ class ReportManager(QtCore.QObject):
 
         self._report_tasks[scenario_id] = task_id
 
-        return True
+        return ReportSubmitStatus(True, ctx.feedback)
 
     def _imp_models(self):
         # Temporary for testing purposes
@@ -359,7 +367,12 @@ class ReportManager(QtCore.QObject):
         template_path = FileUtils.report_template_path()
 
         return ReportContext(
-            template_path, scenario, context_name, output_dir, project_file_path
+            template_path,
+            scenario,
+            context_name,
+            output_dir,
+            project_file_path,
+            QgsFeedback(self),
         )
 
     @classmethod

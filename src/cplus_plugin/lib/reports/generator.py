@@ -9,6 +9,8 @@ import typing
 
 from qgis.core import (
     Qgis,
+    QgsBasicNumericFormat,
+    QgsFeedback,
     QgsFillSymbol,
     QgsLayoutExporter,
     QgsLayoutItemLabel,
@@ -39,7 +41,7 @@ from .layout_items import CplusMapRepeatItem
 from ...models.base import ImplementationModel
 from ...models.helpers import extent_to_project_crs_extent
 from ...models.report import ReportContext, ReportResult
-from ...utils import log, get_report_font, tr
+from ...utils import calculate_raster_value_area, get_report_font, log, tr
 from .variables import create_bulleted_text, LayoutVariableRegister
 
 
@@ -50,7 +52,7 @@ class ReportGeneratorTask(QgsTask):
         super().__init__(description)
         self._context = context
         self._result = None
-        self._generator = ReportGenerator(self._context)
+        self._generator = ReportGenerator(self._context, self._context.feedback)
 
     @property
     def context(self) -> ReportContext:
@@ -70,6 +72,10 @@ class ReportGeneratorTask(QgsTask):
         :rtype: ReportResult
         """
         return self._result
+
+    def cancel(self):
+        """Cancel the report generation task."""
+        super().cancel()
 
     def run(self) -> bool:
         """Initiates the report generation process and returns
@@ -136,8 +142,9 @@ class ReportGeneratorTask(QgsTask):
 class ReportGenerator:
     """Generator for CPLUS reports."""
 
-    def __init__(self, context: ReportContext):
+    def __init__(self, context: ReportContext, feedback: QgsFeedback = None):
         self._context = context
+        self._feedback = feedback
         self._error_messages: typing.List[str] = []
         self._layout = None
         self._project = None
@@ -157,6 +164,15 @@ class ReportGenerator:
         :rtype: ReportContext
         """
         return self._context
+
+    @property
+    def feedback(self) -> QgsFeedback:
+        """Returns the feedback object for process update and cancellation.
+
+        :returns: Feedback object or None if not specified.
+        :rtype: QgsFeedback
+        """
+        return self._feedback
 
     @property
     def layout(self) -> QgsPrintLayout:
@@ -196,6 +212,17 @@ class ReportGenerator:
         :rtype: QgsLayoutItemPage
         """
         return self._repeat_page
+
+    def _process_cancelled(self) -> bool:
+        """Check if there is a request to cancel the process
+        if a feedback object had been specified.
+        """
+        if self._feedback and self._feedback.isCanceled():
+            tr_msg = tr("Report generation cancelled.")
+            self._error_messages.append(tr_msg)
+            return True
+
+        return False
 
     def _set_project(self):
         """Deserialize the project from the report context."""
@@ -676,7 +703,18 @@ class ReportGenerator:
         for imp_model in self._context.scenario.models:
             name_cell = QgsTableCell(imp_model.name)
             name_cell.setBackgroundColor(QtGui.QColor("#e9e9e9"))
-            area_cell = QgsTableCell(27.2)
+            layer = imp_model.layer
+            if layer is None:
+                area_info = tr("No area <Error in layer>")
+            else:
+                area_info = calculate_raster_value_area(layer)
+                if area_info == -1:
+                    area_info = tr("An error occurred when computing the area.")
+            area_cell = QgsTableCell(area_info)
+            number_format = QgsBasicNumericFormat()
+            number_format.setThousandsSeparator(",")
+            number_format.setNumberDecimalPlaces(2)
+            area_cell.setNumericFormat(number_format)
             rows_data.append([name_cell, area_cell])
 
         parent_table.setTableContents(rows_data)
@@ -717,22 +755,40 @@ class ReportGenerator:
 
     def _run(self) -> ReportResult:
         """Runs report generation process."""
+        if self._process_cancelled():
+            return self._get_failed_result()
+
         self._set_project()
         if self._project is None:
             return self._get_failed_result()
 
+        if self._process_cancelled():
+            return self._get_failed_result()
+
         if not self._load_template() or not self.output_dir:
+            return self._get_failed_result()
+
+        if self._process_cancelled():
             return self._get_failed_result()
 
         # Set the normalized scenario extent
         if not self._set_scenario_extent():
             return self._get_failed_result()
 
+        if self._process_cancelled():
+            return self._get_failed_result()
+
         # Update the extent of all map items in the layout
         self._update_map_extents()
 
+        if self._process_cancelled():
+            return self._get_failed_result()
+
         # Update variable values
         self._variable_register.update_variables(self.layout, self._context)
+
+        if self._process_cancelled():
+            return self._get_failed_result()
 
         # Set repeat page
         self._set_repeat_page()
@@ -740,14 +796,23 @@ class ReportGenerator:
         # Render repeat items i.e. implementation models
         self._render_repeat_items()
 
+        if self._process_cancelled():
+            return self._get_failed_result()
+
         # Populate implementation model area table
         self._populate_im_area_table()
+
+        if self._process_cancelled():
+            return self._get_failed_result()
 
         # Populate table with priority weighting values
         self._populate_scenario_weighting_values()
 
         # Add CPLUS report flag
         self._variable_register.set_report_flag(self._layout)
+
+        if self._process_cancelled():
+            return self._get_failed_result()
 
         self._export_to_pdf()
 

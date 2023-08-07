@@ -6,6 +6,8 @@ import dataclasses
 import typing
 from uuid import UUID
 
+from qgis.core import QgsFeedback
+
 from .base import Scenario
 
 
@@ -18,6 +20,15 @@ class ReportContext:
     name: str
     scenario_output_dir: str
     project_file: str
+    feedback: QgsFeedback
+
+
+@dataclasses.dataclass
+class ReportSubmitStatus:
+    """Result of report submission process."""
+
+    status: bool
+    feedback: QgsFeedback
 
 
 @dataclasses.dataclass
