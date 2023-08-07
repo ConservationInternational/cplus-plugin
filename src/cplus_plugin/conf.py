@@ -832,9 +832,7 @@ class SettingsManager(QtCore.QObject):
 
         # PWLs location
         abs_pwls_paths = []
-        log(f"implemantation values {implementation_model.pwls_paths}")
         for layer in self.get_priority_layers():
-            log(f"layer values {layer}")
             if layer.get("path") in implementation_model.pwls_paths:
                 abs_pwl_path = (
                     f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/" f"{layer.get('path')}"
