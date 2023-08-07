@@ -134,6 +134,9 @@ class Settings(enum.Enum):
     SCENARIO_DESCRIPTION = "scenario_description"
     SCENARIO_EXTENT = "scenario_extent"
 
+    # Coefficient for carbon layers
+    CARBON_COEFFICIENT = "carbon_coefficient"
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""

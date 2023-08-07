@@ -73,7 +73,7 @@ from ..definitions.defaults import (
     USER_DOCUMENTATION_SITE,
     LAYER_STYLES,
 )
-from ..definitions.constants import PRIORITY_LAYERS_SEGMENT
+from ..definitions.constants import NCS_CARBON_SEGMENT, PRIORITY_LAYERS_SEGMENT
 
 from .progress_dialog import ProgressDialog
 
@@ -561,7 +561,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 )
             )
 
-        self.run_models_analysis(implementation_models, priority_layers_groups, extent)
+        self.run_pathways_analysis(
+            implementation_models, priority_layers_groups, extent
+        )
 
     def run_scenario_analysis(self):
         """Performs the scenario analysis. This covers the pilot study area,
@@ -735,6 +737,143 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             return
 
+    def run_pathways_analysis(self, models, priority_layers_groups, extent):
+        """Runs the required model pathways analysis on the passed implementation models
+
+        :param model: List of the selected implementation models
+        :type model: typing.List[ImplementationModel]
+
+        :param extent: selected extent from user
+        :type extent: SpatialExtent
+        """
+        model_count = 0
+        for model in models:
+            if not model.pathways:
+                return False
+
+            new_ims_directory = f"{self.scenario_directory}/pathways_carbon_layers"
+            carbon_coefficient = float(
+                settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.5)
+            )
+            base_dir = settings_manager.get_value(Settings.BASE_DIR)
+
+            FileUtils.create_new_dir(new_ims_directory)
+
+            file_name = clean_filename(model.name.replace(" ", "_"))
+
+            output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
+
+            for pathway in model.pathways:
+                basenames = []
+                layers = []
+                path_basename = Path(pathway.path).stem
+                layers.append(pathway.path)
+                basenames.append(f'"{path_basename}@1"')
+
+                for carbon_path in pathway.carbon_paths:
+                    if base_dir not in carbon_path:
+                        carbon_path = f"{base_dir}/{NCS_CARBON_SEGMENT}/{carbon_path}"
+                    carbon_full_path = Path(carbon_path)
+                    if not carbon_full_path.exists():
+                        continue
+                    layers.append(carbon_path)
+                    basenames.append(
+                        f'({carbon_coefficient} * "{carbon_full_path.stem}@1")'
+                    )
+
+                expression = " + ".join(basenames)
+
+                box = QgsRectangle(
+                    float(extent.bbox[0]),
+                    float(extent.bbox[1]),
+                    float(extent.bbox[2]),
+                    float(extent.bbox[3]),
+                )
+
+                source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
+                dest_crs = QgsRasterLayer(layers[0]).crs()
+                transform = QgsCoordinateTransform(
+                    source_crs, dest_crs, QgsProject.instance()
+                )
+                transformed_extent = transform.transformBoundingBox(box)
+
+                extent_string = (
+                    f"{transformed_extent.xMinimum()},{transformed_extent.xMaximum()},"
+                    f"{transformed_extent.yMinimum()},{transformed_extent.yMaximum()}"
+                    f" [{dest_crs.authid()}]"
+                )
+                analysis_done = partial(
+                    self.pathways_analysis_done,
+                    model_count,
+                    models,
+                    extent_string,
+                    priority_layers_groups,
+                    pathway,
+                )
+
+                # Actual processing calculation
+                alg_params = {
+                    "CELLSIZE": 0,
+                    "CRS": None,
+                    "EXPRESSION": expression,
+                    "EXTENT": extent_string,
+                    "LAYERS": layers,
+                    "OUTPUT": output_file,
+                }
+
+                log(
+                    f"Used parameters for combining pathways and carbon layers generation {alg_params}"
+                )
+
+                alg = QgsApplication.processingRegistry().algorithmById(
+                    "qgis:rastercalculator"
+                )
+
+                self.processing_cancelled = False
+
+                self.task = QgsProcessingAlgRunnerTask(
+                    alg, alg_params, self.processing_context, self.position_feedback
+                )
+
+                self.task.executed.connect(analysis_done)
+                QgsApplication.taskManager().addTask(self.task)
+
+            model_count = model_count + 1
+
+    def pathways_analysis_done(
+        self,
+        model_index,
+        models,
+        extent,
+        priority_layers_groups,
+        pathway,
+        success,
+        output,
+    ):
+        """Slot that handles post calculations for the models pathways and
+         carbon layers
+
+        :param model_index: List index of the target model
+        :type model_index: int
+
+        :param pathway: Target pathway
+        :type pathway: NCSPathway
+
+        :param models: List of the selected implementation models
+        :type models: typing.List[ImplementationModel]
+
+        :param success: Whether the scenario analysis was successful
+        :type success: bool
+
+        :param output: Analysis output results
+        :type output: dict
+        """
+        if output is not None and output.get("OUTPUT") is not None:
+            pathway.path = output.get("OUTPUT")
+
+        if model_index == len(models) - 1:
+            self.run_models_analysis(models, priority_layers_groups, extent)
+
     def run_models_analysis(self, models, priority_layers_groups, extent):
         """Runs the required model analysis on the passed implementation models
 
@@ -765,31 +904,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 basenames.append(f'"{path_basename}@1"')
             expression = " + ".join(basenames)
 
-            box = QgsRectangle(
-                float(extent.bbox[0]),
-                float(extent.bbox[1]),
-                float(extent.bbox[2]),
-                float(extent.bbox[3]),
-            )
-
-            source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
-            dest_crs = QgsRasterLayer(layers[0]).crs()
-            transform = QgsCoordinateTransform(
-                source_crs, dest_crs, QgsProject.instance()
-            )
-            transformed_extent = transform.transformBoundingBox(box)
-
-            extent_string = (
-                f"{transformed_extent.xMinimum()},{transformed_extent.xMaximum()},"
-                f"{transformed_extent.yMinimum()},{transformed_extent.yMaximum()}"
-                f" [{dest_crs.authid()}]"
-            )
             analysis_done = partial(
                 self.model_analysis_done,
                 model_count,
                 model,
                 models,
-                extent_string,
+                extent,
                 priority_layers_groups,
             )
 
@@ -798,7 +918,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "CELLSIZE": 0,
                 "CRS": None,
                 "EXPRESSION": expression,
-                "EXTENT": extent_string,
+                "EXTENT": extent,
                 "LAYERS": layers,
                 "OUTPUT": output_file,
             }
