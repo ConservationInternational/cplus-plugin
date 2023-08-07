@@ -514,7 +514,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if base_dir is None:
             self.show_message(
                 tr(
-                    f"Plugin base directory is not set! "
+                    f"Plugin base data directory is not set! "
                     f"Go to plugin settings in order to set it."
                 ),
                 level=Qgis.Critial,
