@@ -1,0 +1,417 @@
+# -*- coding: utf-8 -*-
+"""
+Registers custom report variables for layout design
+and handles report generation.
+"""
+import os
+from pathlib import Path
+import typing
+import uuid
+
+from qgis.core import (
+    Qgis,
+    QgsApplication,
+    QgsFeedback,
+    QgsProject,
+    QgsPrintLayout,
+    QgsTask,
+)
+from qgis.utils import iface
+
+from qgis.PyQt import QtCore, QtGui
+
+from ...conf import settings_manager, Settings
+from ...definitions.constants import OUTPUTS_SEGMENT
+from ...models.base import (
+    ImplementationModel,
+    LayerType,
+    NcsPathway,
+    Scenario,
+    ScenarioResult,
+    SpatialExtent,
+)
+from ...models.report import ReportContext, ReportResult, ReportSubmitStatus
+from ...utils import FileUtils, log, tr
+
+from .generator import ReportGeneratorTask
+from .variables import LayoutVariableRegister
+
+
+class ReportManager(QtCore.QObject):
+    """Registers custom report variables for
+    layout design and handles report generation.
+    """
+
+    generate_started = QtCore.pyqtSignal(str)
+    generate_completed = QtCore.pyqtSignal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._variable_register = LayoutVariableRegister()
+        self.report_name = tr("Scenario Analysis Report")
+
+        # Task id (value) indexed by scenario id (key)
+        self._report_tasks = {}
+
+        # Report results (value) indexed by scenario id (key)
+        self._report_results = {}
+
+        self.tm = QgsApplication.instance().taskManager()
+        self.tm.statusChanged.connect(self.on_task_status_changed)
+
+        self.root_output_dir = ""
+        base_dir = settings_manager.get_value(Settings.BASE_DIR, "")
+        if base_dir:
+            self.root_output_dir = f"{base_dir}/{OUTPUTS_SEGMENT}"
+
+    @property
+    def variable_register(self) -> LayoutVariableRegister:
+        """Get the instance of the variable register used
+        for the management of variables.
+
+        :returns: The register for managing variables in
+        report layout scope.
+        :rtype: LayoutVariableRegister
+        """
+        return self._variable_register
+
+    def register_variables(self, layout: QgsPrintLayout):
+        """Registers custom variables and their corresponding
+        initial values in the layout.
+
+        :param layout: Layout object where the custom
+        variables will be registered.
+        :type layout: QgsPrintLayout
+        """
+        self._variable_register.register_variables(layout)
+
+    def scenario_by_task_id(self, task_id: int) -> str:
+        """Gets the scenario identifier for the report generation t
+        ask with the given ID.
+
+        :param task_id: ID of the task whose corresponding scenario
+        is to be retrieved.
+        :type task_id: int
+
+        :returns: Scenario identifier whose report is being generated
+        by a process with the given task id or an empty string if
+        there was no match.
+        :rtype: str
+        """
+        scenario_ids = [
+            sid for sid, tid in self._report_tasks.items() if tid == task_id
+        ]
+        if len(scenario_ids) == 0:
+            return ""
+
+        return scenario_ids[0]
+
+    def on_task_status_changed(self, task_id: int, status: QgsTask.TaskStatus):
+        """Slot raised when the status of a task has changed.
+
+        This function will emit when the report generation task has started
+        or when it has completed successfully or terminated due to an error.
+
+        :param task_id: ID of the task.
+        :type task_id: int
+
+        :param status: New task status.
+        :type status: QgsTask.TaskStatus
+        """
+        scenario_id = self.scenario_by_task_id(task_id)
+
+        # Not related to CPLUS report or task
+        if not scenario_id:
+            return
+
+        if status == QgsTask.TaskStatus.Running:
+            self.generate_started.emit(scenario_id)
+
+        elif status == QgsTask.TaskStatus.Complete:
+            # Get result
+            task = self.tm.task(task_id)
+            result = task.result
+            if result is not None:
+                self._report_results[scenario_id] = result
+
+            # Remove task
+            self.remove_report_task(scenario_id)
+
+            self.generate_completed.emit(scenario_id)
+
+    def remove_report_task(self, scenario_id: str) -> bool:
+        """Remove report task associated with the given scenario.
+
+        :param scenario_id: Identified of the scenario whose report
+        generation process is to be removed.
+        :type scenario_id: str
+
+        :returns: True if the task has been successfully removed
+        else False if there is no associated task for the given
+        scenario.
+        :rtype: bool
+        """
+        if scenario_id not in self._report_tasks:
+            return False
+
+        task_id = self._report_tasks[scenario_id]
+        task = self.tm.task(task_id)
+        if task is None:
+            return False
+
+        if (
+            task.status() != QgsTask.TaskStatus.Complete
+            or task.status() != QgsTask.TaskStatus.Terminated
+        ):
+            task.cancel()
+
+        _ = self._report_tasks.pop(scenario_id)
+
+        return True
+
+    def create_scenario_dir(self, scenario: Scenario) -> str:
+        """Creates an output directory (within BASE_DIR) for saving the
+        analysis outputs for the given scenario.
+
+        :param scenario: Reference scenario object.
+        :type scenario: Scenario
+
+        :returns: The absolute path to the output directory. If
+        BASE_DIR does not exist, it will not create the directory and
+        will return an empty string. If the current user does not have
+        write permissions to the base directory, it will return an
+        empty string.
+        :rtype: str
+        """
+        if not self.root_output_dir:
+            return ""
+
+        if not os.access(self.root_output_dir, os.W_OK):
+            log("No permission to write to output directory.")
+            return ""
+
+        output_path = Path(self.root_output_dir)
+        if not output_path.exists():
+            try:
+                output_path.mkdir()
+            except FileNotFoundError:
+                msg = (
+                    "Missing parent directory when creating "
+                    "outputs subdirectory in the base directory."
+                )
+                log(msg)
+                return ""
+
+        scenario_path_str = f"{self.root_output_dir}/{str(scenario.uuid)}"
+        scenario_output_path = Path(scenario_path_str)
+        if not scenario_output_path.exists():
+            try:
+                scenario_output_path.mkdir()
+            except FileNotFoundError:
+                msg = (
+                    "Missing parent directory when creating "
+                    "scenario subdirectory in the outputs directory."
+                )
+                log(msg)
+                return ""
+
+        return scenario_path_str
+
+    def generate(self, scenario_result: ScenarioResult = None) -> ReportSubmitStatus:
+        """Initiates the report generation process using information
+        resulting from the scenario analysis.
+
+        :param scenario_result: Contains details from the scenario analysis.
+        :type scenario_result: ScenarioResult
+
+        :returns: True if the report generation process was successfully
+        submitted else False if a running process is re-submitted. Object
+        also contains feedback object for report updating and cancellation.
+        :rtype: ReportSubmitStatus
+        """
+        scenario = scenario_result.scenario
+
+        ctx = self.create_report_context(scenario)
+        if ctx is None:
+            log("Could not create report context. Check directory settings.")
+            return ReportSubmitStatus(False, None)
+
+        scenario_id = str(ctx.scenario.uuid)
+        if scenario_id in self._report_tasks:
+            return ReportSubmitStatus(False, ctx.feedback)
+
+        msg_tr = tr("Generating report for")
+        description = f"{msg_tr} {ctx.scenario.name}"
+        report_task = ReportGeneratorTask(description, ctx)
+        task_id = self.tm.addTask(report_task)
+
+        self._report_tasks[scenario_id] = task_id
+
+        return ReportSubmitStatus(True, ctx.feedback)
+
+    def _imp_models(self):
+        # Temporary for testing purposes
+        models = []
+        base_dir = settings_manager.get_value(Settings.BASE_DIR)
+        TEST_RASTER_PATH = (
+            f"{base_dir}/ncs_pathways/Final_Agroforestry_Priority_norm.tif"
+        )
+        for im in range(7):
+            ncs1 = NcsPathway(
+                uuid.uuid4(),
+                "Amazing First NCS Item",
+                "Description for Amazing NCS",
+                TEST_RASTER_PATH,
+                LayerType.RASTER,
+                True,
+            )
+            ncs2 = NcsPathway(
+                uuid.uuid4(),
+                "Spectacular NCS Pathway",
+                "Description for spectacular NCS pathway",
+                TEST_RASTER_PATH,
+                LayerType.RASTER,
+                True,
+            )
+            imp_model = ImplementationModel(
+                uuid.uuid4(),
+                f"Test Implementation Model - {im!s}",
+                "Description for test implementation model",
+                TEST_RASTER_PATH,
+                LayerType.RASTER,
+                True,
+            )
+            imp_model.add_ncs_pathway(ncs1)
+            imp_model.add_ncs_pathway(ncs2)
+            models.append(imp_model)
+
+        return models
+
+    def report_result(self, scenario_id: str) -> typing.Union[ReportResult, None]:
+        """Gets the report result for the scenario with the given ID.
+
+        :param scenario_id: Identifier of the scenario whose report is to
+        be retrieved.
+        :type scenario_id: str
+
+        :returns: Result of the report generation process. Caller needs to
+        check if the process was successful or there was an error by checking
+        the status of the `success` attribute. For scenarios that had not
+        been submitted for report generation, a None object will be
+        returned.
+        :rtype: ReportResult
+        """
+        if scenario_id not in self._report_results:
+            return None
+
+        return self._report_results[scenario_id]
+
+    def create_report_context(
+        self, scenario: Scenario
+    ) -> typing.Union[ReportContext, None]:
+        """Creates the report context for use in the report
+        generator task.
+
+        :param scenario: Scenario whose report context will be created
+        under BASE_DIR.
+        :type scenario: Scenario
+
+        :returns: A report context object containing the information
+        for generating the report else None if it could not be created.
+        :rtype: ReportContext
+        """
+        output_dir = self.create_scenario_dir(scenario)
+        if not output_dir:
+            return None
+
+        project_file_path = f"{output_dir}/{scenario.name}.qgz"
+        if os.path.exists(project_file_path):
+            counter = 1
+            while True:
+                project_file_path = f"{output_dir}/{scenario.name}_{counter!s}.qgz"
+                if not os.path.exists(project_file_path):
+                    break
+                counter += 1
+
+        # Write project to file for use in the task since QgsProject
+        # instances are not thread safe.
+        storage_type = QgsProject.instance().filePathStorage()
+        QgsProject.instance().setFilePathStorage(Qgis.FilePathType.Absolute)
+        result = QgsProject.instance().write(project_file_path)
+        QgsProject.instance().setFilePathStorage(storage_type)
+
+        if not result:
+            return None
+
+        # Set base name for the layout and PDF file suffixed with a number
+        # depending on the number of runs.
+        layout_manager = QgsProject.instance().layoutManager()
+        counter = 1
+        context_name = ""
+        while True:
+            layout_name = f"{scenario.name} {counter!s}"
+            matching_layout = layout_manager.layoutByName(layout_name)
+            if matching_layout is None:
+                context_name = layout_name
+                break
+            counter += 1
+
+        template_path = FileUtils.report_template_path()
+
+        return ReportContext(
+            template_path,
+            scenario,
+            context_name,
+            output_dir,
+            project_file_path,
+            QgsFeedback(self),
+        )
+
+    @classmethod
+    def open_layout_designer(cls, result: ReportResult) -> bool:
+        """Opens the analysis report in the layout designer. The
+        layout needs to exist in the currently loaded project.
+
+        :param result: Result object from the report generation
+        process.
+        :type result: ReportResult
+
+        :returns: True if the layout was successfully loaded, else
+        False if the result from the generation process was False
+        or if the layout does not exist in the current project.
+        :rtype: bool
+        """
+        if not result.success:
+            return False
+
+        layout = QgsProject.instance().layoutManager().layoutByName(result.name)
+        if layout is None:
+            return False
+
+        iface.openLayoutDesigner(layout)
+
+        return True
+
+    @classmethod
+    def view_pdf(cls, result: ReportResult) -> bool:
+        """Opens the analysis in the host's default PDF viewer.
+
+        :param result: Result object from the report generation
+        process.
+        :type result: ReportResult
+
+        :returns: True if the PDF was successfully loaded, else
+        False if the result from the generation process was False.
+        :rtype: bool
+        """
+        if not result.success:
+            return False
+
+        pdf_url = QtCore.QUrl.fromLocalFile(result.pdf_path)
+        if pdf_url.isEmpty():
+            return False
+
+        return QtGui.QDesktopServices.openUrl(pdf_url)
+
+
+report_manager = ReportManager()

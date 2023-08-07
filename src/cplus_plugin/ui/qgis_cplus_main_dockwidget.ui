@@ -207,7 +207,7 @@
             </property>
             <property name="icon">
              <iconset>
-              <normaloff>../../../../../../../../../../../../resources/cplus_right_arrow.svg</normaloff>../../../../../../../../../../../../resources/cplus_right_arrow.svg</iconset>
+              <normaloff>../../resources/cplus_right_arrow.svg</normaloff>../../resources/cplus_right_arrow.svg</iconset>
             </property>
            </widget>
           </item>
@@ -221,7 +221,7 @@
             </property>
             <property name="icon">
              <iconset>
-              <normaloff>../../../../../../../../../../../../resources/cplus_left_arrow.svg</normaloff>../../../../../../../../../../../../resources/cplus_left_arrow.svg</iconset>
+              <normaloff>../../resources/cplus_left_arrow.svg</normaloff>../../resources/cplus_left_arrow.svg</iconset>
             </property>
            </widget>
           </item>

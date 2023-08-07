@@ -55,6 +55,8 @@ from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
 
 from ..conf import settings_manager, Settings
 
+from ..lib.reports.manager import report_manager
+
 from ..resources import *
 
 from ..utils import clean_filename, open_documentation, tr, log, FileUtils
@@ -120,6 +122,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.scenario_result = None
 
         self.analysis_finished.connect(self.post_analysis)
+
+        # Report manager
+        self.rpm = report_manager
+        self.rpm.generate_started.connect(self.on_report_running)
+        self.rpm.generate_completed.connect(self.on_report_finished)
 
     def prepare_input(self):
         """Initializes plugin input widgets"""
@@ -628,6 +635,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.progress_dialog.progress_bar.setValue(0)
                 self.progress_dialog.analysis_finished_message = tr("Analysis finished")
                 self.progress_dialog.scenario_name = scenario.name
+                self.progress_dialog.scenario_id = str(scenario.uuid)
                 self.progress_dialog.change_status_message(
                     tr("Calculating highest position")
                 )
@@ -962,6 +970,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.scenario_result.analysis_output = output
             self.scenario_result.state = ScenarioState.FINISHED
             self.analysis_finished.emit(self.scenario_result)
+
+            # Initiate report generation
+            self.run_report()
+
         else:
             self.progress_dialog.change_status_message(
                 "No valid output from the processing results."
@@ -1183,3 +1195,62 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def open_settings(self):
         """Options the CPLUS settings in the QGIS options dialog."""
         self.iface.showOptionsDialog(currentPage=OPTIONS_TITLE)
+
+    def run_report(self):
+        """Run report generation. This should be called after the
+        analysis is complete.
+        """
+        if self.scenario_result is None:
+            log(
+                "Cannot run report generation, scenario result is " "not defined",
+                info=False,
+            )
+            return
+
+        submit_result = self.rpm.generate(self.scenario_result)
+        if not submit_result.status:
+            msg = self.tr("Unable to submit report request for scenario")
+            self.show_message(f"{msg} {self.scenario_result.scenario.name}.")
+
+    def on_report_running(self, scenario_id: str):
+        """Slot raised when report task has started."""
+        if not self.report_job_is_for_current_scenario(scenario_id):
+            return
+
+        self.progress_dialog.change_status_message(
+            tr("Report generation"), tr("scenario")
+        )
+
+    def on_report_finished(self, scenario_id: str):
+        """Slot raised when report task has finished."""
+        if not self.report_job_is_for_current_scenario(scenario_id):
+            return
+
+        self.progress_dialog.set_report_complete()
+
+    def report_job_is_for_current_scenario(self, scenario_id: str) -> bool:
+        """Checks if the given scenario identifier is for the current
+        scenario result.
+
+        This is to ensure that signals raised by the report manager refer
+        to the current scenario result object and not for old jobs.
+
+        :param scenario_id: Scenario identifier usually from a signal
+        raised by the report manager.
+        :type scenario_id: str
+
+        :returns: True if the scenario identifier matches the current
+        scenario object in the results, else False.
+        :rtype: bool
+        """
+        if self.scenario_result is None:
+            return False
+
+        current_scenario = self.scenario_result.scenario
+        if current_scenario is None:
+            return False
+
+        if str(current_scenario.uuid) == scenario_id:
+            return True
+
+        return False

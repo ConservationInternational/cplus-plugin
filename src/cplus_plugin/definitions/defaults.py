@@ -10,6 +10,8 @@ PILOT_AREA_EXTENT = {
     "coordinates": [-23.960197335, 32.069186664, -25.201606226, 30.743498637],
 }
 
+DEFAULT_CRS_ID = 4326
+
 DOCUMENTATION_SITE = "https://kartoza.github.io/cplus-plugin"
 USER_DOCUMENTATION_SITE = "https://kartoza.github.io/cplus-plugin/user/cplus_ui_guide"
 ABOUT_DOCUMENTATION_SITE = "https://kartoza.github.io/cplus-plugin/about/ci"
@@ -68,6 +70,32 @@ QGIS_GDAL_PROVIDER = "gdal"
 DEFAULT_LOGO_PATH = (
     os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/logos/ci_logo.png"
 )
+CPLUS_LOGO_PATH = str(
+    os.path.normpath(
+        os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        + "/logos/cplus_logo.svg"
+    )
+)
+CI_LOGO_PATH = str(
+    os.path.normpath(
+        os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        + "/logos/ci_logo.svg"
+    )
+)
+
+# Default template file name
+TEMPLATE_NAME = "main.qpt"
+
+# Minimum sizes (in mm) for repeat items in the template
+MINIMUM_ITEM_WIDTH = 100
+MINIMUM_ITEM_HEIGHT = 100
+
+# Report font
+REPORT_FONT_NAME = "Ubuntu"
+
+# IDs for the given tables in the report template
+IMPLEMENTATION_MODEL_AREA_TABLE_ID = "implementation_model_area_table"
+PRIORITY_GROUP_WEIGHT_TABLE_ID = "assigned_weights_table"
 
 
 PRIORITY_LAYERS = [
@@ -751,3 +779,14 @@ DEFAULT_IMPLEMENTATION_MODELS = [
         ],
     },
 ]
+
+DEFAULT_REPORT_DISCLAIMER = (
+    "The boundaries, names, and designations "
+    "used in this report do not imply official "
+    "endorsement or acceptance by Conservation "
+    "International Foundation, or its partner "
+    "organizations and contributors."
+)
+DEFAULT_REPORT_LICENSE = (
+    "Creative Commons Attribution 4.0 International " "License (CC BY 4.0)"
+)

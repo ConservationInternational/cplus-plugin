@@ -8,11 +8,18 @@ import os
 from pathlib import Path
 
 from qgis.PyQt import QtCore, QtGui
-from qgis.core import Qgis, QgsApplication, QgsMessageLog
-
-from .definitions.defaults import (
-    DOCUMENTATION_SITE,
+from qgis.core import (
+    Qgis,
+    QgsCoordinateTransformContext,
+    QgsDistanceArea,
+    QgsGeometry,
+    QgsMessageLog,
+    QgsRasterLayer,
+    QgsUnitTypes,
 )
+from qgis import processing
+
+from .definitions.defaults import DOCUMENTATION_SITE, REPORT_FONT_NAME, TEMPLATE_NAME
 from .definitions.constants import (
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
@@ -78,6 +85,30 @@ def open_documentation(url=None):
     return result
 
 
+def get_report_font(size=11, bold=False, italic=False) -> QtGui.QFont:
+    """Uses the default font family name to create a
+    font for use in the report.
+
+    :param size: The font point size, default is 11.
+    :type size: int
+
+    :param bold: True for bold font else False which is the default.
+    :type bold: bool
+
+    :param italic: True for font to be in italics else False which is the default.
+    :type italic: bool
+
+    :returns: Font to use in a report.
+    :rtype: QtGui.QFont
+    """
+    font_weight = 50
+    if bold is True:
+        font_weight = 75
+
+    # return QtGui.QFont(REPORT_FONT_NAME, size, font_weight, italic)
+    return QtGui.QFont(REPORT_FONT_NAME, size, font_weight, italic)
+
+
 def clean_filename(filename):
     """Creates a safe filename by removing operating system
     invalid filename characters.
@@ -97,16 +128,62 @@ def clean_filename(filename):
     return filename
 
 
-def is_dark_theme() -> bool:
-    """Checks if the current QGIS UI theme is dark mode.
+def calculate_raster_value_area(layer: QgsRasterLayer, band_number: int = 1) -> float:
+    """Calculates the area of value pixels for the given band in a raster layer.
 
-    :returns: True if the current UI theme is on dark mode, else False.
-    :rtype: bool
+    Please note that this function will run in the main application thread hence
+    for best results, caller should execute it in a background process if part
+    of a bigger workflow.
+
+    :param layer: Input layer whose area for value pixels is to be calculated.
+    :type layer: QgsRasterLayer
+
+    :param band_number: Band number to compute area, default is band one.
+    :type band_number: int
+
+    :returns: The area in hectares or -1 if it could not be
+    calculated.
+    :rtype: float
     """
-    if QgsApplication.instance().themeName() == "Night Mapping":
-        return True
+    if not layer.isValid():
+        log("Invalid layer for raster area calculation.", info=False)
+        return -1
 
-    return False
+    alg_name = "native:rasterlayeruniquevaluesreport"
+    params = {"INPUT": layer, "BAND": band_number}
+
+    output = processing.run(alg_name, params)
+
+    # Get number of pixels with values
+    total_pixel_count = output["TOTAL_PIXEL_COUNT"]
+    if total_pixel_count == 0:
+        log("Input layer for raster area calculation is empty.", info=False)
+        return -1
+
+    no_data_count = output["NODATA_PIXEL_COUNT"]
+    value_pixel_count = total_pixel_count - no_data_count
+
+    area_calc = QgsDistanceArea()
+    crs = layer.crs()
+    area_calc.setSourceCrs(crs, QgsCoordinateTransformContext())
+    if crs is not None:
+        # Use ellipsoid calculation if available
+        area_calc.setEllipsoid(crs.ellipsoidAcronym())
+
+    ext_geom = QgsGeometry.fromRect(layer.extent())
+    extents_area = area_calc.measureArea(ext_geom)
+
+    version = Qgis.versionInt()
+    if version < 33000:
+        unit_type = QgsUnitTypes.AreaHectares
+    else:
+        unit_type = Qgis.AreaUnit.Hectares
+
+    # Compute pixel size in hectares
+    area_ha = area_calc.convertAreaMeasurement(extents_area, unit_type)
+    pixel_area = area_ha / total_pixel_count
+
+    return pixel_area * value_pixel_count
 
 
 class FileUtils:
@@ -139,6 +216,26 @@ class FileUtils:
             return QtGui.QIcon()
 
         return QtGui.QIcon(icon_path)
+
+    @staticmethod
+    def report_template_path(file_name=None) -> str:
+        """Get the absolute path to the template file with the given name.
+        Caller needs to verify that the file actually exists.
+
+        :param file_name: Template file name including the extension. If
+        none is specified then it will use `main.qpt` as the default
+        template name.
+        :type file_name: str
+
+        :returns: The absolute path to the template file with the given name.
+        :rtype: str
+        """
+        if file_name is None:
+            file_name = TEMPLATE_NAME
+
+        absolute_path = f"{FileUtils.plugin_dir()}/app_data/reports/{file_name}"
+
+        return os.path.normpath(absolute_path)
 
     @staticmethod
     def create_ncs_pathways_dir(base_dir: str):

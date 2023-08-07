@@ -14,7 +14,8 @@
 
 import os.path
 
-from qgis.core import QgsSettings
+from qgis.core import QgsApplication, QgsMasterLayoutInterface, QgsSettings
+from qgis.gui import QgsGui, QgsLayoutDesignerInterface
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QDockWidget, QMainWindow, QVBoxLayout
@@ -34,14 +35,22 @@ from .definitions.constants import (
 )
 from .definitions.defaults import (
     ABOUT_DOCUMENTATION_SITE,
+    CI_LOGO_PATH,
+    CPLUS_LOGO_PATH,
     DEFAULT_IMPLEMENTATION_MODELS,
+    DEFAULT_LOGO_PATH,
     DEFAULT_NCS_PATHWAYS,
+    DEFAULT_REPORT_DISCLAIMER,
+    DEFAULT_REPORT_LICENSE,
     DOCUMENTATION_SITE,
     ICON_PATH,
     OPTIONS_TITLE,
     PRIORITY_GROUPS,
     PRIORITY_LAYERS,
 )
+from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
+from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
+from .lib.reports.manager import report_manager
 from .models.helpers import (
     copy_layer_component_attributes,
     create_implementation_model,
@@ -233,12 +242,21 @@ class QgisCplus:
             status_tip=self.tr("CPLUS About"),
         )
 
+        # Initialize default report settings
+        initialize_report_settings()
+
         # Adds the settings to the QGIS options panel
         self.options_factory = CplusOptionsFactory()
         self.iface.registerOptionsWidgetFactory(self.options_factory)
 
         # Initialize default model components
-        initialize_default_settings()
+        initialize_model_settings()
+
+        # Register custom layout items
+        self.register_layout_items()
+
+        # Register custom report variables when a layout is opened
+        self.iface.layoutDesignerOpened.connect(self.on_layout_designer_opened)
 
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin widget is closed."""
@@ -273,6 +291,25 @@ class QgisCplus:
         """Options the CPLUS settings in the QGIS options dialog."""
         self.iface.showOptionsDialog(currentPage=OPTIONS_TITLE)
 
+    def on_layout_designer_opened(self, designer: QgsLayoutDesignerInterface):
+        """Register custom report variables in a print layout only."""
+        layout_type = designer.masterLayout().layoutType()
+        if layout_type == QgsMasterLayoutInterface.PrintLayout:
+            layout = designer.layout()
+            report_manager.register_variables(layout)
+
+    def register_layout_items(self):
+        """Register custom layout items."""
+        # Register map layout item
+        QgsApplication.layoutItemRegistry().addLayoutItemType(
+            CplusMapRepeatItemLayoutItemMetadata()
+        )
+
+        # Register map GUI metadata
+        item_gui_registry = QgsGui.layoutItemGuiRegistry()
+        map_item_gui_metadata = CplusMapLayoutItemGuiMetadata()
+        item_gui_registry.addLayoutItemGuiMetadata(map_item_gui_metadata)
+
     def open_help(self):
         """Opens documentation home page for the plugin in a browser"""
         open_documentation(DOCUMENTATION_SITE)
@@ -302,7 +339,7 @@ def create_priority_layers():
         settings_manager.set_value("default_priority_layers_set", True)
 
 
-def initialize_default_settings():
+def initialize_model_settings():
     """Initialize default model components such as NCS pathways
     and implementation models.
 
@@ -394,3 +431,22 @@ def initialize_default_settings():
         except KeyError as ke:
             log(f"Default implementation model configuration load error - {str(ke)}")
             continue
+
+
+def initialize_report_settings():
+    """Sets the default report settings on first time use
+    of the plugin.
+    """
+    if settings_manager.get_value(Settings.REPORT_DISCLAIMER, None) is None:
+        settings_manager.set_value(
+            Settings.REPORT_DISCLAIMER, DEFAULT_REPORT_DISCLAIMER
+        )
+
+    if settings_manager.get_value(Settings.REPORT_LICENSE, None) is None:
+        settings_manager.set_value(Settings.REPORT_LICENSE, DEFAULT_REPORT_LICENSE)
+
+    if settings_manager.get_value(Settings.REPORT_CPLUS_LOGO, None) is None:
+        settings_manager.set_value(Settings.REPORT_CPLUS_LOGO, CPLUS_LOGO_PATH)
+
+    if settings_manager.get_value(Settings.REPORT_CI_LOGO, None) is None:
+        settings_manager.set_value(Settings.REPORT_CI_LOGO, CI_LOGO_PATH)
