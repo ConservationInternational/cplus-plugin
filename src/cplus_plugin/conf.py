@@ -15,7 +15,11 @@ import uuid
 from qgis.PyQt import QtCore
 from qgis.core import QgsRectangle, QgsSettings
 
-from .definitions.constants import NCS_CARBON_SEGMENT, NCS_PATHWAY_SEGMENT
+from .definitions.constants import (
+    NCS_CARBON_SEGMENT,
+    NCS_PATHWAY_SEGMENT,
+    PRIORITY_LAYERS_SEGMENT,
+)
 
 from .models.base import (
     ImplementationModel,
@@ -749,7 +753,9 @@ class SettingsManager(QtCore.QObject):
         :type implementation_model: ImplementationModel, dict
         """
         if isinstance(implementation_model, ImplementationModel):
+            pwls_paths = implementation_model.pwls_paths
             implementation_model = layer_component_to_dict(implementation_model)
+            implementation_model["pwls_paths"] = pwls_paths
 
         implementation_model_str = json.dumps(implementation_model)
 
@@ -804,6 +810,33 @@ class SettingsManager(QtCore.QObject):
                     implementation_models.append(implementation_model)
 
         return sorted(implementation_models, key=lambda imp_model: imp_model.name)
+
+    def update_implementation_model(self, implementation_model: ImplementationModel):
+        """Updates the attributes of the Implementation object
+        in settings. On the path, the BASE_DIR in settings
+        is used to reflect the absolute path of each NCS
+        pathway layer. If BASE_DIR is empty then the NCS
+        pathway setting will not be updated.
+
+        :param implementation_model: ImplementationModel object to be updated.
+        :type implementation_model: ImplementationModel
+        """
+        base_dir = self.get_value(Settings.BASE_DIR)
+        if not base_dir:
+            return
+
+        # PWLs location
+        abs_pwls_paths = []
+        for layer in self.get_priority_layers():
+            if layer.path in implementation_model.pwls_paths:
+                abs_pwl_path = f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/" f"{layer.path}"
+                abs_pwl_path = str(os.path.normpath(abs_pwl_path))
+                abs_pwls_paths.append(abs_pwl_path)
+        implementation_model.pwls_paths = abs_pwl_path
+
+        # Remove then re-insert
+        self.remove_implementation_model(str(implementation_model.uuid))
+        self.save_implementation_model(implementation_model)
 
     def remove_implementation_model(self, implementation_model_uuid: str):
         """Removes an implementation model settings entry using the UUID.

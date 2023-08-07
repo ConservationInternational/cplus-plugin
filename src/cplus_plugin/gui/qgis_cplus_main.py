@@ -151,6 +151,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.layer_add_btn.clicked.connect(self.add_priority_layer_group)
         self.layer_remove_btn.clicked.connect(self.remove_priority_layer_group)
 
+        reload_icon = FileUtils.get_icon("mActionReload.svg")
+        self.btn_reload_pwl.setIcon(reload_icon)
+        self.btn_reload_pwl.setToolTip(self.tr("Refresh and fetch new layers"))
+
     def save_scenario(self):
         """Save current scenario details into settings"""
         scenario_name = self.scenario_name.text()
@@ -416,6 +420,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         contains = default_extent == passed_extent or default_extent.contains(
             passed_extent
         )
+        scenario_name = self.scenario_name.text()
+        scenario_description = self.scenario_description.text()
+
+        priority_layers_groups = [
+            layer.get("groups")
+            for layer in settings_manager.get_priority_layers()
+            if layer.get("groups") is not [] or layer.get("groups") is not None
+        ]
+
         implementation_models = [
             item.implementation_model
             for item in self.implementation_model_widget.selected_items()
@@ -423,6 +436,34 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if implementation_models == [] or implementation_models is None:
             self.show_message(
                 tr("Select at least one implementation models from step two."),
+                level=Qgis.Critical,
+            )
+            return
+
+        if scenario_name == "" or scenario_name is None:
+            self.show_message(
+                tr(f"Scenario name cannot be blank."),
+                level=Qgis.Critical,
+            )
+            return
+        if scenario_description == "" or scenario_description is None:
+            self.show_message(
+                tr(f"Scenario description cannot be blank."),
+                level=Qgis.Critical,
+            )
+            return
+        if implementation_models == [] or implementation_models is None:
+            self.show_message(
+                tr("Select at least one implementation models from step two."),
+                level=Qgis.Critical,
+            )
+            return
+        if not any(priority_layers_groups):
+            self.show_message(
+                tr(
+                    f"At least one priority weight layer should be added "
+                    f"into one of the priority groups from step three."
+                ),
                 level=Qgis.Critical,
             )
             return
@@ -467,7 +508,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 )
             )
 
-        self.run_models_analysis(implementation_models, extent)
+        self.run_models_analysis(implementation_models, priority_layers_groups, extent)
 
     def run_scenario_analysis(self):
         """Performs the scenario analysis. This covers the pilot study area,
@@ -650,7 +691,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             return
 
-    def run_models_analysis(self, models, extent):
+    def run_models_analysis(self, models, priority_layers_groups, extent):
         """Runs the required model analysis on the passed implementation models
 
         :param model: List of the selected implementation models
@@ -673,9 +714,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             file_name = clean_filename(model.name.replace(" ", "_"))
 
             output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
-            analysis_done = partial(
-                self.model_analysis_done, model_count, model, models
-            )
 
             for pathway in model.pathways:
                 path_basename = Path(pathway.path).stem
@@ -701,6 +739,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 f"{transformed_extent.xMinimum()},{transformed_extent.xMaximum()},"
                 f"{transformed_extent.yMinimum()},{transformed_extent.yMaximum()}"
                 f" [{dest_crs.authid()}]"
+            )
+            analysis_done = partial(
+                self.model_analysis_done,
+                model_count,
+                model,
+                models,
+                extent_string,
+                priority_layers_groups,
             )
 
             # Actual processing calculation
@@ -728,8 +774,120 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             model_count = model_count + 1
 
-    def model_analysis_done(self, model_index, model, models, success, output):
+    def model_analysis_done(
+        self,
+        model_index,
+        model,
+        models,
+        extent,
+        priority_layers_groups,
+        success,
+        output,
+    ):
         """Slot that handles post calculations for the models layers
+
+        :param model_index: List index of the target model
+        :type model_index: int
+
+        :param model: Target implementation models
+        :type model: ImplementationModel
+
+        :param model: List of the selected implementation models
+        :type model: typing.List[ImplementationModel]
+
+        :param success: Whether the scenario analysis was successful
+        :type success: bool
+
+        :param output: Analysis output results
+        :type output: dict
+        """
+        if output is not None and output.get("OUTPUT") is not None:
+            model.layer = QgsRasterLayer(output.get("OUTPUT"), model.name)
+
+        if model_index == len(models) - 1:
+            self.run_priority_analysis(models, priority_layers_groups, extent)
+
+    def run_priority_analysis(self, models, priority_layers_groups, extent):
+        """Runs the required model analysis on the passed implementation models
+
+        :param model: List of the selected implementation models
+        :type model: typing.List[ImplementationModel]
+
+        :param extent: selected extent from user
+        :type extent: SpatialExtent
+        """
+        model_count = 0
+        for model in models:
+            if model.layer is None:
+                return False
+
+            basenames = []
+            layers = []
+            new_ims_directory = (
+                f"{settings_manager.get_value(Settings.BASE_DIR)}/weighted_ims"
+            )
+
+            FileUtils.create_new_dir(new_ims_directory)
+
+            file_name = clean_filename(model.name.replace(" ", "_"))
+
+            output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            analysis_done = partial(
+                self.priority_layers_analysis_done, model_count, model, models
+            )
+            layers.append(model.layer.source())
+            basenames.append(f"{Path(model.layer.source()).stem}@1")
+
+            if model.pwls_paths is None or model.pwls_paths is []:
+                continue
+
+            log(f"pwl paths {model.pwls_paths}")
+
+            for pwl in model.pwls_paths:
+                path_basename = Path(pwl).stem
+                layers.append(pwl)
+                for groups in priority_layers_groups:
+                    for group in groups:
+                        if group.get("name") == path_basename:
+                            value = group.get("value")
+                            coefficient = float(value) / 100
+                            basenames.append(f'"{coefficient}*{path_basename}@1"')
+            expression = " + ".join(basenames)
+
+            log(f"expression {expression}")
+            log(f"layers {layers}")
+
+            # Actual processing calculation
+            alg_params = {
+                "CELLSIZE": 0,
+                "CRS": None,
+                "EXPRESSION": expression,
+                "EXTENT": extent,
+                "LAYERS": layers,
+                "OUTPUT": output_file,
+            }
+
+            log(f"{alg_params}")
+
+            alg = QgsApplication.processingRegistry().algorithmById(
+                "qgis:rastercalculator"
+            )
+
+            self.processing_cancelled = False
+
+            self.task = QgsProcessingAlgRunnerTask(
+                alg, alg_params, self.processing_context, self.position_feedback
+            )
+
+            self.task.executed.connect(analysis_done)
+            QgsApplication.taskManager().addTask(self.task)
+
+            model_count = model_count + 1
+
+    def priority_layers_analysis_done(
+        self, model_index, model, models, success, output
+    ):
+        """Slot that handles post calculations for the models priority layers
 
         :param model_index: List index of the target model
         :type model_index: int

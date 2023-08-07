@@ -13,7 +13,11 @@ from qgis.core import Qgis, QgsApplication, QgsMessageLog
 from .definitions.defaults import (
     DOCUMENTATION_SITE,
 )
-from .definitions.constants import NCS_CARBON_SEGMENT, NCS_PATHWAY_SEGMENT
+from .definitions.constants import (
+    NCS_CARBON_SEGMENT,
+    NCS_PATHWAY_SEGMENT,
+    PRIORITY_LAYERS_SEGMENT,
+)
 
 
 def tr(message):
@@ -161,6 +165,19 @@ class FileUtils:
         ncs_carbon_dir = f"{base_dir}/{NCS_CARBON_SEGMENT}"
         message = tr("Missing parent directory when creating NCS carbon subdirectory.")
         FileUtils.create_new_dir(ncs_carbon_dir, message)
+
+    def create_pwls_dir(base_dir: str):
+        """Creates priority weighting layers subdirectory under BASE_DIR.
+        Skips creation of the subdirectory if it already exists.
+        """
+        if not Path(base_dir).is_dir():
+            return
+
+        pwl_dir = f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}"
+        message = tr(
+            "Missing parent directory when creating priority weighting layers subdirectory."
+        )
+        FileUtils.create_new_dir(pwl_dir, message)
 
     @staticmethod
     def create_new_dir(directory: str, log_message: str = ""):

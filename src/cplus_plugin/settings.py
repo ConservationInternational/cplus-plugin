@@ -84,6 +84,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
             FileUtils.create_ncs_pathways_dir(value)
             FileUtils.create_ncs_carbon_dir(value)
+            FileUtils.create_pwls_dir(value)
 
     def update_logo(self, custom_logo, logo_dir=DEFAULT_LOGO_PATH):
         """Updates the logo preview.

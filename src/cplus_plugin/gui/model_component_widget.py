@@ -61,7 +61,7 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
         self.btn_edit.setEnabled(False)
         self.btn_edit.clicked.connect(self._on_edit_item)
 
-        reload_icon = QgsApplication.instance().getThemeIcon("mActionReload.svg")
+        reload_icon = FileUtils.get_icon("mActionReload.svg")
         self.btn_reload.setIcon(reload_icon)
         self.btn_reload.setToolTip(self.tr("Refresh view"))
         self.btn_reload.clicked.connect(self._on_reload)
