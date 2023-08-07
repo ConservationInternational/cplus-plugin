@@ -753,7 +753,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             new_ims_directory = f"{self.scenario_directory}/pathways_carbon_layers"
             carbon_coefficient = float(
-                settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.5)
+                settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.0)
             )
             base_dir = settings_manager.get_value(Settings.BASE_DIR)
 
@@ -762,6 +762,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             file_name = clean_filename(model.name.replace(" ", "_"))
 
             output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            pathway_count = 0
 
             for pathway in model.pathways:
                 basenames = []
@@ -769,7 +770,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 path_basename = Path(pathway.path).stem
                 layers.append(pathway.path)
                 basenames.append(f'"{path_basename}@1"')
-
                 for carbon_path in pathway.carbon_paths:
                     if base_dir not in carbon_path:
                         carbon_path = f"{base_dir}/{NCS_CARBON_SEGMENT}/{carbon_path}"
@@ -777,9 +777,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     if not carbon_full_path.exists():
                         continue
                     layers.append(carbon_path)
-                    basenames.append(
-                        f'({carbon_coefficient} * "{carbon_full_path.stem}@1")'
-                    )
+                    if carbon_coefficient > 0:
+                        basenames.append(
+                            f'({carbon_coefficient} * "{carbon_full_path.stem}@1")'
+                        )
 
                 expression = " + ".join(basenames)
 
@@ -809,6 +810,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     extent_string,
                     priority_layers_groups,
                     pathway,
+                    (pathway_count == len(model.pathways) - 1),
                 )
 
                 # Actual processing calculation
@@ -838,6 +840,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.task.executed.connect(analysis_done)
                 QgsApplication.taskManager().addTask(self.task)
 
+                pathway_count = pathway_count + 1
+
             model_count = model_count + 1
 
     def pathways_analysis_done(
@@ -847,6 +851,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         extent,
         priority_layers_groups,
         pathway,
+        last_pathway,
         success,
         output,
     ):
@@ -862,6 +867,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param models: List of the selected implementation models
         :type models: typing.List[ImplementationModel]
 
+        :param last_pathway: Whether the pathway is the last from the models pathway list
+        :type last_pathway: bool
+
         :param success: Whether the scenario analysis was successful
         :type success: bool
 
@@ -871,7 +879,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if output is not None and output.get("OUTPUT") is not None:
             pathway.path = output.get("OUTPUT")
 
-        if model_index == len(models) - 1:
+        if (model_index == len(models) - 1) and last_pathway:
             self.run_models_analysis(models, priority_layers_groups, extent)
 
     def run_models_analysis(self, models, priority_layers_groups, extent):
@@ -1085,8 +1093,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Cancels the current processing task."""
         self.processing_cancelled = True
 
-        if self.task:
-            self.task.cancel()
+        try:
+            if self.task:
+                self.task.cancel()
+        except Exception as e:
+            log(f"Problem cancelling task, {e}")
 
     def scenario_results(self, success, output):
         """Called when the task ends. Sets the progress bar to 100 if it finished.
