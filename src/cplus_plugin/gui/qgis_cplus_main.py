@@ -466,6 +466,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             item.implementation_model
             for item in self.implementation_model_widget.selected_items()
         ]
+
+        base_dir = settings_manager.get_value(Settings.BASE_DIR)
+
         if implementation_models == [] or implementation_models is None:
             self.show_message(
                 tr("Select at least one implementation models from step two."),
@@ -507,13 +510,23 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 level=Qgis.Info,
             )
             return
+
+        if base_dir is None:
+            self.show_message(
+                tr(
+                    f"Plugin base data directory is not set! "
+                    f"Go to plugin settings in order to set it."
+                ),
+                level=Qgis.Critial,
+            )
+            return
         extent = SpatialExtent(
             bbox=[extent_list[3], extent_list[2], extent_list[1], extent_list[0]]
         )
 
         try:
             self.scenario_directory = (
-                f"{settings_manager.get_value(Settings.BASE_DIR)}/"
+                f"{base_dir}/"
                 f'scenario_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
             )
 

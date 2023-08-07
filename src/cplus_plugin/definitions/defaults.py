@@ -261,6 +261,13 @@ PRIORITY_LAYERS = [
         "path": "Eat_Fresh_NPV.tif",
     },
     {
+        "uuid": "307df1f4-206b-4f70-8db4-6505948e2a4e",
+        "name": "Eat_Fresh_mtrends",
+        "description": "Placeholder text for Eat_Fresh_mtrends",
+        "selected": False,
+        "path": "Eat_Fresh_mtrends.tif",
+    },
+    {
         "uuid": "86c3dfc5-58d7-4ebd-a851-3b65a6bf5edd",
         "name": "Assisted_Nat_Regen_NPV_re",
         "description": "Placeholder text for Assisted_Nat_Regen_NPV_re",
@@ -313,11 +320,6 @@ PRIORITY_LAYERS = [
 
 
 PRIORITY_GROUPS = [
-    {
-        "uuid": "a4f76e6c-9f83-4a9c-b700-fb1ae04860a4",
-        "name": "Carbon importance",
-        "description": "Placeholder text for carbon importance",
-    },
     {
         "uuid": "dcfb3214-4877-441c-b3ef-8228ab6dfad3",
         "name": "Biodiversity",
