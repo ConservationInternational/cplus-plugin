@@ -757,7 +757,7 @@ DEFAULT_IMPLEMENTATION_MODELS = [
     },
     {
         "uuid": "92054916-e8ea-45a0-992c-b6273d1b75a7",
-        "name": "Sustainable Crop Farming & Aquaponics ",
+        "name": "Sustainable Crop Farming & Aquaponics",
         "description": " This model combines sustainable "
         "crop farming practices such as "
         "agroecology, Permaculture and "
