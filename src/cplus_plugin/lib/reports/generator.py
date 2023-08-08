@@ -28,6 +28,7 @@ from qgis.core import (
     QgsTableCell,
     QgsTextFormat,
 )
+from qgis.utils import iface
 
 from qgis.PyQt import QtCore, QtGui, QtXml
 
@@ -100,6 +101,15 @@ class ReportGeneratorTask(QgsTask):
 
         return self._result.success
 
+    def _zoom_map_items_to_current_extents(self, layout: QgsPrintLayout):
+        """Zoom extents of map items in the layout to current map canvas
+        extents.
+        """
+        extent = iface.mapCanvas().mapSettings().visibleExtent()
+        for item in layout.items():
+            if isinstance(item, QgsLayoutItemMap):
+                item.zoomToExtent(extent)
+
     def finished(self, result: bool):
         """If successful, add the layout to the project.
 
@@ -125,6 +135,8 @@ class ReportGeneratorTask(QgsTask):
                 log("Could not load layout from file.", info=False)
                 return
 
+            # Zoom the extents of map items in the layout
+            self._zoom_map_items_to_current_extents(layout)
             project.layoutManager().addLayout(layout)
 
         else:
@@ -558,7 +570,7 @@ class ReportGenerator:
         )
 
         title_font_size = 10
-        description_font_size = 7
+        description_font_size = 6.5
 
         # IM name label
         margin = 0.01 * width
@@ -677,8 +689,6 @@ class ReportGenerator:
         for item in items:
             if isinstance(item, QgsLayoutItemMap):
                 item.zoomToExtent(self._normalized_scenario_extent)
-                ext = item.extent()
-                log(ext.toString())
 
     def _get_table_from_id(
         self, table_id: str
@@ -732,11 +742,12 @@ class ReportGenerator:
 
         rows_data = []
         for priority_group in self._context.scenario.priority_layer_groups:
-            if "name" not in priority_group or "value" not in priority_group:
-                continue
-            name_cell = QgsTableCell(priority_group["name"])
-            value_cell = QgsTableCell(priority_group["value"])
-            rows_data.append([name_cell, value_cell])
+            for priority_layer in priority_group:
+                if "name" not in priority_layer or "value" not in priority_layer:
+                    continue
+                name_cell = QgsTableCell(priority_layer["name"])
+                value_cell = QgsTableCell(priority_layer["value"])
+                rows_data.append([name_cell, value_cell])
 
         parent_table.setTableContents(rows_data)
 

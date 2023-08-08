@@ -60,6 +60,10 @@ class ReportManager(QtCore.QObject):
         self.tm.statusChanged.connect(self.on_task_status_changed)
 
         self.root_output_dir = ""
+        self._set_root_output_dir()
+
+    def _set_root_output_dir(self):
+        """Set the path for the root directory."""
         base_dir = settings_manager.get_value(Settings.BASE_DIR, "")
         if base_dir:
             self.root_output_dir = f"{base_dir}/{OUTPUTS_SEGMENT}"
@@ -249,44 +253,6 @@ class ReportManager(QtCore.QObject):
 
         return ReportSubmitStatus(True, ctx.feedback)
 
-    def _imp_models(self):
-        # Temporary for testing purposes
-        models = []
-        base_dir = settings_manager.get_value(Settings.BASE_DIR)
-        TEST_RASTER_PATH = (
-            f"{base_dir}/ncs_pathways/Final_Agroforestry_Priority_norm.tif"
-        )
-        for im in range(7):
-            ncs1 = NcsPathway(
-                uuid.uuid4(),
-                "Amazing First NCS Item",
-                "Description for Amazing NCS",
-                TEST_RASTER_PATH,
-                LayerType.RASTER,
-                True,
-            )
-            ncs2 = NcsPathway(
-                uuid.uuid4(),
-                "Spectacular NCS Pathway",
-                "Description for spectacular NCS pathway",
-                TEST_RASTER_PATH,
-                LayerType.RASTER,
-                True,
-            )
-            imp_model = ImplementationModel(
-                uuid.uuid4(),
-                f"Test Implementation Model - {im!s}",
-                "Description for test implementation model",
-                TEST_RASTER_PATH,
-                LayerType.RASTER,
-                True,
-            )
-            imp_model.add_ncs_pathway(ncs1)
-            imp_model.add_ncs_pathway(ncs2)
-            models.append(imp_model)
-
-        return models
-
     def report_result(self, scenario_id: str) -> typing.Union[ReportResult, None]:
         """Gets the report result for the scenario with the given ID.
 
@@ -320,6 +286,9 @@ class ReportManager(QtCore.QObject):
         for generating the report else None if it could not be created.
         :rtype: ReportContext
         """
+        # Try to update the root output directory.
+        self._set_root_output_dir()
+
         output_dir = self.create_scenario_dir(scenario)
         if not output_dir:
             return None

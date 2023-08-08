@@ -1114,9 +1114,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.scenario_result.state = ScenarioState.FINISHED
             self.analysis_finished.emit(self.scenario_result)
 
-            # Initiate report generation
-            self.run_report()
-
         else:
             self.progress_dialog.change_status_message(
                 "No valid output from the processing results."
@@ -1229,6 +1226,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                             )
 
                 im_index = im_index + 1
+
+            # Initiate report generation
+            self.run_report()
+
         else:
             # Reinitializes variables if processing were cancelled by the user
             # Not doing this breaks the processing if a user tries to run
@@ -1361,7 +1362,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             return
 
         self.progress_dialog.change_status_message(
-            tr("Report generation"), tr("scenario")
+            tr("Generating report"), tr("scenario")
         )
 
     def on_report_finished(self, scenario_id: str):
@@ -1370,6 +1371,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             return
 
         self.progress_dialog.set_report_complete()
+        self.progress_dialog.change_status_message(
+            tr("Report generation complete"), tr("scenario")
+        )
 
     def report_job_is_for_current_scenario(self, scenario_id: str) -> bool:
         """Checks if the given scenario identifier is for the current
