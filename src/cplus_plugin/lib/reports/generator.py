@@ -27,6 +27,7 @@ from qgis.core import (
     QgsTask,
     QgsTableCell,
     QgsTextFormat,
+    QgsUnitTypes
 )
 from qgis.utils import iface
 
@@ -669,13 +670,21 @@ class ReportGenerator:
         """
         font = get_report_font(size, bold, italic)
         version = Qgis.versionInt()
+
+        # Text format size unit
+        if version < 33000:
+            unit_type = QgsUnitTypes.Points
+        else:
+            unit_type = Qgis.RenderUnit.Points
+
+        # Label font setting option
         if version < 32400:
             label.setFont(font)
         else:
             txt_format = QgsTextFormat()
             txt_format.setFont(font)
             txt_format.setSize(size)
-            txt_format.setSizeUnit(Qgis.RenderUnit.Points)
+            txt_format.setSizeUnit(unit_type)
             label.setTextFormat(txt_format)
 
         label.refresh()
