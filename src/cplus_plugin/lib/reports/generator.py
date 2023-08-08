@@ -570,7 +570,7 @@ class ReportGenerator:
         )
 
         title_font_size = 10
-        description_font_size = 7
+        description_font_size = 6.5
 
         # IM name label
         margin = 0.01 * width
@@ -742,11 +742,12 @@ class ReportGenerator:
 
         rows_data = []
         for priority_group in self._context.scenario.priority_layer_groups:
-            if "name" not in priority_group or "value" not in priority_group:
-                continue
-            name_cell = QgsTableCell(priority_group["name"])
-            value_cell = QgsTableCell(priority_group["value"])
-            rows_data.append([name_cell, value_cell])
+            for priority_layer in priority_group:
+                if "name" not in priority_layer or "value" not in priority_layer:
+                    continue
+                name_cell = QgsTableCell(priority_layer["name"])
+                value_cell = QgsTableCell(priority_layer["value"])
+                rows_data.append([name_cell, value_cell])
 
         parent_table.setTableContents(rows_data)
 

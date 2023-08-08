@@ -235,8 +235,6 @@ class ReportManager(QtCore.QObject):
         """
         scenario = scenario_result.scenario
 
-        log(str(scenario.priority_layer_groups))
-
         ctx = self.create_report_context(scenario)
         if ctx is None:
             log("Could not create report context. Check directory settings.")

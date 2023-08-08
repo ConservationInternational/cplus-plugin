@@ -1362,7 +1362,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             return
 
         self.progress_dialog.change_status_message(
-            tr("Report generation"), tr("scenario")
+            tr("Generating report"), tr("scenario")
         )
 
     def on_report_finished(self, scenario_id: str):
@@ -1371,6 +1371,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             return
 
         self.progress_dialog.set_report_complete()
+        self.progress_dialog.change_status_message(
+            tr("Report generation complete"), tr("scenario")
+        )
 
     def report_job_is_for_current_scenario(self, scenario_id: str) -> bool:
         """Checks if the given scenario identifier is for the current
