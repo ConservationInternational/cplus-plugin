@@ -249,44 +249,6 @@ class ReportManager(QtCore.QObject):
 
         return ReportSubmitStatus(True, ctx.feedback)
 
-    def _imp_models(self):
-        # Temporary for testing purposes
-        models = []
-        base_dir = settings_manager.get_value(Settings.BASE_DIR)
-        TEST_RASTER_PATH = (
-            f"{base_dir}/ncs_pathways/Final_Agroforestry_Priority_norm.tif"
-        )
-        for im in range(7):
-            ncs1 = NcsPathway(
-                uuid.uuid4(),
-                "Amazing First NCS Item",
-                "Description for Amazing NCS",
-                TEST_RASTER_PATH,
-                LayerType.RASTER,
-                True,
-            )
-            ncs2 = NcsPathway(
-                uuid.uuid4(),
-                "Spectacular NCS Pathway",
-                "Description for spectacular NCS pathway",
-                TEST_RASTER_PATH,
-                LayerType.RASTER,
-                True,
-            )
-            imp_model = ImplementationModel(
-                uuid.uuid4(),
-                f"Test Implementation Model - {im!s}",
-                "Description for test implementation model",
-                TEST_RASTER_PATH,
-                LayerType.RASTER,
-                True,
-            )
-            imp_model.add_ncs_pathway(ncs1)
-            imp_model.add_ncs_pathway(ncs2)
-            models.append(imp_model)
-
-        return models
-
     def report_result(self, scenario_id: str) -> typing.Union[ReportResult, None]:
         """Gets the report result for the scenario with the given ID.
 
