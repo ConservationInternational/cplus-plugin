@@ -60,6 +60,10 @@ class ReportManager(QtCore.QObject):
         self.tm.statusChanged.connect(self.on_task_status_changed)
 
         self.root_output_dir = ""
+        self._set_root_output_dir()
+
+    def _set_root_output_dir(self):
+        """Set the path for the root directory."""
         base_dir = settings_manager.get_value(Settings.BASE_DIR, "")
         if base_dir:
             self.root_output_dir = f"{base_dir}/{OUTPUTS_SEGMENT}"
@@ -282,6 +286,9 @@ class ReportManager(QtCore.QObject):
         for generating the report else None if it could not be created.
         :rtype: ReportContext
         """
+        # Try to update the root output directory.
+        self._set_root_output_dir()
+
         output_dir = self.create_scenario_dir(scenario)
         if not output_dir:
             return None
