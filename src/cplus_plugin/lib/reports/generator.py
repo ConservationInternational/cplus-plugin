@@ -484,12 +484,12 @@ class ReportGenerator:
 
         # Calculate number of pages required
         num_pages, req_pages = divmod(num_implementation_models, int(max_items_page))
-        if num_pages == 0:
-            num_pages = 1
 
         # Check if there is an additional page required
         if req_pages != 0:
             num_pages += 1
+
+        log(f"Number of additional pages: {num_pages!s}")
 
         # First create the additional required pages for the
         # report so that we don't also duplicate the groups
