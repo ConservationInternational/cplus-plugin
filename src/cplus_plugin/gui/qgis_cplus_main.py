@@ -59,7 +59,15 @@ from ..lib.reports.manager import report_manager
 
 from ..resources import *
 
-from ..utils import clean_filename, open_documentation, tr, log, FileUtils
+from ..utils import (
+    clean_filename,
+    implementation_models_tr,
+    ncs_pathways_tr,
+    open_documentation,
+    tr,
+    log,
+    FileUtils,
+)
 
 from ..definitions.defaults import (
     ADD_LAYER_ICON_PATH,
@@ -1155,8 +1163,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             # Groups
             scenario_group = instance_root.insertGroup(0, scenario_name)
-            im_group = scenario_group.addGroup("Implementation model maps")
-            pathways_group = scenario_group.addGroup("Pathways")
+            im_group = scenario_group.addGroup(implementation_models_tr())
+            pathways_group = scenario_group.addGroup(ncs_pathways_tr())
 
             # Group settings
             im_group.setExpanded(False)

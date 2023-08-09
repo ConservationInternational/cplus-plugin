@@ -186,6 +186,26 @@ def calculate_raster_value_area(layer: QgsRasterLayer, band_number: int = 1) -> 
     return pixel_area * value_pixel_count
 
 
+def implementation_models_tr() -> str:
+    """Translation of the implementation models text.
+
+    :returns: The translated version of implementation
+    models text.
+    :rtype: str
+    """
+    return tr("Implementation Model Maps")
+
+
+def ncs_pathways_tr() -> str:
+    """Translation of the ncs pathways text.
+
+    :returns: The translated version of ncs
+    pathways text.
+    :rtype: str
+    """
+    return tr("NCS Pathways Maps")
+
+
 class FileUtils:
     """
     Provides functionality for commonly used file-related operations.

@@ -23,6 +23,7 @@ from qgis.core import (
     QgsLayoutSize,
     QgsPrintLayout,
     QgsProject,
+    QgsRasterLayer,
     QgsReadWriteContext,
     QgsTask,
     QgsTableCell,
@@ -43,7 +44,13 @@ from .layout_items import CplusMapRepeatItem
 from ...models.base import ImplementationModel
 from ...models.helpers import extent_to_project_crs_extent
 from ...models.report import ReportContext, ReportResult
-from ...utils import calculate_raster_value_area, get_report_font, log, tr
+from ...utils import (
+    calculate_raster_value_area,
+    get_report_font,
+    implementation_models_tr,
+    log,
+    tr,
+)
 from .variables import create_bulleted_text, LayoutVariableRegister
 
 
@@ -533,11 +540,10 @@ class ReportGenerator:
         map_ref_point = QgsLayoutPoint(pos_x, pos_y, self._layout.units())
         im_map.attemptMove(map_ref_point, True, False, page)
         im_map.attemptResize(QgsLayoutSize(width, map_height, self._layout.units()))
-        layers = self._project.mapLayersByName(imp_model.name)
-        if len(layers) > 0:
-            ref_im_layer = layers[0]
-            ext = ref_im_layer.extent()
-            im_map.setLayers([ref_im_layer])
+        im_layer = self._get_im_layer_in_project(imp_model.name)
+        if im_layer is not None:
+            ext = im_layer.extent()
+            im_map.setLayers([im_layer])
             im_map.setExtent(ext)
             # Resize item again after the scale has been set correctly
             im_map.attemptResize(QgsLayoutSize(width, map_height, self._layout.units()))
@@ -700,6 +706,28 @@ class ReportGenerator:
             label.setTextFormat(txt_format)
 
         label.refresh()
+
+    def _get_im_layer_in_project(
+        self, im_name: str
+    ) -> typing.Union[QgsRasterLayer, None]:
+        """Retrieves the IM raster layer from the IM layer group in
+        the project.
+        """
+        if self._project is None:
+            return None
+
+        layer_root = self._project.layerTreeRoot()
+        im_layer_group = layer_root.findGroup(implementation_models_tr())
+        if im_layer_group is None:
+            return None
+
+        matching_tree_layers = [
+            tl for tl in im_layer_group.findLayers() if tl.layer().name() == im_name
+        ]
+        if len(matching_tree_layers) == 0:
+            return None
+
+        return matching_tree_layers[0].layer()
 
     def _update_map_extents(self):
         """Update the extent of all map items in the layout."""
