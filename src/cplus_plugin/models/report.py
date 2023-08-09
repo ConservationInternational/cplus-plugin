@@ -6,7 +6,7 @@ import dataclasses
 import typing
 from uuid import UUID
 
-from qgis.core import QgsFeedback
+from qgis.core import QgsFeedback, QgsRectangle
 
 from .base import Scenario
 

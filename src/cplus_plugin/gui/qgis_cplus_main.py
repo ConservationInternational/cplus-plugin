@@ -42,7 +42,6 @@ from qgis.core import (
 
 from qgis.gui import (
     QgsMessageBar,
-    QgsMapCanvas,
     QgsRubberBand,
 )
 
@@ -61,8 +60,6 @@ from ..resources import *
 
 from ..utils import (
     clean_filename,
-    implementation_models_tr,
-    ncs_pathways_tr,
     open_documentation,
     tr,
     log,
@@ -81,7 +78,12 @@ from ..definitions.defaults import (
     USER_DOCUMENTATION_SITE,
     LAYER_STYLES,
 )
-from ..definitions.constants import NCS_CARBON_SEGMENT, PRIORITY_LAYERS_SEGMENT
+from ..definitions.constants import (
+    NCS_CARBON_SEGMENT,
+    PRIORITY_LAYERS_SEGMENT,
+    IM_GROUP_LAYER_NAME,
+    NCS_PATHWAYS_GROUP_LAYER_NAME,
+)
 
 from .progress_dialog import ProgressDialog
 
@@ -1163,8 +1165,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             # Groups
             scenario_group = instance_root.insertGroup(0, scenario_name)
-            im_group = scenario_group.addGroup(implementation_models_tr())
-            pathways_group = scenario_group.addGroup(ncs_pathways_tr())
+            im_group = scenario_group.addGroup(tr(IM_GROUP_LAYER_NAME))
+            pathways_group = scenario_group.addGroup(tr(NCS_PATHWAYS_GROUP_LAYER_NAME))
 
             # Group settings
             im_group.setExpanded(False)
