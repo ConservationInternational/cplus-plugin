@@ -18,6 +18,7 @@ from qgis.core import (
     QgsLayoutItemMap,
     QgsLayoutItemPage,
     QgsLayoutItemPicture,
+    QgsLayoutItemScaleBar,
     QgsLayoutItemShape,
     QgsLayoutPoint,
     QgsLayoutSize,
@@ -25,6 +26,7 @@ from qgis.core import (
     QgsProject,
     QgsRasterLayer,
     QgsReadWriteContext,
+    QgsScaleBarSettings,
     QgsTask,
     QgsTableCell,
     QgsTextFormat,
@@ -489,8 +491,6 @@ class ReportGenerator:
         if req_pages != 0:
             num_pages += 1
 
-        log(f"Number of additional pages: {num_pages!s}")
-
         # First create the additional required pages for the
         # report so that we don't also duplicate the groups
         # in the repeat page when adding the IMs. Not the
@@ -590,13 +590,56 @@ class ReportGenerator:
             ":/images/north_arrows/layout_default_north_arrow.svg"
         )
         arrow_ref_point = QgsLayoutPoint(
-            pos_x + 0.02 * width,
-            pos_y + map_height - (0.1 * height),
+            pos_x + 0.10 * width,
+            pos_y + map_height - (0.13 * height),
             self._layout.units(),
         )
         arrow_item.attemptMove(arrow_ref_point, True, False, page)
         arrow_item.attemptResize(
-            QgsLayoutSize(0.07 * width, 0.07 * height, self._layout.units())
+            QgsLayoutSize(0.05 * width, 0.05 * height, self._layout.units())
+        )
+
+        # Add scale bar
+        scale_bar = QgsLayoutItemScaleBar(self._layout)
+        self._layout.addLayoutItem(scale_bar)
+        scale_bar.setLinkedMap(im_map)
+        scale_bar_ref_point = QgsLayoutPoint(
+            pos_x + 0.02 * width,
+            pos_y + map_height - (0.08 * height),
+            self._layout.units(),
+        )
+        scale_bar.setUnitLabel("km")
+        scale_bar.setHeight(1)
+        scale_bar.setLabelBarSpace(1)
+
+        version = Qgis.versionInt()
+        if version < 33000:
+            distance_unit_type = QgsUnitTypes.DistanceKilometers
+            font_unit_type = QgsUnitTypes.Points
+        else:
+            distance_unit_type = Qgis.DistanceUnit.Kilometers
+            font_unit_type = Qgis.RenderUnit.Points
+
+        scale_bar.setUnits(distance_unit_type)
+        scale_bar.setSegmentSizeMode(
+            QgsScaleBarSettings.SegmentSizeMode.SegmentSizeFitWidth
+        )
+        scale_bar.setUnitsPerSegment(100)
+        scale_bar.setMinimumBarWidth(15)
+        scale_bar.setMaximumBarWidth(30)
+
+        # Scalebar text options
+        scale_bar_font_size = 7
+        font = get_report_font(scale_bar_font_size)
+        txt_format = QgsTextFormat()
+        txt_format.setFont(font)
+        txt_format.setSize(scale_bar_font_size)
+        txt_format.setSizeUnit(font_unit_type)
+        scale_bar.setTextFormat(txt_format)
+
+        scale_bar.attemptMove(scale_bar_ref_point, True, False, page)
+        scale_bar.attemptResize(
+            QgsLayoutSize(0.1 * width, 0.1 * height, self._layout.units())
         )
 
         title_font_size = 10
