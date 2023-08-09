@@ -27,7 +27,7 @@ from qgis.core import (
     QgsTask,
     QgsTableCell,
     QgsTextFormat,
-    QgsUnitTypes
+    QgsUnitTypes,
 )
 from qgis.utils import iface
 
@@ -527,12 +527,24 @@ class ReportGenerator:
         im_map = QgsLayoutItemMap(self._layout)
         self._layout.addLayoutItem(im_map)
         im_map.setFrameEnabled(False)
-        im_map.zoomToExtent(self._normalized_scenario_extent)
-        if imp_model.layer is not None:
-            im_map.setLayers([imp_model.layer])
+        im_map.setBackgroundColor(self._project.backgroundColor())
+        im_name = imp_model.name.lower().replace(" ", "_")
+        im_map.setId(f"map_{im_name}")
         map_ref_point = QgsLayoutPoint(pos_x, pos_y, self._layout.units())
         im_map.attemptMove(map_ref_point, True, False, page)
         im_map.attemptResize(QgsLayoutSize(width, map_height, self._layout.units()))
+        layers = self._project.mapLayersByName(imp_model.name)
+        if len(layers) > 0:
+            ref_im_layer = layers[0]
+            ext = ref_im_layer.extent()
+            im_map.setLayers([ref_im_layer])
+            im_map.setExtent(ext)
+            # Resize item again after the scale has been set correctly
+            im_map.attemptResize(QgsLayoutSize(width, map_height, self._layout.units()))
+        else:
+            log(
+                f"Could not find matching map layer for {imp_model.name} implementation model."
+            )
 
         # Background IM details shape
         shape_height = 0.2 * height
@@ -647,7 +659,7 @@ class ReportGenerator:
     def set_label_font(
         cls,
         label: QgsLayoutItemLabel,
-        size: int,
+        size: float,
         bold: bool = False,
         italic: bool = False,
     ):

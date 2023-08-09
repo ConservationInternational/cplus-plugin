@@ -190,9 +190,9 @@ class ReportManager(QtCore.QObject):
         if not self.root_output_dir:
             return ""
 
-        if not os.access(self.root_output_dir, os.W_OK):
-            log("No permission to write to output directory.")
-            return ""
+        # if not os.access(self.root_output_dir, os.W_OK):
+        #     log("No permission to write to output directory.")
+        #     return ""
 
         output_path = Path(self.root_output_dir)
         if not output_path.exists():
