@@ -579,102 +579,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 )
             )
 
-        # pathway_function = partial(
-        #     self.run_pathways_analysis,
-        #     self.analysis_implementation_models,
-        #     self.analysis_priority_layers_groups,
-        #     self.analysis_extent
-        #     )
-        #
-        # # Create pathway analysis
-        # task = QgsTask.fromFunction(
-        #     'Run NCS Pathways analysis',
-        #     pathway_function,
-        #     on_finished=self.pathways_analysis_completed
-        # )
-        #
-        # QgsApplication.taskManager().addTask(task)
-
         self.run_pathways_analysis(
             self.analysis_implementation_models,
             self.analysis_priority_layers_groups,
             self.analysis_extent,
         )
-
-    def pathways_analysis_completed(self, exception, result=None):
-        if exception is None:
-            if result is None:
-                log(
-                    "Completed with no exception and no result "
-                    "(probably manually canceled by the user)",
-                )
-            else:
-                log("Task for pathways analysis has completed\n")
-        else:
-            log(f"Exception: Task from function, pathways {str(exception)}")
-
-            raise exception
-
-    def run_models_task_analysis(self):
-        models_analysis_function = partial(
-            self.run_models_analysis,
-            self.analysis_implementation_models,
-            self.analysis_priority_layers_groups,
-            self.analysis_extent,
-        )
-
-        task = QgsTask.fromFunction(
-            "Run NCS Pathways analysis",
-            models_analysis_function,
-            on_finished=self.models_analysis_completed,
-        )
-
-        QgsApplication.taskManager().addTask(task)
-
-    def models_analysis_completed(self, exception, result=None):
-        if exception is None:
-            if result is None:
-                log(
-                    "Completed with no exception and no result "
-                    "(probably manually canceled by the user)",
-                )
-            else:
-                log("Task models analysis completed\n")
-        else:
-            log(f"Exception: Task from models analysis function {str(exception)}")
-            raise exception
-
-    def run_priority_task_analysis(self):
-        priority_function = partial(
-            self.run_priority_analysis,
-            self.analysis_implementation_models,
-            self.analysis_priority_layers_groups,
-            self.analysis_extent,
-        )
-
-        task = QgsTask.fromFunction(
-            "Run priority analysis",
-            priority_function,
-            on_finished=self.priority_analysis_completed,
-        )
-
-        QgsApplication.taskManager().addTask(task)
-
-    def priority_analysis_completed(self, exception, result=None):
-        if exception is None:
-            if result is None:
-                log(
-                    "Completed with no exception and no result "
-                    "(probably manually canceled by the user)"
-                )
-            else:
-                log(
-                    "Task for priority analysis completed\n",
-                )
-        else:
-            log("Exception: Task from priority analysis")
-            log(f"Exception: Task from priority analysis function {exception}")
-            raise exception
 
     def run_scenario_analysis(self):
         """Performs the scenario analysis. This covers the pilot study area,
@@ -749,12 +658,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     f"{SCENARIO_OUTPUT_FILE_NAME}_{str(scenario.uuid)[:4]}.tif"
                 )
 
+                sources = [layer.source() for layer in layers]
+
+                log(f"layers sources {sources}, layers count {len(layers)}")
+
                 alg_params = {
                     "IGNORE_NODATA": True,
-                    "INPUT_RASTERS": layers,
+                    "INPUT_RASTERS": sources,
                     "EXTENT": extent_string,
                     "OUTPUT_NODATA_VALUE": -9999,
-                    "REFERENCE_LAYER": layers[0] if len(layers) >= 1 else None,
+                    "REFERENCE_LAYER": sources[0] if len(sources) >= 1 else None,
                     "OUTPUT": output_file,
                 }
 
@@ -806,7 +719,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             return
 
     def main_task(self):
-        log("Running from main task ")
+        """Serves a QgsTask function for the main task that contains
+        smaller sub-tasks that will run the actual processing calculations
+        """
+
+        log("Running from main task.")
 
     def run_pathways_analysis(self, models, priority_layers_groups, extent):
         """Runs the required model pathways analysis on the passed implementation models
@@ -828,11 +745,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             on_finished=models_function,
         )
 
+        main_task.taskCompleted.connect(models_function)
+
         previous_sub_tasks = []
 
         for model in models:
             if not model.pathways:
                 return False
+
+            self.progress_dialog.analysis_finished_message = tr(
+                "Carbon layers calculation on has finished"
+            )
+            self.progress_dialog.scenario_name = tr(f"{model.name} pathways")
 
             new_ims_directory = f"{self.scenario_directory}/pathways_carbon_layers"
             carbon_coefficient = float(
@@ -894,6 +818,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     (pathway_count == len(model.pathways) - 1),
                 )
 
+                if carbon_coefficient <= 0:
+                    self.run_models_analysis(
+                        models, priority_layers_groups, extent_string
+                    )
+                    return
+
                 # Actual processing calculation
                 alg_params = {
                     "CELLSIZE": 0,
@@ -905,7 +835,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 }
 
                 log(
-                    f"Used parameters for combining pathways and carbon layers generation {alg_params}"
+                    f"Used parameters for combining pathways"
+                    f" and carbon layers generation {alg_params}"
                 )
 
                 alg = QgsApplication.processingRegistry().algorithmById(
@@ -917,6 +848,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.task = QgsProcessingAlgRunnerTask(
                     alg, alg_params, self.processing_context, self.position_feedback
                 )
+                self.position_feedback.progressChanged.connect(self.update_progress_bar)
 
                 main_task.addSubTask(
                     self.task, previous_sub_tasks, QgsTask.ParentDependsOnSubTask
@@ -924,7 +856,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 previous_sub_tasks.append(self.task)
 
                 self.task.executed.connect(analysis_done)
-                # QgsApplication.taskManager().addTask(self.task)
 
                 pathway_count = pathway_count + 1
 
@@ -965,9 +896,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
         if output is not None and output.get("OUTPUT") is not None:
             pathway.path = output.get("OUTPUT")
-        #
-        # if (model_index == len(models) - 1) and last_pathway:
-        #     self.run_models_analysis(models, priority_layers_groups, extent)
+
+        if (model_index == len(models) - 1) and last_pathway:
+            self.run_models_analysis(models, priority_layers_groups, extent)
 
     def run_models_analysis(self, models, priority_layers_groups, extent):
         """Runs the required model analysis on the passed implementation models
@@ -979,25 +910,30 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type extent: SpatialExtent
         """
         model_count = 0
+
         priority_function = partial(
             self.run_priority_analysis, models, priority_layers_groups, extent
         )
         main_task = QgsTask.fromFunction(
-            "Running Main functions", self.main_task, on_finished=priority_function
+            "Running main functions", self.main_task, on_finished=priority_function
         )
 
         previous_sub_tasks = []
+
+        self.progress_dialog.analysis_finished_message = tr("Processing has finished")
 
         for model in models:
             if not model.pathways:
                 return False
 
+            self.progress_dialog.scenario_name = tr(
+                f"implementation model {model.name}"
+            )
+
             basenames = []
             layers = []
             new_ims_directory = f"{self.scenario_directory}/implementation_models"
-
             FileUtils.create_new_dir(new_ims_directory)
-
             file_name = clean_filename(model.name.replace(" ", "_"))
 
             output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
@@ -1006,6 +942,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 path_basename = Path(pathway.path).stem
                 layers.append(pathway.path)
                 basenames.append(f'"{path_basename}@1"')
+
             expression = " + ".join(basenames)
 
             analysis_done = partial(
@@ -1039,13 +976,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 alg, alg_params, self.processing_context, self.position_feedback
             )
 
+            self.position_feedback.progressChanged.connect(self.update_progress_bar)
+
             main_task.addSubTask(
                 self.task, previous_sub_tasks, QgsTask.ParentDependsOnSubTask
             )
             previous_sub_tasks.append(self.task)
 
             self.task.executed.connect(analysis_done)
-            # QgsApplication.taskManager().addTask(self.task)
 
             model_count = model_count + 1
 
@@ -1081,8 +1019,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if output is not None and output.get("OUTPUT") is not None:
             model.layer = QgsRasterLayer(output.get("OUTPUT"), model.name)
 
-        # if model_index == len(models) - 1:
-        #     self.run_priority_analysis(models, priority_layers_groups, extent)
+        if model_index == len(models) - 1:
+            self.run_priority_analysis(models, priority_layers_groups, extent)
 
     def run_priority_analysis(self, models, priority_layers_groups, extent):
         """Runs the required model analysis on the passed implementation models
@@ -1094,17 +1032,25 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type extent: SpatialExtent
         """
         model_count = 0
+
         main_task = QgsTask.fromFunction(
             "Running main task for priority layers weighting",
-            self.main_task(),
+            self.main_task,
             on_finished=self.run_scenario_analysis,
         )
+
+        main_task.taskCompleted.connect(self.run_scenario_analysis)
 
         previous_sub_tasks = []
 
         for model in models:
             if model.layer is None:
                 return False
+
+            self.progress_dialog.analysis_finished_message = tr(
+                f"Weighting on {model.name} has finished"
+            )
+            self.progress_dialog.scenario_name = tr(f"priority layers")
 
             basenames = []
             layers = []
@@ -1134,7 +1080,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                         for group in layer.get("groups"):
                             value = group.get("value")
                             coefficient = float(value) / 100
-                            basenames.append(f'({coefficient}*"{path_basename}@1")')
+                            if coefficient > 0:
+                                basenames.append(f'({coefficient}*"{path_basename}@1")')
 
             if basenames is []:
                 return
@@ -1168,6 +1115,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.task = QgsProcessingAlgRunnerTask(
                 alg, alg_params, self.processing_context, self.position_feedback
             )
+
+            self.position_feedback.progressChanged.connect(self.update_progress_bar)
 
             main_task.addSubTask(
                 self.task, previous_sub_tasks, QgsTask.ParentDependsOnSubTask
@@ -1204,8 +1153,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if output is not None and output.get("OUTPUT") is not None:
             model.layer = QgsRasterLayer(output.get("OUTPUT"), model.name)
 
-        # if model_index == len(models) - 1:
-        #     self.run_scenario_analysis()
+        if model_index == len(models) - 1:
+            self.run_scenario_analysis()
 
     def cancel_processing_task(self):
         """Cancels the current processing task."""
