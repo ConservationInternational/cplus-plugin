@@ -620,10 +620,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.progress_dialog.progress_bar.setMaximum(100)
                 self.progress_dialog.progress_bar.setValue(0)
                 self.progress_dialog.analysis_finished_message = tr("Analysis finished")
-                self.progress_dialog.scenario_name = scenario.name
+                self.progress_dialog.scenario_name = tr(f"<b>{scenario.name}</b>")
                 self.progress_dialog.scenario_id = str(scenario.uuid)
                 self.progress_dialog.change_status_message(
-                    tr("Calculating highest position")
+                    tr("Calculating the highest position")
                 )
 
                 self.position_feedback.progressChanged.connect(self.update_progress_bar)
@@ -749,14 +749,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         previous_sub_tasks = []
 
+        self.progress_dialog.analysis_finished_message = tr("Calculating carbon layers")
+        self.progress_dialog.scenario_name = tr(f"models pathways")
+
         for model in models:
             if not model.pathways:
                 return False
-
-            self.progress_dialog.analysis_finished_message = tr(
-                "Carbon layers calculation on has finished"
-            )
-            self.progress_dialog.scenario_name = tr(f"{model.name} pathways")
 
             new_ims_directory = f"{self.scenario_directory}/pathways_carbon_layers"
             carbon_coefficient = float(
@@ -920,15 +918,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         previous_sub_tasks = []
 
-        self.progress_dialog.analysis_finished_message = tr("Processing has finished")
+        self.progress_dialog.analysis_finished_message = tr("Processing calculations")
+        self.progress_dialog.scenario_name = tr("implementation models")
 
         for model in models:
             if not model.pathways:
                 return False
-
-            self.progress_dialog.scenario_name = tr(
-                f"implementation model {model.name}"
-            )
 
             basenames = []
             layers = []
@@ -1043,14 +1038,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         previous_sub_tasks = []
 
+        self.progress_dialog.analysis_finished_message = tr(f"Weighting")
+
+        self.progress_dialog.scenario_name = tr(f"implementation models")
+
         for model in models:
             if model.layer is None:
                 return False
-
-            self.progress_dialog.analysis_finished_message = tr(
-                f"Weighting on {model.name} has finished"
-            )
-            self.progress_dialog.scenario_name = tr(f"priority layers")
 
             basenames = []
             layers = []
