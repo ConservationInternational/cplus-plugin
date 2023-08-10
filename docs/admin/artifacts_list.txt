@@ -24,3 +24,4 @@ cplus_plugin_main_599a - https://github.com/kartoza/cplus-plugin/suites/14908019
 cplus_plugin_main_54e5 - https://github.com/kartoza/cplus-plugin/suites/14909468719/artifacts/849592239
 cplus_plugin_main_cb81 - https://github.com/kartoza/cplus-plugin/suites/14975654606/artifacts/854390091
 cplus_plugin_main_bb18 - https://github.com/kartoza/cplus-plugin/suites/14980740102/artifacts/854745928
+cplus_plugin_main_a869 - https://github.com/kartoza/cplus-plugin/suites/14981110167/artifacts/854771965
