@@ -85,12 +85,12 @@ def open_documentation(url=None):
     return result
 
 
-def get_report_font(size=11, bold=False, italic=False) -> QtGui.QFont:
+def get_report_font(size=11.0, bold=False, italic=False) -> QtGui.QFont:
     """Uses the default font family name to create a
     font for use in the report.
 
     :param size: The font point size, default is 11.
-    :type size: int
+    :type size: float
 
     :param bold: True for bold font else False which is the default.
     :type bold: bool
@@ -105,7 +105,6 @@ def get_report_font(size=11, bold=False, italic=False) -> QtGui.QFont:
     if bold is True:
         font_weight = 75
 
-    # return QtGui.QFont(REPORT_FONT_NAME, size, font_weight, italic)
     return QtGui.QFont(REPORT_FONT_NAME, size, font_weight, italic)
 
 

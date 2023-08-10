@@ -18,20 +18,25 @@ from qgis.core import (
     QgsLayoutItemMap,
     QgsLayoutItemPage,
     QgsLayoutItemPicture,
+    QgsLayoutItemScaleBar,
     QgsLayoutItemShape,
     QgsLayoutPoint,
     QgsLayoutSize,
     QgsPrintLayout,
     QgsProject,
+    QgsRasterLayer,
     QgsReadWriteContext,
+    QgsScaleBarSettings,
     QgsTask,
     QgsTableCell,
     QgsTextFormat,
+    QgsUnitTypes,
 )
 from qgis.utils import iface
 
 from qgis.PyQt import QtCore, QtGui, QtXml
 
+from ...definitions.constants import IM_GROUP_LAYER_NAME
 from ...definitions.defaults import (
     IMPLEMENTATION_MODEL_AREA_TABLE_ID,
     MINIMUM_ITEM_HEIGHT,
@@ -40,9 +45,13 @@ from ...definitions.defaults import (
 )
 from .layout_items import CplusMapRepeatItem
 from ...models.base import ImplementationModel
-from ...models.helpers import extent_to_project_crs_extent
 from ...models.report import ReportContext, ReportResult
-from ...utils import calculate_raster_value_area, get_report_font, log, tr
+from ...utils import (
+    calculate_raster_value_area,
+    get_report_font,
+    log,
+    tr,
+)
 from .variables import create_bulleted_text, LayoutVariableRegister
 
 
@@ -54,6 +63,8 @@ class ReportGeneratorTask(QgsTask):
         self._context = context
         self._result = None
         self._generator = ReportGenerator(self._context, self._context.feedback)
+        self.lm = QgsProject.instance().layoutManager()
+        self.lm.layoutAdded.connect(self._on_layout_added)
 
     @property
     def context(self) -> ReportContext:
@@ -101,7 +112,8 @@ class ReportGeneratorTask(QgsTask):
 
         return self._result.success
 
-    def _zoom_map_items_to_current_extents(self, layout: QgsPrintLayout):
+    @classmethod
+    def _zoom_map_items_to_current_extents(cls, layout: QgsPrintLayout):
         """Zoom extents of map items in the layout to current map canvas
         extents.
         """
@@ -109,6 +121,31 @@ class ReportGeneratorTask(QgsTask):
         for item in layout.items():
             if isinstance(item, QgsLayoutItemMap):
                 item.zoomToExtent(extent)
+
+    def _on_layout_added(self, name: str):
+        """Slot raised when a layout has been added to the manager."""
+        # self._generator.export_to_pdf()
+        self._export_to_pdf()
+
+    def _export_to_pdf(self):
+        """Export layout to PDF after the extents have been updated to
+        the current canvas extents.
+        """
+        # We fetch the layout afresh so that the PDF export can contain
+        # synced extents.
+        layout_name = self._generator.layout.name()
+        layout = self.lm.layoutByName(layout_name)
+        if layout is None:
+            log(
+                f"Could not find {layout_name} layout for exporting to PDF.", info=False
+            )
+            return
+
+        exporter = QgsLayoutExporter(layout)
+        pdf_path = f"{self._generator.output_dir}/{layout_name}.pdf"
+        result = exporter.exportToPdf(pdf_path, QgsLayoutExporter.PdfExportSettings())
+        if result != QgsLayoutExporter.ExportResult.Success:
+            log(f"Could not export {layout_name} layout to PDF.", info=False)
 
     def finished(self, result: bool):
         """If successful, add the layout to the project.
@@ -135,7 +172,7 @@ class ReportGeneratorTask(QgsTask):
                 log("Could not load layout from file.", info=False)
                 return
 
-            # Zoom the extents of map items in the layout
+            # Zoom the extents of map items in the layout then export to PDF
             self._zoom_map_items_to_current_extents(layout)
             project.layoutManager().addLayout(layout)
 
@@ -166,7 +203,6 @@ class ReportGenerator:
         self._repeat_page = None
         self._repeat_page_num = -1
         self._repeat_item = None
-        self._normalized_scenario_extent = None
 
     @property
     def context(self) -> ReportContext:
@@ -322,21 +358,6 @@ class ReportGenerator:
                 self._repeat_page_num = page_num
                 self._repeat_item = item
 
-    def _set_scenario_extent(self) -> bool:
-        """Set scenario extent."""
-        extent = extent_to_project_crs_extent(
-            self._context.scenario.extent, self._project
-        )
-
-        if extent is None:
-            tr_msg = tr("Could not get the scenario extent as a QgsRectangle.")
-            self._error_messages.append(tr_msg)
-            return False
-
-        self._normalized_scenario_extent = extent
-
-        return True
-
     def duplicate_repeat_page(self, position: int) -> bool:
         """Duplicates the repeat page and adds it to the layout
         at the given position.
@@ -465,8 +486,6 @@ class ReportGenerator:
 
         # Calculate number of pages required
         num_pages, req_pages = divmod(num_implementation_models, int(max_items_page))
-        if num_pages == 0:
-            num_pages = 1
 
         # Check if there is an additional page required
         if req_pages != 0:
@@ -526,12 +545,23 @@ class ReportGenerator:
         im_map = QgsLayoutItemMap(self._layout)
         self._layout.addLayoutItem(im_map)
         im_map.setFrameEnabled(False)
-        im_map.zoomToExtent(self._normalized_scenario_extent)
-        if imp_model.layer is not None:
-            im_map.setLayers([imp_model.layer])
+        im_map.setBackgroundColor(self._project.backgroundColor())
+        im_name = imp_model.name.lower().replace(" ", "_")
+        im_map.setId(f"map_{im_name}")
         map_ref_point = QgsLayoutPoint(pos_x, pos_y, self._layout.units())
         im_map.attemptMove(map_ref_point, True, False, page)
         im_map.attemptResize(QgsLayoutSize(width, map_height, self._layout.units()))
+        im_layer = self._get_im_layer_in_project(imp_model.name)
+        if im_layer is not None:
+            ext = im_layer.extent()
+            im_map.setLayers([im_layer])
+            im_map.setExtent(ext)
+            # Resize item again after the scale has been set correctly
+            im_map.attemptResize(QgsLayoutSize(width, map_height, self._layout.units()))
+        else:
+            log(
+                f"Could not find matching map layer for {imp_model.name} implementation model."
+            )
 
         # Background IM details shape
         shape_height = 0.2 * height
@@ -560,13 +590,56 @@ class ReportGenerator:
             ":/images/north_arrows/layout_default_north_arrow.svg"
         )
         arrow_ref_point = QgsLayoutPoint(
-            pos_x + 0.02 * width,
-            pos_y + map_height - (0.1 * height),
+            pos_x + 0.10 * width,
+            pos_y + map_height - (0.13 * height),
             self._layout.units(),
         )
         arrow_item.attemptMove(arrow_ref_point, True, False, page)
         arrow_item.attemptResize(
-            QgsLayoutSize(0.07 * width, 0.07 * height, self._layout.units())
+            QgsLayoutSize(0.05 * width, 0.05 * height, self._layout.units())
+        )
+
+        # Add scale bar
+        scale_bar = QgsLayoutItemScaleBar(self._layout)
+        self._layout.addLayoutItem(scale_bar)
+        scale_bar.setLinkedMap(im_map)
+        scale_bar_ref_point = QgsLayoutPoint(
+            pos_x + 0.02 * width,
+            pos_y + map_height - (0.08 * height),
+            self._layout.units(),
+        )
+        scale_bar.setUnitLabel("km")
+        scale_bar.setHeight(1)
+        scale_bar.setLabelBarSpace(1)
+
+        version = Qgis.versionInt()
+        if version < 33000:
+            distance_unit_type = QgsUnitTypes.DistanceKilometers
+            font_unit_type = QgsUnitTypes.Points
+        else:
+            distance_unit_type = Qgis.DistanceUnit.Kilometers
+            font_unit_type = Qgis.RenderUnit.Points
+
+        scale_bar.setUnits(distance_unit_type)
+        scale_bar.setSegmentSizeMode(
+            QgsScaleBarSettings.SegmentSizeMode.SegmentSizeFitWidth
+        )
+        scale_bar.setUnitsPerSegment(100)
+        scale_bar.setMinimumBarWidth(15)
+        scale_bar.setMaximumBarWidth(30)
+
+        # Scalebar text options
+        scale_bar_font_size = 7
+        font = get_report_font(scale_bar_font_size)
+        txt_format = QgsTextFormat()
+        txt_format.setFont(font)
+        txt_format.setSize(scale_bar_font_size)
+        txt_format.setSizeUnit(font_unit_type)
+        scale_bar.setTextFormat(txt_format)
+
+        scale_bar.attemptMove(scale_bar_ref_point, True, False, page)
+        scale_bar.attemptResize(
+            QgsLayoutSize(0.1 * width, 0.1 * height, self._layout.units())
         )
 
         title_font_size = 10
@@ -646,7 +719,7 @@ class ReportGenerator:
     def set_label_font(
         cls,
         label: QgsLayoutItemLabel,
-        size: int,
+        size: float,
         bold: bool = False,
         italic: bool = False,
     ):
@@ -669,26 +742,55 @@ class ReportGenerator:
         """
         font = get_report_font(size, bold, italic)
         version = Qgis.versionInt()
+
+        # Text format size unit
+        if version < 33000:
+            unit_type = QgsUnitTypes.Points
+        else:
+            unit_type = Qgis.RenderUnit.Points
+
+        # Label font setting option
         if version < 32400:
             label.setFont(font)
         else:
             txt_format = QgsTextFormat()
             txt_format.setFont(font)
             txt_format.setSize(size)
-            txt_format.setSizeUnit(Qgis.RenderUnit.Points)
+            txt_format.setSizeUnit(unit_type)
             label.setTextFormat(txt_format)
 
         label.refresh()
 
+    def _get_im_layer_in_project(
+        self, im_name: str
+    ) -> typing.Union[QgsRasterLayer, None]:
+        """Retrieves the IM raster layer from the IM layer group in
+        the project.
+        """
+        if self._project is None:
+            return None
+
+        layer_root = self._project.layerTreeRoot()
+        im_layer_group = layer_root.findGroup(tr(IM_GROUP_LAYER_NAME))
+        if im_layer_group is None:
+            return None
+
+        matching_tree_layers = [
+            tl for tl in im_layer_group.findLayers() if tl.layer().name() == im_name
+        ]
+        if len(matching_tree_layers) == 0:
+            return None
+
+        return matching_tree_layers[0].layer()
+
     def _update_map_extents(self):
         """Update the extent of all map items in the layout."""
-        if self._normalized_scenario_extent is None:
-            return
-
         items = self._layout.items()
         for item in items:
             if isinstance(item, QgsLayoutItemMap):
-                item.zoomToExtent(self._normalized_scenario_extent)
+                ext = self._context.view_extent
+                log(f"Project view extent: {ext.toString()}")
+                item.zoomToExtent(self._context.view_extent)
 
     def _get_table_from_id(
         self, table_id: str
@@ -785,15 +887,8 @@ class ReportGenerator:
         if self._process_cancelled():
             return self._get_failed_result()
 
-        # Set the normalized scenario extent
-        if not self._set_scenario_extent():
-            return self._get_failed_result()
-
-        if self._process_cancelled():
-            return self._get_failed_result()
-
         # Update the extent of all map items in the layout
-        self._update_map_extents()
+        # self._update_map_extents()
 
         if self._process_cancelled():
             return self._get_failed_result()
@@ -828,7 +923,7 @@ class ReportGenerator:
         if self._process_cancelled():
             return self._get_failed_result()
 
-        self._export_to_pdf()
+        # Export to PDF
 
         result = self._save_layout_to_file()
         if not result:
@@ -873,9 +968,12 @@ class ReportGenerator:
             self._context.name,
         )
 
-    def _export_to_pdf(self) -> bool:
+    def export_to_pdf(self) -> bool:
         """Exports the layout to a PDF file in the output
         directory using the layout name as the file name.
+
+        :returns: True if the layout was successfully exported else False.
+        :rtype: bool
         """
         if self._layout is None or self._project is None or not self.output_dir:
             return False
@@ -891,8 +989,8 @@ class ReportGenerator:
             return False
 
     def _load_template(self) -> bool:
-        """Loads the template in the report context and returns
-        the corresponding layout object.
+        """Loads the template in the report context and registers
+        CPLUS variables.
 
         :returns: True if the template was successfully loaded,
         else False.

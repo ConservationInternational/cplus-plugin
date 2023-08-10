@@ -42,12 +42,12 @@ from qgis.core import (
 
 from qgis.gui import (
     QgsMessageBar,
-    QgsMapCanvas,
     QgsRubberBand,
 )
 
 from qgis.utils import iface
 
+from .component_item_model import ImplementationModelItem
 from .implementation_model_widget import ImplementationModelContainerWidget
 from .priority_group_widget import PriorityGroupWidget
 
@@ -59,7 +59,13 @@ from ..lib.reports.manager import report_manager
 
 from ..resources import *
 
-from ..utils import clean_filename, open_documentation, tr, log, FileUtils
+from ..utils import (
+    clean_filename,
+    open_documentation,
+    tr,
+    log,
+    FileUtils,
+)
 
 from ..definitions.defaults import (
     ADD_LAYER_ICON_PATH,
@@ -73,7 +79,12 @@ from ..definitions.defaults import (
     USER_DOCUMENTATION_SITE,
     LAYER_STYLES,
 )
-from ..definitions.constants import NCS_CARBON_SEGMENT, PRIORITY_LAYERS_SEGMENT
+from ..definitions.constants import (
+    NCS_CARBON_SEGMENT,
+    PRIORITY_LAYERS_SEGMENT,
+    IM_GROUP_LAYER_NAME,
+    NCS_PATHWAYS_GROUP_LAYER_NAME,
+)
 
 from .progress_dialog import ProgressDialog
 
@@ -464,7 +475,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         implementation_models = [
             item.implementation_model
-            for item in self.implementation_model_widget.selected_items()
+            for item in self.implementation_model_widget.selected_im_items()
         ]
 
         base_dir = settings_manager.get_value(Settings.BASE_DIR)
@@ -584,7 +595,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         implementation_models = [
             item.implementation_model
-            for item in self.implementation_model_widget.selected_items()
+            for item in self.implementation_model_widget.selected_im_items()
         ]
 
         priority_layers_groups = [
@@ -611,6 +622,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 level=Qgis.Critical,
             )
             return
+
         if not any(priority_layers_groups):
             self.show_message(
                 tr(
@@ -1155,8 +1167,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             # Groups
             scenario_group = instance_root.insertGroup(0, scenario_name)
-            im_group = scenario_group.addGroup("Implementation model maps")
-            pathways_group = scenario_group.addGroup("Pathways")
+            im_group = scenario_group.addGroup(tr(IM_GROUP_LAYER_NAME))
+            pathways_group = scenario_group.addGroup(tr(NCS_PATHWAYS_GROUP_LAYER_NAME))
 
             # Group settings
             im_group.setExpanded(False)

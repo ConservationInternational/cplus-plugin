@@ -10,11 +10,12 @@ from qgis.PyQt import QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
+from .component_item_model import ImplementationModelItem, ModelComponentItemType
+
 from .model_component_widget import (
     ImplementationModelComponentWidget,
     NcsComponentWidget,
 )
-
 from ..models.base import ImplementationModel, NcsPathway
 
 from ..utils import FileUtils
@@ -124,5 +125,24 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
 
         return status
 
-    def selected_items(self):
+    def selected_items(self) -> typing.List[ModelComponentItemType]:
+        """Returns the selected model component item types which could be
+        NCS pathway or implementation model items.
+
+        :returns: Selected model component items.
+        :rtype: list
+        """
         return self.implementation_model_view.selected_items()
+
+    def selected_im_items(self) -> typing.List[ImplementationModelItem]:
+        """Returns the currently selected instances of ImplementationModelItem.
+
+        :returns: Currently selected instances of ImplementationModelItem or
+        an empty list if there is no selection of IM items.
+        :rtype: list
+        """
+        return [
+            item
+            for item in self.selected_items()
+            if isinstance(item, ImplementationModelItem)
+        ]
