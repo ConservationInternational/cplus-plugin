@@ -660,8 +660,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                 sources = [layer.source() for layer in layers]
 
-                log(f"layers sources {sources}, layers count {len(layers)}")
-
                 alg_params = {
                     "IGNORE_NODATA": True,
                     "INPUT_RASTERS": sources,
