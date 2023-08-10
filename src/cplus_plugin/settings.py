@@ -287,7 +287,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         coefficient = settings_manager.get_value(
             Settings.CARBON_COEFFICIENT, default=0.0
         )
-        self.carbon_coefficient_box.setValue(coefficient)
+        self.carbon_coefficient_box.setValue(float(coefficient))
 
     def showEvent(self, event: QShowEvent) -> None:
         """Show event being called. This will display the plugin settings.
