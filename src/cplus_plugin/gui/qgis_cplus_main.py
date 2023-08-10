@@ -178,6 +178,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.btn_reload_pwl.clicked.connect(update_pwl_layers)
         self.update_pwl_layers()
 
+        # Scenario analysis variables
+
+        self.analysis_scenario_name = None
+        self.analysis_scenario_description = None
+        self.analysis_extent = None
+        self.analysis_implementation_models = None
+        self.analysis_priority_layers_groups = None
+
     def update_pwl_layers(self, notify=False):
         """Updates the priority layers path available in the store implementation models"""
         settings_manager.update_implementation_models()
@@ -461,51 +469,50 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         contains = default_extent == passed_extent or default_extent.contains(
             passed_extent
         )
-        scenario_name = self.scenario_name.text()
-        scenario_description = self.scenario_description.text()
+        self.analysis_scenario_name = self.scenario_name.text()
+        self.analysis_scenario_description = self.scenario_description.text()
 
         self.position_feedback = QgsProcessingFeedback()
         self.processing_context = QgsProcessingContext()
 
-        priority_layers_groups = [
+        self.analysis_priority_layers_groups = [
             layer.get("groups")
             for layer in settings_manager.get_priority_layers()
             if layer.get("groups") is not [] or layer.get("groups") is not None
         ]
 
-        implementation_models = [
+        self.analysis_implementation_models = [
             item.implementation_model
             for item in self.implementation_model_widget.selected_im_items()
         ]
 
         base_dir = settings_manager.get_value(Settings.BASE_DIR)
 
-        if implementation_models == [] or implementation_models is None:
-            self.show_message(
-                tr("Select at least one implementation models from step two."),
-                level=Qgis.Critical,
-            )
-            return
-
-        if scenario_name == "" or scenario_name is None:
+        if self.analysis_scenario_name == "" or self.analysis_scenario_name is None:
             self.show_message(
                 tr(f"Scenario name cannot be blank."),
                 level=Qgis.Critical,
             )
             return
-        if scenario_description == "" or scenario_description is None:
+        if (
+            self.analysis_scenario_description == ""
+            or self.analysis_scenario_description is None
+        ):
             self.show_message(
                 tr(f"Scenario description cannot be blank."),
                 level=Qgis.Critical,
             )
             return
-        if implementation_models == [] or implementation_models is None:
+        if (
+            self.analysis_implementation_models == []
+            or self.analysis_implementation_models is None
+        ):
             self.show_message(
                 tr("Select at least one implementation models from step two."),
                 level=Qgis.Critical,
             )
             return
-        if not any(priority_layers_groups):
+        if not any(self.analysis_priority_layers_groups):
             self.show_message(
                 tr(
                     f"At least one priority weight layer should be added "
@@ -531,7 +538,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 level=Qgis.Critial,
             )
             return
-        extent = SpatialExtent(
+        self.analysis_extent = SpatialExtent(
             bbox=[extent_list[3], extent_list[2], extent_list[1], extent_list[0]]
         )
 
@@ -572,9 +579,102 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 )
             )
 
+        # pathway_function = partial(
+        #     self.run_pathways_analysis,
+        #     self.analysis_implementation_models,
+        #     self.analysis_priority_layers_groups,
+        #     self.analysis_extent
+        #     )
+        #
+        # # Create pathway analysis
+        # task = QgsTask.fromFunction(
+        #     'Run NCS Pathways analysis',
+        #     pathway_function,
+        #     on_finished=self.pathways_analysis_completed
+        # )
+        #
+        # QgsApplication.taskManager().addTask(task)
+
         self.run_pathways_analysis(
-            implementation_models, priority_layers_groups, extent
+            self.analysis_implementation_models,
+            self.analysis_priority_layers_groups,
+            self.analysis_extent,
         )
+
+    def pathways_analysis_completed(self, exception, result=None):
+        if exception is None:
+            if result is None:
+                log(
+                    "Completed with no exception and no result "
+                    "(probably manually canceled by the user)",
+                )
+            else:
+                log("Task for pathways analysis has completed\n")
+        else:
+            log(f"Exception: Task from function, pathways {str(exception)}")
+
+            raise exception
+
+    def run_models_task_analysis(self):
+        models_analysis_function = partial(
+            self.run_models_analysis,
+            self.analysis_implementation_models,
+            self.analysis_priority_layers_groups,
+            self.analysis_extent,
+        )
+
+        task = QgsTask.fromFunction(
+            "Run NCS Pathways analysis",
+            models_analysis_function,
+            on_finished=self.models_analysis_completed,
+        )
+
+        QgsApplication.taskManager().addTask(task)
+
+    def models_analysis_completed(self, exception, result=None):
+        if exception is None:
+            if result is None:
+                log(
+                    "Completed with no exception and no result "
+                    "(probably manually canceled by the user)",
+                )
+            else:
+                log("Task models analysis completed\n")
+        else:
+            log(f"Exception: Task from models analysis function {str(exception)}")
+            raise exception
+
+    def run_priority_task_analysis(self):
+        priority_function = partial(
+            self.run_priority_analysis,
+            self.analysis_implementation_models,
+            self.analysis_priority_layers_groups,
+            self.analysis_extent,
+        )
+
+        task = QgsTask.fromFunction(
+            "Run priority analysis",
+            priority_function,
+            on_finished=self.priority_analysis_completed,
+        )
+
+        QgsApplication.taskManager().addTask(task)
+
+    def priority_analysis_completed(self, exception, result=None):
+        if exception is None:
+            if result is None:
+                log(
+                    "Completed with no exception and no result "
+                    "(probably manually canceled by the user)"
+                )
+            else:
+                log(
+                    "Task for priority analysis completed\n",
+                )
+        else:
+            log("Exception: Task from priority analysis")
+            log(f"Exception: Task from priority analysis function {exception}")
+            raise exception
 
     def run_scenario_analysis(self):
         """Performs the scenario analysis. This covers the pilot study area,
@@ -590,58 +690,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             passed_extent
         )
 
-        scenario_name = self.scenario_name.text()
-        scenario_description = self.scenario_description.text()
-
-        implementation_models = [
-            item.implementation_model
-            for item in self.implementation_model_widget.selected_im_items()
-        ]
-
-        priority_layers_groups = [
-            layer.get("groups")
-            for layer in settings_manager.get_priority_layers()
-            if layer.get("groups") is not [] or layer.get("groups") is not None
-        ]
-
-        if scenario_name == "" or scenario_name is None:
-            self.show_message(
-                tr(f"Scenario name cannot be blank."),
-                level=Qgis.Critical,
-            )
-            return
-        if scenario_description == "" or scenario_description is None:
-            self.show_message(
-                tr(f"Scenario description cannot be blank."),
-                level=Qgis.Critical,
-            )
-            return
-        if implementation_models == [] or implementation_models is None:
-            self.show_message(
-                tr("Select at least one implementation models from step two."),
-                level=Qgis.Critical,
-            )
-            return
-
-        if not any(priority_layers_groups):
-            self.show_message(
-                tr(
-                    f"At least one priority weight layer should be added "
-                    f"into one of the priority groups from step three."
-                ),
-                level=Qgis.Critical,
-            )
-            return
-        extent = SpatialExtent(
-            bbox=[extent_list[3], extent_list[2], extent_list[1], extent_list[0]]
-        )
         scenario = Scenario(
             uuid=uuid.uuid4(),
-            name=scenario_name,
-            description=scenario_description,
-            extent=extent,
-            models=implementation_models,
-            priority_layer_groups=priority_layers_groups,
+            name=self.analysis_scenario_name,
+            description=self.analysis_scenario_description,
+            extent=self.analysis_extent,
+            models=self.analysis_implementation_models,
+            priority_layer_groups=self.analysis_priority_layers_groups,
         )
 
         self.scenario_result = ScenarioResult(
@@ -664,7 +719,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                 self.position_feedback.progressChanged.connect(self.update_progress_bar)
 
-                for model in implementation_models:
+                for model in self.analysis_implementation_models:
                     if model.layer:
                         raster_layer = model.layer
                         if isinstance(model.layer, str):
@@ -745,9 +800,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 f"{default_extent.yMinimum()}, {default_extent.yMaximum()}"
             )
             log(
-                f"Outside the pilot area, passed extent {extent}, default extent{default_ext}"
+                f"Outside the pilot area, passed extent "
+                f"{self.analysis_extent}, default extent{default_ext}"
             )
             return
+
+    def main_task(self):
+        log("Running from main task ")
 
     def run_pathways_analysis(self, models, priority_layers_groups, extent):
         """Runs the required model pathways analysis on the passed implementation models
@@ -759,6 +818,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type extent: SpatialExtent
         """
         model_count = 0
+
+        models_function = partial(
+            self.run_models_analysis, models, priority_layers_groups, extent
+        )
+        main_task = QgsTask.fromFunction(
+            "Main task for running pathways combination with carbon layers",
+            self.main_task,
+            on_finished=models_function,
+        )
+
+        previous_sub_tasks = []
+
         for model in models:
             if not model.pathways:
                 return False
@@ -770,7 +841,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             base_dir = settings_manager.get_value(Settings.BASE_DIR)
 
             FileUtils.create_new_dir(new_ims_directory)
-
             file_name = clean_filename(model.name.replace(" ", "_"))
 
             output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
@@ -793,7 +863,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                         basenames.append(
                             f'({carbon_coefficient} * "{carbon_full_path.stem}@1")'
                         )
-
                 expression = " + ".join(basenames)
 
                 box = QgsRectangle(
@@ -849,12 +918,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     alg, alg_params, self.processing_context, self.position_feedback
                 )
 
+                main_task.addSubTask(
+                    self.task, previous_sub_tasks, QgsTask.ParentDependsOnSubTask
+                )
+                previous_sub_tasks.append(self.task)
+
                 self.task.executed.connect(analysis_done)
-                QgsApplication.taskManager().addTask(self.task)
+                # QgsApplication.taskManager().addTask(self.task)
 
                 pathway_count = pathway_count + 1
 
             model_count = model_count + 1
+        QgsApplication.taskManager().addTask(main_task)
 
     def pathways_analysis_done(
         self,
@@ -890,9 +965,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
         if output is not None and output.get("OUTPUT") is not None:
             pathway.path = output.get("OUTPUT")
-
-        if (model_index == len(models) - 1) and last_pathway:
-            self.run_models_analysis(models, priority_layers_groups, extent)
+        #
+        # if (model_index == len(models) - 1) and last_pathway:
+        #     self.run_models_analysis(models, priority_layers_groups, extent)
 
     def run_models_analysis(self, models, priority_layers_groups, extent):
         """Runs the required model analysis on the passed implementation models
@@ -904,6 +979,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type extent: SpatialExtent
         """
         model_count = 0
+        priority_function = partial(
+            self.run_priority_analysis, models, priority_layers_groups, extent
+        )
+        main_task = QgsTask.fromFunction(
+            "Running Main functions", self.main_task, on_finished=priority_function
+        )
+
+        previous_sub_tasks = []
+
         for model in models:
             if not model.pathways:
                 return False
@@ -955,10 +1039,17 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 alg, alg_params, self.processing_context, self.position_feedback
             )
 
+            main_task.addSubTask(
+                self.task, previous_sub_tasks, QgsTask.ParentDependsOnSubTask
+            )
+            previous_sub_tasks.append(self.task)
+
             self.task.executed.connect(analysis_done)
-            QgsApplication.taskManager().addTask(self.task)
+            # QgsApplication.taskManager().addTask(self.task)
 
             model_count = model_count + 1
+
+        QgsApplication.taskManager().addTask(main_task)
 
     def model_analysis_done(
         self,
@@ -990,8 +1081,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if output is not None and output.get("OUTPUT") is not None:
             model.layer = QgsRasterLayer(output.get("OUTPUT"), model.name)
 
-        if model_index == len(models) - 1:
-            self.run_priority_analysis(models, priority_layers_groups, extent)
+        # if model_index == len(models) - 1:
+        #     self.run_priority_analysis(models, priority_layers_groups, extent)
 
     def run_priority_analysis(self, models, priority_layers_groups, extent):
         """Runs the required model analysis on the passed implementation models
@@ -1003,6 +1094,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type extent: SpatialExtent
         """
         model_count = 0
+        main_task = QgsTask.fromFunction(
+            "Running main task for priority layers weighting",
+            self.main_task(),
+            on_finished=self.run_scenario_analysis,
+        )
+
+        previous_sub_tasks = []
+
         for model in models:
             if model.layer is None:
                 return False
@@ -1070,10 +1169,17 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 alg, alg_params, self.processing_context, self.position_feedback
             )
 
+            main_task.addSubTask(
+                self.task, previous_sub_tasks, QgsTask.ParentDependsOnSubTask
+            )
+            previous_sub_tasks.append(self.task)
+
             self.task.executed.connect(analysis_done)
-            QgsApplication.taskManager().addTask(self.task)
+            # QgsApplication.taskManager().addTask(self.task)
 
             model_count = model_count + 1
+
+        QgsApplication.taskManager().addTask(main_task)
 
     def priority_layers_analysis_done(
         self, model_index, model, models, success, output
@@ -1098,8 +1204,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if output is not None and output.get("OUTPUT") is not None:
             model.layer = QgsRasterLayer(output.get("OUTPUT"), model.name)
 
-        if model_index == len(models) - 1:
-            self.run_scenario_analysis()
+        # if model_index == len(models) - 1:
+        #     self.run_scenario_analysis()
 
     def cancel_processing_task(self):
         """Cancels the current processing task."""
