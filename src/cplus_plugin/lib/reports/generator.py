@@ -14,6 +14,7 @@ from qgis.core import (
     QgsFillSymbol,
     QgsLayoutExporter,
     QgsLayoutItemLabel,
+    QgsLayoutItemLegend,
     QgsLayoutItemManualTable,
     QgsLayoutItemMap,
     QgsLayoutItemPage,
@@ -783,14 +784,18 @@ class ReportGenerator:
 
         return matching_tree_layers[0].layer()
 
-    def _update_map_extents(self):
-        """Update the extent of all map items in the layout."""
-        items = self._layout.items()
-        for item in items:
-            if isinstance(item, QgsLayoutItemMap):
-                ext = self._context.view_extent
-                log(f"Project view extent: {ext.toString()}")
-                item.zoomToExtent(self._context.view_extent)
+    def _update_main_map_legend(self):
+        """Textual adjustments to the main map legend."""
+        legend_item: QgsLayoutItemLegend = self._layout.itemById("legend_main_map")
+        if legend_item is None:
+            tr_msg = tr(
+                "Could not find the main map legend."
+            )
+            self._error_messages.append(tr_msg)
+            return
+
+        model = legend_item.model()
+        root_node = model.rootGroup()
 
     def _get_table_from_id(
         self, table_id: str
@@ -916,6 +921,9 @@ class ReportGenerator:
 
         # Populate table with priority weighting values
         self._populate_scenario_weighting_values()
+
+        # Update the legend for the main map
+        self._update_main_map_legend()
 
         # Add CPLUS report flag
         self._variable_register.set_report_flag(self._layout)
