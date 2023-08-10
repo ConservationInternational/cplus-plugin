@@ -16,7 +16,7 @@
     "author": "Kartoza",
     "email": "info@kartoza.com",
     "description": "QGIS plugin for the CPLUS framework",
-    "version": "0.1.4dev",
+    "version": "0.1.5dev",
     "changelog": ""
   }
 }
