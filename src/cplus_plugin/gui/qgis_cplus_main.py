@@ -47,6 +47,7 @@ from qgis.gui import (
 
 from qgis.utils import iface
 
+from .component_item_model import ImplementationModelItem
 from .implementation_model_widget import ImplementationModelContainerWidget
 from .priority_group_widget import PriorityGroupWidget
 
@@ -474,7 +475,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         implementation_models = [
             item.implementation_model
-            for item in self.implementation_model_widget.selected_items()
+            for item in self.implementation_model_widget.selected_im_items()
         ]
 
         base_dir = settings_manager.get_value(Settings.BASE_DIR)
@@ -594,7 +595,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         implementation_models = [
             item.implementation_model
-            for item in self.implementation_model_widget.selected_items()
+            for item in self.implementation_model_widget.selected_im_items()
         ]
 
         priority_layers_groups = [
@@ -621,6 +622,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 level=Qgis.Critical,
             )
             return
+
         if not any(priority_layers_groups):
             self.show_message(
                 tr(
