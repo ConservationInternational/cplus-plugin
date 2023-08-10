@@ -174,7 +174,7 @@ def calculate_raster_value_area(layer: QgsRasterLayer, band_number: int = 1) -> 
 
     version = Qgis.versionInt()
     if version < 33000:
-        unit_type = QgsUnitTypes.AreaHectares
+        unit_type = QgsUnitTypes.AreaUnit.AreaHectares
     else:
         unit_type = Qgis.AreaUnit.Hectares
 
