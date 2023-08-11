@@ -762,8 +762,12 @@ class SettingsManager(QtCore.QObject):
         """
         if isinstance(implementation_model, ImplementationModel):
             pwls_paths = implementation_model.pwls_paths
+            ncs_pathways = []
+            for ncs in implementation_model.pathways:
+                ncs_pathways.append(str(ncs.uuid))
             implementation_model = layer_component_to_dict(implementation_model)
             implementation_model["pwls_paths"] = pwls_paths
+            implementation_model["pathways"] = ncs_pathways
 
         implementation_model_str = json.dumps(implementation_model)
 
@@ -793,10 +797,19 @@ class SettingsManager(QtCore.QObject):
 
         with qgis_settings(implementation_model_root) as settings:
             implementation_model = settings.value(implementation_model_uuid, None)
+            implementation_model_dict = json.loads(implementation_model)
+            ncs_uuids = []
             if implementation_model is not None:
+                if "pathways" in implementation_model_dict:
+                    ncs_uuids = implementation_model_dict["pathways"]
                 implementation_model = create_implementation_model(
-                    json.loads(implementation_model)
+                    implementation_model_dict
                 )
+                if implementation_model is not None:
+                    for ncs_uuid in ncs_uuids:
+                        ncs = self.get_ncs_pathway(ncs_uuid)
+                        if ncs is not None:
+                            implementation_model.add_ncs_pathway(ncs)
 
         return implementation_model
 
