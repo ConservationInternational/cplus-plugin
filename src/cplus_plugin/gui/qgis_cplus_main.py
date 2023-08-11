@@ -1408,6 +1408,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             # Group settings
             im_group.setExpanded(False)
+            im_weighted_group.setExpanded(False)
             pathways_group.setExpanded(False)
             pathways_group.setItemVisibilityCheckedRecursive(False)
 
