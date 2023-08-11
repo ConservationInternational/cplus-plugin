@@ -1488,7 +1488,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 im_index = im_index + 1
 
             for weighted_im in list_weighted_ims:
-
                 if not weighted_im.endswith(".tif"):
                     continue
 
