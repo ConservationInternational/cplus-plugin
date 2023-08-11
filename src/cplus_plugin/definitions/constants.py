@@ -12,5 +12,5 @@ PRIORITY_LAYERS_SEGMENT = "priority_layers"
 OUTPUTS_SEGMENT = "outputs"
 
 IM_GROUP_LAYER_NAME = "Implementation Model Maps"
-IM_WEIGHTED_GROUP_NAME = "Weighted implementation Model Maps"
+IM_WEIGHTED_GROUP_NAME = "Weighted Implementation Model Maps"
 NCS_PATHWAYS_GROUP_LAYER_NAME = "NCS Pathways Maps"
