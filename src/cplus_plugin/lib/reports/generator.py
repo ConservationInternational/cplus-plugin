@@ -616,8 +616,8 @@ class ReportGenerator:
 
         version = Qgis.versionInt()
         if version < 33000:
-            distance_unit_type = QgsUnitTypes.DistanceKilometers
-            font_unit_type = QgsUnitTypes.Points
+            distance_unit_type = QgsUnitTypes.DistanceUnit.DistanceKilometers
+            font_unit_type = QgsUnitTypes.RenderUnit.RenderPoints
         else:
             distance_unit_type = Qgis.DistanceUnit.Kilometers
             font_unit_type = Qgis.RenderUnit.Points
@@ -747,7 +747,7 @@ class ReportGenerator:
 
         # Text format size unit
         if version < 33000:
-            unit_type = QgsUnitTypes.Points
+            unit_type = QgsUnitTypes.RenderUnit.RenderPoints
         else:
             unit_type = Qgis.RenderUnit.Points
 

@@ -178,6 +178,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.btn_reload_pwl.clicked.connect(update_pwl_layers)
         self.update_pwl_layers()
 
+        # Scenario analysis variables
+
+        self.analysis_scenario_name = None
+        self.analysis_scenario_description = None
+        self.analysis_extent = None
+        self.analysis_implementation_models = None
+        self.analysis_priority_layers_groups = None
+
     def update_pwl_layers(self, notify=False):
         """Updates the priority layers path available in the store implementation models"""
         settings_manager.update_implementation_models()
@@ -461,51 +469,50 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         contains = default_extent == passed_extent or default_extent.contains(
             passed_extent
         )
-        scenario_name = self.scenario_name.text()
-        scenario_description = self.scenario_description.text()
+        self.analysis_scenario_name = self.scenario_name.text()
+        self.analysis_scenario_description = self.scenario_description.text()
 
         self.position_feedback = QgsProcessingFeedback()
         self.processing_context = QgsProcessingContext()
 
-        priority_layers_groups = [
+        self.analysis_priority_layers_groups = [
             layer.get("groups")
             for layer in settings_manager.get_priority_layers()
             if layer.get("groups") is not [] or layer.get("groups") is not None
         ]
 
-        implementation_models = [
+        self.analysis_implementation_models = [
             item.implementation_model
             for item in self.implementation_model_widget.selected_im_items()
         ]
 
         base_dir = settings_manager.get_value(Settings.BASE_DIR)
 
-        if implementation_models == [] or implementation_models is None:
-            self.show_message(
-                tr("Select at least one implementation models from step two."),
-                level=Qgis.Critical,
-            )
-            return
-
-        if scenario_name == "" or scenario_name is None:
+        if self.analysis_scenario_name == "" or self.analysis_scenario_name is None:
             self.show_message(
                 tr(f"Scenario name cannot be blank."),
                 level=Qgis.Critical,
             )
             return
-        if scenario_description == "" or scenario_description is None:
+        if (
+            self.analysis_scenario_description == ""
+            or self.analysis_scenario_description is None
+        ):
             self.show_message(
                 tr(f"Scenario description cannot be blank."),
                 level=Qgis.Critical,
             )
             return
-        if implementation_models == [] or implementation_models is None:
+        if (
+            self.analysis_implementation_models == []
+            or self.analysis_implementation_models is None
+        ):
             self.show_message(
                 tr("Select at least one implementation models from step two."),
                 level=Qgis.Critical,
             )
             return
-        if not any(priority_layers_groups):
+        if not any(self.analysis_priority_layers_groups):
             self.show_message(
                 tr(
                     f"At least one priority weight layer should be added "
@@ -531,7 +538,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 level=Qgis.Critial,
             )
             return
-        extent = SpatialExtent(
+        self.analysis_extent = SpatialExtent(
             bbox=[extent_list[3], extent_list[2], extent_list[1], extent_list[0]]
         )
 
@@ -573,7 +580,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
 
         self.run_pathways_analysis(
-            implementation_models, priority_layers_groups, extent
+            self.analysis_implementation_models,
+            self.analysis_priority_layers_groups,
+            self.analysis_extent,
         )
 
     def run_scenario_analysis(self):
@@ -590,58 +599,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             passed_extent
         )
 
-        scenario_name = self.scenario_name.text()
-        scenario_description = self.scenario_description.text()
-
-        implementation_models = [
-            item.implementation_model
-            for item in self.implementation_model_widget.selected_im_items()
-        ]
-
-        priority_layers_groups = [
-            layer.get("groups")
-            for layer in settings_manager.get_priority_layers()
-            if layer.get("groups") is not [] or layer.get("groups") is not None
-        ]
-
-        if scenario_name == "" or scenario_name is None:
-            self.show_message(
-                tr(f"Scenario name cannot be blank."),
-                level=Qgis.Critical,
-            )
-            return
-        if scenario_description == "" or scenario_description is None:
-            self.show_message(
-                tr(f"Scenario description cannot be blank."),
-                level=Qgis.Critical,
-            )
-            return
-        if implementation_models == [] or implementation_models is None:
-            self.show_message(
-                tr("Select at least one implementation models from step two."),
-                level=Qgis.Critical,
-            )
-            return
-
-        if not any(priority_layers_groups):
-            self.show_message(
-                tr(
-                    f"At least one priority weight layer should be added "
-                    f"into one of the priority groups from step three."
-                ),
-                level=Qgis.Critical,
-            )
-            return
-        extent = SpatialExtent(
-            bbox=[extent_list[3], extent_list[2], extent_list[1], extent_list[0]]
-        )
         scenario = Scenario(
             uuid=uuid.uuid4(),
-            name=scenario_name,
-            description=scenario_description,
-            extent=extent,
-            models=implementation_models,
-            priority_layer_groups=priority_layers_groups,
+            name=self.analysis_scenario_name,
+            description=self.analysis_scenario_description,
+            extent=self.analysis_extent,
+            models=self.analysis_implementation_models,
+            priority_layer_groups=self.analysis_priority_layers_groups,
         )
 
         self.scenario_result = ScenarioResult(
@@ -650,34 +614,36 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         if contains:
             try:
-                layers = []
+                layers = {}
 
                 self.progress_dialog.progress_bar.setMinimum(0)
                 self.progress_dialog.progress_bar.setMaximum(100)
                 self.progress_dialog.progress_bar.setValue(0)
                 self.progress_dialog.analysis_finished_message = tr("Analysis finished")
-                self.progress_dialog.scenario_name = scenario.name
+                self.progress_dialog.scenario_name = tr(f"<b>{scenario.name}</b>")
                 self.progress_dialog.scenario_id = str(scenario.uuid)
                 self.progress_dialog.change_status_message(
-                    tr("Calculating highest position")
+                    tr("Calculating the highest position")
                 )
 
                 self.position_feedback.progressChanged.connect(self.update_progress_bar)
 
-                for model in implementation_models:
+                for model in self.analysis_implementation_models:
                     if model.layer:
                         raster_layer = model.layer
                         if isinstance(model.layer, str):
                             raster_layer = QgsRasterLayer(model.layer, model.name)
-                        layers.append(
-                            raster_layer
-                        ) if raster_layer is not None else None
+                        layers[model.name] = (
+                            raster_layer if raster_layer is not None else None
+                        )
                     else:
                         for pathway in model.pathways:
-                            layers.append(QgsRasterLayer(pathway.path))
+                            layers[model.name] = QgsRasterLayer(pathway.path)
 
                 source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
-                dest_crs = layers[0].crs()
+                dest_crs = (
+                    list(layers.values())[0].crs() if len(layers) > 0 else source_crs
+                )
                 transform = QgsCoordinateTransform(
                     source_crs, dest_crs, QgsProject.instance()
                 )
@@ -694,12 +660,39 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     f"{SCENARIO_OUTPUT_FILE_NAME}_{str(scenario.uuid)[:4]}.tif"
                 )
 
+                # Preparing the input rasters for the highest position
+                # analysis in a correct order
+
+                models_names = [
+                    model.name for model in self.analysis_implementation_models
+                ]
+                all_models_names = [
+                    model.name
+                    for model in self.implementation_model_widget.implementation_models()
+                ]
+                sources = []
+
+                absolute_path = (
+                    f"{FileUtils.plugin_dir()}/app_data/layers/null_raster.tif"
+                )
+                null_raster_file = os.path.normpath(absolute_path)
+
+                for model_name in all_models_names:
+                    if model_name in models_names:
+                        sources.append(layers[model_name].source())
+                    else:
+                        sources.append(null_raster_file)
+
+                log(f"Layers sources {[Path(source).stem for source in sources]}")
+
                 alg_params = {
                     "IGNORE_NODATA": True,
-                    "INPUT_RASTERS": layers,
+                    "INPUT_RASTERS": sources,
                     "EXTENT": extent_string,
                     "OUTPUT_NODATA_VALUE": -9999,
-                    "REFERENCE_LAYER": layers[0] if len(layers) >= 1 else None,
+                    "REFERENCE_LAYER": list(layers.values())[0]
+                    if len(layers) >= 1
+                    else None,
                     "OUTPUT": output_file,
                 }
 
@@ -730,7 +723,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 log(
                     tr(
                         "An error occurred when running task for "
-                        'scenario analysis, error message "{}"'.format(err)
+                        'scenario analysis, error message "{}"'.format(str(err))
                     )
                 )
 
@@ -745,9 +738,17 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 f"{default_extent.yMinimum()}, {default_extent.yMaximum()}"
             )
             log(
-                f"Outside the pilot area, passed extent {extent}, default extent{default_ext}"
+                f"Outside the pilot area, passed extent "
+                f"{self.analysis_extent}, default extent{default_ext}"
             )
             return
+
+    def main_task(self):
+        """Serves as a QgsTask function for the main task that contains
+        smaller sub-tasks running the actual processing calculations.
+        """
+
+        log("Running from main task.")
 
     def run_pathways_analysis(self, models, priority_layers_groups, extent):
         """Runs the required model pathways analysis on the passed implementation models
@@ -755,10 +756,30 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param model: List of the selected implementation models
         :type model: typing.List[ImplementationModel]
 
+        :param priority_layers_groups: Used priority layers groups and their values
+        :type priority_layers_groups: dict
+
         :param extent: selected extent from user
         :type extent: SpatialExtent
         """
         model_count = 0
+
+        models_function = partial(
+            self.run_models_analysis, models, priority_layers_groups, extent
+        )
+        main_task = QgsTask.fromFunction(
+            "Main task for running pathways combination with carbon layers",
+            self.main_task,
+            on_finished=models_function,
+        )
+
+        main_task.taskCompleted.connect(models_function)
+
+        previous_sub_tasks = []
+
+        self.progress_dialog.analysis_finished_message = tr("Calculating carbon layers")
+        self.progress_dialog.scenario_name = tr(f"models pathways")
+
         for model in models:
             if not model.pathways:
                 return False
@@ -770,7 +791,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             base_dir = settings_manager.get_value(Settings.BASE_DIR)
 
             FileUtils.create_new_dir(new_ims_directory)
-
             file_name = clean_filename(model.name.replace(" ", "_"))
 
             output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
@@ -793,7 +813,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                         basenames.append(
                             f'({carbon_coefficient} * "{carbon_full_path.stem}@1")'
                         )
-
                 expression = " + ".join(basenames)
 
                 box = QgsRectangle(
@@ -825,6 +844,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     (pathway_count == len(model.pathways) - 1),
                 )
 
+                if carbon_coefficient <= 0:
+                    self.run_models_analysis(
+                        models, priority_layers_groups, extent_string
+                    )
+                    return
+
                 # Actual processing calculation
                 alg_params = {
                     "CELLSIZE": 0,
@@ -836,7 +861,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 }
 
                 log(
-                    f"Used parameters for combining pathways and carbon layers generation {alg_params}"
+                    f"Used parameters for combining pathways"
+                    f" and carbon layers generation: {alg_params}"
                 )
 
                 alg = QgsApplication.processingRegistry().algorithmById(
@@ -848,13 +874,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.task = QgsProcessingAlgRunnerTask(
                     alg, alg_params, self.processing_context, self.position_feedback
                 )
+                self.position_feedback.progressChanged.connect(self.update_progress_bar)
 
+                main_task.addSubTask(
+                    self.task, previous_sub_tasks, QgsTask.ParentDependsOnSubTask
+                )
+                previous_sub_tasks.append(self.task)
                 self.task.executed.connect(analysis_done)
-                QgsApplication.taskManager().addTask(self.task)
 
                 pathway_count = pathway_count + 1
 
             model_count = model_count + 1
+        QgsApplication.taskManager().addTask(main_task)
 
     def pathways_analysis_done(
         self,
@@ -879,6 +910,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param models: List of the selected implementation models
         :type models: typing.List[ImplementationModel]
 
+        :param priority_layers_groups: Used priority layers groups and their values
+        :type priority_layers_groups: dict
+
         :param last_pathway: Whether the pathway is the last from the models pathway list
         :type last_pathway: bool
 
@@ -900,10 +934,26 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param model: List of the selected implementation models
         :type model: typing.List[ImplementationModel]
 
+        :param priority_layers_groups: Used priority layers groups and their values
+        :type priority_layers_groups: dict
+
         :param extent: selected extent from user
         :type extent: SpatialExtent
         """
         model_count = 0
+
+        priority_function = partial(
+            self.run_priority_analysis, models, priority_layers_groups, extent
+        )
+        main_task = QgsTask.fromFunction(
+            "Running main functions", self.main_task, on_finished=priority_function
+        )
+
+        previous_sub_tasks = []
+
+        self.progress_dialog.analysis_finished_message = tr("Processing calculations")
+        self.progress_dialog.scenario_name = tr("implementation models")
+
         for model in models:
             if not model.pathways:
                 return False
@@ -911,9 +961,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             basenames = []
             layers = []
             new_ims_directory = f"{self.scenario_directory}/implementation_models"
-
             FileUtils.create_new_dir(new_ims_directory)
-
             file_name = clean_filename(model.name.replace(" ", "_"))
 
             output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
@@ -922,6 +970,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 path_basename = Path(pathway.path).stem
                 layers.append(pathway.path)
                 basenames.append(f'"{path_basename}@1"')
+
             expression = " + ".join(basenames)
 
             analysis_done = partial(
@@ -943,7 +992,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "OUTPUT": output_file,
             }
 
-            log(f"Used parameters for implementation models generation {alg_params}")
+            log(f"Used parameters for implementation models generation: {alg_params}")
 
             alg = QgsApplication.processingRegistry().algorithmById(
                 "qgis:rastercalculator"
@@ -955,12 +1004,168 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 alg, alg_params, self.processing_context, self.position_feedback
             )
 
+            self.position_feedback.progressChanged.connect(self.update_progress_bar)
+
+            main_task.addSubTask(
+                self.task, previous_sub_tasks, QgsTask.ParentDependsOnSubTask
+            )
+            previous_sub_tasks.append(self.task)
             self.task.executed.connect(analysis_done)
-            QgsApplication.taskManager().addTask(self.task)
 
             model_count = model_count + 1
 
+        QgsApplication.taskManager().addTask(main_task)
+
     def model_analysis_done(
+        self,
+        model_index,
+        model,
+        models,
+        extent,
+        priority_layers_groups,
+        success,
+        output,
+    ):
+        """Slot that handles post calculations for the models layers
+
+        :param model_index: List index of the target model
+        :type model_index: int
+
+        :param model: Target implementation models
+        :type model: ImplementationModel
+
+        :param model: List of the selected implementation models
+        :type model: typing.List[ImplementationModel]
+
+        :param priority_layers_groups: Used priority layers groups and their values
+        :type priority_layers_groups: dict
+
+        :param success: Whether the scenario analysis was successful
+        :type success: bool
+
+        :param output: Analysis output results
+        :type output: dict
+        """
+        if output is not None and output.get("OUTPUT") is not None:
+            model.layer = QgsRasterLayer(output.get("OUTPUT"), model.name)
+
+        if model_index == len(models) - 1:
+            self.run_normalization_analysis(models, priority_layers_groups, extent)
+
+    def run_normalization_analysis(self, models, priority_layers_groups, extent):
+        """Runs the normalization on the analysis models layers,
+        adjusting band statistical values measured on different scale
+        to a 0-1 scale or 0-2 scale.
+
+        If carbon layers were used prior to the models analysis the 0-2 scale will
+        be used instead of the default 0-1 scale.
+
+        :param model: List of the analyzed implementation models
+        :type model: typing.List[ImplementationModel]
+
+        :param priority_layers_groups: Used priority layers groups and their values
+        :type priority_layers_groups: dict
+
+        :param extent: selected extent from user
+        :type extent: str
+        """
+        model_count = 0
+
+        priority_function = partial(
+            self.run_priority_analysis, models, priority_layers_groups, extent
+        )
+        main_task = QgsTask.fromFunction(
+            "Running normalization", self.main_task, on_finished=priority_function
+        )
+
+        previous_sub_tasks = []
+
+        self.progress_dialog.analysis_finished_message = tr("Normalization")
+        self.progress_dialog.scenario_name = tr("implementation models")
+
+        for model in models:
+            if not model.layer:
+                log(f"There is no raster layer for the model {model.name}")
+                return False
+
+            basenames = []
+            layers = []
+            new_ims_directory = f"{self.scenario_directory}/normalized_ims"
+            FileUtils.create_new_dir(new_ims_directory)
+            file_name = clean_filename(model.name.replace(" ", "_"))
+
+            output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
+
+            provider = model.layer.dataProvider()
+            band_statistics = provider.bandStatistics(1)
+
+            min_value = band_statistics.minimumValue
+            max_value = band_statistics.maximumValue
+
+            layer_source = model.layer.source()
+            layer_name = Path(layer_source).stem
+
+            layers.append(layer_source)
+
+            carbon_coefficient = float(
+                settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.0)
+            )
+
+            if carbon_coefficient <= 0:
+                expression = (
+                    f'("{layer_name}@1" - {min_value}) /'
+                    f" ({max_value} - {min_value})"
+                )
+            else:
+                expression = (
+                    f' 2 * ("{layer_name}@1" - {min_value}) /'
+                    f" ({max_value} - {min_value})"
+                )
+
+            analysis_done = partial(
+                self.normalization_analysis_done,
+                model_count,
+                model,
+                models,
+                extent,
+                priority_layers_groups,
+            )
+
+            # Actual processing calculation
+            alg_params = {
+                "CELLSIZE": 0,
+                "CRS": None,
+                "EXPRESSION": expression,
+                "EXTENT": extent,
+                "LAYERS": layers,
+                "OUTPUT": output_file,
+            }
+
+            log(f"Used parameters for normalization of the models: {alg_params}")
+
+            alg = QgsApplication.processingRegistry().algorithmById(
+                "qgis:rastercalculator"
+            )
+
+            self.processing_cancelled = False
+
+            self.task = QgsProcessingAlgRunnerTask(
+                alg, alg_params, self.processing_context, self.position_feedback
+            )
+
+            self.position_feedback.progressChanged.connect(self.update_progress_bar)
+
+            main_task.addSubTask(
+                self.task, previous_sub_tasks, QgsTask.ParentDependsOnSubTask
+            )
+            previous_sub_tasks.append(self.task)
+            self.task.executed.connect(analysis_done)
+
+            model_count = model_count + 1
+
+        QgsApplication.taskManager().addTask(main_task)
+
+    def normalization_analysis_done(
         self,
         model_index,
         model,
@@ -1003,6 +1208,21 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type extent: SpatialExtent
         """
         model_count = 0
+
+        main_task = QgsTask.fromFunction(
+            "Running main task for priority layers weighting",
+            self.main_task,
+            on_finished=self.run_scenario_analysis,
+        )
+
+        main_task.taskCompleted.connect(self.run_scenario_analysis)
+
+        previous_sub_tasks = []
+
+        self.progress_dialog.analysis_finished_message = tr(f"Weighting")
+
+        self.progress_dialog.scenario_name = tr(f"implementation models")
+
         for model in models:
             if model.layer is None:
                 return False
@@ -1035,7 +1255,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                         for group in layer.get("groups"):
                             value = group.get("value")
                             coefficient = float(value) / 100
-                            basenames.append(f'({coefficient}*"{path_basename}@1")')
+                            if coefficient > 0:
+                                basenames.append(f'({coefficient}*"{path_basename}@1")')
 
             if basenames is []:
                 return
@@ -1070,10 +1291,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 alg, alg_params, self.processing_context, self.position_feedback
             )
 
+            self.position_feedback.progressChanged.connect(self.update_progress_bar)
+
+            main_task.addSubTask(
+                self.task, previous_sub_tasks, QgsTask.ParentDependsOnSubTask
+            )
+            previous_sub_tasks.append(self.task)
+
             self.task.executed.connect(analysis_done)
-            QgsApplication.taskManager().addTask(self.task)
 
             model_count = model_count + 1
+
+        QgsApplication.taskManager().addTask(main_task)
 
     def priority_layers_analysis_done(
         self, model_index, model, models, success, output
