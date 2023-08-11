@@ -717,8 +717,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             return
 
     def main_task(self):
-        """Serves a QgsTask function for the main task that contains
-        smaller sub-tasks that will run the actual processing calculations
+        """Serves as a QgsTask function for the main task that contains
+        smaller sub-tasks running the actual processing calculations.
         """
 
         log("Running from main task.")
@@ -728,6 +728,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         :param model: List of the selected implementation models
         :type model: typing.List[ImplementationModel]
+
+        :param priority_layers_groups: Used priority layers groups and their values
+        :type priority_layers_groups: dict
 
         :param extent: selected extent from user
         :type extent: SpatialExtent
@@ -880,6 +883,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param models: List of the selected implementation models
         :type models: typing.List[ImplementationModel]
 
+        :param priority_layers_groups: Used priority layers groups and their values
+        :type priority_layers_groups: dict
+
         :param last_pathway: Whether the pathway is the last from the models pathway list
         :type last_pathway: bool
 
@@ -900,6 +906,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         :param model: List of the selected implementation models
         :type model: typing.List[ImplementationModel]
+
+        :param priority_layers_groups: Used priority layers groups and their values
+        :type priority_layers_groups: dict
 
         :param extent: selected extent from user
         :type extent: SpatialExtent
@@ -1001,6 +1010,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param model: List of the selected implementation models
         :type model: typing.List[ImplementationModel]
 
+        :param priority_layers_groups: Used priority layers groups and their values
+        :type priority_layers_groups: dict
+
         :param success: Whether the scenario analysis was successful
         :type success: bool
 
@@ -1060,12 +1072,17 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             provider = model.layer.dataProvider()
             band_statistics = provider.bandStatistics(1)
 
-            min_value = band_statistics.minimumValue()
-            max_value = band_statistics.maximumValue()
+            min_value = band_statistics.minimumValue
+            max_value = band_statistics.maximumValue
 
-            layer_name = Path(model.layer.source()).stem
+            layer_source = model.layer.source()
+            layer_name = Path(layer_source).stem
 
-            layers.append(model.layer.sources())
+            layers.append(layer_source)
+
+            carbon_coefficient = float(
+                settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.0)
+            )
 
             if carbon_coefficient <= 0:
                 expression = (
