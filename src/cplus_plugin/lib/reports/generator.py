@@ -43,6 +43,7 @@ from ...definitions.defaults import (
     MINIMUM_ITEM_HEIGHT,
     MINIMUM_ITEM_WIDTH,
     PRIORITY_GROUP_WEIGHT_TABLE_ID,
+    SCENARIO_OUTPUT_LAYER_NAME,
 )
 from .layout_items import CplusMapRepeatItem
 from ...models.base import ImplementationModel
@@ -788,14 +789,16 @@ class ReportGenerator:
         """Textual adjustments to the main map legend."""
         legend_item: QgsLayoutItemLegend = self._layout.itemById("legend_main_map")
         if legend_item is None:
-            tr_msg = tr(
-                "Could not find the main map legend."
-            )
+            tr_msg = tr("Could not find the main map legend.")
             self._error_messages.append(tr_msg)
             return
 
         model = legend_item.model()
         root_node = model.rootGroup()
+        for tree_layer in root_node.findLayers():
+            if tree_layer.name().startswith(SCENARIO_OUTPUT_LAYER_NAME):
+                tree_layer.setName(tr("Ideal Landuse"))
+                model.refreshLayerLegend(tree_layer)
 
     def _get_table_from_id(
         self, table_id: str
@@ -891,9 +894,6 @@ class ReportGenerator:
 
         if self._process_cancelled():
             return self._get_failed_result()
-
-        # Update the extent of all map items in the layout
-        # self._update_map_extents()
 
         if self._process_cancelled():
             return self._get_failed_result()
