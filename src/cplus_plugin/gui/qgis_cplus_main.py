@@ -78,11 +78,13 @@ from ..definitions.defaults import (
     SCENARIO_OUTPUT_LAYER_NAME,
     USER_DOCUMENTATION_SITE,
     LAYER_STYLES,
+    LAYER_STYLES_WEIGHTED,
 )
 from ..definitions.constants import (
     NCS_CARBON_SEGMENT,
     PRIORITY_LAYERS_SEGMENT,
     IM_GROUP_LAYER_NAME,
+    IM_WEIGHTED_GROUP_NAME,
     NCS_PATHWAYS_GROUP_LAYER_NAME,
 )
 
@@ -1390,6 +1392,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         # If the processing were stopped, no file will be added
         if not self.processing_cancelled:
+            raster = scenario_result.analysis_output['OUTPUT']
+            im_weighted_dir = os.path.dirname(raster) + "/weighted_ims/"
+            list_weighted_ims = os.listdir(im_weighted_dir)
+
             scenario_name = scenario_result.scenario.name
             qgis_instance = QgsProject.instance()
             instance_root = qgis_instance.layerTreeRoot()
@@ -1397,6 +1403,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             # Groups
             scenario_group = instance_root.insertGroup(0, scenario_name)
             im_group = scenario_group.addGroup(tr(IM_GROUP_LAYER_NAME))
+            im_weighted_group = scenario_group.addGroup(tr(IM_WEIGHTED_GROUP_NAME))
             pathways_group = scenario_group.addGroup(tr(NCS_PATHWAYS_GROUP_LAYER_NAME))
 
             # Group settings
@@ -1421,6 +1428,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             """
             self.move_layer_to_group(scenario_layer, scenario_group)
 
+            coefficient = settings_manager.get_value(
+                Settings.CARBON_COEFFICIENT, default=0.0
+            )
+
             # Add implementation models and pathways
             list_models = scenario_result.scenario.models
             im_index = 0
@@ -1431,7 +1442,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                 # Add IM layer with styling, if available
                 if im_layer:
-                    im_layer.loadNamedStyle(LAYER_STYLES[im_name])
+                    if float(coefficient) > 0:
+                        # Style with range 0 to 2
+                        style_to_use = LAYER_STYLES["carbon"][im_name]
+                    else:
+                        # Style with range 0 to 1
+                        style_to_use = LAYER_STYLES["normal"][im_name]
+
+                    im_layer.loadNamedStyle(style_to_use)
                     added_im_layer = qgis_instance.addMapLayer(im_layer)
                     self.move_layer_to_group(added_im_layer, im_group)
 
@@ -1467,6 +1485,24 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                             )
 
                 im_index = im_index + 1
+
+            for weighted_im in list_weighted_ims:
+
+                if not weighted_im.endswith(".tif"):
+                    continue
+
+                weighted_im_name = weighted_im[:len(weighted_im) - 9]
+                if float(coefficient) > 0:
+                    # Style with range 0 to 2
+                    style_to_use = LAYER_STYLES_WEIGHTED["carbon"][weighted_im_name]
+                else:
+                    # Style with range 0 to 1
+                    style_to_use = LAYER_STYLES_WEIGHTED["normal"][weighted_im_name]
+
+                im_weighted_layer = QgsRasterLayer(im_weighted_dir + weighted_im, weighted_im_name, QGIS_GDAL_PROVIDER)
+                im_weighted_layer.loadNamedStyle(style_to_use)
+                added_im_weighted_layer = qgis_instance.addMapLayer(im_weighted_layer)
+                self.move_layer_to_group(added_im_weighted_layer, im_weighted_group)
 
             # Initiate report generation
             self.run_report()
