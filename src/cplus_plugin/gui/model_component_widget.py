@@ -343,6 +343,7 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         super().__init__(parent)
 
         self.item_model = IMItemModel(parent)
+        self.item_model.im_pathways_updated.connect(self.on_pathways_updated)
 
         self.lst_model_items.setAcceptDrops(True)
         self.lst_model_items.setDragDropMode(QtWidgets.QAbstractItemView.DropOnly)
@@ -359,6 +360,14 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         :rtype: list
         """
         return self.item_model.models()
+
+    def on_pathways_updated(self, im_item: ImplementationModelItem):
+        """Slot raised when the pathways of an ImplementationModelItem
+        have been added or removed. Persist this information in settings.
+        """
+        cloned_im_item = im_item.clone()
+        cloned_im = cloned_im_item.implementation_model
+        settings_manager.update_implementation_model(cloned_im)
 
     def model_items(self) -> typing.List[ImplementationModelItem]:
         """Returns a collection of all ImplementationModelItem objects
@@ -407,8 +416,7 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
             layer = editor.layer
             result = self.item_model.update_implementation_model(model, layer)
             if result:
-                settings_manager.remove_implementation_model(str(model.uuid))
-                settings_manager.save_implementation_model(model)
+                settings_manager.update_implementation_model(model)
             self._update_ui_on_selection_changed()
 
     def _on_remove_item(self):

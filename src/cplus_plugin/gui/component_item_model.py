@@ -4,10 +4,9 @@ Contains item models for view widgets such as NCS pathway or IM views.
 """
 import uuid
 from abc import abstractmethod
-from copy import deepcopy
 import json
 import typing
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from qgis.core import QgsMapLayer
 
@@ -325,6 +324,38 @@ class ImplementationModelItem(LayerComponentItem):
         return [ncs_item.ncs_pathway for ncs_item in self.ncs_items]
 
     @property
+    def original_ncs_pathways(self) -> typing.List[NcsPathway]:
+        """Returns a collection of NcsPathway objects but with
+        their original UUIDs.
+
+        These are used for persisting the NCsPathway objects
+        related to the underlying IM object.
+
+        :returns: Collection of NcsPathway objects with their
+        original UUIDs linked to the underlying ImplementationModel
+        object.
+        :rtype: list
+        """
+        ncs_pathways = []
+        for ncs_item in self.ncs_items:
+            ncs = ncs_item.ncs_pathway
+            keys = [
+                old_uuid
+                for old_uuid, new_uuid in self._uuid_remap.items()
+                if new_uuid == ncs_item.uuid
+            ]
+            if len(keys) == 0:
+                continue
+
+            cloned_ncs = clone_layer_component(ncs, NcsPathway)
+
+            original_uuid = UUID(keys[0])
+            cloned_ncs.uuid = original_uuid
+            ncs_pathways.append(cloned_ncs)
+
+        return ncs_pathways
+
+    @property
     def layer_item(self) -> QtGui.QStandardItem:
         """Returns the view item for the layer.
 
@@ -479,11 +510,14 @@ class ImplementationModelItem(LayerComponentItem):
     def clone(self) -> "ImplementationModelItem":
         """Creates a cloned version of this item.
 
-        Please note that the UUID of the cloned item will change.
+        The cloned IM will contain pathways with the
+        original UUID. The UUID of the IM will not change.
         """
         implementation_model = clone_layer_component(
             self.implementation_model, ImplementationModel
         )
+        # Use NCS pathways with original UUIDs
+        implementation_model.pathways = self.original_ncs_pathways
 
         return ImplementationModelItem(implementation_model)
 
@@ -805,6 +839,9 @@ class NcsPathwayItemModel(ComponentItemModel):
 class IMItemModel(ComponentItemModel):
     """View model for implementation model."""
 
+    # Signal raised when the pathways have been updated (added or removed)
+    im_pathways_updated = QtCore.pyqtSignal(ImplementationModelItem)
+
     def add_implementation_model(
         self, implementation_model: ImplementationModel, layer: QgsMapLayer = None
     ) -> bool:
@@ -827,6 +864,15 @@ class IMItemModel(ComponentItemModel):
             status = self.set_model_layer(implementation_model_item, layer)
             if not status:
                 result = False
+
+        # Add NCS pathways
+        self.blockSignals(True)
+        if result:
+            for ncs_pathway in implementation_model.pathways:
+                ncs_item = NcsPathwayItem.create(ncs_pathway)
+                # self.add_ncs_pathway(ncs_item, implementation_model_item)
+
+        self.blockSignals(False)
 
         return result
 
@@ -937,6 +983,8 @@ class IMItemModel(ComponentItemModel):
         reference_row = max(bottom_idx.row(), idx.row())
         self.add_component_item(clone_ncs, reference_row + 1)
 
+        self.im_pathways_updated.emit(target_model_item)
+
         return True
 
     def remove_ncs_pathway_item(
@@ -959,6 +1007,8 @@ class IMItemModel(ComponentItemModel):
         status = parent.remove_ncs_pathway_item(ncs_uuid)
         if not status:
             return False
+
+        self.im_pathways_updated.emit(parent)
 
         return self.remove_component_item(ncs_uuid)
 

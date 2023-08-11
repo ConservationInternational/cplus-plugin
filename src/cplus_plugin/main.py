@@ -420,11 +420,13 @@ def initialize_model_settings():
 
                 settings_manager.save_implementation_model(imp_model_dict)
             else:
+                pathways = imp_model.pathways
                 # Update values
                 source_im = create_implementation_model(imp_model_dict)
                 if source_im is None:
                     continue
                 imp_model = copy_layer_component_attributes(imp_model, source_im)
+                imp_model.pathways = pathways
                 settings_manager.remove_implementation_model(str(imp_model.uuid))
                 settings_manager.save_implementation_model(imp_model)
         except KeyError as ke:
