@@ -614,7 +614,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         if contains:
             try:
-                layers = []
+                layers = {}
 
                 self.progress_dialog.progress_bar.setMinimum(0)
                 self.progress_dialog.progress_bar.setMaximum(100)
@@ -633,15 +633,17 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                         raster_layer = model.layer
                         if isinstance(model.layer, str):
                             raster_layer = QgsRasterLayer(model.layer, model.name)
-                        layers.append(
-                            raster_layer
-                        ) if raster_layer is not None else None
+                        layers[model.name] = (
+                            raster_layer if raster_layer is not None else None
+                        )
                     else:
                         for pathway in model.pathways:
-                            layers.append(QgsRasterLayer(pathway.path))
+                            layers[model.name] = QgsRasterLayer(pathway.path)
 
                 source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
-                dest_crs = layers[0].crs()
+                dest_crs = (
+                    list(layers.values())[0].crs() if len(layers) > 0 else source_crs
+                )
                 transform = QgsCoordinateTransform(
                     source_crs, dest_crs, QgsProject.instance()
                 )
@@ -658,14 +660,39 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     f"{SCENARIO_OUTPUT_FILE_NAME}_{str(scenario.uuid)[:4]}.tif"
                 )
 
-                sources = [layer.source() for layer in layers]
+                # Preparing the input rasters for the highest position
+                # analysis in a correct order
+
+                models_names = [
+                    model.name for model in self.analysis_implementation_models
+                ]
+                all_models_names = [
+                    model.name
+                    for model in self.implementation_model_widget.implementation_models()
+                ]
+                sources = []
+
+                absolute_path = (
+                    f"{FileUtils.plugin_dir()}/app_data/layers/null_raster.tif"
+                )
+                null_raster_file = os.path.normpath(absolute_path)
+
+                for model_name in all_models_names:
+                    if model_name in models_names:
+                        sources.append(layers[model_name].source())
+                    else:
+                        sources.append(null_raster_file)
+
+                log(f"Layers sources {[Path(source).stem for source in sources]}")
 
                 alg_params = {
                     "IGNORE_NODATA": True,
                     "INPUT_RASTERS": sources,
                     "EXTENT": extent_string,
                     "OUTPUT_NODATA_VALUE": -9999,
-                    "REFERENCE_LAYER": sources[0] if len(sources) >= 1 else None,
+                    "REFERENCE_LAYER": list(layers.values())[0]
+                    if len(layers) >= 1
+                    else None,
                     "OUTPUT": output_file,
                 }
 
@@ -696,7 +723,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 log(
                     tr(
                         "An error occurred when running task for "
-                        'scenario analysis, error message "{}"'.format(err)
+                        'scenario analysis, error message "{}"'.format(str(err))
                     )
                 )
 
