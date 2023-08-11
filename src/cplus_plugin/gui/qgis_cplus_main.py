@@ -1066,6 +1066,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     continue
 
                 path_basename = pwl_path.stem
+                if coefficient <= 0:
+                    continue
                 layers.append(pwl)
                 for layer in settings_manager.get_priority_layers():
                     if layer.get("name") == path_basename:
