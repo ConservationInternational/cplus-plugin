@@ -807,13 +807,9 @@ class SettingsManager(QtCore.QObject):
                 )
                 if implementation_model is not None:
                     for ncs_uuid in ncs_uuids:
-                        log(f"NCS_UUID: {ncs_uuid}")
                         ncs = self.get_ncs_pathway(ncs_uuid)
                         if ncs is not None:
-                            log("NCS is found")
                             implementation_model.add_ncs_pathway(ncs)
-                        else:
-                            log("NCS is none")
 
         return implementation_model
 
