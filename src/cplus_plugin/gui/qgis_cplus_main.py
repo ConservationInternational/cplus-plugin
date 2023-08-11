@@ -832,7 +832,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                 log(
                     f"Used parameters for combining pathways"
-                    f" and carbon layers generation {alg_params}"
+                    f" and carbon layers generation: {alg_params}"
                 )
 
                 alg = QgsApplication.processingRegistry().algorithmById(
@@ -850,7 +850,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     self.task, previous_sub_tasks, QgsTask.ParentDependsOnSubTask
                 )
                 previous_sub_tasks.append(self.task)
-
                 self.task.executed.connect(analysis_done)
 
                 pathway_count = pathway_count + 1
@@ -957,7 +956,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "OUTPUT": output_file,
             }
 
-            log(f"Used parameters for implementation models generation {alg_params}")
+            log(f"Used parameters for implementation models generation: {alg_params}")
 
             alg = QgsApplication.processingRegistry().algorithmById(
                 "qgis:rastercalculator"
@@ -975,7 +974,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.task, previous_sub_tasks, QgsTask.ParentDependsOnSubTask
             )
             previous_sub_tasks.append(self.task)
-
             self.task.executed.connect(analysis_done)
 
             model_count = model_count + 1
@@ -983,6 +981,147 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         QgsApplication.taskManager().addTask(main_task)
 
     def model_analysis_done(
+        self,
+        model_index,
+        model,
+        models,
+        extent,
+        priority_layers_groups,
+        success,
+        output,
+    ):
+        """Slot that handles post calculations for the models layers
+
+        :param model_index: List index of the target model
+        :type model_index: int
+
+        :param model: Target implementation models
+        :type model: ImplementationModel
+
+        :param model: List of the selected implementation models
+        :type model: typing.List[ImplementationModel]
+
+        :param success: Whether the scenario analysis was successful
+        :type success: bool
+
+        :param output: Analysis output results
+        :type output: dict
+        """
+        if output is not None and output.get("OUTPUT") is not None:
+            model.layer = QgsRasterLayer(output.get("OUTPUT"), model.name)
+
+        if model_index == len(models) - 1:
+            self.run_normalization_analysis(models, priority_layers_groups, extent)
+
+    def run_normalization_analysis(self, models, priority_layers_groups, extent):
+        """Runs the normalization on the analysis models layers,
+        adjusting band statistical values measured on different scale
+        to a 0-1 scale or 0-2 scale.
+
+        If carbon layers were used prior to the models analysis the 0-2 scale will
+        be used instead of the default 0-1 scale.
+
+        :param model: List of the analyzed implementation models
+        :type model: typing.List[ImplementationModel]
+
+        :param priority_layers_groups: Used priority layers groups and their values
+        :type priority_layers_groups: dict
+
+        :param extent: selected extent from user
+        :type extent: str
+        """
+        model_count = 0
+
+        priority_function = partial(
+            self.run_priority_analysis, models, priority_layers_groups, extent
+        )
+        main_task = QgsTask.fromFunction(
+            "Running normalization", self.main_task, on_finished=priority_function
+        )
+
+        previous_sub_tasks = []
+
+        self.progress_dialog.analysis_finished_message = tr("Normalization")
+        self.progress_dialog.scenario_name = tr("implementation models")
+
+        for model in models:
+            if not model.layer:
+                log(f"There is no raster layer for the model {model.name}")
+                return False
+
+            basenames = []
+            layers = []
+            new_ims_directory = f"{self.scenario_directory}/normalized_ims"
+            FileUtils.create_new_dir(new_ims_directory)
+            file_name = clean_filename(model.name.replace(" ", "_"))
+
+            output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
+
+            provider = model.layer.dataProvider()
+            band_statistics = provider.bandStatistics(1)
+
+            min_value = band_statistics.minimumValue()
+            max_value = band_statistics.maximumValue()
+
+            layer_name = Path(model.layer.source()).stem
+
+            layers.append(model.layer.sources())
+
+            if carbon_coefficient <= 0:
+                expression = (
+                    f'("{layer_name}@1" - {min_value}) /'
+                    f" ({max_value} - {min_value})"
+                )
+            else:
+                expression = (
+                    f' 2 * ("{layer_name}@1" - {min_value}) /'
+                    f" ({max_value} - {min_value})"
+                )
+
+            analysis_done = partial(
+                self.normalization_analysis_done,
+                model_count,
+                model,
+                models,
+                extent,
+                priority_layers_groups,
+            )
+
+            # Actual processing calculation
+            alg_params = {
+                "CELLSIZE": 0,
+                "CRS": None,
+                "EXPRESSION": expression,
+                "EXTENT": extent,
+                "LAYERS": layers,
+                "OUTPUT": output_file,
+            }
+
+            log(f"Used parameters for normalization of the models: {alg_params}")
+
+            alg = QgsApplication.processingRegistry().algorithmById(
+                "qgis:rastercalculator"
+            )
+
+            self.processing_cancelled = False
+
+            self.task = QgsProcessingAlgRunnerTask(
+                alg, alg_params, self.processing_context, self.position_feedback
+            )
+
+            self.position_feedback.progressChanged.connect(self.update_progress_bar)
+
+            main_task.addSubTask(
+                self.task, previous_sub_tasks, QgsTask.ParentDependsOnSubTask
+            )
+            previous_sub_tasks.append(self.task)
+            self.task.executed.connect(analysis_done)
+
+            model_count = model_count + 1
+
+        QgsApplication.taskManager().addTask(main_task)
+
+    def normalization_analysis_done(
         self,
         model_index,
         model,
@@ -1116,7 +1255,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             previous_sub_tasks.append(self.task)
 
             self.task.executed.connect(analysis_done)
-            # QgsApplication.taskManager().addTask(self.task)
 
             model_count = model_count + 1
 
