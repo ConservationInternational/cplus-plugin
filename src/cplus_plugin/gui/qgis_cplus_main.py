@@ -1392,7 +1392,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         # If the processing were stopped, no file will be added
         if not self.processing_cancelled:
-            raster = scenario_result.analysis_output['OUTPUT']
+            raster = scenario_result.analysis_output["OUTPUT"]
             im_weighted_dir = os.path.dirname(raster) + "/weighted_ims/"
             list_weighted_ims = os.listdir(im_weighted_dir)
 
@@ -1492,7 +1492,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 if not weighted_im.endswith(".tif"):
                     continue
 
-                weighted_im_name = weighted_im[:len(weighted_im) - 9]
+                weighted_im_name = weighted_im[: len(weighted_im) - 9]
                 if float(coefficient) > 0:
                     # Style with range 0 to 2
                     style_to_use = LAYER_STYLES_WEIGHTED["carbon"][weighted_im_name]
@@ -1500,7 +1500,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     # Style with range 0 to 1
                     style_to_use = LAYER_STYLES_WEIGHTED["normal"][weighted_im_name]
 
-                im_weighted_layer = QgsRasterLayer(im_weighted_dir + weighted_im, weighted_im_name, QGIS_GDAL_PROVIDER)
+                im_weighted_layer = QgsRasterLayer(
+                    im_weighted_dir + weighted_im, weighted_im_name, QGIS_GDAL_PROVIDER
+                )
                 im_weighted_layer.loadNamedStyle(style_to_use)
                 added_im_weighted_layer = qgis_instance.addMapLayer(im_weighted_layer)
                 self.move_layer_to_group(added_im_weighted_layer, im_weighted_group)

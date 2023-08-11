@@ -49,79 +49,137 @@ LAYER_STYLES = {
     "scenario_result": STYLES_PATH + "0_default_scenario_style.qml",
     "normal": {
         "Agroforestry": STYLES_PATH + "normal/" + "1_agroforesty_style.qml",
-        "Alien Plant Removal": STYLES_PATH + "normal/" + "2_alien_plant_removal_style.qml",
-        "Applied Nucleation": STYLES_PATH + "normal/" + "3_applied_nucleation_style.qml",
-        "Assisted Natural Regeneration": STYLES_PATH + "normal/" + "4_assisted_natural_regen_style.qml",
-        "Avoided Deforestation and Degradation": STYLES_PATH + "normal/"
+        "Alien Plant Removal": STYLES_PATH
+        + "normal/"
+        + "2_alien_plant_removal_style.qml",
+        "Applied Nucleation": STYLES_PATH
+        + "normal/"
+        + "3_applied_nucleation_style.qml",
+        "Assisted Natural Regeneration": STYLES_PATH
+        + "normal/"
+        + "4_assisted_natural_regen_style.qml",
+        "Avoided Deforestation and Degradation": STYLES_PATH
+        + "normal/"
         + "5_avoided_deforestation_style.qml",
-        "Avoided Wetland Conversion/Restoration": STYLES_PATH + "normal/"
+        "Avoided Wetland Conversion/Restoration": STYLES_PATH
+        + "normal/"
         + "6_wetland_impacts_style.qml",
         "Bioproducts": STYLES_PATH + "normal/" + "7_bioproducts_style.qml",
         "Bush Thinning": STYLES_PATH + "normal/" + "8_bush_thinning_style.qml",
         "Direct Tree Seeding": STYLES_PATH + "normal/" + "9_tree_seedling_style.qml",
-        "Livestock Market Access": STYLES_PATH + "normal/" + "10_livestock_market_style.qml",
-        "Livestock Rangeland Management": STYLES_PATH + "normal/" + "11_livestock_rangeland_style.qml",
-        "Natural Woodland Livestock Management": STYLES_PATH + "normal/"
+        "Livestock Market Access": STYLES_PATH
+        + "normal/"
+        + "10_livestock_market_style.qml",
+        "Livestock Rangeland Management": STYLES_PATH
+        + "normal/"
+        + "11_livestock_rangeland_style.qml",
+        "Natural Woodland Livestock Management": STYLES_PATH
+        + "normal/"
         + "12_woodland_livestock_style.qml",
-        "Sustainable Crop Farming & Aquaponics": STYLES_PATH + "normal/" + "13_crop_farming_style.qml",
+        "Sustainable Crop Farming & Aquaponics": STYLES_PATH
+        + "normal/"
+        + "13_crop_farming_style.qml",
     },
     "carbon": {
         "Agroforestry": STYLES_PATH + "carbon/" + "1_agroforesty_style.qml",
-        "Alien Plant Removal": STYLES_PATH + "carbon/" + "2_alien_plant_removal_style.qml",
-        "Applied Nucleation": STYLES_PATH + "carbon/" + "3_applied_nucleation_style.qml",
-        "Assisted Natural Regeneration": STYLES_PATH + "carbon/" + "4_assisted_natural_regen_style.qml",
-        "Avoided Deforestation and Degradation": STYLES_PATH + "carbon/"
+        "Alien Plant Removal": STYLES_PATH
+        + "carbon/"
+        + "2_alien_plant_removal_style.qml",
+        "Applied Nucleation": STYLES_PATH
+        + "carbon/"
+        + "3_applied_nucleation_style.qml",
+        "Assisted Natural Regeneration": STYLES_PATH
+        + "carbon/"
+        + "4_assisted_natural_regen_style.qml",
+        "Avoided Deforestation and Degradation": STYLES_PATH
+        + "carbon/"
         + "5_avoided_deforestation_style.qml",
-        "Avoided Wetland Conversion/Restoration": STYLES_PATH + "carbon/"
+        "Avoided Wetland Conversion/Restoration": STYLES_PATH
+        + "carbon/"
         + "6_wetland_impacts_style.qml",
         "Bioproducts": STYLES_PATH + "carbon/" + "7_bioproducts_style.qml",
         "Bush Thinning": STYLES_PATH + "carbon/" + "8_bush_thinning_style.qml",
         "Direct Tree Seeding": STYLES_PATH + "carbon/" + "9_tree_seedling_style.qml",
-        "Livestock Market Access": STYLES_PATH + "carbon/" + "10_livestock_market_style.qml",
-        "Livestock Rangeland Management": STYLES_PATH + "11_livestock_rangeland_style.qml",
-        "Natural Woodland Livestock Management": STYLES_PATH + "carbon/"
+        "Livestock Market Access": STYLES_PATH
+        + "carbon/"
+        + "10_livestock_market_style.qml",
+        "Livestock Rangeland Management": STYLES_PATH
+        + "11_livestock_rangeland_style.qml",
+        "Natural Woodland Livestock Management": STYLES_PATH
+        + "carbon/"
         + "12_woodland_livestock_style.qml",
-        "Sustainable Crop Farming & Aquaponics": STYLES_PATH + "carbon/" + "13_crop_farming_style.qml",
-    }
+        "Sustainable Crop Farming & Aquaponics": STYLES_PATH
+        + "carbon/"
+        + "13_crop_farming_style.qml",
+    },
 }
 
 LAYER_STYLES_WEIGHTED = {
     "normal": {
         "Agroforestry": STYLES_PATH + "normal/" + "1_agroforesty_style.qml",
-        "Alien_Plant_Removal": STYLES_PATH + "normal/" + "2_alien_plant_removal_style.qml",
-        "Applied_Nucleation": STYLES_PATH + "normal/" + "3_applied_nucleation_style.qml",
-        "Assisted_Natural_Regeneration": STYLES_PATH + "normal/" + "4_assisted_natural_regen_style.qml",
-        "Avoided_Deforestation_and_Degradation": STYLES_PATH + "normal/"
+        "Alien_Plant_Removal": STYLES_PATH
+        + "normal/"
+        + "2_alien_plant_removal_style.qml",
+        "Applied_Nucleation": STYLES_PATH
+        + "normal/"
+        + "3_applied_nucleation_style.qml",
+        "Assisted_Natural_Regeneration": STYLES_PATH
+        + "normal/"
+        + "4_assisted_natural_regen_style.qml",
+        "Avoided_Deforestation_and_Degradation": STYLES_PATH
+        + "normal/"
         + "5_avoided_deforestation_style.qml",
-        "Avoided_Wetland_Conversion_Restoration": STYLES_PATH + "normal/"
+        "Avoided_Wetland_Conversion_Restoration": STYLES_PATH
+        + "normal/"
         + "6_wetland_impacts_style.qml",
         "Bioproducts": STYLES_PATH + "normal/" + "7_bioproducts_style.qml",
         "Bush_Thinning": STYLES_PATH + "normal/" + "8_bush_thinning_style.qml",
         "Direct_Tree_Seeding": STYLES_PATH + "normal/" + "9_tree_seedling_style.qml",
-        "Livestock_Market_Access": STYLES_PATH + "normal/" + "10_livestock_market_style.qml",
-        "Livestock_Rangeland_Management": STYLES_PATH + "normal/" + "11_livestock_rangeland_style.qml",
-        "Natural_Woodland_Livestock_Management": STYLES_PATH + "normal/"
+        "Livestock_Market_Access": STYLES_PATH
+        + "normal/"
+        + "10_livestock_market_style.qml",
+        "Livestock_Rangeland_Management": STYLES_PATH
+        + "normal/"
+        + "11_livestock_rangeland_style.qml",
+        "Natural_Woodland_Livestock_Management": STYLES_PATH
+        + "normal/"
         + "12_woodland_livestock_style.qml",
-        "Sustainable_Crop_Farming_&_Aquaponics": STYLES_PATH + "normal/" + "13_crop_farming_style.qml",
+        "Sustainable_Crop_Farming_&_Aquaponics": STYLES_PATH
+        + "normal/"
+        + "13_crop_farming_style.qml",
     },
     "carbon": {
         "Agroforestry": STYLES_PATH + "carbon/" + "1_agroforesty_style.qml",
-        "Alien_Plant_Removal": STYLES_PATH + "carbon/" + "2_alien_plant_removal_style.qml",
-        "Applied_Nucleation": STYLES_PATH + "carbon/" + "3_applied_nucleation_style.qml",
-        "Assisted_Natural_Regeneration": STYLES_PATH + "carbon/" + "4_assisted_natural_regen_style.qml",
-        "Avoided_Deforestation_and_Degradation": STYLES_PATH + "carbon/"
+        "Alien_Plant_Removal": STYLES_PATH
+        + "carbon/"
+        + "2_alien_plant_removal_style.qml",
+        "Applied_Nucleation": STYLES_PATH
+        + "carbon/"
+        + "3_applied_nucleation_style.qml",
+        "Assisted_Natural_Regeneration": STYLES_PATH
+        + "carbon/"
+        + "4_assisted_natural_regen_style.qml",
+        "Avoided_Deforestation_and_Degradation": STYLES_PATH
+        + "carbon/"
         + "5_avoided_deforestation_style.qml",
-        "Avoided_Wetland_Conversion_Restoration": STYLES_PATH + "carbon/"
+        "Avoided_Wetland_Conversion_Restoration": STYLES_PATH
+        + "carbon/"
         + "6_wetland_impacts_style.qml",
         "Bioproducts": STYLES_PATH + "carbon/" + "7_bioproducts_style.qml",
         "Bush_Thinning": STYLES_PATH + "carbon/" + "8_bush_thinning_style.qml",
         "Direct_Tree_Seeding": STYLES_PATH + "carbon/" + "9_tree_seedling_style.qml",
-        "Livestock_Market_Access": STYLES_PATH + "carbon/" + "10_livestock_market_style.qml",
-        "Livestock_Rangeland_Management": STYLES_PATH + "11_livestock_rangeland_style.qml",
-        "Natural_Woodland_Livestock_Management": STYLES_PATH + "carbon/"
+        "Livestock_Market_Access": STYLES_PATH
+        + "carbon/"
+        + "10_livestock_market_style.qml",
+        "Livestock_Rangeland_Management": STYLES_PATH
+        + "11_livestock_rangeland_style.qml",
+        "Natural_Woodland_Livestock_Management": STYLES_PATH
+        + "carbon/"
         + "12_woodland_livestock_style.qml",
-        "Sustainable_Crop_Farming_&_Aquaponics": STYLES_PATH + "carbon/" + "13_crop_farming_style.qml",
-    }
+        "Sustainable_Crop_Farming_&_Aquaponics": STYLES_PATH
+        + "carbon/"
+        + "13_crop_farming_style.qml",
+    },
 }
 
 QGIS_GDAL_PROVIDER = "gdal"
