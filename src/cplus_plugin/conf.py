@@ -797,9 +797,9 @@ class SettingsManager(QtCore.QObject):
 
         with qgis_settings(implementation_model_root) as settings:
             implementation_model = settings.value(implementation_model_uuid, None)
-            implementation_model_dict = json.loads(implementation_model)
             ncs_uuids = []
             if implementation_model is not None:
+                implementation_model_dict = json.loads(implementation_model)
                 if "pathways" in implementation_model_dict:
                     ncs_uuids = implementation_model_dict["pathways"]
                 implementation_model = create_implementation_model(
