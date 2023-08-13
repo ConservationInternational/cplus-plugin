@@ -342,6 +342,8 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        self._saved_ims = settings_manager.get_all_implementation_models()
+
         self.item_model = IMItemModel(parent)
         self.item_model.im_pathways_updated.connect(self.on_pathways_updated)
 
@@ -389,8 +391,7 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         """Load implementation models from settings."""
         self.clear()
 
-        imp_models = settings_manager.get_all_implementation_models()
-        for imp_model in imp_models:
+        for imp_model in self._saved_ims:
             self.add_implementation_model(imp_model)
 
     def _on_add_item(self):

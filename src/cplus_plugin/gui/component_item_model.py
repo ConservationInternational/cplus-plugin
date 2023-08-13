@@ -437,7 +437,9 @@ class ImplementationModelItem(LayerComponentItem):
         if self._implementation_model.contains_pathway(ncs_item.uuid):
             return False
 
-        self._implementation_model.add_ncs_pathway(ncs_item.ncs_pathway)
+        if not self._implementation_model.add_ncs_pathway(ncs_item.ncs_pathway):
+            return False
+
         self._ncs_items.append(ncs_item)
         ncs_item._parent = self
 
@@ -865,14 +867,23 @@ class IMItemModel(ComponentItemModel):
             if not status:
                 result = False
 
-        # Add NCS pathways
-        self.blockSignals(True)
+        # Add NCS pathways. If there are underlying NCS pathway items then
+        # clone them, remove then re-insert so that the underlying IM can
+        # have the unique UUID.
         if result:
+            cloned_ncs_pathways = []
             for ncs_pathway in implementation_model.pathways:
-                ncs_item = NcsPathwayItem.create(ncs_pathway)
-                # self.add_ncs_pathway(ncs_item, implementation_model_item)
+                cloned_ncs = clone_layer_component(ncs_pathway, NcsPathway)
+                cloned_ncs_pathways.append(cloned_ncs)
 
-        self.blockSignals(False)
+            # Remove pathways in the IM
+            for ncs in cloned_ncs_pathways:
+                _ = implementation_model.remove_ncs_pathway(str(ncs.uuid))
+
+            # Now add the NCSs afresh
+            for ncs in cloned_ncs_pathways:
+                ncs_item = NcsPathwayItem.create(ncs)
+                self.add_ncs_pathway(ncs_item, implementation_model_item)
 
         return result
 
@@ -973,15 +984,14 @@ class IMItemModel(ComponentItemModel):
         if target_model_item.layer:
             return False
 
-        clone_ncs = ncs_item.clone()
-
-        status = target_model_item.add_ncs_pathway_item(clone_ncs)
+        clone_ncs_item = ncs_item.clone()
+        status = target_model_item.add_ncs_pathway_item(clone_ncs_item)
         if not status:
             return False
 
         bottom_idx = target_model_item.bottom_ncs_item_index()
         reference_row = max(bottom_idx.row(), idx.row())
-        self.add_component_item(clone_ncs, reference_row + 1)
+        self.add_component_item(clone_ncs_item, reference_row + 1)
 
         self.im_pathways_updated.emit(target_model_item)
 

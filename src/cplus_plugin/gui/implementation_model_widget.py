@@ -55,6 +55,8 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         self.ipm_layout.addWidget(self.implementation_model_view)
         self.implementation_model_view.title = self.tr("Implementation Models")
 
+        self.load()
+
     def load(self):
         """Load NCS pathways and implementation models to the views.
 
