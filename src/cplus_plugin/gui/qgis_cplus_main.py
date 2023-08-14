@@ -27,6 +27,7 @@ from qgis.core import (
     QgsApplication,
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransform,
+    QgsFeedback,
     QgsGeometry,
     QgsProject,
     QgsProcessing,
@@ -137,6 +138,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.rpm = report_manager
         self.rpm.generate_started.connect(self.on_report_running)
         self.rpm.generate_completed.connect(self.on_report_finished)
+        self.reporting_feedback = QgsFeedback(self)
+        self.reporting_feedback.progressChanged.connect(
+            self.on_reporting_progress_changed
+        )
 
     def prepare_input(self):
         """Initializes plugin input widgets"""
@@ -1630,7 +1635,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             return
 
-        submit_result = self.rpm.generate(self.scenario_result)
+        submit_result = self.rpm.generate(self.scenario_result, self.reporting_feedback)
         if not submit_result.status:
             msg = self.tr("Unable to submit report request for scenario")
             self.show_message(f"{msg} {self.scenario_result.scenario.name}.")
@@ -1640,9 +1645,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if not self.report_job_is_for_current_scenario(scenario_id):
             return
 
+        self.progress_dialog.update_progress_bar(0)
+        self.progress_dialog.set_report_running()
         self.progress_dialog.change_status_message(
             tr("Generating report"), tr("scenario")
         )
+
+    def on_reporting_progress_changed(self, progress: float):
+        """Slot raised when the reporting progress has changed."""
+        self.progress_dialog.update_progress_bar(progress)
 
     def on_report_finished(self, scenario_id: str):
         """Slot raised when report task has finished."""

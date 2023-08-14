@@ -89,6 +89,9 @@ class ReportGeneratorTask(QgsTask):
 
     def cancel(self):
         """Cancel the report generation task."""
+        if self._context.feedback:
+            self._context.feedback.cancel()
+
         super().cancel()
 
     def run(self) -> bool:
@@ -195,7 +198,7 @@ class ReportGenerator:
 
     def __init__(self, context: ReportContext, feedback: QgsFeedback = None):
         self._context = context
-        self._feedback = feedback
+        self._feedback = context.feedback or feedback
         self._error_messages: typing.List[str] = []
         self._layout = None
         self._project = None
@@ -263,14 +266,17 @@ class ReportGenerator:
         """
         return self._repeat_page
 
-    def _process_cancelled(self) -> bool:
+    def _process_check_cancelled_or_set_progress(self, value: float) -> bool:
         """Check if there is a request to cancel the process
         if a feedback object had been specified.
         """
-        if self._feedback and self._feedback.isCanceled():
-            tr_msg = tr("Report generation cancelled.")
-            self._error_messages.append(tr_msg)
-            return True
+        if self._feedback:
+            if self._feedback.isCanceled():
+                tr_msg = tr("Report generation cancelled.")
+                self._error_messages.append(tr_msg)
+                return True
+
+            self._feedback.setProgress(value)
 
         return False
 
@@ -486,6 +492,8 @@ class ReportGenerator:
             self._error_messages.append(tr_msg)
             return
 
+        progress_percent_per_im = 10 / num_implementation_models
+
         # Calculate number of pages required
         num_pages, req_pages = divmod(num_implementation_models, int(max_items_page))
 
@@ -521,6 +529,13 @@ class ReportGenerator:
                         page_pos,
                         imp_model,
                     )
+
+                    # Check cancel or update progress
+                    if self._feedback:
+                        progress = self._feedback.progress() + progress_percent_per_im
+                        if self._process_check_cancelled_or_set_progress(progress):
+                            break
+
                     im_count += 1
 
         # Hide repeat item frame
@@ -822,6 +837,14 @@ class ReportGenerator:
             self._error_messages.append(tr_msg)
             return
 
+        num_implementation_models = len(self._context.scenario.models)
+        if num_implementation_models == 0:
+            tr_msg = "No implementation models in the scenario"
+            self._error_messages.append(tr_msg)
+            return
+
+        progress_percent_per_im = 40 / num_implementation_models
+
         rows_data = []
         for imp_model in self._context.scenario.models:
             name_cell = QgsTableCell(imp_model.name)
@@ -839,6 +862,12 @@ class ReportGenerator:
             number_format.setNumberDecimalPlaces(2)
             area_cell.setNumericFormat(number_format)
             rows_data.append([name_cell, area_cell])
+
+            # Check cancel or update progress
+            if self._feedback:
+                progress = self._feedback.progress() + progress_percent_per_im
+                if self._process_check_cancelled_or_set_progress(progress):
+                    break
 
         parent_table.setTableContents(rows_data)
 
@@ -879,44 +908,47 @@ class ReportGenerator:
 
     def _run(self) -> ReportResult:
         """Runs report generation process."""
-        if self._process_cancelled():
+        if self._process_check_cancelled_or_set_progress(0):
             return self._get_failed_result()
 
         self._set_project()
         if self._project is None:
             return self._get_failed_result()
 
-        if self._process_cancelled():
+        if self._process_check_cancelled_or_set_progress(5):
             return self._get_failed_result()
 
         if not self._load_template() or not self.output_dir:
             return self._get_failed_result()
 
-        if self._process_cancelled():
+        if self._process_check_cancelled_or_set_progress(10):
             return self._get_failed_result()
 
-        if self._process_cancelled():
+        if self._process_check_cancelled_or_set_progress(15):
             return self._get_failed_result()
 
         # Update variable values
         self._variable_register.update_variables(self.layout, self._context)
 
-        if self._process_cancelled():
+        if self._process_check_cancelled_or_set_progress(20):
             return self._get_failed_result()
 
         # Set repeat page
         self._set_repeat_page()
 
+        if self._process_check_cancelled_or_set_progress(30):
+            return self._get_failed_result()
+
         # Render repeat items i.e. implementation models
         self._render_repeat_items()
 
-        if self._process_cancelled():
+        if self._process_check_cancelled_or_set_progress(40):
             return self._get_failed_result()
 
         # Populate implementation model area table
         self._populate_im_area_table()
 
-        if self._process_cancelled():
+        if self._process_check_cancelled_or_set_progress(80):
             return self._get_failed_result()
 
         # Populate table with priority weighting values
@@ -928,13 +960,14 @@ class ReportGenerator:
         # Add CPLUS report flag
         self._variable_register.set_report_flag(self._layout)
 
-        if self._process_cancelled():
+        if self._process_check_cancelled_or_set_progress(90):
             return self._get_failed_result()
-
-        # Export to PDF
 
         result = self._save_layout_to_file()
         if not result:
+            return self._get_failed_result()
+
+        if self._process_check_cancelled_or_set_progress(100):
             return self._get_failed_result()
 
         return ReportResult(

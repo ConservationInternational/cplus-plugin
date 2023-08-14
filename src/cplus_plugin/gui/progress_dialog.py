@@ -48,6 +48,7 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         self.scenario_name = scenario_name
         self.scenario_id = ""
         self.main_widget = main_widget
+        self.rpm = report_manager
 
         # Dialog window options
         self.setWindowIcon(QIcon(ICON_PATH))
@@ -59,6 +60,9 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         # Dialog statuses
         self.analysis_running = True
         self.change_status_message(init_message)
+
+        # Report status
+        self.report_running = False
 
         # Progress bar
         self.progress_bar.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
@@ -160,10 +164,15 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         )
         self.lbl_status.setText(final_msg)
 
+    def set_report_running(self):
+        """Sets flag to indicate that the report is running."""
+        self.report_running = True
+
     def set_report_complete(self):
         """Enable layout designer and PDF report buttons."""
         self.designer_action.setEnabled(True)
         self.pdf_action.setEnabled(True)
+        self.report_running = False
 
     def view_report_pdf(self) -> None:
         """Opens a PDF version of the report"""
@@ -217,6 +226,9 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         if self.analysis_running:
             # Stops analysis if it is still running
             self.stop_processing()
+
+        if self.report_running:
+            self.rpm.remove_report_task(self.scenario_id)
 
         super().reject()
 
