@@ -12,6 +12,7 @@ from qgis.core import (
     QgsBasicNumericFormat,
     QgsFeedback,
     QgsFillSymbol,
+    QgsLayerTreeNode,
     QgsLayoutExporter,
     QgsLayoutItemLabel,
     QgsLayoutItemLegend,
@@ -212,6 +213,7 @@ class ReportGenerator:
         self._repeat_page = None
         self._repeat_page_num = -1
         self._repeat_item = None
+        self._reference_layer_group = None
 
     @property
     def context(self) -> ReportContext:
@@ -319,6 +321,21 @@ class ReportGenerator:
         metadata.setAbstract(self._context.scenario.description)
         metadata.setCreationDateTime(QtCore.QDateTime.currentDateTime())
         project.setMetadata(metadata)
+
+        # Set reference layer group in project i.e. the one that contains
+        # the scenario output layer.
+        layer_root = project.layerTreeRoot()
+        matching_tree_layers = [
+            tl
+            for tl in layer_root.findLayers()
+            if tl.layer().name() == self._context.output_layer_name
+        ]
+        if len(matching_tree_layers) > 0:
+            log("Found scenario layer in group")
+            scenario_tree_layer = matching_tree_layers[0]
+            parent = scenario_tree_layer.parent()
+            if parent.nodeType() == QgsLayerTreeNode.NodeType.NodeGroup:
+                self._reference_layer_group = parent
 
         self._project = project
 
@@ -789,17 +806,35 @@ class ReportGenerator:
         the project.
         """
         if self._project is None:
+            tr_msg = tr(
+                "Project could not be recreated, unable to fetch the implementation model layer."
+            )
+            self._error_messages.append(tr_msg)
             return None
 
-        layer_root = self._project.layerTreeRoot()
-        im_layer_group = layer_root.findGroup(tr(IM_GROUP_LAYER_NAME))
+        if self._reference_layer_group is None:
+            tr_msg = tr(
+                "Could not find the scenario layer group, unable to fetch the implementation model layer."
+            )
+            self._error_messages.append(tr_msg)
+            return None
+
+        im_layer_group = self._reference_layer_group.findGroup(tr(IM_GROUP_LAYER_NAME))
         if im_layer_group is None:
+            tr_msg = tr(
+                "Could not find the implementation model layer group, unable to fetch the implementation model layer."
+            )
+            self._error_messages.append(tr_msg)
             return None
 
         matching_tree_layers = [
             tl for tl in im_layer_group.findLayers() if tl.layer().name() == im_name
         ]
         if len(matching_tree_layers) == 0:
+            tr_msg = tr(
+                "Could not find the implementation model layer in the implementation model layer group."
+            )
+            self._error_messages.append(tr_msg)
             return None
 
         return matching_tree_layers[0].layer()

@@ -241,10 +241,16 @@ class ReportManager(QtCore.QObject):
         """
         scenario = scenario_result.scenario
 
+        if not scenario_result.output_layer_name:
+            log("Layer name for output scenario is empty. Cannot generate reports.")
+            return ReportSubmitStatus(False, None)
+
         if feedback is None:
             feedback = QgsFeedback(self)
 
-        ctx = self.create_report_context(scenario, feedback)
+        ctx = self.create_report_context(
+            scenario, feedback, scenario_result.output_layer_name
+        )
         if ctx is None:
             log("Could not create report context. Check directory settings.")
             return ReportSubmitStatus(False, None)
@@ -282,7 +288,7 @@ class ReportManager(QtCore.QObject):
         return self._report_results[scenario_id]
 
     def create_report_context(
-        self, scenario: Scenario, feedback: QgsFeedback
+        self, scenario: Scenario, feedback: QgsFeedback, output_layer_name: str
     ) -> typing.Union[ReportContext, None]:
         """Creates the report context for use in the report
         generator task.
@@ -294,6 +300,10 @@ class ReportManager(QtCore.QObject):
         :param feedback: Feedback object for reporting back to the main
         application.
         :type feedback: QgsFeedback
+
+        :param output_layer_name: Name of the output scenario layer in
+        the TOC.
+        :type output_layer_name: str
 
         :returns: A report context object containing the information
         for generating the report else None if it could not be created.
@@ -347,6 +357,7 @@ class ReportManager(QtCore.QObject):
             output_dir,
             project_file_path,
             feedback,
+            output_layer_name,
         )
 
     @classmethod

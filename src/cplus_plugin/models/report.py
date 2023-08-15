@@ -21,6 +21,7 @@ class ReportContext:
     scenario_output_dir: str
     project_file: str
     feedback: QgsFeedback
+    output_layer_name: str
 
 
 @dataclasses.dataclass

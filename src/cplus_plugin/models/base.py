@@ -450,3 +450,4 @@ class ScenarioResult:
     scenario: Scenario
     created_date: datetime.datetime = datetime.datetime.now()
     analysis_output: typing.Dict = None
+    output_layer_name: str = ""

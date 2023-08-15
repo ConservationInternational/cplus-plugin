@@ -1434,6 +1434,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 f"{SCENARIO_OUTPUT_LAYER_NAME}_"
                 f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
             )
+            scenario_result.output_layer_name = layer_name
             layer = QgsRasterLayer(layer_file, layer_name, QGIS_GDAL_PROVIDER)
             layer.loadNamedStyle(LAYER_STYLES["scenario_result"])
             scenario_layer = qgis_instance.addMapLayer(layer)
