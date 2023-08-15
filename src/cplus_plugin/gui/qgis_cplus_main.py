@@ -1405,8 +1405,19 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             qgis_instance = QgsProject.instance()
             instance_root = qgis_instance.layerTreeRoot()
 
+            # Check if there are other groups for the scenario
+            # and assign a suffix.
+            counter = 1
+            group_name = scenario_name
+            while True:
+                scenario_grp = instance_root.findGroup(group_name)
+                if scenario_grp is None:
+                    break
+                group_name = f"{scenario_name} {counter!s}"
+                counter += 1
+
             # Groups
-            scenario_group = instance_root.insertGroup(0, scenario_name)
+            scenario_group = instance_root.insertGroup(0, group_name)
             im_group = scenario_group.addGroup(tr(IM_GROUP_LAYER_NAME))
             im_weighted_group = scenario_group.addGroup(tr(IM_WEIGHTED_GROUP_NAME))
             pathways_group = scenario_group.addGroup(tr(NCS_PATHWAYS_GROUP_LAYER_NAME))

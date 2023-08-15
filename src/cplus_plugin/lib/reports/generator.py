@@ -171,6 +171,7 @@ class ReportGeneratorTask(QgsTask):
                 log("Output layout could not be saved.", info=False)
                 return
 
+            feedback = self._context.feedback
             project = QgsProject.instance()
             layout = _load_layout_from_file(layout_path, project)
             if layout is None:
@@ -180,6 +181,9 @@ class ReportGeneratorTask(QgsTask):
             # Zoom the extents of map items in the layout then export to PDF
             self._zoom_map_items_to_current_extents(layout)
             project.layoutManager().addLayout(layout)
+
+            if feedback is not None:
+                feedback.setProgress(100)
 
         else:
             log(
@@ -960,14 +964,14 @@ class ReportGenerator:
         # Add CPLUS report flag
         self._variable_register.set_report_flag(self._layout)
 
-        if self._process_check_cancelled_or_set_progress(90):
+        if self._process_check_cancelled_or_set_progress(85):
             return self._get_failed_result()
 
         result = self._save_layout_to_file()
         if not result:
             return self._get_failed_result()
 
-        if self._process_check_cancelled_or_set_progress(100):
+        if self._process_check_cancelled_or_set_progress(90):
             return self._get_failed_result()
 
         return ReportResult(
