@@ -11,7 +11,7 @@ a dedicated plugin repository
 - Open QGIS application and open plugin manager.
 - Click on **Plugins** -> **Manage and Install Plugins** (see **Figure 1**)
 
-![QGIS plugin manager](../img/installation/install-qgis-plugins.png)
+![QGIS plugin manager](img/install-qgis-plugins.png)
 
 *Figure 1: QGIS plugin manager*
 
@@ -33,7 +33,7 @@ https://github.com/kartoza/cplus-plugin/releases/download/{tagname}/cplus.{versi
 - Select the zip file which contains the plugin
 - Click **Install Plugin**
 
-![QGIS install from ZIP](../img/installation/installation-from-zip.png)
+![QGIS install from ZIP](img/installation-from-zip.png)
 
 *Figure 2: Plugin manager install from zip option*
 
@@ -47,7 +47,7 @@ Current repository: [https://raw.githubusercontent.com/kartoza/cplus-plugin/rele
 
 **NOTE:** The plugin is currently in experimental phase, so enable **Show also Experimental Plugins**
 
-![QGIS plugin settings](../img/installation/installation-plugin-settings.png)
+![QGIS plugin settings](img/installation-plugin-settings.png)
 
 *Figure 3: Custom repository installation*
 

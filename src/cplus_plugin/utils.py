@@ -74,9 +74,9 @@ def log(
 
 
 def open_documentation(url=None):
-    """Opens documentation website in the default browser
+    """Opens img website in the default browser
 
-    :param url: URL link to documentation site (e.g. gh pages site)
+    :param url: URL link to img site (e.g. gh pages site)
     :type url: str
 
     """

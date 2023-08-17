@@ -9,17 +9,19 @@ site_author: Kartoza
 nav:
   - Home: index.md
   - User:
-      - Installation: user/installation.md
-      - Plugin guide: user/cplus_ui_guide.md
-      - Settings: user/settings.md
-  - Admin:
-      - Bugs and suggestions: admin/tasks.md
-      - Staging version: admin/staging_version.md
-      - Artifacts: admin/repository.md
+      - user/index.md
+      - Quick Start: user/quickstart/index.md
+      - Guide: user/guide/index.md
+      - Manual: user/manual/index.md
+  - Administrators:
+      - administrator/index.md
+      - Guide: administrator/guide/index.md
+      - Repository: administrator/repository/index.md
   - Developer:
-      - Setup: developer/setup.md
-      - Architecture: developer/architecture.md
-      - Documentation: developer/documentation.md
+      - developer/index.md
+      - Setup: developer/setup/index.md
+      - Architecture: developer/architecture/index.md
+      - Documentation: developer/documentation/index.md
       - API:
           - Core:
             - Main: developer/api/api_main.md
@@ -62,17 +64,25 @@ plugins:
 
 theme:
   name: material
-  logo: img/logos/cplus_logo_white_background.svg
+  logo: about/img/cplus_logo_white_background.svg
   features:
     - navigation.tabs
     - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - navigation.instant
+    - navigation.tabs.sticky
+    - navigation.tracking
     - toc.integrate
+    - toc.follow
     - navigation.top
     - search.suggest
     - search.highlight
+    - search.share
     - content.tabs.link
     - content.code.annotation
     - content.code.copy
+    - header.autohide
   language: en
   palette:
     - scheme: default

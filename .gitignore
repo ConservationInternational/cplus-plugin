@@ -67,7 +67,7 @@ instance/
 # Scrapy stuff:
 .scrapy
 
-# Sphinx documentation
+# Sphinx img
 docs/_build/
 
 # PyBuilder
@@ -116,7 +116,7 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
-# mkdocs documentation
+# mkdocs img
 /site
 
 # mypy

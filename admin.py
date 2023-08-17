@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" QGIS CPLUS plugin admin operations
+""" QGIS CPLUS plugin img operations
 
 """
 

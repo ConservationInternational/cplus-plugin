@@ -2,11 +2,19 @@
 
 ## Perform analysis
 
-Open the CPLUS dockwidget by clicking on the CPLUS toolbar icon (**Figure 1**).
+**Figure 1** shows the toolbar button/menu for the plugin. Clicking on the icon will open the plugin.
+When a user clicks on the drop-down button, they will be presented with four options:
 
-![CPLUS plugin toolbar icon](../img/plugin/plugin-toolbar-icon.png)
+- **CPLUS**: Close or open the plugin dock widget
+- **Settings**: Open the settings for the plugin
+- **Help**: Takes the user to the online guide for the plugin
+- **About**: Will take the user to the About section on the GH pages
+
+![CPLUS plugin toolbar icon](img/plugin-toolbar-icon.png)
 
 *Figure 1: CPLUS toolbar icon*
+
+Open the CPLUS dockwidget by clicking on the CPLUS toolbar icon (**Figure 1**).
 
 ### Step 1: Scenario Information
 
@@ -21,7 +29,7 @@ comparison will be considered for each scenario.
 - **Figure 2** shows an example of Step 1
 - Once the information has been provided, click **Step 2**
 
-![CPLUS step 1](../img/plugin/plugin-step1.png)
+![CPLUS step 1](img/plugin-step1.png)
 
 *Figure 2: Step 1 focusses on Scenario Information*
 
@@ -32,7 +40,7 @@ A NCS pathway can be defined as a composite spatial layer on specific land use c
 factors that determine areas ideal for a specific use case (e.g. Animal mangement).
 An IM is a combination of NCS pathways represented in an AOI spatial layer. **Figure 3** shows the UI.
 
-![CPLUS step 1](../img/plugin/plugin-step2.png)
+![CPLUS step 1](img/plugin-step2.png)
 
 *Figure 3: Step 2 allows the user to create and edit NCS pathways and Implementation Models*
 
@@ -42,7 +50,7 @@ Step 2 buttons (**Figure 4**):
 - **Editing**: Edit and existing pathway or model
 - **Delete**: Delete a pathway or model
 
-![CPLUS step 2 buttons](../img/plugin/plugin-step2-buttons.png)
+![CPLUS step 2 buttons](img/plugin-step2-buttons.png)
 
 *Figure 4: Create, delete, and edit buttons*
 
@@ -60,7 +68,7 @@ will be highlighted in red. The user will need to rectify the issue before conti
 step 3.
 ```
 
-![CPLUS add pathway](../img/plugin/plugin-pathway-editor.png)
+![CPLUS add pathway](img/plugin-pathway-editor.png)
 
 *Figure 5: NCS Pathway creator/editor*
 
@@ -71,7 +79,7 @@ step 3.
 - Click **OK**
 - The new **Implementation model** will be added
 
-![CPLUS add implementation model](../img/plugin/plugin-implementation-model.png)
+![CPLUS add implementation model](img/plugin-implementation-model.png)
 
 *Figure 6: Implementation Model creator/editor*
 
@@ -85,7 +93,7 @@ TODO: DV - Insert screenshot
 The final step deals with the **Weighting priorities** and **Priority groups**. These weights
 will be applied when the user starts running the scenario. An example is shown in **Figure 9**.
 
-![CPLUS step 3](../img/plugin/plugin-step3_2.png)
+![CPLUS step 3](img/plugin-step3_2.png)
 
 *Figure 8: Step 3 allows the user to set the Weights of each Priority Group*
 
@@ -95,24 +103,75 @@ arrow buttons.
 ### Add priority layers
 
 Select the target layer from the priority weighting layers list and the destination group from
-the priority groups and use the left arrow button ![left arrow](../img/plugin/cplus_left_arrow.svg) 
+the priority groups and use the left arrow button ![left arrow](img/cplus_left_arrow.svg) 
 to add the layer into the group.
 
 
 ### Remove priority layers
 
 Select the target layer from the priority weighting layers list from its priority group and 
-use the right arrow button ![right arrow](../img/plugin/cplus_right_arrow.svg) to remove the layer into the group.
+use the right arrow button ![right arrow](img/cplus_right_arrow.svg) to remove the layer into the group.
 
 ### Setting groups values 
 Move the slider to adjust the weight of each group, values can also be set manually, by using the left input spin box. 
 Once done selecting weights, click **Run Scenario** button to run the analysis.
 
 
-![example](../img/plugin/step_3_example.gif)
+![example](img/step_3_example.gif)
 
 *Figure 9: Showing how to use step 3 components to select priority weighting layers 
 and their respective weights of each Priority Group*
+
+## Settings
+
+### Open CPLUS settings
+
+**QGIS options** (**Figure 10**):
+- Click on **Settings** -> **Options**
+
+![QGIS settings](img/settings-qgis.png)
+
+*Figure 10: QGIS settings*
+
+- Select the CPLUS tab to the left
+- This will open the CPLUS settings dialog. See **Figure 11** for an example
+
+![CPLUS settings](img/settings-cplus-tab.png)
+
+*Figure 11: CPLUS section as loaded in the QGIS settings dialog*
+
+**Toolbar** (**Figure 12**):
+- Click on the CPLUS toolbar drop-down
+- Select **Settings**
+- This will take you directly to the CPLUS settings dialog in the QGIS options
+
+![CPLUS settings button](img/settings-toolbar-button.png)
+
+*Figure 12: CPLUS toolbar button*
+
+### CPLUS settings
+
+A short description of each available setting a user can change. Most are optional.
+
+**Configure Analysis**:
+
+- Settings will be added as the plugin development continues
+
+**Reports**:
+
+- Information which will be included when a report is generated. These settings are optional,
+  and will be excluded from the report if not provided
+- *Organization*: The organization(s) to be included in the report
+- *Contact Email*: Contact email for the author
+- *Website*: A website link to the project or company
+- *Custom logo*: Enable and provide a custom logo of your choosing. If disabled, the CI logo will be used in the report
+- *Footer*: Footer section for the report
+- *Disclaimer*: A disclaimer to be added to the report
+- *License*: A license to be added to the report
+
+**Advanced**:
+
+- *Base data directory* (required): Data accessed and download by the plugin will be stored here
 
 
 ## Report generating

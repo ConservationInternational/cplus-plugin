@@ -24,7 +24,7 @@ a user whom are new to mkdocs.
 Mostly, the only changes a user will need to make is to the **nav** section in the mkdocs.yml file (**Figure 1**).
 Other options, such as the themes, plugins and extensions, should require no changes.
 
-![mkdocs nav example](../img/documentation/mkdocs-nav-example.png)
+![mkdocs nav example](img/mkdocs-nav-example.png)
 
 *Figure 1: Navigation example of mkdocs*
 
@@ -35,13 +35,13 @@ Here is an explanation on how the **nav** should be updated:
   the plugin, a guide on how to use the plugin, etc.
 - The order in which the **nav** is structured will determine the tabs order on the site, as shown in **Figure 2**
 
-![mkdocs nav tabs](../img/documentation/mkdocs-nav-tabs.png)
+![mkdocs nav tabs](img/mkdocs-nav-tabs.png)
 
 *Figure 2: Tabs in a generated site*
 
 - Each tab, or group, will then be structured as in **Figure 3**
 
-![mkdocs tab content](../img/documentation/mkdocs-nav-tab-contents.png)
+![mkdocs tab content](img/mkdocs-nav-tab-contents.png)
 
 *Figure 3: Structure created by markdown headings*
 
@@ -60,14 +60,14 @@ needs to make the changes in the code (comments) for this to happen.
 The comments for mkdocstrings is three sections:
 
 - Description: A description on what the function does. A destailed description are welcome
-- Args: List of parameters for the function. Type and description should be included
-- Returns: A list of values which the function would return. Type should be included, with a description
+- param: List of parameters for the function. Type and description should be included
+- returns: A list of values which the function would return. Type should be included, with a description
 
-![Documentation mkdocstrings comments](../img/documentation/mkdocstrings-comments.png)
+![Documentation mkdocstrings comments](img/mkdocstrings-comments.png)
 
 Here is an example of the end-result:
 
-![Documentation mkdocstrings example](../img/documentation/mkdocstrings-example.png)
+![Documentation mkdocstrings example](img/mkdocstrings-example.png)
 
 ### mkdocstrings options
 
@@ -77,19 +77,19 @@ aware of: members, show_root_directory, show_source, and heading_level.
 - **heading_level**: The header level of the content (functions, etc.) which will be added
 - **members**: Only these function/classes will be shown
 
-![Documentation mkdocstrings members](../img/documentation/mkdocstrings-members-example.png)
+![Documentation mkdocstrings members](img/mkdocstrings-members-example.png)
 
 - **show_root_directory**: The root directory of the code
   - Best will be to disable this, as it looks neater
   - Here is an example of show_root_directory enabled, followed by an example when it is disabled:
 
-![Documentation mkdocstrings root enabled](../img/documentation/mkdocstrings-root-dir-enabled.png)
+![Documentation mkdocstrings root enabled](img/mkdocstrings-root-dir-enabled.png)
 
-![Documentation mkdocstrings root disabled](../img/documentation/mkdocstrings-root-dir-disabled.png)
+![Documentation mkdocstrings root disabled](img/mkdocstrings-root-dir-disabled.png)
 
 - **show_source**: Shows the directory of the source code and a snippet of the code
 
-![Documentation mkdocstrings source](../img/documentation/mkdocstrings-source.png)
+![Documentation mkdocstrings source](img/mkdocstrings-source.png)
 
 More information on this can be found <a href="https://mkdocstrings.github.io/usage/">here</a>.
 
@@ -102,7 +102,7 @@ before creating a pull request.
 - Run "mkdocs serve"
 - **Figure 4** shows an example of the result
 
-![Documentation mkdocs serve](../img/documentation/mkdocs-serve-console.png)
+![Documentation mkdocs serve](img/mkdocs-serve-console.png)
 
 *Figure 4: Console example of serving mkdocs*
 
@@ -111,7 +111,7 @@ before creating a pull request.
 - Open the URL in a browser: localhost:8000
 - The Home page should be similar to **Figure 5**
 
-![Documentation example](../img/documentation/mkdocs-pages-example.png)
+![Documentation example](img/mkdocs-pages-example.png)
 
 *Figure 5: Site example. This is the Home page*
 
@@ -120,7 +120,7 @@ before creating a pull request.
 When performing the serve, mkdocs will automatically check for any errors. An example will be when
 a file linked in the documentation cannot be found (**Figure 6**).
 
-![Documentation error](../img/documentation/mkdocs-serve-error.png)
+![Documentation error](img/mkdocs-serve-error.png)
 
 *Figure 6: Missing file example when serving mkdocs*
 

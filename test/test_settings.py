@@ -25,7 +25,7 @@ class CplusPluginSettingsTest(unittest.TestCase):
         save_email = "an email"
         save_website = "a website"
         save_custom_logo_enabled = True
-        save_custom_logo_dir = "logos/ci_logo.png"
+        save_custom_logo_dir = "img/ci_logo.png"
         save_footer = "a footer"
         save_disclaimer = "a disclaimer"
         save_report_license = "license"
@@ -83,7 +83,7 @@ class CplusPluginSettingsTest(unittest.TestCase):
         save_email = "an email 2"
         save_website = "a website 2"
         save_custom_logo_enabled = False
-        save_custom_logo_dir = "logos/ci_logo.png"
+        save_custom_logo_dir = "img/ci_logo.png"
         save_footer = "a footer 2"
         save_disclaimer = "a disclaimer 2"
         save_report_license = "license 2"
@@ -140,7 +140,7 @@ class CplusPluginSettingsTest(unittest.TestCase):
         """
         settings_dialog = CplusSettings(PARENT)
 
-        dir_exist = "logos/"
+        dir_exist = "img/"
         dir_does_not_exist = "not_exist"
 
         settings_dialog.folder_data.setFilePath(dir_exist)
@@ -158,8 +158,8 @@ class CplusPluginSettingsTest(unittest.TestCase):
         """
         settings_dialog = CplusSettings(PARENT)
 
-        logo_exist = "logos/ci_logo.png"
-        logo_does_not_exist = "logos/does_not_exist.png"
+        logo_exist = "img/ci_logo.png"
+        logo_does_not_exist = "img/does_not_exist.png"
 
         settings_dialog.logo_file.setFilePath(logo_exist)
         file_exist = settings_dialog.logo_file_exists()
