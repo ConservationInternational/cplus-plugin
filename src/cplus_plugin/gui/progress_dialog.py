@@ -212,6 +212,7 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         Processing will be stopped, and the UI will be updated to accommodate
         the processing status.
         """
+        self.cancel_reporting()
 
         if self.analysis_running:
             # If cancelled is clicked
@@ -220,6 +221,11 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
             # If close has been clicked. In this case processing were already stopped
             super().close()
 
+    def cancel_reporting(self):
+        """Cancel the report generation process."""
+        if self.report_running:
+            self.rpm.remove_report_task(self.scenario_id)
+
     def reject(self) -> None:
         """Called when the dialog is closed"""
 
@@ -227,8 +233,7 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
             # Stops analysis if it is still running
             self.stop_processing()
 
-        if self.report_running:
-            self.rpm.remove_report_task(self.scenario_id)
+        self.cancel_reporting()
 
         super().reject()
 

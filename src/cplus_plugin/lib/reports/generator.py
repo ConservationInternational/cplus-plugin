@@ -108,6 +108,7 @@ class ReportGeneratorTask(QgsTask):
             return False
 
         if self._context.project_file:
+            log("Project file found, about to initiate report run")
             self._result = self._generator.run()
         else:
             msg = tr("Unable to serialize current project for " "report generation.")
@@ -938,6 +939,7 @@ class ReportGenerator:
         :rtype: ReportResult
         """
         try:
+            log("Inside run process, about to initiate internal run")
             return self._run()
         except Exception as ex:
             # Last resort to capture general exceptions.

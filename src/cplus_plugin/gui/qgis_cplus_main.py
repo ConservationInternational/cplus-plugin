@@ -5,6 +5,7 @@
 """
 
 import os
+import typing
 import uuid
 
 import datetime
@@ -48,7 +49,6 @@ from qgis.gui import (
 
 from qgis.utils import iface
 
-from .component_item_model import ImplementationModelItem
 from .implementation_model_widget import ImplementationModelContainerWidget
 from .priority_group_widget import PriorityGroupWidget
 
@@ -138,10 +138,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.rpm = report_manager
         self.rpm.generate_started.connect(self.on_report_running)
         self.rpm.generate_completed.connect(self.on_report_finished)
-        self.reporting_feedback = QgsFeedback(self)
-        self.reporting_feedback.progressChanged.connect(
-            self.on_reporting_progress_changed
-        )
+        self.reporting_feedback: typing.Union[QgsFeedback, None] = None
 
     def prepare_input(self):
         """Initializes plugin input widgets"""
@@ -1647,6 +1644,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             return
 
+        self.reset_reporting_feedback()
+
         submit_result = self.rpm.generate(self.scenario_result, self.reporting_feedback)
         if not submit_result.status:
             msg = self.tr("Unable to submit report request for scenario")
@@ -1661,6 +1660,22 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.progress_dialog.set_report_running()
         self.progress_dialog.change_status_message(
             tr("Generating report"), tr("scenario")
+        )
+
+    def reset_reporting_feedback(self):
+        """Creates a new reporting feedback object and reconnects
+        the signals.
+
+        We are doing this to address cases where the feedback is canceled
+        and the same object has to be reused for subsequent report
+        generation tasks.
+        """
+        if self.reporting_feedback is not None:
+            self.reporting_feedback.progressChanged.disconnect()
+
+        self.reporting_feedback = QgsFeedback(self)
+        self.reporting_feedback.progressChanged.connect(
+            self.on_reporting_progress_changed
         )
 
     def on_reporting_progress_changed(self, progress: float):
