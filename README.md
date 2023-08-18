@@ -47,13 +47,30 @@ a dedicated plugin repository
 #### Install from ZIP file
 
 Alternatively the plugin can be installed using **Install from ZIP** option on the 
-QGIS plugin manager. 
+QGIS plugin manager.
 
 - Download zip file from the required plugin released version
 https://github.com/kartoza/cplus-plugin/releases/download/{tagname}/cplus.{version}.zip or create one
 using the admin interface as explained [here](https://github.com/kartoza/cplus-plugin#plugin-admin-interface).
 
-- From the **Install from ZIP** page, select the zip file and click the **Install** button to install plugin
+- From the **Install from ZIP** page, select the zip file and click the **Install** button to install plugin.
+
+##### Plugin Artifacts
+The plugin CI workflow generate artifacts each time a new pull request is made against the main branch and 
+each time there is a merge into the main branch.
+
+![pr_artifact.png](docs%2Fimg%2Fplugin%2Fpr_artifact.png)
+_Comment with a link to the generate plugin zip file artifact_
+
+These artifacts can be used to test the submitted changes before deploying them to the staging repository or
+then publishing them to the QGIS official plugin repository.
+
+Pull request artifacts can be accessed from their respective pull request page, under a comment created by a 
+`github-actions` bot. Main branch merge artifacts can be viewed and fetched from the plugin site here https://kartoza.github.io/cplus-plugin/admin/repository
+
+![main_pr_artifacts.png](docs%2Fimg%2Fplugin%2Fmain_pr_artifacts.png)
+_Look of the main branch and pull requests artifacts page_
+
 
 #### Install from custom plugin repository
 
@@ -140,8 +157,8 @@ from the plugin root.
 ```
 
 The script builds a testable plugin code and then it spins up Docker containers that contain QGIS version 3.26 
-and latest version images respectively, finally it runs the available test suite. The script requires Python to
-have been installed in the system.
+and latest version images respectively, finally it runs the available test suite. Python is required to
+be installed in the system before using the script.
 
 When using the script for the first time it will pull the QGIS Docker images if there are not available 
 locally. After the tests have finished running the Docker containers created for the tests will be stopped and removed.
