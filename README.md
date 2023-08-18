@@ -1,11 +1,14 @@
 # CPLUS QGIS plugin
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/kartoza/cplus-plugin/ci.yml?branch=main)
-![GitHub](https://img.shields.io/github/license/kartoza/cplus-plugin)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![QGIS.org](https://img.shields.io/badge/QGIS.org-ondevelopment-yellow)](https://plugins.qgis.org/plugins/ci-cplus-plugin/)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/kartoza/cplus-plugin/ci.yml?branch=main&logo=github)
+![GitHub](https://img.shields.io/github/license/kartoza/cplus-plugin?logo=docsdotrs)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?logo=python)](https://github.com/psf/black)
+[![QGIS.org](https://img.shields.io/badge/QGIS.org-ondevelopment-yellow?logo=qgis)](https://plugins.qgis.org/plugins/ci-cplus-plugin/)
 
-[![Documentation](https://img.shields.io/badge/Documentation-onprogress-inactive)](https://github.com/kartoza/ci-cplus/actions/workflows/doc.yml)
-[![Tests](https://img.shields.io/badge/Tests-onprogress-inactive)](https://github.com/kartoza/ci-cplus-plugin/actions/workflows/ci.yml)
+[![Documentation](https://img.shields.io/badge/Documentation-available-active?logo=readthedocs)]( https://kartoza.github.io/cplus-plugin)
+[![Tests](https://img.shields.io/badge/Tests-onprogress-inactive?logo=pytest)](https://github.com/kartoza/ci-cplus-plugin/actions/workflows/ci.yml)
+
+![GitHub all releases](https://img.shields.io/github/downloads/kartoza/cplus-plugin/total?logo=github&label=github-downloads)
+
 
 
 ### QGIS plugin for the CPLUS framework.
@@ -17,9 +20,9 @@
 
 * Available and supported in all the QGIS 3.x versions
 
-| Plugin version   | Minimum QGIS version | Maximum QGIS version |
-|-------------|----------|------|
-| 0.0.1   | 3.0          | 3.99 |
+| Plugin version(s)                                                                                                                                                                                                          | Minimum QGIS version                                                                               | Maximum QGIS version |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|------|
+| ![GitHub Epic 1 Release)](https://img.shields.io/github/v/release/kartoza/cplus-plugin?logo=semanticrelease&label=latest-release)<br> ![](https://img.shields.io/badge/stable_version-v0.2.0dev-blue?logo=semanticrelease) | 3.0          | 3.99 |
 
 
 ### ⚙️ Installation
