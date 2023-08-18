@@ -1,11 +1,14 @@
 # CPLUS QGIS plugin
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/kartoza/cplus-plugin/ci.yml?branch=main)
-![GitHub](https://img.shields.io/github/license/kartoza/cplus-plugin)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![QGIS.org](https://img.shields.io/badge/QGIS.org-ondevelopment-yellow)](https://plugins.qgis.org/plugins/ci-cplus-plugin/)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/kartoza/cplus-plugin/ci.yml?branch=main&logo=github)
+![GitHub](https://img.shields.io/github/license/kartoza/cplus-plugin?logo=docsdotrs)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?logo=python)](https://github.com/psf/black)
+[![QGIS.org](https://img.shields.io/badge/QGIS.org-ondevelopment-yellow?logo=qgis)](https://plugins.qgis.org/plugins/ci-cplus-plugin/)
 
-[![Documentation](https://img.shields.io/badge/Documentation-onprogress-inactive)](https://github.com/kartoza/ci-cplus/actions/workflows/doc.yml)
-[![Tests](https://img.shields.io/badge/Tests-onprogress-inactive)](https://github.com/kartoza/ci-cplus-plugin/actions/workflows/ci.yml)
+[![Documentation](https://img.shields.io/badge/Documentation-available-active?logo=readthedocs)]( https://kartoza.github.io/cplus-plugin)
+[![Tests](https://img.shields.io/badge/Tests-onprogress-inactive?logo=pytest)](https://github.com/kartoza/ci-cplus-plugin/actions/workflows/ci.yml)
+
+![GitHub all releases](https://img.shields.io/github/downloads/kartoza/cplus-plugin/total?logo=github&label=github-downloads)
+
 
 
 ### QGIS plugin for the CPLUS framework.
@@ -17,9 +20,9 @@
 
 * Available and supported in all the QGIS 3.x versions
 
-| Plugin version   | Minimum QGIS version | Maximum QGIS version |
-|-------------|----------|------|
-| 0.0.1   | 3.0          | 3.99 |
+| Plugin version(s)                                                                                                                                                                                                          | Minimum QGIS version                                                                               | Maximum QGIS version |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|------|
+| ![GitHub Epic 1 Release)](https://img.shields.io/github/v/release/kartoza/cplus-plugin?logo=semanticrelease&label=latest-release)<br> ![](https://img.shields.io/badge/stable_version-v0.2.0dev-blue?logo=semanticrelease) | 3.0          | 3.99 |
 
 
 ### ⚙️ Installation
@@ -47,13 +50,30 @@ a dedicated plugin repository
 #### Install from ZIP file
 
 Alternatively the plugin can be installed using **Install from ZIP** option on the 
-QGIS plugin manager. 
+QGIS plugin manager.
 
 - Download zip file from the required plugin released version
 https://github.com/kartoza/cplus-plugin/releases/download/{tagname}/cplus.{version}.zip or create one
 using the admin interface as explained [here](https://github.com/kartoza/cplus-plugin#plugin-admin-interface).
 
-- From the **Install from ZIP** page, select the zip file and click the **Install** button to install plugin
+- From the **Install from ZIP** page, select the zip file and click the **Install** button to install plugin.
+
+##### Plugin Artifacts
+The plugin CI workflow generate artifacts each time a new pull request is made against the main branch and 
+each time there is a merge into the main branch.
+
+![pr_artifact.png](docs%2Fimg%2Fplugin%2Fpr_artifact.png)
+_Comment with a link to the generate plugin zip file artifact_
+
+These artifacts can be used to test the submitted changes before deploying them to the staging repository or
+then publishing them to the QGIS official plugin repository.
+
+Pull request artifacts can be accessed from their respective pull request page, under a comment created by a 
+`github-actions` bot. Main branch merge artifacts can be viewed and fetched from the plugin site here https://kartoza.github.io/cplus-plugin/admin/repository
+
+![main_pr_artifacts.png](docs%2Fimg%2Fplugin%2Fmain_pr_artifacts.png)
+_Look of the main branch and pull requests artifacts page_
+
 
 #### Install from custom plugin repository
 
@@ -140,8 +160,8 @@ from the plugin root.
 ```
 
 The script builds a testable plugin code and then it spins up Docker containers that contain QGIS version 3.26 
-and latest version images respectively, finally it runs the available test suite. The script requires Python to
-have been installed in the system.
+and latest version images respectively, finally it runs the available test suite. Python is required to
+be installed in the system before using the script.
 
 When using the script for the first time it will pull the QGIS Docker images if there are not available 
 locally. After the tests have finished running the Docker containers created for the tests will be stopped and removed.
