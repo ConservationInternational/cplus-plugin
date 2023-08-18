@@ -1,12 +1,14 @@
-# Installation
+# Quick start
 
-## Plugin repository
+## Installation
+
+### Plugin repository
 
 During the development phase the plugin is available to install via 
 a dedicated plugin repository 
 [https://raw.githubusercontent.com/kartoza/cplus-plugin/release/docs/repository/plugins.xml](https://raw.githubusercontent.com/kartoza/cplus-plugin/release/docs/repository/plugins.xml)
 
-## Install from QGIS plugin repository
+### Install from QGIS plugin repository
 
 - Open QGIS application and open plugin manager.
 - Click on **Plugins** -> **Manage and Install Plugins** (see **Figure 1**)
@@ -19,7 +21,7 @@ a dedicated plugin repository
 - From the found results, click on the `CPLUS` result item and a page with plugin information will show up.
 - Click the `Install Plugin` button at the bottom of the dialog to install the plugin.
 
-## Install from ZIP file
+### Install from ZIP file
 
 Alternatively the plugin can be installed using **Install from ZIP** option on the 
 QGIS plugin manager. 
@@ -39,7 +41,7 @@ https://github.com/kartoza/cplus-plugin/releases/download/{tagname}/cplus.{versi
 
 - From the **Install from ZIP** page, select the zip file and click the **Install** button to install plugin
 
-## Install from custom plugin repository
+### Install from custom plugin repository
 
 Current repository: [https://raw.githubusercontent.com/kartoza/cplus-plugin/release/docs/repository/plugins.xml](https://raw.githubusercontent.com/kartoza/cplus-plugin/release/docs/repository/plugins.xml)
 
@@ -62,3 +64,13 @@ in order to be able to install it.
 
 When the development work is complete the plugin will be available on the QGIS
 official plugin repository.
+
+## Short tutorial
+
+Short example (**Figure 4**) on how to set parameters in step 1, implementation models in step 2, and weighing in step 3.
+For a more detailed instructions on how to use the plugin,
+see the [guide](../guide/index.md) and the [manual](../manual/index.md).
+
+![CPLUS recording](img/steps_1_to_3.gif)
+
+*Figure 4: Quick guide on how to use the plugin*
