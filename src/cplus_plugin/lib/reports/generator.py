@@ -108,7 +108,6 @@ class ReportGeneratorTask(QgsTask):
             return False
 
         if self._context.project_file:
-            log("Project file found, about to initiate report run")
             self._result = self._generator.run()
         else:
             msg = tr("Unable to serialize current project for " "report generation.")
@@ -332,7 +331,6 @@ class ReportGenerator:
             if tl.layer().name() == self._context.output_layer_name
         ]
         if len(matching_tree_layers) > 0:
-            log("Found scenario layer in group")
             scenario_tree_layer = matching_tree_layers[0]
             parent = scenario_tree_layer.parent()
             if parent.nodeType() == QgsLayerTreeNode.NodeType.NodeGroup:
@@ -939,7 +937,6 @@ class ReportGenerator:
         :rtype: ReportResult
         """
         try:
-            log("Inside run process, about to initiate internal run")
             return self._run()
         except Exception as ex:
             # Last resort to capture general exceptions.

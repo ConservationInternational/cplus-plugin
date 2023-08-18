@@ -884,14 +884,13 @@ class IMItemModel(ComponentItemModel):
                 # clone them, remove then re-insert so that the underlying NCS pathways can
                 # have the unique UUID in the IM item.
                 if result:
-                    cloned_ncs_pathways = []
-                    for ncs_pathway in implementation_model.pathways:
-                        cloned_ncs = clone_ncs_pathway(ncs_pathway)
-                        cloned_ncs_pathways.append(cloned_ncs)
+                    cloned_implementation_model = clone_implementation_model(
+                        implementation_model
+                    )
+                    cloned_ncs_pathways = cloned_implementation_model.pathways
 
                     # Remove pathways in the IM
-                    for ncs in cloned_ncs_pathways:
-                        _ = implementation_model.remove_ncs_pathway(str(ncs.uuid))
+                    implementation_model.pathways = []
 
                     # Now add the NCSs afresh
                     for ncs in cloned_ncs_pathways:
