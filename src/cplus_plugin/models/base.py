@@ -117,7 +117,6 @@ class LayerModelComponent(BaseModelComponent):
     path: str = ""
     layer_type: LayerType = LayerType.UNDEFINED
     user_defined: bool = False
-    layer: typing.Union[QgsMapLayer, None] = None
 
     def __post_init__(self):
         """Try to set the layer and layer type properties."""
@@ -151,23 +150,17 @@ class LayerModelComponent(BaseModelComponent):
         property or specified path.
         :rtype: QgsMapLayer
         """
-        if self.layer:
-            return self.layer
-
         if not os.path.exists(self.path):
             return None
 
-        ncs_layer = None
+        layer = None
         if self.layer_type == LayerType.RASTER:
-            ncs_layer = QgsRasterLayer(self.path, self.name)
+            layer = QgsRasterLayer(self.path, self.name)
 
         elif self.layer_type == LayerType.VECTOR:
-            ncs_layer = QgsVectorLayer(self.path, self.name)
+            layer = QgsVectorLayer(self.path, self.name)
 
-        if ncs_layer:
-            self.layer = ncs_layer
-
-        return ncs_layer
+        return layer
 
     def is_valid(self) -> bool:
         """Checks if the corresponding map layer is valid.
@@ -293,7 +286,7 @@ class ImplementationModel(LayerModelComponent):
             raise ValueError(f"{msg} {self.name}.")
 
         # Reset pathways if layer has also been set.
-        if self.layer and len(self.pathways) > 0:
+        if self.to_map_layer() is not None and len(self.pathways) > 0:
             self.pathways = []
 
     def contains_pathway(self, pathway_uuid: str) -> bool:
@@ -333,10 +326,8 @@ class ImplementationModel(LayerModelComponent):
         return True
 
     def clear_layer(self):
-        """Simply sets the layer property so that NCS pathway objects
-        can be added.
-        """
-        self.layer = None
+        """Removes a reference to the layer URI defined in the path attribute."""
+        self.path = ""
 
     def remove_ncs_pathway(self, pathway_uuid: str) -> bool:
         """Removes the NCS pathway with a matching UUID from the collection.
@@ -408,13 +399,13 @@ class ImplementationModel(LayerModelComponent):
         Does not check for validity of individual NCS pathways in the
         collection.
         """
-        if self.layer:
+        if self.to_map_layer() is not None:
             return super().is_valid()
         else:
             if len(self.pathways) == 0:
                 return False
 
-            if not self.is_pwl_valid():
+            if not self.is_pwls_valid():
                 return False
 
             return True
@@ -437,7 +428,6 @@ class Scenario(BaseModelComponent):
     """
 
     extent: SpatialExtent
-    # TODO: Confirm if this should be weighted model instead.
     models: typing.List[ImplementationModel]
     priority_layer_groups: typing.List
     state: ScenarioState = ScenarioState.IDLE

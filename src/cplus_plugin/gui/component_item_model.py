@@ -8,7 +8,7 @@ import json
 import typing
 from uuid import UUID, uuid4
 
-from qgis.core import QgsMapLayer
+from qgis.core import QgsMapLayer, QgsRasterLayer, QgsVectorLayer
 
 from qgis.PyQt import QtCore, QtGui
 
@@ -17,10 +17,12 @@ from ..models.base import (
     BaseModelComponentType,
     ImplementationModel,
     LayerModelComponent,
+    LayerType,
     NcsPathway,
 )
 from ..models.helpers import (
-    clone_layer_component,
+    clone_implementation_model,
+    clone_ncs_pathway,
     create_ncs_pathway,
     ncs_pathway_to_dict,
 )
@@ -156,6 +158,9 @@ class LayerComponentItem(ModelComponentItem):
     def set_layer(self, layer: QgsMapLayer) -> bool:
         """Set the map layer for the component item.
 
+        It sets the :py:attr:`~path` attribute of the
+        underlying data model.
+
         :param layer: Map layer for the component item.
         :type layer: QgsMapLayer
 
@@ -169,8 +174,12 @@ class LayerComponentItem(ModelComponentItem):
         if not layer.isValid():
             return False
 
-        self._model_component.layer = layer
-        self._model_component.update_layer_type()
+        path = layer.dataProvider().dataSourceUri()
+        self._model_component.path = path
+        if isinstance(layer, QgsRasterLayer):
+            self._model_component.layer_type = LayerType.RASTER
+        elif isinstance(layer, QgsVectorLayer):
+            self._model_component.layer_type = LayerType.VECTOR
 
         return True
 
@@ -249,7 +258,7 @@ class NcsPathwayItem(LayerComponentItem):
 
     def clone(self) -> "NcsPathwayItem":
         """Creates a cloned version of this item."""
-        ncs = clone_layer_component(self.ncs_pathway, NcsPathway)
+        ncs = clone_ncs_pathway(self.ncs_pathway)
 
         return NcsPathwayItem(ncs)
 
@@ -347,7 +356,7 @@ class ImplementationModelItem(LayerComponentItem):
             if len(keys) == 0:
                 continue
 
-            cloned_ncs = clone_layer_component(ncs, NcsPathway)
+            cloned_ncs = clone_ncs_pathway(ncs)
 
             original_uuid = UUID(keys[0])
             cloned_ncs.uuid = original_uuid
@@ -370,17 +379,17 @@ class ImplementationModelItem(LayerComponentItem):
         """Clears the layer reference in the model component."""
         self._implementation_model.clear_layer()
 
-    def ncs_item_by_uuid(self, uuid: str) -> typing.Union[NcsPathwayItem, None]:
+    def ncs_item_by_uuid(self, ncs_uuid: str) -> typing.Union[NcsPathwayItem, None]:
         """Returns an NcsPathway item matching the given UUID.
 
-        :param uuid: UUID of the NcsPathway item to retrieve.
-        :type uuid: str
+        :param ncs_uuid: UUID of the NcsPathway item to retrieve.
+        :type ncs_uuid: str
 
         :returns: NcsPathwayItem matching the given UUID, else None
         if not found.
         :rtype: NcsPathwayItem
         """
-        ncs_items = [n for n in self._ncs_items if n.uuid == uuid]
+        ncs_items = [n for n in self._ncs_items if n.uuid == ncs_uuid]
 
         if len(ncs_items) == 0:
             return None
@@ -515,9 +524,7 @@ class ImplementationModelItem(LayerComponentItem):
         The cloned IM will contain pathways with the
         original UUID. The UUID of the IM will not change.
         """
-        implementation_model = clone_layer_component(
-            self.implementation_model, ImplementationModel
-        )
+        implementation_model = clone_implementation_model(self.implementation_model)
         # Use NCS pathways with original UUIDs
         implementation_model.pathways = self.original_ncs_pathways
 
@@ -867,13 +874,13 @@ class IMItemModel(ComponentItemModel):
             if not status:
                 result = False
 
-        # Add NCS pathways. If there are underlying NCS pathway items then
-        # clone them, remove then re-insert so that the underlying IM can
-        # have the unique UUID.
+        # Add NCS pathways. If there are underlying NCS pathway objects then
+        # clone them, remove then re-insert so that the underlying NCS pathways can
+        # have the unique UUID in the IM item.
         if result:
             cloned_ncs_pathways = []
             for ncs_pathway in implementation_model.pathways:
-                cloned_ncs = clone_layer_component(ncs_pathway, NcsPathway)
+                cloned_ncs = clone_ncs_pathway(ncs_pathway)
                 cloned_ncs_pathways.append(cloned_ncs)
 
             # Remove pathways in the IM

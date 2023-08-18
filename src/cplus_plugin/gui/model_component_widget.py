@@ -339,7 +339,9 @@ class NcsComponentWidget(ModelComponentWidget):
 
     def _save_item(self, item: NcsPathwayItem):
         """Update the NCS pathway in settings."""
-        settings_manager.update_ncs_pathway(item.ncs_pathway)
+        cloned_ncs_item = item.clone()
+        cloned_ncs = cloned_ncs_item.ncs_pathway
+        settings_manager.update_ncs_pathway(cloned_ncs)
 
     def _on_remove_item(self):
         """Delete NcsPathway object."""
@@ -407,9 +409,7 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         """Slot raised when the pathways of an ImplementationModelItem
         have been added or removed. Persist this information in settings.
         """
-        cloned_im_item = im_item.clone()
-        cloned_im = cloned_im_item.implementation_model
-        settings_manager.update_implementation_model(cloned_im)
+        self._save_item(im_item)
 
     def model_items(self) -> typing.List[ImplementationModelItem]:
         """Returns a collection of all ImplementationModelItem objects
@@ -457,12 +457,15 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
             layer = editor.layer
             result = self.item_model.update_implementation_model(model, layer)
             if result:
-                settings_manager.update_implementation_model(model)
+                self._save_item(item)
             self._update_ui_on_selection_changed()
 
     def _save_item(self, item: ImplementationModelItem):
         """Update the underlying IM in the item in settings."""
-        settings_manager.update_implementation_model(item.implementation_model)
+        pass
+        # cloned_im_item = item.clone()
+        # cloned_im = cloned_im_item.implementation_model
+        # settings_manager.update_implementation_model(cloned_im)
 
     def _on_remove_item(self):
         """Delete implementation model object."""
