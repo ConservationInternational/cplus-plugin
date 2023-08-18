@@ -1406,7 +1406,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             # and assign a suffix.
             counter = 1
             group_name = scenario_name
-            while True:
+
+            # Control to prevent infinite loop
+            max_limit = 100
+            while True and counter <= max_limit:
                 scenario_grp = instance_root.findGroup(group_name)
                 if scenario_grp is None:
                     break
@@ -1657,7 +1660,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             return
 
         self.progress_dialog.update_progress_bar(0)
-        self.progress_dialog.set_report_running()
+        self.progress_dialog.report_running = True
         self.progress_dialog.change_status_message(
             tr("Generating report"), tr("scenario")
         )

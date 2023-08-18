@@ -462,10 +462,9 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
 
     def _save_item(self, item: ImplementationModelItem):
         """Update the underlying IM in the item in settings."""
-        pass
-        # cloned_im_item = item.clone()
-        # cloned_im = cloned_im_item.implementation_model
-        # settings_manager.update_implementation_model(cloned_im)
+        cloned_im_item = item.clone()
+        cloned_im = cloned_im_item.implementation_model
+        settings_manager.update_implementation_model(cloned_im)
 
     def _on_remove_item(self):
         """Delete implementation model object."""
