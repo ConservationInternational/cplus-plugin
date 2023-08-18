@@ -1481,7 +1481,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     for pathway in list_pathways:
                         try:
                             # pathway_name = pathway.name
-                            pathway_layer = pathway.layer
+                            pathway_layer = pathway.to_map_layer()
 
                             added_pw_layer = qgis_instance.addMapLayer(pathway_layer)
                             self.move_layer_to_group(added_pw_layer, im_pathway_group)
