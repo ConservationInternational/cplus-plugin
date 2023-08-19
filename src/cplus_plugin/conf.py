@@ -474,7 +474,7 @@ class SettingsManager(QtCore.QObject):
             settings.setValue("name", priority_layer["name"])
             settings.setValue("description", priority_layer["description"])
             settings.setValue("path", priority_layer["path"])
-            settings.setValue("selected", priority_layer["selected"])
+            settings.setValue("selected", priority_layer.get("selected", False))
             groups_key = f"{settings_key}/groups"
             with qgis_settings(groups_key) as groups_settings:
                 for group_id in groups_settings.childGroups():
@@ -864,7 +864,7 @@ class SettingsManager(QtCore.QObject):
     def update_implementation_models(self):
         """Updates the attributes of the avaialable implementation models
 
-        :param implementation_model: ImplementationModel object to be updated.
+        :param implementation_model: Implementation model object to be updated.
         :type implementation_model: ImplementationModel
         """
         models = self.get_all_implementation_models()
