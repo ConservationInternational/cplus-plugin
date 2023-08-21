@@ -55,6 +55,8 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         self.ipm_layout.addWidget(self.implementation_model_view)
         self.implementation_model_view.title = self.tr("Implementation Models")
 
+        self.load()
+
     def load(self):
         """Load NCS pathways and implementation models to the views.
 
@@ -129,10 +131,20 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         """Returns the selected model component item types which could be
         NCS pathway or implementation model items.
 
+        These are cloned objects so as not to interfere with the
+        underlying data models when used for scenario analysis. Otherwise,
+        one can also use the data models from the MVC item model.
+
         :returns: Selected model component items.
         :rtype: list
         """
-        return self.implementation_model_view.selected_items()
+        ref_items = self.implementation_model_view.selected_items()
+        cloned_items = []
+        for ref_item in ref_items:
+            clone_item = ref_item.clone()
+            cloned_items.append(clone_item)
+
+        return cloned_items
 
     def selected_im_items(self) -> typing.List[ImplementationModelItem]:
         """Returns the currently selected instances of ImplementationModelItem.
