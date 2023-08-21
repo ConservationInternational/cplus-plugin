@@ -1050,7 +1050,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         model_count = 0
 
         priority_function = partial(
-            self.run_priority_analysis, models, priority_layers_groups, extent
+            self.run_normalization_analysis, models, priority_layers_groups, extent
         )
         main_task = QgsTask.fromFunction(
             "Running main functions", self.main_task, on_finished=priority_function
