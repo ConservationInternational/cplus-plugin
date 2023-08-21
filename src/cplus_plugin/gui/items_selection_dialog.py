@@ -24,7 +24,7 @@ DialogUi, _ = loadUiType(
 class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
     """Dialog for handling items selection"""
 
-    def __init__(self, parent):
+    def __init__(self, parent, layer=None):
         """Constructor"""
         super().__init__()
         self.setupUi(self)
@@ -50,21 +50,17 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
 
         self.set_items()
 
-        profile = settings_manager.get_current_profile()
-        custom_properties = settings_manager.get_templates_custom_properties(
-            self.parent.template.id, profile.id
-        )
-
         for index in range(self.list_widget.count()):
-            item_item = self.list_widget.item(index)
-            if custom_properties["item_names"] is not None:
-                if item_item.text() in custom_properties["item_names"]:
-                    item_item.setCheckState(QtCore.Qt.Checked)
+            item = self.list_widget.item(index)
+            model_uuid = item.data(QtCore.Qt.UserRole)
+            model = settings_manager.get_implementation_model(model_uuid)
+            if layer.get("name") in item_item.text():
+                item_item.setCheckState(QtCore.Qt.Checked)
 
     def set_items(self):
-        items_values = QgsProject.instance().mapItems().values()
+        models = settings_manager.get_all_implementation_models()
 
-        item_names = [f"{item.name()}" for item in items_values]
+        item_names = [item.name for item in models]
         for name in item_names:
             list_widget_item = QtWidgets.QListWidgetItem(name)
             list_widget_item.setFlags(

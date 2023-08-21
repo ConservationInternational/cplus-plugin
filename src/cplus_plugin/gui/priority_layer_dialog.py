@@ -17,12 +17,11 @@ from qgis.PyQt.uic import loadUiType
 from qgis.gui import QgsFileWidget
 
 from ..conf import settings_manager, Settings
-
 from ..utils import FileUtils, open_documentation
-
 from ..definitions.defaults import ICON_PATH, PRIORITY_LAYERS, USER_DOCUMENTATION_SITE
-
 from ..definitions.constants import PRIORITY_LAYERS_SEGMENT
+
+from .items_selection_dialog import ItemsSelectionDialog
 
 
 DialogUi, _ = loadUiType(
@@ -107,6 +106,15 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
             self.layer_description.setText(self.layer["description"])
 
             self.map_layer_file_widget.setFilePath(layer_path)
+
+    def open_layer_select_dialog(self):
+        model_select_dialog = ItemsSelectionDialog(self, self.layer)
+        model_select_dialog.exec_()
+
+    def set_selected_models(self, models):
+        self.selected_models = models
+        self.models_names = [model.name for model in models]
+        self.selected_models_le.setText(",".join(self.models_names))
 
     def accept(self):
         """Handles logic for adding new priority layer and edit existing one"""

@@ -195,6 +195,15 @@ LayerModelComponentType = typing.TypeVar(
 
 
 @dataclasses.dataclass
+class PriorityLayer(BaseModelComponent):
+    """Base class for model components storing priority weighting layers."""
+
+    groups: list
+    selected: bool = False
+    path: str = ""
+
+
+@dataclasses.dataclass
 class NcsPathway(LayerModelComponent):
     """Contains information about an NCS pathway layer."""
 
