@@ -260,6 +260,41 @@ def clone_layer_component(
     return cloned_component
 
 
+def clone_ncs_pathway(ncs: NcsPathway) -> NcsPathway:
+    """Creates a deep copy of the given NCS pathway.
+    :param ncs: NCS pathway to clone.
+    :type ncs: NcsPathway
+    :returns: A deep copy of the original NCS pathway object.
+    :rtype: NcsPathway
+    """
+    return clone_layer_component(ncs, NcsPathway)
+
+
+def clone_implementation_model(
+    implementation_model: ImplementationModel,
+) -> ImplementationModel:
+    """Creates a deep copy of the given implementation model.
+    :param implementation_model: Implementation model to clone.
+    :type implementation_model: ImplementationModel
+    :returns: A deep copy of the original implementation model object.
+    :rtype: ImplementationModel
+    """
+    imp_model = clone_layer_component(implementation_model, ImplementationModel)
+    if imp_model is None:
+        return None
+
+    pathways = implementation_model.pathways
+    cloned_pathways = []
+    for p in pathways:
+        cloned_ncs = clone_ncs_pathway(p)
+        if cloned_ncs is not None:
+            cloned_pathways.append(cloned_ncs)
+
+    imp_model.pathways = cloned_pathways
+
+    return imp_model
+
+
 def copy_layer_component_attributes(
     target: LayerModelComponent, source: LayerModelComponent
 ) -> LayerModelComponent:
