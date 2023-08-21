@@ -251,7 +251,7 @@ class NcsPathwayItem(LayerComponentItem):
 
     def clone(self) -> "NcsPathwayItem":
         """Creates a cloned version of this item."""
-        ncs = clone_layer_component(self.ncs_pathway, NcsPathway)
+        ncs = clone_ncs_pathway(self.ncs_pathway)
 
         return NcsPathwayItem(ncs)
 
@@ -515,8 +515,8 @@ class ImplementationModelItem(LayerComponentItem):
         The cloned IM will contain pathways with the
         original UUID. The UUID of the IM will not change.
         """
-        implementation_model = clone_layer_component(
-            self.implementation_model, ImplementationModel
+        implementation_model = clone_implementation_model(
+            self.implementation_model,
         )
         # Use NCS pathways with original UUIDs
         implementation_model.pathways = self.original_ncs_pathways
