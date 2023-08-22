@@ -23,6 +23,7 @@ from ..models.base import (
 from ..models.helpers import (
     clone_implementation_model,
     clone_ncs_pathway,
+    clone_layer_component,
     create_ncs_pathway,
     ncs_pathway_to_dict,
 )
@@ -524,7 +525,9 @@ class ImplementationModelItem(LayerComponentItem):
         The cloned IM will contain pathways with the
         original UUID. The UUID of the IM will not change.
         """
-        implementation_model = clone_implementation_model(self.implementation_model)
+        implementation_model = clone_implementation_model(
+            self.implementation_model,
+        )
         # Use NCS pathways with original UUIDs
         implementation_model.pathways = self.original_ncs_pathways
 
@@ -874,28 +877,27 @@ class IMItemModel(ComponentItemModel):
 
         implementation_model_item = ImplementationModelItem.create(implementation_model)
         result = self.add_component_item(implementation_model_item)
-        if result:
-            if layer:
-                status = self.set_model_layer(implementation_model_item, layer)
-                if not status:
-                    result = False
-            else:
-                # Add NCS pathways. If there are underlying NCS pathway objects then
-                # clone them, remove then re-insert so that the underlying NCS pathways can
-                # have the unique UUID in the IM item.
-                if result:
-                    cloned_implementation_model = clone_implementation_model(
-                        implementation_model
-                    )
-                    cloned_ncs_pathways = cloned_implementation_model.pathways
+        if layer:
+            status = self.set_model_layer(implementation_model_item, layer)
+            if not status:
+                result = False
+        else:
+            # Add NCS pathways. If there are underlying NCS pathway objects then
+            # clone them, remove then re-insert so that the underlying NCS pathways can
+            # have the unique UUID in the IM item.
+            if result:
+                cloned_implementation_model = clone_implementation_model(
+                    implementation_model
+                )
+                cloned_ncs_pathways = cloned_implementation_model.pathways
 
-                    # Remove pathways in the IM
-                    implementation_model.pathways = []
+                # Remove pathways in the IM
+                implementation_model.pathways = []
 
-                    # Now add the NCSs afresh
-                    for ncs in cloned_ncs_pathways:
-                        ncs_item = NcsPathwayItem.create(ncs)
-                        self.add_ncs_pathway(ncs_item, implementation_model_item)
+                # Now add the NCSs afresh
+                for ncs in cloned_ncs_pathways:
+                    ncs_item = NcsPathwayItem.create(ncs)
+                    self.add_ncs_pathway(ncs_item, implementation_model_item)
 
         return result
 

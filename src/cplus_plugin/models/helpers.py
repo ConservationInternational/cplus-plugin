@@ -287,7 +287,7 @@ def clone_implementation_model(
     for p in pathways:
         cloned_ncs = clone_ncs_pathway(p)
         if cloned_ncs is not None:
-            cloned_pathways.append((cloned_ncs))
+            cloned_pathways.append(cloned_ncs)
 
     imp_model.pathways = cloned_pathways
 
