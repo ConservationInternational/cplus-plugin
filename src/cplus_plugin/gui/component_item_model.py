@@ -174,7 +174,7 @@ class LayerComponentItem(ModelComponentItem):
         if not layer.isValid():
             return False
 
-        path = layer.dataProvider().dataSourceUri()
+        path = layer.source()
         self._model_component.path = path
         if isinstance(layer, QgsRasterLayer):
             self._model_component.layer_type = LayerType.RASTER
