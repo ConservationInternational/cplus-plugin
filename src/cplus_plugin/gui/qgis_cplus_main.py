@@ -236,7 +236,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         if extent is not None:
             extent_rectangle = QgsRectangle(
-                float(extent[0]), float(extent[3]), float(extent[1]), float(extent[2])
+                float(extent[0]), float(extent[2]), float(extent[1]), float(extent[3])
             )
             self.extent_box.setOutputExtentFromUser(
                 extent_rectangle,
@@ -465,7 +465,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         extent_list = PILOT_AREA_EXTENT["coordinates"]
         default_extent = QgsRectangle(
-            extent_list[3], extent_list[0], extent_list[1], extent_list[2]
+            extent_list[0], extent_list[2], extent_list[1], extent_list[3]
         )
         passed_extent = self.extent_box.outputExtent()
         contains = default_extent == passed_extent or default_extent.contains(
@@ -529,6 +529,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 tr(f"Selected area of interest is outside the pilot area."),
                 level=Qgis.Info,
             )
+            default_ext = (
+                f"{default_extent.xMinimum()}, {default_extent.xMaximum()},"
+                f"{default_extent.yMinimum()}, {default_extent.yMaximum()}"
+            )
+            log(
+                f"Outside the pilot area, passed extent "
+                f"{passed_extent}"
+                f"default extent{default_ext}"
+            )
             return
 
         if base_dir is None:
@@ -541,7 +550,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             return
         self.analysis_extent = SpatialExtent(
-            bbox=[extent_list[3], extent_list[2], extent_list[1], extent_list[0]]
+            bbox=[
+                passed_extent.xMinimum(),
+                passed_extent.xMaximum(),
+                passed_extent.yMinimum(),
+                passed_extent.yMaximum(),
+            ]
         )
 
         try:
@@ -588,17 +602,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
 
     def run_scenario_analysis(self):
-        """Performs the scenario analysis. This covers the pilot study area,
+        """Performs the last step in scenario analysis. This covers the pilot study area,
         and checks whether the AOI is outside the pilot study area.
         """
-
-        extent_list = PILOT_AREA_EXTENT["coordinates"]
-        default_extent = QgsRectangle(
-            extent_list[3], extent_list[0], extent_list[1], extent_list[2]
-        )
-        passed_extent = self.extent_box.outputExtent()
-        contains = default_extent == passed_extent or default_extent.contains(
-            passed_extent
+        passed_extent_box = self.analysis_extent.bbox
+        passed_extent = QgsRectangle(
+            passed_extent_box[0],
+            passed_extent_box[2],
+            passed_extent_box[1],
+            passed_extent_box[3],
         )
 
         scenario = Scenario(
@@ -614,136 +626,113 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             scenario=scenario,
         )
 
-        if contains:
-            try:
-                layers = {}
+        try:
+            layers = {}
 
-                self.progress_dialog.progress_bar.setMinimum(0)
-                self.progress_dialog.progress_bar.setMaximum(100)
-                self.progress_dialog.progress_bar.setValue(0)
-                self.progress_dialog.analysis_finished_message = tr("Analysis finished")
-                self.progress_dialog.scenario_name = tr(f"<b>{scenario.name}</b>")
-                self.progress_dialog.scenario_id = str(scenario.uuid)
-                self.progress_dialog.change_status_message(
-                    tr("Calculating the highest position")
-                )
-
-                self.position_feedback.progressChanged.connect(self.update_progress_bar)
-
-                for model in self.analysis_implementation_models:
-                    if model.layer:
-                        raster_layer = model.layer
-                        if isinstance(model.layer, str):
-                            raster_layer = QgsRasterLayer(model.layer, model.name)
-                        layers[model.name] = (
-                            raster_layer if raster_layer is not None else None
-                        )
-                    else:
-                        for pathway in model.pathways:
-                            layers[model.name] = QgsRasterLayer(pathway.path)
-
-                source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
-                dest_crs = (
-                    list(layers.values())[0].crs() if len(layers) > 0 else source_crs
-                )
-                transform = QgsCoordinateTransform(
-                    source_crs, dest_crs, QgsProject.instance()
-                )
-                transformed_extent = transform.transformBoundingBox(passed_extent)
-
-                extent_string = (
-                    f"{transformed_extent.xMinimum()},{transformed_extent.xMaximum()},"
-                    f"{transformed_extent.yMinimum()},{transformed_extent.yMaximum()}"
-                    f" [{dest_crs.authid()}]"
-                )
-
-                output_file = (
-                    f"{self.scenario_directory}/"
-                    f"{SCENARIO_OUTPUT_FILE_NAME}_{str(scenario.uuid)[:4]}.tif"
-                )
-
-                # Preparing the input rasters for the highest position
-                # analysis in a correct order
-
-                models_names = [
-                    model.name for model in self.analysis_implementation_models
-                ]
-                all_models_names = [
-                    model.name
-                    for model in self.implementation_model_widget.implementation_models()
-                ]
-                sources = []
-
-                absolute_path = (
-                    f"{FileUtils.plugin_dir()}/app_data/layers/null_raster.tif"
-                )
-                null_raster_file = os.path.normpath(absolute_path)
-
-                for model_name in all_models_names:
-                    if model_name in models_names:
-                        sources.append(layers[model_name].source())
-                    else:
-                        sources.append(null_raster_file)
-
-                log(f"Layers sources {[Path(source).stem for source in sources]}")
-
-                alg_params = {
-                    "IGNORE_NODATA": True,
-                    "INPUT_RASTERS": sources,
-                    "EXTENT": extent_string,
-                    "OUTPUT_NODATA_VALUE": -9999,
-                    "REFERENCE_LAYER": list(layers.values())[0]
-                    if len(layers) >= 1
-                    else None,
-                    "OUTPUT": output_file,
-                }
-
-                log(f"Used parameters for highest position analysis {alg_params}")
-
-                alg = QgsApplication.processingRegistry().algorithmById(
-                    "native:highestpositioninrasterstack"
-                )
-
-                self.processing_cancelled = False
-                self.task = QgsProcessingAlgRunnerTask(
-                    alg,
-                    alg_params,
-                    self.processing_context,
-                    feedback=self.position_feedback,
-                )
-                self.task.executed.connect(self.scenario_results)
-                QgsApplication.taskManager().addTask(self.task)
-
-            except Exception as err:
-                self.show_message(
-                    tr(
-                        "An error occurred when running analysis task, "
-                        "check logs for more information"
-                    ),
-                    level=Qgis.Info,
-                )
-                log(
-                    tr(
-                        "An error occurred when running task for "
-                        'scenario analysis, error message "{}"'.format(str(err))
-                    )
-                )
-
-        else:
-            self.show_message(
-                tr("Selected area of interest is outside the pilot area."),
-                level=Qgis.Critical,
+            self.progress_dialog.progress_bar.setMinimum(0)
+            self.progress_dialog.progress_bar.setMaximum(100)
+            self.progress_dialog.progress_bar.setValue(0)
+            self.progress_dialog.analysis_finished_message = tr("Analysis finished")
+            self.progress_dialog.scenario_name = tr(f"<b>{scenario.name}</b>")
+            self.progress_dialog.scenario_id = str(scenario.uuid)
+            self.progress_dialog.change_status_message(
+                tr("Calculating the highest position")
             )
 
-            default_ext = (
-                f"{default_extent.xMinimum()}, {default_extent.xMaximum()},"
-                f"{default_extent.yMinimum()}, {default_extent.yMaximum()}"
+            self.position_feedback.progressChanged.connect(self.update_progress_bar)
+
+            for model in self.analysis_implementation_models:
+                if model.layer:
+                    raster_layer = model.layer
+                    if isinstance(model.layer, str):
+                        raster_layer = QgsRasterLayer(model.layer, model.name)
+                    layers[model.name] = (
+                        raster_layer if raster_layer is not None else None
+                    )
+                else:
+                    for pathway in model.pathways:
+                        layers[model.name] = QgsRasterLayer(pathway.path)
+
+            source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
+            dest_crs = list(layers.values())[0].crs() if len(layers) > 0 else source_crs
+            transform = QgsCoordinateTransform(
+                source_crs, dest_crs, QgsProject.instance()
+            )
+            transformed_extent = transform.transformBoundingBox(passed_extent)
+
+            extent_string = (
+                f"{transformed_extent.xMinimum()},{transformed_extent.xMaximum()},"
+                f"{transformed_extent.yMinimum()},{transformed_extent.yMaximum()}"
+                f" [{dest_crs.authid()}]"
+            )
+
+            output_file = (
+                f"{self.scenario_directory}/"
+                f"{SCENARIO_OUTPUT_FILE_NAME}_{str(scenario.uuid)[:4]}.tif"
+            )
+
+            # Preparing the input rasters for the highest position
+            # analysis in a correct order
+
+            models_names = [model.name for model in self.analysis_implementation_models]
+            all_models_names = [
+                model.name
+                for model in self.implementation_model_widget.implementation_models()
+            ]
+            sources = []
+
+            absolute_path = f"{FileUtils.plugin_dir()}/app_data/layers/null_raster.tif"
+            null_raster_file = os.path.normpath(absolute_path)
+
+            for model_name in all_models_names:
+                if model_name in models_names:
+                    sources.append(layers[model_name].source())
+                else:
+                    sources.append(null_raster_file)
+
+            log(f"Layers sources {[Path(source).stem for source in sources]}")
+
+            alg_params = {
+                "IGNORE_NODATA": True,
+                "INPUT_RASTERS": sources,
+                "EXTENT": extent_string,
+                "OUTPUT_NODATA_VALUE": -9999,
+                "REFERENCE_LAYER": list(layers.values())[0]
+                if len(layers) >= 1
+                else None,
+                "OUTPUT": output_file,
+            }
+
+            log(f"Used parameters for highest position analysis {alg_params}")
+
+            alg = QgsApplication.processingRegistry().algorithmById(
+                "native:highestpositioninrasterstack"
+            )
+
+            self.processing_cancelled = False
+            self.task = QgsProcessingAlgRunnerTask(
+                alg,
+                alg_params,
+                self.processing_context,
+                feedback=self.position_feedback,
+            )
+            self.task.executed.connect(self.scenario_results)
+            QgsApplication.taskManager().addTask(self.task)
+
+        except Exception as err:
+            self.show_message(
+                tr(
+                    "An error occurred when running analysis task, "
+                    "check logs for more information"
+                ),
+                level=Qgis.Info,
             )
             log(
-                f"Outside the pilot area, passed extent "
-                f"{self.analysis_extent}, default extent{default_ext}"
+                tr(
+                    "An error occurred when running task for "
+                    'scenario analysis, error message "{}"'.format(str(err))
+                )
             )
-            return
 
     def main_task(self):
         """Serves as a QgsTask function for the main task that contains
@@ -828,8 +817,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             box = QgsRectangle(
                 float(extent.bbox[0]),
-                float(extent.bbox[1]),
                 float(extent.bbox[2]),
+                float(extent.bbox[1]),
                 float(extent.bbox[3]),
             )
 
@@ -1562,10 +1551,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         map_canvas = iface.mapCanvas()
         extent_list = PILOT_AREA_EXTENT["coordinates"]
         default_extent = QgsRectangle(
-            extent_list[3], extent_list[2], extent_list[1], extent_list[0]
+            extent_list[0], extent_list[2], extent_list[1], extent_list[3]
         )
         zoom_extent = QgsRectangle(
-            extent_list[3] - 0.5, extent_list[2], extent_list[1] + 0.5, extent_list[0]
+            extent_list[0] - 0.5, extent_list[2], extent_list[1] + 0.5, extent_list[3]
         )
 
         aoi = QgsRubberBand(iface.mapCanvas(), QgsWkbTypes.PolygonGeometry)
@@ -1594,7 +1583,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         extent_list = PILOT_AREA_EXTENT["coordinates"]
         default_extent = QgsRectangle(
-            extent_list[3], extent_list[2], extent_list[1], extent_list[0]
+            extent_list[0], extent_list[2], extent_list[1], extent_list[3]
         )
 
         self.extent_box.setOutputExtentFromUser(
