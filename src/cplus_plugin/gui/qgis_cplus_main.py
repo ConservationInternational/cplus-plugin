@@ -73,6 +73,7 @@ from ..utils import (
 from ..definitions.defaults import (
     ADD_LAYER_ICON_PATH,
     PILOT_AREA_EXTENT,
+    PRIORITY_LAYERS,
     OPTIONS_TITLE,
     ICON_PATH,
     QGIS_GDAL_PROVIDER,
@@ -1386,7 +1387,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             layers.append(model.layer.source())
             basenames.append(f'"{Path(model.layer.source()).stem}@1"')
 
-            if model.pwls_paths is None or model.pwls_paths is []:
+            if model.priority_layers is None or model.priority_layers is []:
                 log(
                     f"There are no associated "
                     f"priority weighting layers for model {model.name}"
@@ -1396,11 +1397,27 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             settings_model = settings_manager.get_implementation_model(str(model.uuid))
             base_dir = settings_manager.get_value(Settings.BASE_DIR)
 
-            for pwl in settings_model.pwls_paths:
-                if base_dir not in pwl:
+            for layer in settings_model.priority_layers:
+                pwl = layer.get("path")
+                if base_dir not in pwl and layer in PRIORITY_LAYERS:
                     pwl = f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/{pwl}"
                 pwl_path = Path(pwl)
                 if not pwl_path.exists():
+                    self.show_message(
+                        tr(
+                            f"Path {pwl_path} for priority "
+                            f"weighting layer {layer.get('name')} "
+                            f"doesn't exist, skipping the layer "
+                            f"from the model {model.name} weighting."
+                        ),
+                        level=Qgis.Warning,
+                    )
+                    log(
+                        f"Path {pwl_path} for priority "
+                        f"weighting layer {layer.get('name')} "
+                        f"doesn't exist, skipping the layer "
+                        f"from the model {model.name} weighting."
+                    )
                     continue
 
                 path_basename = pwl_path.stem

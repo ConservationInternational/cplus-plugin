@@ -58,6 +58,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         icon_pixmap = QtGui.QPixmap(ICON_PATH)
         self.icon_la.setPixmap(icon_pixmap)
 
+        self.models = []
         self.initialize_ui()
 
     def map_layer_changed(self, layer):
@@ -94,6 +95,8 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
 
         self.map_layer_file_widget.setStorageMode(QgsFileWidget.StorageMode.GetFile)
 
+        self.select_models_btn.clicked.connect(self.open_layer_select_dialog)
+
         if self.layer is not None:
             layer_path = self.layer.get("path")
 
@@ -107,14 +110,51 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
 
             self.map_layer_file_widget.setFilePath(layer_path)
 
+            all_models = settings_manager.get_all_implementation_models()
+
+            for model in all_models:
+                model_layer_uuids = [
+                    layer.get("uuid") for layer in model.priority_layers
+                ]
+                if str(self.layer.get("uuid")) in model_layer_uuids:
+                    self.models.append(model)
+
+            self.set_selected_models(self.models)
+
     def open_layer_select_dialog(self):
+        """Opens priority layer item selection dialog"""
         model_select_dialog = ItemsSelectionDialog(self, self.layer)
         model_select_dialog.exec_()
 
-    def set_selected_models(self, models):
-        self.selected_models = models
-        self.models_names = [model.name for model in models]
-        self.selected_models_le.setText(",".join(self.models_names))
+    def set_selected_models(self, models, removed_models=[]):
+        """Adds this dialog layer into the passed models and removes it from the
+        unselected models passed as removed_models.
+
+        :param models: Selected implementation models
+        :type models: list
+
+        :param removed_models: Implementation models that dialog
+        layer should be removed from.
+        :type removed_models: list
+
+        """
+
+        self.models = models
+
+        models_names = [model.name for model in models]
+        self.selected_models_le.setText(" , ".join(models_names))
+
+        for model in models:
+            models_layer_uuids = [
+                str(layer.get("uuid")) for layer in model.priority_layers
+            ]
+            if str(self.layer.get("uuid")) not in models_layer_uuids:
+                model.priority_layers.append(self.layer)
+                settings_manager.save_implementation_model(model)
+        for model in removed_models:
+            if self.layer in model.priority_layers:
+                model.priority_layers.remove(self.layer)
+                settings_manager.save_implementation_model(model)
 
     def accept(self):
         """Handles logic for adding new priority layer and edit existing one"""

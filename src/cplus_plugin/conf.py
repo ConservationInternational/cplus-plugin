@@ -15,6 +15,8 @@ import uuid
 from qgis.PyQt import QtCore
 from qgis.core import QgsRectangle, QgsSettings
 
+from .definitions.defaults import PRIORITY_LAYERS
+
 from .definitions.constants import (
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
@@ -363,7 +365,7 @@ class SettingsManager(QtCore.QObject):
                         stored_group["value"] = group_settings.value("value")
                         groups.append(stored_group)
 
-            priority_layer = {"uuid": identifier}
+            priority_layer = {"uuid": str(identifier)}
             priority_layer["name"] = settings.value("name")
             priority_layer["description"] = settings.value("description")
             priority_layer["path"] = settings.value("path")
@@ -761,13 +763,22 @@ class SettingsManager(QtCore.QObject):
         :type implementation_model: ImplementationModel, dict
         """
         if isinstance(implementation_model, ImplementationModel):
-            pwls_paths = implementation_model.pwls_paths
+            priority_layers = implementation_model.priority_layers
             ncs_pathways = []
             for ncs in implementation_model.pathways:
                 ncs_pathways.append(str(ncs.uuid))
             implementation_model = layer_component_to_dict(implementation_model)
-            implementation_model["pwls_paths"] = pwls_paths
+            implementation_model["priority_layers"] = priority_layers
             implementation_model["pathways"] = ncs_pathways
+
+        if isinstance(implementation_model, dict):
+            priority_layers = []
+            if implementation_model.get("pwls_ids") is not None:
+                for layer_id in implementation_model.get("pwls_ids", []):
+                    layer = self.get_priority_layer(layer_id)
+                    priority_layers.append(layer)
+                if len(priority_layers) > 0:
+                    implementation_model["priority_layers"] = priority_layers
 
         implementation_model_str = json.dumps(implementation_model)
 
@@ -802,6 +813,7 @@ class SettingsManager(QtCore.QObject):
                 implementation_model_dict = json.loads(implementation_model)
                 if "pathways" in implementation_model_dict:
                     ncs_uuids = implementation_model_dict["pathways"]
+
                 implementation_model = create_implementation_model(
                     implementation_model_dict
                 )
@@ -846,16 +858,14 @@ class SettingsManager(QtCore.QObject):
         if not base_dir:
             return
 
-        # PWLs location
-        abs_pwls_paths = []
-        for layer in self.get_priority_layers():
-            if layer.get("path") in implementation_model.pwls_paths:
+        # PWLs path update
+        for layer in implementation_model.priority_layers:
+            if layer in PRIORITY_LAYERS and base_dir not in layer.get("path"):
                 abs_pwl_path = (
                     f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/" f"{layer.get('path')}"
                 )
                 abs_pwl_path = str(os.path.normpath(abs_pwl_path))
-                abs_pwls_paths.append(abs_pwl_path)
-        implementation_model.pwls_paths = abs_pwls_paths
+                layer["path"] = abs_pwl_path
 
         # Remove then re-insert
         self.remove_implementation_model(str(implementation_model.uuid))

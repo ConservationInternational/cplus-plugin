@@ -288,7 +288,7 @@ class ImplementationModel(LayerModelComponent):
     """
 
     pathways: typing.List[NcsPathway] = dataclasses.field(default_factory=list)
-    pwls_paths: typing.List[str] = dataclasses.field(default_factory=list)
+    priority_layers: typing.List[typing.Dict] = dataclasses.field(default_factory=list)
 
     def __post_init__(self):
         """Pre-checks on initialization."""
@@ -385,14 +385,14 @@ class ImplementationModel(LayerModelComponent):
         return pathways[0]
 
     def pw_layers(self) -> typing.List[QgsRasterLayer]:
-        """Returns the list of priority weighting layers whose path is defined under
-        the :py:attr:`~pwls_paths` attribute.
+        """Returns the list of priority weighting layers wdefined under
+        the :py:attr:`~priority_layers` attribute.
 
         :returns: Priority layers for the implementation or an empty list
         if the path is not defined.
         :rtype: list
         """
-        return [QgsRasterLayer(pwl_path) for pwl_path in self.pwls_paths]
+        return [QgsRasterLayer(layer.get("path")) for layer in self.priority_layers]
 
     def is_pwls_valid(self) -> bool:
         """Checks if the priority layers are valid.
