@@ -22,12 +22,13 @@ DialogUi, _ = loadUiType(
 class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
     """Dialog for handling items selection"""
 
-    def __init__(self, parent, layer=None):
+    def __init__(self, parent, layer=None, models=[]):
         """Constructor"""
         super().__init__()
         self.setupUi(self)
         self.parent = parent
         self.layer = layer
+        self.models = models
 
         select_all_btn = QtWidgets.QPushButton(tr("Select All"))
         select_all_btn.setToolTip(tr("Select the all listed items"))
@@ -53,12 +54,14 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
             item = self.list_widget.item(index)
             model_uuid = item.data(QtCore.Qt.UserRole)
             model = settings_manager.get_implementation_model(str(model_uuid))
+
+            layer_model_uuids = [model.uuid for model in self.models]
             model_layer_uuids = [layer.get("uuid") for layer in model.priority_layers]
 
             if (
                 self.layer is not None
                 and str(self.layer.get("uuid")) in model_layer_uuids
-            ):
+            ) or (model.uuid in layer_model_uuids):
                 item.setCheckState(QtCore.Qt.Checked)
 
     def set_items(self):

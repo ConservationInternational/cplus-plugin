@@ -123,7 +123,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
 
     def open_layer_select_dialog(self):
         """Opens priority layer item selection dialog"""
-        model_select_dialog = ItemsSelectionDialog(self, self.layer)
+        model_select_dialog = ItemsSelectionDialog(self, self.layer, self.models)
         model_select_dialog.exec_()
 
     def set_selected_models(self, models, removed_models=[]):
@@ -144,6 +144,9 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         models_names = [model.name for model in models]
         self.selected_models_le.setText(" , ".join(models_names))
 
+        if not self.layer:
+            return
+
         for model in models:
             models_layer_uuids = [
                 str(layer.get("uuid")) for layer in model.priority_layers
@@ -160,7 +163,9 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         """Handles logic for adding new priority layer and edit existing one"""
         layer_id = uuid.uuid4()
         layer = {}
+        update_models = True
         if self.layer is not None:
+            update_models = False
             layer_id = self.layer.get("uuid")
 
         layer["uuid"] = str(layer_id)
@@ -173,6 +178,11 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
             layer["path"] = self.map_layer_file_widget.filePath()
 
         settings_manager.save_priority_layer(layer)
+
+        if update_models:
+            self.layer = layer
+            self.set_selected_models(self.models)
+
         super().accept()
 
     def open_help(self):
