@@ -706,10 +706,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.position_feedback.progressChanged.connect(self.update_progress_bar)
 
             for model in self.analysis_implementation_models:
-                if model.layer:
-                    raster_layer = model.layer
-                    if isinstance(model.layer, str):
-                        raster_layer = QgsRasterLayer(model.layer, model.name)
+                if model.path is not None and model.path is not "":
+                    raster_layer = QgsRasterLayer(model.path, model.name)
                     layers[model.name] = (
                         raster_layer if raster_layer is not None else None
                     )
@@ -860,7 +858,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         pathways = []
 
         for model in models:
-            if not model.pathways or model.layer is None:
+            if not model.pathways and (model.path is None and model.path is ""):
                 self.show_message(
                     tr(
                         f"No defined model pathways or a"
@@ -1062,7 +1060,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             basenames = []
             layers = []
-            if not model.pathways or model.layer is None:
+            if not model.pathways and (model.path is None and model.path is ""):
                 self.show_message(
                     tr(
                         f"No defined model pathways or a"
@@ -1077,8 +1075,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 main_task.cancel()
                 return False
 
-            if model.layer is not None:
-                shutil.copy(str(model.layer.source()), new_ims_directory)
+            if model.path is not None and model.path is not "":
+                shutil.copy(str(model.path), new_ims_directory)
 
             output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
 
@@ -1163,7 +1161,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type output: dict
         """
         if output is not None and output.get("OUTPUT") is not None:
-            model.layer = QgsRasterLayer(output.get("OUTPUT"), model.name)
+            model.path = output.get("OUTPUT")
 
         if model_index == len(models) - 1:
             self.run_normalization_analysis(models, priority_layers_groups, extent)
@@ -1200,18 +1198,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.progress_dialog.scenario_name = tr("implementation models")
 
         for model in models:
-            if not model.layer:
-                log(f"There is no raster layer for the model {model.name}")
+            if model.path is None and model.path is "":
+                log(f"There is no map layer for the model {model.name}")
                 self.show_message(
                     tr(
                         f"Problem when running models normalization, "
-                        f"there is no raster layer for the model {model.name}"
+                        f"there is no map layer for the model {model.name}"
                     ),
                     level=Qgis.Critical,
                 )
                 log(
                     f"Problem when running models normalization, "
-                    f"there is no raster layer for the model {model.name}"
+                    f"there is no map layer for the model {model.name}"
                 )
                 main_task.cancel()
                 return False
@@ -1224,16 +1222,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
 
-            provider = model.layer.dataProvider()
+            model_layer = QgsRasterLayer(model.path, model.name)
+            provider = model_layer.dataProvider()
             band_statistics = provider.bandStatistics(1)
 
             min_value = band_statistics.minimumValue
             max_value = band_statistics.maximumValue
 
-            layer_source = model.layer.source()
-            layer_name = Path(layer_source).stem
+            layer_name = Path(model.path).stem
 
-            layers.append(layer_source)
+            layers.append(model.path)
 
             carbon_coefficient = float(
                 settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.0)
@@ -1321,7 +1319,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type output: dict
         """
         if output is not None and output.get("OUTPUT") is not None:
-            model.layer = QgsRasterLayer(output.get("OUTPUT"), model.name)
+            model.path = output.get("OUTPUT")
 
         if model_index == len(models) - 1:
             self.run_priority_analysis(models, priority_layers_groups, extent)
@@ -1355,18 +1353,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.progress_dialog.scenario_name = tr(f"implementation models")
 
         for model in models:
-            if model.layer is None:
-                log(f"There is no raster layer for the model {model.name}")
+            if model.path is None and model.path is "":
+                log(f"There is no map layer for the model {model.name}")
                 self.show_message(
                     tr(
                         f"Problem when running models weighting, "
-                        f"there is no raster layer for the model {model.name}"
+                        f"there is no map layer for the model {model.name}"
                     ),
                     level=Qgis.Critical,
                 )
                 log(
                     f"Problem when running models normalization, "
-                    f"there is no raster layer for the model {model.name}"
+                    f"there is no map layer for the model {model.name}"
                 )
                 main_task.cancel()
 
@@ -1377,8 +1375,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             analysis_done = partial(
                 self.priority_layers_analysis_done, model_count, model, models
             )
-            layers.append(model.layer.source())
-            basenames.append(f'"{Path(model.layer.source()).stem}@1"')
+            layers.append(model.path)
+            basenames.append(f'"{Path(model.path).stem}@1"')
+
+            if not any(priority_layers_groups):
+                log(
+                    f"There are defined priority layers in groups,"
+                    f" skipping models weighting step."
+                )
+                self.run_scenario_analysis()
+                return
 
             if model.priority_layers is None or model.priority_layers is []:
                 log(
@@ -1490,7 +1496,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type output: dict
         """
         if output is not None and output.get("OUTPUT") is not None:
-            model.layer = QgsRasterLayer(output.get("OUTPUT"), model.name)
+            model.path = output.get("OUTPUT")
 
         if model_index == len(models) - 1:
             self.run_scenario_analysis()
@@ -1557,7 +1563,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if not self.processing_cancelled:
             raster = scenario_result.analysis_output["OUTPUT"]
             im_weighted_dir = os.path.dirname(raster) + "/weighted_ims/"
-            list_weighted_ims = os.listdir(im_weighted_dir)
+            list_weighted_ims = (
+                os.listdir(im_weighted_dir) if os.path.exists(im_weighted_dir) else []
+            )
 
             scenario_name = scenario_result.scenario.name
             qgis_instance = QgsProject.instance()
@@ -1580,12 +1588,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             # Groups
             scenario_group = instance_root.insertGroup(0, group_name)
             im_group = scenario_group.addGroup(tr(IM_GROUP_LAYER_NAME))
-            im_weighted_group = scenario_group.addGroup(tr(IM_WEIGHTED_GROUP_NAME))
+            im_weighted_group = (
+                scenario_group.addGroup(tr(IM_WEIGHTED_GROUP_NAME))
+                if os.path.exists(im_weighted_dir)
+                else None
+            )
             pathways_group = scenario_group.addGroup(tr(NCS_PATHWAYS_GROUP_LAYER_NAME))
 
             # Group settings
             im_group.setExpanded(False)
-            im_weighted_group.setExpanded(False)
+            im_weighted_group.setExpanded(False) if im_weighted_group else None
             pathways_group.setExpanded(False)
             pathways_group.setItemVisibilityCheckedRecursive(False)
 
@@ -1616,7 +1628,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             im_index = 0
             for im in list_models:
                 im_name = im.name
-                im_layer = im.layer
+                im_layer = QgsRasterLayer(im.path, im.name)
                 list_pathways = im.pathways
 
                 # Add IM layer with styling, if available
