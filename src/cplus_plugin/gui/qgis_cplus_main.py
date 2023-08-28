@@ -5,6 +5,7 @@
 """
 
 import os
+import typing
 import uuid
 
 import datetime
@@ -27,6 +28,7 @@ from qgis.core import (
     QgsApplication,
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransform,
+    QgsFeedback,
     QgsGeometry,
     QgsProject,
     QgsProcessing,
@@ -47,7 +49,6 @@ from qgis.gui import (
 
 from qgis.utils import iface
 
-from .component_item_model import ImplementationModelItem
 from .implementation_model_widget import ImplementationModelContainerWidget
 from .priority_group_widget import PriorityGroupWidget
 
@@ -137,6 +138,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.rpm = report_manager
         self.rpm.generate_started.connect(self.on_report_running)
         self.rpm.generate_completed.connect(self.on_report_finished)
+        self.reporting_feedback: typing.Union[QgsFeedback, None] = None
 
     def prepare_input(self):
         """Initializes plugin input widgets"""
@@ -1397,8 +1399,22 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             qgis_instance = QgsProject.instance()
             instance_root = qgis_instance.layerTreeRoot()
 
+            # Check if there are other groups for the scenario
+            # and assign a suffix.
+            counter = 1
+            group_name = scenario_name
+
+            # Control to prevent infinite loop
+            max_limit = 100
+            while True and counter <= max_limit:
+                scenario_grp = instance_root.findGroup(group_name)
+                if scenario_grp is None:
+                    break
+                group_name = f"{scenario_name} {counter!s}"
+                counter += 1
+
             # Groups
-            scenario_group = instance_root.insertGroup(0, scenario_name)
+            scenario_group = instance_root.insertGroup(0, group_name)
             im_group = scenario_group.addGroup(tr(IM_GROUP_LAYER_NAME))
             im_weighted_group = scenario_group.addGroup(tr(IM_WEIGHTED_GROUP_NAME))
             pathways_group = scenario_group.addGroup(tr(NCS_PATHWAYS_GROUP_LAYER_NAME))
@@ -1415,6 +1431,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 f"{SCENARIO_OUTPUT_LAYER_NAME}_"
                 f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
             )
+            scenario_result.output_layer_name = layer_name
             layer = QgsRasterLayer(layer_file, layer_name, QGIS_GDAL_PROVIDER)
             layer.loadNamedStyle(LAYER_STYLES["scenario_result"])
             scenario_layer = qgis_instance.addMapLayer(layer)
@@ -1461,7 +1478,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     for pathway in list_pathways:
                         try:
                             # pathway_name = pathway.name
-                            pathway_layer = pathway.layer
+                            pathway_layer = pathway.to_map_layer()
 
                             added_pw_layer = qgis_instance.addMapLayer(pathway_layer)
                             self.move_layer_to_group(added_pw_layer, im_pathway_group)
@@ -1627,7 +1644,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             return
 
-        submit_result = self.rpm.generate(self.scenario_result)
+        self.reset_reporting_feedback()
+
+        submit_result = self.rpm.generate(self.scenario_result, self.reporting_feedback)
         if not submit_result.status:
             msg = self.tr("Unable to submit report request for scenario")
             self.show_message(f"{msg} {self.scenario_result.scenario.name}.")
@@ -1637,9 +1656,31 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if not self.report_job_is_for_current_scenario(scenario_id):
             return
 
+        self.progress_dialog.update_progress_bar(0)
+        self.progress_dialog.report_running = True
         self.progress_dialog.change_status_message(
             tr("Generating report"), tr("scenario")
         )
+
+    def reset_reporting_feedback(self):
+        """Creates a new reporting feedback object and reconnects
+        the signals.
+
+        We are doing this to address cases where the feedback is canceled
+        and the same object has to be reused for subsequent report
+        generation tasks.
+        """
+        if self.reporting_feedback is not None:
+            self.reporting_feedback.progressChanged.disconnect()
+
+        self.reporting_feedback = QgsFeedback(self)
+        self.reporting_feedback.progressChanged.connect(
+            self.on_reporting_progress_changed
+        )
+
+    def on_reporting_progress_changed(self, progress: float):
+        """Slot raised when the reporting progress has changed."""
+        self.progress_dialog.update_progress_bar(progress)
 
     def on_report_finished(self, scenario_id: str):
         """Slot raised when report task has finished."""
