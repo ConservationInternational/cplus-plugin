@@ -359,6 +359,9 @@ def initialize_model_settings():
         # Create priority weighting layers subdirectory
         FileUtils.create_pwls_dir(base_dir)
 
+    # Check if carbon coefficient has been defined
+    carbon_coefficient = settings_manager.get_value(Settings.CARBON_COEFFICIENT, 0)
+
     # Add default pathways
     for ncs_dict in DEFAULT_NCS_PATHWAYS:
         try:
