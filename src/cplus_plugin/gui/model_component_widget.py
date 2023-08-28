@@ -231,11 +231,6 @@ class NcsComponentWidget(ModelComponentWidget):
         self.lst_model_items.setDragDropMode(QtWidgets.QAbstractItemView.DragOnly)
         self.lst_model_items.setAcceptDrops(False)
 
-        # Disable add, edit, remove controls for now
-        self.btn_add.setEnabled(False)
-        self.btn_remove.setEnabled(False)
-        self.btn_edit.setEnabled(False)
-
     def add_ncs_pathway(self, ncs_pathway: NcsPathway) -> bool:
         """Adds an NCS pathway object to the view.
 

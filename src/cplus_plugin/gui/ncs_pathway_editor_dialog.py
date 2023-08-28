@@ -10,8 +10,7 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
-from qgis.core import QgsApplication
-
+from ..definitions.defaults import ICON_PATH
 from ..models.base import LayerType, NcsPathway
 from ..utils import FileUtils
 
@@ -27,20 +26,33 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         super().__init__(parent)
         self.setupUi(self)
 
-        self.rb_map_canvas.toggled.connect(self._on_select_map_canvas)
-        self.rb_upload.toggled.connect(self._on_upload_from_file)
         self.buttonBox.accepted.connect(self._on_accepted)
+
+        icon_pixmap = QtGui.QPixmap(ICON_PATH)
+        self.icon_la.setPixmap(icon_pixmap)
+
+        help_icon = FileUtils.get_icon("mActionHelpContents.svg")
+        self.btn_help.setIcon(help_icon)
+
+        add_icon = FileUtils.get_icon("symbologyAdd.svg")
+        self.btn_add_carbon.setIcon(add_icon)
+        # self.btn_add_carbon.clicked.connect(self._on_add_carbon_layer)
+
+        remove_icon = FileUtils.get_icon("symbologyRemove.svg")
+        self.btn_delete_carbon.setIcon(remove_icon)
+        self.btn_delete_carbon.setEnabled(False)
+        # self.btn_delete_carbon.clicked.connect(self._on_remove_carbon_layer)
+
+        edit_icon = FileUtils.get_icon("mActionToggleEditing.svg")
+        self.btn_edit_carbon.setIcon(edit_icon)
+        self.btn_edit_carbon.setEnabled(False)
+        # self.btn_edit_carbon.clicked.connect(self._on_edit_carbon_layer)
 
         self._edit_mode = False
         self._ncs_pathway = ncs_pathway
         if self._ncs_pathway is not None:
             self._update_controls()
             self._edit_mode = True
-
-        help_icon = FileUtils.get_icon("mActionHelpContents.svg")
-        self.btn_help.setIcon(help_icon)
-
-        self.rb_map_canvas.setChecked(True)
 
     @property
     def ncs_pathway(self) -> NcsPathway:
@@ -67,7 +79,7 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             return
 
         self.txt_name.setText(self._ncs_pathway.name)
-        self.txt_description.setText(self._ncs_pathway.description)
+        self.txt_description.setPlainText(self._ncs_pathway.description)
 
     def validate(self) -> bool:
         """Validates if name and layer have been specified.
@@ -79,8 +91,6 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         if not self.txt_name.text():
             status = False
-
-        # TODO: Add layer validation
 
         return status
 
@@ -98,7 +108,7 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         else:
             # Update mode
             self._ncs_pathway.name = self.txt_name.text()
-            self._ncs_pathway.description = self.txt_description.text()
+            self._ncs_pathway.description = self.txt_description.toPlainText()
 
     def _on_accepted(self):
         """Validates user input before closing."""
@@ -107,17 +117,3 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self._create_update_ncs_pathway()
         self.accept()
-
-    def _on_select_map_canvas(self, toggled):
-        """Slot raised when radio button for choosing map layer
-        from map canvas has been selected.
-        """
-        if toggled:
-            self.stackedWidget.setCurrentIndex(0)
-
-    def _on_upload_from_file(self, toggled):
-        """ "Slot raised when radio button for uploading map layer from f
-        ile has been selected.
-        """
-        if toggled:
-            self.stackedWidget.setCurrentIndex(1)
