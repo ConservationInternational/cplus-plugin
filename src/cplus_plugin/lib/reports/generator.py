@@ -887,7 +887,7 @@ class ReportGenerator:
         for imp_model in self._context.scenario.models:
             name_cell = QgsTableCell(imp_model.name)
             name_cell.setBackgroundColor(QtGui.QColor("#e9e9e9"))
-            layer = imp_model.layer
+            layer = QgsRasterLayer(imp_model.path, imp_model.name)
             if layer is None:
                 area_info = tr("No area <Error in layer>")
             else:
