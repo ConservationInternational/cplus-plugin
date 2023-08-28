@@ -29,7 +29,7 @@ from .implementation_model_editor_dialog import ImplementationModelEditorDialog
 from .model_description_editor import ModelDescriptionEditorDialog
 from .ncs_pathway_editor_dialog import NcsPathwayEditorDialog
 from ..models.base import ImplementationModel, NcsPathway
-from ..utils import FileUtils
+from ..utils import FileUtils, log
 
 
 WidgetUi, _ = loadUiType(
