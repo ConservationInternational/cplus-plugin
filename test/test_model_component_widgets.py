@@ -113,7 +113,7 @@ class TestImplementationModelComponentWidget(TestCase):
         ncs = get_valid_ncs_pathway()
         ncs_item = NcsPathwayItem(ncs)
         result = im_widget.add_ncs_pathway_items([ncs_item])
-        self.assertFalse(result)
+        self.assertTrue(result)
 
     def test_cannot_add_ncs_pathway_items(self):
         """Assert ncsPathwayItem objects cannot be added to the

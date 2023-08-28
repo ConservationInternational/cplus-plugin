@@ -160,9 +160,9 @@ def create_implementation_model(source_dict) -> typing.Union[ImplementationModel
     :rtype: ImplementationModel
     """
     implementation_model = create_layer_component(source_dict, ImplementationModel)
-    pwls_paths_attr = "pwls_paths"
-    if pwls_paths_attr in source_dict.keys():
-        implementation_model.pwls_paths = source_dict["pwls_paths"]
+    priority_layers_attr = "priority_layers"
+    if priority_layers_attr in source_dict.keys():
+        implementation_model.priority_layers = source_dict["priority_layers"]
 
     return implementation_model
 
@@ -250,11 +250,6 @@ def clone_layer_component(
 
     for f in fields(layer_component):
         attr_val = getattr(layer_component, f.name)
-
-        # Clone map layer
-        if f.name == "layer" and attr_val is not None:
-            attr_val = attr_val.clone()
-
         setattr(cloned_component, f.name, attr_val)
 
     return cloned_component
@@ -262,8 +257,10 @@ def clone_layer_component(
 
 def clone_ncs_pathway(ncs: NcsPathway) -> NcsPathway:
     """Creates a deep copy of the given NCS pathway.
+
     :param ncs: NCS pathway to clone.
     :type ncs: NcsPathway
+
     :returns: A deep copy of the original NCS pathway object.
     :rtype: NcsPathway
     """
@@ -274,8 +271,10 @@ def clone_implementation_model(
     implementation_model: ImplementationModel,
 ) -> ImplementationModel:
     """Creates a deep copy of the given implementation model.
+
     :param implementation_model: Implementation model to clone.
     :type implementation_model: ImplementationModel
+
     :returns: A deep copy of the original implementation model object.
     :rtype: ImplementationModel
     """

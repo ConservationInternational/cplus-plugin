@@ -26,9 +26,10 @@ from .component_item_model import (
 )
 from ..conf import settings_manager
 from .implementation_model_editor_dialog import ImplementationModelEditorDialog
+from .model_description_editor import ModelDescriptionEditorDialog
 from .ncs_pathway_editor_dialog import NcsPathwayEditorDialog
 from ..models.base import ImplementationModel, NcsPathway
-from ..utils import FileUtils
+from ..utils import FileUtils, log
 
 
 WidgetUi, _ = loadUiType(
@@ -65,6 +66,11 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
         self.btn_reload.setIcon(reload_icon)
         self.btn_reload.setToolTip(self.tr("Refresh view"))
         self.btn_reload.clicked.connect(self._on_reload)
+
+        self.btn_edit_description.setIcon(edit_icon)
+        self.btn_edit_description.setToolTip(self.tr("Edit description"))
+        self.btn_edit_description.setEnabled(False)
+        self.btn_edit_description.clicked.connect(self._on_update_description)
 
     @property
     def item_model(self) -> ComponentItemModelType:
@@ -144,6 +150,34 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
         """
         pass
 
+    def _on_update_description(self):
+        """Slot raised to edit the currently selected item."""
+        sel_items = self.selected_items()
+        if len(sel_items) == 0:
+            return
+
+        reference_item = sel_items[0]
+        description_editor = ModelDescriptionEditorDialog(
+            self, reference_item.description
+        )
+        title_tr = self.tr("Description Editor")
+        description_editor.setWindowTitle(
+            f"{reference_item.model_component.name} {title_tr}"
+        )
+        if description_editor.exec_() == QtWidgets.QDialog.Accepted:
+            updated_description = description_editor.description
+            reference_item.model_component.description = updated_description
+            self.txt_item_description.setText(updated_description)
+            self._save_item(reference_item)
+
+    def _save_item(self, item: ComponentItemModelType):
+        """Persist the changes in the underlying model for the given item.
+
+        To be implemented by child classes as default implementation does
+        nothing.
+        """
+        pass
+
     def set_description(self, description: str):
         """Updates the text for the selected item.
 
@@ -176,6 +210,7 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
         """Update UI properties on selection changed."""
         self.btn_remove.setEnabled(True)
         self.btn_edit.setEnabled(True)
+        self.btn_edit_description.setEnabled(True)
 
         # Remove description and disable edit and remove buttons if
         # more than one item has been selected.
@@ -184,6 +219,7 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
             self.clear_description()
             self.btn_remove.setEnabled(False)
             self.btn_edit.setEnabled(False)
+            self.btn_edit_description.setEnabled(False)
             return
 
         if not isinstance(selected_items[0], ModelComponentItem):
@@ -296,6 +332,12 @@ class NcsComponentWidget(ModelComponentWidget):
             self.item_model.update_ncs_pathway(ncs_pathway)
             self._update_ui_on_selection_changed()
 
+    def _save_item(self, item: NcsPathwayItem):
+        """Update the NCS pathway in settings."""
+        cloned_ncs_item = item.clone()
+        cloned_ncs = cloned_ncs_item.ncs_pathway
+        settings_manager.update_ncs_pathway(cloned_ncs)
+
     def _on_remove_item(self):
         """Delete NcsPathway object."""
         selected_items = self.selected_items()
@@ -337,6 +379,8 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        self._saved_ims = settings_manager.get_all_implementation_models()
+
         self.item_model = IMItemModel(parent)
         self.item_model.im_pathways_updated.connect(self.on_pathways_updated)
 
@@ -360,9 +404,7 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         """Slot raised when the pathways of an ImplementationModelItem
         have been added or removed. Persist this information in settings.
         """
-        cloned_im_item = im_item.clone()
-        cloned_im = cloned_im_item.implementation_model
-        settings_manager.update_implementation_model(cloned_im)
+        self._save_item(im_item)
 
     def model_items(self) -> typing.List[ImplementationModelItem]:
         """Returns a collection of all ImplementationModelItem objects
@@ -384,8 +426,7 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         """Load implementation models from settings."""
         self.clear()
 
-        imp_models = settings_manager.get_all_implementation_models()
-        for imp_model in imp_models:
+        for imp_model in self._saved_ims:
             self.add_implementation_model(imp_model)
 
     def _on_add_item(self):
@@ -411,8 +452,14 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
             layer = editor.layer
             result = self.item_model.update_implementation_model(model, layer)
             if result:
-                settings_manager.update_implementation_model(model)
+                self._save_item(item)
             self._update_ui_on_selection_changed()
+
+    def _save_item(self, item: ImplementationModelItem):
+        """Update the underlying IM in the item in settings."""
+        cloned_im_item = item.clone()
+        cloned_im = cloned_im_item.implementation_model
+        settings_manager.update_implementation_model(cloned_im)
 
     def _on_remove_item(self):
         """Delete implementation model object."""
@@ -542,5 +589,7 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
 
         item = selected_items[0]
         self.btn_edit.setEnabled(False)
+        self.btn_edit_description.setEnabled(False)
         if item.type() == IMPLEMENTATION_MODEL_TYPE:
             self.btn_edit.setEnabled(True)
+            self.btn_edit_description.setEnabled(True)

@@ -399,13 +399,6 @@ PRIORITY_LAYERS = [
         "path": "Herding_4_Health_mtrends_re.tif",
     },
     {
-        "uuid": "ff66420e-d5ff-4869-97d9-021cc90d7a1a",
-        "name": "Assisted_Nat_Regen_carbonimpact",
-        "description": "Placeholder text for Assisted_Nat_Regen_carbonimpact",
-        "selected": False,
-        "path": "Assisted_Nat_Regen_carbonimpact.tif",
-    },
-    {
         "uuid": "9291a5d9-d1cd-44c2-8fc3-2b3b20f80572",
         "name": "Alien_Plant_Removal_mtrends_re",
         "description": "Placeholder text for Alien_Plant_Removal_mtrends_re",
@@ -639,12 +632,12 @@ DEFAULT_IMPLEMENTATION_MODELS = [
         "sustainable land management, biodiversity conservation, "
         "soil health improvement, and diversified income "
         "sources for farmers.",
-        "pwls_paths": [
-            "social_int_clip_norm.tif",
-            "cccombo_clip_norm.tif",
-            "ei_all_gknp_clip_norm.tif",
-            "biocombine_clip_norm.tif",
-            "Policy.tif",
+        "pwls_ids": [
+            "c931282f-db2d-4644-9786-6720b3ab206a",
+            "fce41934-5196-45d5-80bd-96423ff0e74e",
+            "88c1c7dd-c5d1-420c-a71c-a5c595c1c5be",
+            "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
+            "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
     },
     {
@@ -656,14 +649,14 @@ DEFAULT_IMPLEMENTATION_MODELS = [
         "By eradicating these plants, natural "
         "habitats can be restored, allowing "
         "native flora and fauna to thrive.",
-        "pwls_paths": [
-            "social_int_clip_norm.tif",
-            "ei_all_gknp_clip_norm.tif",
-            "biocombine_clip_norm.tif",
-            "Policy.tif",
-            "Alien_Plant_Removal_years_re.tif",
-            "Alien_Plant_Removal_carbonimpact_re.tif",
-            "Alien_Plant_Removal_mtrends_re.tif",
+        "pwls_ids": [
+            "c931282f-db2d-4644-9786-6720b3ab206a",
+            "88c1c7dd-c5d1-420c-a71c-a5c595c1c5be",
+            "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
+            "2f76304a-bb73-442c-9c02-ff9945389a20",
+            "3c155210-ccd8-404b-bbe8-b1433d6158a2",
+            "9f6c8b8f-0648-44ca-b943-58fab043f559",
+            "9291a5d9-d1cd-44c2-8fc3-2b3b20f80572",
         ],
     },
     {
@@ -679,11 +672,11 @@ DEFAULT_IMPLEMENTATION_MODELS = [
         "other ecological processes, ultimately "
         "leading to the regeneration of the "
         "surrounding landscape.",
-        "pwls_paths": [
-            "social_int_clip_norm.tif",
-            "cccombo_clip_norm.tif",
-            "biocombine_clip_norm.tif",
-            "Policy.tif",
+        "pwls_ids": [
+            "c931282f-db2d-4644-9786-6720b3ab206a",
+            "fce41934-5196-45d5-80bd-96423ff0e74e",
+            "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
+            "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
     },
     {
@@ -699,15 +692,15 @@ DEFAULT_IMPLEMENTATION_MODELS = [
         "as removing competing vegetation, "
         "protecting young seedlings, and "
         "restoring ecosystem functions.",
-        "pwls_paths": [
-            "cccombo_clip_norm.tif",
-            "ei_all_gknp_clip_norm.tif",
-            "biocombine_clip_norm.tif",
-            "Policy.tif",
-            "Assisted_Nat_Regen_years.tif",
-            "Assisted_Nat_Regen_carbonimpact.tif",
-            "Assisted_Nat_Regen_NPV_re.tif",
-            "Assisted_Nat_Regen_mtrends_re.tif",
+        "pwls_ids": [
+            "fce41934-5196-45d5-80bd-96423ff0e74e",
+            "88c1c7dd-c5d1-420c-a71c-a5c595c1c5be",
+            "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
+            "2f76304a-bb73-442c-9c02-ff9945389a20",
+            "85cd441e-fa3d-46e4-add9-973ba58f8bd4",
+            "5e41f4fa-3d7f-41aa-bee7-b9e9d08b56db",
+            "86c3dfc5-58d7-4ebd-a851-3b65a6bf5edd",
+            "620d5d7d-c452-498f-b848-b206a76891cd",
         ],
     },
     {
@@ -722,12 +715,12 @@ DEFAULT_IMPLEMENTATION_MODELS = [
         "forests, preserving their "
         "biodiversity, carbon sequestration "
         "potential, and ecosystem services.",
-        "pwls_paths": [
-            "social_int_clip_norm_inverse.tif",
-            "cccombo_clip_norm.tif",
-            "ei_all_gknp_clip_norm.tif",
-            "biocombine_clip_norm.tif",
-            "Policy.tif",
+        "pwls_ids": [
+            "f5687ced-af18-4cfc-9bc3-8006e40420b6",
+            "fce41934-5196-45d5-80bd-96423ff0e74e",
+            "88c1c7dd-c5d1-420c-a71c-a5c595c1c5be",
+            "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
+            "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
     },
     {
@@ -742,12 +735,12 @@ DEFAULT_IMPLEMENTATION_MODELS = [
         "frameworks, and restoration efforts, "
         "to safeguard the ecological functions "
         "and biodiversity of wetland habitats",
-        "pwls_paths": [
-            "social_int_clip_norm_inverse.tif",
-            "cccombo_clip_norm.tif",
-            "ei_all_gknp_clip_norm.tif",
-            "biocombine_clip_norm.tif",
-            "Policy.tif",
+        "pwls_ids": [
+            "f5687ced-af18-4cfc-9bc3-8006e40420b6",
+            "fce41934-5196-45d5-80bd-96423ff0e74e",
+            "88c1c7dd-c5d1-420c-a71c-a5c595c1c5be",
+            "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
+            "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
     },
     {
@@ -762,15 +755,15 @@ DEFAULT_IMPLEMENTATION_MODELS = [
         "and bio-based materials, to reduce "
         "reliance on fossil fuels and promote "
         "a more sustainable economy.",
-        "pwls_paths": [
-            "social_int_clip_norm.tif",
-            "cccombo_clip_norm_inverse.tif",
-            "biocombine_clip_norm.tif",
-            "Policy.tif",
-            "Wattle_Naturally_years_re.tif",
-            "Wattle_Naturally_carbonimpact_re.tif",
-            "Wattle_Naturally_NPV.tif",
-            "Wattle_Naturally_mtrends_re.tif",
+        "pwls_ids": [
+            "c931282f-db2d-4644-9786-6720b3ab206a",
+            "fef3c7e4-0cdf-477f-823b-a99da42f931e",
+            "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
+            "2f76304a-bb73-442c-9c02-ff9945389a20",
+            "fb92cac1-7744-4b11-8238-4e1da97650e0",
+            "9e5cff3f-73e7-4734-b76a-2a9f0536fa27",
+            "c5b1b81e-e1ae-41ec-adeb-7388f7597156",
+            "3872be6d-f791-41f7-b031-b85173e41d5e",
         ],
     },
     {
@@ -783,15 +776,15 @@ DEFAULT_IMPLEMENTATION_MODELS = [
         "regrowth of grass. This practice helps "
         "restore natural balance, prevent "
         "overgrowth, and enhance biodiversity.",
-        "pwls_paths": [
-            "social_int_clip_norm.tif",
-            "cccombo_clip_norm_inverse.tif",
-            "biocombine_clip_norm.tif",
-            "Policy.tif",
-            "Bush_Thinning_years_re.tif",
-            "Bush_Thinning_carbonimpact.tif",
-            "Bush_Thinning_NPV_re.tif",
-            "Bush_Thinning_mtrends_re.tif",
+        "pwls_ids": [
+            "c931282f-db2d-4644-9786-6720b3ab206a",
+            "fef3c7e4-0cdf-477f-823b-a99da42f931e",
+            "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
+            "2f76304a-bb73-442c-9c02-ff9945389a20",
+            "e1a801c5-7f77-4746-be34-0138b62ff25c",
+            "478b0729-a507-4729-b1e4-b2bea7e161fd",
+            "5f329f53-31ff-4039-b0ec-a8d174a50866",
+            "5bcebbe2-7035-4d81-9817-0b4db8aa63e2",
         ],
     },
     {
@@ -805,11 +798,11 @@ DEFAULT_IMPLEMENTATION_MODELS = [
         "friendly approach to reforestation and "
         "afforestation efforts, promoting forest "
         "restoration and carbon sequestration.",
-        "pwls_paths": [
-            "cccombo_clip_norm.tif",
-            "ei_all_gknp_clip_norm.tif",
-            "biocombine_clip_norm.tif",
-            "Policy.tif",
+        "pwls_ids": [
+            "fce41934-5196-45d5-80bd-96423ff0e74e",
+            "88c1c7dd-c5d1-420c-a71c-a5c595c1c5be",
+            "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
+            "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
     },
     {
@@ -823,15 +816,15 @@ DEFAULT_IMPLEMENTATION_MODELS = [
         "grazing strategies that promote "
         "biodiversity, soil health, and "
         "sustainable land use.",
-        "pwls_paths": [
-            "social_int_clip_norm.tif",
-            "ei_all_gknp_clip_norm.tif",
-            "biocombine_clip_norm.tif",
-            "Policy.tif",
-            "Herding_4_Health_years.tif",
-            "Herding_4_Health_carbonimpact_re.tif",
-            "Herding_4_Health_NPV_re.tif",
-            "Herding_4_Health_mtrends_re.tif",
+        "pwls_ids": [
+            "c931282f-db2d-4644-9786-6720b3ab206a",
+            "88c1c7dd-c5d1-420c-a71c-a5c595c1c5be",
+            "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
+            "2f76304a-bb73-442c-9c02-ff9945389a20",
+            "fee0b421-805b-4bd9-a629-06586a760405",
+            "38a33633-9198-4b55-a424-135a4d522973",
+            "88dc8ff3-e61f-4a48-8f9b-5791efb6603f",
+            "a1bfff8e-fb87-4bca-97fa-a984d9bde712",
         ],
     },
     {
@@ -846,11 +839,11 @@ DEFAULT_IMPLEMENTATION_MODELS = [
         "livestock products, promoting economic "
         "viability and incentivizing environmentally "
         "friendly practices.",
-        "pwls_paths": [
-            "social_int_clip_norm.tif",
-            "ei_all_gknp_clip_norm.tif",
-            "biocombine_clip_norm.tif",
-            "Policy.tif",
+        "pwls_ids": [
+            "c931282f-db2d-4644-9786-6720b3ab206a",
+            "88c1c7dd-c5d1-420c-a71c-a5c595c1c5be",
+            "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
+            "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
     },
     {
@@ -864,12 +857,12 @@ DEFAULT_IMPLEMENTATION_MODELS = [
         "and regeneration of native woodlands, "
         "ensuring ecological integrity while "
         "meeting livestock production goals.",
-        "pwls_paths": [
-            "social_int_clip_norm.tif",
-            "cccombo_clip_norm.tif",
-            "ei_all_gknp_clip_norm.tif",
-            "biocombine_clip_norm.tif",
-            "Policy.tif",
+        "pwls_ids": [
+            "c931282f-db2d-4644-9786-6720b3ab206a",
+            "fce41934-5196-45d5-80bd-96423ff0e74e",
+            "88c1c7dd-c5d1-420c-a71c-a5c595c1c5be",
+            "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
+            "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
     },
     {
@@ -886,15 +879,15 @@ DEFAULT_IMPLEMENTATION_MODELS = [
         "resource-efficient manner, reducing "
         "water usage and chemical inputs while "
         "maximizing productivity.",
-        "pwls_paths": [
-            "social_int_clip_norm_inverse.tif",
-            "cccombo_clip_norm.tif",
-            "biocombine_clip_norm.tif",
-            "Policy.tif",
-            "Eat_Fresh_years.tif",
-            "Eat_Fresh_carbonimpact_re.tif",
-            "Eat_Fresh_NPV.tif",
-            "Eat_Fresh_mtrends.tif",
+        "pwls_ids": [
+            "f5687ced-af18-4cfc-9bc3-8006e40420b6",
+            "fce41934-5196-45d5-80bd-96423ff0e74e",
+            "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
+            "2f76304a-bb73-442c-9c02-ff9945389a20",
+            "6f7c1494-f73e-4e5e-8411-59676f9fa6e1",
+            "151668e7-8ffb-4766-9534-09949ab0356b",
+            "ed1ee71b-e7db-4599-97a9-a97c941a615f",
+            "307df1f4-206b-4f70-8db4-6505948e2a4e",
         ],
     },
 ]

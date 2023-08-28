@@ -404,24 +404,11 @@ def initialize_model_settings():
             imp_model_uuid = imp_model_dict["uuid"]
             imp_model = settings_manager.get_implementation_model(imp_model_uuid)
             if imp_model is None:
-                # Update dir
-                # base_dir = settings_manager.get_value(Settings.BASE_DIR, None)
-                # if base_dir is not None:
-                #     # Priority layers location
-                #     pwl_file_names = imp_model_dict["pwls_paths"]
-                #     abs_pwls_paths = []
-                #     for pwl_file_name in pwl_file_names:
-                #         abs_pwl_path = (
-                #             f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/{pwl_file_name}"
-                #         )
-                #         norm_pwl_path = str(os.path.normpath(abs_pwl_path))
-                #         abs_pwls_paths.append(norm_pwl_path)
-                #     imp_model_dict["pwls_paths"] = abs_pwls_paths
-
                 settings_manager.save_implementation_model(imp_model_dict)
             else:
                 pathways = imp_model.pathways
                 # Update values
+                imp_model_dict["priority_layers"] = imp_model.priority_layers
                 source_im = create_implementation_model(imp_model_dict)
                 if source_im is None:
                     continue

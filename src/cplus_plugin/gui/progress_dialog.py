@@ -48,6 +48,7 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         self.scenario_name = scenario_name
         self.scenario_id = ""
         self.main_widget = main_widget
+        self.report_manager = report_manager
 
         # Dialog window options
         self.setWindowIcon(QIcon(ICON_PATH))
@@ -59,6 +60,9 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         # Dialog statuses
         self.analysis_running = True
         self.change_status_message(init_message)
+
+        # Report status
+        self.report_running = False
 
         # Progress bar
         self.progress_bar.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
@@ -164,6 +168,7 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         """Enable layout designer and PDF report buttons."""
         self.designer_action.setEnabled(True)
         self.pdf_action.setEnabled(True)
+        self.report_running = False
 
     def view_report_pdf(self) -> None:
         """Opens a PDF version of the report"""
@@ -203,6 +208,7 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         Processing will be stopped, and the UI will be updated to accommodate
         the processing status.
         """
+        self.cancel_reporting()
 
         if self.analysis_running:
             # If cancelled is clicked
@@ -211,12 +217,19 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
             # If close has been clicked. In this case processing were already stopped
             super().close()
 
+    def cancel_reporting(self):
+        """Cancel the report generation process."""
+        if self.report_running:
+            self.report_manager.remove_report_task(self.scenario_id)
+
     def reject(self) -> None:
         """Called when the dialog is closed"""
 
         if self.analysis_running:
             # Stops analysis if it is still running
             self.stop_processing()
+
+        self.cancel_reporting()
 
         super().reject()
 

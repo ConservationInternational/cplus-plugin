@@ -107,7 +107,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         if self._layer:
             self.layer_gb.setCollapsed(False)
             self.layer_gb.setChecked(True)
-            layer_path = self._layer.dataProvider().dataSourceUri()
+            layer_path = self._layer.source()
             self.cbo_layer.setAdditionalItems([layer_path])
 
     def validate(self) -> bool:
@@ -178,7 +178,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         """Slot raised to upload a raster layer."""
         data_dir = settings_manager.get_value(Settings.LAST_DATA_DIR, "")
         if not data_dir and self._layer:
-            data_path = self._layer.dataProvider().dataSourceUri()
+            data_path = self._layer.source()
             if os.path.exists(data_path):
                 data_dir = os.path.dirname(data_path)
 
