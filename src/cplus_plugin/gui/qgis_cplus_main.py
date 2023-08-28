@@ -193,7 +193,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.analysis_scenario_description = None
         self.analysis_extent = None
         self.analysis_implementation_models = None
-        self.analysis_priority_layers_groups = None
+        self.analysis_priority_layers_groups = []
 
     def update_pwl_layers(self, notify=False):
         """Updates the priority layers path available in the store implementation models"""
@@ -584,15 +584,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         ):
             self.show_message(
                 tr("Select at least one implementation models from step two."),
-                level=Qgis.Critical,
-            )
-            return
-        if not any(self.analysis_priority_layers_groups):
-            self.show_message(
-                tr(
-                    f"At least one priority weighting layer should be added "
-                    f"into one of the priority groups from step three."
-                ),
                 level=Qgis.Critical,
             )
             return
