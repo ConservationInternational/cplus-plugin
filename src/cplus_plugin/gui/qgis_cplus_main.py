@@ -856,6 +856,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.progress_dialog.analysis_finished_message = tr("Calculating carbon layers")
         self.progress_dialog.scenario_name = tr(f"models pathways")
         pathways = []
+        models_paths = []
 
         for model in models:
             if not model.pathways and (model.path is None and model.path is ""):
@@ -876,7 +877,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 if not (pathway in pathways):
                     pathways.append(pathway)
 
-        if not pathways and model.path:
+            if model.path is not None and model.path is not "":
+                models_paths.append(model.path)
+
+        if not pathways and len(models_paths) > 0:
             self.run_models_analysis(models, priority_layers_groups, extent)
             return
 
