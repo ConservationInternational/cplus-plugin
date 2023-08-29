@@ -285,12 +285,6 @@ class NcsComponentWidget(ModelComponentWidget):
         for item in items:
             self.item_model.remove_ncs_pathway(item.uuid)
 
-    def _update_ui_on_selection_changed(self):
-        """Temporarily disable edit, remove buttons."""
-        super()._update_ui_on_selection_changed()
-        self.btn_remove.setEnabled(False)
-        self.btn_edit.setEnabled(False)
-
     def pathways(self, valid_only=False) -> typing.List[NcsPathway]:
         """Returns a collection of NcsPathway objects in the list view.
 

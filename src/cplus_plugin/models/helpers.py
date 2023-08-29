@@ -141,9 +141,17 @@ def create_ncs_pathway(source_dict) -> typing.Union[NcsPathway, None]:
     :rtype: NcsPathway
     """
     ncs = create_layer_component(source_dict, NcsPathway)
+
+    # We are checking because of the various iterations of the attributes
+    # in the NcsPathway class where some of these attributes might
+    # be missing.
     carbon_paths_attr = "carbon_paths"
     if carbon_paths_attr in source_dict:
         ncs.carbon_paths = source_dict["carbon_paths"]
+
+    carbon_coefficient_attr = "carbon_coefficient"
+    if carbon_coefficient_attr in source_dict:
+        ncs.carbon_coefficient = source_dict["carbon_coefficient"]
 
     return ncs
 
@@ -219,6 +227,7 @@ def ncs_pathway_to_dict(ncs_pathway: NcsPathway, uuid_to_str=True) -> dict:
     """
     base_ncs_dict = layer_component_to_dict(ncs_pathway, uuid_to_str)
     base_ncs_dict["carbon_paths"] = ncs_pathway.carbon_paths
+    base_ncs_dict["carbon_coefficient"] = ncs_pathway.carbon_coefficient
 
     return base_ncs_dict
 

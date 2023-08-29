@@ -230,7 +230,7 @@ class NcsPathway(LayerModelComponent):
 
         return True
 
-    def add_carbon_layer(self, carbon_path: str) -> bool:
+    def add_carbon_path(self, carbon_path: str) -> bool:
         """Add a carbon layer path.
 
         Checks if the path has already been defined or if it exists

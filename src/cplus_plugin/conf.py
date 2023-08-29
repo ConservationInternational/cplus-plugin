@@ -662,14 +662,34 @@ class SettingsManager(QtCore.QObject):
         """
         ncs_pathway = None
 
+        ncs_dict = self.get_ncs_pathway_dict(ncs_uuid)
+        if len(ncs_dict) == 0:
+            return None
+
+        ncs_pathway = create_ncs_pathway(ncs_dict)
+
+        return ncs_pathway
+
+    def get_ncs_pathway_dict(self, ncs_uuid: str) -> dict:
+        """Gets an NCS pathway attribute values as a dictionary.
+
+        :param ncs_uuid: Unique identifier for the NCS pathway object.
+        :type ncs_uuid: str
+
+        :returns: Returns the NCS pathway attribute values matching the given
+        identifier else an empty dictionary if not found.
+        :rtype: dict
+        """
+        ncs_pathway_dict = {}
+
         ncs_root = self._get_ncs_pathway_settings_base()
 
         with qgis_settings(ncs_root) as settings:
-            ncs_model = settings.value(ncs_uuid, None)
-            if ncs_model is not None:
-                ncs_pathway = create_ncs_pathway(json.loads(ncs_model))
+            ncs_model = settings.value(ncs_uuid, dict())
+            if len(ncs_model) > 0:
+                ncs_pathway_dict = json.loads(ncs_model)
 
-        return ncs_pathway
+        return ncs_pathway_dict
 
     def get_all_ncs_pathways(self) -> typing.List[NcsPathway]:
         """Get all the NCS pathway objects stored in settings.

@@ -359,7 +359,7 @@ def initialize_model_settings():
         # Create priority weighting layers subdirectory
         FileUtils.create_pwls_dir(base_dir)
 
-    # Check if carbon coefficient has been defined
+    # Use carbon coefficient values for older-version NCS pathways
     carbon_coefficient = settings_manager.get_value(Settings.CARBON_COEFFICIENT, 0)
 
     # Add default pathways
@@ -389,14 +389,21 @@ def initialize_model_settings():
                     ncs_dict["carbon_paths"] = abs_carbon_paths
 
                 ncs_dict["user_defined"] = False
+                ncs_dict["carbon_coefficient"] = carbon_coefficient
                 settings_manager.save_ncs_pathway(ncs_dict)
             else:
-                # Update values
-                source_ncs = create_ncs_pathway(ncs_dict)
-                if source_ncs is None:
+                # Update carbon coefficient value
+                # Check if carbon coefficient had previously been defined
+                ncs_dict = settings_manager.get_ncs_pathway_dict(ncs_uuid)
+                if "carbon_coefficient" in ncs_dict:
                     continue
-                ncs = copy_layer_component_attributes(ncs, source_ncs)
-                settings_manager.update_ncs_pathway(ncs)
+                else:
+                    ncs_dict["carbon_coefficient"] = carbon_coefficient
+                    source_ncs = create_ncs_pathway(ncs_dict)
+                    if source_ncs is None:
+                        continue
+                    ncs = copy_layer_component_attributes(ncs, source_ncs)
+                    settings_manager.update_ncs_pathway(ncs)
         except KeyError as ke:
             log(f"Default NCS configuration load error - {str(ke)}")
             continue
