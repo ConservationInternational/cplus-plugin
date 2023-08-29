@@ -856,6 +856,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.progress_dialog.analysis_finished_message = tr("Calculating carbon layers")
         self.progress_dialog.scenario_name = tr(f"models pathways")
         pathways = []
+        models_paths = []
 
         for model in models:
             if not model.pathways and (model.path is None and model.path is ""):
@@ -873,11 +874,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 main_task.cancel()
                 return False
             for pathway in model.pathways:
-                if not pathway in pathways:
+                if not (pathway in pathways):
                     pathways.append(pathway)
 
-        if not pathways:
-            return False
+            if model.path is not None and model.path is not "":
+                models_paths.append(model.path)
+
+        if not pathways and len(models_paths) > 0:
+            self.run_models_analysis(models, priority_layers_groups, extent)
+            return
 
         new_carbon_directory = f"{self.scenario_directory}/pathways_carbon_layers"
         carbon_coefficient = float(
@@ -1075,10 +1080,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 main_task.cancel()
                 return False
 
-            if model.path is not None and model.path is not "":
-                shutil.copy(str(model.path), new_ims_directory)
-
             output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
+
+            # Due to the implementation models base class model only one of the following
+            # blocks will be executed, the implementation model either contain a path or
+            # pathways
+
+            if model.path is not None and model.path is not "":
+                basenames = [f'"{Path(model.path).stem}@1"']
+                layers = [model.path]
 
             for pathway in model.pathways:
                 path_basename = Path(pathway.path).stem
@@ -1198,8 +1208,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.progress_dialog.scenario_name = tr("implementation models")
 
         for model in models:
-            if model.path is None and model.path is "":
-                log(f"There is no map layer for the model {model.name}")
+            if model.path is None or model.path is "":
                 self.show_message(
                     tr(
                         f"Problem when running models normalization, "
@@ -1353,8 +1362,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.progress_dialog.scenario_name = tr(f"implementation models")
 
         for model in models:
-            if model.path is None and model.path is "":
-                log(f"There is no map layer for the model {model.name}")
+            if model.path is None or model.path is "":
                 self.show_message(
                     tr(
                         f"Problem when running models weighting, "
@@ -1398,19 +1406,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             for layer in settings_model.priority_layers:
                 pwl = layer.get("path")
+
                 if base_dir not in pwl and layer in PRIORITY_LAYERS:
                     pwl = f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/{pwl}"
                 pwl_path = Path(pwl)
                 if not pwl_path.exists():
-                    self.show_message(
-                        tr(
-                            f"Path {pwl_path} for priority "
-                            f"weighting layer {layer.get('name')} "
-                            f"doesn't exist, skipping the layer "
-                            f"from the model {model.name} weighting."
-                        ),
-                        level=Qgis.Warning,
-                    )
                     log(
                         f"Path {pwl_path} for priority "
                         f"weighting layer {layer.get('name')} "
