@@ -726,7 +726,8 @@ class SettingsManager(QtCore.QObject):
         in settings. On the path, the BASE_DIR in settings
         is used to reflect the absolute path of each NCS
         pathway layer. If BASE_DIR is empty then the NCS
-        pathway setting will not be updated.
+        pathway setting will not be updated, this only applies
+        for default pathways.
 
         :param ncs_pathway: NCS pathway object to be updated.
         :type ncs_pathway: NcsPathway
@@ -735,20 +736,30 @@ class SettingsManager(QtCore.QObject):
         if not base_dir:
             return
 
-        # Pathway location
-        p = Path(ncs_pathway.path)
-        abs_path = f"{base_dir}/{NCS_PATHWAY_SEGMENT}/" f"{p.name}"
-        abs_path = str(os.path.normpath(abs_path))
-        ncs_pathway.path = abs_path
+        # Pathway location for default pathway
+        if not ncs_pathway.user_defined:
+            p = Path(ncs_pathway.path)
+            # Only update if path does not exist otherwise
+            # fallback to check under base directory.
+            if not p.exists():
+                abs_path = f"{base_dir}/{NCS_PATHWAY_SEGMENT}/" f"{p.name}"
+                abs_path = str(os.path.normpath(abs_path))
+                ncs_pathway.path = abs_path
 
-        # Carbon location
-        abs_carbon_paths = []
-        for cb_path in ncs_pathway.carbon_paths:
-            cp = Path(cb_path)
-            abs_carbon_path = f"{base_dir}/{NCS_CARBON_SEGMENT}/" f"{cp.name}"
-            abs_carbon_path = str(os.path.normpath(abs_carbon_path))
-            abs_carbon_paths.append(abs_carbon_path)
-        ncs_pathway.carbon_paths = abs_carbon_paths
+            # Carbon location
+            abs_carbon_paths = []
+            for cb_path in ncs_pathway.carbon_paths:
+                cp = Path(cb_path)
+                # Similarly, if the given carbon path does not exist then try
+                # to use the default one in the ncs_carbon directory.
+                if not cp.exists():
+                    abs_carbon_path = f"{base_dir}/{NCS_CARBON_SEGMENT}/" f"{cp.name}"
+                    abs_carbon_path = str(os.path.normpath(abs_carbon_path))
+                    abs_carbon_paths.append(abs_carbon_path)
+                else:
+                    abs_carbon_paths.append(cb_path)
+
+            ncs_pathway.carbon_paths = abs_carbon_paths
 
         # Remove then re-insert
         self.remove_ncs_pathway(str(ncs_pathway.uuid))
