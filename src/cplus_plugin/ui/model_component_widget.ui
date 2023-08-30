@@ -105,8 +105,14 @@
    </item>
    <item row="4" column="0" colspan="4">
     <widget class="QLineEdit" name="txt_item_description">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
      <property name="maxLength">
       <number>500</number>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
      </property>
     </widget>
    </item>

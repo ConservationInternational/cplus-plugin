@@ -311,7 +311,9 @@ class NcsComponentWidget(ModelComponentWidget):
         ncs_editor = NcsPathwayEditorDialog(self)
         if ncs_editor.exec_() == QtWidgets.QDialog.Accepted:
             ncs_pathway = ncs_editor.ncs_pathway
-            self.item_model.add_ncs_pathway(ncs_pathway)
+            result = self.item_model.add_ncs_pathway(ncs_pathway)
+            if result:
+                settings_manager.save_ncs_pathway(ncs_pathway)
 
     def _on_edit_item(self):
         """Edit selected NCS pathway object."""
@@ -323,7 +325,9 @@ class NcsComponentWidget(ModelComponentWidget):
         ncs_editor = NcsPathwayEditorDialog(self, item.ncs_pathway)
         if ncs_editor.exec_() == QtWidgets.QDialog.Accepted:
             ncs_pathway = ncs_editor.ncs_pathway
-            self.item_model.update_ncs_pathway(ncs_pathway)
+            result = self.item_model.update_ncs_pathway(ncs_pathway)
+            if result:
+                self._save_item(item)
             self._update_ui_on_selection_changed()
 
     def _save_item(self, item: NcsPathwayItem):
@@ -355,6 +359,7 @@ class NcsComponentWidget(ModelComponentWidget):
             == QtWidgets.QMessageBox.Yes
         ):
             self.item_model.remove_ncs_pathway(str(ncs.uuid))
+            settings_manager.remove_ncs_pathway(str(ncs.uuid))
             self.clear_description()
 
     def load(self):

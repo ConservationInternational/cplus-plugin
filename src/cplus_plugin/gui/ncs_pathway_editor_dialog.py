@@ -191,7 +191,7 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._ncs_pathway = NcsPathway(
                 uuid.uuid4(),
                 self.txt_name.text(),
-                self.txt_description.text(),
+                self.txt_description.toPlainText(),
                 user_defined=True,
             )
         else:
