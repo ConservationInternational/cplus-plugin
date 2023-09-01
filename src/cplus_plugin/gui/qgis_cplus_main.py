@@ -777,7 +777,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "native:highestpositioninrasterstack"
             )
 
-            #self.processing_cancelled = False
+            # self.processing_cancelled = False
             self.task = QgsProcessingAlgRunnerTask(
                 alg,
                 alg_params,
@@ -1237,14 +1237,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 else:
                     # If the user cancelled the processing
                     self.show_message(
-                        tr(
-                            f"Processing has been cancelled by the user."
-                        ),
+                        tr(f"Processing has been cancelled by the user."),
                         level=Qgis.Critical,
                     )
-                    log(
-                        f"Processing has been cancelled by the user."
-                    )
+                    log(f"Processing has been cancelled by the user.")
 
                 main_task.cancel()
                 return False
@@ -1540,7 +1536,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.reporting_feedback.cancel()
         except Exception as e:
             log(f"Problem cancelling report generating task, {e}")
-
 
     def scenario_results(self, success, output):
         """Called when the task ends. Sets the progress bar to 100 if it finished.
