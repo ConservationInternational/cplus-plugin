@@ -10,14 +10,8 @@ from qgis.PyQt import (
 from qgis.PyQt.QtWidgets import QMenu, QAction, QStyle, QProgressBar
 from qgis.PyQt.QtGui import QIcon
 
-from qgis.core import (
-    QgsApplication,
-    QgsTask,
-)
-
 from ..utils import open_documentation, tr, log
 from ..definitions.defaults import (
-    ICON_PATH,
     ICON_PDF,
     ICON_LAYOUT,
     ICON_REPORT,
@@ -49,9 +43,6 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         self.scenario_id = ""
         self.main_widget = main_widget
         self.report_manager = report_manager
-
-        # Dialog window options
-        self.setWindowIcon(QIcon(ICON_PATH))
 
         # Dialog window flags
         flags = QtCore.Qt.WindowMinimizeButtonHint | QtCore.Qt.WindowCloseButtonHint
@@ -141,11 +132,6 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
             except RuntimeError:
                 log(tr("Error setting value to a progress bar"), notify=False)
 
-            if value >= 100:
-                # Analysis has finished
-                self.change_status_message(self.analysis_finished_message)
-                self.processing_finished()
-
     def change_status_message(self, message="Processing", entity="scenario") -> None:
         """Updates the status message
 
@@ -166,9 +152,12 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
 
     def set_report_complete(self):
         """Enable layout designer and PDF report buttons."""
+        self.btn_view_report.setEnabled(True)
         self.designer_action.setEnabled(True)
         self.pdf_action.setEnabled(True)
         self.report_running = False
+
+        self.processing_finished()
 
     def view_report_pdf(self) -> None:
         """Opens a PDF version of the report"""
@@ -259,9 +248,9 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         """Post-steps when processing succeeded."""
 
         self.analysis_running = False
+        self.change_status_message(self.analysis_finished_message)
 
         # Change cancel button to the close button status
         self.btn_cancel.setText(tr("Close"))
         icon = self.style().standardIcon(QStyle.SP_DialogCloseButton)
         self.btn_cancel.setIcon(icon)
-        self.btn_view_report.setEnabled(True)

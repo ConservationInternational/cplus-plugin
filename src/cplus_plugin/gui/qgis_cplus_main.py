@@ -659,6 +659,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 )
             )
 
+        self.processing_cancelled = False
+
         self.run_pathways_analysis(
             self.analysis_implementation_models,
             self.analysis_priority_layers_groups,
@@ -669,6 +671,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Performs the last step in scenario analysis. This covers the pilot study area,
         and checks whether the AOI is outside the pilot study area.
         """
+        if self.processing_cancelled:
+            # Will not proceed if processing has been cancelled by the user
+            return
+
         passed_extent_box = self.analysis_extent.bbox
         passed_extent = QgsRectangle(
             passed_extent_box[0],
@@ -771,7 +777,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "native:highestpositioninrasterstack"
             )
 
-            self.processing_cancelled = False
+            #self.processing_cancelled = False
             self.task = QgsProcessingAlgRunnerTask(
                 alg,
                 alg_params,
@@ -839,6 +845,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param extent: selected extent from user
         :type extent: SpatialExtent
         """
+        if self.processing_cancelled:
+            # Will not proceed if processing has been cancelled by the user
+            return False
 
         models_function = partial(
             self.run_models_analysis, models, priority_layers_groups, extent
@@ -973,8 +982,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "qgis:rastercalculator"
             )
 
-            self.processing_cancelled = False
-
             self.task = QgsProcessingAlgRunnerTask(
                 alg, alg_params, self.processing_context, self.position_feedback
             )
@@ -1044,6 +1051,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param extent: selected extent from user
         :type extent: SpatialExtent
         """
+        if self.processing_cancelled:
+            # Will not proceed if processing has been cancelled by the user
+            return False
+
         model_count = 0
 
         priority_function = partial(
@@ -1122,8 +1133,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "qgis:rastercalculator"
             )
 
-            self.processing_cancelled = False
-
             self.task = QgsProcessingAlgRunnerTask(
                 alg, alg_params, self.processing_context, self.position_feedback
             )
@@ -1193,6 +1202,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param extent: selected extent from user
         :type extent: str
         """
+        if self.processing_cancelled:
+            # Will not proceed if processing has been cancelled by the user
+            return False
+
         model_count = 0
 
         priority_function = partial(
@@ -1209,17 +1222,30 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         for model in models:
             if model.path is None or model.path is "":
-                self.show_message(
-                    tr(
+                if not self.processing_cancelled:
+                    self.show_message(
+                        tr(
+                            f"Problem when running models normalization, "
+                            f"there is no map layer for the model {model.name}"
+                        ),
+                        level=Qgis.Critical,
+                    )
+                    log(
                         f"Problem when running models normalization, "
                         f"there is no map layer for the model {model.name}"
-                    ),
-                    level=Qgis.Critical,
-                )
-                log(
-                    f"Problem when running models normalization, "
-                    f"there is no map layer for the model {model.name}"
-                )
+                    )
+                else:
+                    # If the user cancelled the processing
+                    self.show_message(
+                        tr(
+                            f"Processing has been cancelled by the user."
+                        ),
+                        level=Qgis.Critical,
+                    )
+                    log(
+                        f"Processing has been cancelled by the user."
+                    )
+
                 main_task.cancel()
                 return False
 
@@ -1281,8 +1307,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             alg = QgsApplication.processingRegistry().algorithmById(
                 "qgis:rastercalculator"
             )
-
-            self.processing_cancelled = False
 
             self.task = QgsProcessingAlgRunnerTask(
                 alg, alg_params, self.processing_context, self.position_feedback
@@ -1456,8 +1480,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "qgis:rastercalculator"
             )
 
-            self.processing_cancelled = False
-
             self.task = QgsProcessingAlgRunnerTask(
                 alg, alg_params, self.processing_context, self.position_feedback
             )
@@ -1505,11 +1527,20 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Cancels the current processing task."""
         self.processing_cancelled = True
 
+        # Analysis processing tasks
         try:
             if self.task:
                 self.task.cancel()
         except Exception as e:
             log(f"Problem cancelling task, {e}")
+
+        # Report generating task
+        try:
+            if self.reporting_feedback:
+                self.reporting_feedback.cancel()
+        except Exception as e:
+            log(f"Problem cancelling report generating task, {e}")
+
 
     def scenario_results(self, success, output):
         """Called when the task ends. Sets the progress bar to 100 if it finished.
@@ -1614,7 +1645,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             """A workaround to add a layer to a group.
             Adding it using group.insertChildNode or group.addLayer causes issues,
-             but adding to the root is fine.
+            but adding to the root is fine.
             This approach adds it to the root, and then moves it to the group.
             """
             self.move_layer_to_group(scenario_layer, scenario_group)
@@ -1813,6 +1844,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Run report generation. This should be called after the
         analysis is complete.
         """
+        if self.processing_cancelled:
+            # Will not proceed if processing has been cancelled by the user
+            return
+
         if self.scenario_result is None:
             log(
                 "Cannot run report generation, scenario result is " "not defined",

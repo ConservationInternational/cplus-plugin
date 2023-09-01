@@ -52,10 +52,6 @@ class CplusPluginProgressDialogTest(unittest.TestCase):
         current_value = progress_dialog.get_progress_bar().value()
         self.assertEqual(test_value, current_value)
 
-        # Checks if processing were stopped at 100% status
-        processing_status = progress_dialog.get_processing_status()
-        self.assertEqual(processing_status, False)
-
     def test_view_report(self) -> None:
         """Tests if the report is correctly opened in as a PDF"""
 
