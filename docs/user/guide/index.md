@@ -107,7 +107,7 @@ model else a warning message will be displayed as shown in Figure 7 below: </blo
 ### Step 3: Priority weighting
 
 The final step deals with the **Weighting priorities** and **Priority groups**. These weights
-will be applied when the user starts running the scenario. An example is shown in **Figure 9**.
+will be applied when the user starts running the scenario. An example is shown in **Figure 11**.
 
 ![CPLUS step 3](img/plugin-step3_2.png)
 
@@ -128,39 +128,62 @@ to add the layer into the group.
 Select the target layer from the priority weighting layers list from its priority group and 
 use the right arrow button ![right arrow](img/cplus_right_arrow.svg) to remove the layer into the group.
 
+#### Create custom priority layers
+
+- Click on ![add button](img/symbologyAdd.svg) to add a new custom priority layer, or ![edit button](img/mActionToggleEditing.svg) to edit an existing priority layer
+- This will open the Priority Layer dialog (see **Figure 9**)
+- The following parameters needs to be set:
+- **Priority layer**: The layer which represents the priority layer
+- **Priority layer name**: A unique identifier for the priority layer
+- **Priority layer description**: A detailed description of the priority layer
+- Click the **Assign implementation models** button to select IMs to be associated with the priority layer (see **Figure 10**)
+
+![Priority layer editing/adding dialog](img/manual-priority-layer-dialog.png)
+
+*Figure 9: Priority layer dialog*
+
+- Select the IMs you want to be associated with the priority layer
+- Click **OK**
+
+![Priority layer editing/adding dialog](img/manual-pwl-selection.png)
+
+*Figure 10: Implementation model selection for priority layers*
+
+- ![remove button](img/symbologyRemove.svg): Remove the selected PWL
+
 #### Setting groups values 
 Move the slider to adjust the weight of each group, values can also be set manually, by using the left input spin box. 
 Once done selecting weights, click **Run Scenario** button to run the analysis.
 
 ### Steps 1 to 3 example
 
-The following recording (**Figure 9**) shows an example on how to do Step 1, 2 and 3.
+The following recording (**Figure 11**) shows an example on how to do Step 1, 2 and 3.
 
 ![Steps 1 to 3 example](img/steps_1_to_3.gif)
 
-*Figure 9: Shows how to implement Step 1, 2 and 3 in QGIS*
+*Figure 11: Shows how to implement Step 1, 2 and 3 in QGIS*
 
 ## Processing
 
 - Once the user has provided all desired parameters, click **Run Scenario**
-- The processing dialog will open (**Figure 10**)
+- The processing dialog will open (**Figure 12**)
 - The processing will take a while, depending on the number of IMs and pathways provided for each IM
 - Click the Cancel button to stop the processing
 
 ![Processing dialog running](img/plugin-processing-dialog.png)
 
-*Figure 10: Processing dialog while the algorithm is running*
+*Figure 12: Processing dialog while the algorithm is running*
 
-- **Figure 11** will be the result if the processing succceeded
+- **Figure 13** will be the result if the processing succceeded
 - The user should take note that the **View Report** button is now available
 
 ![Processing dialog success](img/plugin-processing-succeeded.png)
 
-*Figure 11: Processing dialog if successfull*
+*Figure 13: Processing dialog if successfull*
 
 ### Processing results
 
-The following groups and layers will be added to the QGIS canvas once the processing finishes (see **Figure 12**):
+The following groups and layers will be added to the QGIS canvas once the processing finishes (see **Figure 14**):
 - A group containing the results
 - **Implementation Model Maps**: Non-weighted IMs created by the user in Step 2
 - **Weighted Implementation Model Maps**: Weighted IMs based on the IMs added in Step 2 and weighing set in Step 3
@@ -168,13 +191,13 @@ The following groups and layers will be added to the QGIS canvas once the proces
 
 ![Layers added to canvas](img/plugin-added-layers.png)
 
-*Figure 12: Groups and layers added to the QGIS canvas*
+*Figure 14: Groups and layers added to the QGIS canvas*
 
-An example of output results in QGIS is detailed by **Figure 13**
+An example of output results in QGIS is detailed by **Figure 15**
 
 ![Outputs example](img/outputs-qgis.gif)
 
-*Figure 13: A recording example of an example scenario*
+*Figure 15: A recording example of an example scenario*
 
 ## Report generating
 
@@ -186,27 +209,27 @@ An example of output results in QGIS is detailed by **Figure 13**
 
 ![Report options](img/plugin-report-options.png)
 
-*Figure 14: Report options*
+*Figure 16: Report options*
 
-- **Figure 14** shows an example of a report opened in the layout designer
+- **Figure 17** shows an example of a report opened in the layout designer
 
 ![Report layout designer](img/report-layout-designer.png) 
 
-*Figure 14: Report opened in the QGIS layout designer*
+*Figure 17: Report opened in the QGIS layout designer*
 
-- **Figure 15** shows an report in PDF format
+- **Figure 18** shows an report in PDF format
 
 ![Report PDF](img/report-pdf.png)
 
-*Figure 15: PDF version of a report*
+*Figure 18: PDF version of a report*
 
 ### Generated report example
 
-Here is an example on how to open a report in the QGIS layout designer, or as a PDF (**Figure 16**).
+Here is an example on how to open a report in the QGIS layout designer, or as a PDF (**Figure 19**).
 
 ![Generated report example](img/generated-reports.gif)
 
-*Figure 16: Example of a generated report in PDF and layout designer formats*
+*Figure 19: Example of a generated report in PDF and layout designer formats*
 
 ## Settings
 
@@ -214,29 +237,29 @@ Here is an example on how to open a report in the QGIS layout designer, or as a 
 
 The user can follow two approaches to open the CPLUS settings.
 
-QGIS options (**Figure 17**):
+QGIS options (**Figure 20**):
 
 - Click on **Settings** -> **Options**
 
 ![QGIS settings](img/settings-qgis.png)
 
-*Figure 17: QGIS settings*
+*Figure 20: QGIS settings*
 
 - Select the CPLUS tab to the left
-- This will open the CPLUS settings dialog. See **Figure 18** for an example
+- This will open the CPLUS settings dialog. See **Figure 21** for an example
 
 ![CPLUS settings](img/settings-cplus-tab.png)
 
-*Figure 18: CPLUS section as loaded in the QGIS settings dialog*
+*Figure 21: CPLUS section as loaded in the QGIS settings dialog*
 
-CPLUS toolbar (**Figure 19**):
+CPLUS toolbar (**Figure 22**):
 - Click on the CPLUS toolbar drop-down
 - Select **Settings**
 - This will take you directly to the CPLUS settings dialog in the QGIS options
 
 ![CPLUS plugin toolbar icon](img/plugin-toolbar-icon.png)
 
-*Figure 19: CPLUS toolbar button*
+*Figure 22: CPLUS toolbar button*
 
 ### CPLUS settings
 
@@ -263,8 +286,8 @@ A short description of each available setting a user can change. Most are option
 - *Base data directory* (required): Data accessed and download by the plugin will be stored here
 - *Coefficient for carbon layers*: Value applied during processing to the carbon-based layers. Default is 0
 
-**Figure 20** shows an example of updating and applying CPLUS settings.
+**Figure 23** shows an example of updating and applying CPLUS settings.
 
 ![CPLUS settings example](img/settings-recording.gif)
 
-*Figure 20: CPLUS settings example*
+*Figure 23: CPLUS settings example*

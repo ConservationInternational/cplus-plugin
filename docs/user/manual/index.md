@@ -63,17 +63,41 @@ Step 2 focuses on the implementation models (IMs) and pathways.
 
 *Figure 4: Step 3 of the dock widget*
 
-- **Priority groups**:
+- **Priority groups**: Groups to which PWLs can be assigned
 - **Priority weighted layers (PWL)**:
 - ![right arrow](img/cplus_right_arrow.svg): Remove the selected PWL from the priority group
 - ![left arrow](img/cplus_left_arrow.svg): Add the selected PWL to the selected priority group
+- ![add button](img/symbologyAdd.svg): Add a new PWL
+- ![remove button](img/symbologyRemove.svg): Remove the selected PWL
+- ![edit button](img/mActionToggleEditing.svg): Edit the selected PWL
 - **Run Scenario**: Starts running the analysis. The progress dialog will open when the user clicks this button
+
+#### Priority Weighted Layers Editor dialog
+
+![UI Priority layer dialog](img/manual-priority-layer-dialog.png)
+
+*Figure 5: Priority layer dialog*
+
+- **Priority layer**: Select the priority layer
+- **Priority layer name**: A unique name for the priority layer
+- **Priority layer description**: A detailed description for the priority layer
+- **Assign implementation models**: Selected IMs associated with the priority layer
+
+![UI Priority layer dialog](img/manual-pwl-selection.png)
+
+*Figure 6: Selection of IMs for a custom priority layer*
+
+- List of IMs a user can select. Multiple IMs can be selected
+- **OK**: Save the selected models
+- **Select All**: Selects each of the available IMs
+- **Clear Selection**: Deselects each of the selected IMs
+- **Toggle Selection**: Switches each option from deselected to selected, or selected to deselected
 
 ## Progress dialog
 
 ![Progress dialog](img/manual-processing-dialog.png)
 
-*Figure 5: Processing dialog which will show the status of the analysis*
+*Figure 7: Processing dialog which will show the status of the analysis*
 
 - **Analysis Progress**: Progress of the current step
 - **Status**: A status message on the current analysis being performed
@@ -87,7 +111,7 @@ These options will be available once the analysis has finished. The options will
 
 ![Report options](img/manual-report-options.png)
 
-*Figure 6: Options available to the user related to the generated report*
+*Figure 8: Options available to the user related to the generated report*
 
 - **Layout designer**: Opens the report in the QGIS layout designer
 - **Open PDF**: Opens the created PDF
@@ -97,7 +121,7 @@ These options will be available once the analysis has finished. The options will
 
 ![CPLUS settings](img/manual-settings.png)
 
-*Figure 7: Settings available to the user*
+*Figure 9: Settings available to the user*
 
 - **Reports**: Information to be added to the report
   - *Organization*: (optional) Organization or institute name
