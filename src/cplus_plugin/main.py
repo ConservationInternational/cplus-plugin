@@ -29,9 +29,14 @@ from qgis.PyQt.QtWidgets import QMenu
 
 from .conf import Settings, settings_manager
 from .definitions.constants import (
+    CARBON_COEFFICIENT_ATTRIBUTE,
+    CARBON_PATHS_ATTRIBUTE,
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
+    PATH_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
+    USER_DEFINED_ATTRIBUTE,
+    UUID_ATTRIBUTE
 )
 from .definitions.defaults import (
     ABOUT_DOCUMENTATION_SITE,
@@ -365,20 +370,20 @@ def initialize_model_settings():
     # Add default pathways
     for ncs_dict in DEFAULT_NCS_PATHWAYS:
         try:
-            ncs_uuid = ncs_dict["uuid"]
+            ncs_uuid = ncs_dict[UUID_ATTRIBUTE]
             ncs = settings_manager.get_ncs_pathway(ncs_uuid)
             if ncs is None:
                 # Update dir
                 base_dir = settings_manager.get_value(Settings.BASE_DIR, None)
                 if base_dir is not None:
                     # Pathway location
-                    file_name = ncs_dict["path"]
+                    file_name = ncs_dict[PATH_ATTRIBUTE]
                     absolute_path = f"{base_dir}/{NCS_PATHWAY_SEGMENT}/{file_name}"
                     abs_path = str(os.path.normpath(absolute_path))
-                    ncs_dict["path"] = abs_path
+                    ncs_dict[PATH_ATTRIBUTE] = abs_path
 
                     # Carbon location
-                    carbon_file_names = ncs_dict["carbon_paths"]
+                    carbon_file_names = ncs_dict[CARBON_PATHS_ATTRIBUTE]
                     abs_carbon_paths = []
                     for carbon_file_name in carbon_file_names:
                         abs_carbon_path = (
@@ -386,19 +391,19 @@ def initialize_model_settings():
                         )
                         norm_carbon_path = str(os.path.normpath(abs_carbon_path))
                         abs_carbon_paths.append(norm_carbon_path)
-                    ncs_dict["carbon_paths"] = abs_carbon_paths
+                    ncs_dict[CARBON_PATHS_ATTRIBUTE] = abs_carbon_paths
 
-                ncs_dict["user_defined"] = False
-                ncs_dict["carbon_coefficient"] = carbon_coefficient
+                ncs_dict[USER_DEFINED_ATTRIBUTE] = False
+                ncs_dict[CARBON_COEFFICIENT_ATTRIBUTE] = carbon_coefficient
                 settings_manager.save_ncs_pathway(ncs_dict)
             else:
                 # Update carbon coefficient value
                 # Check if carbon coefficient had previously been defined
                 ncs_dict = settings_manager.get_ncs_pathway_dict(ncs_uuid)
-                if "carbon_coefficient" in ncs_dict:
+                if CARBON_COEFFICIENT_ATTRIBUTE in ncs_dict:
                     continue
                 else:
-                    ncs_dict["carbon_coefficient"] = carbon_coefficient
+                    ncs_dict[CARBON_COEFFICIENT_ATTRIBUTE] = carbon_coefficient
                     source_ncs = create_ncs_pathway(ncs_dict)
                     if source_ncs is None:
                         continue
@@ -411,14 +416,14 @@ def initialize_model_settings():
     # Add default implementation models
     for imp_model_dict in DEFAULT_IMPLEMENTATION_MODELS:
         try:
-            imp_model_uuid = imp_model_dict["uuid"]
+            imp_model_uuid = imp_model_dict[USER_DEFINED_ATTRIBUTE]
             imp_model = settings_manager.get_implementation_model(imp_model_uuid)
             if imp_model is None:
                 settings_manager.save_implementation_model(imp_model_dict)
             else:
                 pathways = imp_model.pathways
                 # Update values
-                imp_model_dict["priority_layers"] = imp_model.priority_layers
+                imp_model_dict[PRIORITY_LAYERS_SEGMENT] = imp_model.priority_layers
                 source_im = create_implementation_model(imp_model_dict)
                 if source_im is None:
                     continue

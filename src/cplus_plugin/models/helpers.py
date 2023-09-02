@@ -16,6 +16,7 @@ from .base import (
     NcsPathway,
     SpatialExtent,
 )
+from ..definitions.constants import CARBON_COEFFICIENT_ATTRIBUTE, CARBON_PATHS_ATTRIBUTE, NAME_ATTRIBUTE, DESCRIPTION_ATTRIBUTE, LAYER_TYPE_ATTRIBUTE, PATH_ATTRIBUTE, PRIORITY_LAYERS_SEGMENT, USER_DEFINED_ATTRIBUTE, UUID_ATTRIBUTE
 from ..definitions.defaults import DEFAULT_CRS_ID
 
 from qgis.core import (
@@ -52,9 +53,9 @@ def model_component_to_dict(
         model_uuid = str(model_uuid)
 
     return {
-        "uuid": model_uuid,
-        "name": model_component.name,
-        "description": model_component.description,
+        UUID_ATTRIBUTE: model_uuid,
+        NAME_ATTRIBUTE: model_component.name,
+        DESCRIPTION_ATTRIBUTE: model_component.description,
     }
 
 
@@ -80,7 +81,7 @@ def create_model_component(
         return None
 
     return model_cls(
-        uuid.UUID(source_dict["uuid"]), source_dict["name"], source_dict["description"]
+        uuid.UUID(source_dict[UUID_ATTRIBUTE]), source_dict[NAME_ATTRIBUTE], source_dict[DESCRIPTION_ATTRIBUTE]
     )
 
 
@@ -104,28 +105,25 @@ def create_layer_component(
     from the dictionary.
     :rtype: LayerModelComponent
     """
-    if "uuid" not in source_dict:
+    if UUID_ATTRIBUTE not in source_dict:
         return None
 
-    source_uuid = source_dict["uuid"]
+    source_uuid = source_dict[UUID_ATTRIBUTE]
     if isinstance(source_uuid, str):
         source_uuid = uuid.UUID(source_uuid)
 
     kwargs = {}
-    path_attr = "path"
-    if path_attr in source_dict:
-        kwargs[path_attr] = source_dict[path_attr]
+    if PATH_ATTRIBUTE in source_dict:
+        kwargs[PATH_ATTRIBUTE] = source_dict[PATH_ATTRIBUTE]
 
-    layer_type_attr = "layer_type"
-    if layer_type_attr in source_dict:
-        kwargs[layer_type_attr] = LayerType(int(source_dict["layer_type"]))
+    if LAYER_TYPE_ATTRIBUTE in source_dict:
+        kwargs[LAYER_TYPE_ATTRIBUTE] = LayerType(int(source_dict[LAYER_TYPE_ATTRIBUTE]))
 
-    user_defined_attr = "user_defined"
-    if user_defined_attr in source_dict:
-        kwargs[user_defined_attr] = bool(source_dict[user_defined_attr])
+    if USER_DEFINED_ATTRIBUTE in source_dict:
+        kwargs[USER_DEFINED_ATTRIBUTE] = bool(source_dict[USER_DEFINED_ATTRIBUTE])
 
     return model_cls(
-        source_uuid, source_dict["name"], source_dict["description"], **kwargs
+        source_uuid, source_dict[NAME_ATTRIBUTE], source_dict[DESCRIPTION_ATTRIBUTE], **kwargs
     )
 
 
@@ -145,13 +143,12 @@ def create_ncs_pathway(source_dict) -> typing.Union[NcsPathway, None]:
     # We are checking because of the various iterations of the attributes
     # in the NcsPathway class where some of these attributes might
     # be missing.
-    carbon_paths_attr = "carbon_paths"
-    if carbon_paths_attr in source_dict:
-        ncs.carbon_paths = source_dict["carbon_paths"]
+    if CARBON_PATHS_ATTRIBUTE in source_dict:
+        ncs.carbon_paths = source_dict[CARBON_PATHS_ATTRIBUTE]
 
-    carbon_coefficient_attr = "carbon_coefficient"
+    carbon_coefficient_attr = CARBON_COEFFICIENT_ATTRIBUTE
     if carbon_coefficient_attr in source_dict:
-        ncs.carbon_coefficient = source_dict["carbon_coefficient"]
+        ncs.carbon_coefficient = source_dict[CARBON_COEFFICIENT_ATTRIBUTE]
 
     return ncs
 
@@ -168,9 +165,8 @@ def create_implementation_model(source_dict) -> typing.Union[ImplementationModel
     :rtype: ImplementationModel
     """
     implementation_model = create_layer_component(source_dict, ImplementationModel)
-    priority_layers_attr = "priority_layers"
-    if priority_layers_attr in source_dict.keys():
-        implementation_model.priority_layers = source_dict["priority_layers"]
+    if PRIORITY_LAYERS_SEGMENT in source_dict.keys():
+        implementation_model.priority_layers = source_dict[PRIORITY_LAYERS_SEGMENT]
 
     return implementation_model
 
@@ -197,9 +193,9 @@ def layer_component_to_dict(
     :rtype: dict
     """
     base_attrs = model_component_to_dict(layer_component, uuid_to_str)
-    base_attrs["path"] = layer_component.path
-    base_attrs["layer_type"] = int(layer_component.layer_type)
-    base_attrs["user_defined"] = layer_component.user_defined
+    base_attrs[PATH_ATTRIBUTE] = layer_component.path
+    base_attrs[LAYER_TYPE_ATTRIBUTE] = int(layer_component.layer_type)
+    base_attrs[USER_DEFINED_ATTRIBUTE] = layer_component.user_defined
 
     return base_attrs
 
@@ -226,8 +222,8 @@ def ncs_pathway_to_dict(ncs_pathway: NcsPathway, uuid_to_str=True) -> dict:
     :rtype: dict
     """
     base_ncs_dict = layer_component_to_dict(ncs_pathway, uuid_to_str)
-    base_ncs_dict["carbon_paths"] = ncs_pathway.carbon_paths
-    base_ncs_dict["carbon_coefficient"] = ncs_pathway.carbon_coefficient
+    base_ncs_dict[CARBON_PATHS_ATTRIBUTE] = ncs_pathway.carbon_paths
+    base_ncs_dict[CARBON_COEFFICIENT_ATTRIBUTE] = ncs_pathway.carbon_coefficient
 
     return base_ncs_dict
 
@@ -330,7 +326,7 @@ def copy_layer_component_attributes(
 
     for f in fields(source):
         # Exclude uuid and map layer
-        if f.name == "uuid" or f.name == "layer":
+        if f.name == UUID_ATTRIBUTE:
             continue
         attr_val = getattr(source, f.name)
         setattr(target, f.name, attr_val)

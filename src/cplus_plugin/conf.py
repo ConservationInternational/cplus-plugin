@@ -18,6 +18,8 @@ from qgis.core import QgsRectangle, QgsSettings
 from .definitions.defaults import PRIORITY_LAYERS
 
 from .definitions.constants import (
+    CARBON_COEFFICIENT_ATTRIBUTE,
+    CARBON_PATHS_ATTRIBUTE,
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
     PRIORITY_LAYERS_SEGMENT,
@@ -741,7 +743,7 @@ class SettingsManager(QtCore.QObject):
             p = Path(ncs_pathway.path)
             # Only update if path does not exist otherwise
             # fallback to check under base directory.
-            if not p.exists():
+            if not p.exists() or not p.is_absolute():
                 abs_path = f"{base_dir}/{NCS_PATHWAY_SEGMENT}/" f"{p.name}"
                 abs_path = str(os.path.normpath(abs_path))
                 ncs_pathway.path = abs_path
@@ -752,7 +754,7 @@ class SettingsManager(QtCore.QObject):
                 cp = Path(cb_path)
                 # Similarly, if the given carbon path does not exist then try
                 # to use the default one in the ncs_carbon directory.
-                if not cp.exists():
+                if not cp.exists() or not cp.is_absolute():
                     abs_carbon_path = f"{base_dir}/{NCS_CARBON_SEGMENT}/" f"{cp.name}"
                     abs_carbon_path = str(os.path.normpath(abs_carbon_path))
                     abs_carbon_paths.append(abs_carbon_path)
