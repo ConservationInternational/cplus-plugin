@@ -36,7 +36,7 @@ from .definitions.constants import (
     PATH_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
     USER_DEFINED_ATTRIBUTE,
-    UUID_ATTRIBUTE
+    UUID_ATTRIBUTE,
 )
 from .definitions.defaults import (
     ABOUT_DOCUMENTATION_SITE,

@@ -16,7 +16,17 @@ from .base import (
     NcsPathway,
     SpatialExtent,
 )
-from ..definitions.constants import CARBON_COEFFICIENT_ATTRIBUTE, CARBON_PATHS_ATTRIBUTE, NAME_ATTRIBUTE, DESCRIPTION_ATTRIBUTE, LAYER_TYPE_ATTRIBUTE, PATH_ATTRIBUTE, PRIORITY_LAYERS_SEGMENT, USER_DEFINED_ATTRIBUTE, UUID_ATTRIBUTE
+from ..definitions.constants import (
+    CARBON_COEFFICIENT_ATTRIBUTE,
+    CARBON_PATHS_ATTRIBUTE,
+    NAME_ATTRIBUTE,
+    DESCRIPTION_ATTRIBUTE,
+    LAYER_TYPE_ATTRIBUTE,
+    PATH_ATTRIBUTE,
+    PRIORITY_LAYERS_SEGMENT,
+    USER_DEFINED_ATTRIBUTE,
+    UUID_ATTRIBUTE,
+)
 from ..definitions.defaults import DEFAULT_CRS_ID
 
 from qgis.core import (
@@ -81,7 +91,9 @@ def create_model_component(
         return None
 
     return model_cls(
-        uuid.UUID(source_dict[UUID_ATTRIBUTE]), source_dict[NAME_ATTRIBUTE], source_dict[DESCRIPTION_ATTRIBUTE]
+        uuid.UUID(source_dict[UUID_ATTRIBUTE]),
+        source_dict[NAME_ATTRIBUTE],
+        source_dict[DESCRIPTION_ATTRIBUTE],
     )
 
 
@@ -123,7 +135,10 @@ def create_layer_component(
         kwargs[USER_DEFINED_ATTRIBUTE] = bool(source_dict[USER_DEFINED_ATTRIBUTE])
 
     return model_cls(
-        source_uuid, source_dict[NAME_ATTRIBUTE], source_dict[DESCRIPTION_ATTRIBUTE], **kwargs
+        source_uuid,
+        source_dict[NAME_ATTRIBUTE],
+        source_dict[DESCRIPTION_ATTRIBUTE],
+        **kwargs
     )
 
 
