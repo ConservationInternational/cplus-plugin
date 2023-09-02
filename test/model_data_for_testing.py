@@ -7,6 +7,17 @@ from uuid import UUID
 
 from qgis.core import QgsRasterLayer
 
+from cplus_plugin.definitions.constants import (
+    CARBON_COEFFICIENT_ATTRIBUTE,
+    CARBON_PATHS_ATTRIBUTE,
+    NAME_ATTRIBUTE,
+    DESCRIPTION_ATTRIBUTE,
+    LAYER_TYPE_ATTRIBUTE,
+    PATH_ATTRIBUTE,
+    PRIORITY_LAYERS_SEGMENT,
+    USER_DEFINED_ATTRIBUTE,
+    UUID_ATTRIBUTE,
+)
 from cplus_plugin.definitions.defaults import PILOT_AREA_EXTENT
 from cplus_plugin.models.base import (
     ImplementationModel,
@@ -121,12 +132,12 @@ def get_test_scenario_result() -> ScenarioResult:
 
 
 NCS_PATHWAY_DICT = {
-    "uuid": UUID(VALID_NCS_UUID_STR),
-    "name": "Valid NCS Pathway",
-    "description": "Description for valid NCS",
-    "path": TEST_RASTER_PATH,
-    "layer_type": 0,
-    "user_defined": True,
-    "carbon_paths": [],
-    "carbon_coefficient": 0.0,
+    UUID_ATTRIBUTE: UUID(VALID_NCS_UUID_STR),
+    NAME_ATTRIBUTE: "Valid NCS Pathway",
+    DESCRIPTION_ATTRIBUTE: "Description for valid NCS",
+    PATH_ATTRIBUTE: TEST_RASTER_PATH,
+    LAYER_TYPE_ATTRIBUTE: 0,
+    USER_DEFINED_ATTRIBUTE: True,
+    CARBON_PATHS_ATTRIBUTE: [],
+    CARBON_COEFFICIENT_ATTRIBUTE: 0.0,
 }
