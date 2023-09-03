@@ -582,6 +582,8 @@ class ComponentItemModel(QtGui.QStandardItemModel):
 
         self.insertRow(idx, component_item)
 
+        self.sort(0)
+
         self._re_index_rows()
 
         return True
@@ -647,6 +649,10 @@ class ComponentItemModel(QtGui.QStandardItemModel):
             return False
 
         item.update(item.model_component)
+
+        self.sort(0)
+
+        self._re_index_rows()
 
         return True
 

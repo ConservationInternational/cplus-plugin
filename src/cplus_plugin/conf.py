@@ -23,7 +23,7 @@ from .definitions.constants import (
     PATH_ATTRIBUTE,
     PATHWAYS_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
-    UUID_ATTRIBUTE
+    UUID_ATTRIBUTE,
 )
 
 from .models.base import (
@@ -690,7 +690,10 @@ class SettingsManager(QtCore.QObject):
         with qgis_settings(ncs_root) as settings:
             ncs_model = settings.value(ncs_uuid, dict())
             if len(ncs_model) > 0:
-                ncs_pathway_dict = json.loads(ncs_model)
+                try:
+                    ncs_pathway_dict = json.loads(ncs_model)
+                except json.JSONDecodeError:
+                    log("NCS pathway JSON is invalid")
 
         return ncs_pathway_dict
 
@@ -844,7 +847,12 @@ class SettingsManager(QtCore.QObject):
             implementation_model = settings.value(implementation_model_uuid, None)
             ncs_uuids = []
             if implementation_model is not None:
-                implementation_model_dict = json.loads(implementation_model)
+                implementation_model_dict = {}
+                try:
+                    implementation_model_dict = json.loads(implementation_model)
+                except json.JSONDecodeError:
+                    log("Implementation model JSON is invalid.")
+
                 if PATHWAYS_ATTRIBUTE in implementation_model_dict:
                     ncs_uuids = implementation_model_dict[PATHWAYS_ATTRIBUTE]
 
@@ -896,7 +904,8 @@ class SettingsManager(QtCore.QObject):
         for layer in implementation_model.priority_layers:
             if layer in PRIORITY_LAYERS and base_dir not in layer.get(PATH_ATTRIBUTE):
                 abs_pwl_path = (
-                    f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/" f"{layer.get(PATH_ATTRIBUTE)}"
+                    f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/"
+                    f"{layer.get(PATH_ATTRIBUTE)}"
                 )
                 abs_pwl_path = str(os.path.normpath(abs_pwl_path))
                 layer[PATH_ATTRIBUTE] = abs_pwl_path

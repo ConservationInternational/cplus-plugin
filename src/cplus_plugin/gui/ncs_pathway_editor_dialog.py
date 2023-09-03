@@ -174,7 +174,7 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._show_warning_message(msg)
             status = False
 
-        if self._layer and not self._layer.isValid():
+        if layer and not layer.isValid():
             msg = tr("Map layer is not valid.")
             self._show_warning_message(msg)
             status = False

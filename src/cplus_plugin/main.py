@@ -365,7 +365,7 @@ def initialize_model_settings():
         FileUtils.create_pwls_dir(base_dir)
 
     # Use carbon coefficient values for older-version NCS pathways
-    carbon_coefficient = settings_manager.get_value(Settings.CARBON_COEFFICIENT, 0)
+    carbon_coefficient = settings_manager.get_value(Settings.CARBON_COEFFICIENT, 0, float)
 
     # Add default pathways
     for ncs_dict in DEFAULT_NCS_PATHWAYS:
@@ -416,7 +416,7 @@ def initialize_model_settings():
     # Add default implementation models
     for imp_model_dict in DEFAULT_IMPLEMENTATION_MODELS:
         try:
-            imp_model_uuid = imp_model_dict[USER_DEFINED_ATTRIBUTE]
+            imp_model_uuid = imp_model_dict[UUID_ATTRIBUTE]
             imp_model = settings_manager.get_implementation_model(imp_model_uuid)
             if imp_model is None:
                 settings_manager.save_implementation_model(imp_model_dict)
