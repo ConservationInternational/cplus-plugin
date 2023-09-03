@@ -340,7 +340,7 @@ def copy_layer_component_attributes(
         )
 
     for f in fields(source):
-        # Exclude uuid and map layer
+        # Exclude uuid
         if f.name == UUID_ATTRIBUTE:
             continue
         attr_val = getattr(source, f.name)

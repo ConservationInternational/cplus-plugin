@@ -365,7 +365,9 @@ def initialize_model_settings():
         FileUtils.create_pwls_dir(base_dir)
 
     # Use carbon coefficient values for older-version NCS pathways
-    carbon_coefficient = settings_manager.get_value(Settings.CARBON_COEFFICIENT, 0, float)
+    carbon_coefficient = settings_manager.get_value(
+        Settings.CARBON_COEFFICIENT, 0, float
+    )
 
     # Add default pathways
     for ncs_dict in DEFAULT_NCS_PATHWAYS:

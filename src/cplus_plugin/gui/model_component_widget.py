@@ -258,6 +258,8 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
 class NcsComponentWidget(ModelComponentWidget):
     """Widget for displaying and managing NCS pathways."""
 
+    ncs_pathway_updated = QtCore.pyqtSignal(NcsPathway)
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -328,6 +330,7 @@ class NcsComponentWidget(ModelComponentWidget):
             result = self.item_model.update_ncs_pathway(ncs_pathway)
             if result:
                 self._save_item(item)
+                self.ncs_pathway_updated.emit(ncs_pathway)
             self._update_ui_on_selection_changed()
 
     def _save_item(self, item: NcsPathwayItem):
@@ -592,3 +595,16 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         if item.type() == IMPLEMENTATION_MODEL_TYPE:
             self.btn_edit.setEnabled(True)
             self.btn_edit_description.setEnabled(True)
+
+    def update_ncs_pathway_items(self, ncs_pathway: NcsPathway) -> bool:
+        """Update NCS pathway items used for IMs that are linked to the
+        given NCS pathway.
+
+        :param ncs_pathway: NCS pathway whose attribute values will be updated
+        for the related pathways used in the IMs.
+        :type ncs_pathway: NcsPathway
+
+        :returns: True if NCS pathway items were updated, else False.
+        :rtype: bool
+        """
+        return self.item_model.update_ncs_pathway_items(ncs_pathway)
