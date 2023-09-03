@@ -582,8 +582,6 @@ class ComponentItemModel(QtGui.QStandardItemModel):
 
         self.insertRow(idx, component_item)
 
-        self.sort(0)
-
         self._re_index_rows()
 
         return True
@@ -649,10 +647,6 @@ class ComponentItemModel(QtGui.QStandardItemModel):
             return False
 
         item.update(item.model_component)
-
-        self.sort(0)
-
-        self._re_index_rows()
 
         return True
 
@@ -735,7 +729,12 @@ class NcsPathwayItemModel(ComponentItemModel):
         ncs_item = NcsPathwayItem.create(ncs)
         self._update_display(ncs_item)
 
-        return self.add_component_item(ncs_item)
+        status = self.add_component_item(ncs_item)
+
+        self.sort(0)
+        self._re_index_rows()
+
+        return status
 
     def update_ncs_pathway(self, ncs: NcsPathway) -> bool:
         """Updates the NCS pathway item in the model.
@@ -755,6 +754,9 @@ class NcsPathwayItemModel(ComponentItemModel):
             return False
 
         self._update_display(item)
+
+        self.sort(0)
+        self._re_index_rows()
 
         return True
 
