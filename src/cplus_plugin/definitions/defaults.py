@@ -185,18 +185,18 @@ LAYER_STYLES_WEIGHTED = {
 QGIS_GDAL_PROVIDER = "gdal"
 
 DEFAULT_LOGO_PATH = (
-    os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/logos/ci_logo.png"
+    os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/img/ci_logo.png"
 )
 CPLUS_LOGO_PATH = str(
     os.path.normpath(
         os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-        + "/logos/cplus_logo.svg"
+        + "/img/cplus_logo.svg"
     )
 )
 CI_LOGO_PATH = str(
     os.path.normpath(
         os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-        + "/logos/ci_logo.svg"
+        + "/img/ci_logo.svg"
     )
 )
 

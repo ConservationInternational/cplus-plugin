@@ -199,7 +199,7 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
                 log("Unable to open layout designer.")
 
     def open_report_help(self) -> None:
-        """Opens the Report guide in a browser"""
+        """Opens the Report manual in a browser"""
         open_documentation(REPORT_DOCUMENTATION)
 
     def cancel_clicked(self) -> None:
