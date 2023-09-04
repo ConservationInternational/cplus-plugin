@@ -1,6 +1,6 @@
 # Kartoza
 
-![Simplified analysis model](img/kartoza_logo.svg){style="display: block; margin: 0 auto; border: 1px solid grey; width: 50%; height: 50%"}
+![Simplified analysis model](../img/logos/kartoza_logo.svg){style="display: block; margin: 0 auto; border: 1px solid grey; width: 50%; height: 50%"}
 
 <a href="https://kartoza.com/">Kartoza</a>
 will make geospatial data and technology work for you by partnering with us for training,

@@ -39,7 +39,7 @@ jobs:
           draft: false
 
       - name: Generate zip
-        run: python img.py generate-zip
+        run: python admin.py generate-zip
 
       - name: get zip details
         id: get-zip-details

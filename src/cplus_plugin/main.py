@@ -310,11 +310,11 @@ class QgisCplus:
         item_gui_registry.addLayoutItemGuiMetadata(map_item_gui_metadata)
 
     def open_help(self):
-        """Opens img home page for the plugin in a browser"""
+        """Opens documentation home page for the plugin in a browser"""
         open_documentation(DOCUMENTATION_SITE)
 
     def open_about(self):
-        """Opens the about img for the plugin in a browser"""
+        """Opens the about documentation for the plugin in a browser"""
         open_documentation(ABOUT_DOCUMENTATION_SITE)
 
 

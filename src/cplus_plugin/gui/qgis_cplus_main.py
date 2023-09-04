@@ -455,7 +455,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             parent_item.removeChild(selected_group)
 
     def open_help(self):
-        """Opens the user img for the plugin in a browser"""
+        """Opens the user documentation for the plugin in a browser"""
         open_documentation(USER_DOCUMENTATION_SITE)
 
     def add_priority_layer(self):

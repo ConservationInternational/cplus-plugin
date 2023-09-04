@@ -1,4 +1,3 @@
-import os
 import unittest
 
 from utilities_for_testing import get_qgis_app
@@ -160,7 +159,7 @@ class CplusPluginSettingsTest(unittest.TestCase):
         settings_dialog = CplusSettings(PARENT)
 
         logo_exist = "logos/ci_logo.png"
-        logo_does_not_exist = "img/does_not_exist.png"
+        logo_does_not_exist = "logos/does_not_exist.png"
 
         settings_dialog.logo_file.setFilePath(logo_exist)
         file_exist = settings_dialog.logo_file_exists()
