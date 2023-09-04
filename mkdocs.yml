@@ -8,40 +8,36 @@ site_author: Kartoza
 
 nav:
   - Home: index.md
-  - Users:
-      - user/index.md
-      - Quick Start: user/quickstart/index.md
-      - Guide: user/guide/index.md
-      - Manual: user/manual/index.md
-  - Administrators:
-      - administrator/index.md
-      - Guide: administrator/guide/index.md
-      - Repository: administrator/repository/index.md
-  - Developers:
-      - developer/index.md
-      - Setup: developer/setup/index.md
-      - Architecture: developer/architecture/index.md
-      - Documentation: developer/documentation/index.md
+  - User:
+      - Installation: user/installation.md
+      - Plugin guide: user/cplus_ui_guide.md
+      - Settings: user/settings.md
+  - Admin:
+      - Bugs and suggestions: admin/tasks.md
+      - Staging version: admin/staging_version.md
+      - Artifacts: admin/repository.md
+  - Developer:
+      - Setup: developer/setup.md
+      - Architecture: developer/architecture.md
+      - Documentation: developer/documentation.md
       - API:
           - Core:
-            - Main: developer/api/core/api_main.md
-            - Configuration: developer/core/api/api_conf.md
-            - Settings: developer/api/core/api_settings.md
-            - Utilities: developer/api/core/api_utils.md
+            - Main: developer/api/api_main.md
+            - Configuration: developer/api/api_conf.md
+            - Settings: developer/api/api_settings.md
+            - Utilities: developer/api/api_utils.md
           - Models:
-            - Model base: developer/api/models/api_base.md
-            - Helpers: developer/api/models/api_helpers.md
-            - Report: developer/api/models/api_report.md
+            - Model base: developer/api/api_base.md
+            - Helpers: developer/api/api_helpers.md
           - GUI:
-            - GUI main: developer/api/gui/api_gui_main.md
-            - Component item model: developer/api/gui/api_component_items.md
-            - Implementation model editor: developer/api/gui/api_im_editor_dialog.md
-            - Implementation model widget: developer/api/gui/api_im_widget.md
-            - Map repeat item widget: developer/api/gui/api_map_repeat_item_widget.md
-            - Model component widget: developer/api/gui/api_model_component_widget.md
-            - NCS Pathway editor: developer/api/gui/api_ncs_pathway_editor.md
-            - Priority group: developer/api/gui/api_priority_group.md
-            - Progress dialog: developer/api/gui/api_progress_dialog.md
+            - GUI main: developer/api/api_gui_main.md
+            - Component item model: developer/api/api_component_items.md
+            - Implementation model editor: developer/api/api_im_editor_dialog.md
+            - Implementation model widget: developer/api/api_im_widget.md
+            - Model component widget: developer/api/api_model_component_widget.md
+            - NCS Pathway editor: developer/api/api_ncs_pathway_editor.md
+            - Priority group: developer/api/api_priority_group.md
+            - Progress dialog: developer/api/api_progress_dialog.md
   - About:
       - Conservation International: about/ci.md
       - Kartoza: about/kartoza.md
@@ -66,25 +62,17 @@ plugins:
 
 theme:
   name: material
-  logo: about/img/cplus_logo_white_background.svg
+  logo: img/logos/cplus_logo.svg
   features:
     - navigation.tabs
     - navigation.sections
-    - navigation.expand
-    - navigation.indexes
-    - navigation.instant
-    - navigation.tabs.sticky
-    - navigation.tracking
     - toc.integrate
-    - toc.follow
     - navigation.top
     - search.suggest
     - search.highlight
-    - search.share
     - content.tabs.link
     - content.code.annotation
     - content.code.copy
-    - header.autohide
   language: en
   palette:
     - scheme: default

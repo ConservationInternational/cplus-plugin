@@ -12,7 +12,7 @@ class CplusPluginUtilTest(unittest.TestCase):
         pass
 
     def test_open_documentation(self):
-        # Checks function for opening img in a browser
+        # Checks function for opening documentation in a browser
         result = open_documentation()
 
         # TODO work out a web browser for testing this utility
