@@ -48,3 +48,4 @@ cplus_plugin_main_f486 - https://github.com/kartoza/cplus-plugin/suites/15789991
 cplus_plugin_main_7eee - https://github.com/kartoza/cplus-plugin/suites/15802263224/artifacts/901775005
 cplus_plugin_main_22ca - https://github.com/kartoza/cplus-plugin/suites/15838462940/artifacts/903670615
 cplus_plugin_main_8642 - https://github.com/kartoza/cplus-plugin/suites/15840017157/artifacts/903764872
+cplus_plugin_main_841a - https://github.com/kartoza/cplus-plugin/suites/15839984173/artifacts/903765861
