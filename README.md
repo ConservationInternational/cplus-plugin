@@ -13,7 +13,7 @@
 
 ### QGIS plugin for the CPLUS framework.
 
-<img src="https://raw.githubusercontent.com/kartoza/cplus-plugin/master/docs/img/logos/cplus_logo.svg" alt="CPLUS logo" width=200 height=200>
+<img src="https://raw.githubusercontent.com/kartoza/cplus-plugin/master/docs/about/img/cplus_logo.svg" alt="CPLUS logo" width=200 height=200>
 
 
 ### 📚 Versions
