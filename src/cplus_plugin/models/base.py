@@ -201,6 +201,7 @@ class NcsPathway(LayerModelComponent):
     """Contains information about an NCS pathway layer."""
 
     carbon_paths: typing.List[str] = dataclasses.field(default_factory=list)
+    carbon_coefficient: float = 0.0
 
     def __eq__(self, other: "NcsPathway") -> bool:
         """Test equality of NcsPathway object with another
@@ -226,6 +227,27 @@ class NcsPathway(LayerModelComponent):
 
         if self.user_defined != other.user_defined:
             return False
+
+        return True
+
+    def add_carbon_path(self, carbon_path: str) -> bool:
+        """Add a carbon layer path.
+
+        Checks if the path has already been defined or if it exists
+        in the file system.
+
+        :returns: True if the carbon layer path was successfully
+        added, else False if the path has already been defined
+        or does not exist in the file system.
+        :rtype: bool
+        """
+        if carbon_path in self.carbon_paths:
+            return False
+
+        if not os.path.exists(carbon_path):
+            return False
+
+        self.carbon_paths.append(carbon_path)
 
         return True
 

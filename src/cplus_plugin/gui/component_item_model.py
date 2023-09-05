@@ -23,7 +23,7 @@ from ..models.base import (
 from ..models.helpers import (
     clone_implementation_model,
     clone_ncs_pathway,
-    clone_layer_component,
+    copy_layer_component_attributes,
     create_ncs_pathway,
     ncs_pathway_to_dict,
 )
@@ -332,6 +332,27 @@ class ImplementationModelItem(LayerComponentItem):
         :rtype: list
         """
         return [ncs_item.ncs_pathway for ncs_item in self.ncs_items]
+
+    def ncs_item_from_original_pathway(
+        self, ncs_pathway: NcsPathway
+    ) -> typing.Union[NcsPathwayItem, None]:
+        """Retrieves the NCS item corresponding to the original NCS
+        pathway i.e. before it is added to this implementation
+        model item.
+
+        :param ncs_pathway: Original NCS pathway data model.
+        :type ncs_pathway: NcsPathway
+
+        :returns: The matching NCS pathway item in this implementation
+        model item, else None if there is no matching item.
+        """
+        ncs_uuid = str(ncs_pathway.uuid)
+        if ncs_uuid not in self._uuid_remap:
+            return None
+
+        new_uuid = self._uuid_remap[ncs_uuid]
+
+        return self.ncs_item_by_uuid(new_uuid)
 
     @property
     def original_ncs_pathways(self) -> typing.List[NcsPathway]:
@@ -729,7 +750,12 @@ class NcsPathwayItemModel(ComponentItemModel):
         ncs_item = NcsPathwayItem.create(ncs)
         self._update_display(ncs_item)
 
-        return self.add_component_item(ncs_item)
+        status = self.add_component_item(ncs_item)
+
+        self.sort(0)
+        self._re_index_rows()
+
+        return status
 
     def update_ncs_pathway(self, ncs: NcsPathway) -> bool:
         """Updates the NCS pathway item in the model.
@@ -749,6 +775,9 @@ class NcsPathwayItemModel(ComponentItemModel):
             return False
 
         self._update_display(item)
+
+        self.sort(0)
+        self._re_index_rows()
 
         return True
 
@@ -1086,6 +1115,31 @@ class IMItemModel(ComponentItemModel):
         component_items = self.model_component_items()
 
         return [ci for ci in component_items if ci.type() == IMPLEMENTATION_MODEL_TYPE]
+
+    def update_ncs_pathway_items(self, ncs_pathway: NcsPathway) -> bool:
+        """Update NCS pathway items matching the given NCS pathway model.
+
+        If the NCS pathway model is not valid then the NCS pathway items
+        in the implementation model item will not be updated.
+
+        :returns: True if matching NCS pathway items have been updated,
+        else False.
+        :rtype: bool
+        """
+        if not ncs_pathway.is_valid():
+            return False
+
+        for im_item in self.model_items():
+            ncs_item_for_original = im_item.ncs_item_from_original_pathway(ncs_pathway)
+            if ncs_item_for_original is None:
+                continue
+
+            item_pathway = ncs_item_for_original.ncs_pathway
+            # Copy attribute values excluding the UUID
+            copy_layer_component_attributes(item_pathway, ncs_pathway)
+            ncs_item_for_original.update(item_pathway)
+
+        return True
 
     def remove_implementation_model(self, uuid_str: str) -> bool:
         """Remove an implementation model item from the model.

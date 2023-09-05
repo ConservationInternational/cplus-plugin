@@ -55,6 +55,8 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         self.ipm_layout.addWidget(self.implementation_model_view)
         self.implementation_model_view.title = self.tr("Implementation Models")
 
+        self.ncs_pathway_view.ncs_pathway_updated.connect(self.on_ncs_pathway_updated)
+
         self.load()
 
     def load(self):
@@ -103,6 +105,10 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
             return
 
         self.implementation_model_view.add_ncs_pathway_items(all_ncs_items)
+
+    def on_ncs_pathway_updated(self, ncs_pathway: NcsPathway):
+        """Slot raised when an NCS pathway has been updated."""
+        self.implementation_model_view.update_ncs_pathway_items(ncs_pathway)
 
     def is_valid(self) -> bool:
         """Check if the user input is valid.

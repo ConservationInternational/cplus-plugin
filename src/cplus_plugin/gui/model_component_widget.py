@@ -258,6 +258,8 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
 class NcsComponentWidget(ModelComponentWidget):
     """Widget for displaying and managing NCS pathways."""
 
+    ncs_pathway_updated = QtCore.pyqtSignal(NcsPathway)
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -266,11 +268,6 @@ class NcsComponentWidget(ModelComponentWidget):
         self.lst_model_items.setDragEnabled(True)
         self.lst_model_items.setDragDropMode(QtWidgets.QAbstractItemView.DragOnly)
         self.lst_model_items.setAcceptDrops(False)
-
-        # Disable add, edit, remove controls for now
-        self.btn_add.setEnabled(False)
-        self.btn_remove.setEnabled(False)
-        self.btn_edit.setEnabled(False)
 
     def add_ncs_pathway(self, ncs_pathway: NcsPathway) -> bool:
         """Adds an NCS pathway object to the view.
@@ -289,12 +286,6 @@ class NcsComponentWidget(ModelComponentWidget):
         items = self.ncs_items()
         for item in items:
             self.item_model.remove_ncs_pathway(item.uuid)
-
-    def _update_ui_on_selection_changed(self):
-        """Temporarily disable edit, remove buttons."""
-        super()._update_ui_on_selection_changed()
-        self.btn_remove.setEnabled(False)
-        self.btn_edit.setEnabled(False)
 
     def pathways(self, valid_only=False) -> typing.List[NcsPathway]:
         """Returns a collection of NcsPathway objects in the list view.
@@ -322,7 +313,9 @@ class NcsComponentWidget(ModelComponentWidget):
         ncs_editor = NcsPathwayEditorDialog(self)
         if ncs_editor.exec_() == QtWidgets.QDialog.Accepted:
             ncs_pathway = ncs_editor.ncs_pathway
-            self.item_model.add_ncs_pathway(ncs_pathway)
+            result = self.item_model.add_ncs_pathway(ncs_pathway)
+            if result:
+                settings_manager.save_ncs_pathway(ncs_pathway)
 
     def _on_edit_item(self):
         """Edit selected NCS pathway object."""
@@ -334,7 +327,10 @@ class NcsComponentWidget(ModelComponentWidget):
         ncs_editor = NcsPathwayEditorDialog(self, item.ncs_pathway)
         if ncs_editor.exec_() == QtWidgets.QDialog.Accepted:
             ncs_pathway = ncs_editor.ncs_pathway
-            self.item_model.update_ncs_pathway(ncs_pathway)
+            result = self.item_model.update_ncs_pathway(ncs_pathway)
+            if result:
+                self._save_item(item)
+                self.ncs_pathway_updated.emit(ncs_pathway)
             self._update_ui_on_selection_changed()
 
     def _save_item(self, item: NcsPathwayItem):
@@ -366,6 +362,7 @@ class NcsComponentWidget(ModelComponentWidget):
             == QtWidgets.QMessageBox.Yes
         ):
             self.item_model.remove_ncs_pathway(str(ncs.uuid))
+            settings_manager.remove_ncs_pathway(str(ncs.uuid))
             self.clear_description()
 
     def load(self):
@@ -598,3 +595,16 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         if item.type() == IMPLEMENTATION_MODEL_TYPE:
             self.btn_edit.setEnabled(True)
             self.btn_edit_description.setEnabled(True)
+
+    def update_ncs_pathway_items(self, ncs_pathway: NcsPathway) -> bool:
+        """Update NCS pathway items used for IMs that are linked to the
+        given NCS pathway.
+
+        :param ncs_pathway: NCS pathway whose attribute values will be updated
+        for the related pathways used in the IMs.
+        :type ncs_pathway: NcsPathway
+
+        :returns: True if NCS pathway items were updated, else False.
+        :rtype: bool
+        """
+        return self.item_model.update_ncs_pathway_items(ncs_pathway)
