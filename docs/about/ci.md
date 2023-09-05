@@ -1,6 +1,6 @@
 # Conservation International
 
-![Simplified analysis model](../img/logos/ci_logo.svg){style="display: block; margin: 0 auto; border: 1px solid grey" }
+![Simplified analysis model](img/ci_logo.svg){style="display: block; margin: 0 auto; border: 1px solid grey" }
 
 <p style="text-align: center;">Through the help of community leaders and policymakers, the mission of <a href="https://www.conservation.org/">Conservation International (CI)</a> is to combat climate
 change and preserve carbon stores. CI and the Climate Positive Land Use Strategy (CPLUS) project need the ability to spatially analyze a given area to determine the
