@@ -9,7 +9,6 @@ import typing
 import uuid
 
 import datetime
-import shutil
 
 from functools import partial
 
@@ -56,10 +55,11 @@ from .priority_group_widget import PriorityGroupWidget
 from .priority_layer_dialog import PriorityLayerDialog
 
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
-
 from ..conf import settings_manager, Settings
 
 from ..lib.reports.manager import report_manager
+
+from .components.tree_widget import TreeWidget
 
 from ..resources import *
 
@@ -187,6 +187,29 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.edit_pwl_btn.clicked.connect(self.edit_priority_layer)
         self.remove_pwl_btn.clicked.connect(self.remove_priority_layer)
 
+        # Add priority groups list into the groups frame
+        self.priority_groups_list = TreeWidget()
+
+        self.priority_groups_list.setHeaderHidden(True)
+
+        self.priority_groups_list.setDragEnabled(True)
+        self.priority_groups_list.setDragDropOverwriteMode(True)
+        self.priority_groups_list.viewport().setAcceptDrops(True)
+
+        self.priority_groups_list.setDropIndicatorShown(True)
+        self.priority_groups_list.setDragDropMode(QtWidgets.QAbstractItemView.DropOnly)
+
+        self.priority_groups_list.child_draged_droped.connect(
+            self.priority_groups_update
+        )
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.setSpacing(0)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        layout.addWidget(self.priority_groups_list)
+        self.priority_groups_frame.setLayout(layout)
+
         # Scenario analysis variables
 
         self.analysis_scenario_name = None
@@ -194,6 +217,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.analysis_extent = None
         self.analysis_implementation_models = None
         self.analysis_priority_layers_groups = []
+
+    def priority_groups_update(self, parent, start, end, destination, row):
+        log(
+            f"draged"
+            f" {parent.text()} "
+            f"start {start}, "
+            f"end {end}, "
+            f"destination {destination.text()},"
+            f" row {row}"
+        )
 
     def update_pwl_layers(self, notify=False):
         """Updates the priority layers path available in the store implementation models"""
