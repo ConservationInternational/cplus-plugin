@@ -218,15 +218,28 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.analysis_priority_layers_groups = []
 
     def priority_groups_update(self, target_item, selected_items):
-        item_widget = self.priority_groups_list.itemWidget(target_item, 0)
+        """Updates the priority groups list item with the passed
+         selected layer items.
+
+        :param target_item: The priority group tree widget
+         item that is to be updated
+        :type target_item: QTreeWidgetItem
+
+        :param selected_items: Priority layers items from the list widget
+        :type selected_items: list
+        """
         self.priority_groups_list.setCurrentItem(target_item)
 
         for item in selected_items:
-            layer = settings_manager.find_layer_by_name(item.text())
             self.add_priority_layer_group(target_item, item)
 
     def update_pwl_layers(self, notify=False):
-        """Updates the priority layers path available in the store implementation models"""
+        """Updates the priority layers path available in
+        the store implementation models
+
+        :param notify: Whether to show messag to user about the update
+        :type notify: bool
+        """
         settings_manager.update_implementation_models()
         self.update_priority_layers()
         if notify:
@@ -392,7 +405,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         Checks if priority layer is already in the target group and if so no
         addition is done.
 
-        After addition is done the respective priority layer plugin settings
+        Once the addition is done, the respective priority layer plugin settings
         are updated to store the new information.
 
         :param target_group: Priority group where layer will be added to
@@ -452,20 +465,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 priority_layer["groups"] = new_groups
                 settings_manager.save_priority_layer(priority_layer)
 
-    def remove_priority_layer_group(self, target_group=None, priority_layer=None):
-        """Remove priority layer from a priority group.
-           If no target_group or priority_layer is passed then the current selected
-           group or priority layer from their respective list will be used.
-
-           Checks if priority layer is already in the target group and if no,
-           the removal is not performed.
-
-        :param target_group: Priority group where layer will be removed from
-        :type target_group: dict
-
-        :param priority_layer: Priority weighting layer to be removed
-        :type priority_layer: dict
-        """
+    def remove_priority_layer_group(self):
+        """Remove the current select priority layer from the current priority group."""
         selected_group = self.priority_groups_list.currentItem()
         parent_item = selected_group.parent() if selected_group is not None else None
 
@@ -858,7 +859,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         log("Running from main task.")
 
     def run_pathways_analysis(self, models, priority_layers_groups, extent):
-        """Runs the required model pathways analysis on the passed implementation models
+        """Runs the required model pathways analysis on the passed
+         implementation models.
 
         :param model: List of the selected implementation models
         :type model: typing.List[ImplementationModel]
@@ -1044,10 +1046,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param models: List of the selected implementation models
         :type models: typing.List[ImplementationModel]
 
-        :param priority_layers_groups: Used priority layers groups and their values
+        :param priority_layers_groups: Used priority layers
+        groups and their values
         :type priority_layers_groups: dict
 
-        :param last_pathway: Whether the pathway is the last from the models pathway list
+        :param last_pathway: Whether the pathway is the last from
+         the models pathway list
         :type last_pathway: bool
 
         :param success: Whether the scenario analysis was successful
@@ -1063,12 +1067,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.run_models_analysis(models, priority_layers_groups, extent)
 
     def run_models_analysis(self, models, priority_layers_groups, extent):
-        """Runs the required model analysis on the passed implementation models.
+        """Runs the required model analysis on the passed
+        implementation models.
 
         :param models: List of the selected implementation models
         :type models: typing.List[ImplementationModel]
 
-        :param priority_layers_groups: Used priority layers groups and their values
+        :param priority_layers_groups: Used priority layers
+        groups and their values
         :type priority_layers_groups: dict
 
         :param extent: selected extent from user
@@ -1089,7 +1095,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.progress_dialog.scenario_name = tr("implementation models")
 
         for model in models:
-            new_ims_directory = f"{self.scenario_directory}/implementation_models"
+            new_ims_directory = f"{self.scenario_directory}/" f"implementation_models"
             FileUtils.create_new_dir(new_ims_directory)
             file_name = clean_filename(model.name.replace(" ", "_"))
 
@@ -1110,10 +1116,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 main_task.cancel()
                 return False
 
-            output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            output_file = (
+                f"{new_ims_directory}/" f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            )
 
-            # Due to the implementation models base class model only one of the following
-            # blocks will be executed, the implementation model either contain a path or
+            # Due to the implementation models base class
+            # model only one of the following blocks will be executed,
+            # the implementation model either contain a path or
             # pathways
 
             if model.path is not None and model.path is not "":
@@ -1146,7 +1155,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "OUTPUT": output_file,
             }
 
-            log(f"Used parameters for implementation models generation: {alg_params}")
+            log(
+                f"Used parameters for "
+                f"implementation models generation: {alg_params}"
+            )
 
             alg = QgsApplication.processingRegistry().algorithmById(
                 "qgis:rastercalculator"
@@ -1191,7 +1203,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param model: List of the selected implementation models
         :type model: typing.List[ImplementationModel]
 
-        :param priority_layers_groups: Used priority layers groups and their values
+        :param priority_layers_groups: Used priority layers groups
+         and their values
         :type priority_layers_groups: dict
 
         :param success: Whether the scenario analysis was successful
@@ -1259,7 +1272,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             FileUtils.create_new_dir(new_ims_directory)
             file_name = clean_filename(model.name.replace(" ", "_"))
 
-            output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            output_file = (
+                f"{new_ims_directory}/" f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            )
 
             model_layer = QgsRasterLayer(model.path, model.name)
             provider = model_layer.dataProvider()
@@ -1306,7 +1321,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "OUTPUT": output_file,
             }
 
-            log(f"Used parameters for normalization of the models: {alg_params}")
+            log(f"Used parameters for normalization of" f" the models: {alg_params}")
 
             alg = QgsApplication.processingRegistry().algorithmById(
                 "qgis:rastercalculator"

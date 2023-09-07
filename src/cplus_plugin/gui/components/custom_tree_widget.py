@@ -10,6 +10,14 @@ class CustomTreeWidget(QTreeWidget):
         super()
 
     def dropEvent(self, event: QDropEvent):
+        """Overrides the QTreeWidget dropEvent function, fetches the source item list
+        and the target item and then emits a signal that can used to access the
+        event source and target.
+
+        :param event: Drop event object
+        :type event: QDropEvent
+        """
+
         current_index = self.indexAt(event.pos())
         target_item = self.itemFromIndex(current_index)
 
