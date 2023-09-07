@@ -1400,6 +1400,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             basenames = []
             layers = []
+            selected_layers = []
+
             analysis_done = partial(
                 self.priority_layers_analysis_done, model_count, model, models
             )
@@ -1440,13 +1442,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     continue
 
                 path_basename = pwl_path.stem
-                layers.append(pwl)
-                for layer in settings_manager.get_priority_layers():
-                    if layer.get("name") == path_basename:
-                        for group in layer.get("groups"):
+
+                for priority_layer in settings_manager.get_priority_layers():
+                    if priority_layer.get("name") == layer.get("name"):
+                        for group in priority_layer.get("groups", []):
                             value = group.get("value")
                             coefficient = float(value) / 100
                             if coefficient > 0:
+                                if pwl not in layers:
+                                    layers.append(pwl)
                                 basenames.append(f'({coefficient}*"{path_basename}@1")')
 
             if basenames is []:
