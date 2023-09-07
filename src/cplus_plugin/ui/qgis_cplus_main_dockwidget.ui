@@ -293,7 +293,7 @@
           <item>
            <widget class="QToolButton" name="layer_add_btn">
             <property name="toolTip">
-             <string>Add the selected priority weighting layer to the group.</string>
+             <string>Add the selected priority weighting layer(s) to the group.</string>
             </property>
             <property name="text">
              <string>&lt;-</string>

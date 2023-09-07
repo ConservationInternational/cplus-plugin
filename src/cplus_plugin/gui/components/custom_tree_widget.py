@@ -1,9 +1,19 @@
+# -*- coding: utf-8 -*-
+
+"""
+ Custom tree widget class
+"""
+
 from qgis.PyQt.QtWidgets import QTreeWidget, QTreeWidgetItem
 from qgis.PyQt.QtGui import QDropEvent
 from qgis.PyQt import QtCore
 
 
 class CustomTreeWidget(QTreeWidget):
+    """Class for the custom tree widget object, extending the QTreeWidget class
+    and overriding the drag and drop behaviour.
+    """
+
     child_dragged_dropped = QtCore.pyqtSignal(QTreeWidgetItem, list)
 
     def __int__(self):

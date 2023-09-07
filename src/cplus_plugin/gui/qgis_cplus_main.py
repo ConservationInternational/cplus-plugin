@@ -414,56 +414,65 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param priority_layer: Priority weighting layer to be added
         :type priority_layer: dict
         """
-        selected_priority_layer = (
-            priority_layer or self.priority_layers_list.currentItem()
+        selected_priority_layers = (
+            priority_layer or self.priority_layers_list.selectedItems()
         )
+        selected_priority_layers = (
+            [selected_priority_layers]
+            if not isinstance(selected_priority_layers, list)
+            else selected_priority_layers
+        )
+
         selected_group = target_group or self.priority_groups_list.currentItem()
 
-        if (
-            selected_group is not None and selected_group.parent() is None
-        ) and selected_priority_layer is not None:
-            children = selected_group.takeChildren()
-            item_found = False
-            text = selected_priority_layer.data(QtCore.Qt.DisplayRole)
-            for child in children:
-                if child.text(0) == text:
-                    item_found = True
-                    break
-            selected_group.addChildren(children)
+        for selected_priority_layer in selected_priority_layers:
+            if (
+                selected_group is not None and selected_group.parent() is None
+            ) and selected_priority_layer is not None:
+                children = selected_group.takeChildren()
+                item_found = False
+                text = selected_priority_layer.data(QtCore.Qt.DisplayRole)
+                for child in children:
+                    if child.text(0) == text:
+                        item_found = True
+                        break
+                selected_group.addChildren(children)
 
-            if not item_found:
-                selected_group.setExpanded(True)
-                item = QtWidgets.QTreeWidgetItem(selected_group)
-                item.setText(0, text)
-                group_widget = self.priority_groups_list.itemWidget(selected_group, 0)
-                layer_id = selected_priority_layer.data(QtCore.Qt.UserRole)
+                if not item_found:
+                    selected_group.setExpanded(True)
+                    item = QtWidgets.QTreeWidgetItem(selected_group)
+                    item.setText(0, text)
+                    group_widget = self.priority_groups_list.itemWidget(
+                        selected_group, 0
+                    )
+                    layer_id = selected_priority_layer.data(QtCore.Qt.UserRole)
 
-                priority_layer = settings_manager.get_priority_layer(layer_id)
-                target_group_name = (
-                    group_widget.group.get("name") if group_widget.group else None
-                )
+                    priority_layer = settings_manager.get_priority_layer(layer_id)
+                    target_group_name = (
+                        group_widget.group.get("name") if group_widget.group else None
+                    )
 
-                groups = priority_layer.get("groups")
-                new_groups = []
-                group_found = False
+                    groups = priority_layer.get("groups")
+                    new_groups = []
+                    group_found = False
 
-                for group in groups:
-                    if target_group_name == group["name"]:
-                        group_found = True
-                        new_group = settings_manager.find_group_by_name(
+                    for group in groups:
+                        if target_group_name == group["name"]:
+                            group_found = True
+                            new_group = settings_manager.find_group_by_name(
+                                target_group_name
+                            )
+                        else:
+                            new_group = group
+                        new_groups.append(new_group)
+                    if not group_found:
+                        searched_group = settings_manager.find_group_by_name(
                             target_group_name
                         )
-                    else:
-                        new_group = group
-                    new_groups.append(new_group)
-                if not group_found:
-                    searched_group = settings_manager.find_group_by_name(
-                        target_group_name
-                    )
-                    new_groups.append(searched_group)
+                        new_groups.append(searched_group)
 
-                priority_layer["groups"] = new_groups
-                settings_manager.save_priority_layer(priority_layer)
+                    priority_layer["groups"] = new_groups
+                    settings_manager.save_priority_layer(priority_layer)
 
     def remove_priority_layer_group(self):
         """Remove the current select priority layer from the current priority group."""
@@ -1095,7 +1104,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.progress_dialog.scenario_name = tr("implementation models")
 
         for model in models:
-            new_ims_directory = f"{self.scenario_directory}/" f"implementation_models"
+            new_ims_directory = f"{self.scenario_directory}/implementation_models"
             FileUtils.create_new_dir(new_ims_directory)
             file_name = clean_filename(model.name.replace(" ", "_"))
 
@@ -1116,9 +1125,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 main_task.cancel()
                 return False
 
-            output_file = (
-                f"{new_ims_directory}/" f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
-            )
+            output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
 
             # Due to the implementation models base class
             # model only one of the following blocks will be executed,
@@ -1272,9 +1279,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             FileUtils.create_new_dir(new_ims_directory)
             file_name = clean_filename(model.name.replace(" ", "_"))
 
-            output_file = (
-                f"{new_ims_directory}/" f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
-            )
+            output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
 
             model_layer = QgsRasterLayer(model.path, model.name)
             provider = model_layer.dataProvider()
@@ -1321,7 +1326,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "OUTPUT": output_file,
             }
 
-            log(f"Used parameters for normalization of" f" the models: {alg_params}")
+            log(f"Used parameters for normalization of the models: {alg_params}")
 
             alg = QgsApplication.processingRegistry().algorithmById(
                 "qgis:rastercalculator"
