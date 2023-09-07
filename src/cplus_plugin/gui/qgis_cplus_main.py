@@ -59,7 +59,7 @@ from ..conf import settings_manager, Settings
 
 from ..lib.reports.manager import report_manager
 
-from .components.tree_widget import TreeWidget
+from .components.custom_tree_widget import CustomTreeWidget
 
 from ..resources import *
 
@@ -188,7 +188,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.remove_pwl_btn.clicked.connect(self.remove_priority_layer)
 
         # Add priority groups list into the groups frame
-        self.priority_groups_list = TreeWidget()
+        self.priority_groups_list = CustomTreeWidget()
 
         self.priority_groups_list.setHeaderHidden(True)
 
@@ -196,10 +196,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.priority_groups_list.setDragDropOverwriteMode(True)
         self.priority_groups_list.viewport().setAcceptDrops(True)
 
-        self.priority_groups_list.setDropIndicatorShown(True)
         self.priority_groups_list.setDragDropMode(QtWidgets.QAbstractItemView.DropOnly)
 
-        self.priority_groups_list.child_draged_droped.connect(
+        self.priority_groups_list.child_dragged_dropped.connect(
             self.priority_groups_update
         )
 
@@ -218,15 +217,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.analysis_implementation_models = None
         self.analysis_priority_layers_groups = []
 
-    def priority_groups_update(self, parent, start, end, destination, row):
-        log(
-            f"draged"
-            f" {parent.text()} "
-            f"start {start}, "
-            f"end {end}, "
-            f"destination {destination.text()},"
-            f" row {row}"
-        )
+    def priority_groups_update(self, target_item, selected_items):
+        item_widget = self.priority_groups_list.itemWidget(target_item, 0)
+        self.priority_groups_list.setCurrentItem(target_item)
+
+        for item in selected_items:
+            layer = settings_manager.find_layer_by_name(item.text())
+            self.add_priority_layer_group(target_item, item)
 
     def update_pwl_layers(self, notify=False):
         """Updates the priority layers path available in the store implementation models"""
@@ -389,14 +386,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def add_priority_layer_group(self, target_group=None, priority_layer=None):
         """Adds priority layer from the weighting layers into a priority group
-           If no target_group or priority_layer is passed then the current selected
-           group or priority layer from their respective list will be used.
+        If no target_group or priority_layer is passed then the current selected
+        group or priority layer from their respective list will be used.
 
-           Checks if priority layer is already in the target group and if so no
-           addition is done.
+        Checks if priority layer is already in the target group and if so no
+        addition is done.
 
-           After addition is done the respective priority layer plugin settings
-           are updated to store the new information.
+        After addition is done the respective priority layer plugin settings
+        are updated to store the new information.
 
         :param target_group: Priority group where layer will be added to
         :type target_group: dict

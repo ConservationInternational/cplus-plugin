@@ -387,6 +387,9 @@
           <property name="dragDropMode">
            <enum>QAbstractItemView::DragOnly</enum>
           </property>
+          <property name="selectionMode">
+           <enum>QAbstractItemView::MultiSelection</enum>
+          </property>
           <property name="sortingEnabled">
            <bool>true</bool>
           </property>
