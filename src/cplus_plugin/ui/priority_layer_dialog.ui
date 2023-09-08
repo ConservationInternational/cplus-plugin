@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>527</width>
-    <height>412</height>
+    <height>442</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -65,7 +65,7 @@
          <string/>
         </property>
         <property name="pixmap">
-         <pixmap>../../../../../../../../../../.designer/icons/cplus_logo.svg</pixmap>
+         <pixmap>../../../../../../../../../../../../../../.designer/icons/cplus_logo.svg</pixmap>
         </property>
         <property name="scaledContents">
          <bool>true</bool>
@@ -81,7 +81,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select your own Weighting Priority Layer. Click Help for documentation on how to create your own NCS pathway layers.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select your own Weighting Priority Layer. Click Help for documentation on how to create your own priority weighting layers.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="scaledContents">
          <bool>false</bool>
