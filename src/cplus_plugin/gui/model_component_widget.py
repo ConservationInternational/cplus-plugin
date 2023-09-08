@@ -521,6 +521,7 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
                 implementation_model_item = item.data()
                 if implementation_model_item:
                     self.item_model.remove_layer(implementation_model_item)
+                    self._save_item(implementation_model_item)
 
             self.clear_description()
 

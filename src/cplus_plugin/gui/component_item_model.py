@@ -992,7 +992,7 @@ class IMItemModel(ComponentItemModel):
 
         icon = FileUtils.get_icon("mIconRaster.svg")
         item = LayerItem(icon, display_name)
-        item.setToolTip(display_name)
+        item.setToolTip(layer.source())
         item.setData(implementation_model_item)
 
         item_idx = self.index_by_uuid(implementation_model_item.uuid)
