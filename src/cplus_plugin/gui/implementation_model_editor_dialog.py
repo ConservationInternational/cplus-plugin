@@ -4,6 +4,7 @@ Dialog for creating or editing an implementation model.
 """
 
 import os
+import typing
 import uuid
 
 from qgis.core import Qgis, QgsMapLayerProxyModel, QgsRasterLayer
@@ -173,14 +174,15 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._implementation_model.name = self.txt_name.text()
             self._implementation_model.description = self.txt_description.toPlainText()
 
-        layer = self._get_selected_map_layer()
-        if layer:
-            self._layer = layer
+        self._layer = self._get_selected_map_layer()
 
-    def _get_selected_map_layer(self) -> QgsRasterLayer:
+    def _get_selected_map_layer(self) -> typing.Union[QgsRasterLayer, None]:
         """Returns the currently selected map layer or None if there is
         no item in the combobox.
         """
+        if not self.layer_gb.isChecked():
+            return None
+
         layer = self.cbo_layer.currentLayer()
 
         if layer is None:
