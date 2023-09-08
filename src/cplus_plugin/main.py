@@ -257,6 +257,9 @@ class QgisCplus:
         # Initialize default model components
         initialize_model_settings()
 
+        # Loads NCS pathways and implementation models in step two
+        self.main_widget.load_models_from_settings()
+
         # Register custom layout items
         self.register_layout_items()
 
