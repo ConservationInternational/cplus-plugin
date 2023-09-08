@@ -15,9 +15,9 @@ from qgis.PyQt.uic import loadUiType
 
 from .carbon_item_model import CarbonLayerItem, CarbonLayerModel
 from ..conf import Settings, settings_manager
-from ..definitions.defaults import ICON_PATH
+from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
 from ..models.base import LayerType, NcsPathway
-from ..utils import FileUtils, tr
+from ..utils import FileUtils, open_documentation, tr
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/ncs_pathway_editor_dialog.ui")
@@ -50,6 +50,7 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         help_icon = FileUtils.get_icon("mActionHelpContents.svg")
         self.btn_help.setIcon(help_icon)
+        self.btn_help.clicked.connect(self.open_help)
 
         add_icon = FileUtils.get_icon("symbologyAdd.svg")
         self.btn_add_carbon.setIcon(add_icon)
@@ -319,6 +320,10 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             return ""
 
         return layer_path
+
+    def open_help(self, activated: bool):
+        """Opens the user documentation for the plugin in a browser."""
+        open_documentation(USER_DOCUMENTATION_SITE)
 
     def _on_accepted(self):
         """Validates user input before closing."""

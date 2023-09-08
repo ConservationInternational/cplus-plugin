@@ -15,9 +15,9 @@ from qgis.PyQt import QtGui, QtWidgets
 from qgis.PyQt.uic import loadUiType
 
 from ..conf import Settings, settings_manager
-from ..definitions.defaults import ICON_PATH
+from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
 from ..models.base import ImplementationModel
-from ..utils import FileUtils, tr
+from ..utils import FileUtils, open_documentation, tr
 
 WidgetUi, _ = loadUiType(
     os.path.join(
@@ -38,6 +38,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self.buttonBox.accepted.connect(self._on_accepted)
         self.btn_select_file.clicked.connect(self._on_select_file)
+        self.btn_help.clicked.connect(self.open_help)
 
         icon_pixmap = QtGui.QPixmap(ICON_PATH)
         self.icon_la.setPixmap(icon_pixmap)
@@ -201,6 +202,10 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self._create_implementation_model()
         self.accept()
+
+    def open_help(self, activated: bool):
+        """Opens the user documentation for the plugin in a browser."""
+        open_documentation(USER_DOCUMENTATION_SITE)
 
     def _on_select_file(self, activated: bool):
         """Slot raised to upload a raster layer."""
