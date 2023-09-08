@@ -9,7 +9,6 @@ import typing
 import uuid
 
 import datetime
-import shutil
 
 from functools import partial
 
@@ -56,10 +55,11 @@ from .priority_group_widget import PriorityGroupWidget
 from .priority_layer_dialog import PriorityLayerDialog
 
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
-
 from ..conf import settings_manager, Settings
 
 from ..lib.reports.manager import report_manager
+
+from .components.custom_tree_widget import CustomTreeWidget
 
 from ..resources import *
 
@@ -187,6 +187,28 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.edit_pwl_btn.clicked.connect(self.edit_priority_layer)
         self.remove_pwl_btn.clicked.connect(self.remove_priority_layer)
 
+        # Add priority groups list into the groups frame
+        self.priority_groups_list = CustomTreeWidget()
+
+        self.priority_groups_list.setHeaderHidden(True)
+
+        self.priority_groups_list.setDragEnabled(True)
+        self.priority_groups_list.setDragDropOverwriteMode(True)
+        self.priority_groups_list.viewport().setAcceptDrops(True)
+
+        self.priority_groups_list.setDragDropMode(QtWidgets.QAbstractItemView.DropOnly)
+
+        self.priority_groups_list.child_dragged_dropped.connect(
+            self.priority_groups_update
+        )
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.setSpacing(0)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        layout.addWidget(self.priority_groups_list)
+        self.priority_groups_frame.setLayout(layout)
+
         # Scenario analysis variables
 
         self.analysis_scenario_name = None
@@ -195,8 +217,29 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.analysis_implementation_models = None
         self.analysis_priority_layers_groups = []
 
+    def priority_groups_update(self, target_item, selected_items):
+        """Updates the priority groups list item with the passed
+         selected layer items.
+
+        :param target_item: The priority group tree widget
+         item that is to be updated
+        :type target_item: QTreeWidgetItem
+
+        :param selected_items: Priority layers items from the list widget
+        :type selected_items: list
+        """
+        self.priority_groups_list.setCurrentItem(target_item)
+
+        for item in selected_items:
+            self.add_priority_layer_group(target_item, item)
+
     def update_pwl_layers(self, notify=False):
-        """Updates the priority layers path available in the store implementation models"""
+        """Updates the priority layers path available in
+        the store implementation models
+
+        :param notify: Whether to show messag to user about the update
+        :type notify: bool
+        """
         settings_manager.update_implementation_models()
         self.update_priority_layers()
         if notify:
@@ -356,14 +399,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def add_priority_layer_group(self, target_group=None, priority_layer=None):
         """Adds priority layer from the weighting layers into a priority group
-           If no target_group or priority_layer is passed then the current selected
-           group or priority layer from their respective list will be used.
+        If no target_group or priority_layer is passed then the current selected
+        group or priority layer from their respective list will be used.
 
-           Checks if priority layer is already in the target group and if so no
-           addition is done.
+        Checks if priority layer is already in the target group and if so no
+        addition is done.
 
-           After addition is done the respective priority layer plugin settings
-           are updated to store the new information.
+        Once the addition is done, the respective priority layer plugin settings
+        are updated to store the new information.
 
         :param target_group: Priority group where layer will be added to
         :type target_group: dict
@@ -371,71 +414,68 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param priority_layer: Priority weighting layer to be added
         :type priority_layer: dict
         """
-        selected_priority_layer = (
-            priority_layer or self.priority_layers_list.currentItem()
+        selected_priority_layers = (
+            priority_layer or self.priority_layers_list.selectedItems()
         )
+        selected_priority_layers = (
+            [selected_priority_layers]
+            if not isinstance(selected_priority_layers, list)
+            else selected_priority_layers
+        )
+
         selected_group = target_group or self.priority_groups_list.currentItem()
 
-        if (
-            selected_group is not None and selected_group.parent() is None
-        ) and selected_priority_layer is not None:
-            children = selected_group.takeChildren()
-            item_found = False
-            text = selected_priority_layer.data(QtCore.Qt.DisplayRole)
-            for child in children:
-                if child.text(0) == text:
-                    item_found = True
-                    break
-            selected_group.addChildren(children)
+        for selected_priority_layer in selected_priority_layers:
+            if (
+                selected_group is not None and selected_group.parent() is None
+            ) and selected_priority_layer is not None:
+                children = selected_group.takeChildren()
+                item_found = False
+                text = selected_priority_layer.data(QtCore.Qt.DisplayRole)
+                for child in children:
+                    if child.text(0) == text:
+                        item_found = True
+                        break
+                selected_group.addChildren(children)
 
-            if not item_found:
-                selected_group.setExpanded(True)
-                item = QtWidgets.QTreeWidgetItem(selected_group)
-                item.setText(0, text)
-                group_widget = self.priority_groups_list.itemWidget(selected_group, 0)
-                layer_id = selected_priority_layer.data(QtCore.Qt.UserRole)
+                if not item_found:
+                    selected_group.setExpanded(True)
+                    item = QtWidgets.QTreeWidgetItem(selected_group)
+                    item.setText(0, text)
+                    group_widget = self.priority_groups_list.itemWidget(
+                        selected_group, 0
+                    )
+                    layer_id = selected_priority_layer.data(QtCore.Qt.UserRole)
 
-                priority_layer = settings_manager.get_priority_layer(layer_id)
-                target_group_name = (
-                    group_widget.group.get("name") if group_widget.group else None
-                )
+                    priority_layer = settings_manager.get_priority_layer(layer_id)
+                    target_group_name = (
+                        group_widget.group.get("name") if group_widget.group else None
+                    )
 
-                groups = priority_layer.get("groups")
-                new_groups = []
-                group_found = False
+                    groups = priority_layer.get("groups")
+                    new_groups = []
+                    group_found = False
 
-                for group in groups:
-                    if target_group_name == group["name"]:
-                        group_found = True
-                        new_group = settings_manager.find_group_by_name(
+                    for group in groups:
+                        if target_group_name == group["name"]:
+                            group_found = True
+                            new_group = settings_manager.find_group_by_name(
+                                target_group_name
+                            )
+                        else:
+                            new_group = group
+                        new_groups.append(new_group)
+                    if not group_found:
+                        searched_group = settings_manager.find_group_by_name(
                             target_group_name
                         )
-                    else:
-                        new_group = group
-                    new_groups.append(new_group)
-                if not group_found:
-                    searched_group = settings_manager.find_group_by_name(
-                        target_group_name
-                    )
-                    new_groups.append(searched_group)
+                        new_groups.append(searched_group)
 
-                priority_layer["groups"] = new_groups
-                settings_manager.save_priority_layer(priority_layer)
+                    priority_layer["groups"] = new_groups
+                    settings_manager.save_priority_layer(priority_layer)
 
-    def remove_priority_layer_group(self, target_group=None, priority_layer=None):
-        """Remove priority layer from a priority group.
-           If no target_group or priority_layer is passed then the current selected
-           group or priority layer from their respective list will be used.
-
-           Checks if priority layer is already in the target group and if no,
-           the removal is not performed.
-
-        :param target_group: Priority group where layer will be removed from
-        :type target_group: dict
-
-        :param priority_layer: Priority weighting layer to be removed
-        :type priority_layer: dict
-        """
+    def remove_priority_layer_group(self):
+        """Remove the current select priority layer from the current priority group."""
         selected_group = self.priority_groups_list.currentItem()
         parent_item = selected_group.parent() if selected_group is not None else None
 
@@ -834,7 +874,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         log("Running from main task.")
 
     def run_pathways_analysis(self, models, priority_layers_groups, extent):
-        """Runs the required model pathways analysis on the passed implementation models
+        """Runs the required model pathways analysis on the passed
+         implementation models.
 
         :param model: List of the selected implementation models
         :type model: typing.List[ImplementationModel]
@@ -1021,10 +1062,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param models: List of the selected implementation models
         :type models: typing.List[ImplementationModel]
 
-        :param priority_layers_groups: Used priority layers groups and their values
+        :param priority_layers_groups: Used priority layers
+        groups and their values
         :type priority_layers_groups: dict
 
-        :param last_pathway: Whether the pathway is the last from the models pathway list
+        :param last_pathway: Whether the pathway is the last from
+         the models pathway list
         :type last_pathway: bool
 
         :param success: Whether the scenario analysis was successful
@@ -1040,12 +1083,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.run_models_analysis(models, priority_layers_groups, extent)
 
     def run_models_analysis(self, models, priority_layers_groups, extent):
-        """Runs the required model analysis on the passed implementation models.
+        """Runs the required model analysis on the passed
+        implementation models.
 
         :param models: List of the selected implementation models
         :type models: typing.List[ImplementationModel]
 
-        :param priority_layers_groups: Used priority layers groups and their values
+        :param priority_layers_groups: Used priority layers
+        groups and their values
         :type priority_layers_groups: dict
 
         :param extent: selected extent from user
@@ -1093,8 +1138,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
 
-            # Due to the implementation models base class model only one of the following
-            # blocks will be executed, the implementation model either contain a path or
+            # Due to the implementation models base class
+            # model only one of the following blocks will be executed,
+            # the implementation model either contain a path or
             # pathways
 
             if model.path is not None and model.path is not "":
@@ -1127,7 +1173,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "OUTPUT": output_file,
             }
 
-            log(f"Used parameters for implementation models generation: {alg_params}")
+            log(
+                f"Used parameters for "
+                f"implementation models generation: {alg_params}"
+            )
 
             alg = QgsApplication.processingRegistry().algorithmById(
                 "qgis:rastercalculator"
@@ -1170,7 +1219,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param model: List of the selected implementation models
         :type model: typing.List[ImplementationModel]
 
-        :param priority_layers_groups: Used priority layers groups and their values
+        :param priority_layers_groups: Used priority layers groups
+         and their values
         :type priority_layers_groups: dict
 
         :param success: Whether the scenario analysis was successful
