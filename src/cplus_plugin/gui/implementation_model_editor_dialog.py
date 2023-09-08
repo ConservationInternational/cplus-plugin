@@ -95,7 +95,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
             return
 
         self.txt_name.setText(self._implementation_model.name)
-        self.txt_description.setText(self._implementation_model.description)
+        self.txt_description.setPlainText(self._implementation_model.description)
 
         self.layer_gb.setCollapsed(True)
 
