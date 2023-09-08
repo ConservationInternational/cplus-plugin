@@ -846,7 +846,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Transforms the passed extent into the destination crs
 
          :param extent: Target extent
-        :type extent: SpatialExtent
+        :type extent: QgsRectangle
 
         :param source_crs: Source CRS of the passed extent
         :type source_crs: QgsCoordinateReferenceSystem
@@ -855,14 +855,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type dest_crs: QgsCoordinateReferenceSystem
         """
 
-        box = QgsRectangle(
-            float(extent.bbox[0]),
-            float(extent.bbox[1]),
-            float(extent.bbox[2]),
-            float(extent.bbox[3]),
-        )
         transform = QgsCoordinateTransform(source_crs, dest_crs, QgsProject.instance())
-        transformed_extent = transform.transformBoundingBox(box)
+        transformed_extent = transform.transformBoundingBox(extent)
 
         return transformed_extent
 
@@ -1830,6 +1824,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             extent_list[0] - 0.5, extent_list[2], extent_list[1] + 0.5, extent_list[3]
         )
 
+        canvas_crs = map_canvas.mapSettings().destinationCrs()
+        original_crs = QgsCoordinateReferenceSystem("EPSG:4326")
+
+        if canvas_crs.authid() != original_crs.authid():
+            zoom_extent = self.transform_extent(zoom_extent, original_crs, canvas_crs)
+            default_extent = self.transform_extent(
+                default_extent, original_crs, canvas_crs
+            )
+
         aoi = QgsRubberBand(iface.mapCanvas(), QgsWkbTypes.PolygonGeometry)
 
         aoi.setFillColor(QtGui.QColor(0, 0, 0, 0))
@@ -1838,9 +1841,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         aoi.setLineStyle(QtCore.Qt.DashLine)
 
         geom = QgsGeometry.fromRect(default_extent)
-        aoi.setToGeometry(geom, QgsCoordinateReferenceSystem("EPSG:4326"))
+
+        aoi.setToGeometry(geom, canvas_crs)
 
         map_canvas.setExtent(zoom_extent)
+        map_canvas.refresh()
 
     def prepare_extent_box(self):
         """Configure the spatial extent box with the initial settings."""
