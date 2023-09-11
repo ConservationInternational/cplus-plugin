@@ -590,11 +590,17 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.position_feedback = QgsProcessingFeedback()
         self.processing_context = QgsProcessingContext()
 
-        self.analysis_priority_layers_groups = [
-            layer.get("groups")
-            for layer in settings_manager.get_priority_layers()
-            if layer.get("groups") is not [] or layer.get("groups") is not None
-        ]
+        for group in settings_manager.get_priority_groups():
+            group_layer_dict = {
+                "name": group.get("name"),
+                "value": group.get("value"),
+                "layers": [],
+            }
+            for layer in settings_manager.get_priority_layers():
+                group_names = [group.get("name") for group in layer.get("groups", [])]
+                if group.get("name") in group_names:
+                    group_layer_dict["layers"].append(layer.get("name"))
+            self.analysis_priority_layers_groups.append(group_layer_dict)
 
         self.analysis_implementation_models = [
             item.implementation_model
