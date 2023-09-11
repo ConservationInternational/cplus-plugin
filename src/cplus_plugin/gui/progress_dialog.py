@@ -28,6 +28,8 @@ Ui_DlgProgress, _ = uic.loadUiType(
 class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
     """This progress dialog"""
 
+    analysis_cancelled = QtCore.pyqtSignal()
+
     def __init__(
         self,
         init_message="Processing",
@@ -197,6 +199,8 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         Processing will be stopped, and the UI will be updated to accommodate
         the processing status.
         """
+        self.analysis_cancelled.emit()
+
         self.cancel_reporting()
 
         if self.analysis_running:
@@ -213,6 +217,7 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
 
     def reject(self) -> None:
         """Called when the dialog is closed"""
+        self.analysis_cancelled.emit()
 
         if self.analysis_running:
             # Stops analysis if it is still running

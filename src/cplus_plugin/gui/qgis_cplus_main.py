@@ -139,9 +139,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.analysis_finished.connect(self.post_analysis)
 
         # Report manager
-        self.rpm = report_manager
-        self.rpm.generate_started.connect(self.on_report_running)
-        self.rpm.generate_completed.connect(self.on_report_finished)
+        self.report_manager = report_manager
+        self.report_manager.generate_started.connect(self.on_report_running)
+        self.report_manager.generate_completed.connect(self.on_report_finished)
         self.reporting_feedback: typing.Union[QgsFeedback, None] = None
 
     def prepare_input(self):
@@ -670,6 +670,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             FileUtils.create_new_dir(self.scenario_directory)
 
+            if self.progress_dialog is not None:
+                self.progress_dialog.disconnect()
+
             # Creates and opens the progress dialog for the analysis
             self.progress_dialog = ProgressDialog(
                 "Raster calculation",
@@ -677,6 +680,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 0,
                 100,
                 main_widget=self,
+            )
+            self.progress_dialog.analysis_cancelled.connect(
+                self.on_progress_dialog_cancelled
             )
             self.progress_dialog.run_dialog()
             self.progress_dialog.scenario_name = ""
@@ -700,6 +706,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
 
         self.processing_cancelled = False
+
+        self.run_scenario_btn.setEnabled(False)
 
         self.run_pathways_analysis(
             self.analysis_implementation_models,
@@ -1911,7 +1919,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.reset_reporting_feedback()
 
-        submit_result = self.rpm.generate(self.scenario_result, self.reporting_feedback)
+        submit_result = self.report_manager.generate(
+            self.scenario_result, self.reporting_feedback
+        )
         if not submit_result.status:
             msg = self.tr("Unable to submit report request for scenario")
             self.show_message(f"{msg} {self.scenario_result.scenario.name}.")
@@ -1956,6 +1966,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.progress_dialog.change_status_message(
             tr("Report generation complete"), tr("scenario")
         )
+        self.run_scenario_btn.setEnabled(True)
 
     def report_job_is_for_current_scenario(self, scenario_id: str) -> bool:
         """Checks if the given scenario identifier is for the current
@@ -1983,3 +1994,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             return True
 
         return False
+
+    def on_progress_dialog_cancelled(self):
+        """Slot raised when analysis has been cancelled in progress dialog."""
+        self.run_scenario_btn.setEnabled(True)
