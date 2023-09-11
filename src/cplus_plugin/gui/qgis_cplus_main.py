@@ -1584,6 +1584,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             if self.task:
                 self.task.cancel()
         except Exception as e:
+            self.on_progress_dialog_cancelled()
             log(f"Problem cancelling task, {e}")
 
         # Report generating task
@@ -1591,6 +1592,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             if self.reporting_feedback:
                 self.reporting_feedback.cancel()
         except Exception as e:
+            self.on_progress_dialog_cancelled()
             log(f"Problem cancelling report generating task, {e}")
 
     def scenario_results(self, success, output):
@@ -1997,4 +1999,5 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def on_progress_dialog_cancelled(self):
         """Slot raised when analysis has been cancelled in progress dialog."""
-        self.run_scenario_btn.setEnabled(True)
+        if not self.run_scenario_btn.isEnabled():
+            self.run_scenario_btn.setEnabled(True)
