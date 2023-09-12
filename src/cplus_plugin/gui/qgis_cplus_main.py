@@ -237,7 +237,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Updates the priority layers path available in
         the store implementation models
 
-        :param notify: Whether to show messag to user about the update
+        :param notify: Whether to show message to user about the update
         :type notify: bool
         """
         settings_manager.update_implementation_models()
@@ -375,8 +375,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 layer["groups"] = new_groups
                 settings_manager.save_priority_layer(layer)
 
-    def update_priority_layers(self):
-        """Updates the priority weighting layers list in the UI."""
+    def update_priority_layers(self, update_groups=True):
+        """Updates the priority weighting layers list in the UI.
+
+        :param update_groups: Whether to update the priority groups list or not
+        :type update_groups: bool
+        """
         self.priority_layers_list.clear()
         for layer in settings_manager.get_priority_layers():
             item = QtWidgets.QListWidgetItem()
@@ -384,18 +388,19 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             item.setData(QtCore.Qt.UserRole, layer.get("uuid"))
 
             self.priority_layers_list.addItem(item)
-            for index in range(self.priority_groups_list.topLevelItemCount()):
-                group = self.priority_groups_list.topLevelItem(index)
-                if group.text(0) in layer.get("groups"):
-                    self.add_priority_layer_group(group, item)
-                else:
-                    group_children = group.takeChildren()
-                    children = []
-                    for child in group_children:
-                        if child.text(0) == layer.get("name"):
-                            continue
-                        children.append(child)
-                    group.addChildren(children)
+            if update_groups:
+                for index in range(self.priority_groups_list.topLevelItemCount()):
+                    group = self.priority_groups_list.topLevelItem(index)
+                    if group.text(0) in layer.get("groups"):
+                        self.add_priority_layer_group(group, item)
+                    else:
+                        group_children = group.takeChildren()
+                        children = []
+                        for child in group_children:
+                            if child.text(0) == layer.get("name"):
+                                continue
+                            children.append(child)
+                        group.addChildren(children)
 
     def add_priority_layer_group(self, target_group=None, priority_layer=None):
         """Adds priority layer from the weighting layers into a priority group
@@ -504,16 +509,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
         layer_dialog = PriorityLayerDialog()
         layer_dialog.exec_()
-        self.update_priority_layers()
+        self.update_priority_layers(update_groups=False)
 
     def edit_priority_layer(self):
         """Edits the current selected priority layer
         and updates the layer box list."""
         if self.priority_layers_list.currentItem() is None:
             self.show_message(
-                tr(
-                    "Select first the priority " "weighting layer from the layers list."
-                ),
+                tr("Select first the priority weighting layer from the layers list."),
                 Qgis.Critical,
             )
             return
@@ -529,8 +532,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         layer = settings_manager.find_layer_by_name(current_text)
         layer_dialog = PriorityLayerDialog(layer)
         layer_dialog.exec_()
-
-        self.update_priority_layers()
 
     def remove_priority_layer(self):
         """Removes the current active priority layer."""
@@ -561,7 +562,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
         if reply == QtWidgets.QMessageBox.Yes:
             settings_manager.delete_priority_layer(layer.get("uuid"))
-            self.update_priority_layers()
+            self.update_priority_layers(update_groups=False)
 
     def prepare_message_bar(self):
         """Initializes the widget message bar settings"""
@@ -935,9 +936,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             return
 
         new_carbon_directory = f"{self.scenario_directory}/pathways_carbon_layers"
+
+        coefficient_importance = settings_manager.get_value(
+            Settings.COEFFICIENT_IMPORTANCE, default=5
+        )
         carbon_coefficient = float(
             settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.0)
         )
+        carbon_coefficient = int(coefficient_importance) * carbon_coefficient
+
         base_dir = settings_manager.get_value(Settings.BASE_DIR)
 
         FileUtils.create_new_dir(new_carbon_directory)
@@ -1431,6 +1438,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.progress_dialog.scenario_name = tr(f"implementation models")
 
+        coefficient_importance = settings_manager.get_value(
+            Settings.COEFFICIENT_IMPORTANCE, default=5
+        )
+
         for model in models:
             if model.path is None or model.path is "":
                 self.show_message(
@@ -1477,11 +1488,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             base_dir = settings_manager.get_value(Settings.BASE_DIR)
 
             for layer in settings_model.priority_layers:
-                pwl = layer.get("path")
-
-                if base_dir not in pwl and layer in PRIORITY_LAYERS:
-                    pwl = f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/{pwl}"
+                settings_layer = settings_manager.get_priority_layer(layer.get("uuid"))
+                pwl = settings_layer.get("path")
                 pwl_path = Path(pwl)
+
                 if not pwl_path.exists():
                     log(
                         f"Path {pwl_path} for priority "
@@ -1498,6 +1508,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                         for group in priority_layer.get("groups", []):
                             value = group.get("value")
                             coefficient = float(value) / 100
+                            coefficient = coefficient * int(coefficient_importance)
                             if coefficient > 0:
                                 if pwl not in layers:
                                     layers.append(pwl)
