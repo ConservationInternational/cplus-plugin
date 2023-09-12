@@ -1,5 +1,123 @@
 # Guide
 
+## Preparing data
+
+Data preparation is an important step prior to performing data analysis. This is especially true
+for spatial data (rasters and vector layers), as there is a lot of factors which plays a role
+in the end result. Here are some factors which needs to be considered:
+
+- The data should cover the same spatial extent or overlap each other
+- Coordinate systems are very important when it comes to the accuracy of your spatial analysis.
+For most analysis a projected coordinate system (e.g. UTM, Albers Equal Area Conic, South African LO-system, etc) is preferred above a
+geographic coordinate system (WGS84, Hartebeesthoek84, etc). This is because calculating distances and areas 
+is much more accurate with projected coordinate systems
+- Best practice will be to make use of the same coordinate system for each layer. Having a geographic coordinate
+for some layers, and projected coordinate systems for other, can have negative impacts on your results
+- When working with rasters, be sure that the nodata value is set correctly, otherwise the nodata value
+will be unknown during analysis and will be considered as a normal pixel value
+- The plugin can only work with raster layers. If you have data in vector format, consider converting it to a raster
+- Any outlier values needs to be removed from the spatial data prior to performing analysis
+
+Taking into account the above can greatly improve the analysis and the results produced from the analysis.
+This section will further deal with how to prepare your data using tools available in QGIS.
+
+- Click Processing -> Toolbox to open the QGIS toolbox
+- The toolbox will be used for each section
+
+### Coordinate systems
+
+- Best will be to convert each dataset in a geographic coordinate system to a projected coordinate system
+- Type 'Warp' in the QGIS toolbox search
+- Under **Raster projections**, select **Warp**
+
+![QGIS Warp tool](img/qgis-warp.png)
+
+Provide the following parameters:
+
+- **Input layer**: Layer thee user wants to reproject
+- **Source CRS**: Current CRS of the layer
+- **Target CRS**: The CRS to what the layer should be projected
+- **Resampling method to use**: Nearest Neighbour. Using other options will change pixel values, which we don't want
+- **Nodata value**: Leave empty, except if the user wants to change the nodata value
+- **Reprojected**: The output file
+
+- Click **Run**
+- Do this for all geographic coordinate system rasters
+- As mentioned above, best will be for all layers to make use of the same coordinate system
+
+### Nodata value
+
+If a nodata value for a raster is not set correctly, it will be considered as a pixel value which is
+part of the analysis. This can have a negative impact on the analysis results.
+
+How to check if a raster's nodata is set correctly
+
+- Right-click on the raster in QGIS
+- Select **Properties**
+- Select the **Information** tab
+- Scroll down to the **Bands** section
+- Under **No-data** there should be a value
+- If there is no value, this means that the nodata is not set correctly and therefore needs to be fixed
+
+![QGIS raster nodata](img/qgis-raster-nodata.png)
+
+To fix a nodata issue, do the following:
+
+- Type 'Translate' in the toolbox search
+- Open the 'Translate' tool under 'Raster Conversion'
+
+![QGIS Translate tool](img/qgis-translate.png)
+
+Provide the following parameters:
+
+- **Input layer**: Raster layer
+- **Assign a specific nodata value to output bands**: Provide a desired value here. -9999 will suffice for most cases
+- **Converted**: Output raster
+
+This should solve a nodata issue with a raster. The Translate tool is to convert a raster to another format, but the user can still make use of the same format. This tool
+is useful to correctly set nodata values when needed.
+
+### Vector to raster
+
+As mentioned above, the plugin can only works with raster layers. But often a user might have some data in vector format. This can easily be resolved
+by converting the vector layer to a raster, which can then be used as input to the plugin. Firstly, we want to convert the vector layer
+to make use of the same projected coordinate system than other data. This can be done as follows:
+
+- Type 'Reproject layer' in the QGIS toolbox search
+- Select the 'Reproject layer' tool in the 'Vector general' section
+
+![QGIS Reproject tool](img/qgis-reproject-layer.png)
+
+Set the parameters as follows:
+
+- **Input layer**: Vector layer which needs to be reprojected
+- **Target CRS**: Coordinate system to which the layer should be reprojected, preferrably a projected coordinate system
+- **Reprojected**: The output layer
+
+- Click **Run**
+
+Now that the vector layer is in the correct coordinate system, the user can convert the vector layer to a raster:
+
+- Type 'rasterize' in the QGIS toolbox search
+- Select 'Rasterize (vector to raster)'
+
+![QGIS Rasterize tool](img/qgis-rasterize.png)
+
+Set the parameters as follows:
+
+- **Input layer**: The vector layer to convert to a raster
+- **Field to use to burn**: Attribute field to use as the raster pixel values
+- **A fixed value to burn**: A default value for empty fields for a feature. Otherwise leave as is
+- **Output raster size units**: Georeferenced units
+- **Width** and **Height**: Spatial resolution in meters. If the vector layer is in geograpghic coordinates, this distance will be degrees not meters
+- **Output extent**: Leave as is, except if the user wants to limit the output to an extent
+- **Assign a specific nodata value to output bands**: -9999 will suffice for most cases
+- **Rasterized**: The output raster
+
+- Click **Run**
+
+The user's data should now be ready for analysis.
+
 ## Perform analysis
 
 **Figure 1** shows the toolbar button/menu for the plugin. Clicking on the icon will open the plugin.
