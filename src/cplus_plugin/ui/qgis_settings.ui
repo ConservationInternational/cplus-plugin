@@ -164,23 +164,6 @@
           <string>Advanced</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_2">
-          <item row="2" column="1">
-           <widget class="QgsFileWidget" name="folder_data">
-            <property name="storageMode">
-             <enum>QgsFileWidget::GetDirectory</enum>
-            </property>
-            <property name="options">
-             <set>QFileDialog::ShowDirsOnly</set>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="lbl_data_dir">
-            <property name="text">
-             <string>Base data directory</string>
-            </property>
-           </widget>
-          </item>
           <item row="3" column="0">
            <widget class="QLabel" name="carbon_coefficien_la">
             <property name="toolTip">
@@ -188,6 +171,13 @@
             </property>
             <property name="text">
              <string>Coefficient for carbon layers</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="lbl_data_dir">
+            <property name="text">
+             <string>Base data directory</string>
             </property>
            </widget>
           </item>
@@ -207,6 +197,42 @@
             </property>
             <property name="value">
              <double>0.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QgsFileWidget" name="folder_data">
+            <property name="storageMode">
+             <enum>QgsFileWidget::GetDirectory</enum>
+            </property>
+            <property name="options">
+             <set>QFileDialog::ShowDirsOnly</set>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="label">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Used to specify the level of importance for the used coefficients when weighting the implementation models with the priority weighting layers and when combining carbon layers with the NCS pathways.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="text">
+             <string>Coefficients importance</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QSpinBox" name="coefficients_importance_box">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Used to specify the level of importance for the used coefficients when weighting the implementation models with the priority weighting layers and when combining carbon layers with the NCS pathways.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>5</number>
+            </property>
+            <property name="value">
+             <number>5</number>
             </property>
            </widget>
           </item>

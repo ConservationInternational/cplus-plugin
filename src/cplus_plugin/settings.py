@@ -231,6 +231,12 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         coefficient = self.carbon_coefficient_box.value()
         settings_manager.set_value(Settings.CARBON_COEFFICIENT, coefficient)
 
+        # Coefficients importance
+        coefficients_importance = self.coefficients_importance_box.value()
+        settings_manager.set_value(
+            Settings.COEFFICIENT_IMPORTANCE, coefficients_importance
+        )
+
         # Checks if the provided base directory exists
         if not os.path.exists(base_dir_path):
             iface.messageBar().pushCritical(
@@ -288,6 +294,12 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             Settings.CARBON_COEFFICIENT, default=0.0
         )
         self.carbon_coefficient_box.setValue(float(coefficient))
+
+        # Coefficients importance
+        coefficients_importance = settings_manager.get_value(
+            Settings.COEFFICIENT_IMPORTANCE, default=5
+        )
+        self.coefficients_importance_box.setValue(int(coefficients_importance))
 
     def showEvent(self, event: QShowEvent) -> None:
         """Show event being called. This will display the plugin settings.

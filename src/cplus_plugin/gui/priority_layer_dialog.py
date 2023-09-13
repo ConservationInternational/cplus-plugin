@@ -147,6 +147,12 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         if not self.layer:
             return
 
+        if len(removed_models) <= 0:
+            all_models = settings_manager.get_all_implementation_models()
+            removed_models = [
+                model for model in all_models if model.name not in models_names
+            ]
+
         for model in models:
             models_layer_uuids = [
                 str(layer.get("uuid")) for layer in model.priority_layers
@@ -155,33 +161,31 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
                 model.priority_layers.append(self.layer)
                 settings_manager.save_implementation_model(model)
         for model in removed_models:
-            if self.layer in model.priority_layers:
-                model.priority_layers.remove(self.layer)
-                settings_manager.save_implementation_model(model)
+            for layer in model.priority_layers:
+                if str(layer.get("uuid")) == str(self.layer.get("uuid")):
+                    model.priority_layers.remove(layer)
+                    settings_manager.save_implementation_model(model)
 
     def accept(self):
         """Handles logic for adding new priority layer and edit existing one"""
         layer_id = uuid.uuid4()
+        layer_groups = []
         layer = {}
-        update_models = True
         if self.layer is not None:
-            update_models = False
             layer_id = self.layer.get("uuid")
+            layer_groups = self.layer.get("groups", [])
 
         layer["uuid"] = str(layer_id)
         layer["name"] = self.layer_name.text()
         layer["description"] = self.layer_description.toPlainText()
+        layer["groups"] = layer_groups
 
-        if self.map_layer_box.currentLayer() is not None:
-            layer["path"] = self.map_layer_box.currentLayer().source()
-        else:
-            layer["path"] = self.map_layer_file_widget.filePath()
+        layer["path"] = self.map_layer_file_widget.filePath()
 
         settings_manager.save_priority_layer(layer)
 
-        if update_models:
-            self.layer = layer
-            self.set_selected_models(self.models)
+        self.layer = layer
+        self.set_selected_models(self.models)
 
         super().accept()
 
