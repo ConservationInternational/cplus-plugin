@@ -48,7 +48,7 @@ from ...definitions.defaults import (
     IMPLEMENTATION_MODEL_AREA_TABLE_ID,
     MINIMUM_ITEM_HEIGHT,
     MINIMUM_ITEM_WIDTH,
-    PRIORITY_GROUP_WEIGHT_TABLE_ID
+    PRIORITY_GROUP_WEIGHT_TABLE_ID,
 )
 from .layout_items import CplusMapRepeatItem
 from ...models.base import ImplementationModel

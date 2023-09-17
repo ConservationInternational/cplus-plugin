@@ -1928,7 +1928,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.reset_reporting_feedback()
 
-        submit_result = self.report_manager.generate(self.scenario_result, self.reporting_feedback)
+        submit_result = self.report_manager.generate(
+            self.scenario_result, self.reporting_feedback
+        )
         if not submit_result.status:
             msg = self.tr("Unable to submit report request for scenario")
             self.show_message(f"{msg} {self.scenario_result.scenario.name}.")

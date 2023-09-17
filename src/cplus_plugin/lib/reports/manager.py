@@ -21,10 +21,7 @@ from qgis.PyQt import QtCore, QtGui
 
 from ...conf import settings_manager, Settings
 from ...definitions.constants import OUTPUTS_SEGMENT
-from ...models.base import (
-    Scenario,
-    ScenarioResult
-)
+from ...models.base import Scenario, ScenarioResult
 from ...models.report import ReportContext, ReportResult, ReportSubmitStatus
 from ...utils import FileUtils, log, tr
 
