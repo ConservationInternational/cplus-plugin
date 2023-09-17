@@ -238,6 +238,8 @@ class ReportGenerator:
         if self._feedback:
             self._feedback.canceled.connect(self._on_feedback_cancelled)
 
+        self._area_calculation_progress_reference = 40
+
     @property
     def context(self) -> ReportContext:
         """Returns the report context used by the generator.
@@ -890,18 +892,20 @@ class ReportGenerator:
 
         legend_item.setAutoUpdateModel(False)
         model = legend_item.model()
+        im_names = [im.name.lower() for im in self._context.scenario.models]
         for tree_layer in legend_item.model().rootGroup().findLayers():
             if tree_layer.name() == self._context.output_layer_name:
                 # We need to refresh the tree layer for the nodes to be loaded
                 model.refreshLayerLegend(tree_layer)
                 scenario_child_nodes = model.layerLegendNodes(tree_layer)
+                im_node_indices = []
                 for i, child_node in enumerate(scenario_child_nodes):
-                    # Find node containing "Band 1..." and remove it
-                    # i.e. exclude it from the tree layer.
-                    if isinstance(child_node, QgsSimpleLegendNode):
-                        indexes = list(range(i + 1, len(scenario_child_nodes)))
-                        QgsMapLayerLegendUtils.setLegendNodeOrder(tree_layer, indexes)
+                    node_name = str(child_node.data(QtCore.Qt.DisplayRole))
+                    # Only show nodes for implementation nodes used for the scenario
+                    if node_name.lower() in im_names:
+                        im_node_indices.append(i)
 
+                QgsMapLayerLegendUtils.setLegendNodeOrder(tree_layer, im_node_indices)
                 # Rename layer name in the legend
                 tree_layer.setCustomProperty("legend/title-label", tr("Ideal Landuse"))
                 model.refreshLayerLegend(tree_layer)
