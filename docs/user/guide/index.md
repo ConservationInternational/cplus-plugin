@@ -265,18 +265,21 @@ Step 2 buttons (**Figure 14**):
 - Click on the left green plus button to add a new pathway (**Figure 15**)
 - Provide a **Name** and **Description** for the pathway
 - Two approaches to select a layer: A layer from the **QGIS canvas**, or **Upload from a file**
+- Add **Carbon layers** as desired. Multiple carbon layers can be provided. These layers will be averaged
 - Click **OK**
 - The new **NCS pathway** will be added
 
-```
-NOTE: If the NCS pathway is broken (e.g. layer or file cannot be found), the pathway text
+<blockquote> If the NCS pathway is broken (e.g. layer or file cannot be found), the pathway text
 will have an exclamation mark next to it. The user will need to rectify the issue before continuing to
-step 3.
-```
+step 3. </blockquote>
 
 ![CPLUS add pathway](img/plugin-pathway-editor.png)
 
 *Figure 15: NCS Pathway creator/editor*
+
+<blockquote> Be sure each NCS pathway's Carbon layers is set up correctly before setting up
+the Implementation models in the steps which follows. Changes to the Carbon layers afterward will
+require the user to set up the Implementation model again. </blockquote>
 
 #### Implementation model
 
