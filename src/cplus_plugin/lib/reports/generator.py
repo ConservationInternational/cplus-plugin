@@ -2,6 +2,7 @@
 """
 CPLUS Report generator.
 """
+from numbers import Number
 import os
 from pathlib import Path
 import traceback
@@ -24,11 +25,14 @@ from qgis.core import (
     QgsLayoutItemShape,
     QgsLayoutPoint,
     QgsLayoutSize,
+    QgsMapLayerLegendUtils,
     QgsPrintLayout,
+    QgsProcessingFeedback,
     QgsProject,
     QgsRasterLayer,
     QgsReadWriteContext,
     QgsScaleBarSettings,
+    QgsSimpleLegendNode,
     QgsTask,
     QgsTableCell,
     QgsTextFormat,
@@ -40,14 +44,15 @@ from qgis.PyQt import QtCore, QtGui, QtXml
 
 from ...definitions.constants import IM_GROUP_LAYER_NAME
 from ...definitions.defaults import (
+    DEFAULT_IMPLEMENTATION_MODEL_PIXEL_VALUES,
     IMPLEMENTATION_MODEL_AREA_TABLE_ID,
     MINIMUM_ITEM_HEIGHT,
     MINIMUM_ITEM_WIDTH,
     PRIORITY_GROUP_WEIGHT_TABLE_ID,
-    SCENARIO_OUTPUT_LAYER_NAME,
 )
 from .layout_items import CplusMapRepeatItem
 from ...models.base import ImplementationModel
+from ...models.helpers import extent_to_project_crs_extent
 from ...models.report import ReportContext, ReportResult
 from ...utils import (
     calculate_raster_value_area,
@@ -66,8 +71,8 @@ class ReportGeneratorTask(QgsTask):
         self._context = context
         self._result = None
         self._generator = ReportGenerator(self._context, self._context.feedback)
-        self.lm = QgsProject.instance().layoutManager()
-        self.lm.layoutAdded.connect(self._on_layout_added)
+        self.layout_manager = QgsProject.instance().layoutManager()
+        self.layout_manager.layoutAdded.connect(self._on_layout_added)
 
     @property
     def context(self) -> ReportContext:
@@ -118,19 +123,23 @@ class ReportGeneratorTask(QgsTask):
 
         return self._result.success
 
-    @classmethod
-    def _zoom_map_items_to_current_extents(cls, layout: QgsPrintLayout):
+    def _zoom_map_items_to_current_extents(self, layout: QgsPrintLayout):
         """Zoom extents of map items in the layout to current map canvas
         extents.
         """
-        extent = iface.mapCanvas().mapSettings().visibleExtent()
+        scenario_extent = extent_to_project_crs_extent(
+            self._context.scenario.extent, QgsProject.instance()
+        )
+        if scenario_extent is None:
+            log("Cannot set extents for map items in the report.")
+            return
+
         for item in layout.items():
             if isinstance(item, QgsLayoutItemMap):
-                item.zoomToExtent(extent)
+                item.zoomToExtent(scenario_extent)
 
     def _on_layout_added(self, name: str):
         """Slot raised when a layout has been added to the manager."""
-        # self._generator.export_to_pdf()
         self._export_to_pdf()
 
     def _export_to_pdf(self):
@@ -140,12 +149,21 @@ class ReportGeneratorTask(QgsTask):
         # We fetch the layout afresh so that the PDF export can contain
         # synced extents.
         layout_name = self._generator.layout.name()
-        layout = self.lm.layoutByName(layout_name)
+        layout = self.layout_manager.layoutByName(layout_name)
         if layout is None:
             log(
                 f"Could not find {layout_name} layout for exporting to PDF.", info=False
             )
             return
+
+        # Set project metadata which will be cascaded to the PDF document
+        project = QgsProject.instance()
+        metadata = project.metadata()
+        metadata.setTitle(self._context.scenario.name)
+        metadata.setAuthor("CPLUS plugin")
+        metadata.setAbstract(self._context.scenario.description)
+        metadata.setCreationDateTime(QtCore.QDateTime.currentDateTime())
+        project.setMetadata(metadata)
 
         exporter = QgsLayoutExporter(layout)
         pdf_path = f"{self._generator.output_dir}/{layout_name}.pdf"
@@ -214,6 +232,13 @@ class ReportGenerator:
         self._repeat_page_num = -1
         self._repeat_item = None
         self._reference_layer_group = None
+        self._scenario_layer = None
+        self._area_processing_feedback = None
+
+        if self._feedback:
+            self._feedback.canceled.connect(self._on_feedback_cancelled)
+
+        self._area_calculation_progress_reference = 40
 
     @property
     def context(self) -> ReportContext:
@@ -272,6 +297,24 @@ class ReportGenerator:
         """
         return self._repeat_page
 
+    def _reset_area_processing_feedback(self):
+        """Creates a new instance of processing feedback."""
+        if self._area_processing_feedback is not None:
+            self._area_processing_feedback.progressChanged.disconnect()
+
+        self._area_processing_feedback = QgsProcessingFeedback()
+        self._area_processing_feedback.progressChanged.connect(
+            self._on_area_progress_changed
+        )
+
+    def _on_area_progress_changed(self, progress: float):
+        """Slot raised when progress for area calculation."""
+        # Check cancel or update progress
+        total_progress = self._area_calculation_progress_reference + (
+            self._area_calculation_progress_reference / 100 * progress
+        )
+        self._process_check_cancelled_or_set_progress(total_progress)
+
     def _process_check_cancelled_or_set_progress(self, value: float) -> bool:
         """Check if there is a request to cancel the process
         if a feedback object had been specified.
@@ -285,6 +328,15 @@ class ReportGenerator:
             self._feedback.setProgress(value)
 
         return False
+
+    def _on_feedback_cancelled(self):
+        # Slot raised when the main feedback object has been cancelled.
+        # Cancel area calculation as well
+        if (
+            self._area_processing_feedback
+            and not self._area_processing_feedback.isCanceled()
+        ):
+            self._area_processing_feedback.cancel()
 
     def _set_project(self):
         """Deserialize the project from the report context."""
@@ -314,14 +366,6 @@ class ReportGenerator:
             self._error_messages.append(f"{tr_msg} {self._context.project_file}.")
             return
 
-        # Set project metadata which will be cascaded to the PDF document
-        metadata = project.metadata()
-        metadata.setTitle(self._context.scenario.name)
-        metadata.setAuthor("CPLUS plugin")
-        metadata.setAbstract(self._context.scenario.description)
-        metadata.setCreationDateTime(QtCore.QDateTime.currentDateTime())
-        project.setMetadata(metadata)
-
         # Set reference layer group in project i.e. the one that contains
         # the scenario output layer.
         layer_root = project.layerTreeRoot()
@@ -332,6 +376,7 @@ class ReportGenerator:
         ]
         if len(matching_tree_layers) > 0:
             scenario_tree_layer = matching_tree_layers[0]
+            self._scenario_layer = scenario_tree_layer.layer()
             parent = scenario_tree_layer.parent()
             if parent.nodeType() == QgsLayerTreeNode.NodeType.NodeGroup:
                 self._reference_layer_group = parent
@@ -504,7 +549,6 @@ class ReportGenerator:
 
         max_items_page = num_rows * num_cols
 
-        # Temporary for testing
         num_implementation_models = len(self._context.scenario.models)
 
         if num_implementation_models == 0:
@@ -846,12 +890,36 @@ class ReportGenerator:
             self._error_messages.append(tr_msg)
             return
 
+        legend_item.setAutoUpdateModel(False)
         model = legend_item.model()
-        root_node = model.rootGroup()
-        for tree_layer in root_node.findLayers():
-            if tree_layer.name().startswith(SCENARIO_OUTPUT_LAYER_NAME):
-                tree_layer.setName(tr("Ideal Landuse"))
+        im_names = [im.name.lower() for im in self._context.scenario.models]
+        for tree_layer in legend_item.model().rootGroup().findLayers():
+            if tree_layer.name() == self._context.output_layer_name:
+                # We need to refresh the tree layer for the nodes to be loaded
                 model.refreshLayerLegend(tree_layer)
+                scenario_child_nodes = model.layerLegendNodes(tree_layer)
+                im_node_indices = []
+                for i, child_node in enumerate(scenario_child_nodes):
+                    node_name = str(child_node.data(QtCore.Qt.DisplayRole))
+                    # Only show nodes for implementation nodes used for the scenario
+                    if node_name.lower() in im_names:
+                        im_node_indices.append(i)
+
+                QgsMapLayerLegendUtils.setLegendNodeOrder(tree_layer, im_node_indices)
+                # Rename layer name in the legend
+                tree_layer.setCustomProperty("legend/title-label", tr("Ideal Landuse"))
+                model.refreshLayerLegend(tree_layer)
+            else:
+                # Remove all other non-scenario layers
+                node_index = model.node2index(tree_layer)
+                if not node_index.isValid():
+                    continue
+                model.removeRow(node_index.row(), node_index.parent())
+
+        # Refresh legend
+        legend_item.adjustBoxSize()
+        legend_item.invalidateCache()
+        legend_item.update()
 
     def _get_table_from_id(
         self, table_id: str
@@ -877,35 +945,51 @@ class ReportGenerator:
 
         num_implementation_models = len(self._context.scenario.models)
         if num_implementation_models == 0:
-            tr_msg = "No implementation models in the scenario"
+            tr_msg = tr("No implementation models in the scenario.")
             self._error_messages.append(tr_msg)
             return
 
-        progress_percent_per_im = 40 / num_implementation_models
+        if self._scenario_layer is None:
+            tr_msg = tr("Scenario layer could not be set to calculate the area.")
+            self._error_messages.append(tr_msg)
+            return
+
+        self._reset_area_processing_feedback()
+
+        # Calculate pixel area
+        pixel_area_info = calculate_raster_value_area(
+            self._scenario_layer, feedback=self._area_processing_feedback
+        )
+        if len(pixel_area_info) == 0:
+            tr_msg = tr("No implementation model areas from the calculation.")
+            self._error_messages.append(tr_msg)
+            return
 
         rows_data = []
         for imp_model in self._context.scenario.models:
+            # IM name
             name_cell = QgsTableCell(imp_model.name)
             name_cell.setBackgroundColor(QtGui.QColor("#e9e9e9"))
-            layer = QgsRasterLayer(imp_model.path, imp_model.name)
-            if layer is None:
-                area_info = tr("No area <Error in layer>")
-            else:
-                area_info = calculate_raster_value_area(layer)
-                if area_info == -1:
-                    area_info = tr("An error occurred when computing the area.")
-            area_cell = QgsTableCell(area_info)
-            number_format = QgsBasicNumericFormat()
-            number_format.setThousandsSeparator(",")
-            number_format.setNumberDecimalPlaces(2)
-            area_cell.setNumericFormat(number_format)
-            rows_data.append([name_cell, area_cell])
 
-            # Check cancel or update progress
-            if self._feedback:
-                progress = self._feedback.progress() + progress_percent_per_im
-                if self._process_check_cancelled_or_set_progress(progress):
-                    break
+            # IM area
+            im_uuid = str(imp_model.uuid)
+            if im_uuid in DEFAULT_IMPLEMENTATION_MODEL_PIXEL_VALUES:
+                im_pixel_value = DEFAULT_IMPLEMENTATION_MODEL_PIXEL_VALUES[im_uuid]
+                area_info = pixel_area_info.get(im_pixel_value, None)
+                if area_info is None:
+                    area_info = "0"
+            else:
+                area_info = tr("<Pixel value not found>")
+
+            area_cell = QgsTableCell(area_info)
+            if isinstance(area_info, Number):
+                number_format = QgsBasicNumericFormat()
+                number_format.setThousandsSeparator(",")
+                number_format.setShowTrailingZeros(True)
+                number_format.setNumberDecimalPlaces(2)
+                area_cell.setNumericFormat(number_format)
+
+            rows_data.append([name_cell, area_cell])
 
         parent_table.setTableContents(rows_data)
 
@@ -918,13 +1002,30 @@ class ReportGenerator:
             return
 
         rows_data = []
+        groups = []
         for priority_group in self._context.scenario.priority_layer_groups:
-            for priority_layer in priority_group:
-                if "name" not in priority_layer or "value" not in priority_layer:
-                    continue
-                name_cell = QgsTableCell(priority_layer["name"])
-                value_cell = QgsTableCell(priority_layer["value"])
-                rows_data.append([name_cell, value_cell])
+            if "name" not in priority_group or "value" not in priority_group:
+                continue
+
+            group_name = priority_group["name"]
+            # Ensure there are no duplicates in the table
+            if group_name in groups:
+                continue
+
+            # If value is less than or equal to zero then do not include in the table.
+            value = -1
+            try:
+                value = int(priority_group["value"])
+            except ValueError:
+                continue
+
+            if value <= 0:
+                continue
+
+            name_cell = QgsTableCell(group_name)
+            value_cell = QgsTableCell(value)
+            rows_data.append([name_cell, value_cell])
+            groups.append(group_name)
 
         parent_table.setTableContents(rows_data)
 

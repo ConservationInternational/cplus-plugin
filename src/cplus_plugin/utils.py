@@ -12,8 +12,8 @@ from qgis.core import (
     Qgis,
     QgsCoordinateTransformContext,
     QgsDistanceArea,
-    QgsGeometry,
     QgsMessageLog,
+    QgsProcessingFeedback,
     QgsRasterLayer,
     QgsUnitTypes,
 )
@@ -127,12 +127,14 @@ def clean_filename(filename):
     return filename
 
 
-def calculate_raster_value_area(layer: QgsRasterLayer, band_number: int = 1) -> float:
+def calculate_raster_value_area(
+    layer: QgsRasterLayer, band_number: int = 1, feedback: QgsProcessingFeedback = None
+) -> dict:
     """Calculates the area of value pixels for the given band in a raster layer.
 
     Please note that this function will run in the main application thread hence
-    for best results, caller should execute it in a background process if part
-    of a bigger workflow.
+    for best results, it is recommended to execute it in a background process
+    if part of a bigger workflow.
 
     :param layer: Input layer whose area for value pixels is to be calculated.
     :type layer: QgsRasterLayer
@@ -140,27 +142,39 @@ def calculate_raster_value_area(layer: QgsRasterLayer, band_number: int = 1) -> 
     :param band_number: Band number to compute area, default is band one.
     :type band_number: int
 
-    :returns: The area in hectares or -1 if it could not be
-    calculated.
+    :param feedback: Feedback object for progress during area calculation.
+    :type feedback: QgsProcessingFeedback
+
+    :returns: A dictionary containing the pixel value as
+    the key and the corresponding area in hectares as the value for all the pixels
+    in the raster otherwise returns a empty dictionary if the raster is invalid
+    or if it is empty.
     :rtype: float
     """
     if not layer.isValid():
         log("Invalid layer for raster area calculation.", info=False)
-        return -1
+        return {}
 
-    alg_name = "native:rasterlayeruniquevaluesreport"
-    params = {"INPUT": layer, "BAND": band_number}
+    algorithm_name = "native:rasterlayeruniquevaluesreport"
+    params = {
+        "INPUT": layer,
+        "BAND": band_number,
+        "OUTPUT_TABLE": "TEMPORARY_OUTPUT",
+        "OUTPUT_HTML_FILE": "[Skip output]",
+    }
 
-    output = processing.run(alg_name, params)
+    algorithm_result = processing.run(algorithm_name, params, feedback=feedback)
 
     # Get number of pixels with values
-    total_pixel_count = output["TOTAL_PIXEL_COUNT"]
+    total_pixel_count = algorithm_result["TOTAL_PIXEL_COUNT"]
     if total_pixel_count == 0:
         log("Input layer for raster area calculation is empty.", info=False)
-        return -1
+        return {}
 
-    no_data_count = output["NODATA_PIXEL_COUNT"]
-    value_pixel_count = total_pixel_count - no_data_count
+    output_table = algorithm_result["OUTPUT_TABLE"]
+    if output_table is None:
+        log("Unique values raster table could not be retrieved.", info=False)
+        return {}
 
     area_calc = QgsDistanceArea()
     crs = layer.crs()
@@ -169,20 +183,21 @@ def calculate_raster_value_area(layer: QgsRasterLayer, band_number: int = 1) -> 
         # Use ellipsoid calculation if available
         area_calc.setEllipsoid(crs.ellipsoidAcronym())
 
-    ext_geom = QgsGeometry.fromRect(layer.extent())
-    extents_area = area_calc.measureArea(ext_geom)
-
     version = Qgis.versionInt()
     if version < 33000:
         unit_type = QgsUnitTypes.AreaUnit.AreaHectares
     else:
         unit_type = Qgis.AreaUnit.Hectares
 
-    # Compute pixel size in hectares
-    area_ha = area_calc.convertAreaMeasurement(extents_area, unit_type)
-    pixel_area = area_ha / total_pixel_count
+    pixel_areas = {}
+    features = output_table.getFeatures()
+    for f in features:
+        pixel_value = f.attribute(0)
+        area = f.attribute(2)
+        pixel_value_area = area_calc.convertAreaMeasurement(area, unit_type)
+        pixel_areas[int(pixel_value)] = pixel_value_area
 
-    return pixel_area * value_pixel_count
+    return pixel_areas
 
 
 class FileUtils:

@@ -371,10 +371,10 @@ def extent_to_qgs_rectangle(
         return None
 
     return QgsRectangle(
-        spatial_extent.bbox[3],
+        spatial_extent.bbox[0],
         spatial_extent.bbox[2],
         spatial_extent.bbox[1],
-        spatial_extent.bbox[0],
+        spatial_extent.bbox[3],
     )
 
 

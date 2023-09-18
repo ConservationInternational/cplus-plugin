@@ -6,7 +6,6 @@ and handles report generation.
 import os
 from pathlib import Path
 import typing
-import uuid
 
 from qgis.core import (
     Qgis,
@@ -22,14 +21,7 @@ from qgis.PyQt import QtCore, QtGui
 
 from ...conf import settings_manager, Settings
 from ...definitions.constants import OUTPUTS_SEGMENT
-from ...models.base import (
-    ImplementationModel,
-    LayerType,
-    NcsPathway,
-    Scenario,
-    ScenarioResult,
-    SpatialExtent,
-)
+from ...models.base import Scenario, ScenarioResult
 from ...models.report import ReportContext, ReportResult, ReportSubmitStatus
 from ...utils import FileUtils, log, tr
 
@@ -56,8 +48,8 @@ class ReportManager(QtCore.QObject):
         # Report results (value) indexed by scenario id (key)
         self._report_results = {}
 
-        self.tm = QgsApplication.instance().taskManager()
-        self.tm.statusChanged.connect(self.on_task_status_changed)
+        self.task_manager = QgsApplication.instance().taskManager()
+        self.task_manager.statusChanged.connect(self.on_task_status_changed)
 
         self.root_output_dir = ""
         self._set_root_output_dir()
@@ -133,7 +125,7 @@ class ReportManager(QtCore.QObject):
 
         elif status == QgsTask.TaskStatus.Complete:
             # Get result
-            task = self.tm.task(task_id)
+            task = self.task_manager.task(task_id)
             result = task.result
             if result is not None:
                 self._report_results[scenario_id] = result
@@ -159,7 +151,7 @@ class ReportManager(QtCore.QObject):
             return False
 
         task_id = self._report_tasks[scenario_id]
-        task = self.tm.task(task_id)
+        task = self.task_manager.task(task_id)
         if task is None:
             return False
 
@@ -189,10 +181,6 @@ class ReportManager(QtCore.QObject):
         """
         if not self.root_output_dir:
             return ""
-
-        # if not os.access(self.root_output_dir, os.W_OK):
-        #     log("No permission to write to output directory.")
-        #     return ""
 
         output_path = Path(self.root_output_dir)
         if not output_path.exists():
@@ -262,7 +250,7 @@ class ReportManager(QtCore.QObject):
         msg_tr = tr("Generating report for")
         description = f"{msg_tr} {ctx.scenario.name}"
         report_task = ReportGeneratorTask(description, ctx)
-        task_id = self.tm.addTask(report_task)
+        task_id = self.task_manager.addTask(report_task)
 
         self._report_tasks[scenario_id] = task_id
 
