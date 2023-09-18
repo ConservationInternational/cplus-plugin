@@ -164,7 +164,7 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         name = self.txt_name.text()
         if not name:
-            msg = tr("Name cannot be empty.")
+            msg = tr("NCS pathway name cannot be empty.")
             self._show_warning_message(msg)
             status = False
 
