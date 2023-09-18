@@ -27,7 +27,7 @@ WidgetUi, _ = loadUiType(
 class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
     """Dialog for creating or editing an NCS pathway entry."""
 
-    def __init__(self, parent=None, ncs_pathway=None):
+    def __init__(self, parent=None, ncs_pathway=None, excluded_names=None):
         super().__init__(parent)
         self.setupUi(self)
 
@@ -70,6 +70,10 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             Settings.CARBON_COEFFICIENT, 0.0, float
         )
         self.sb_carbon_coefficient.setValue(carbon_coefficient)
+
+        self._excluded_names = excluded_names
+        if excluded_names is None:
+            self._excluded_names = []
 
         self._edit_mode = False
         self._layer = None
@@ -158,9 +162,15 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self._message_bar.clearWidgets()
 
-        if not self.txt_name.text():
+        name = self.txt_name.text()
+        if not name:
             msg = tr("Name cannot be empty.")
             self._show_warning_message(msg)
+            status = False
+
+        if name.lower() in self._excluded_names:
+            msg = tr("name has already been used.")
+            self._show_warning_message(f"'{name}' {msg}")
             status = False
 
         if not self.txt_description.toPlainText():
