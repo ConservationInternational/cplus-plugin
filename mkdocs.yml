@@ -34,6 +34,7 @@ nav:
             - Report: developer/api/models/api_report.md
           - GUI:
             - GUI main: developer/api/gui/api_gui_main.md
+            - Carbon item model: developer/api/gui/api_carbon_layer_model.md
             - Component item model: developer/api/gui/api_component_items.md
             - Implementation model editor: developer/api/gui/api_im_editor_dialog.md
             - Implementation model widget: developer/api/gui/api_im_widget.md
