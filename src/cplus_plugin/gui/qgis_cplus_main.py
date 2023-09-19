@@ -714,9 +714,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.analysis_extent,
         )
 
-    def run_scenario_analysis(self):
-        """Performs the last step in scenario analysis. This covers the pilot study area,
-        and checks whether the AOI is outside the pilot study area.
+    def run_highest_position_analysis(self):
+        """Runs the highest position analysis which is last step
+        in scenario analysis. Uses the models set by the current ongoing
+        analysis.
+
         """
         if self.processing_cancelled:
             # Will not proceed if processing has been cancelled by the user
@@ -878,8 +880,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Runs the required model pathways analysis on the passed
          implementation models.
 
-        :param model: List of the selected implementation models
-        :type model: typing.List[ImplementationModel]
+        :param models: List of the selected implementation models
+        :type models: typing.List[ImplementationModel]
 
         :param priority_layers_groups: Used priority layers groups and their values
         :type priority_layers_groups: dict
@@ -1427,10 +1429,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         main_task = QgsTask.fromFunction(
             "Running main task for priority layers weighting",
             self.main_task,
-            on_finished=self.run_scenario_analysis,
+            on_finished=self.run_highest_position_analysis,
         )
 
-        main_task.taskCompleted.connect(self.run_scenario_analysis)
+        main_task.taskCompleted.connect(self.run_highest_position_analysis)
 
         previous_sub_tasks = []
 
@@ -1474,7 +1476,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     f"There are defined priority layers in groups,"
                     f" skipping models weighting step."
                 )
-                self.run_scenario_analysis()
+                self.run_highest_position_analysis()
                 return
 
             if model.priority_layers is None or model.priority_layers is []:
@@ -1582,7 +1584,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             model.path = output.get("OUTPUT")
 
         if model_index == len(models) - 1:
-            self.run_scenario_analysis()
+            self.run_highest_position_analysis()
 
     def cancel_processing_task(self):
         """Cancels the current processing task."""
