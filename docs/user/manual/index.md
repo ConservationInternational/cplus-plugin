@@ -124,16 +124,16 @@ These options will be available once the analysis has finished. The options will
 *Figure 9: Settings available to the user*
 
 - **Reports**: Information to be added to the report
-  - *Organization*: (optional) Organization or institute name
-  - *Contact email*: (optional) Contact email of the user
-  - *Website*: (optional) Link to website of your company or institute
-  - *Custom logo*: (optional) If enabled, the user needs to provide a custom logo. Most formats should suffice (png, jpeg, etc.)
-  - *Logo preview*: Visual previre of the default CI logo, or the custom logo a user selected
-  - *Footer*: (optional) Will be added to the report
-  - *Disclaimer*: Change as desired, otherwise use the default disclaimer
-  - *License*: Change as desired, otherwise use the default license description
+    - *Organization*: (optional) Organization or institute name
+    - *Contact email*: (optional) Contact email of the user
+    - *Website*: (optional) Link to website of your company or institute
+    - *Custom logo*: (optional) If enabled, the user needs to provide a custom logo. Most formats should suffice (png, jpeg, etc.)
+    - *Logo preview*: Visual previre of the default CI logo, or the custom logo a user selected
+    - *Footer*: (optional) Will be added to the report
+    - *Disclaimer*: Change as desired, otherwise use the default disclaimer
+    - *License*: Change as desired, otherwise use the default license description
 - **Advanced**:
-  - *Base data directory*: Directory to read data from, and to which results will be written
-  - *Coefficient for carbon layers*: Applied to carbon layers during processing
-- **OK**: Apply and save settings
-- **Cancel**: Any changes to the settings will not be saved
+    - *Base data directory*: Directory to read data from, and to which results will be written
+    - *Coefficient for carbon layers*: Applied to carbon layers during processing
+    - **Coefficient importance**: Level of importance for used coefficients when weighting the implementation models
+    - **Pathway suitability index**: Index multiplied to the pathways. Lower values means the pathway is less important, higher means its more important
