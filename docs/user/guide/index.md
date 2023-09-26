@@ -24,6 +24,31 @@ This section will further deal with how to prepare your data using tools availab
 - Click **Processing** -> **Toolbox** to open the QGIS toolbox
 - The toolbox will be used for each section
 
+### Carbon and Priority weighted layers
+
+Both Carbon and Priority weighted layers (PWL) should not contain any nodata values. If the nodata pixels
+is not removed from the rasters, the user's analysis will be less efficient and likely result in a reduction in
+results (e.g. all nodata pixels will end up as nodata). Figure 1 shows a Carbon raster with nodata pixels.
+
+![QGIS unknown crs](img/qgis-carbon-not-filled.png)
+
+Follow these easy steps to remove nodata pixels from a raster:
+
+- In the toolbox search, type "fill nodata"
+- Open the tool *Fill NoData cells*
+- Provide the parameters as follows:
+    - **Raster input**: Raster layer with nodata pixels which should be removed
+    - **Fill value**: Zero should suffice for most cases
+    - **Output raster**: Directory to which the filled raster should be stored
+
+![QGIS unknown crs](img/qgis-carbon-layer-fill.png)
+
+- Click **Run**
+
+Figure 2 shows a nodata filled raster.
+
+![QGIS unknown crs](img/qgis-raster-filled.png)
+
 ### Coordinate systems
 
 #### Fix layers with an undefined CRS
@@ -37,7 +62,7 @@ to be resolved prior to perform analysis. An unknown coordinate system can be id
 
 ![QGIS unknown crs](img/qgis-unknown-crs.png)
 
-*Figure 1: Unknown CRS for a layer in QGIS*
+*Figure 3: Unknown CRS for a layer in QGIS*
 
 - Further investigation can be done by right-clicking on the layer and select **Properties**
 - Click on the **Information** tab
@@ -46,7 +71,7 @@ to be resolved prior to perform analysis. An unknown coordinate system can be id
 
 ![QGIS layer information](img/qgis-properties-crs.png)
 
-*Figure 2: QGIS layer properties*
+*Figure 4: QGIS layer properties*
 
 To define the CRS, do the following:
 
@@ -61,7 +86,7 @@ To define the CRS, do the following:
 
 ![QGIS assign projection](img/qgis-assign-projection.png)
 
-*Figure 3: QGIS Assign projection tool*
+*Figure 5: QGIS Assign projection tool*
 
 <blockquote>Be sure you are using the correct coordinate system when defining an unknown coordinate
 system to a layer. If the incorrect coordinate system is selected, the data will likely not be
@@ -75,7 +100,7 @@ at the correct position spatially. </blockquote>
 
 ![QGIS Warp tool](img/qgis-warp.png)
 
-*Figure 4: QGIS Warp tool*
+*Figure 6: QGIS Warp tool*
 
 - Provide the following parameters:
     - **Input layer**: Layer thee user wants to reproject
@@ -105,7 +130,7 @@ How to check if a raster's nodata is set correctly
 
 ![QGIS raster nodata](img/qgis-raster-nodata.png)
 
-*Figure 5: Layer properties to check for nodata value*
+*Figure 7: Layer properties to check for nodata value*
 
 To fix a nodata issue, do the following:
 
@@ -114,7 +139,7 @@ To fix a nodata issue, do the following:
 
 ![QGIS Translate tool](img/qgis-translate.png)
 
-*Figure 6: QGIS Translate tool*
+*Figure 8: QGIS Translate tool*
 
 - Provide the following parameters:
     - **Input layer**: Raster layer
@@ -140,7 +165,7 @@ accomplished using the *Reclassify by table* tool.
 
 ![QGIS Reclassify tool](img/qgis-reclassify-raster.png)
 
-*Figure 7: QGIS Reclassify by Table tool*
+*Figure 9: QGIS Reclassify by Table tool*
 
 - Open the *Reclassification table* so that the user can set the value reclassifcations. Atleast one
 row needs to be provided
@@ -155,14 +180,14 @@ row needs to be provided
 
 ![QGIS Reclassification table](img/qgis-reclassification-table.png)
 
-*Figure 8: Reclassify table*
+*Figure 10: Reclassify table*
 
 - Click **Run**
-- An example of the resulting raster compared to the original raster is shown in **Figure 8b**
+- An example of the resulting raster compared to the original raster is shown in **Figure 11**
 
 ![QGIS reclassified raster](img/qgis-raster-reclassified.png)
 
-*Figure 8b: Reclassified raster compared to the original raster*
+*Figure 11: Reclassified raster compared to the original raster*
 
 ### Vector to raster
 
@@ -175,7 +200,7 @@ to make use of the same projected coordinate system than other data. This can be
 
 ![QGIS Reproject tool](img/qgis-reproject-layer.png)
 
-*Figure 9: QGIS Reproject tool for vector layers*
+*Figure 12: QGIS Reproject tool for vector layers*
 
 - Set the parameters as follows:
     - **Input layer**: Vector layer which needs to be reprojected
@@ -191,7 +216,7 @@ Now that the vector layer is in the correct coordinate system, the user can conv
 
 ![QGIS Rasterize tool](img/qgis-rasterize.png)
 
-*Figure 10: QGIS Rasterize tool*
+*Figure 13: QGIS Rasterize tool*
 
 - Set the parameters as follows:
     - **Input layer**: The vector layer to convert to a raster
@@ -218,9 +243,9 @@ When a user clicks on the drop-down button, they will be presented with four opt
 
 ![CPLUS plugin toolbar icon](img/plugin-toolbar-icon.png)
 
-*Figure 11: CPLUS toolbar icon*
+*Figure 14: CPLUS toolbar icon*
 
-Open the CPLUS dockwidget by clicking on the CPLUS toolbar icon (**Figure 11**).
+Open the CPLUS dockwidget by clicking on the CPLUS toolbar icon (**Figure 14**).
 
 ### Step 1: Scenario Information
 
@@ -232,25 +257,25 @@ comparison will be considered for each scenario.
 - **Scenario description**: A detailed description of the analysis
 - **Extent**: The area of interest for this analysis. This can be calculated from the current
   canvas view extent, a layer, or an extent drawn by the user
-- **Figure 12** shows an example of Step 1
+- **Figure 15** shows an example of Step 1
 - Once the information has been provided, click **Step 2**
 
 ![CPLUS step 1](img/plugin-step1.png)
 
-*Figure 12: Step 1 focusses on Scenario Information*
+*Figure 15: Step 1 focusses on Scenario Information*
 
 ### Step 2: Pathways and models
 
 This step deals with the **Natural Climate Solution (NCS) pathways** and the **Implementation models (IM)**.
 A NCS pathway can be defined as a composite spatial layer on specific land use classes and other
 factors that determine areas ideal for a specific use case (e.g. Animal mangement).
-An IM is a combination of NCS pathways represented in an AOI spatial layer. **Figure 13** shows the UI.
+An IM is a combination of NCS pathways represented in an AOI spatial layer. **Figure 16** shows the UI.
 
 ![CPLUS step 1](img/plugin-step2.png)
 
-*Figure 13: Step 2 allows the user to create and edit NCS pathways and Implementation Models*
+*Figure 16: Step 2 allows the user to create and edit NCS pathways and Implementation Models*
 
-Step 2 buttons (**Figure 14**):
+Step 2 buttons (**Figure 17**):
 
 - **Add**: Adds a new pathway or model
 - **Editing**: Edit and existing pathway or model
@@ -258,11 +283,11 @@ Step 2 buttons (**Figure 14**):
 
 ![CPLUS step 2 buttons](img/plugin-step2-buttons.png)
 
-*Figure 14: Create, delete, and edit buttons*
+*Figure 17: Create, delete, and edit buttons*
 
 #### NCS Pathway
 
-- Click on the left green plus button to add a new pathway (**Figure 15**)
+- Click on the left green plus button to add a new pathway (**Figure 18**)
 - Provide a **Name** and **Description** for the pathway
 - Two approaches to select a layer: A layer from the **QGIS canvas**, or **Upload from a file**
 - Add **Carbon layers** as desired. Multiple carbon layers can be provided. These layers will be averaged
@@ -275,7 +300,7 @@ step 3. </blockquote>
 
 ![CPLUS add pathway](img/plugin-pathway-editor.png)
 
-*Figure 15: NCS Pathway creator/editor*
+*Figure 18: NCS Pathway creator/editor*
 
 <blockquote> Be sure each NCS pathway's Carbon layers is set up correctly before setting up
 the Implementation models in the steps which follows. Changes to the Carbon layers afterward will
@@ -293,7 +318,7 @@ Add pathways to an existing IM:
 
 How to add a new IM:
 
-- Click on the right green plus button to add an **Implementation model** (**Figure 16**)
+- Click on the right green plus button to add an **Implementation model** (**Figure 19**)
 - Provide a **Name** and **Description**
 - (optional) The user can provide an existing raster for the IM. Enable **Map layer** to do this
 - Click **OK**
@@ -301,14 +326,14 @@ How to add a new IM:
 
 ![CPLUS add implementation model](img/plugin-implementation-model.png)
 
-*Figure 16: Implementation Model creator/editor*
+*Figure 19: Implementation Model creator/editor*
 
 - The final step is to select each of the IMs a user want to include in the scenario run
 - A user can exclude IMs if they don't want to include it, even if the IM has pathways
 
 ![CPLUS selected IMs](img/plugin-selected-ims.png)
 
-*Figure 17: Selected Implementation models*
+*Figure 20: Selected Implementation models*
 
 <blockquote>Before proceeding to Step 3, a user needs to define at least one NCS pathway layer for an implementation 
 model, otherwise a warning message will be displayed. </blockquote>
@@ -316,11 +341,11 @@ model, otherwise a warning message will be displayed. </blockquote>
 ### Step 3: Priority weighting
 
 The final step deals with the **Weighting priorities** and **Priority groups**. These weights
-will be applied when the user starts running the scenario. An example is shown in **Figure 18**.
+will be applied when the user starts running the scenario. An example is shown in **Figure 21**.
 
 ![CPLUS step 3](img/plugin-step3_2.png)
 
-*Figure 18: Step 3 allows the user to set the Weights of each Priority Group*
+*Figure 21: Step 3 allows the user to set the Weights of each Priority Group*
 
 The priority weighting layers can be selected and added and removed into each priority group by using the 
 arrow buttons. 
@@ -339,7 +364,7 @@ use the right arrow button ![right arrow](img/cplus_right_arrow.svg) to remove t
 #### Create custom priority layers
 
 - Click on ![add button](img/symbologyAdd.svg) to add a new custom priority layer, or ![edit button](img/mActionToggleEditing.svg) to edit an existing priority layer
-- This will open the Priority Layer dialog (see **Figure 19**)
+- This will open the Priority Layer dialog (see **Figure 22**)
 - The following parameters needs to be set:
     - **Priority layer**: The layer which represents the priority layer
     - **Priority layer name**: A unique identifier for the priority layer
@@ -348,14 +373,14 @@ use the right arrow button ![right arrow](img/cplus_right_arrow.svg) to remove t
 
 ![Priority layer editing/adding dialog](img/manual-priority-layer-dialog.png)
 
-*Figure 19: Priority layer dialog*
+*Figure 22: Priority layer dialog*
 
 - Select the IMs you want to be associated with the priority layer
 - Click **OK**
 
 ![Priority layer editing/adding dialog](img/manual-pwl-selection.png)
 
-*Figure 20: Implementation model selection for priority layers*
+*Figure 23: Implementation model selection for priority layers*
 
 - ![remove button](img/symbologyRemove.svg): Remove the selected PWL
 
@@ -365,29 +390,29 @@ Once done selecting weights, click **Run Scenario** button to run the analysis.
 
 ### Steps 1 to 3 example
 
-The following recording (**Figure 21**) shows an example on how to do Step 1, 2 and 3.
+The following recording (**Figure 24**) shows an example on how to do Step 1, 2 and 3.
 
 ![Steps 1 to 3 example](img/steps_1_to_3.gif)
 
-*Figure 21: Shows how to implement Step 1, 2 and 3 in QGIS*
+*Figure 24: Shows how to implement Step 1, 2 and 3 in QGIS*
 
 ## Processing
 
 - Once the user has provided all desired parameters, click **Run Scenario**
-- The processing dialog will open (**Figure 22**)
+- The processing dialog will open (**Figure 25**)
 - The processing will take a while, depending on the number of IMs and pathways provided for each IM
 - Click the **Cancel** button to stop the processing
 
 ![Processing dialog running](img/plugin-processing-dialog.png)
 
-*Figure 22: Processing dialog while the algorithm is running*
+*Figure 25: Processing dialog while the algorithm is running*
 
-- **Figure 23** will be the result if the processing succceeded
+- **Figure 26** will be the result if the processing succceeded
 - The user should take note that the **View Report** button is now available
 
 ![Processing dialog success](img/plugin-processing-succeeded.png)
 
-*Figure 23: Processing dialog if successfull*
+*Figure 26: Processing dialog if successfull*
 
 ### Processing results
 
@@ -399,13 +424,13 @@ The following groups and layers will be added to the QGIS canvas once the proces
 
 ![Layers added to canvas](img/plugin-added-layers.png)
 
-*Figure 24: Groups and layers added to the QGIS canvas*
+*Figure 27: Groups and layers added to the QGIS canvas*
 
-An example of output results in QGIS is detailed by **Figure 25**
+An example of output results in QGIS is detailed by **Figure 28**
 
 ![Outputs example](img/outputs-qgis.gif)
 
-*Figure 25: A recording example of an example scenario*
+*Figure 28: A recording example of an example scenario*
 
 ## Report generating
 
@@ -417,19 +442,19 @@ An example of output results in QGIS is detailed by **Figure 25**
 
 ![Report options](img/plugin-report-options.png)
 
-*Figure 26: Report options*
+*Figure 29: Report options*
 
-- **Figure 27** shows an example of a report opened in the layout designer
+- **Figure 30** shows an example of a report opened in the layout designer
 
 ![Report layout designer](img/report-layout-designer.png) 
 
-*Figure 27: Report opened in the QGIS layout designer*
+*Figure 30: Report opened in the QGIS layout designer*
 
-- **Figure 28** shows a report in PDF format
+- **Figure 31** shows a report in PDF format
 
 ![Report PDF](img/report-pdf.png)
 
-*Figure 28: PDF version of a report*
+*Figure 31: PDF version of a report*
 
 ### Generated report example
 
@@ -437,7 +462,7 @@ Here is an example on how to open a report in the QGIS layout designer, or as a 
 
 ![Generated report example](img/generated-reports.gif)
 
-*Figure 29: Example of a generated report in PDF and layout designer formats*
+*Figure 32: Example of a generated report in PDF and layout designer formats*
 
 ## Settings
 
@@ -445,29 +470,29 @@ Here is an example on how to open a report in the QGIS layout designer, or as a 
 
 The user can follow two approaches to open the CPLUS settings.
 
-QGIS options (**Figure 30**):
+QGIS options (**Figure 33**):
 
 - Click on **Settings** -> **Options**
 
 ![QGIS settings](img/settings-qgis.png)
 
-*Figure 30: QGIS settings*
+*Figure 33: QGIS settings*
 
 - Select the *CPLUS* tab to the left
-- This will open the CPLUS settings dialog. See **Figure 31** for an example
+- This will open the CPLUS settings dialog. See **Figure 34** for an example
 
 ![CPLUS settings](img/settings-cplus-tab.png)
 
-*Figure 31: CPLUS section as loaded in the QGIS settings dialog*
+*Figure 34: CPLUS section as loaded in the QGIS settings dialog*
 
-CPLUS toolbar (**Figure 32**):
+CPLUS toolbar (**Figure 35**):
 - Click on the CPLUS toolbar drop-down
 - Select **Settings**
 - This will take you directly to the CPLUS settings dialog in the QGIS options
 
 ![CPLUS plugin toolbar icon](img/plugin-toolbar-icon.png)
 
-*Figure 32: CPLUS toolbar button*
+*Figure 35: CPLUS toolbar button*
 
 ### CPLUS settings
 
@@ -494,8 +519,8 @@ A short description of each available setting a user can change. Most are option
 - **Base data directory** (required): Data accessed and download by the plugin will be stored here
 - **Coefficient for carbon layers**: Value applied during processing to the carbon-based layers. Default is 0
 
-**Figure 33** shows an example of updating and applying CPLUS settings.
+**Figure 36** shows an example of updating and applying CPLUS settings.
 
 ![CPLUS settings example](img/settings-recording.gif)
 
-*Figure 33: CPLUS settings example*
+*Figure 36: CPLUS settings example*
