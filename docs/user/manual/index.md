@@ -1,9 +1,141 @@
 # Manual
 
+The manual covers two sections. Firstly the calculations and formulas is discussed. This is so that a user can
+understand how the calculations for each step is done when processing the pathways and carbon layers, how the
+implementations models are created, algorithms applied to create the priority weighted, and the last step, which
+is the highest position calculation.
+
+The second sections deals with the plugin itself. It covers each step, explains each element of each step and why its
+needed. A description of the generated report is also provided.
+
+## CPLUS calculations and formulas
+
+### Implementation model calculation
+
+The following steps/rules are considered to create an Implementation model:
+
+- Carbon layers:
+    - When multiple Carbon layers are provided, the average is calculated from the layers to create a single Carbon layer
+    - The produced Carbon layer is multiplied by the Carbon coefficient provided by the user in the settings
+    - If the Carbon coefficient is zero, the value is ignored
+- NCS pathways:
+    - Multiply the pathway raster with the Suitability index
+    - If the index is zero, the pathway raster is used as-is
+
+$$
+\operatorname{NCS weighted carbon} ={CarbonCoefficient}\times{\frac{(Carbon_1 + Carbon_2 + .... + Carbon_n)}{n}} + ({SuitabilityIndex}\times{NcsPathway})
+$$
+
+where *CarbonCoefficient* is the carbon coefficient value multiplied with the averaged carbon raster;
+
+&emsp;&emsp;&nbsp;&nbsp;&nbsp; *Carbon* is a carbon raster;
+
+&emsp;&emsp;&nbsp;&nbsp;&nbsp; *SuitabilityIndex* is the NCS pathway index value;
+
+&emsp;&emsp;&nbsp;&nbsp;&nbsp; *NcsPathway* is the NCS pathway raster; and
+
+&emsp;&emsp;&nbsp;&nbsp;&nbsp; *n* is the number of carbon rasters.
+
+- The results from the above calculation is normalized to create the normalized NCS Weighted Carbon layer
+- A normalized raster's pixel values range from 0 to 1
+
+$$
+\operatorname{Normalized NCS weighted carbon} =\frac{value - min}{max - min}
+$$
+
+where *value* is the pixel value;
+
+&emsp;&emsp;&nbsp;&nbsp;&nbsp; *min* is the minimum value of the raster; and
+
+&emsp;&emsp;&nbsp;&nbsp;&nbsp; *max* is the maximum value of the raster.
+
+- Because an IM can consist of multiple pathways, the normalized results will be summed
+
+$$
+\operatorname{Summed pathways} = NcsWeightedCarbon_1 + NcsWeightedCarbon_2 + ... + NcsWeightedCarbon_n
+$$
+
+where *NcsWeightedCarbon* is a pathway set up by the user; and
+
+&emsp;&emsp;&nbsp;&nbsp;&nbsp; *n* is the number of pathways.
+
+- Now that the pathways has been summed for the IM, it needs to be normalized
+- The Suitability index and the Carbon coefficient then needs to be considered after the normalization is done
+
+$$
+\operatorname{Final IM} ={(SuitabilityIndex + CarbonCoefficient)}\times{\frac{value - min}{max - min}}
+$$
+
+where *value* is the pixel value;
+
+&emsp;&emsp;&nbsp;&nbsp;&nbsp; *min* is the minimum value of the raster;
+
+&emsp;&emsp;&nbsp;&nbsp;&nbsp; *max* is the maximum value of the raster;
+
+&emsp;&emsp;&nbsp;&nbsp;&nbsp; *SuitabilityIndex* is the NCS pathway index value; and
+
+&emsp;&emsp;&nbsp;&nbsp;&nbsp; *CarbonCoefficient* is the carbon coefficient value multiplied with the averaged carbon raster.
+
+- The resulting output is the final IM
+
+### Priority weighted layer calculation
+
+- This step is performed after the IMs has been created
+- The PWL is more important, and will therefore be multiplied by five to take this into account
+- Here is the formula for the PWL calculation:
+
+$$
+\operatorname{Priority weighted layer} ={FinalImplementationModel} + ({5}\times{Priority weighted layer})
+$$
+
+- The resulting PWL will then be used as input to the Highest position calculation
+
+### Highest Position calculation
+
+The <a href="https://docs.qgis.org/3.28/en/docs/user_manual/processing_algs/qgis/rasteranalysis.html#qgishighestpositioninrasterstack">Highest position</a>
+tool determines the raster in a stack with the highest value at a given pixel. Essentially the result
+is a classification, where each class represents a specific IM. If multiple rasters has the the highest
+pixel value at a given pixel, the first raster in the stack will be used. Figure 1 shows an example from
+the QGIS description of the Highest position tool.
+
+![QGIS highest position example](img/qgis-highest-position-example.png)
+
+*Figure 1: Highest position example*
+
+In the plugin the nodata values are ignored. This means that if atleast one raster has a pixel value
+at that cell there will be a raster stack value. If none of the rasters in the stack has a pixel value
+at that cell (e.g. each raster pixel is nodata) the output will be nodata at that pixel.
+
+Here is an explanation on how-to use the **Highest position** tool:
+
+- Figure 2 shows the layer for the Highest position at stack position 1
+
+![QGIS layer 1](img/qgis-hp-stack-layer-1.png)
+
+*Figure 2: Layer 1 used as highest position input*
+
+- Figure 3 shows the layer for the Highest position at stack position 2
+
+![QGIS layer 2](img/qgis-hp-stack-layer-2.png)
+
+*Figure 3: Layer 2 used as highest position input*
+
+- Figure 4 shows the result from the Highest position calculation (Scenario result)
+    - *Stack layer 1* (blue): Figure 2 raster had the highest pixel value
+    - *Stack layer 2* (red): Figure 3 raster had the highest pixel value
+
+![QGIS highest position result](img/qgis-hp-result.png)
+
+*Figure 4: Highest position result*
+
+This concludes the section on how the calculations is done 
+
+## Plugin
+
 Detailed descriptions for each UI element of the plugin. This covers steps 1 to 3, dialogs,
 and the settings UI.
 
-## Dock widget
+### Dock widget
 
 This is the main UI of the plugin. The dock widget opens on the right side of QGIS.
 The dock widget consist of three tabs, each focussing on a particular phase of the analyis.
@@ -13,7 +145,7 @@ Here is a short description of those steps:
 - **Step 2**: NCS pathways and Implementation models
 - **Step 3**: Weighting priorities
 
-### Step 1: Scenario information
+#### Step 1: Scenario information
 
 ![UI Step 1](img/manual-step1.png)
 
@@ -30,7 +162,7 @@ Step 1 allows a user to set up the scenario details and parameters.
 
 ![Bushbuckridge pilot area](img/manual-bushbuckridge.png)
 
-### Step 2: NCS pathways and Implementation models
+#### Step 2: NCS pathways and Implementation models
 
 Step 2 focuses on the implementation models (IMs) and pathways.
 
@@ -47,7 +179,7 @@ Step 2 focuses on the implementation models (IMs) and pathways.
 - ![remove button](img/symbologyRemove.svg): Remove the selected IM or pathway
 - ![edit button](img/mActionToggleEditing.svg): Edit the selected IM
 
-#### Implementation Model Editor dialog
+##### Implementation Model Editor dialog
 
 ![add IM dialog](img/manual-add-im.png)
 
@@ -57,7 +189,7 @@ Step 2 focuses on the implementation models (IMs) and pathways.
 - **Description**: A detailed description of the IM. This will be used in the report
 - **Map layer**: If enabled, a user can provide an existing IM. This has to be a raster
 
-### Step 3: Weighting priorities
+#### Step 3: Weighting priorities
 
 ![UI Step 3](img/manual-step3.png)
 
@@ -72,7 +204,7 @@ Step 2 focuses on the implementation models (IMs) and pathways.
 - ![edit button](img/mActionToggleEditing.svg): Edit the selected PWL
 - **Run Scenario**: Starts running the analysis. The progress dialog will open when the user clicks this button
 
-#### Priority Weighted Layers Editor dialog
+##### Priority Weighted Layers Editor dialog
 
 ![UI Priority layer dialog](img/manual-priority-layer-dialog.png)
 
@@ -93,7 +225,7 @@ Step 2 focuses on the implementation models (IMs) and pathways.
 - **Clear Selection**: Deselects each of the selected IMs
 - **Toggle Selection**: Switches each option from deselected to selected, or selected to deselected
 
-## Progress dialog
+### Progress dialog
 
 ![Progress dialog](img/manual-processing-dialog.png)
 
@@ -105,7 +237,7 @@ Step 2 focuses on the implementation models (IMs) and pathways.
 - **Cancel**: Clicking this button will stop the processing
 - **Close**: Only visible once the processing stops. Will close the progress dialog
 
-### Report options
+#### Report options
 
 These options will be available once the analysis has finished. The options will stay disabled if the analysis failed
 
@@ -117,7 +249,7 @@ These options will be available once the analysis has finished. The options will
 - **Open PDF**: Opens the created PDF
 - **Help**: Takes the user to the Users documentation site
 
-## Settings
+### Settings
 
 ![CPLUS settings](img/manual-settings.png)
 
