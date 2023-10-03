@@ -1440,10 +1440,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.progress_dialog.scenario_name = tr(f"implementation models")
 
-        coefficient_importance = settings_manager.get_value(
-            Settings.COEFFICIENT_IMPORTANCE, default=5
-        )
-
         for model in models:
             if model.path is None or model.path is "":
                 self.show_message(
@@ -1487,20 +1483,25 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 continue
 
             settings_model = settings_manager.get_implementation_model(str(model.uuid))
-            base_dir = settings_manager.get_value(Settings.BASE_DIR)
 
             for layer in settings_model.priority_layers:
                 settings_layer = settings_manager.get_priority_layer(layer.get("uuid"))
                 pwl = settings_layer.get("path")
+
+                missing_pwl_message = (
+                    f"Path {pwl_path} for priority "
+                    f"weighting layer {layer.get('name')} "
+                    f"doesn't exist, skipping the layer "
+                    f"from the model {model.name} weighting."
+                )
+                if pwl is None:
+                    log(missing_pwl_message)
+                    continue
+
                 pwl_path = Path(pwl)
 
                 if not pwl_path.exists():
-                    log(
-                        f"Path {pwl_path} for priority "
-                        f"weighting layer {layer.get('name')} "
-                        f"doesn't exist, skipping the layer "
-                        f"from the model {model.name} weighting."
-                    )
+                    log(missing_pwl_message)
                     continue
 
                 path_basename = pwl_path.stem
@@ -1509,8 +1510,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     if priority_layer.get("name") == layer.get("name"):
                         for group in priority_layer.get("groups", []):
                             value = group.get("value")
-                            coefficient = float(value) / 100
-                            coefficient = coefficient * int(coefficient_importance)
+                            coefficient = float(value)
                             if coefficient > 0:
                                 if pwl not in layers:
                                     layers.append(pwl)
