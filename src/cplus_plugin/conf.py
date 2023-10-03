@@ -145,6 +145,9 @@ class Settings(enum.Enum):
     # Coefficients importance value
     COEFFICIENT_IMPORTANCE = "coefficients_importance"
 
+    # Pathway suitability index value
+    PATHWAY_SUITABILITY_INDEX = "pathway_suitability_index"
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""

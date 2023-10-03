@@ -164,23 +164,6 @@
           <string>Advanced</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_2">
-          <item row="3" column="0">
-           <widget class="QLabel" name="carbon_coefficien_la">
-            <property name="toolTip">
-             <string>The value that will be used as a coefficient when combining pathways with carbon layers. </string>
-            </property>
-            <property name="text">
-             <string>Coefficient for carbon layers</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="lbl_data_dir">
-            <property name="text">
-             <string>Base data directory</string>
-            </property>
-           </widget>
-          </item>
           <item row="3" column="1">
            <widget class="QDoubleSpinBox" name="carbon_coefficient_box">
             <property name="toolTip">
@@ -200,16 +183,6 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
-           <widget class="QgsFileWidget" name="folder_data">
-            <property name="storageMode">
-             <enum>QgsFileWidget::GetDirectory</enum>
-            </property>
-            <property name="options">
-             <set>QFileDialog::ShowDirsOnly</set>
-            </property>
-           </widget>
-          </item>
           <item row="4" column="0">
            <widget class="QLabel" name="label">
             <property name="toolTip">
@@ -217,6 +190,26 @@
             </property>
             <property name="text">
              <string>Coefficients importance</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="carbon_coefficien_la">
+            <property name="toolTip">
+             <string>The value that will be used as a coefficient when combining pathways with carbon layers. </string>
+            </property>
+            <property name="text">
+             <string>Coefficient for carbon layers</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QgsFileWidget" name="folder_data">
+            <property name="storageMode">
+             <enum>QgsFileWidget::GetDirectory</enum>
+            </property>
+            <property name="options">
+             <set>QFileDialog::ShowDirsOnly</set>
             </property>
            </widget>
           </item>
@@ -233,6 +226,33 @@
             </property>
             <property name="value">
              <number>5</number>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="lbl_data_dir">
+            <property name="text">
+             <string>Base data directory</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="lbl_suitability_index">
+            <property name="text">
+             <string>Pathway suitability index</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <widget class="QDoubleSpinBox" name="suitability_index_box">
+            <property name="decimals">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <double>5.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.500000000000000</double>
             </property>
            </widget>
           </item>
