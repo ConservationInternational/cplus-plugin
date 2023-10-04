@@ -1136,7 +1136,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             FileUtils.create_new_dir(new_ims_directory)
             file_name = clean_filename(model.name.replace(" ", "_"))
 
-            basenames = []
             layers = []
             if not model.pathways and (model.path is None and model.path is ""):
                 self.show_message(
@@ -1161,15 +1160,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             # pathways
 
             if model.path is not None and model.path is not "":
-                basenames = [f'"{Path(model.path).stem}@1"']
                 layers = [model.path]
 
             for pathway in model.pathways:
-                path_basename = Path(pathway.path).stem
                 layers.append(pathway.path)
-                basenames.append(f'"{path_basename}@1"')
-
-            expression = " + ".join(basenames)
 
             analysis_done = partial(
                 self.model_analysis_done,
@@ -1181,12 +1175,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
 
             # Actual processing calculation
+
             alg_params = {
-                "CELLSIZE": 0,
-                "CRS": None,
-                "EXPRESSION": expression,
+                "IGNORE_NODATA": True,
+                "INPUT": layers,
                 "EXTENT": extent,
-                "LAYERS": layers,
+                "OUTPUT_NODATA_VALUE": -9999,
+                "REFERENCE_LAYER": layers[0] if len(layers) > 0 else None,
+                "STATISTIC": 0,  # Sum
                 "OUTPUT": output_file,
             }
 
@@ -1196,7 +1192,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
 
             alg = QgsApplication.processingRegistry().algorithmById(
-                "qgis:rastercalculator"
+                "native:cellstatistics"
             )
 
             self.task = QgsProcessingAlgRunnerTask(
@@ -1255,13 +1251,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def run_normalization_analysis(self, models, priority_layers_groups, extent):
         """Runs the normalization analysis on the models layers,
         adjusting band values measured on different scale, the resulting scale
-        is computed using the below formula.
+        is computed using the below formula
         Normalized_Model = (Carbon coefficient + Suitability index) * (
                             (Model layer value) - (Model band minimum value)) /
                             (Model band maximum value - Model band minimum value))
 
         If the carbon coefficient and suitability index are both zero then
-        the computation won't take them into account in the calculation.
+        the computation won't take them into account in the normalization
+        calculation.
 
         :param models: List of the analyzed implementation models
         :type models: typing.List[ImplementationModel]
