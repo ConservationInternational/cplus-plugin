@@ -186,7 +186,7 @@
           <item row="4" column="0">
            <widget class="QLabel" name="label">
             <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Used to specify the level of importance for the used coefficients when weighting the implementation models with the priority weighting layers and when combining carbon layers with the NCS pathways.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Used to specify the level of importance for the used coefficients when combining carbon layers with the NCS pathways.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
             <property name="text">
              <string>Coefficients importance</string>
@@ -293,7 +293,7 @@
   <customwidget>
    <class>QgsScrollArea</class>
    <extends>QScrollArea</extends>
-   <header>qgis.gui</header>
+   <header location="global">qgis.gui</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

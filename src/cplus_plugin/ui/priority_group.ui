@@ -36,10 +36,10 @@
    <item row="0" column="3">
     <widget class="QgsSpinBox" name="group_spin_box">
      <property name="suffix">
-      <string>%</string>
+      <string/>
      </property>
      <property name="maximum">
-      <number>100</number>
+      <number>5</number>
      </property>
     </widget>
    </item>
@@ -67,7 +67,10 @@
         </sizepolicy>
        </property>
        <property name="maximum">
-        <number>100</number>
+        <number>5</number>
+       </property>
+       <property name="pageStep">
+        <number>1</number>
        </property>
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
