@@ -1254,11 +1254,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def run_normalization_analysis(self, models, priority_layers_groups, extent):
         """Runs the normalization analysis on the models layers,
-        adjusting band values measured on different scale
-        to a 0-1 scale or 0-2 scale.
+        adjusting band values measured on different scale, the resulting scale
+        is computed using the below formula.
+        Normalized_Model = (Carbon coefficient + Suitability index) * (
+                            (Model layer value) - (Model band minimum value)) /
+                            (Model band maximum value - Model band minimum value))
 
-        If carbon layers were used prior to the models analysis the 0-2 scale will
-        be used instead of the default 0-1 scale.
+        If the carbon coefficient and suitability index are both zero then
+        the computation won't take them into account in the calculation.
 
         :param models: List of the analyzed implementation models
         :type models: typing.List[ImplementationModel]
@@ -1335,14 +1338,24 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.0)
             )
 
-            if carbon_coefficient <= 0:
+            suitability_index = float(
+                settings_manager.get_value(
+                    Settings.PATHWAY_SUITABILITY_INDEX, default=0
+                )
+            )
+
+            normalization_index = carbon_coefficient + suitability_index
+
+            if normalization_index > 0:
                 expression = (
+                    f" {normalization_index} * "
                     f'("{layer_name}@1" - {min_value}) /'
                     f" ({max_value} - {min_value})"
                 )
+
             else:
                 expression = (
-                    f' 2 * ("{layer_name}@1" - {min_value}) /'
+                    f'("{layer_name}@1" - {min_value}) /'
                     f" ({max_value} - {min_value})"
                 )
 
