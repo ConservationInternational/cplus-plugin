@@ -912,7 +912,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         models_paths = []
 
         for model in models:
-            if not model.pathways and (model.path is None and model.path is ""):
+            if not model.pathways and (model.path is None or model.path is ""):
                 self.show_message(
                     tr(
                         f"No defined model pathways or a"
@@ -942,6 +942,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         coefficient_importance = settings_manager.get_value(
             Settings.COEFFICIENT_IMPORTANCE, default=5
         )
+
+        suitability_index = float(
+            settings_manager.get_value(Settings.PATHWAY_SUITABILITY_INDEX, default=0)
+        )
+
         carbon_coefficient = float(
             settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.0)
         )
@@ -964,7 +969,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 f"{new_carbon_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
             )
 
-            basenames.append(f'"{path_basename}@1"')
+            if suitability_index > 0:
+                basenames.append(f'{suitability_index} * "{path_basename}@1"')
+            else:
+                basenames.append(f'"{path_basename}@1"')
 
             for carbon_path in pathway.carbon_paths:
                 if base_dir not in carbon_path:
@@ -1009,7 +1017,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 (pathway_count == len(pathways) - 1),
             )
 
-            if carbon_coefficient <= 0:
+            if carbon_coefficient <= 0 and suitability_index <= 0:
                 self.run_models_analysis(models, priority_layers_groups, extent_string)
                 return
 
@@ -1489,7 +1497,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 pwl = settings_layer.get("path")
 
                 missing_pwl_message = (
-                    f"Path {pwl_path} for priority "
+                    f"Path {pwl} for priority "
                     f"weighting layer {layer.get('name')} "
                     f"doesn't exist, skipping the layer "
                     f"from the model {model.name} weighting."
