@@ -31,7 +31,7 @@ class CplusPluginSettingsTest(unittest.TestCase):
         save_report_license = "license"
         save_base_dir = "base directory"
 
-        carbon_coefficient = 0.15
+        carbon_coefficient = 0.1
         coefficient_importance = 3
         pathway_suitability_index = 1.5
 
@@ -110,7 +110,7 @@ class CplusPluginSettingsTest(unittest.TestCase):
         save_report_license = "license 2"
         save_base_dir = "base directory 2"
 
-        save_carbon_coefficient = 0.15
+        save_carbon_coefficient = 0.1
         save_coefficient_importance = 3
         save_pathway_suitability_index = 1.5
 
