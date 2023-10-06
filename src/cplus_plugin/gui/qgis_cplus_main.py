@@ -886,7 +886,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param priority_layers_groups: Used priority layers groups and their values
         :type priority_layers_groups: dict
 
-        :param extent: selected extent from user
+        :param extent: The selected extent from user
         :type extent: SpatialExtent
         """
         if self.processing_cancelled:
@@ -894,7 +894,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             return False
 
         models_function = partial(
-            self.run_models_analysis, models, priority_layers_groups, extent
+            self.run_pathways_normalization, models, priority_layers_groups, extent
         )
         main_task = QgsTask.fromFunction(
             "Main task for running pathways combination with carbon layers",
@@ -934,7 +934,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 models_paths.append(model.path)
 
         if not pathways and len(models_paths) > 0:
-            self.run_models_analysis(models, priority_layers_groups, extent)
+            self.run_pathways_normalization(models, priority_layers_groups, extent)
             return
 
         new_carbon_directory = f"{self.scenario_directory}/pathways_carbon_layers"
@@ -1018,7 +1018,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
 
             if carbon_coefficient <= 0 and suitability_index <= 0:
-                self.run_models_analysis(models, priority_layers_groups, extent_string)
+                self.run_pathways_normalization(
+                    models, priority_layers_groups, extent_string
+                )
                 return
 
             # Actual processing calculation
@@ -1069,6 +1071,203 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     ):
         """Slot that handles post calculations for the models pathways and
          carbon layers.
+
+        :param model_index: List index of the target model
+        :type model_index: int
+
+        :param pathway: Target pathway
+        :type pathway: NCSPathway
+
+        :param models: List of the selected implementation models
+        :type models: typing.List[ImplementationModel]
+
+        :param priority_layers_groups: Used priority layers
+        groups and their values
+        :type priority_layers_groups: dict
+
+        :param last_pathway: Whether the pathway is the last from
+         the models pathway list
+        :type last_pathway: bool
+
+        :param success: Whether the scenario analysis was successful
+        :type success: bool
+
+        :param output: Analysis output results
+        :type output: dict
+        """
+        if output is not None and output.get("OUTPUT") is not None:
+            pathway.path = output.get("OUTPUT")
+
+        if (pathway_count == len(pathways) - 1) and last_pathway:
+            self.run_pathways_normalization(models, priority_layers_groups, extent)
+
+    def run_pathways_normalization(self, models, priority_layers_groups, extent):
+        """Runs the normalization on the models pathways layers,
+        adjusting band values measured on different scale, the resulting scale
+        is computed using the below formula
+        Normalized_Pathway = (Carbon coefficient + Suitability index) * (
+                            (Model layer value) - (Model band minimum value)) /
+                            (Model band maximum value - Model band minimum value))
+
+        If the carbon coefficient and suitability index are both zero then
+        the computation won't take them into account in the normalization
+        calculation.
+
+        :param models: List of the analyzed implementation models
+        :type models: typing.List[ImplementationModel]
+
+        :param priority_layers_groups: Used priority layers groups and their values
+        :type priority_layers_groups: dict
+
+        :param extent: selected extent from user
+        :type extent: str
+        """
+        if self.processing_cancelled:
+            # Will not proceed if processing has been cancelled by the user
+            return False
+
+        pathway_count = 0
+
+        priority_function = partial(
+            self.run_models_analysis, models, priority_layers_groups, extent
+        )
+        main_task = QgsTask.fromFunction(
+            "Running pathways normalization",
+            self.main_task,
+            on_finished=priority_function,
+        )
+
+        previous_sub_tasks = []
+
+        self.progress_dialog.analysis_finished_message = tr("Normalization")
+        self.progress_dialog.scenario_name = tr("pathways")
+
+        pathways = []
+        models_paths = []
+
+        for model in models:
+            if not model.pathways and (model.path is None or model.path is ""):
+                self.show_message(
+                    tr(
+                        f"No defined model pathways or a"
+                        f" model layer for the model {model.name}"
+                    ),
+                    level=Qgis.Critical,
+                )
+                log(
+                    f"No defined model pathways or a "
+                    f"model layer for the model {model.name}"
+                )
+                main_task.cancel()
+                return False
+            for pathway in model.pathways:
+                if not (pathway in pathways):
+                    pathways.append(pathway)
+
+            if model.path is not None and model.path is not "":
+                models_paths.append(model.path)
+
+        if not pathways and len(models_paths) > 0:
+            self.run_models_analysis(models, priority_layers_groups, extent)
+            return
+
+        carbon_coefficient = float(
+            settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.0)
+        )
+
+        suitability_index = float(
+            settings_manager.get_value(Settings.PATHWAY_SUITABILITY_INDEX, default=0)
+        )
+
+        normalization_index = carbon_coefficient + suitability_index
+
+        for pathway in pathways:
+            layers = []
+            new_ims_directory = f"{self.scenario_directory}/normalized_pathways"
+            FileUtils.create_new_dir(new_ims_directory)
+            file_name = clean_filename(pathway.name.replace(" ", "_"))
+
+            output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
+
+            pathway_layer = QgsRasterLayer(pathway.path, pathway.name)
+            provider = pathway_layer.dataProvider()
+            band_statistics = provider.bandStatistics(1)
+
+            min_value = band_statistics.minimumValue
+            max_value = band_statistics.maximumValue
+
+            layer_name = Path(pathway.path).stem
+
+            layers.append(pathway.path)
+
+            if normalization_index > 0:
+                expression = (
+                    f" {normalization_index} * "
+                    f'("{layer_name}@1" - {min_value}) /'
+                    f" ({max_value} - {min_value})"
+                )
+            else:
+                expression = (
+                    f'("{layer_name}@1" - {min_value}) /'
+                    f" ({max_value} - {min_value})"
+                )
+
+            analysis_done = partial(
+                self.pathways_normalization_done,
+                pathway_count,
+                models,
+                extent,
+                priority_layers_groups,
+                pathways,
+                pathway,
+                (pathway_count == len(pathways) - 1),
+            )
+
+            # Actual processing calculation
+            alg_params = {
+                "CELLSIZE": 0,
+                "CRS": None,
+                "EXPRESSION": expression,
+                "EXTENT": extent,
+                "LAYERS": layers,
+                "OUTPUT": output_file,
+            }
+
+            log(f"Used parameters for normalization of the pathways: {alg_params}")
+
+            alg = QgsApplication.processingRegistry().algorithmById(
+                "qgis:rastercalculator"
+            )
+
+            self.task = QgsProcessingAlgRunnerTask(
+                alg, alg_params, self.processing_context, self.position_feedback
+            )
+
+            self.position_feedback.progressChanged.connect(self.update_progress_bar)
+
+            main_task.addSubTask(
+                self.task, previous_sub_tasks, QgsTask.ParentDependsOnSubTask
+            )
+            previous_sub_tasks.append(self.task)
+            self.task.executed.connect(analysis_done)
+
+            pathway_count = pathway_count + 1
+
+        QgsApplication.taskManager().addTask(main_task)
+
+    def pathways_normalization_done(
+        self,
+        pathway_count,
+        models,
+        extent,
+        priority_layers_groups,
+        pathways,
+        pathway,
+        last_pathway,
+        success,
+        output,
+    ):
+        """Slot that handles normalized pathways layers.
 
         :param model_index: List index of the target model
         :type model_index: int
