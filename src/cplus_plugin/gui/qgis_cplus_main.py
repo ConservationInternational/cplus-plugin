@@ -878,7 +878,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def run_pathways_analysis(self, models, priority_layers_groups, extent):
         """Runs the required model pathways analysis on the passed
-         implementation models.
+         implementation models. The analysis involves adding the pathways
+         carbon layers into the pathway layer.
+
+         If the pathway layer has more than one carbon layer, the resulting
+         weighted pathway will contain the sum of the pathway layer values
+         with the average of the pathway carbon layers values.
 
         :param models: List of the selected implementation models
         :type models: typing.List[ImplementationModel]
@@ -974,6 +979,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             else:
                 basenames.append(f'"{path_basename}@1"')
 
+            carbon_names = []
+
             for carbon_path in pathway.carbon_paths:
                 if base_dir not in carbon_path:
                     carbon_path = f"{base_dir}/{NCS_CARBON_SEGMENT}/{carbon_path}"
@@ -981,10 +988,19 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 if not carbon_full_path.exists():
                     continue
                 layers.append(carbon_path)
-                if carbon_coefficient > 0:
-                    basenames.append(
-                        f'({carbon_coefficient} * "{carbon_full_path.stem}@1")'
-                    )
+                carbon_names.append(f'"{carbon_full_path.stem}@1"')
+
+            if len(carbon_names) == 1 and carbon_coefficient > 0:
+                basenames.append(f"{carbon_coefficient} * {carbon_names[0]})")
+
+            # Setting up calculation to use carbon layers average when
+            # a pathway has more than one carbon layer.
+            if len(carbon_names) > 1 and carbon_coefficient > 0:
+                basenames.append(
+                    f"{carbon_coefficient} * ("
+                    f'({" + ".join(carbon_names)}) / '
+                    f"{len(pathway.carbon_paths)})"
+                )
             expression = " + ".join(basenames)
 
             box = QgsRectangle(
