@@ -944,10 +944,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         new_carbon_directory = f"{self.scenario_directory}/pathways_carbon_layers"
 
-        coefficient_importance = settings_manager.get_value(
-            Settings.COEFFICIENT_IMPORTANCE, default=5
-        )
-
         suitability_index = float(
             settings_manager.get_value(Settings.PATHWAY_SUITABILITY_INDEX, default=0)
         )
@@ -955,7 +951,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         carbon_coefficient = float(
             settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.0)
         )
-        carbon_coefficient = int(coefficient_importance) * carbon_coefficient
 
         base_dir = settings_manager.get_value(Settings.BASE_DIR)
 
