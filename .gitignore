@@ -131,3 +131,4 @@ dmypy.json
 .idea/
 build/
 cplus_scenario_output.*
+[Skip output]
