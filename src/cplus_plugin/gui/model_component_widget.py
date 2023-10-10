@@ -254,6 +254,20 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
         """
         self.load()
 
+    def model_names(self) -> typing.List[str]:
+        """Gets the names of the components in the item model.
+
+        :returns: Returns the model names in lower case or an empty
+        list if the item model has not been set.
+        :rtype: list
+        """
+        if self._item_model is None:
+            return []
+
+        model_components = self._item_model.model_components()
+
+        return [mc.name.lower() for mc in model_components]
+
 
 class NcsComponentWidget(ModelComponentWidget):
     """Widget for displaying and managing NCS pathways."""
@@ -310,7 +324,7 @@ class NcsComponentWidget(ModelComponentWidget):
 
     def _on_add_item(self):
         """Show NCS pathway editor."""
-        ncs_editor = NcsPathwayEditorDialog(self)
+        ncs_editor = NcsPathwayEditorDialog(self, excluded_names=self.model_names())
         if ncs_editor.exec_() == QtWidgets.QDialog.Accepted:
             ncs_pathway = ncs_editor.ncs_pathway
             result = self.item_model.add_ncs_pathway(ncs_pathway)
@@ -324,7 +338,14 @@ class NcsComponentWidget(ModelComponentWidget):
             return
 
         item = selected_items[0]
-        ncs_editor = NcsPathwayEditorDialog(self, item.ncs_pathway)
+
+        # If editing, remove the current name of the model component
+        excluded_names = self.model_names()
+        excluded_names.remove(item.model_component.name.lower())
+
+        ncs_editor = NcsPathwayEditorDialog(
+            self, item.ncs_pathway, excluded_names=excluded_names
+        )
         if ncs_editor.exec_() == QtWidgets.QDialog.Accepted:
             ncs_pathway = ncs_editor.ncs_pathway
             result = self.item_model.update_ncs_pathway(ncs_pathway)
@@ -402,6 +423,20 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         """
         return self.item_model.models()
 
+    def model_names(self) -> typing.List[str]:
+        """Gets the names of the implementation models in the item model.
+
+        :returns: Returns the names of implementation models in lower
+        case or an empty list if the item model has not been set.
+        :rtype: list
+        """
+        if self._item_model is None:
+            return []
+
+        model_components = self._item_model.models()
+
+        return [mc.name.lower() for mc in model_components]
+
     def on_pathways_updated(self, im_item: ImplementationModelItem):
         """Slot raised when the pathways of an ImplementationModelItem
         have been added or removed. Persist this information in settings.
@@ -433,7 +468,9 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
 
     def _on_add_item(self):
         """Show implementation model editor."""
-        editor = ImplementationModelEditorDialog(self)
+        editor = ImplementationModelEditorDialog(
+            self, excluded_names=self.model_names()
+        )
         if editor.exec_() == QtWidgets.QDialog.Accepted:
             model = editor.implementation_model
             layer = editor.layer
@@ -448,7 +485,14 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
             return
 
         item = selected_items[0]
-        editor = ImplementationModelEditorDialog(self, item.implementation_model)
+
+        # If editing, remove the current name of the model component
+        excluded_names = self.model_names()
+        excluded_names.remove(item.model_component.name.lower())
+
+        editor = ImplementationModelEditorDialog(
+            self, item.implementation_model, excluded_names=excluded_names
+        )
         if editor.exec_() == QtWidgets.QDialog.Accepted:
             model = editor.implementation_model
             layer = editor.layer
