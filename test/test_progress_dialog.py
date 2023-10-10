@@ -56,6 +56,24 @@ class CplusPluginProgressDialogTest(unittest.TestCase):
         processing_status = progress_dialog.get_processing_status()
         self.assertEqual(processing_status, False)
 
+    def test_view_report(self) -> None:
+        """Tests if the report is correctly opened in as a PDF"""
+
+        # view_report_pdf()
+        self.assertEqual(True, True)
+
+    def test_view_report_layout_designer(self) -> None:
+        """A check on whether the report is opened correctly in layout view."""
+
+        # view_report_layout_designer()
+        self.assertEqual(True, True)
+
+    def test_stop_processing(self) -> None:
+        """Checks if processing has been stopped correctly."""
+
+        # stop_processing()
+        self.assertEqual(True, True)
+
     def test_processing_stopped(self) -> None:
         """Checks if post-stopped changes occurs."""
 

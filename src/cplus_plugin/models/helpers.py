@@ -12,8 +12,28 @@ from .base import (
     ImplementationModel,
     LayerModelComponent,
     LayerModelComponentType,
-    NcsPathway,
     LayerType,
+    NcsPathway,
+    SpatialExtent,
+)
+from ..definitions.constants import (
+    CARBON_COEFFICIENT_ATTRIBUTE,
+    CARBON_PATHS_ATTRIBUTE,
+    NAME_ATTRIBUTE,
+    DESCRIPTION_ATTRIBUTE,
+    LAYER_TYPE_ATTRIBUTE,
+    PATH_ATTRIBUTE,
+    PRIORITY_LAYERS_SEGMENT,
+    USER_DEFINED_ATTRIBUTE,
+    UUID_ATTRIBUTE,
+)
+from ..definitions.defaults import DEFAULT_CRS_ID
+
+from qgis.core import (
+    QgsCoordinateReferenceSystem,
+    QgsCoordinateTransform,
+    QgsProject,
+    QgsRectangle,
 )
 
 
@@ -43,9 +63,9 @@ def model_component_to_dict(
         model_uuid = str(model_uuid)
 
     return {
-        "uuid": model_uuid,
-        "name": model_component.name,
-        "description": model_component.description,
+        UUID_ATTRIBUTE: model_uuid,
+        NAME_ATTRIBUTE: model_component.name,
+        DESCRIPTION_ATTRIBUTE: model_component.description,
     }
 
 
@@ -71,7 +91,9 @@ def create_model_component(
         return None
 
     return model_cls(
-        uuid.UUID(source_dict["uuid"]), source_dict["name"], source_dict["description"]
+        uuid.UUID(source_dict[UUID_ATTRIBUTE]),
+        source_dict[NAME_ATTRIBUTE],
+        source_dict[DESCRIPTION_ATTRIBUTE],
     )
 
 
@@ -95,28 +117,28 @@ def create_layer_component(
     from the dictionary.
     :rtype: LayerModelComponent
     """
-    if "uuid" not in source_dict:
+    if UUID_ATTRIBUTE not in source_dict:
         return None
 
-    source_uuid = source_dict["uuid"]
+    source_uuid = source_dict[UUID_ATTRIBUTE]
     if isinstance(source_uuid, str):
         source_uuid = uuid.UUID(source_uuid)
 
     kwargs = {}
-    path_attr = "path"
-    if path_attr in source_dict:
-        kwargs[path_attr] = source_dict[path_attr]
+    if PATH_ATTRIBUTE in source_dict:
+        kwargs[PATH_ATTRIBUTE] = source_dict[PATH_ATTRIBUTE]
 
-    layer_type_attr = "layer_type"
-    if layer_type_attr in source_dict:
-        kwargs[layer_type_attr] = LayerType(int(source_dict["layer_type"]))
+    if LAYER_TYPE_ATTRIBUTE in source_dict:
+        kwargs[LAYER_TYPE_ATTRIBUTE] = LayerType(int(source_dict[LAYER_TYPE_ATTRIBUTE]))
 
-    user_defined_attr = "user_defined"
-    if user_defined_attr in source_dict:
-        kwargs[user_defined_attr] = bool(source_dict[user_defined_attr])
+    if USER_DEFINED_ATTRIBUTE in source_dict:
+        kwargs[USER_DEFINED_ATTRIBUTE] = bool(source_dict[USER_DEFINED_ATTRIBUTE])
 
     return model_cls(
-        source_uuid, source_dict["name"], source_dict["description"], **kwargs
+        source_uuid,
+        source_dict[NAME_ATTRIBUTE],
+        source_dict[DESCRIPTION_ATTRIBUTE],
+        **kwargs
     )
 
 
@@ -132,9 +154,16 @@ def create_ncs_pathway(source_dict) -> typing.Union[NcsPathway, None]:
     :rtype: NcsPathway
     """
     ncs = create_layer_component(source_dict, NcsPathway)
-    carbon_paths_attr = "carbon_paths"
-    if carbon_paths_attr in source_dict:
-        ncs.carbon_paths = source_dict["carbon_paths"]
+
+    # We are checking because of the various iterations of the attributes
+    # in the NcsPathway class where some of these attributes might
+    # be missing.
+    if CARBON_PATHS_ATTRIBUTE in source_dict:
+        ncs.carbon_paths = source_dict[CARBON_PATHS_ATTRIBUTE]
+
+    carbon_coefficient_attr = CARBON_COEFFICIENT_ATTRIBUTE
+    if carbon_coefficient_attr in source_dict:
+        ncs.carbon_coefficient = source_dict[CARBON_COEFFICIENT_ATTRIBUTE]
 
     return ncs
 
@@ -150,7 +179,11 @@ def create_implementation_model(source_dict) -> typing.Union[ImplementationModel
     from the dictionary.
     :rtype: ImplementationModel
     """
-    return create_layer_component(source_dict, ImplementationModel)
+    implementation_model = create_layer_component(source_dict, ImplementationModel)
+    if PRIORITY_LAYERS_SEGMENT in source_dict.keys():
+        implementation_model.priority_layers = source_dict[PRIORITY_LAYERS_SEGMENT]
+
+    return implementation_model
 
 
 def layer_component_to_dict(
@@ -175,9 +208,9 @@ def layer_component_to_dict(
     :rtype: dict
     """
     base_attrs = model_component_to_dict(layer_component, uuid_to_str)
-    base_attrs["path"] = layer_component.path
-    base_attrs["layer_type"] = int(layer_component.layer_type)
-    base_attrs["user_defined"] = layer_component.user_defined
+    base_attrs[PATH_ATTRIBUTE] = layer_component.path
+    base_attrs[LAYER_TYPE_ATTRIBUTE] = int(layer_component.layer_type)
+    base_attrs[USER_DEFINED_ATTRIBUTE] = layer_component.user_defined
 
     return base_attrs
 
@@ -204,7 +237,8 @@ def ncs_pathway_to_dict(ncs_pathway: NcsPathway, uuid_to_str=True) -> dict:
     :rtype: dict
     """
     base_ncs_dict = layer_component_to_dict(ncs_pathway, uuid_to_str)
-    base_ncs_dict["carbon_paths"] = ncs_pathway.carbon_paths
+    base_ncs_dict[CARBON_PATHS_ATTRIBUTE] = ncs_pathway.carbon_paths
+    base_ncs_dict[CARBON_COEFFICIENT_ATTRIBUTE] = ncs_pathway.carbon_coefficient
 
     return base_ncs_dict
 
@@ -236,14 +270,48 @@ def clone_layer_component(
 
     for f in fields(layer_component):
         attr_val = getattr(layer_component, f.name)
-
-        # Clone map layer
-        if f.name == "layer" and attr_val is not None:
-            attr_val = attr_val.clone()
-
         setattr(cloned_component, f.name, attr_val)
 
     return cloned_component
+
+
+def clone_ncs_pathway(ncs: NcsPathway) -> NcsPathway:
+    """Creates a deep copy of the given NCS pathway.
+
+    :param ncs: NCS pathway to clone.
+    :type ncs: NcsPathway
+
+    :returns: A deep copy of the original NCS pathway object.
+    :rtype: NcsPathway
+    """
+    return clone_layer_component(ncs, NcsPathway)
+
+
+def clone_implementation_model(
+    implementation_model: ImplementationModel,
+) -> ImplementationModel:
+    """Creates a deep copy of the given implementation model.
+
+    :param implementation_model: Implementation model to clone.
+    :type implementation_model: ImplementationModel
+
+    :returns: A deep copy of the original implementation model object.
+    :rtype: ImplementationModel
+    """
+    imp_model = clone_layer_component(implementation_model, ImplementationModel)
+    if imp_model is None:
+        return None
+
+    pathways = implementation_model.pathways
+    cloned_pathways = []
+    for p in pathways:
+        cloned_ncs = clone_ncs_pathway(p)
+        if cloned_ncs is not None:
+            cloned_pathways.append(cloned_ncs)
+
+    imp_model.pathways = cloned_pathways
+
+    return imp_model
 
 
 def copy_layer_component_attributes(
@@ -272,8 +340,8 @@ def copy_layer_component_attributes(
         )
 
     for f in fields(source):
-        # Exclude uuid and map layer
-        if f.name == "uuid" or f.name == "layer":
+        # Exclude uuid
+        if f.name == UUID_ATTRIBUTE:
             continue
         attr_val = getattr(source, f.name)
         setattr(target, f.name, attr_val)
@@ -282,3 +350,67 @@ def copy_layer_component_attributes(
     target.update_layer_type()
 
     return target
+
+
+def extent_to_qgs_rectangle(
+    spatial_extent: SpatialExtent,
+) -> typing.Union[QgsRectangle, None]:
+    """Returns a QgsRectangle object from the SpatialExtent object.
+
+    If the SpatialExtent is invalid (i.e. less than four items) then it
+    will return None.
+
+    :param spatial_extent: Spatial extent data model that defines the
+    scenario bounds.
+    :type spatial_extent: SpatialExtent
+
+    :returns: QGIS rectangle defining the bounds for the scenario.
+    :rtype: QgsRectangle
+    """
+    if len(spatial_extent.bbox) < 4:
+        return None
+
+    return QgsRectangle(
+        spatial_extent.bbox[0],
+        spatial_extent.bbox[2],
+        spatial_extent.bbox[1],
+        spatial_extent.bbox[3],
+    )
+
+
+def extent_to_project_crs_extent(
+    spatial_extent: SpatialExtent, project: QgsProject = None
+) -> typing.Union[QgsRectangle, None]:
+    """Transforms SpatialExtent model to an QGIS extent based
+    on the CRS of the given project.
+
+    :param spatial_extent: Spatial extent data model that defines the
+    scenario bounds.
+    :type spatial_extent: SpatialExtent
+
+    :param project: Project whose CRS will be used to determine
+    the values of the output extent.
+    :type project: QgsProject
+
+    :returns: Output extent in the project's CRS. If the input extent
+    is invalid, this function will return None.
+    :rtype: QgsRectangle
+    """
+    input_rect = extent_to_qgs_rectangle(spatial_extent)
+    if input_rect is None:
+        return None
+
+    default_crs = QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
+    if not default_crs.isValid():
+        return None
+
+    if project is None:
+        project = QgsProject.instance()
+
+    target_crs = project.crs()
+    if default_crs == target_crs:
+        # No need for transformation
+        return input_rect
+
+    coordinate_xform = QgsCoordinateTransform(default_crs, project.crs(), project)
+    return coordinate_xform.transformBoundingBox(input_rect)

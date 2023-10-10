@@ -10,11 +10,12 @@ from qgis.PyQt import QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
+from .component_item_model import ImplementationModelItem, ModelComponentItemType
+
 from .model_component_widget import (
     ImplementationModelComponentWidget,
     NcsComponentWidget,
 )
-
 from ..models.base import ImplementationModel, NcsPathway
 
 from ..utils import FileUtils
@@ -53,6 +54,10 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         self.implementation_model_view = ImplementationModelComponentWidget()
         self.ipm_layout.addWidget(self.implementation_model_view)
         self.implementation_model_view.title = self.tr("Implementation Models")
+
+        self.ncs_pathway_view.ncs_pathway_updated.connect(self.on_ncs_pathway_updated)
+
+        self.load()
 
     def load(self):
         """Load NCS pathways and implementation models to the views.
@@ -101,6 +106,10 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
 
         self.implementation_model_view.add_ncs_pathway_items(all_ncs_items)
 
+    def on_ncs_pathway_updated(self, ncs_pathway: NcsPathway):
+        """Slot raised when an NCS pathway has been updated."""
+        self.implementation_model_view.update_ncs_pathway_items(ncs_pathway)
+
     def is_valid(self) -> bool:
         """Check if the user input is valid.
 
@@ -124,5 +133,34 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
 
         return status
 
-    def selected_items(self):
-        return self.implementation_model_view.selected_items()
+    def selected_items(self) -> typing.List[ModelComponentItemType]:
+        """Returns the selected model component item types which could be
+        NCS pathway or implementation model items.
+
+        These are cloned objects so as not to interfere with the
+        underlying data models when used for scenario analysis. Otherwise,
+        one can also use the data models from the MVC item model.
+
+        :returns: Selected model component items.
+        :rtype: list
+        """
+        ref_items = self.implementation_model_view.selected_items()
+        cloned_items = []
+        for ref_item in ref_items:
+            clone_item = ref_item.clone()
+            cloned_items.append(clone_item)
+
+        return cloned_items
+
+    def selected_im_items(self) -> typing.List[ImplementationModelItem]:
+        """Returns the currently selected instances of ImplementationModelItem.
+
+        :returns: Currently selected instances of ImplementationModelItem or
+        an empty list if there is no selection of IM items.
+        :rtype: list
+        """
+        return [
+            item
+            for item in self.selected_items()
+            if isinstance(item, ImplementationModelItem)
+        ]

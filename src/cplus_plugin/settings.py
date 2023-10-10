@@ -84,6 +84,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
             FileUtils.create_ncs_pathways_dir(value)
             FileUtils.create_ncs_carbon_dir(value)
+            FileUtils.create_pwls_dir(value)
 
     def update_logo(self, custom_logo, logo_dir=DEFAULT_LOGO_PATH):
         """Updates the logo preview.
@@ -217,7 +218,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         settings_manager.set_value(Settings.REPORT_FOOTER, footer)
 
         disclaimer = self.txt_disclaimer.toPlainText()
-        settings_manager.set_value(Settings.REPORT_DISLAIMER, disclaimer)
+        settings_manager.set_value(Settings.REPORT_DISCLAIMER, disclaimer)
 
         report_license = self.txt_license.text()
         settings_manager.set_value(Settings.REPORT_LICENSE, report_license)
@@ -225,6 +226,22 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         # Advanced settings
         base_dir_path = self.folder_data.filePath()
         settings_manager.set_value(Settings.BASE_DIR, base_dir_path)
+
+        # Carbon layers coefficient saving
+        coefficient = self.carbon_coefficient_box.value()
+        settings_manager.set_value(Settings.CARBON_COEFFICIENT, coefficient)
+
+        # Coefficients importance
+        coefficients_importance = self.coefficients_importance_box.value()
+        settings_manager.set_value(
+            Settings.COEFFICIENT_IMPORTANCE, coefficients_importance
+        )
+
+        # Pathway suitability index
+        pathway_suitability_index = self.suitability_index_box.value()
+        settings_manager.set_value(
+            Settings.PATHWAY_SUITABILITY_INDEX, pathway_suitability_index
+        )
 
         # Checks if the provided base directory exists
         if not os.path.exists(base_dir_path):
@@ -267,7 +284,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         footer = settings_manager.get_value(Settings.REPORT_FOOTER, default="")
         self.txt_footer.setPlainText(footer)
 
-        disclaimer = settings_manager.get_value(Settings.REPORT_DISLAIMER, default="")
+        disclaimer = settings_manager.get_value(Settings.REPORT_DISCLAIMER, default="")
         self.txt_disclaimer.setPlainText(disclaimer)
 
         report_license = settings_manager.get_value(Settings.REPORT_LICENSE, default="")
@@ -277,6 +294,24 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         base_dir = settings_manager.get_value(Settings.BASE_DIR, default="")
         self.folder_data.setFilePath(base_dir)
         self.base_dir_exists()
+
+        # Carbon layers coefficient
+        coefficient = settings_manager.get_value(
+            Settings.CARBON_COEFFICIENT, default=0.0
+        )
+        self.carbon_coefficient_box.setValue(float(coefficient))
+
+        # Coefficients importance
+        coefficients_importance = settings_manager.get_value(
+            Settings.COEFFICIENT_IMPORTANCE, default=5
+        )
+        self.coefficients_importance_box.setValue(int(coefficients_importance))
+
+        # Pathway suitability index
+        pathway_suitability_index = settings_manager.get_value(
+            Settings.PATHWAY_SUITABILITY_INDEX, default=0
+        )
+        self.suitability_index_box.setValue(float(pathway_suitability_index))
 
     def showEvent(self, event: QShowEvent) -> None:
         """Show event being called. This will display the plugin settings.

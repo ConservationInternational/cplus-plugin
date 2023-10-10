@@ -14,7 +14,8 @@
 
 import os.path
 
-from qgis.core import QgsSettings
+from qgis.core import QgsApplication, QgsMasterLayoutInterface, QgsSettings
+from qgis.gui import QgsGui, QgsLayoutDesignerInterface
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QDockWidget, QMainWindow, QVBoxLayout
@@ -27,17 +28,34 @@ from qgis.PyQt.QtWidgets import QToolButton
 from qgis.PyQt.QtWidgets import QMenu
 
 from .conf import Settings, settings_manager
-from .definitions.constants import NCS_CARBON_SEGMENT, NCS_PATHWAY_SEGMENT
+from .definitions.constants import (
+    CARBON_COEFFICIENT_ATTRIBUTE,
+    CARBON_PATHS_ATTRIBUTE,
+    NCS_CARBON_SEGMENT,
+    NCS_PATHWAY_SEGMENT,
+    PATH_ATTRIBUTE,
+    PRIORITY_LAYERS_SEGMENT,
+    USER_DEFINED_ATTRIBUTE,
+    UUID_ATTRIBUTE,
+)
 from .definitions.defaults import (
     ABOUT_DOCUMENTATION_SITE,
+    CI_LOGO_PATH,
+    CPLUS_LOGO_PATH,
     DEFAULT_IMPLEMENTATION_MODELS,
+    DEFAULT_LOGO_PATH,
     DEFAULT_NCS_PATHWAYS,
+    DEFAULT_REPORT_DISCLAIMER,
+    DEFAULT_REPORT_LICENSE,
     DOCUMENTATION_SITE,
     ICON_PATH,
     OPTIONS_TITLE,
     PRIORITY_GROUPS,
     PRIORITY_LAYERS,
 )
+from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
+from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
+from .lib.reports.manager import report_manager
 from .models.helpers import (
     copy_layer_component_attributes,
     create_implementation_model,
@@ -229,12 +247,21 @@ class QgisCplus:
             status_tip=self.tr("CPLUS About"),
         )
 
+        # Initialize default report settings
+        initialize_report_settings()
+
         # Adds the settings to the QGIS options panel
         self.options_factory = CplusOptionsFactory()
         self.iface.registerOptionsWidgetFactory(self.options_factory)
 
         # Initialize default model components
-        initialize_default_settings()
+        initialize_model_settings()
+
+        # Register custom layout items
+        self.register_layout_items()
+
+        # Register custom report variables when a layout is opened
+        self.iface.layoutDesignerOpened.connect(self.on_layout_designer_opened)
 
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin widget is closed."""
@@ -268,6 +295,25 @@ class QgisCplus:
         """Options the CPLUS settings in the QGIS options dialog."""
         self.iface.showOptionsDialog(currentPage=OPTIONS_TITLE)
 
+    def on_layout_designer_opened(self, designer: QgsLayoutDesignerInterface):
+        """Register custom report variables in a print layout only."""
+        layout_type = designer.masterLayout().layoutType()
+        if layout_type == QgsMasterLayoutInterface.PrintLayout:
+            layout = designer.layout()
+            report_manager.register_variables(layout)
+
+    def register_layout_items(self):
+        """Register custom layout items."""
+        # Register map layout item
+        QgsApplication.layoutItemRegistry().addLayoutItemType(
+            CplusMapRepeatItemLayoutItemMetadata()
+        )
+
+        # Register map GUI metadata
+        item_gui_registry = QgsGui.layoutItemGuiRegistry()
+        map_item_gui_metadata = CplusMapLayoutItemGuiMetadata()
+        item_gui_registry.addLayoutItemGuiMetadata(map_item_gui_metadata)
+
     def open_help(self):
         """Opens documentation home page for the plugin in a browser"""
         open_documentation(DOCUMENTATION_SITE)
@@ -297,7 +343,7 @@ def create_priority_layers():
         settings_manager.set_value("default_priority_layers_set", True)
 
 
-def initialize_default_settings():
+def initialize_model_settings():
     """Initialize default model components such as NCS pathways
     and implementation models.
 
@@ -315,23 +361,31 @@ def initialize_default_settings():
         # Create NCS carbon subdirectory
         FileUtils.create_ncs_carbon_dir(base_dir)
 
+        # Create priority weighting layers subdirectory
+        FileUtils.create_pwls_dir(base_dir)
+
+    # Use carbon coefficient values for older-version NCS pathways
+    carbon_coefficient = settings_manager.get_value(
+        Settings.CARBON_COEFFICIENT, 0, float
+    )
+
     # Add default pathways
     for ncs_dict in DEFAULT_NCS_PATHWAYS:
         try:
-            ncs_uuid = ncs_dict["uuid"]
+            ncs_uuid = ncs_dict[UUID_ATTRIBUTE]
             ncs = settings_manager.get_ncs_pathway(ncs_uuid)
             if ncs is None:
                 # Update dir
                 base_dir = settings_manager.get_value(Settings.BASE_DIR, None)
                 if base_dir is not None:
                     # Pathway location
-                    file_name = ncs_dict["path"]
+                    file_name = ncs_dict[PATH_ATTRIBUTE]
                     absolute_path = f"{base_dir}/{NCS_PATHWAY_SEGMENT}/{file_name}"
                     abs_path = str(os.path.normpath(absolute_path))
-                    ncs_dict["path"] = abs_path
+                    ncs_dict[PATH_ATTRIBUTE] = abs_path
 
                     # Carbon location
-                    carbon_file_names = ncs_dict["carbon_paths"]
+                    carbon_file_names = ncs_dict[CARBON_PATHS_ATTRIBUTE]
                     abs_carbon_paths = []
                     for carbon_file_name in carbon_file_names:
                         abs_carbon_path = (
@@ -339,17 +393,24 @@ def initialize_default_settings():
                         )
                         norm_carbon_path = str(os.path.normpath(abs_carbon_path))
                         abs_carbon_paths.append(norm_carbon_path)
-                    ncs_dict["carbon_paths"] = abs_carbon_paths
+                    ncs_dict[CARBON_PATHS_ATTRIBUTE] = abs_carbon_paths
 
-                ncs_dict["user_defined"] = False
+                ncs_dict[USER_DEFINED_ATTRIBUTE] = False
+                ncs_dict[CARBON_COEFFICIENT_ATTRIBUTE] = carbon_coefficient
                 settings_manager.save_ncs_pathway(ncs_dict)
             else:
-                # Update values
-                source_ncs = create_ncs_pathway(ncs_dict)
-                if source_ncs is None:
+                # Update carbon coefficient value
+                # Check if carbon coefficient had previously been defined
+                ncs_dict = settings_manager.get_ncs_pathway_dict(ncs_uuid)
+                if CARBON_COEFFICIENT_ATTRIBUTE in ncs_dict:
                     continue
-                ncs = copy_layer_component_attributes(ncs, source_ncs)
-                settings_manager.update_ncs_pathway(ncs)
+                else:
+                    ncs_dict[CARBON_COEFFICIENT_ATTRIBUTE] = carbon_coefficient
+                    source_ncs = create_ncs_pathway(ncs_dict)
+                    if source_ncs is None:
+                        continue
+                    ncs = copy_layer_component_attributes(ncs, source_ncs)
+                    settings_manager.update_ncs_pathway(ncs)
         except KeyError as ke:
             log(f"Default NCS configuration load error - {str(ke)}")
             continue
@@ -357,18 +418,40 @@ def initialize_default_settings():
     # Add default implementation models
     for imp_model_dict in DEFAULT_IMPLEMENTATION_MODELS:
         try:
-            imp_model_uuid = imp_model_dict["uuid"]
+            imp_model_uuid = imp_model_dict[UUID_ATTRIBUTE]
             imp_model = settings_manager.get_implementation_model(imp_model_uuid)
             if imp_model is None:
                 settings_manager.save_implementation_model(imp_model_dict)
             else:
+                pathways = imp_model.pathways
                 # Update values
+                imp_model_dict[PRIORITY_LAYERS_SEGMENT] = imp_model.priority_layers
                 source_im = create_implementation_model(imp_model_dict)
                 if source_im is None:
                     continue
                 imp_model = copy_layer_component_attributes(imp_model, source_im)
+                imp_model.pathways = pathways
                 settings_manager.remove_implementation_model(str(imp_model.uuid))
                 settings_manager.save_implementation_model(imp_model)
         except KeyError as ke:
             log(f"Default implementation model configuration load error - {str(ke)}")
             continue
+
+
+def initialize_report_settings():
+    """Sets the default report settings on first time use
+    of the plugin.
+    """
+    if settings_manager.get_value(Settings.REPORT_DISCLAIMER, None) is None:
+        settings_manager.set_value(
+            Settings.REPORT_DISCLAIMER, DEFAULT_REPORT_DISCLAIMER
+        )
+
+    if settings_manager.get_value(Settings.REPORT_LICENSE, None) is None:
+        settings_manager.set_value(Settings.REPORT_LICENSE, DEFAULT_REPORT_LICENSE)
+
+    if settings_manager.get_value(Settings.REPORT_CPLUS_LOGO, None) is None:
+        settings_manager.set_value(Settings.REPORT_CPLUS_LOGO, CPLUS_LOGO_PATH)
+
+    if settings_manager.get_value(Settings.REPORT_CI_LOGO, None) is None:
+        settings_manager.set_value(Settings.REPORT_CI_LOGO, CI_LOGO_PATH)

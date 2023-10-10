@@ -26,9 +26,10 @@ from .component_item_model import (
 )
 from ..conf import settings_manager
 from .implementation_model_editor_dialog import ImplementationModelEditorDialog
+from .model_description_editor import ModelDescriptionEditorDialog
 from .ncs_pathway_editor_dialog import NcsPathwayEditorDialog
 from ..models.base import ImplementationModel, NcsPathway
-from ..utils import FileUtils
+from ..utils import FileUtils, log
 
 
 WidgetUi, _ = loadUiType(
@@ -61,10 +62,15 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
         self.btn_edit.setEnabled(False)
         self.btn_edit.clicked.connect(self._on_edit_item)
 
-        reload_icon = QgsApplication.instance().getThemeIcon("mActionReload.svg")
+        reload_icon = FileUtils.get_icon("mActionReload.svg")
         self.btn_reload.setIcon(reload_icon)
         self.btn_reload.setToolTip(self.tr("Refresh view"))
         self.btn_reload.clicked.connect(self._on_reload)
+
+        self.btn_edit_description.setIcon(edit_icon)
+        self.btn_edit_description.setToolTip(self.tr("Edit description"))
+        self.btn_edit_description.setEnabled(False)
+        self.btn_edit_description.clicked.connect(self._on_update_description)
 
     @property
     def item_model(self) -> ComponentItemModelType:
@@ -144,6 +150,34 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
         """
         pass
 
+    def _on_update_description(self):
+        """Slot raised to edit the currently selected item."""
+        sel_items = self.selected_items()
+        if len(sel_items) == 0:
+            return
+
+        reference_item = sel_items[0]
+        description_editor = ModelDescriptionEditorDialog(
+            self, reference_item.description
+        )
+        title_tr = self.tr("Description Editor")
+        description_editor.setWindowTitle(
+            f"{reference_item.model_component.name} {title_tr}"
+        )
+        if description_editor.exec_() == QtWidgets.QDialog.Accepted:
+            updated_description = description_editor.description
+            reference_item.model_component.description = updated_description
+            self.txt_item_description.setText(updated_description)
+            self._save_item(reference_item)
+
+    def _save_item(self, item: ComponentItemModelType):
+        """Persist the changes in the underlying model for the given item.
+
+        To be implemented by child classes as default implementation does
+        nothing.
+        """
+        pass
+
     def set_description(self, description: str):
         """Updates the text for the selected item.
 
@@ -176,6 +210,7 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
         """Update UI properties on selection changed."""
         self.btn_remove.setEnabled(True)
         self.btn_edit.setEnabled(True)
+        self.btn_edit_description.setEnabled(True)
 
         # Remove description and disable edit and remove buttons if
         # more than one item has been selected.
@@ -184,6 +219,7 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
             self.clear_description()
             self.btn_remove.setEnabled(False)
             self.btn_edit.setEnabled(False)
+            self.btn_edit_description.setEnabled(False)
             return
 
         if not isinstance(selected_items[0], ModelComponentItem):
@@ -218,9 +254,25 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
         """
         self.load()
 
+    def model_names(self) -> typing.List[str]:
+        """Gets the names of the components in the item model.
+
+        :returns: Returns the model names in lower case or an empty
+        list if the item model has not been set.
+        :rtype: list
+        """
+        if self._item_model is None:
+            return []
+
+        model_components = self._item_model.model_components()
+
+        return [mc.name.lower() for mc in model_components]
+
 
 class NcsComponentWidget(ModelComponentWidget):
     """Widget for displaying and managing NCS pathways."""
+
+    ncs_pathway_updated = QtCore.pyqtSignal(NcsPathway)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -230,11 +282,6 @@ class NcsComponentWidget(ModelComponentWidget):
         self.lst_model_items.setDragEnabled(True)
         self.lst_model_items.setDragDropMode(QtWidgets.QAbstractItemView.DragOnly)
         self.lst_model_items.setAcceptDrops(False)
-
-        # Disable add, edit, remove controls for now
-        self.btn_add.setEnabled(False)
-        self.btn_remove.setEnabled(False)
-        self.btn_edit.setEnabled(False)
 
     def add_ncs_pathway(self, ncs_pathway: NcsPathway) -> bool:
         """Adds an NCS pathway object to the view.
@@ -253,12 +300,6 @@ class NcsComponentWidget(ModelComponentWidget):
         items = self.ncs_items()
         for item in items:
             self.item_model.remove_ncs_pathway(item.uuid)
-
-    def _update_ui_on_selection_changed(self):
-        """Temporarily disable edit, remove buttons."""
-        super()._update_ui_on_selection_changed()
-        self.btn_remove.setEnabled(False)
-        self.btn_edit.setEnabled(False)
 
     def pathways(self, valid_only=False) -> typing.List[NcsPathway]:
         """Returns a collection of NcsPathway objects in the list view.
@@ -283,10 +324,12 @@ class NcsComponentWidget(ModelComponentWidget):
 
     def _on_add_item(self):
         """Show NCS pathway editor."""
-        ncs_editor = NcsPathwayEditorDialog(self)
+        ncs_editor = NcsPathwayEditorDialog(self, excluded_names=self.model_names())
         if ncs_editor.exec_() == QtWidgets.QDialog.Accepted:
             ncs_pathway = ncs_editor.ncs_pathway
-            self.item_model.add_ncs_pathway(ncs_pathway)
+            result = self.item_model.add_ncs_pathway(ncs_pathway)
+            if result:
+                settings_manager.save_ncs_pathway(ncs_pathway)
 
     def _on_edit_item(self):
         """Edit selected NCS pathway object."""
@@ -295,11 +338,27 @@ class NcsComponentWidget(ModelComponentWidget):
             return
 
         item = selected_items[0]
-        ncs_editor = NcsPathwayEditorDialog(self, item.ncs_pathway)
+
+        # If editing, remove the current name of the model component
+        excluded_names = self.model_names()
+        excluded_names.remove(item.model_component.name.lower())
+
+        ncs_editor = NcsPathwayEditorDialog(
+            self, item.ncs_pathway, excluded_names=excluded_names
+        )
         if ncs_editor.exec_() == QtWidgets.QDialog.Accepted:
             ncs_pathway = ncs_editor.ncs_pathway
-            self.item_model.update_ncs_pathway(ncs_pathway)
+            result = self.item_model.update_ncs_pathway(ncs_pathway)
+            if result:
+                self._save_item(item)
+                self.ncs_pathway_updated.emit(ncs_pathway)
             self._update_ui_on_selection_changed()
+
+    def _save_item(self, item: NcsPathwayItem):
+        """Update the NCS pathway in settings."""
+        cloned_ncs_item = item.clone()
+        cloned_ncs = cloned_ncs_item.ncs_pathway
+        settings_manager.update_ncs_pathway(cloned_ncs)
 
     def _on_remove_item(self):
         """Delete NcsPathway object."""
@@ -324,6 +383,7 @@ class NcsComponentWidget(ModelComponentWidget):
             == QtWidgets.QMessageBox.Yes
         ):
             self.item_model.remove_ncs_pathway(str(ncs.uuid))
+            settings_manager.remove_ncs_pathway(str(ncs.uuid))
             self.clear_description()
 
     def load(self):
@@ -342,7 +402,10 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        self._saved_ims = settings_manager.get_all_implementation_models()
+
         self.item_model = IMItemModel(parent)
+        self.item_model.im_pathways_updated.connect(self.on_pathways_updated)
 
         self.lst_model_items.setAcceptDrops(True)
         self.lst_model_items.setDragDropMode(QtWidgets.QAbstractItemView.DropOnly)
@@ -359,6 +422,26 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         :rtype: list
         """
         return self.item_model.models()
+
+    def model_names(self) -> typing.List[str]:
+        """Gets the names of the implementation models in the item model.
+
+        :returns: Returns the names of implementation models in lower
+        case or an empty list if the item model has not been set.
+        :rtype: list
+        """
+        if self._item_model is None:
+            return []
+
+        model_components = self._item_model.models()
+
+        return [mc.name.lower() for mc in model_components]
+
+    def on_pathways_updated(self, im_item: ImplementationModelItem):
+        """Slot raised when the pathways of an ImplementationModelItem
+        have been added or removed. Persist this information in settings.
+        """
+        self._save_item(im_item)
 
     def model_items(self) -> typing.List[ImplementationModelItem]:
         """Returns a collection of all ImplementationModelItem objects
@@ -380,13 +463,14 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         """Load implementation models from settings."""
         self.clear()
 
-        imp_models = settings_manager.get_all_implementation_models()
-        for imp_model in imp_models:
+        for imp_model in self._saved_ims:
             self.add_implementation_model(imp_model)
 
     def _on_add_item(self):
         """Show implementation model editor."""
-        editor = ImplementationModelEditorDialog(self)
+        editor = ImplementationModelEditorDialog(
+            self, excluded_names=self.model_names()
+        )
         if editor.exec_() == QtWidgets.QDialog.Accepted:
             model = editor.implementation_model
             layer = editor.layer
@@ -401,15 +485,27 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
             return
 
         item = selected_items[0]
-        editor = ImplementationModelEditorDialog(self, item.implementation_model)
+
+        # If editing, remove the current name of the model component
+        excluded_names = self.model_names()
+        excluded_names.remove(item.model_component.name.lower())
+
+        editor = ImplementationModelEditorDialog(
+            self, item.implementation_model, excluded_names=excluded_names
+        )
         if editor.exec_() == QtWidgets.QDialog.Accepted:
             model = editor.implementation_model
             layer = editor.layer
             result = self.item_model.update_implementation_model(model, layer)
             if result:
-                settings_manager.remove_implementation_model(str(model.uuid))
-                settings_manager.save_implementation_model(model)
+                self._save_item(item)
             self._update_ui_on_selection_changed()
+
+    def _save_item(self, item: ImplementationModelItem):
+        """Update the underlying IM in the item in settings."""
+        cloned_im_item = item.clone()
+        cloned_im = cloned_im_item.implementation_model
+        settings_manager.update_implementation_model(cloned_im)
 
     def _on_remove_item(self):
         """Delete implementation model object."""
@@ -539,5 +635,20 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
 
         item = selected_items[0]
         self.btn_edit.setEnabled(False)
+        self.btn_edit_description.setEnabled(False)
         if item.type() == IMPLEMENTATION_MODEL_TYPE:
             self.btn_edit.setEnabled(True)
+            self.btn_edit_description.setEnabled(True)
+
+    def update_ncs_pathway_items(self, ncs_pathway: NcsPathway) -> bool:
+        """Update NCS pathway items used for IMs that are linked to the
+        given NCS pathway.
+
+        :param ncs_pathway: NCS pathway whose attribute values will be updated
+        for the related pathways used in the IMs.
+        :type ncs_pathway: NcsPathway
+
+        :returns: True if NCS pathway items were updated, else False.
+        :rtype: bool
+        """
+        return self.item_model.update_ncs_pathway_items(ncs_pathway)

@@ -5,6 +5,8 @@ Unit tests for GUI item models for model components.
 
 from unittest import TestCase
 
+from cplus_plugin.gui.carbon_item_model import CarbonLayerModel
+
 from cplus_plugin.gui.component_item_model import (
     IMItemModel,
     ImplementationModelItem,
@@ -18,6 +20,7 @@ from model_data_for_testing import (
     get_test_layer,
     get_valid_ncs_pathway,
     IMPLEMENTATION_MODEL_UUID_STR,
+    TEST_RASTER_PATH,
     VALID_NCS_UUID_STR,
 )
 from utilities_for_testing import get_qgis_app
@@ -109,3 +112,34 @@ class TestIMItemModel(TestCase):
             IMPLEMENTATION_MODEL_UUID_STR
         )
         self.assertTrue(result)
+
+
+class TestCarbonItemModel(TestCase):
+    """Tests for the NCS carbon item model."""
+
+    def test_add_carbon_layer(self):
+        """Assert a carbon layer can be added."""
+        carbon_model = CarbonLayerModel()
+        result = carbon_model.add_carbon_layer(TEST_RASTER_PATH)
+        self.assertTrue(result)
+
+    def test_carbon_layer_index(self):
+        """Assert a valid model index is returned for an existing path."""
+        carbon_model = CarbonLayerModel()
+        _ = carbon_model.add_carbon_layer(TEST_RASTER_PATH)
+        index = carbon_model.carbon_layer_index(TEST_RASTER_PATH)
+        self.assertTrue(index.isValid())
+
+    def test_carbon_layer_exists(self):
+        """Assert the model contains an existing carbon layer."""
+        carbon_model = CarbonLayerModel()
+        _ = carbon_model.add_carbon_layer(TEST_RASTER_PATH)
+        result = carbon_model.contains_layer_path(TEST_RASTER_PATH)
+        self.assertTrue(result)
+
+    def test_number_of_carbon_layer_items(self):
+        """Assert the number of carbon layer items in the model."""
+        carbon_model = CarbonLayerModel()
+        _ = carbon_model.add_carbon_layer(TEST_RASTER_PATH)
+        num_layers = len(carbon_model.carbon_paths())
+        self.assertEqual(num_layers, 1)

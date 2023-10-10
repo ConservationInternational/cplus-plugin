@@ -10,20 +10,15 @@ from qgis.PyQt import (
 from qgis.PyQt.QtWidgets import QMenu, QAction, QStyle, QProgressBar
 from qgis.PyQt.QtGui import QIcon
 
-from qgis.core import (
-    QgsApplication,
-    QgsTask,
-)
-
 from ..utils import open_documentation, tr, log
 from ..definitions.defaults import (
-    ICON_PATH,
     ICON_PDF,
     ICON_LAYOUT,
     ICON_REPORT,
     ICON_HELP,
     REPORT_DOCUMENTATION,
 )
+from ..lib.reports.manager import report_manager
 
 Ui_DlgProgress, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/analysis_progress_dialog.ui")
@@ -45,10 +40,9 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         super().__init__(parent)
         self.setupUi(self)
         self.scenario_name = scenario_name
+        self.scenario_id = ""
         self.main_widget = main_widget
-
-        # Dialog window options
-        self.setWindowIcon(QIcon(ICON_PATH))
+        self.report_manager = report_manager
 
         # Dialog window flags
         flags = QtCore.Qt.WindowMinimizeButtonHint | QtCore.Qt.WindowCloseButtonHint
@@ -57,6 +51,9 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         # Dialog statuses
         self.analysis_running = True
         self.change_status_message(init_message)
+
+        # Report status
+        self.report_running = False
 
         # Progress bar
         self.progress_bar.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
@@ -69,16 +66,18 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         self.btn_view_report.setIcon(QIcon(ICON_REPORT))
 
         # Menu button to open report in Layout designer
-        action = QAction(QIcon(ICON_LAYOUT), "Layout designer", parent=self)
-        action.triggered.connect(self.view_report_layout_designer)
-        action.setEnabled(True)
-        self.menu.addAction(action)
+        self.designer_action = QAction(
+            QIcon(ICON_LAYOUT), "Layout designer", parent=self
+        )
+        self.designer_action.triggered.connect(self.view_report_layout_designer)
+        self.designer_action.setEnabled(False)
+        self.menu.addAction(self.designer_action)
 
         # Open a PDF version of the report
-        action = QAction(QIcon(ICON_PDF), "Open PDF", parent=self)
-        action.triggered.connect(self.view_report_pdf)
-        action.setEnabled(True)
-        self.menu.addAction(action)
+        self.pdf_action = QAction(QIcon(ICON_PDF), "Open PDF", parent=self)
+        self.pdf_action.triggered.connect(self.view_report_pdf)
+        self.pdf_action.setEnabled(False)
+        self.menu.addAction(self.pdf_action)
 
         # Open a Help for reports
         action = QAction(QIcon(ICON_HELP), "Help", parent=self)
@@ -129,11 +128,6 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
             except RuntimeError:
                 log(tr("Error setting value to a progress bar"), notify=False)
 
-            if value >= 100:
-                # Analysis has finished
-                self.change_status_message(self.analysis_finished_message)
-                self.processing_finished()
-
     def change_status_message(self, message="Processing", entity="scenario") -> None:
         """Updates the status message
 
@@ -152,13 +146,42 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         )
         self.lbl_status.setText(final_msg)
 
+    def set_report_complete(self):
+        """Enable layout designer and PDF report buttons."""
+        self.btn_view_report.setEnabled(True)
+        self.designer_action.setEnabled(True)
+        self.pdf_action.setEnabled(True)
+        self.report_running = False
+
+        self.processing_finished()
+
     def view_report_pdf(self) -> None:
         """Opens a PDF version of the report"""
-        pass
+        if not self.scenario_id:
+            log("Scenario ID has not been set.")
+            return
+
+        result = report_manager.report_result(self.scenario_id)
+        if result is None:
+            log("Report result not found.")
+        else:
+            status = report_manager.view_pdf(result)
+            if not status:
+                log("Unable to open PDF report.")
 
     def view_report_layout_designer(self) -> None:
         """Opens the report in layout designer"""
-        pass
+        if not self.scenario_id:
+            log("Scenario ID has not been set.")
+            return
+
+        result = report_manager.report_result(self.scenario_id)
+        if result is None:
+            log("Report result not found.")
+        else:
+            status = report_manager.open_layout_designer(result)
+            if not status:
+                log("Unable to open layout designer.")
 
     def open_report_help(self) -> None:
         """Opens the Report guide in a browser"""
@@ -170,6 +193,7 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         Processing will be stopped, and the UI will be updated to accommodate
         the processing status.
         """
+        self.cancel_reporting()
 
         if self.analysis_running:
             # If cancelled is clicked
@@ -178,12 +202,19 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
             # If close has been clicked. In this case processing were already stopped
             super().close()
 
+    def cancel_reporting(self):
+        """Cancel the report generation process."""
+        if self.report_running:
+            self.report_manager.remove_report_task(self.scenario_id)
+
     def reject(self) -> None:
         """Called when the dialog is closed"""
 
         if self.analysis_running:
             # Stops analysis if it is still running
             self.stop_processing()
+
+        self.cancel_reporting()
 
         super().reject()
 
@@ -211,7 +242,10 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         """Post-steps when processing succeeded."""
 
         self.analysis_running = False
+        self.change_status_message(self.analysis_finished_message)
 
         # Change cancel button to the close button status
         self.btn_cancel.setText(tr("Close"))
         self.btn_view_report.setEnabled(True)
+        icon = self.style().standardIcon(QStyle.SP_DialogCloseButton)
+        self.btn_cancel.setIcon(icon)

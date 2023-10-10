@@ -7,13 +7,33 @@ from uuid import UUID
 
 from qgis.core import QgsRasterLayer
 
-from cplus_plugin.models.base import ImplementationModel, LayerType, NcsPathway
+from cplus_plugin.definitions.constants import (
+    CARBON_COEFFICIENT_ATTRIBUTE,
+    CARBON_PATHS_ATTRIBUTE,
+    NAME_ATTRIBUTE,
+    DESCRIPTION_ATTRIBUTE,
+    LAYER_TYPE_ATTRIBUTE,
+    PATH_ATTRIBUTE,
+    PRIORITY_LAYERS_SEGMENT,
+    USER_DEFINED_ATTRIBUTE,
+    UUID_ATTRIBUTE,
+)
+from cplus_plugin.definitions.defaults import PILOT_AREA_EXTENT
+from cplus_plugin.models.base import (
+    ImplementationModel,
+    LayerType,
+    NcsPathway,
+    Scenario,
+    ScenarioResult,
+    SpatialExtent,
+)
 
 
 VALID_NCS_UUID_STR = "b5338edf-f3cc-4040-867d-be9651a28b63"
 INVALID_NCS_UUID_STR = "4c6b31a1-3ff3-43b2-bfe2-45519a975955"
 IMPLEMENTATION_MODEL_UUID_STR = "01e3a612-118d-4d94-9a5a-09c4b9168288"
 TEST_RASTER_PATH = os.path.join(os.path.dirname(__file__), "tenbytenraster.tif")
+SCENARIO_UUID_STR = "6cf5b355-f605-4de5-98b1-64936d473f82"
 
 
 def get_valid_ncs_pathway() -> NcsPathway:
@@ -26,6 +46,7 @@ def get_valid_ncs_pathway() -> NcsPathway:
         LayerType.RASTER,
         True,
         carbon_paths=[],
+        carbon_coefficient=0.0,
     )
 
 
@@ -82,12 +103,41 @@ def get_test_layer() -> QgsRasterLayer:
     return QgsRasterLayer(TEST_RASTER_PATH, "Test Layer")
 
 
+def get_test_scenario() -> Scenario:
+    """Returns the test Scenario object."""
+    extent_list = PILOT_AREA_EXTENT["coordinates"]
+    sp_extent = SpatialExtent(
+        bbox=[extent_list[3], extent_list[2], extent_list[1], extent_list[0]]
+    )
+    return Scenario(
+        UUID(SCENARIO_UUID_STR),
+        "Test Scenario" "Test scenario description",
+        sp_extent,
+        [get_implementation_model()],
+        [
+            [
+                {
+                    "name": "Biodiversity",
+                    "value": 50,
+                    "description": "Test biodiversity group",
+                }
+            ]
+        ],
+    )
+
+
+def get_test_scenario_result() -> ScenarioResult:
+    """Returns a test scenario result object."""
+    return ScenarioResult(get_test_scenario())
+
+
 NCS_PATHWAY_DICT = {
-    "uuid": UUID(VALID_NCS_UUID_STR),
-    "name": "Valid NCS Pathway",
-    "description": "Description for valid NCS",
-    "path": TEST_RASTER_PATH,
-    "layer_type": 0,
-    "user_defined": True,
-    "carbon_paths": [],
+    UUID_ATTRIBUTE: UUID(VALID_NCS_UUID_STR),
+    NAME_ATTRIBUTE: "Valid NCS Pathway",
+    DESCRIPTION_ATTRIBUTE: "Description for valid NCS",
+    PATH_ATTRIBUTE: TEST_RASTER_PATH,
+    LAYER_TYPE_ATTRIBUTE: 0,
+    USER_DEFINED_ATTRIBUTE: True,
+    CARBON_PATHS_ATTRIBUTE: [],
+    CARBON_COEFFICIENT_ATTRIBUTE: 0.0,
 }

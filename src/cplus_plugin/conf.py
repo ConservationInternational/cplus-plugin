@@ -15,7 +15,16 @@ import uuid
 from qgis.PyQt import QtCore
 from qgis.core import QgsRectangle, QgsSettings
 
-from .definitions.constants import NCS_CARBON_SEGMENT, NCS_PATHWAY_SEGMENT
+from .definitions.defaults import PRIORITY_LAYERS
+
+from .definitions.constants import (
+    NCS_CARBON_SEGMENT,
+    NCS_PATHWAY_SEGMENT,
+    PATH_ATTRIBUTE,
+    PATHWAYS_ATTRIBUTE,
+    PRIORITY_LAYERS_SEGMENT,
+    UUID_ATTRIBUTE,
+)
 
 from .models.base import (
     ImplementationModel,
@@ -112,9 +121,11 @@ class Settings(enum.Enum):
     REPORT_CONTACT_EMAIL = "report/email"
     REPORT_WEBSITE = "report/website"
     REPORT_CUSTOM_LOGO = "report/custom_logo"
+    REPORT_CPLUS_LOGO = "report/cplus_logo"
+    REPORT_CI_LOGO = "report/ci_logo"
     REPORT_LOGO_DIR = "report/logo_dir"
     REPORT_FOOTER = "report/footer"
-    REPORT_DISLAIMER = "report/disclaimer"
+    REPORT_DISCLAIMER = "report/disclaimer"
     REPORT_LICENSE = "report/license"
 
     # Last selected data directory
@@ -127,6 +138,15 @@ class Settings(enum.Enum):
     SCENARIO_NAME = "scenario_name"
     SCENARIO_DESCRIPTION = "scenario_description"
     SCENARIO_EXTENT = "scenario_extent"
+
+    # Coefficient for carbon layers
+    CARBON_COEFFICIENT = "carbon_coefficient"
+
+    # Coefficients importance value
+    COEFFICIENT_IMPORTANCE = "coefficients_importance"
+
+    # Pathway suitability index value
+    PATHWAY_SUITABILITY_INDEX = "pathway_suitability_index"
 
 
 class SettingsManager(QtCore.QObject):
@@ -354,9 +374,10 @@ class SettingsManager(QtCore.QObject):
                         stored_group["value"] = group_settings.value("value")
                         groups.append(stored_group)
 
-            priority_layer = {"uuid": identifier}
+            priority_layer = {"uuid": str(identifier)}
             priority_layer["name"] = settings.value("name")
             priority_layer["description"] = settings.value("description")
+            priority_layer["path"] = settings.value("path")
             priority_layer["selected"] = settings.value("selected", type=bool)
             priority_layer["groups"] = groups
         return priority_layer
@@ -389,6 +410,7 @@ class SettingsManager(QtCore.QObject):
                         "uuid": uuid,
                         "name": priority_settings.value("name"),
                         "description": priority_settings.value("description"),
+                        "path": priority_settings.value("path"),
                         "selected": priority_settings.value("selected", type=bool),
                         "groups": groups,
                     }
@@ -462,7 +484,8 @@ class SettingsManager(QtCore.QObject):
             groups = priority_layer.get("groups", [])
             settings.setValue("name", priority_layer["name"])
             settings.setValue("description", priority_layer["description"])
-            settings.setValue("selected", priority_layer["selected"])
+            settings.setValue("path", priority_layer["path"])
+            settings.setValue("selected", priority_layer.get("selected", False))
             groups_key = f"{settings_key}/groups"
             with qgis_settings(groups_key) as groups_settings:
                 for group_id in groups_settings.childGroups():
@@ -630,7 +653,7 @@ class SettingsManager(QtCore.QObject):
 
         ncs_str = json.dumps(ncs_pathway)
 
-        ncs_uuid = ncs_pathway["uuid"]
+        ncs_uuid = ncs_pathway[UUID_ATTRIBUTE]
         ncs_root = self._get_ncs_pathway_settings_base()
 
         with qgis_settings(ncs_root) as settings:
@@ -648,14 +671,37 @@ class SettingsManager(QtCore.QObject):
         """
         ncs_pathway = None
 
+        ncs_dict = self.get_ncs_pathway_dict(ncs_uuid)
+        if len(ncs_dict) == 0:
+            return None
+
+        ncs_pathway = create_ncs_pathway(ncs_dict)
+
+        return ncs_pathway
+
+    def get_ncs_pathway_dict(self, ncs_uuid: str) -> dict:
+        """Gets an NCS pathway attribute values as a dictionary.
+
+        :param ncs_uuid: Unique identifier for the NCS pathway object.
+        :type ncs_uuid: str
+
+        :returns: Returns the NCS pathway attribute values matching the given
+        identifier else an empty dictionary if not found.
+        :rtype: dict
+        """
+        ncs_pathway_dict = {}
+
         ncs_root = self._get_ncs_pathway_settings_base()
 
         with qgis_settings(ncs_root) as settings:
-            ncs_model = settings.value(ncs_uuid, None)
-            if ncs_model is not None:
-                ncs_pathway = create_ncs_pathway(json.loads(ncs_model))
+            ncs_model = settings.value(ncs_uuid, dict())
+            if len(ncs_model) > 0:
+                try:
+                    ncs_pathway_dict = json.loads(ncs_model)
+                except json.JSONDecodeError:
+                    log("NCS pathway JSON is invalid")
 
-        return ncs_pathway
+        return ncs_pathway_dict
 
     def get_all_ncs_pathways(self) -> typing.List[NcsPathway]:
         """Get all the NCS pathway objects stored in settings.
@@ -692,7 +738,8 @@ class SettingsManager(QtCore.QObject):
         in settings. On the path, the BASE_DIR in settings
         is used to reflect the absolute path of each NCS
         pathway layer. If BASE_DIR is empty then the NCS
-        pathway setting will not be updated.
+        pathway setting will not be updated, this only applies
+        for default pathways.
 
         :param ncs_pathway: NCS pathway object to be updated.
         :type ncs_pathway: NcsPathway
@@ -701,20 +748,30 @@ class SettingsManager(QtCore.QObject):
         if not base_dir:
             return
 
-        # Pathway location
-        p = Path(ncs_pathway.path)
-        abs_path = f"{base_dir}/{NCS_PATHWAY_SEGMENT}/" f"{p.name}"
-        abs_path = str(os.path.normpath(abs_path))
-        ncs_pathway.path = abs_path
+        # Pathway location for default pathway
+        if not ncs_pathway.user_defined:
+            p = Path(ncs_pathway.path)
+            # Only update if path does not exist otherwise
+            # fallback to check under base directory.
+            if not p.exists():
+                abs_path = f"{base_dir}/{NCS_PATHWAY_SEGMENT}/" f"{p.name}"
+                abs_path = str(os.path.normpath(abs_path))
+                ncs_pathway.path = abs_path
 
-        # Carbon location
-        abs_carbon_paths = []
-        for cb_path in ncs_pathway.carbon_paths:
-            cp = Path(cb_path)
-            abs_carbon_path = f"{base_dir}/{NCS_CARBON_SEGMENT}/" f"{cp.name}"
-            abs_carbon_path = str(os.path.normpath(abs_carbon_path))
-            abs_carbon_paths.append(abs_carbon_path)
-        ncs_pathway.carbon_paths = abs_carbon_paths
+            # Carbon location
+            abs_carbon_paths = []
+            for cb_path in ncs_pathway.carbon_paths:
+                cp = Path(cb_path)
+                # Similarly, if the given carbon path does not exist then try
+                # to use the default one in the ncs_carbon directory.
+                if not cp.exists():
+                    abs_carbon_path = f"{base_dir}/{NCS_CARBON_SEGMENT}/" f"{cp.name}"
+                    abs_carbon_path = str(os.path.normpath(abs_carbon_path))
+                    abs_carbon_paths.append(abs_carbon_path)
+                else:
+                    abs_carbon_paths.append(cb_path)
+
+            ncs_pathway.carbon_paths = abs_carbon_paths
 
         # Remove then re-insert
         self.remove_ncs_pathway(str(ncs_pathway.uuid))
@@ -749,11 +806,26 @@ class SettingsManager(QtCore.QObject):
         :type implementation_model: ImplementationModel, dict
         """
         if isinstance(implementation_model, ImplementationModel):
+            priority_layers = implementation_model.priority_layers
+            ncs_pathways = []
+            for ncs in implementation_model.pathways:
+                ncs_pathways.append(str(ncs.uuid))
             implementation_model = layer_component_to_dict(implementation_model)
+            implementation_model[PRIORITY_LAYERS_SEGMENT] = priority_layers
+            implementation_model[PATHWAYS_ATTRIBUTE] = ncs_pathways
+
+        if isinstance(implementation_model, dict):
+            priority_layers = []
+            if implementation_model.get("pwls_ids") is not None:
+                for layer_id in implementation_model.get("pwls_ids", []):
+                    layer = self.get_priority_layer(layer_id)
+                    priority_layers.append(layer)
+                if len(priority_layers) > 0:
+                    implementation_model[PRIORITY_LAYERS_SEGMENT] = priority_layers
 
         implementation_model_str = json.dumps(implementation_model)
 
-        implementation_model_uuid = implementation_model["uuid"]
+        implementation_model_uuid = implementation_model[UUID_ATTRIBUTE]
         implementation_model_root = self._get_implementation_model_settings_base()
 
         with qgis_settings(implementation_model_root) as settings:
@@ -779,10 +851,25 @@ class SettingsManager(QtCore.QObject):
 
         with qgis_settings(implementation_model_root) as settings:
             implementation_model = settings.value(implementation_model_uuid, None)
+            ncs_uuids = []
             if implementation_model is not None:
+                implementation_model_dict = {}
+                try:
+                    implementation_model_dict = json.loads(implementation_model)
+                except json.JSONDecodeError:
+                    log("Implementation model JSON is invalid.")
+
+                if PATHWAYS_ATTRIBUTE in implementation_model_dict:
+                    ncs_uuids = implementation_model_dict[PATHWAYS_ATTRIBUTE]
+
                 implementation_model = create_implementation_model(
-                    json.loads(implementation_model)
+                    implementation_model_dict
                 )
+                if implementation_model is not None:
+                    for ncs_uuid in ncs_uuids:
+                        ncs = self.get_ncs_pathway(ncs_uuid)
+                        if ncs is not None:
+                            implementation_model.add_ncs_pathway(ncs)
 
         return implementation_model
 
@@ -804,6 +891,45 @@ class SettingsManager(QtCore.QObject):
                     implementation_models.append(implementation_model)
 
         return sorted(implementation_models, key=lambda imp_model: imp_model.name)
+
+    def update_implementation_model(self, implementation_model: ImplementationModel):
+        """Updates the attributes of the Implementation object
+        in settings. On the path, the BASE_DIR in settings
+        is used to reflect the absolute path of each NCS
+        pathway layer. If BASE_DIR is empty then the NCS
+        pathway setting will not be updated.
+
+        :param implementation_model: ImplementationModel object to be updated.
+        :type implementation_model: ImplementationModel
+        """
+        base_dir = self.get_value(Settings.BASE_DIR)
+        if not base_dir:
+            return
+
+        # PWLs path update
+        for layer in implementation_model.priority_layers:
+            if layer in PRIORITY_LAYERS and base_dir not in layer.get(PATH_ATTRIBUTE):
+                abs_pwl_path = (
+                    f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/"
+                    f"{layer.get(PATH_ATTRIBUTE)}"
+                )
+                abs_pwl_path = str(os.path.normpath(abs_pwl_path))
+                layer[PATH_ATTRIBUTE] = abs_pwl_path
+
+        # Remove then re-insert
+        self.remove_implementation_model(str(implementation_model.uuid))
+        self.save_implementation_model(implementation_model)
+
+    def update_implementation_models(self):
+        """Updates the attributes of the avaialable implementation models
+
+        :param implementation_model: Implementation model object to be updated.
+        :type implementation_model: ImplementationModel
+        """
+        models = self.get_all_implementation_models()
+
+        for implementation_model in models:
+            self.update_implementation_model(implementation_model)
 
     def remove_implementation_model(self, implementation_model_uuid: str):
         """Removes an implementation model settings entry using the UUID.

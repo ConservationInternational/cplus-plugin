@@ -28,7 +28,7 @@ WidgetUi, _ = loadUiType(
 class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
     """Dialog for creating or editing an implementation model entry."""
 
-    def __init__(self, parent=None, implementation_model=None):
+    def __init__(self, parent=None, implementation_model=None, excluded_names=None):
         super().__init__(parent)
         self.setupUi(self)
 
@@ -45,6 +45,10 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self._edit_mode = False
         self._layer = None
+
+        self._excluded_names = excluded_names
+        if excluded_names is None:
+            self._excluded_names = []
 
         self._implementation_model = implementation_model
         if self._implementation_model is not None:
@@ -107,7 +111,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         if self._layer:
             self.layer_gb.setCollapsed(False)
             self.layer_gb.setChecked(True)
-            layer_path = self._layer.dataProvider().dataSourceUri()
+            layer_path = self._layer.source()
             self.cbo_layer.setAdditionalItems([layer_path])
 
     def validate(self) -> bool:
@@ -120,8 +124,19 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self._message_bar.clearWidgets()
 
-        if not self.txt_name.text():
-            msg = tr("Implementation model name is required.")
+        name = self.txt_name.text()
+        if not name:
+            msg = tr("Implementation model name cannot be empty.")
+            self._show_warning_message(msg)
+            status = False
+
+        if name.lower() in self._excluded_names:
+            msg = tr("name has already been used.")
+            self._show_warning_message(f"'{name}' {msg}")
+            status = False
+
+        if not self.txt_description.text():
+            msg = tr("Description cannot be empty.")
             self._show_warning_message(msg)
             status = False
 
@@ -178,7 +193,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         """Slot raised to upload a raster layer."""
         data_dir = settings_manager.get_value(Settings.LAST_DATA_DIR, "")
         if not data_dir and self._layer:
-            data_path = self._layer.dataProvider().dataSourceUri()
+            data_path = self._layer.source()
             if os.path.exists(data_path):
                 data_dir = os.path.dirname(data_path)
 
