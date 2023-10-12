@@ -986,7 +986,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 carbon_names.append(f'"{carbon_full_path.stem}@1"')
 
             if len(carbon_names) == 1 and carbon_coefficient > 0:
-                basenames.append(f"{carbon_coefficient} * {carbon_names[0]})")
+                basenames.append(f"{carbon_coefficient} * ({carbon_names[0]})")
 
             # Setting up calculation to use carbon layers average when
             # a pathway has more than one carbon layer.
