@@ -32,7 +32,6 @@ class CplusPluginSettingsTest(unittest.TestCase):
         save_base_dir = "base directory"
 
         carbon_coefficient = 0.1
-        coefficient_importance = 3
         pathway_suitability_index = 1.5
 
         # Sets the values in the GUI
@@ -47,7 +46,6 @@ class CplusPluginSettingsTest(unittest.TestCase):
         settings_dialog.folder_data.setFilePath(save_base_dir)
 
         settings_dialog.carbon_coefficient_box.setValue(carbon_coefficient)
-        settings_dialog.coefficients_importance_box.setValue(coefficient_importance)
         settings_dialog.suitability_index_box.setValue(pathway_suitability_index)
 
         # Saves the settings set in the GUI
@@ -84,11 +82,6 @@ class CplusPluginSettingsTest(unittest.TestCase):
         carbon_coefficient_val = settings_manager.get_value(Settings.CARBON_COEFFICIENT)
         self.assertEqual(carbon_coefficient, carbon_coefficient_val)
 
-        coefficient_importance_val = settings_manager.get_value(
-            Settings.COEFFICIENT_IMPORTANCE
-        )
-        self.assertEqual(coefficient_importance, coefficient_importance_val)
-
         pathway_suitability_index_val = settings_manager.get_value(
             Settings.PATHWAY_SUITABILITY_INDEX
         )
@@ -111,7 +104,6 @@ class CplusPluginSettingsTest(unittest.TestCase):
         save_base_dir = "base directory 2"
 
         save_carbon_coefficient = 0.1
-        save_coefficient_importance = 3
         save_pathway_suitability_index = 1.5
 
         # Set all values for testing
@@ -128,9 +120,6 @@ class CplusPluginSettingsTest(unittest.TestCase):
         settings_manager.set_value(Settings.BASE_DIR, save_base_dir)
 
         settings_manager.set_value(Settings.CARBON_COEFFICIENT, save_carbon_coefficient)
-        settings_manager.set_value(
-            Settings.COEFFICIENT_IMPORTANCE, save_coefficient_importance
-        )
         settings_manager.set_value(
             Settings.PATHWAY_SUITABILITY_INDEX, save_pathway_suitability_index
         )
@@ -168,9 +157,6 @@ class CplusPluginSettingsTest(unittest.TestCase):
 
         carbon_coefficient = settings_dialog.carbon_coefficient_box.value()
         self.assertEqual(save_carbon_coefficient, carbon_coefficient)
-
-        coefficient_importance = settings_dialog.coefficients_importance_box.value()
-        self.assertEqual(save_coefficient_importance, coefficient_importance)
 
         pathway_suitability_index = settings_dialog.suitability_index_box.value()
         self.assertEqual(save_pathway_suitability_index, pathway_suitability_index)
