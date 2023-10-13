@@ -231,12 +231,6 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         coefficient = self.carbon_coefficient_box.value()
         settings_manager.set_value(Settings.CARBON_COEFFICIENT, coefficient)
 
-        # Coefficients importance
-        coefficients_importance = self.coefficients_importance_box.value()
-        settings_manager.set_value(
-            Settings.COEFFICIENT_IMPORTANCE, coefficients_importance
-        )
-
         # Pathway suitability index
         pathway_suitability_index = self.suitability_index_box.value()
         settings_manager.set_value(
@@ -300,12 +294,6 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             Settings.CARBON_COEFFICIENT, default=0.0
         )
         self.carbon_coefficient_box.setValue(float(coefficient))
-
-        # Coefficients importance
-        coefficients_importance = settings_manager.get_value(
-            Settings.COEFFICIENT_IMPORTANCE, default=5
-        )
-        self.coefficients_importance_box.setValue(int(coefficients_importance))
 
         # Pathway suitability index
         pathway_suitability_index = settings_manager.get_value(

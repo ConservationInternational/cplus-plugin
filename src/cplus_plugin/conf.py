@@ -142,9 +142,6 @@ class Settings(enum.Enum):
     # Coefficient for carbon layers
     CARBON_COEFFICIENT = "carbon_coefficient"
 
-    # Coefficients importance value
-    COEFFICIENT_IMPORTANCE = "coefficients_importance"
-
     # Pathway suitability index value
     PATHWAY_SUITABILITY_INDEX = "pathway_suitability_index"
 
