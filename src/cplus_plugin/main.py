@@ -102,6 +102,9 @@ class QgisCplus:
         self.toolBtnAction = self.toolbar.addWidget(self.toolButton)
         self.actions.append(self.toolBtnAction)
 
+        # Initialize default model components
+        initialize_model_settings()
+
         if not settings_manager.get_value(
             "default_priority_layers_set", default=False, setting_type=bool
         ):
@@ -194,10 +197,6 @@ class QgisCplus:
         if add_to_menu:
             self.menu.addAction(action)
 
-        # If we want to read this
-        # if add_to_web_menu:
-        #     self.iface.addPluginToWebMenu(self.menu, action)
-
         if add_to_toolbar:
             self.toolButton.menu().addAction(action)
 
@@ -253,9 +252,6 @@ class QgisCplus:
         # Adds the settings to the QGIS options panel
         self.options_factory = CplusOptionsFactory()
         self.iface.registerOptionsWidgetFactory(self.options_factory)
-
-        # Initialize default model components
-        initialize_model_settings()
 
         # Register custom layout items
         self.register_layout_items()
