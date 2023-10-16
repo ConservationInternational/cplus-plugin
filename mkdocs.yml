@@ -33,6 +33,7 @@ nav:
                 - Layout items: developer/api/core/api_reports_layout_items.md
                 - Manager: developer/api/core/api_reports_manager.md
                 - Variables: developer/api/core/api_reports_variables.md
+            - Extents: developer/api/core/api_pilot_extent.md
           - Models:
             - Model base: developer/api/models/api_base.md
             - Helpers: developer/api/models/api_helpers.md
