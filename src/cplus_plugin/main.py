@@ -421,6 +421,7 @@ def initialize_model_settings():
             imp_model_uuid = imp_model_dict[UUID_ATTRIBUTE]
             imp_model = settings_manager.get_implementation_model(imp_model_uuid)
             if imp_model is None:
+                imp_model_dict[USER_DEFINED_ATTRIBUTE] = False
                 settings_manager.save_implementation_model(imp_model_dict)
             else:
                 pathways = imp_model.pathways

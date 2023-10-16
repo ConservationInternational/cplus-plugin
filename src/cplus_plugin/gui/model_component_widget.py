@@ -268,6 +268,25 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
 
         return [mc.name.lower() for mc in model_components]
 
+    def enable_default_items(self, state: bool):
+        """Enable or disable default model component items in the view.
+
+        :param state: True to enable or False to disable default model
+        component items.
+        :type state: bool
+        """
+        self._item_model.enable_default_items(state)
+
+        # If false, deselect default items
+        if not state:
+            selection_model = self.lst_model_items.selectionModel()
+            selected_idxs = selection_model.selectedRows()
+            for sel_idx in selected_idxs:
+                item = self._item_model.item(sel_idx.row(), 0)
+                # If not enabled then deselect
+                if not item.isEnabled():
+                    selection_model.select(sel_idx, QtCore.QItemSelectionModel.Deselect)
+
 
 class NcsComponentWidget(ModelComponentWidget):
     """Widget for displaying and managing NCS pathways."""

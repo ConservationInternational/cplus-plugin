@@ -6,12 +6,15 @@ Container widget for configuring the implementation widget.
 import os
 import typing
 
+from qgis.core import Qgis
+from qgis.gui import QgsMessageBar
+
 from qgis.PyQt import QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
 from .component_item_model import ImplementationModelItem, ModelComponentItemType
-
+from ..lib.extent_check import PilotExtentCheck
 from .model_component_widget import (
     ImplementationModelComponentWidget,
     NcsComponentWidget,
@@ -31,11 +34,20 @@ WidgetUi, _ = loadUiType(
 class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
     """Widget for configuring the implementation model."""
 
-    def __init__(self, parent=None):
+    def __init__(
+        self, parent: QtWidgets.QWidget = None, message_bar: QgsMessageBar = None
+    ):
         super().__init__(parent)
         self.setupUi(self)
 
+        self._message_bar = message_bar
+
         self._items_loaded = False
+
+        self.can_show_error_messages = False
+
+        self._extent_check = PilotExtentCheck(self)
+        self._extent_check.extent_changed.connect(self._on_extent_changed)
 
         self.btn_add_one.setIcon(FileUtils.get_icon("cplus_right_arrow.svg"))
         self.btn_add_one.setToolTip(self.tr("Add selected NCS pathway"))
@@ -110,6 +122,48 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         """Slot raised when an NCS pathway has been updated."""
         self.implementation_model_view.update_ncs_pathway_items(ncs_pathway)
 
+    def _on_extent_changed(self):
+        """Slot raised when map extent has changed."""
+        if not self._items_loaded:
+            return
+
+        if self._extent_check.is_within_pilot_area():
+            self.ncs_pathway_view.enable_default_items(True)
+            self.implementation_model_view.enable_default_items(True)
+            self._message_bar.clearWidgets()
+        else:
+            self.ncs_pathway_view.enable_default_items(False)
+            self.implementation_model_view.enable_default_items(False)
+
+            if self.can_show_error_messages:
+                # Display warning
+                msg = self.tr(
+                    "Area of interest is outside the pilot area, please use your "
+                    "own NCS pathways, implementation models and PWLs."
+                )
+                self.show_message(msg)
+
+    def check_extent(self):
+        """Check if the current extent is within the pilot area and notify the
+        user accordingly.
+        """
+        self._on_extent_changed()
+
+    def show_message(self, message, level=Qgis.Warning):
+        """Shows message if message bar has been specified.
+
+        :param message: Text to display in the message bar.
+        :type message: str
+
+        :param level: Message level type
+        :type level: Qgis.MessageLevel
+        """
+        if self._message_bar is None:
+            return
+
+        self._message_bar.clearWidgets()
+        self._message_bar.pushMessage(message, level=level)
+
     def is_valid(self) -> bool:
         """Check if the user input is valid.
 
@@ -137,6 +191,9 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         """Returns the selected model component item types which could be
         NCS pathway or implementation model items.
 
+        If an item is disabled then it will be excluded from the
+        selection.
+
         These are cloned objects so as not to interfere with the
         underlying data models when used for scenario analysis. Otherwise,
         one can also use the data models from the MVC item model.
@@ -147,6 +204,9 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         ref_items = self.implementation_model_view.selected_items()
         cloned_items = []
         for ref_item in ref_items:
+            if not ref_item.isEnabled():
+                continue
+
             clone_item = ref_item.clone()
             cloned_items.append(clone_item)
 
@@ -154,6 +214,8 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
 
     def selected_im_items(self) -> typing.List[ImplementationModelItem]:
         """Returns the currently selected instances of ImplementationModelItem.
+
+        If an item is disabled then it will be excluded from the  selection.
 
         :returns: Currently selected instances of ImplementationModelItem or
         an empty list if there is no selection of IM items.

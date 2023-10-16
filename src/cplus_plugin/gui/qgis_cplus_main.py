@@ -117,14 +117,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.task = None
         self.processing_cancelled = False
 
+        self.prepare_input()
+
         # Insert widget for step 2
-        self.implementation_model_widget = ImplementationModelContainerWidget(self)
+        self.implementation_model_widget = ImplementationModelContainerWidget(
+            self, self.message_bar
+        )
         self.tab_widget.insertTab(
             1, self.implementation_model_widget, self.tr("Step 2")
         )
         self.tab_widget.currentChanged.connect(self.on_tab_step_changed)
-
-        self.prepare_input()
 
         # Step 3, priority weighting layers initialization
         self.priority_groups_widgets = {}
@@ -2123,14 +2125,17 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type index: int
         """
         if index == 1:
+            self.implementation_model_widget.can_show_error_messages = True
             self.implementation_model_widget.load()
+            self.implementation_model_widget.check_extent()
+
         elif index == 2:
-            # Validate NCS pathway - implementation model mapping
-            valid = self.implementation_model_widget.is_valid()
-            if not valid:
-                msg = self.tr(
-                    "Define one or more NCS pathways/map layers for at least one implementation model."
-                )
+            # Validate implementation model selection
+            selected_implementation_models = (
+                self.implementation_model_widget.selected_im_items()
+            )
+            if len(selected_implementation_models) == 0:
+                msg = self.tr("Please select at least one implementation model.")
                 self.show_message(msg)
                 self.tab_widget.setCurrentIndex(1)
 
