@@ -5,18 +5,25 @@
 
 
 import os
+import uuid
 from pathlib import Path
 
 from qgis.PyQt import QtCore, QtGui
 from qgis.core import (
     Qgis,
+    QgsCoordinateReferenceSystem,
+    QgsCoordinateTransform,
     QgsCoordinateTransformContext,
     QgsDistanceArea,
     QgsMessageLog,
     QgsProcessingFeedback,
     QgsRasterLayer,
+    QgsRectangle,
     QgsUnitTypes,
 )
+
+from qgis.analysis import QgsAlignRaster
+
 from qgis import processing
 
 from .definitions.defaults import DOCUMENTATION_SITE, REPORT_FONT_NAME, TEMPLATE_NAME
@@ -200,6 +207,53 @@ def calculate_raster_value_area(
     return pixel_areas
 
 
+def align_rasters(
+    first_raster_source,
+    second_raster_source,
+    extent,
+    output_dir,
+    rescale_values=False,
+    resample=True,
+):
+    directory = output_dir / "snap_layers"
+    FileUtils.create_new_dir(directory)
+
+    first_layer_output = f"directory/{uuid.uuid4()[5]}.tif"
+    second_layer_output = f"directory/{uuid.uuid4()[5]}.tif"
+
+    align = QgsAlignRaster()
+    lst = [
+        QgsAlignRaster.Item(first_raster_source, first_layer_output),
+        QgsAlignRaster.Item(second_raster_source, second_layer_output),
+    ]
+
+    if rescale_values:
+        lst[0].rescaleValues = True
+        lst[1].rescaleValues = True
+
+    align.setRasters(lst)
+
+    if resample:
+        index = align.suggestedReferenceLayer()
+    else:
+        index = 1  # have to use second layer as the reference
+
+    tranformed_extent = QgsRectangle(extent[0], extent[1], extent[2], extent[3])
+    transform = QgsCoordinateTransform(
+        QgsCoordinateReferenceSystem("EPSG:4326"),
+        QgsCoordinateReferenceSystem(align.destinationCRS()),
+    )
+
+    tranformed_extent = transform.transformBoundingBox(tranformed_extent)
+
+    align.setClipExtent(tranformed_extent)
+
+    if not align.run():
+        raise Exception(align.errorMessage())
+
+    return first_layer_output, second_layer_output
+
+
 class FileUtils:
     """
     Provides functionality for commonly used file-related operations.
@@ -297,5 +351,16 @@ class FileUtils:
         if not p.exists():
             try:
                 p.mkdir()
+            except FileNotFoundError:
+                log(log_message)
+
+    @staticmethod
+    def create_new_file(file_path: str, log_message: str = ""):
+        """Creates new file"""
+        p = Path(file_path)
+
+        if not p.exists():
+            try:
+                p.touch(exits=True)
             except FileNotFoundError:
                 log(log_message)
