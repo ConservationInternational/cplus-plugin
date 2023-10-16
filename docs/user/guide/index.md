@@ -524,7 +524,6 @@ A short description of each available setting a user can change. Most are option
 
 - **Base data directory** (required): Data accessed and download by the plugin will be stored here
 - **Coefficient for carbon layers**: Value applied during processing to the carbon-based layers. Default is 0
-- **Coefficient importance**: Level of importance for used coefficients when weighting the implementation models
 - **Pathway suitability index**: Index multiplied to the pathways. Lower values means the pathway is less important, higher means its more important
 
 **Figure 37** shows an example of updating and applying CPLUS settings.

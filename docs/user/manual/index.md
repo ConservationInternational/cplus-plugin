@@ -303,5 +303,4 @@ These options will be available once the analysis has finished. The options will
 - **Advanced**:
     - *Base data directory*: Directory to read data from, and to which results will be written
     - *Coefficient for carbon layers*: Applied to carbon layers during processing
-    - **Coefficient importance**: Level of importance for used coefficients when weighting the implementation models
-    - **Pathway suitability index**: Index multiplied to the pathways. Lower values means the pathway is less important, higher means its more important
+    - *Pathway suitability index*: Index multiplied to the pathways. Lower values means the pathway is less important, higher means its more important
