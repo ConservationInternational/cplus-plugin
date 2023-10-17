@@ -677,6 +677,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             FileUtils.create_new_dir(self.scenario_directory)
 
+            if self.progress_dialog is not None:
+                self.progress_dialog.disconnect()
+
             # Creates and opens the progress dialog for the analysis
             self.progress_dialog = ProgressDialog(
                 "Raster calculation",
@@ -684,6 +687,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 0,
                 100,
                 main_widget=self,
+            )
+            self.progress_dialog.analysis_cancelled.connect(
+                self.on_progress_dialog_cancelled
             )
             self.progress_dialog.run_dialog()
             self.progress_dialog.scenario_name = ""
@@ -707,6 +713,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
 
         self.processing_cancelled = False
+
+        self.run_scenario_btn.setEnabled(False)
 
         self.run_pathways_analysis(
             self.analysis_implementation_models,
@@ -1823,6 +1831,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             if self.task:
                 self.task.cancel()
         except Exception as e:
+            self.on_progress_dialog_cancelled()
             log(f"Problem cancelling task, {e}")
 
         # Report generating task
@@ -1830,6 +1839,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             if self.reporting_feedback:
                 self.reporting_feedback.cancel()
         except Exception as e:
+            self.on_progress_dialog_cancelled()
             log(f"Problem cancelling report generating task, {e}")
 
     def scenario_results(self, success, output):
@@ -2205,6 +2215,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.progress_dialog.change_status_message(
             tr("Report generation complete"), tr("scenario")
         )
+        self.run_scenario_btn.setEnabled(True)
 
     def report_job_is_for_current_scenario(self, scenario_id: str) -> bool:
         """Checks if the given scenario identifier is for the current
@@ -2232,3 +2243,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             return True
 
         return False
+
+    def on_progress_dialog_cancelled(self):
+        """Slot raised when analysis has been cancelled in progress dialog."""
+        if not self.run_scenario_btn.isEnabled():
+            self.run_scenario_btn.setEnabled(True)
