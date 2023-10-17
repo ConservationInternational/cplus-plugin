@@ -69,7 +69,7 @@ These artifacts can be used to test the submitted changes before deploying them 
 then publishing them to the QGIS official plugin repository.
 
 Pull request artifacts can be accessed from their respective pull request page, under a comment created by a 
-`github-actions` bot. Main branch merge artifacts can be viewed and fetched from the plugin site here https://kartoza.github.io/cplus-plugin/admin/repository
+`github-actions` bot. Main branch merge artifacts can be viewed and fetched from the plugin site here https://kartoza.github.io/cplus-plugin/administrator/repository
 
 ![main_pr_artifacts.png](docs%2Fimg%2Fplugin%2Fmain_pr_artifacts.png)
 _Look of the main branch and pull requests artifacts page_
