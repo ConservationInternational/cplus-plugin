@@ -107,6 +107,12 @@ class QgisCplus:
         ):
             create_priority_layers()
 
+        # Check if default NCS pathways and IMs have been loaded
+        if not settings_manager.get_value(
+            Settings.DEFAULT_MODELS_UPDATED, default=False, setting_type=bool
+        ):
+            initialize_model_settings()
+
         self.main_widget = QgisCplusMain(
             iface=self.iface, parent=self.iface.mainWindow()
         )
@@ -253,12 +259,6 @@ class QgisCplus:
         # Adds the settings to the QGIS options panel
         self.options_factory = CplusOptionsFactory()
         self.iface.registerOptionsWidgetFactory(self.options_factory)
-
-        # Initialize default model components
-        initialize_model_settings()
-
-        # Loads NCS pathways and implementation models in step two
-        self.main_widget.load_models_from_settings()
 
         # Register custom layout items
         self.register_layout_items()
@@ -428,6 +428,8 @@ def initialize_model_settings():
         except KeyError as ke:
             log(f"Default implementation model configuration load error - {str(ke)}")
             continue
+
+    settings_manager.set_value(Settings.DEFAULT_MODELS_UPDATED, True)
 
 
 def initialize_report_settings():

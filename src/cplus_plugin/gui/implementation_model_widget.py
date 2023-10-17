@@ -57,6 +57,8 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
 
         self.ncs_pathway_view.ncs_pathway_updated.connect(self.on_ncs_pathway_updated)
 
+        self.load()
+
     def load(self):
         """Load NCS pathways and implementation models to the views.
 
