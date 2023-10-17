@@ -142,9 +142,6 @@ class Settings(enum.Enum):
     # Coefficient for carbon layers
     CARBON_COEFFICIENT = "carbon_coefficient"
 
-    # Default models (NCS and IMs) updated
-    DEFAULT_MODELS_UPDATED = "default_ncs_im_updated"
-
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""

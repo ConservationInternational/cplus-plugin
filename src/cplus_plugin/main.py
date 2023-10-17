@@ -109,7 +109,7 @@ class QgisCplus:
 
         # Check if default NCS pathways and IMs have been loaded
         if not settings_manager.get_value(
-            Settings.DEFAULT_MODELS_UPDATED, default=False, setting_type=bool
+            "default_ncs_im_models_set", default=False, setting_type=bool
         ):
             initialize_model_settings()
 
@@ -429,7 +429,7 @@ def initialize_model_settings():
             log(f"Default implementation model configuration load error - {str(ke)}")
             continue
 
-    settings_manager.set_value(Settings.DEFAULT_MODELS_UPDATED, True)
+    settings_manager.set_value("default_ncs_im_models_set", True)
 
 
 def initialize_report_settings():
