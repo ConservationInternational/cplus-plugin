@@ -66,11 +66,6 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.btn_edit_carbon.setEnabled(False)
         self.btn_edit_carbon.clicked.connect(self._on_edit_carbon_layer)
 
-        # Set to use default carbon coefficient defined in settings
-        carbon_coefficient = settings_manager.get_value(
-            Settings.CARBON_COEFFICIENT, 0.0, float
-        )
-
         self._excluded_names = excluded_names
         if excluded_names is None:
             self._excluded_names = []
