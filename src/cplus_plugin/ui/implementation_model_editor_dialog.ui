@@ -20,32 +20,15 @@
    <string>Implementation Model Editor</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="5" column="0" colspan="3">
-    <widget class="QLineEdit" name="txt_description">
+   <item row="3" column="0" colspan="3">
+    <widget class="QLineEdit" name="txt_name">
      <property name="maxLength">
-      <number>500</number>
+      <number>200</number>
      </property>
     </widget>
    </item>
-   <item row="4" column="0">
-    <widget class="QLabel" name="label_2">
-     <property name="text">
-      <string>Description</string>
-     </property>
-    </widget>
-   </item>
-   <item row="7" column="1">
-    <spacer name="horizontalSpacer">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>198</width>
-       <height>20</height>
-      </size>
-     </property>
-    </spacer>
+   <item row="1" column="0" colspan="3">
+    <layout class="QVBoxLayout" name="vl_notification"/>
    </item>
    <item row="7" column="2">
     <widget class="QDialogButtonBox" name="buttonBox">
@@ -54,20 +37,6 @@
      </property>
      <property name="standardButtons">
       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-     </property>
-    </widget>
-   </item>
-   <item row="7" column="0">
-    <widget class="QPushButton" name="btn_help">
-     <property name="text">
-      <string>Help</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>Name</string>
      </property>
     </widget>
    </item>
@@ -115,10 +84,30 @@
      </layout>
     </widget>
    </item>
-   <item row="3" column="0" colspan="3">
-    <widget class="QLineEdit" name="txt_name">
-     <property name="maxLength">
-      <number>200</number>
+   <item row="7" column="1">
+    <spacer name="horizontalSpacer">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>198</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Name</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0">
+    <widget class="QPushButton" name="btn_help">
+     <property name="text">
+      <string>Help</string>
      </property>
     </widget>
    </item>
@@ -187,8 +176,15 @@
      </layout>
     </widget>
    </item>
-   <item row="1" column="0" colspan="3">
-    <layout class="QVBoxLayout" name="vl_notification"/>
+   <item row="4" column="0">
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>Description</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0" colspan="3">
+    <widget class="QPlainTextEdit" name="txt_description"/>
    </item>
   </layout>
  </widget>
@@ -207,7 +203,6 @@
  </customwidgets>
  <tabstops>
   <tabstop>txt_name</tabstop>
-  <tabstop>txt_description</tabstop>
   <tabstop>layer_gb</tabstop>
   <tabstop>btn_help</tabstop>
  </tabstops>

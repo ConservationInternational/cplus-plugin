@@ -127,7 +127,7 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
 
         status = False
         for im in implementation_models:
-            if len(im.pathways) > 0:
+            if len(im.pathways) > 0 or im.to_map_layer() is not None:
                 status = True
                 break
 

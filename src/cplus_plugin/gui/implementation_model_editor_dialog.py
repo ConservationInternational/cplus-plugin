@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Dialog for creating or editing an NCS pathway entry.
+Dialog for creating or editing an implementation model.
 """
 
 import os
+import typing
 import uuid
 
 from qgis.core import Qgis, QgsMapLayerProxyModel, QgsRasterLayer
@@ -14,9 +15,9 @@ from qgis.PyQt import QtGui, QtWidgets
 from qgis.PyQt.uic import loadUiType
 
 from ..conf import Settings, settings_manager
-from ..definitions.defaults import ICON_PATH
+from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
 from ..models.base import ImplementationModel
-from ..utils import FileUtils, tr
+from ..utils import FileUtils, open_documentation, tr
 
 WidgetUi, _ = loadUiType(
     os.path.join(
@@ -37,6 +38,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self.buttonBox.accepted.connect(self._on_accepted)
         self.btn_select_file.clicked.connect(self._on_select_file)
+        self.btn_help.clicked.connect(self.open_help)
 
         icon_pixmap = QtGui.QPixmap(ICON_PATH)
         self.icon_la.setPixmap(icon_pixmap)
@@ -99,7 +101,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
             return
 
         self.txt_name.setText(self._implementation_model.name)
-        self.txt_description.setText(self._implementation_model.description)
+        self.txt_description.setPlainText(self._implementation_model.description)
 
         self.layer_gb.setCollapsed(True)
 
@@ -111,8 +113,28 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         if self._layer:
             self.layer_gb.setCollapsed(False)
             self.layer_gb.setChecked(True)
+
             layer_path = self._layer.source()
+            self._add_layer_path(layer_path)
+
+    def _add_layer_path(self, layer_path: str):
+        """Select or add layer path to the map layer combobox."""
+        matching_index = -1
+        num_layers = self.cbo_layer.count()
+        for index in range(num_layers):
+            layer = self.cbo_layer.layer(index)
+            if layer is None:
+                continue
+            if os.path.normpath(layer.source()) == os.path.normpath(layer_path):
+                matching_index = index
+                break
+
+        if matching_index == -1:
             self.cbo_layer.setAdditionalItems([layer_path])
+            # Set added path as current item
+            self.cbo_layer.setCurrentIndex(num_layers)
+        else:
+            self.cbo_layer.setCurrentIndex(matching_index)
 
     def validate(self) -> bool:
         """Validates if name has been specified.
@@ -135,12 +157,13 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._show_warning_message(f"'{name}' {msg}")
             status = False
 
-        if not self.txt_description.text():
+        if not self.txt_description.toPlainText():
             msg = tr("Description cannot be empty.")
             self._show_warning_message(msg)
             status = False
 
-        if self._layer and not self._layer.isValid():
+        layer = self._get_selected_map_layer()
+        if layer and not layer.isValid():
             msg = tr("Map layer is not valid.")
             self._show_warning_message(msg)
             status = False
@@ -155,21 +178,22 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         """Create or update NcsPathway from user input."""
         if self._implementation_model is None:
             self._implementation_model = ImplementationModel(
-                uuid.uuid4(), self.txt_name.text(), self.txt_description.text()
+                uuid.uuid4(), self.txt_name.text(), self.txt_description.toPlainText()
             )
         else:
             # Update mode
             self._implementation_model.name = self.txt_name.text()
-            self._implementation_model.description = self.txt_description.text()
+            self._implementation_model.description = self.txt_description.toPlainText()
 
-        layer = self._get_selected_map_layer()
-        if layer:
-            self._layer = layer
+        self._layer = self._get_selected_map_layer()
 
-    def _get_selected_map_layer(self) -> QgsRasterLayer:
+    def _get_selected_map_layer(self) -> typing.Union[QgsRasterLayer, None]:
         """Returns the currently selected map layer or None if there is
         no item in the combobox.
         """
+        if not self.layer_gb.isChecked():
+            return None
+
         layer = self.cbo_layer.currentLayer()
 
         if layer is None:
@@ -188,6 +212,10 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self._create_implementation_model()
         self.accept()
+
+    def open_help(self, activated: bool):
+        """Opens the user documentation for the plugin in a browser."""
+        open_documentation(USER_DOCUMENTATION_SITE)
 
     def _on_select_file(self, activated: bool):
         """Slot raised to upload a raster layer."""
@@ -216,5 +244,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         if layer_path in existing_paths:
             return
 
-        self.cbo_layer.setAdditionalItems([layer_path])
+        self.cbo_layer.setAdditionalItems([])
+
+        self._add_layer_path(layer_path)
         settings_manager.set_value(Settings.LAST_DATA_DIR, os.path.dirname(layer_path))

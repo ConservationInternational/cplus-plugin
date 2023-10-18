@@ -948,6 +948,7 @@ class IMItemModel(ComponentItemModel):
         item_idx = self.index_by_uuid(implementation_model_item.uuid)
         layer_row = item_idx.row() + 1
         self.removeRows(layer_row, 1)
+        self._re_index_rows()
 
         # Remove underlying layer reference
         implementation_model_item.clear_layer()
@@ -991,12 +992,13 @@ class IMItemModel(ComponentItemModel):
 
         icon = FileUtils.get_icon("mIconRaster.svg")
         item = LayerItem(icon, display_name)
-        item.setToolTip(display_name)
+        item.setToolTip(layer.source())
         item.setData(implementation_model_item)
 
         item_idx = self.index_by_uuid(implementation_model_item.uuid)
         layer_row = item_idx.row() + 1
         self.insertRow(layer_row, item)
+        self._re_index_rows()
 
         return True
 
