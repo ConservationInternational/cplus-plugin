@@ -142,6 +142,9 @@ class Settings(enum.Enum):
     # Coefficient for carbon layers
     CARBON_COEFFICIENT = "carbon_coefficient"
 
+    # Pathway suitability index value
+    PATHWAY_SUITABILITY_INDEX = "pathway_suitability_index"
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""

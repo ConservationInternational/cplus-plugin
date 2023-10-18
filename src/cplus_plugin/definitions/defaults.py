@@ -902,3 +902,20 @@ DEFAULT_REPORT_DISCLAIMER = (
 DEFAULT_REPORT_LICENSE = (
     "Creative Commons Attribution 4.0 International " "License (CC BY 4.0)"
 )
+
+# KEY: Implementation model identifier, VALUE: pixel value
+DEFAULT_IMPLEMENTATION_MODEL_PIXEL_VALUES = {
+    "a0b8fd2d-1259-4141-9ad6-d4369cf0dfd4": 1,
+    "1c8db48b-717b-451b-a644-3af1bee984ea": 2,
+    "de9597b2-f082-4299-9620-1da3bad8ab62": 3,
+    "40f04ea6-1f91-4695-830a-7d46f821f5db": 4,
+    "43f96ed8-cd2f-4b91-b6c8-330d3b93bcc1": 5,
+    "c3c5a381-2b9f-4ddc-8a77-708239314fb6": 6,
+    "3defbd0e-2b12-4ab2-a7d4-a035152396a7": 7,
+    "22f9e555-0356-4b18-b292-c2d516dcdba5": 8,
+    "177f1f27-cace-4f3e-9c3c-ef2cf54fc283": 9,
+    "4fbfcb1c-bfd7-4305-b216-7a1077a2ccf7": 10,
+    "d9d00a77-3db1-4390-944e-09b27bcbb981": 11,
+    "20491092-e665-4ee7-b92f-b0ed864c7312": 12,
+    "92054916-e8ea-45a0-992c-b6273d1b75a7": 13,
+}

@@ -28,6 +28,8 @@ Ui_DlgProgress, _ = uic.loadUiType(
 class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
     """This progress dialog"""
 
+    analysis_cancelled = QtCore.pyqtSignal()
+
     def __init__(
         self,
         init_message="Processing",
@@ -59,10 +61,6 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         self.progress_bar.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
         self.progress_bar.setMinimum(minimum)
         self.progress_bar.setMaximum(maximum)
-
-        # Cancel/close button
-        icon = self.style().standardIcon(QStyle.SP_DialogCancelButton)
-        self.btn_cancel.setIcon(icon)
 
         # Report menu
         self.menu = QMenu("&View Report")
@@ -197,6 +195,8 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         Processing will be stopped, and the UI will be updated to accommodate
         the processing status.
         """
+        self.analysis_cancelled.emit()
+
         self.cancel_reporting()
 
         if self.analysis_running:
@@ -213,6 +213,7 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
 
     def reject(self) -> None:
         """Called when the dialog is closed"""
+        self.analysis_cancelled.emit()
 
         if self.analysis_running:
             # Stops analysis if it is still running
@@ -240,8 +241,6 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
 
         # Change cancel button to the close button status
         self.btn_cancel.setText(tr("Close"))
-        icon = self.style().standardIcon(QStyle.SP_DialogCloseButton)
-        self.btn_cancel.setIcon(icon)
         self.btn_view_report.setEnabled(False)
 
     def processing_finished(self) -> None:
@@ -252,5 +251,6 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
 
         # Change cancel button to the close button status
         self.btn_cancel.setText(tr("Close"))
+        self.btn_view_report.setEnabled(True)
         icon = self.style().standardIcon(QStyle.SP_DialogCloseButton)
         self.btn_cancel.setIcon(icon)

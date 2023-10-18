@@ -29,7 +29,7 @@ WidgetUi, _ = loadUiType(
 class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
     """Dialog for creating or editing an implementation model entry."""
 
-    def __init__(self, parent=None, implementation_model=None):
+    def __init__(self, parent=None, implementation_model=None, excluded_names=None):
         super().__init__(parent)
         self.setupUi(self)
 
@@ -47,6 +47,10 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self._edit_mode = False
         self._layer = None
+
+        self._excluded_names = excluded_names
+        if excluded_names is None:
+            self._excluded_names = []
 
         self._implementation_model = implementation_model
         if self._implementation_model is not None:
@@ -142,9 +146,15 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self._message_bar.clearWidgets()
 
-        if not self.txt_name.text():
-            msg = tr("Name cannot be empty.")
+        name = self.txt_name.text()
+        if not name:
+            msg = tr("Implementation model name cannot be empty.")
             self._show_warning_message(msg)
+            status = False
+
+        if name.lower() in self._excluded_names:
+            msg = tr("name has already been used.")
+            self._show_warning_message(f"'{name}' {msg}")
             status = False
 
         if not self.txt_description.toPlainText():
