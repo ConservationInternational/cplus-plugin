@@ -9,6 +9,8 @@ from qgis.core import QgsRectangle
 
 from cplus_plugin.lib.extent_check import PilotExtentCheck
 
+from model_data_for_testing import get_test_layer
+
 from utilities_for_testing import get_qgis_app
 
 
@@ -29,5 +31,6 @@ class TestPilotExtentCheck(TestCase):
         """Assert a true result when canvas AOI is within pilot area."""
         extent_check = PilotExtentCheck()
         test_extent = QgsRectangle(31.5, -24.8, 31.8, -24.5)
+        CANVAS.setLayers([get_test_layer()])
         CANVAS.zoomToFeatureExtent(test_extent)
         self.assertTrue(extent_check.is_within_pilot_area())
