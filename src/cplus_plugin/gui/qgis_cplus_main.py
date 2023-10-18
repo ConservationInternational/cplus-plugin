@@ -119,6 +119,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.prepare_input()
 
+        # Monitors if current extents are within pilot AOI
+        self._extent_check = PilotExtentCheck(self)
+
         # Insert widget for step 2
         self.implementation_model_widget = ImplementationModelContainerWidget(
             self, self.message_bar
