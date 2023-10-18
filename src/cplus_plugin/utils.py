@@ -228,7 +228,7 @@ def align_rasters(
     :param extent: Clip extent
     :type extent: list
 
-    :param output_dir: Output directory for the snapped
+    :param output_dir: Absolute path of the output directory for the snapped
     layers
     :type output_dir: str
 
@@ -244,6 +244,9 @@ def align_rasters(
 
     input_layer_output = f"{directory}/{uuid.uuid4()[5]}.tif"
     reference_layer_output = f"{directory}/{uuid.uuid4()[5]}.tif"
+
+    FileUtils.create_new_file(input_layer_output)
+    FileUtils.create_new_file(reference_layer_output)
 
     align = QgsAlignRaster()
     lst = [

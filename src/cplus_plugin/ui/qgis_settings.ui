@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>592</width>
-    <height>646</height>
+    <width>594</width>
+    <height>687</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -36,8 +36,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>570</width>
-        <height>624</height>
+        <width>572</width>
+        <height>665</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -227,6 +227,36 @@
             </property>
             <property name="options">
              <set>QFileDialog::ShowDirsOnly</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QgsCollapsibleGroupBox" name="snapping_group_box">
+         <property name="title">
+          <string>Snapping</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout">
+          <item>
+           <widget class="QCheckBox" name="rescale_values">
+            <property name="text">
+             <string>Enable pixel values rescaling</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="resample_values">
+            <property name="text">
+             <string>Allow resampling</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="load_snap_dialog">
+            <property name="text">
+             <string>Open snap dialog</string>
             </property>
            </widget>
           </item>
