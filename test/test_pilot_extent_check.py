@@ -28,6 +28,6 @@ class TestPilotExtentCheck(TestCase):
     def test_aoi_within_pilot_area(self):
         """Assert a true result when canvas AOI is within pilot area."""
         extent_check = PilotExtentCheck()
-        test_extent = QgsRectangle(31, -25, 31.8, -24)
+        test_extent = QgsRectangle(31.5, -24.8, 31.8, -24.5)
         CANVAS.zoomToFeatureExtent(test_extent)
         self.assertTrue(extent_check.is_within_pilot_area())
