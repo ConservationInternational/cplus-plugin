@@ -40,6 +40,8 @@ WidgetUi, _ = loadUiType(
 class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
     """Widget for displaying and managing model items in a list view."""
 
+    items_reloaded = QtCore.pyqtSignal()
+
     def __init__(self, parent=None, item_model=None):
         super().__init__(parent)
         self.setupUi(self)
@@ -253,6 +255,7 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
         afresh.
         """
         self.load()
+        self.items_reloaded.emit()
 
     def model_names(self) -> typing.List[str]:
         """Gets the names of the components in the item model.
@@ -292,6 +295,7 @@ class NcsComponentWidget(ModelComponentWidget):
     """Widget for displaying and managing NCS pathways."""
 
     ncs_pathway_updated = QtCore.pyqtSignal(NcsPathway)
+    items_reloaded = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -417,6 +421,8 @@ class NcsComponentWidget(ModelComponentWidget):
 
 class ImplementationModelComponentWidget(ModelComponentWidget):
     """Widget for displaying and managing implementation models."""
+
+    items_reloaded = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)

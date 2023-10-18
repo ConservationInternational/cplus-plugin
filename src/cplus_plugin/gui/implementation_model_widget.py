@@ -68,6 +68,7 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         self.implementation_model_view.title = self.tr("Implementation Models")
 
         self.ncs_pathway_view.ncs_pathway_updated.connect(self.on_ncs_pathway_updated)
+        self.ncs_pathway_view.items_reloaded.connect(self._on_ncs_pathways_reloaded)
 
         self.load()
 
@@ -117,6 +118,10 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
             return
 
         self.implementation_model_view.add_ncs_pathway_items(all_ncs_items)
+
+    def _on_ncs_pathways_reloaded(self):
+        """Slot raised when NCS pathways have been reloaded."""
+        self._on_extent_changed()
 
     def on_ncs_pathway_updated(self, ncs_pathway: NcsPathway):
         """Slot raised when an NCS pathway has been updated."""

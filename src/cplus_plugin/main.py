@@ -338,6 +338,7 @@ def create_priority_layers():
 
         for layer in PRIORITY_LAYERS:
             layer["groups"] = groups
+            layer["user_defined"] = False
             settings_manager.save_priority_layer(layer)
 
         settings_manager.set_value("default_priority_layers_set", True)
