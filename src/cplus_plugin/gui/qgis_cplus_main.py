@@ -57,6 +57,7 @@ from .priority_layer_dialog import PriorityLayerDialog
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
 from ..conf import settings_manager, Settings
 
+from ..lib.extent_check import PilotExtentCheck
 from ..lib.reports.manager import report_manager
 
 from .components.custom_tree_widget import CustomTreeWidget
@@ -91,6 +92,7 @@ from ..definitions.constants import (
     IM_GROUP_LAYER_NAME,
     IM_WEIGHTED_GROUP_NAME,
     NCS_PATHWAYS_GROUP_LAYER_NAME,
+    USER_DEFINED_ATTRIBUTE,
 )
 
 from .progress_dialog import ProgressDialog
@@ -119,13 +121,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.prepare_input()
 
-        # Monitors if current extents are within pilot AOI
-        self._extent_check = PilotExtentCheck(self)
+        # Monitors if current extents are within the pilot AOI
+        self.extent_check = PilotExtentCheck(self)
+        self.extent_check.extent_changed.connect(self.on_extent_changed)
 
         # Insert widget for step 2
         self.implementation_model_widget = ImplementationModelContainerWidget(
             self, self.message_bar
         )
+        self.implementation_model_widget.extent_check = self.extent_check
         self.tab_widget.insertTab(
             1, self.implementation_model_widget, self.tr("Step 2")
         )
@@ -133,6 +137,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         # Step 3, priority weighting layers initialization
         self.priority_groups_widgets = {}
+        self.pwl_item_flags = None
 
         self.initialize_priority_layers()
 
@@ -314,6 +319,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             item.setData(QtCore.Qt.DisplayRole, layer.get("name"))
             item.setData(QtCore.Qt.UserRole, layer.get("uuid"))
 
+            if self.pwl_item_flags is None:
+                self.pwl_item_flags = item.flags()
+
             self.priority_layers_list.addItem(item)
 
         list_items = []
@@ -344,6 +352,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 if item.parent() is None:
                     layer_item = QtWidgets.QTreeWidgetItem(item)
                     layer_item.setText(0, layer.get("name"))
+                    layer_item.setData(
+                        0, QtCore.Qt.UserRole, layer.get(USER_DEFINED_ATTRIBUTE)
+                    )
 
             list_items.append((item, group_widget))
             items_only.append(item)
@@ -351,6 +362,54 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.priority_groups_list.addTopLevelItems(items_only)
         for item in list_items:
             self.priority_groups_list.setItemWidget(item[0], 0, item[1])
+
+        # Trigger process to enable/disable PWLs based on current extents
+        self.on_extent_changed()
+
+    def on_extent_changed(self):
+        """Slot raised by PilotExtentCheck object when current map extents have
+        changed.
+
+        We use this to enable/disable default model items if they are within or
+        outside the pilot AOI.
+        """
+        within_pilot_area = self.extent_check.is_within_pilot_area()
+
+        # Enable/disable PWL items
+        for i in range(self.priority_layers_list.count()):
+            pwl_item = self.priority_layers_list.item(i)
+            uuid_str = pwl_item.data(QtCore.Qt.UserRole)
+            if not uuid_str:
+                continue
+
+            pwl_uuid = uuid.UUID(uuid_str)
+            pwl = settings_manager.get_priority_layer(pwl_uuid)
+            if USER_DEFINED_ATTRIBUTE not in pwl:
+                continue
+
+            is_user_defined = pwl.get(USER_DEFINED_ATTRIBUTE)
+            if is_user_defined:
+                continue
+
+            if within_pilot_area:
+                pwl_item.setFlags(self.pwl_item_flags)
+            else:
+                pwl_item.setFlags(QtCore.Qt.NoItemFlags)
+
+        # Enable/disable PWL items already defined under the priority groups
+        for i in range(self.priority_groups_list.topLevelItemCount()):
+            group_item = self.priority_groups_list.topLevelItem(i)
+
+            for c in range(group_item.childCount()):
+                pwl_tree_item = group_item.child(c)
+                is_user_defined = pwl_tree_item.data(0, QtCore.Qt.UserRole)
+                if is_user_defined:
+                    continue
+
+                if within_pilot_area:
+                    pwl_tree_item.setFlags(self.pwl_item_flags)
+                else:
+                    pwl_tree_item.setFlags(QtCore.Qt.NoItemFlags)
 
     def group_value_changed(self, group_name, group_value):
         """Slot to handle priority group widget changes.
@@ -407,6 +466,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                             children.append(child)
                         group.addChildren(children)
 
+        # Trigger check to enable/disable PWLs
+        self.on_extent_changed()
+
     def add_priority_layer_group(self, target_group=None, priority_layer=None):
         """Adds priority layer from the weighting layers into a priority group
         If no target_group or priority_layer is passed then the current selected
@@ -458,6 +520,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     layer_id = selected_priority_layer.data(QtCore.Qt.UserRole)
 
                     priority_layer = settings_manager.get_priority_layer(layer_id)
+                    item.setData(0, QtCore.Qt.UserRole, priority_layer.get(USER_DEFINED_ATTRIBUTE))
                     target_group_name = (
                         group_widget.group.get("name") if group_widget.group else None
                     )
@@ -483,6 +546,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                     priority_layer["groups"] = new_groups
                     settings_manager.save_priority_layer(priority_layer)
+
+        # Trigger check to enable/disable PWLs based on current extent
+        self.on_extent_changed()
 
     def remove_priority_layer_group(self):
         """Remove the current select priority layer from the current priority group."""

@@ -19,7 +19,7 @@ from qgis.gui import QgsFileWidget
 from ..conf import settings_manager, Settings
 from ..utils import FileUtils, open_documentation
 from ..definitions.defaults import ICON_PATH, PRIORITY_LAYERS, USER_DOCUMENTATION_SITE
-from ..definitions.constants import PRIORITY_LAYERS_SEGMENT
+from ..definitions.constants import PRIORITY_LAYERS_SEGMENT, USER_DEFINED_ATTRIBUTE
 
 from .items_selection_dialog import ItemsSelectionDialog
 
@@ -181,6 +181,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         layer["groups"] = layer_groups
 
         layer["path"] = self.map_layer_file_widget.filePath()
+        layer[USER_DEFINED_ATTRIBUTE] = True
 
         settings_manager.save_priority_layer(layer)
 

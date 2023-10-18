@@ -14,11 +14,11 @@ from qgis.PyQt import QtWidgets
 from qgis.PyQt.uic import loadUiType
 
 from .component_item_model import ImplementationModelItem, ModelComponentItemType
-from ..lib.extent_check import PilotExtentCheck
 from .model_component_widget import (
     ImplementationModelComponentWidget,
     NcsComponentWidget,
 )
+from ..lib.extent_check import PilotExtentCheck
 from ..models.base import ImplementationModel, NcsPathway
 
 from ..utils import FileUtils
@@ -46,8 +46,7 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
 
         self.can_show_error_messages = False
 
-        self._extent_check = PilotExtentCheck(self)
-        self._extent_check.extent_changed.connect(self._on_extent_changed)
+        self._extent_check = None
 
         self.btn_add_one.setIcon(FileUtils.get_icon("cplus_right_arrow.svg"))
         self.btn_add_one.setToolTip(self.tr("Add selected NCS pathway"))
@@ -71,6 +70,28 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         self.ncs_pathway_view.items_reloaded.connect(self._on_ncs_pathways_reloaded)
 
         self.load()
+
+    @property
+    def extent_check(self) -> PilotExtentCheck:
+        """Returns the object used to check if the current extent is within the pilot AOI.
+
+        :returns: Pilot extent check object for checking if extent is within AOI or
+        None if not defined.
+        :rtype: PilotExtentCheck
+        """
+        return self._extent_check
+
+    @extent_check.setter
+    def extent_check(self, extent_check: PilotExtentCheck):
+        """Specify the object for checking if the current extent is within the
+        pilot AOI.
+
+        :param extent_check: Pilot extent checker object.
+        :type extent_check: PilotExtentCheck
+        """
+        self._extent_check = extent_check
+        if self._extent_check:
+            self._extent_check.extent_changed.connect(self._on_extent_changed)
 
     def load(self):
         """Load NCS pathways and implementation models to the views.
