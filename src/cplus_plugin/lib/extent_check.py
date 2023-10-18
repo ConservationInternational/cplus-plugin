@@ -3,8 +3,6 @@
 Checks if the current extent is within the pilot area of interest.
 """
 
-import typing
-
 from qgis.core import (
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransform,
