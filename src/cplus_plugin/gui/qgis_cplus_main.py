@@ -520,7 +520,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     layer_id = selected_priority_layer.data(QtCore.Qt.UserRole)
 
                     priority_layer = settings_manager.get_priority_layer(layer_id)
-                    item.setData(0, QtCore.Qt.UserRole, priority_layer.get(USER_DEFINED_ATTRIBUTE))
+                    item.setData(
+                        0,
+                        QtCore.Qt.UserRole,
+                        priority_layer.get(USER_DEFINED_ATTRIBUTE),
+                    )
                     target_group_name = (
                         group_widget.group.get("name") if group_widget.group else None
                     )
@@ -669,6 +673,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "layers": [],
             }
             for layer in settings_manager.get_priority_layers():
+                pwl_items = self.priority_layers_list.findItems(
+                    layer.get("name"), QtCore.Qt.MatchExactly
+                )
+                if len(pwl_items) > 0:
+                    # Exclude adding the PWL since its for a disabled default
+                    # item outside the pilot AOI.
+                    if pwl_items[0].flags() == QtCore.Qt.NoItemFlags:
+                        continue
+
                 group_names = [group.get("name") for group in layer.get("groups", [])]
                 if group.get("name") in group_names:
                     group_layer_dict["layers"].append(layer.get("name"))
