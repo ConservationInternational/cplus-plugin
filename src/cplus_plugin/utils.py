@@ -208,23 +208,47 @@ def calculate_raster_value_area(
 
 
 def align_rasters(
-    first_raster_source,
-    second_raster_source,
+    input_raster_source,
+    reference_raster_source,
     extent,
     output_dir,
     rescale_values=False,
     resample=True,
 ):
+    """
+    Based from work on https://github.com/inasafe/inasafe/pull/2070
+    Aligns the passed raster files source and save the results into new files.
+
+    :param input_raster_source: Input layer source
+    :type input_raster_source: str
+
+    :param reference_raster_source: Reference layer source
+    :type reference_raster_source: str
+
+    :param extent: Clip extent
+    :type extent: list
+
+    :param output_dir: Output directory for the snapped
+    layers
+    :type output_dir: str
+
+    :param rescale_values: Whether to rescale pixel values
+    :type rescale_values: bool
+
+    :param resample: Whether to allow values resampling
+    :type resample: bool
+
+    """
     directory = output_dir / "snap_layers"
     FileUtils.create_new_dir(directory)
 
-    first_layer_output = f"directory/{uuid.uuid4()[5]}.tif"
-    second_layer_output = f"directory/{uuid.uuid4()[5]}.tif"
+    input_layer_output = f"{directory}/{uuid.uuid4()[5]}.tif"
+    reference_layer_output = f"{directory}/{uuid.uuid4()[5]}.tif"
 
     align = QgsAlignRaster()
     lst = [
-        QgsAlignRaster.Item(first_raster_source, first_layer_output),
-        QgsAlignRaster.Item(second_raster_source, second_layer_output),
+        QgsAlignRaster.Item(input_raster_source, input_layer_output),
+        QgsAlignRaster.Item(reference_raster_source, reference_layer_output),
     ]
 
     if rescale_values:
@@ -237,6 +261,8 @@ def align_rasters(
         index = align.suggestedReferenceLayer()
     else:
         index = 1  # have to use second layer as the reference
+
+    align.setParametersFromRaster(lst[index].inputFilename)
 
     tranformed_extent = QgsRectangle(extent[0], extent[1], extent[2], extent[3])
     transform = QgsCoordinateTransform(
@@ -251,7 +277,7 @@ def align_rasters(
     if not align.run():
         raise Exception(align.errorMessage())
 
-    return first_layer_output, second_layer_output
+    return input_layer_output, reference_layer_output
 
 
 class FileUtils:
