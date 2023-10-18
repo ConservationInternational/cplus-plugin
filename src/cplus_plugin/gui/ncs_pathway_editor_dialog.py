@@ -124,8 +124,9 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.txt_description.setPlainText(self._ncs_pathway.description)
         self.sb_carbon_coefficient.setValue(self._ncs_pathway.carbon_coefficient)
 
-        layer_path = self._layer.source()
-        self._add_layer_path(layer_path)
+        if self._layer:
+            layer_path = self._layer.source()
+            self._add_layer_path(layer_path)
 
         for carbon_path in self._ncs_pathway.carbon_paths:
             self._carbon_model.add_carbon_layer(carbon_path)
