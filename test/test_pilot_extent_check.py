@@ -5,12 +5,7 @@ Unit test for pilot extent check.
 import os
 from unittest import TestCase
 
-from qgis.core import (
-    QgsCoordinateReferenceSystem,
-    QgsCoordinateTransform,
-    QgsProject,
-    QgsRectangle,
-)
+from qgis.core import QgsRectangle
 
 from cplus_plugin.lib.extent_check import PilotExtentCheck
 
