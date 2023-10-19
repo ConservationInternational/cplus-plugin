@@ -66,12 +66,6 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.btn_edit_carbon.setEnabled(False)
         self.btn_edit_carbon.clicked.connect(self._on_edit_carbon_layer)
 
-        # Set to use default carbon coefficient defined in settings
-        carbon_coefficient = settings_manager.get_value(
-            Settings.CARBON_COEFFICIENT, 0.0, float
-        )
-        self.sb_carbon_coefficient.setValue(carbon_coefficient)
-
         self._excluded_names = excluded_names
         if excluded_names is None:
             self._excluded_names = []
@@ -122,10 +116,10 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self.txt_name.setText(self._ncs_pathway.name)
         self.txt_description.setPlainText(self._ncs_pathway.description)
-        self.sb_carbon_coefficient.setValue(self._ncs_pathway.carbon_coefficient)
 
-        layer_path = self._layer.source()
-        self._add_layer_path(layer_path)
+        if self._layer:
+            layer_path = self._layer.source()
+            self._add_layer_path(layer_path)
 
         for carbon_path in self._ncs_pathway.carbon_paths:
             self._carbon_model.add_carbon_layer(carbon_path)
@@ -212,7 +206,7 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self._ncs_pathway.path = self._layer.source()
         self._ncs_pathway.layer_type = LayerType.RASTER
-        self._ncs_pathway.carbon_coefficient = self.sb_carbon_coefficient.value()
+
         self._ncs_pathway.carbon_paths = self._carbon_model.carbon_paths()
 
     def _get_selected_map_layer(self) -> QgsRasterLayer:
