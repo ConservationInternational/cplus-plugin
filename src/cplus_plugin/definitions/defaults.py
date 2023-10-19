@@ -639,6 +639,10 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
+        "fill_style": {
+            "color": "229,182,54,255",
+            "style": "solid",
+        }
     },
     {
         "uuid": "1c8db48b-717b-451b-a644-3af1bee984ea",
@@ -658,6 +662,10 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9f6c8b8f-0648-44ca-b943-58fab043f559",
             "9291a5d9-d1cd-44c2-8fc3-2b3b20f80572",
         ],
+        "fill_style": {
+            "color": "229,182,54,255",
+            "style": "solid",
+        }
     },
     {
         "uuid": "de9597b2-f082-4299-9620-1da3bad8ab62",
@@ -678,6 +686,10 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
+        "fill_style": {
+            "color": "229,182,54,255",
+            "style": "solid",
+        }
     },
     {
         "uuid": "40f04ea6-1f91-4695-830a-7d46f821f5db",
@@ -702,6 +714,10 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "86c3dfc5-58d7-4ebd-a851-3b65a6bf5edd",
             "620d5d7d-c452-498f-b848-b206a76891cd",
         ],
+        "fill_style": {
+            "color": "229,182,54,255",
+            "style": "solid",
+        }
     },
     {
         "uuid": "43f96ed8-cd2f-4b91-b6c8-330d3b93bcc1",
@@ -722,6 +738,10 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
+        "fill_style": {
+            "color": "229,182,54,255",
+            "style": "solid",
+        }
     },
     {
         "uuid": "c3c5a381-2b9f-4ddc-8a77-708239314fb6",
@@ -742,6 +762,10 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
+        "fill_style": {
+            "color": "229,182,54,255",
+            "style": "solid",
+        }
     },
     {
         "uuid": "3defbd0e-2b12-4ab2-a7d4-a035152396a7",
@@ -765,6 +789,10 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "c5b1b81e-e1ae-41ec-adeb-7388f7597156",
             "3872be6d-f791-41f7-b031-b85173e41d5e",
         ],
+        "fill_style": {
+            "color": "229,182,54,255",
+            "style": "solid",
+        }
     },
     {
         "uuid": "22f9e555-0356-4b18-b292-c2d516dcdba5",
@@ -786,6 +814,10 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "5f329f53-31ff-4039-b0ec-a8d174a50866",
             "5bcebbe2-7035-4d81-9817-0b4db8aa63e2",
         ],
+        "fill_style": {
+            "color": "229,182,54,255",
+            "style": "solid",
+        }
     },
     {
         "uuid": "177f1f27-cace-4f3e-9c3c-ef2cf54fc283",
@@ -804,6 +836,10 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
+        "fill_style": {
+            "color": "229,182,54,255",
+            "style": "solid",
+        }
     },
     {
         "uuid": "d9d00a77-3db1-4390-944e-09b27bcbb981",
@@ -826,6 +862,10 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "88dc8ff3-e61f-4a48-8f9b-5791efb6603f",
             "a1bfff8e-fb87-4bca-97fa-a984d9bde712",
         ],
+        "fill_style": {
+            "color": "229,182,54,255",
+            "style": "solid",
+        }
     },
     {
         "uuid": "4fbfcb1c-bfd7-4305-b216-7a1077a2ccf7",
@@ -845,6 +885,10 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
+        "fill_style": {
+            "color": "229,182,54,255",
+            "style": "solid",
+        }
     },
     {
         "uuid": "20491092-e665-4ee7-b92f-b0ed864c7312",
@@ -864,6 +908,10 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
+        "fill_style": {
+            "color": "229,182,54,255",
+            "style": "solid",
+        }
     },
     {
         "uuid": "92054916-e8ea-45a0-992c-b6273d1b75a7",
@@ -889,6 +937,10 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "ed1ee71b-e7db-4599-97a9-a97c941a615f",
             "307df1f4-206b-4f70-8db4-6505948e2a4e",
         ],
+        "fill_style": {
+            "color": "229,182,54,255",
+            "style": "solid",
+        }
     },
 ]
 

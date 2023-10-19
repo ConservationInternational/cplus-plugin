@@ -10,7 +10,7 @@ import os.path
 import typing
 from uuid import UUID
 
-from qgis.core import QgsMapLayer, QgsRasterLayer, QgsVectorLayer
+from qgis.core import QgsFillSymbol, QgsMapLayer, QgsRasterLayer, QgsVectorLayer
 
 
 @dataclasses.dataclass
@@ -304,6 +304,7 @@ class ImplementationModel(LayerModelComponent):
 
     pathways: typing.List[NcsPathway] = dataclasses.field(default_factory=list)
     priority_layers: typing.List[typing.Dict] = dataclasses.field(default_factory=list)
+    fill_style: dict = dataclasses.field(default_factory=dict)
 
     def __post_init__(self):
         """Pre-checks on initialization."""
@@ -440,6 +441,14 @@ class ImplementationModel(LayerModelComponent):
                 return False
 
             return True
+
+    def style_symbol(self) -> QgsFillSymbol:
+        """Creates a fill symbol from the fill style definition.
+
+        :returns: Style information as a fill symbol.
+        :rtype: QgsFillSymbol
+        """
+        return QgsFillSymbol.createSimple(self.fill_style)
 
 
 class ScenarioState(Enum):
