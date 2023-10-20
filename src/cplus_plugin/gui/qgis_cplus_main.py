@@ -58,6 +58,7 @@ from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
 from ..conf import settings_manager, Settings
 
 from ..lib.reports.manager import report_manager
+from ..models.helpers import clone_implementation_model
 
 from .components.custom_tree_widget import CustomTreeWidget
 
@@ -985,8 +986,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             carbon_names = []
 
             for carbon_path in pathway.carbon_paths:
-                if base_dir not in carbon_path:
-                    carbon_path = f"{base_dir}/{NCS_CARBON_SEGMENT}/{carbon_path}"
                 carbon_full_path = Path(carbon_path)
                 if not carbon_full_path.exists():
                     continue
@@ -1676,7 +1675,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.progress_dialog.scenario_name = tr(f"implementation models")
 
-        for model in models:
+        for original_model in models:
+            model = clone_implementation_model(original_model)
+
             if model.path is None or model.path is "":
                 self.show_message(
                     tr(
