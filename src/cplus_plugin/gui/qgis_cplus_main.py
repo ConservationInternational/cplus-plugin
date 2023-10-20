@@ -2097,6 +2097,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         # Creates the color ramp
         color_ramp_shader = QgsColorRampShader()
         color_ramp_shader.setSourceColorRamp(color_ramp)
+        color_ramp_shader.setColorRampType(QgsColorRampShader.Discrete)
 
         shader = QgsRasterShader()
         shader.setRasterShaderFunction(color_ramp_shader)
