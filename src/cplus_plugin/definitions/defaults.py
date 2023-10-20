@@ -45,58 +45,19 @@ SCENARIO_OUTPUT_FILE_NAME = "cplus_scenario_output"
 SCENARIO_OUTPUT_LAYER_NAME = "scenario_result"
 
 PILOT_AREA_SCENARIO_SYMBOLOGY = {
-    "Agroforestry": {
-        "val": 1,
-        "color": "#d80007"
-    },
-    "Alien Plant Removal": {
-        "val": 2,
-        "color": "#6f6f6f"
-    },
-    "Applied Nucleation": {
-        "val": 3,
-        "color": "#81c4ff"
-    },
-    "Assisted Natural Regeneration": {
-        "val": 4,
-        "color": "#e8ec18"
-    },
-    "Avoided Deforestation and Degradation": {
-        "val": 5,
-        "color": "#ff4c84"
-    },
-    "Avoided Wetland Conversion/Restoration": {
-        "val": 6,
-        "color": "#1f31d3"
-    },
-    "Bioproducts": {
-        "val": 7,
-        "color": "#67593f"
-    },
-    "Bush Thinning": {
-        "val": 8,
-        "color": "#30ff01"
-    },
-    "Direct Tree Seeding": {
-        "val": 9,
-        "color": "#bd6b70"
-    },
-    "Livestock Market Access": {
-        "val": 10,
-        "color": "#6c0009"
-    },
-    "Livestock Rangeland Management": {
-        "val": 11,
-        "color": "#ffa500"
-    },
-    "Natural Woodland Livestock Management": {
-        "val": 12,
-        "color": "#007018"
-    },
-    "Sustainable Crop Farming & Aquaponics": {
-        "val": 13,
-        "color": "#781a8b"
-    },
+    "Agroforestry": {"val": 1, "color": "#d80007"},
+    "Alien Plant Removal": {"val": 2, "color": "#6f6f6f"},
+    "Applied Nucleation": {"val": 3, "color": "#81c4ff"},
+    "Assisted Natural Regeneration": {"val": 4, "color": "#e8ec18"},
+    "Avoided Deforestation and Degradation": {"val": 5, "color": "#ff4c84"},
+    "Avoided Wetland Conversion/Restoration": {"val": 6, "color": "#1f31d3"},
+    "Bioproducts": {"val": 7, "color": "#67593f"},
+    "Bush Thinning": {"val": 8, "color": "#30ff01"},
+    "Direct Tree Seeding": {"val": 9, "color": "#bd6b70"},
+    "Livestock Market Access": {"val": 10, "color": "#6c0009"},
+    "Livestock Rangeland Management": {"val": 11, "color": "#ffa500"},
+    "Natural Woodland Livestock Management": {"val": 12, "color": "#007018"},
+    "Sustainable Crop Farming & Aquaponics": {"val": 13, "color": "#781a8b"},
 }
 
 IM_COLOUR_RAMPS = {

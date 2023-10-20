@@ -2034,7 +2034,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     im_weighted_dir + weighted_im, weighted_im_name, QGIS_GDAL_PROVIDER
                 )
 
-                renderer = self.pilot_area_pseudo_styling(im_weighted_layer, weighted_im_name)
+                renderer = self.pilot_area_pseudo_styling(
+                    im_weighted_layer, weighted_im_name
+                )
                 im_weighted_layer.setRenderer(renderer)
                 im_weighted_layer.triggerRepaint()
 
@@ -2068,7 +2070,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             raster_val = PILOT_AREA_SCENARIO_SYMBOLOGY[im_name]["val"]
             color = PILOT_AREA_SCENARIO_SYMBOLOGY[im_name]["color"]
-            color_ramp_shader = QgsColorRampShader.ColorRampItem(float(raster_val), QtGui.QColor(color), im_name)
+            color_ramp_shader = QgsColorRampShader.ColorRampItem(
+                float(raster_val), QtGui.QColor(color), im_name
+            )
             pilot_area_classes.append(color_ramp_shader)
 
         class_data = QgsPalettedRasterRenderer.colorTableToClassData(pilot_area_classes)
@@ -2097,7 +2101,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         # Creates the color ramp
         color_ramp_shader = QgsColorRampShader()
         color_ramp_shader.setSourceColorRamp(color_ramp)
-        color_ramp_shader.setColorRampType(QgsColorRampShader.Discrete)
+        color_ramp_shader.setColorRampType(QgsColorRampShader.Exact)
 
         shader = QgsRasterShader()
         shader.setRasterShaderFunction(color_ramp_shader)
