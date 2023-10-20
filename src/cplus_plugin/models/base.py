@@ -442,7 +442,7 @@ class ImplementationModel(LayerModelComponent):
 
             return True
 
-    def style_symbol(self) -> QgsFillSymbol:
+    def fill_symbol(self) -> QgsFillSymbol:
         """Creates a fill symbol from the fill style definition.
 
         :returns: Style information as a fill symbol.

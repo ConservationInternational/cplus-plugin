@@ -19,6 +19,7 @@ from .base import (
 from ..definitions.constants import (
     CARBON_COEFFICIENT_ATTRIBUTE,
     CARBON_PATHS_ATTRIBUTE,
+    FILL_STYLE_ATTRIBUTE,
     NAME_ATTRIBUTE,
     DESCRIPTION_ATTRIBUTE,
     LAYER_TYPE_ATTRIBUTE,
@@ -182,6 +183,10 @@ def create_implementation_model(source_dict) -> typing.Union[ImplementationModel
     implementation_model = create_layer_component(source_dict, ImplementationModel)
     if PRIORITY_LAYERS_SEGMENT in source_dict.keys():
         implementation_model.priority_layers = source_dict[PRIORITY_LAYERS_SEGMENT]
+
+    # Set style
+    if FILL_STYLE_ATTRIBUTE in source_dict.keys():
+        implementation_model.fill_style = source_dict[FILL_STYLE_ATTRIBUTE]
 
     return implementation_model
 

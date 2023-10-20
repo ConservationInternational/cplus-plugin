@@ -134,7 +134,7 @@
       </size>
      </property>
      <property name="dialogTitle">
-      <string>Implementation Model Symbol Settings</string>
+      <string>Implementation Model Fill Symbol Settings</string>
      </property>
     </widget>
    </item>
