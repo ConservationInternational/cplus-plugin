@@ -50,6 +50,7 @@ from qgis.core import (
     QgsRendererRangeLabelFormat,
     QgsColorRamp,
     QgsRasterBandStats,
+    QgsRasterMinMaxOrigin,
 )
 
 from qgis.gui import (
@@ -2103,7 +2104,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         # Style accuracy for min/max values. Sets it to Exact (Actual) to show the correct min/max values
         min_max_settings = renderer.minMaxOrigin()
-        min_max_settings.setStatAccuracy(0)
+        min_max_settings.setStatAccuracy(QgsRasterMinMaxOrigin.StatAccuracy.Exact)
         renderer.setMinMaxOrigin(min_max_settings)
 
         return renderer
