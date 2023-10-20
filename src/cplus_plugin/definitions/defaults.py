@@ -640,7 +640,7 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
         "fill_style": {
-            "color": "229,182,54,255",
+            "color": "#d80007",
             "style": "solid",
             "outline_width": "0",
             "outline_color": "35,35,35,0",
@@ -665,7 +665,7 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9291a5d9-d1cd-44c2-8fc3-2b3b20f80572",
         ],
         "fill_style": {
-            "color": "229,182,54,255",
+            "color": "#6f6f6f",
             "style": "solid",
             "outline_width": "0",
             "outline_color": "35,35,35,0",
@@ -691,7 +691,7 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
         "fill_style": {
-            "color": "229,182,54,255",
+            "color": "#81c4ff",
             "style": "solid",
             "outline_width": "0",
             "outline_color": "35,35,35,0",
@@ -721,7 +721,7 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "620d5d7d-c452-498f-b848-b206a76891cd",
         ],
         "fill_style": {
-            "color": "229,182,54,255",
+            "color": "#e8ec18",
             "style": "solid",
             "outline_width": "0",
             "outline_color": "35,35,35,0",
@@ -747,7 +747,7 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
         "fill_style": {
-            "color": "229,182,54,255",
+            "color": "#ff4c84",
             "style": "solid",
             "outline_width": "0",
             "outline_color": "35,35,35,0",
@@ -773,7 +773,7 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
         "fill_style": {
-            "color": "229,182,54,255",
+            "color": "#1f31d3",
             "style": "solid",
             "outline_width": "0",
             "outline_color": "35,35,35,0",
@@ -802,7 +802,7 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "3872be6d-f791-41f7-b031-b85173e41d5e",
         ],
         "fill_style": {
-            "color": "229,182,54,255",
+            "color": "#67593f",
             "style": "solid",
             "outline_width": "0",
             "outline_color": "35,35,35,0",
@@ -829,7 +829,7 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "5bcebbe2-7035-4d81-9817-0b4db8aa63e2",
         ],
         "fill_style": {
-            "color": "229,182,54,255",
+            "color": "#30ff01",
             "style": "solid",
             "outline_width": "0",
             "outline_color": "35,35,35,0",
@@ -853,7 +853,7 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
         "fill_style": {
-            "color": "229,182,54,255",
+            "color": "#bd6b70",
             "style": "solid",
             "outline_width": "0",
             "outline_color": "35,35,35,0",
@@ -881,7 +881,7 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "a1bfff8e-fb87-4bca-97fa-a984d9bde712",
         ],
         "fill_style": {
-            "color": "229,182,54,255",
+            "color": "#ffa500",
             "style": "solid",
             "outline_width": "0",
             "outline_color": "35,35,35,0",
@@ -906,7 +906,7 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
         "fill_style": {
-            "color": "229,182,54,255",
+            "color": "#6c0009",
             "style": "solid",
             "outline_width": "0",
             "outline_color": "35,35,35,0",
@@ -931,7 +931,7 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
         "fill_style": {
-            "color": "229,182,54,255",
+            "color": "#007018",
             "style": "solid",
             "outline_width": "0",
             "outline_color": "35,35,35,0",
@@ -962,7 +962,7 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "307df1f4-206b-4f70-8db4-6505948e2a4e",
         ],
         "fill_style": {
-            "color": "229,182,54,255",
+            "color": "#781a8b",
             "style": "solid",
             "outline_width": "0",
             "outline_color": "35,35,35,0",
