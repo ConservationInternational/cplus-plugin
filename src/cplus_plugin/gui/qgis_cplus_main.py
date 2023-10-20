@@ -39,17 +39,11 @@ from qgis.core import (
     QgsRectangle,
     QgsTask,
     QgsWkbTypes,
-    QgsLayerTreeLayer,
     QgsColorRampShader,
     QgsSingleBandPseudoColorRenderer,
     QgsRasterShader,
     QgsPalettedRasterRenderer,
     QgsStyle,
-    QgsClassificationEqualInterval,
-    QgsGraduatedSymbolRenderer,
-    QgsRendererRangeLabelFormat,
-    QgsColorRamp,
-    QgsRasterBandStats,
     QgsRasterMinMaxOrigin,
 )
 
