@@ -47,7 +47,9 @@ from qgis.core import (
     QgsStyle,
     QgsClassificationEqualInterval,
     QgsGraduatedSymbolRenderer,
-    QgsRendererRangeLabelFormat
+    QgsRendererRangeLabelFormat,
+    QgsColorRamp,
+    QgsRasterBandStats,
 )
 
 from qgis.gui import (
