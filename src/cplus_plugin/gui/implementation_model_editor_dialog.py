@@ -194,7 +194,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         self._message_bar.pushMessage(message, Qgis.MessageLevel.Warning)
 
     def _create_implementation_model(self):
-        """Create or update NcsPathway from user input."""
+        """Create or update implementation model from user input."""
         if self._implementation_model is None:
             self._implementation_model = ImplementationModel(
                 uuid.uuid4(), self.txt_name.text(), self.txt_description.toPlainText()
