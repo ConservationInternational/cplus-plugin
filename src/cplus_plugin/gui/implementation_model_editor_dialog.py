@@ -205,7 +205,10 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._implementation_model.description = self.txt_description.toPlainText()
 
         self._layer = self._get_selected_map_layer()
-        self._implementation_model.fill_style = self.fill_symbol_layer().properties()
+        fill_symbol_layer = self.fill_symbol_layer()
+        self._implementation_model.fill_style = {}
+        if fill_symbol_layer:
+            self._implementation_model.fill_style = fill_symbol_layer.properties()
 
     def _get_selected_map_layer(self) -> typing.Union[QgsRasterLayer, None]:
         """Returns the currently selected map layer or None if there is
