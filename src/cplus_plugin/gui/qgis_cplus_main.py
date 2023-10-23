@@ -722,7 +722,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if not contains:
             self.show_message(
                 tr(f"Selected area of interest is outside the pilot area."),
-                level=Qgis.Critical,
+                level=Qgis.Warning,
             )
             default_ext = (
                 f"{default_extent.xMinimum()}, {default_extent.xMaximum()},"
@@ -733,7 +733,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 f"{passed_extent}"
                 f"default extent{default_ext}"
             )
-            return
 
         if base_dir is None:
             self.show_message(
