@@ -7,7 +7,13 @@ import os
 import typing
 import uuid
 
-from qgis.core import Qgis, QgsMapLayerProxyModel, QgsRasterLayer
+from qgis.core import (
+    Qgis,
+    QgsFillSymbol,
+    QgsFillSymbolLayer,
+    QgsMapLayerProxyModel,
+    QgsRasterLayer,
+)
 from qgis.gui import QgsMessageBar
 
 from qgis.PyQt import QtGui, QtWidgets
@@ -35,6 +41,8 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self._message_bar = QgsMessageBar()
         self.vl_notification.addWidget(self._message_bar)
+
+        self.style_btn.setSymbolType(Qgis.SymbolType.Fill)
 
         self.buttonBox.accepted.connect(self._on_accepted)
         self.btn_select_file.clicked.connect(self._on_select_file)
@@ -117,6 +125,11 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
             layer_path = self._layer.source()
             self._add_layer_path(layer_path)
 
+        # Set style
+        symbol = self._implementation_model.fill_symbol()
+        if symbol:
+            self.style_btn.setSymbol(symbol)
+
     def _add_layer_path(self, layer_path: str):
         """Select or add layer path to the map layer combobox."""
         matching_index = -1
@@ -168,6 +181,12 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._show_warning_message(msg)
             status = False
 
+        fill_symbol_layer = self.fill_symbol_layer()
+        if fill_symbol_layer is None:
+            msg = tr("No fill symbol layer defined in the style.")
+            self._show_warning_message(msg)
+            status = False
+
         return status
 
     def _show_warning_message(self, message):
@@ -175,7 +194,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         self._message_bar.pushMessage(message, Qgis.MessageLevel.Warning)
 
     def _create_implementation_model(self):
-        """Create or update NcsPathway from user input."""
+        """Create or update implementation model from user input."""
         if self._implementation_model is None:
             self._implementation_model = ImplementationModel(
                 uuid.uuid4(), self.txt_name.text(), self.txt_description.toPlainText()
@@ -186,6 +205,10 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._implementation_model.description = self.txt_description.toPlainText()
 
         self._layer = self._get_selected_map_layer()
+        fill_symbol_layer = self.fill_symbol_layer()
+        self._implementation_model.fill_style = {}
+        if fill_symbol_layer:
+            self._implementation_model.fill_style = fill_symbol_layer.properties()
 
     def _get_selected_map_layer(self) -> typing.Union[QgsRasterLayer, None]:
         """Returns the currently selected map layer or None if there is
@@ -212,6 +235,28 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self._create_implementation_model()
         self.accept()
+
+    def fill_symbol_layer(self) -> QgsFillSymbolLayer:
+        """Gets the first fill symbol layer in the symbol as
+        set in the button.
+
+        It checks to ensure that there is at least one fill symbol
+        layer contained in the symbol.
+
+        :returns: Fill symbol layer to be used in the implementation
+        model.
+        :rtype: QgsFillSymbolLayer
+        """
+        fill_symbol_layer = None
+        btn_symbol = self.style_btn.symbol()
+
+        for i in range(btn_symbol.symbolLayerCount()):
+            symbol_layer = btn_symbol.symbolLayer(i)
+            if isinstance(symbol_layer, QgsFillSymbolLayer):
+                fill_symbol_layer = symbol_layer
+                break
+
+        return fill_symbol_layer
 
     def open_help(self, activated: bool):
         """Opens the user documentation for the plugin in a browser."""
