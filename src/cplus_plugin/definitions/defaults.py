@@ -777,6 +777,26 @@ DEFAULT_IMPLEMENTATION_MODELS = [
         },
     },
     {
+        "uuid": "1334cc3b-cb7b-46a3-923a-45d9b18d9d56",
+        "name": "Protected Area Expansion",
+        "description": "This model involves expanding existing protected "
+        "areas to protect more grassland, savanna, and forest "
+        "from converting to an anthropogenic land cover class.",
+        "pwls_ids": [
+            "f5687ced-af18-4cfc-9bc3-8006e40420b6",
+            "fce41934-5196-45d5-80bd-96423ff0e74e",
+            "88c1c7dd-c5d1-420c-a71c-a5c595c1c5be",
+            "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
+            "2f76304a-bb73-442c-9c02-ff9945389a20",
+        ],
+        "fill_style": {
+            "color": "#c27ba0",
+            "style": "solid",
+            "outline_width": "0",
+            "outline_color": "35,35,35,0",
+        },
+    },
+    {
         "uuid": "92054916-e8ea-45a0-992c-b6273d1b75a7",
         "name": "Sustainable Crop Farming & Aquaponics",
         "description": " This model combines sustainable "
@@ -834,5 +854,6 @@ DEFAULT_IMPLEMENTATION_MODEL_PIXEL_VALUES = {
     "4fbfcb1c-bfd7-4305-b216-7a1077a2ccf7": 10,
     "d9d00a77-3db1-4390-944e-09b27bcbb981": 11,
     "20491092-e665-4ee7-b92f-b0ed864c7312": 12,
-    "92054916-e8ea-45a0-992c-b6273d1b75a7": 13,
+    "1334cc3b-cb7b-46a3-923a-45d9b18d9d56": 13,
+    "92054916-e8ea-45a0-992c-b6273d1b75a7": 14,
 }
