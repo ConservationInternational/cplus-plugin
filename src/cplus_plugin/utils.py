@@ -7,7 +7,6 @@
 import os
 import uuid
 from pathlib import Path
-import toml
 
 from qgis.PyQt import QtCore, QtGui
 from qgis.core import (
@@ -94,7 +93,13 @@ def open_documentation(url=None):
     return result
 
 
-def get_plugin_version():
+def get_plugin_version() -> [str, None]:
+    """Returns the current plugin version
+    as saved in the metadata.txt plugin file.
+
+    :returns version: Plugin version
+    :rtype version: str
+    """
     metadata_file = Path(__file__).parent.resolve() / "metadata.txt"
 
     with open(metadata_file, "r") as f:

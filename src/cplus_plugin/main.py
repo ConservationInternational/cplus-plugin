@@ -339,7 +339,7 @@ def create_priority_layers():
         priority_layers_setting, default=False, setting_type=bool
     ):
         log(f"Initializing priority layers and groups")
-        found_settings = settings_manager.get_settings("default_priority_layers_set")
+        found_settings = settings_manager.find_settings("default_priority_layers_set")
 
         # Remove old settings as they will not be of use anymore.
         for previous_setting in found_settings:
