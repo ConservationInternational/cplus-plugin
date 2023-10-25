@@ -7,6 +7,7 @@
 import os
 import uuid
 from pathlib import Path
+import toml
 
 from qgis.PyQt import QtCore, QtGui
 from qgis.core import (
@@ -91,6 +92,17 @@ def open_documentation(url=None):
     url = DOCUMENTATION_SITE if url is None else url
     result = QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
     return result
+
+
+def get_plugin_version():
+    metadata_file = Path(__file__).parent.resolve() / "metadata.txt"
+
+    with open(metadata_file, "r") as f:
+        for line in f.readlines():
+            if line.startswith("version"):
+                version = line.strip().split("=")[1]
+                return version
+    return None
 
 
 def get_report_font(size=11.0, bold=False, italic=False) -> QtGui.QFont:

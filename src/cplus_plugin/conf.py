@@ -209,6 +209,14 @@ class SettingsManager(QtCore.QObject):
             )
         return self.settings.value(f"{self.BASE_GROUP_NAME}/{name}", default)
 
+    def get_settings(self, name):
+        result = []
+        with qgis_settings(f"{self.BASE_GROUP_NAME}") as settings:
+            for settings_name in settings.childKeys():
+                if name in settings_name:
+                    result.append(settings_name)
+        return result
+
     def remove(self, name):
         """Remove the setting with the specified name.
 
@@ -529,7 +537,7 @@ class SettingsManager(QtCore.QObject):
                     )
 
     def delete_priority_layers(self):
-        """Deletes all the plugin priority settings."""
+        """Deletes all the plugin priority weighting layers settings."""
         with qgis_settings(
             f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_LAYERS_GROUP_NAME}"
         ) as settings:

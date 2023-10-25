@@ -72,11 +72,7 @@ from .models.helpers import (
 )
 from .settings import CplusOptionsFactory
 
-from .utils import (
-    FileUtils,
-    log,
-    open_documentation,
-)
+from .utils import FileUtils, log, open_documentation, get_plugin_version
 
 
 class QgisCplus:
@@ -111,10 +107,7 @@ class QgisCplus:
         self.toolBtnAction = self.toolbar.addWidget(self.toolButton)
         self.actions.append(self.toolBtnAction)
 
-        if not settings_manager.get_value(
-            "default_priority_layers_set", default=False, setting_type=bool
-        ):
-            create_priority_layers()
+        create_priority_layers()
 
         # Check if default NCS pathways and IMs have been loaded
         if not settings_manager.get_value(
@@ -338,22 +331,37 @@ class QgisCplus:
 def create_priority_layers():
     """Prepares the priority weighted layers UI with the defaults priority groups"""
 
+    priority_layers_setting = f"default_priority_layers_set_{get_plugin_version()}"
+
+    log(f"Priority weighting layers plugin setting - {priority_layers_setting}")
+
     if not settings_manager.get_value(
-        "default_priority_layers_set", default=False, setting_type=bool
+        priority_layers_setting, default=False, setting_type=bool
     ):
         log(f"Initializing priority layers and groups")
+        found_settings = settings_manager.get_settings("default_priority_layers_set")
+
+        # Remove old settings as they will not be of use anymore.
+        for previous_setting in found_settings:
+            settings_manager.remove(previous_setting)
 
         groups = []
         for group in PRIORITY_GROUPS:
             group["value"] = 0
             settings_manager.save_priority_group(group)
-
+        new_uuids = []
         for layer in PRIORITY_LAYERS:
             layer["groups"] = groups
             layer["user_defined"] = False
-            settings_manager.save_priority_layer(layer)
+            new_uuids.append(layer["uuid"])
+            if not settings_manager.get_priority_layer(layer["uuid"]):
+                settings_manager.save_priority_layer(layer)
 
-        settings_manager.set_value("default_priority_layers_set", True)
+        for layer in settings_manager.get_priority_layers():
+            if layer["uuid"] not in new_uuids:
+                settings_manager.delete_priority_layer(layer["uuid"])
+
+        settings_manager.set_value(priority_layers_setting, True)
 
 
 def initialize_model_settings():
