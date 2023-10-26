@@ -46,7 +46,6 @@ def get_valid_ncs_pathway() -> NcsPathway:
         LayerType.RASTER,
         True,
         carbon_paths=[],
-        carbon_coefficient=0.0,
     )
 
 
@@ -139,5 +138,4 @@ NCS_PATHWAY_DICT = {
     LAYER_TYPE_ATTRIBUTE: 0,
     USER_DEFINED_ATTRIBUTE: True,
     CARBON_PATHS_ATTRIBUTE: [],
-    CARBON_COEFFICIENT_ATTRIBUTE: 0.0,
 }

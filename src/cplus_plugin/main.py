@@ -29,7 +29,6 @@ from qgis.PyQt.QtWidgets import QMenu
 
 from .conf import Settings, settings_manager
 from .definitions.constants import (
-    CARBON_COEFFICIENT_ATTRIBUTE,
     CARBON_PATHS_ATTRIBUTE,
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
@@ -367,11 +366,6 @@ def initialize_model_settings():
         # Create priority weighting layers subdirectory
         FileUtils.create_pwls_dir(base_dir)
 
-    # Use carbon coefficient values for older-version NCS pathways
-    carbon_coefficient = settings_manager.get_value(
-        Settings.CARBON_COEFFICIENT, 0, float
-    )
-
     # Add default pathways
     for ncs_dict in DEFAULT_NCS_PATHWAYS:
         try:
@@ -399,21 +393,7 @@ def initialize_model_settings():
                     ncs_dict[CARBON_PATHS_ATTRIBUTE] = abs_carbon_paths
 
                 ncs_dict[USER_DEFINED_ATTRIBUTE] = False
-                ncs_dict[CARBON_COEFFICIENT_ATTRIBUTE] = carbon_coefficient
                 settings_manager.save_ncs_pathway(ncs_dict)
-            else:
-                # Update carbon coefficient value
-                # Check if carbon coefficient had previously been defined
-                ncs_dict = settings_manager.get_ncs_pathway_dict(ncs_uuid)
-                if CARBON_COEFFICIENT_ATTRIBUTE in ncs_dict:
-                    continue
-                else:
-                    ncs_dict[CARBON_COEFFICIENT_ATTRIBUTE] = carbon_coefficient
-                    source_ncs = create_ncs_pathway(ncs_dict)
-                    if source_ncs is None:
-                        continue
-                    ncs = copy_layer_component_attributes(ncs, source_ncs)
-                    settings_manager.update_ncs_pathway(ncs)
         except KeyError as ke:
             log(f"Default NCS configuration load error - {str(ke)}")
             continue
