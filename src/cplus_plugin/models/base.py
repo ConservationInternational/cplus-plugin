@@ -201,7 +201,6 @@ class NcsPathway(LayerModelComponent):
     """Contains information about an NCS pathway layer."""
 
     carbon_paths: typing.List[str] = dataclasses.field(default_factory=list)
-    carbon_coefficient: float = 0.0
 
     def __eq__(self, other: "NcsPathway") -> bool:
         """Test equality of NcsPathway object with another
