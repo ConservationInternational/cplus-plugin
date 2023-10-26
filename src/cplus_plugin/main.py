@@ -29,7 +29,6 @@ from qgis.PyQt.QtWidgets import QMenu
 
 from .conf import Settings, settings_manager
 from .definitions.constants import (
-    CARBON_COEFFICIENT_ATTRIBUTE,
     CARBON_PATHS_ATTRIBUTE,
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
