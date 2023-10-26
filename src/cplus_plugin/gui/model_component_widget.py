@@ -392,7 +392,16 @@ class NcsComponentWidget(ModelComponentWidget):
 
         settings_manager.update_ncs_pathways()
         ncs_pathways = settings_manager.get_all_ncs_pathways()
-        for ncs in ncs_pathways:
+
+        progress_dialog = QtWidgets.QProgressDialog(self)
+        progress_dialog.setWindowTitle(self.tr("Load NCS Pathways"))
+        progress_dialog.setMinimum(0)
+        progress_dialog.setMaximum(len(ncs_pathways))
+        progress_dialog.setLabelText(self.tr("Updating NCS pathways..."))
+        for i, ncs in enumerate(ncs_pathways, start=1):
+            progress_dialog.setValue(i)
+            if progress_dialog.wasCanceled():
+                break
             self.add_ncs_pathway(ncs)
 
 
