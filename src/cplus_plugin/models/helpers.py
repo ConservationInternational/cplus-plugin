@@ -243,7 +243,6 @@ def ncs_pathway_to_dict(ncs_pathway: NcsPathway, uuid_to_str=True) -> dict:
     """
     base_ncs_dict = layer_component_to_dict(ncs_pathway, uuid_to_str)
     base_ncs_dict[CARBON_PATHS_ATTRIBUTE] = ncs_pathway.carbon_paths
-    base_ncs_dict[CARBON_COEFFICIENT_ATTRIBUTE] = ncs_pathway.carbon_coefficient
 
     return base_ncs_dict
 
