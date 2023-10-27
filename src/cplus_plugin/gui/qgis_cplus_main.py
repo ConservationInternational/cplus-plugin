@@ -1950,7 +1950,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             scenario_layer = qgis_instance.addMapLayer(layer)
 
             # Scenario result layer styling
-            renderer = self.pilot_area_scenario_styling(layer, list_models)
+            renderer = self.style_models_layer(layer, list_models)
             layer.setRenderer(renderer)
             layer.triggerRepaint()
 
@@ -1961,10 +1961,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             """
             self.move_layer_to_group(scenario_layer, scenario_group)
 
-            coefficient = settings_manager.get_value(
-                Settings.CARBON_COEFFICIENT, default=0.0
-            )
-
             # Add implementation models and pathways
             im_index = 0
             for im in list_models:
@@ -1974,8 +1970,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                 # Add IM layer with styling, if available
                 if im_layer:
-
-                    renderer = self.pilot_area_pseudo_styling(im_layer, im_name)
+                    renderer = self.style_model_layer(im_layer, im_name)
 
                     added_im_layer = qgis_instance.addMapLayer(im_layer)
                     self.move_layer_to_group(added_im_layer, im_group)
@@ -2028,9 +2023,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     im_weighted_dir + weighted_im, weighted_im_name, QGIS_GDAL_PROVIDER
                 )
 
-                renderer = self.pilot_area_pseudo_styling(
-                    im_weighted_layer, weighted_im_name
-                )
+                renderer = self.style_model_layer(im_weighted_layer, weighted_im_name)
                 im_weighted_layer.setRenderer(renderer)
                 im_weighted_layer.triggerRepaint()
 
@@ -2046,10 +2039,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.position_feedback = QgsProcessingFeedback()
             self.processing_context = QgsProcessingContext()
 
-    def pilot_area_scenario_styling(self, layer, models):
-        """Applies the styling to the produced scenario result raster for the pilot area.
+    def style_models_layer(self, layer, models):
+        """Applies the styling to the passed layer that
+         contains the passed list of models.
 
-        :param layer: Scenario result raster layer
+        :param layer: Layer to be styling
         :type layer: QgsRasterLayer
 
         :param models: List which contains the models and associated information
@@ -2058,7 +2052,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :returns: Renderer for the symbology.
         :rtype: QgsPalettedRasterRenderer
         """
-        pilot_area_classes = []
+        area_classes = []
         for model in models:
             im_name = model.name
 
@@ -2067,20 +2061,21 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             color_ramp_shader = QgsColorRampShader.ColorRampItem(
                 float(raster_val), QtGui.QColor(color), im_name
             )
-            pilot_area_classes.append(color_ramp_shader)
+            area_classes.append(color_ramp_shader)
 
-        class_data = QgsPalettedRasterRenderer.colorTableToClassData(pilot_area_classes)
+        class_data = QgsPalettedRasterRenderer.colorTableToClassData(area_classes)
         renderer = QgsPalettedRasterRenderer(layer.dataProvider(), 1, class_data)
 
         return renderer
 
-    def pilot_area_pseudo_styling(self, layer, im_name):
-        """Applies the styling to an implementation model for the pilot study area.
+    def style_model_layer(self, layer, im_name):
+        """Applies the styling to the layer that contains the passed
+         implementation model.
 
         :param layer: Raster layer to which to apply the symbology
         :type layer: QgsRasterLayer
 
-        :param im_name: Implementation model name related to the pilot study area
+        :param im_name: Implementation model name
         :type im_name: string
 
         :returns: Renderer for the symbology.
@@ -2092,19 +2087,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         default_style = QgsStyle().defaultStyle()
         color_ramp = default_style.colorRamp(ramp_name)
 
-        # Creates the color ramp
-        color_ramp_shader = QgsColorRampShader()
-        color_ramp_shader.setSourceColorRamp(color_ramp)
-        color_ramp_shader.setColorRampType(QgsColorRampShader.Exact)
+        stats = layer.dataProvider().bandStatistics(1)
+        renderer = QgsSingleBandPseudoColorRenderer(layer.dataProvider(), 1)
 
-        shader = QgsRasterShader()
-        shader.setRasterShaderFunction(color_ramp_shader)
-        renderer = QgsSingleBandPseudoColorRenderer(layer.dataProvider(), 1, shader)
+        renderer.setClassificationMin(stats.minimumValue)
+        renderer.setClassificationMax(stats.maximumValue)
 
-        # Style accuracy for min/max values. Sets it to Exact (Actual) to show the correct min/max values
-        min_max_settings = renderer.minMaxOrigin()
-        min_max_settings.setStatAccuracy(QgsRasterMinMaxOrigin.StatAccuracy.Exact)
-        renderer.setMinMaxOrigin(min_max_settings)
+        renderer.createShader(
+            color_ramp, QgsColorRampShader.Interpolated, QgsColorRampShader.Continuous
+        )
 
         return renderer
 
