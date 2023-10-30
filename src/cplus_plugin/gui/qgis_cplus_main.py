@@ -2043,10 +2043,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Applies the styling to the passed layer that
          contains the passed list of models.
 
-        :param layer: Layer to be styling
+        :param layer: Layer to be styled
         :type layer: QgsRasterLayer
 
-        :param models: List which contains the models and associated information
+        :param models: List which contains the implementation
+        models
         :type models: list
 
         :returns: Renderer for the symbology.
@@ -2070,13 +2071,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def style_model_layer(self, layer, im_name):
         """Applies the styling to the layer that contains the passed
-         implementation model.
+         implementation model name.
 
         :param layer: Raster layer to which to apply the symbology
         :type layer: QgsRasterLayer
 
         :param im_name: Implementation model name
-        :type im_name: string
+        :type im_name: str
 
         :returns: Renderer for the symbology.
         :rtype: QgsSingleBandPseudoColorRenderer
