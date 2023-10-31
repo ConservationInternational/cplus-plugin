@@ -181,7 +181,7 @@ def create_implementation_model(source_dict) -> typing.Union[ImplementationModel
 
     # Set style
     if STYLE_ATTRIBUTE in source_dict.keys():
-        implementation_model.fill_style = source_dict[STYLE_ATTRIBUTE]
+        implementation_model.layer_styles = source_dict[STYLE_ATTRIBUTE]
 
     return implementation_model
 

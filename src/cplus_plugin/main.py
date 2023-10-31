@@ -35,7 +35,8 @@ from qgis.PyQt.QtWidgets import QMenu
 from .conf import Settings, settings_manager
 from .definitions.constants import (
     CARBON_PATHS_ATTRIBUTE,
-    COLOR_RAMP_ATTRIBUTE,
+    COLOR_RAMP_PROPERTIES_ATTRIBUTE,
+    COLOR_RAMP_TYPE_ATTRIBUTE,
     IM_LAYER_STYLE_ATTRIBUTE,
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
@@ -419,17 +420,27 @@ def initialize_model_settings():
                     style_info = imp_model_dict[STYLE_ATTRIBUTE]
                     if IM_LAYER_STYLE_ATTRIBUTE in style_info:
                         model_layer_style = style_info[IM_LAYER_STYLE_ATTRIBUTE]
-                        if COLOR_RAMP_ATTRIBUTE in model_layer_style:
+                        if COLOR_RAMP_PROPERTIES_ATTRIBUTE in model_layer_style:
                             # Must be a preset color brewer scheme name
-                            scheme_name = model_layer_style[COLOR_RAMP_ATTRIBUTE]
+                            scheme_name = model_layer_style[
+                                COLOR_RAMP_PROPERTIES_ATTRIBUTE
+                            ]
                             if scheme_name in preset_scheme_names:
-                                color_ramp = QgsColorBrewerColorRamp(scheme_name)
+                                color_ramp = QgsColorBrewerColorRamp(scheme_name, 8)
                                 color_ramp_properties = color_ramp.properties()
                                 # Save the color ramp properties instead of just the
                                 # scheme name
                                 imp_model_dict[STYLE_ATTRIBUTE][
                                     IM_LAYER_STYLE_ATTRIBUTE
-                                ][COLOR_RAMP_ATTRIBUTE] = color_ramp_properties
+                                ][
+                                    COLOR_RAMP_PROPERTIES_ATTRIBUTE
+                                ] = color_ramp_properties
+                                imp_model_dict[STYLE_ATTRIBUTE][
+                                    IM_LAYER_STYLE_ATTRIBUTE
+                                ][
+                                    COLOR_RAMP_TYPE_ATTRIBUTE
+                                ] = QgsColorBrewerColorRamp.typeString()
+
                 settings_manager.save_implementation_model(imp_model_dict)
         except KeyError as ke:
             log(f"Default implementation model configuration load error - {str(ke)}")

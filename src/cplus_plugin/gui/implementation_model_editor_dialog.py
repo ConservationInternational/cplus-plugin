@@ -9,6 +9,7 @@ import uuid
 
 from qgis.core import (
     Qgis,
+    QgsColorRamp,
     QgsFillSymbol,
     QgsFillSymbolLayer,
     QgsMapLayerProxyModel,
@@ -21,6 +22,12 @@ from qgis.PyQt import QtGui, QtWidgets
 from qgis.PyQt.uic import loadUiType
 
 from ..conf import Settings, settings_manager
+from ..definitions.constants import (
+    COLOR_RAMP_PROPERTIES_ATTRIBUTE,
+    COLOR_RAMP_TYPE_ATTRIBUTE,
+    IM_LAYER_STYLE_ATTRIBUTE,
+    IM_SCENARIO_STYLE_ATTRIBUTE,
+)
 from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
 from ..models.base import ImplementationModel
 from ..utils import FileUtils, open_documentation, tr
@@ -43,6 +50,12 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.vl_notification.addWidget(self._message_bar)
 
         self.style_btn.setSymbolType(Qgis.SymbolType.Fill)
+
+        self.btn_color_ramp.setShowNull(False)
+        self.btn_color_ramp.setRandomColorRamp()
+        self.btn_color_ramp.setColorRampDialogTitle(
+            self.tr("Set Color Ramp for Output Implementation Model")
+        )
 
         self.buttonBox.accepted.connect(self._on_accepted)
         self.btn_select_file.clicked.connect(self._on_select_file)
@@ -125,10 +138,15 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
             layer_path = self._layer.source()
             self._add_layer_path(layer_path)
 
-        # Set style
-        symbol = self._implementation_model.fill_symbol()
+        # Set scenario fill style
+        symbol = self._implementation_model.scenario_fill_symbol()
         if symbol:
             self.style_btn.setSymbol(symbol)
+
+        # Set output layer color ramp
+        output_model_color_ramp = self._implementation_model.model_color_ramp()
+        if output_model_color_ramp:
+            self.btn_color_ramp.setColorRamp(output_model_color_ramp)
 
     def _add_layer_path(self, layer_path: str):
         """Select or add layer path to the map layer combobox."""
@@ -181,9 +199,15 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._show_warning_message(msg)
             status = False
 
-        fill_symbol_layer = self.fill_symbol_layer()
+        fill_symbol_layer = self.scenario_fill_symbol_layer()
         if fill_symbol_layer is None:
-            msg = tr("No fill symbol layer defined in the style.")
+            msg = tr("No fill symbol defined for the scenario layer.")
+            self._show_warning_message(msg)
+            status = False
+
+        output_model_color_ramp = self.btn_color_ramp.colorRamp()
+        if output_model_color_ramp is None:
+            msg = tr("No color ramp defined for the output model layer.")
             self._show_warning_message(msg)
             status = False
 
@@ -205,10 +229,22 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._implementation_model.description = self.txt_description.toPlainText()
 
         self._layer = self._get_selected_map_layer()
-        fill_symbol_layer = self.fill_symbol_layer()
-        self._implementation_model.fill_style = {}
-        if fill_symbol_layer:
-            self._implementation_model.fill_style = fill_symbol_layer.properties()
+        scenario_fill_symbol_layer = self.scenario_fill_symbol_layer()
+        self._implementation_model.layer_styles = {}
+        if scenario_fill_symbol_layer:
+            self._implementation_model.layer_styles[
+                IM_SCENARIO_STYLE_ATTRIBUTE
+            ] = scenario_fill_symbol_layer.properties()
+
+        output_model_color_ramp = self.btn_color_ramp.colorRamp()
+        if output_model_color_ramp:
+            color_ramp_info = {
+                COLOR_RAMP_PROPERTIES_ATTRIBUTE: output_model_color_ramp.properties(),
+                COLOR_RAMP_TYPE_ATTRIBUTE: output_model_color_ramp.typeString(),
+            }
+            self._implementation_model.layer_styles[
+                IM_LAYER_STYLE_ATTRIBUTE
+            ] = color_ramp_info
 
     def _get_selected_map_layer(self) -> typing.Union[QgsRasterLayer, None]:
         """Returns the currently selected map layer or None if there is
@@ -236,7 +272,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         self._create_implementation_model()
         self.accept()
 
-    def fill_symbol_layer(self) -> QgsFillSymbolLayer:
+    def scenario_fill_symbol_layer(self) -> QgsFillSymbolLayer:
         """Gets the first fill symbol layer in the symbol as
         set in the button.
 
@@ -257,6 +293,16 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
                 break
 
         return fill_symbol_layer
+
+    def output_layer_color_ramp(self) -> QgsColorRamp:
+        """Returns the selected color ramp.
+
+        :returns: The color ramp selected by the user.
+        :rtype: QgsColorRamp
+        """
+        color_ramp = self.btn_color_ramp.colorRamp()
+
+        return color_ramp
 
     def open_help(self, activated: bool):
         """Opens the user documentation for the plugin in a browser."""

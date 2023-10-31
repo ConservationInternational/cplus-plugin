@@ -782,7 +782,7 @@ DEFAULT_IMPLEMENTATION_MODELS = [
                 "outline_width": "0",
                 "outline_color": "35,35,35,0",
             },
-            "model_layer": {"color_ramp": "Rocket"},
+            "model_layer": {"color_ramp": "PRGn"},
         },
     },
     {
