@@ -18,7 +18,7 @@ from qgis.core import QgsRectangle, QgsSettings
 from .definitions.defaults import PRIORITY_LAYERS
 
 from .definitions.constants import (
-    FILL_STYLE_ATTRIBUTE,
+    STYLE_ATTRIBUTE,
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
     PATH_ATTRIBUTE,
@@ -812,7 +812,7 @@ class SettingsManager(QtCore.QObject):
             implementation_model = layer_component_to_dict(implementation_model)
             implementation_model[PRIORITY_LAYERS_SEGMENT] = priority_layers
             implementation_model[PATHWAYS_ATTRIBUTE] = ncs_pathways
-            implementation_model[FILL_STYLE_ATTRIBUTE] = fill_style
+            implementation_model[STYLE_ATTRIBUTE] = fill_style
 
         if isinstance(implementation_model, dict):
             priority_layers = []

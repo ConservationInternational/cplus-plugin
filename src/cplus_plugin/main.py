@@ -14,7 +14,12 @@
 
 import os.path
 
-from qgis.core import QgsApplication, QgsMasterLayoutInterface, QgsSettings
+from qgis.core import (
+    QgsApplication,
+    QgsColorBrewerColorRamp,
+    QgsMasterLayoutInterface,
+    QgsSettings,
+)
 from qgis.gui import QgsGui, QgsLayoutDesignerInterface
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
@@ -30,10 +35,13 @@ from qgis.PyQt.QtWidgets import QMenu
 from .conf import Settings, settings_manager
 from .definitions.constants import (
     CARBON_PATHS_ATTRIBUTE,
+    COLOR_RAMP_ATTRIBUTE,
+    IM_LAYER_STYLE_ATTRIBUTE,
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
     PATH_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
+    STYLE_ATTRIBUTE,
     USER_DEFINED_ATTRIBUTE,
     UUID_ATTRIBUTE,
 )
@@ -398,12 +406,30 @@ def initialize_model_settings():
             log(f"Default NCS configuration load error - {str(ke)}")
             continue
 
+    # Preset color brewer scheme names
+    preset_scheme_names = QgsColorBrewerColorRamp.listSchemeNames()
+
     # Add default implementation models
     for imp_model_dict in DEFAULT_IMPLEMENTATION_MODELS:
         try:
             imp_model_uuid = imp_model_dict[UUID_ATTRIBUTE]
             imp_model = settings_manager.get_implementation_model(imp_model_uuid)
             if imp_model is None:
+                if STYLE_ATTRIBUTE in imp_model_dict:
+                    style_info = imp_model_dict[STYLE_ATTRIBUTE]
+                    if IM_LAYER_STYLE_ATTRIBUTE in style_info:
+                        model_layer_style = style_info[IM_LAYER_STYLE_ATTRIBUTE]
+                        if COLOR_RAMP_ATTRIBUTE in model_layer_style:
+                            # Must be a preset color brewer scheme name
+                            scheme_name = model_layer_style[COLOR_RAMP_ATTRIBUTE]
+                            if scheme_name in preset_scheme_names:
+                                color_ramp = QgsColorBrewerColorRamp(scheme_name)
+                                color_ramp_properties = color_ramp.properties()
+                                # Save the color ramp properties instead of just the
+                                # scheme name
+                                imp_model_dict[STYLE_ATTRIBUTE][
+                                    IM_LAYER_STYLE_ATTRIBUTE
+                                ][COLOR_RAMP_ATTRIBUTE] = color_ramp_properties
                 settings_manager.save_implementation_model(imp_model_dict)
         except KeyError as ke:
             log(f"Default implementation model configuration load error - {str(ke)}")
