@@ -78,6 +78,9 @@
        <number>0</number>
       </property>
       <item>
+       <layout class="QHBoxLayout" name="button_container"/>
+      </item>
+      <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>

@@ -23,6 +23,7 @@ from ..definitions.constants import (
     DESCRIPTION_ATTRIBUTE,
     LAYER_TYPE_ATTRIBUTE,
     PATH_ATTRIBUTE,
+    PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
     USER_DEFINED_ATTRIBUTE,
     UUID_ATTRIBUTE,
@@ -182,6 +183,10 @@ def create_implementation_model(source_dict) -> typing.Union[ImplementationModel
     # Set style
     if STYLE_ATTRIBUTE in source_dict.keys():
         implementation_model.layer_styles = source_dict[STYLE_ATTRIBUTE]
+
+    # Set styling pixel value
+    if PIXEL_VALUE_ATTRIBUTE in source_dict.keys():
+        implementation_model.style_pixel_value = source_dict[PIXEL_VALUE_ATTRIBUTE]
 
     return implementation_model
 

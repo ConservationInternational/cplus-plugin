@@ -41,6 +41,7 @@ from .definitions.constants import (
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
     PATH_ATTRIBUTE,
+    PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
     STYLE_ATTRIBUTE,
     USER_DEFINED_ATTRIBUTE,
@@ -411,7 +412,7 @@ def initialize_model_settings():
     preset_scheme_names = QgsColorBrewerColorRamp.listSchemeNames()
 
     # Add default implementation models
-    for imp_model_dict in DEFAULT_IMPLEMENTATION_MODELS:
+    for i, imp_model_dict in enumerate(DEFAULT_IMPLEMENTATION_MODELS, start=1):
         try:
             imp_model_uuid = imp_model_dict[UUID_ATTRIBUTE]
             imp_model = settings_manager.get_implementation_model(imp_model_uuid)
@@ -441,6 +442,7 @@ def initialize_model_settings():
                                     COLOR_RAMP_TYPE_ATTRIBUTE
                                 ] = QgsColorBrewerColorRamp.typeString()
 
+                imp_model_dict[PIXEL_VALUE_ATTRIBUTE] = i
                 settings_manager.save_implementation_model(imp_model_dict)
         except KeyError as ke:
             log(f"Default implementation model configuration load error - {str(ke)}")

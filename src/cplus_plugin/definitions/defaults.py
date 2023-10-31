@@ -727,6 +727,34 @@ DEFAULT_IMPLEMENTATION_MODELS = [
         },
     },
     {
+        "uuid": "4fbfcb1c-bfd7-4305-b216-7a1077a2ccf7",
+        "name": "Livestock Market Access",
+        "description": " This model aims to improve market "
+        "access for livestock producers practicing "
+        "sustainable and regenerative farming "
+        "methods. It involves creating networks, "
+        "certifications, and partnerships that "
+        "support the sale of sustainably produced "
+        "livestock products, promoting economic "
+        "viability and incentivizing environmentally "
+        "friendly practices.",
+        "pwls_ids": [
+            "c931282f-db2d-4644-9786-6720b3ab206a",
+            "88c1c7dd-c5d1-420c-a71c-a5c595c1c5be",
+            "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
+            "2f76304a-bb73-442c-9c02-ff9945389a20",
+        ],
+        "style": {
+            "scenario_layer": {
+                "color": "#6c0009",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "PRGn"},
+        },
+    },
+    {
         "uuid": "d9d00a77-3db1-4390-944e-09b27bcbb981",
         "name": "Livestock Rangeland Management",
         "description": "This model focuses on sustainable "
@@ -755,34 +783,6 @@ DEFAULT_IMPLEMENTATION_MODELS = [
                 "outline_color": "35,35,35,0",
             },
             "model_layer": {"color_ramp": "YlOrBr"},
-        },
-    },
-    {
-        "uuid": "4fbfcb1c-bfd7-4305-b216-7a1077a2ccf7",
-        "name": "Livestock Market Access",
-        "description": " This model aims to improve market "
-        "access for livestock producers practicing "
-        "sustainable and regenerative farming "
-        "methods. It involves creating networks, "
-        "certifications, and partnerships that "
-        "support the sale of sustainably produced "
-        "livestock products, promoting economic "
-        "viability and incentivizing environmentally "
-        "friendly practices.",
-        "pwls_ids": [
-            "c931282f-db2d-4644-9786-6720b3ab206a",
-            "88c1c7dd-c5d1-420c-a71c-a5c595c1c5be",
-            "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
-            "2f76304a-bb73-442c-9c02-ff9945389a20",
-        ],
-        "style": {
-            "scenario_layer": {
-                "color": "#6c0009",
-                "style": "solid",
-                "outline_width": "0",
-                "outline_color": "35,35,35,0",
-            },
-            "model_layer": {"color_ramp": "PRGn"},
         },
     },
     {
