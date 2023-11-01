@@ -31,6 +31,7 @@ class PixelValueEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         help_icon = FileUtils.get_icon("mActionHelpContents.svg")
         self.btn_help.setIcon(help_icon)
+        self.btn_help.clicked.connect(self.open_help)
 
         self._item_model = QtGui.QStandardItemModel(self)
         self._item_model.setColumnCount(1)
@@ -61,6 +62,10 @@ class PixelValueEditorDialog(QtWidgets.QDialog, WidgetUi):
             im_item.setEditable(False)
             im_item.setData(str(imp_model.uuid), QtCore.Qt.UserRole)
             self._item_model.appendRow(im_item)
+
+    def open_help(self, activated: bool):
+        """Opens the user documentation for the plugin in a browser."""
+        open_documentation(USER_DOCUMENTATION_SITE)
 
     @property
     def item_mapping(self) -> OrderedDict:
