@@ -44,12 +44,25 @@ class PixelValueEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self._item_model = QtGui.QStandardItemModel(self)
         self._item_model.setColumnCount(1)
-        self.lv_implementation_model.setModel(self._item_model)
+        self.tv_implementation_model.setModel(self._item_model)
+
+        self.tv_implementation_model.setDragEnabled(True)
+        self.tv_implementation_model.setAcceptDrops(True)
+        self.tv_implementation_model.setShowGrid(False)
+        self.tv_implementation_model.setDragDropOverwriteMode(False)
+        self.tv_implementation_model.setDragDropMode(
+            QtWidgets.QAbstractItemView.InternalMove
+        )
+        self.tv_implementation_model.horizontalHeader().setSectionResizeMode(
+            QtWidgets.QHeaderView.Stretch
+        )
 
         self._load_items()
 
     def _load_items(self):
-        """Load implementation models to the view."""
-        for imp_model in settings_manager.get_all_implementation_models():
+        """Load implementation models to the table widget."""
+        for i, imp_model in enumerate(settings_manager.get_all_implementation_models()):
             im_item = QtGui.QStandardItem(imp_model.name)
+            im_item.setDropEnabled(False)
+            im_item.setEditable(False)
             self._item_model.appendRow(im_item)

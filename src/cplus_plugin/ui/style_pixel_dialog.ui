@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>352</width>
-    <height>374</height>
+    <width>345</width>
+    <height>426</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -66,7 +66,7 @@
       <item>
        <widget class="QLabel" name="label_123">
         <property name="text">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the pixel value that will be used for styling the implementation models in the scenario layer by dragging and dropping the models to specify their position in the table below.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the pixel value that will be used for styling the implementation models in the scenario layer by dragging and dropping the rows to specify the position.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="wordWrap">
          <bool>true</bool>
@@ -97,7 +97,7 @@
     </widget>
    </item>
    <item row="1" column="0" colspan="2">
-    <widget class="QListView" name="lv_implementation_model">
+    <widget class="QTableView" name="tv_implementation_model">
      <property name="editTriggers">
       <set>QAbstractItemView::NoEditTriggers</set>
      </property>
@@ -108,7 +108,7 @@
       <enum>QAbstractItemView::InternalMove</enum>
      </property>
      <property name="defaultDropAction">
-      <enum>Qt::MoveAction</enum>
+      <enum>Qt::IgnoreAction</enum>
      </property>
      <property name="selectionMode">
       <enum>QAbstractItemView::SingleSelection</enum>
@@ -116,6 +116,9 @@
      <property name="selectionBehavior">
       <enum>QAbstractItemView::SelectRows</enum>
      </property>
+     <attribute name="horizontalHeaderVisible">
+      <bool>false</bool>
+     </attribute>
     </widget>
    </item>
   </layout>
