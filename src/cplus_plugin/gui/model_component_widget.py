@@ -459,7 +459,14 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         """Slot raised to show editor dialog for managing IM pixel values for styling."""
         pixel_dialog = PixelValueEditorDialog(self)
         if pixel_dialog.exec_() == QtWidgets.QDialog.Accepted:
-            pass
+            # Update pixel values
+            pixel_values = pixel_dialog.item_mapping
+            for val, im_id in pixel_values.items():
+                imp_model = settings_manager.get_implementation_model(im_id)
+                if not imp_model:
+                    continue
+                imp_model.style_pixel_value = val
+                settings_manager.update_implementation_model(imp_model)
 
     def model_names(self) -> typing.List[str]:
         """Gets the names of the implementation models in the item model.
@@ -512,6 +519,8 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         if editor.exec_() == QtWidgets.QDialog.Accepted:
             model = editor.implementation_model
             layer = editor.layer
+            num_models = len(settings_manager.get_all_implementation_models())
+            model.style_pixel_value = num_models + 1
             result = self.item_model.add_implementation_model(model, layer)
             if result:
                 settings_manager.save_implementation_model(model)
@@ -596,9 +605,13 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
                         implementation_model_uuid
                     )
                     if result:
+                        ref_pixel_value = model_component.style_pixel_value
                         settings_manager.remove_implementation_model(
                             implementation_model_uuid
                         )
+
+                        # Reassign pixel values accordingly
+                        self.reassign_pixel_values(ref_pixel_value)
             else:
                 implementation_model_item = item.data()
                 if implementation_model_item:
@@ -606,6 +619,29 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
                     self._save_item(implementation_model_item)
 
             self.clear_description()
+
+    @classmethod
+    def reassign_pixel_values(cls, start_position: int):
+        """Reassign the styling pixel values for implementation models
+        from the given start position.
+
+        It is important to call this function when the maximum pixel
+        value does not match the number of implementation models such
+        as when one or more implementation models have been deleted.
+
+        :param start_position: Position to start reassigning the pixel
+        values.
+        :type start_position: int
+        """
+        sorted_models = sorted(
+            settings_manager.get_all_implementation_models(),
+            key=lambda model: model.style_pixel_value,
+        )
+        remap_models = sorted_models[start_position:]
+        for val, imp_model in enumerate(remap_models, start=start_position):
+            imp_model.style_pixel_value = val
+            settings_manager.update_implementation_model(imp_model)
+            print(f"{imp_model.name} - {val!s}")
 
     def add_ncs_pathway_items(self, ncs_items: typing.List[NcsPathwayItem]) -> bool:
         """Adds an NCS pathway item to the collection.

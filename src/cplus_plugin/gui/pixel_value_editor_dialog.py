@@ -3,13 +3,14 @@
 Dialog for setting the pixel value for styling IMs.
 """
 
+from collections import OrderedDict
 import os
 import typing
 import uuid
 
 from qgis.gui import QgsMessageBar
 
-from qgis.PyQt import QtGui, QtWidgets
+from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
@@ -61,8 +62,35 @@ class PixelValueEditorDialog(QtWidgets.QDialog, WidgetUi):
 
     def _load_items(self):
         """Load implementation models to the table widget."""
-        for i, imp_model in enumerate(settings_manager.get_all_implementation_models()):
+        sorted_models = sorted(
+            settings_manager.get_all_implementation_models(),
+            key=lambda model: model.style_pixel_value,
+        )
+        for i, imp_model in enumerate(sorted_models):
             im_item = QtGui.QStandardItem(imp_model.name)
             im_item.setDropEnabled(False)
             im_item.setEditable(False)
+            im_item.setData(str(imp_model.uuid), QtCore.Qt.UserRole)
             self._item_model.appendRow(im_item)
+
+    @property
+    def item_mapping(self) -> OrderedDict:
+        """Returns a mapping of the implementation model position in
+        the table and its corresponding unique identifier.
+
+        We are using an OrderedDict to ensure consistency across
+        different Python versions in the different platforms that QGIS
+        runs on.
+
+        :returns: The mapping of the implementation model position in
+        the table and its corresponding unique identifier.
+        :rtype: OrderedDict
+        """
+        im_position = OrderedDict()
+
+        for i in range(self._item_model.rowCount()):
+            item = self._item_model.item(i, 0)
+            im_id = item.data(QtCore.Qt.UserRole)
+            im_position[i + 1] = im_id
+
+        return im_position

@@ -73,9 +73,6 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         if excluded_names is None:
             self._excluded_names = []
 
-        # Set manually by the caller of the dialog
-        self.new_pixel_value = 0
-
         self._implementation_model = implementation_model
         if self._implementation_model is not None:
             self._edit_mode = True
@@ -226,7 +223,6 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._implementation_model = ImplementationModel(
                 uuid.uuid4(), self.txt_name.text(), self.txt_description.toPlainText()
             )
-            self._implementation_model.style_pixel_value = self.new_pixel_value
         else:
             # Update mode
             self._implementation_model.name = self.txt_name.text()
