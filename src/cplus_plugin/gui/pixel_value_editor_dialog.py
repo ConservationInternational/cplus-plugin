@@ -10,6 +10,8 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
+from qgis.gui import QgsGui
+
 from ..conf import settings_manager
 from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
 from ..utils import FileUtils, open_documentation
@@ -25,6 +27,8 @@ class PixelValueEditorDialog(QtWidgets.QDialog, WidgetUi):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setupUi(self)
+
+        QgsGui.enableAutoGeometryRestore(self)
 
         icon_pixmap = QtGui.QPixmap(ICON_PATH)
         self.icon_la.setPixmap(icon_pixmap)

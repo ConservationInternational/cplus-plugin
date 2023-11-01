@@ -468,6 +468,8 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
                 imp_model.style_pixel_value = val
                 settings_manager.update_implementation_model(imp_model)
 
+            self.load()
+
     def model_names(self) -> typing.List[str]:
         """Gets the names of the implementation models in the item model.
 
@@ -610,7 +612,7 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
                             implementation_model_uuid
                         )
 
-                        # Reassign pixel values accordingly
+                        # Reassign pixel values
                         self.reassign_pixel_values(ref_pixel_value)
             else:
                 implementation_model_item = item.data()
@@ -637,11 +639,10 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
             settings_manager.get_all_implementation_models(),
             key=lambda model: model.style_pixel_value,
         )
-        remap_models = sorted_models[start_position:]
+        remap_models = sorted_models[start_position - 1:]
         for val, imp_model in enumerate(remap_models, start=start_position):
             imp_model.style_pixel_value = val
             settings_manager.update_implementation_model(imp_model)
-            print(f"{imp_model.name} - {val!s}")
 
     def add_ncs_pathway_items(self, ncs_items: typing.List[NcsPathwayItem]) -> bool:
         """Adds an NCS pathway item to the collection.
