@@ -18,11 +18,12 @@ from .base import (
 )
 from ..definitions.constants import (
     CARBON_PATHS_ATTRIBUTE,
-    FILL_STYLE_ATTRIBUTE,
+    STYLE_ATTRIBUTE,
     NAME_ATTRIBUTE,
     DESCRIPTION_ATTRIBUTE,
     LAYER_TYPE_ATTRIBUTE,
     PATH_ATTRIBUTE,
+    PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
     USER_DEFINED_ATTRIBUTE,
     UUID_ATTRIBUTE,
@@ -180,8 +181,12 @@ def create_implementation_model(source_dict) -> typing.Union[ImplementationModel
         implementation_model.priority_layers = source_dict[PRIORITY_LAYERS_SEGMENT]
 
     # Set style
-    if FILL_STYLE_ATTRIBUTE in source_dict.keys():
-        implementation_model.fill_style = source_dict[FILL_STYLE_ATTRIBUTE]
+    if STYLE_ATTRIBUTE in source_dict.keys():
+        implementation_model.layer_styles = source_dict[STYLE_ATTRIBUTE]
+
+    # Set styling pixel value
+    if PIXEL_VALUE_ATTRIBUTE in source_dict.keys():
+        implementation_model.style_pixel_value = source_dict[PIXEL_VALUE_ATTRIBUTE]
 
     return implementation_model
 

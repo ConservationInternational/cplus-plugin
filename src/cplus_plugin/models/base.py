@@ -10,7 +10,27 @@ import os.path
 import typing
 from uuid import UUID
 
-from qgis.core import QgsFillSymbol, QgsMapLayer, QgsRasterLayer, QgsVectorLayer
+from qgis.core import (
+    QgsColorBrewerColorRamp,
+    QgsColorRamp,
+    QgsCptCityColorRamp,
+    QgsFillSymbol,
+    QgsGradientColorRamp,
+    QgsLimitedRandomColorRamp,
+    QgsMapLayer,
+    QgsPresetSchemeColorRamp,
+    QgsRandomColorRamp,
+    QgsRasterLayer,
+    QgsVectorLayer,
+)
+
+from ..definitions.constants import (
+    COLOR_RAMP_PROPERTIES_ATTRIBUTE,
+    COLOR_RAMP_TYPE_ATTRIBUTE,
+    IM_LAYER_STYLE_ATTRIBUTE,
+    IM_SCENARIO_STYLE_ATTRIBUTE,
+    STYLE_ATTRIBUTE,
+)
 
 
 @dataclasses.dataclass
@@ -303,7 +323,8 @@ class ImplementationModel(LayerModelComponent):
 
     pathways: typing.List[NcsPathway] = dataclasses.field(default_factory=list)
     priority_layers: typing.List[typing.Dict] = dataclasses.field(default_factory=list)
-    fill_style: dict = dataclasses.field(default_factory=dict)
+    layer_styles: dict = dataclasses.field(default_factory=dict)
+    style_pixel_value: int = -1
 
     def __post_init__(self):
         """Pre-checks on initialization."""
@@ -441,13 +462,88 @@ class ImplementationModel(LayerModelComponent):
 
             return True
 
-    def fill_symbol(self) -> QgsFillSymbol:
-        """Creates a fill symbol from the fill style definition.
+    def scenario_layer_style_info(self) -> dict:
+        """Returns the fill symbol properties for styling the implementation
+        layer in the final scenario result.
 
-        :returns: Style information as a fill symbol.
+        :returns: Fill symbol properties for the implementation model
+        styling in the scenario layer or an empty dictionary if there was
+        no definition found in the root style.
+        :rtype: dict
+        """
+        if (
+            len(self.layer_styles) == 0
+            or IM_SCENARIO_STYLE_ATTRIBUTE not in self.layer_styles
+        ):
+            return dict()
+
+        return self.layer_styles[IM_SCENARIO_STYLE_ATTRIBUTE]
+
+    def model_layer_style_info(self) -> dict:
+        """Returns the color ramp properties for styling the implementation
+        layer resulting from a scenario run.
+
+        :returns: Color ramp properties for the implementation model styling
+        or an empty dictionary if there was no definition found in the root
+        style.
+        :rtype: dict
+        """
+        if (
+            len(self.layer_styles) == 0
+            or IM_LAYER_STYLE_ATTRIBUTE not in self.layer_styles
+        ):
+            return dict()
+
+        return self.layer_styles[IM_LAYER_STYLE_ATTRIBUTE]
+
+    def scenario_fill_symbol(self) -> typing.Union[QgsFillSymbol, None]:
+        """Creates a fill symbol for the implementation model in the scenario.
+
+        :returns: Fill symbol for the implementation model in the scenario
+        or None if there was no definition found.
         :rtype: QgsFillSymbol
         """
-        return QgsFillSymbol.createSimple(self.fill_style)
+        scenario_style_info = self.scenario_layer_style_info()
+        if len(scenario_style_info) == 0:
+            return None
+
+        return QgsFillSymbol.createSimple(scenario_style_info)
+
+    def model_color_ramp(self) -> typing.Union[QgsColorRamp, None]:
+        """Create a color ramp for styling the implementation layer resulting
+        from a scenario run.
+
+        :returns: A color ramp for styling the implementation layer or None
+        if there was no definition found.
+        :rtype: QgsColorRamp
+        """
+        model_layer_info = self.model_layer_style_info()
+        if len(model_layer_info) == 0:
+            return None
+
+        ramp_info = model_layer_info.get(COLOR_RAMP_PROPERTIES_ATTRIBUTE, None)
+        if ramp_info is None or len(ramp_info) == 0:
+            return None
+
+        ramp_type = model_layer_info.get(COLOR_RAMP_TYPE_ATTRIBUTE, None)
+        if ramp_type is None:
+            return None
+
+        # New ramp types will need to be added here manually
+        if ramp_type == QgsColorBrewerColorRamp.typeString():
+            return QgsColorBrewerColorRamp.create(ramp_info)
+        elif ramp_type == QgsCptCityColorRamp.typeString():
+            return QgsCptCityColorRamp.create(ramp_info)
+        elif ramp_type == QgsGradientColorRamp.typeString():
+            return QgsGradientColorRamp.create(ramp_info)
+        elif ramp_type == QgsLimitedRandomColorRamp.typeString():
+            return QgsLimitedRandomColorRamp.create(ramp_info)
+        elif ramp_type == QgsPresetSchemeColorRamp.typeString():
+            return QgsPresetSchemeColorRamp.create(ramp_info)
+        elif ramp_type == QgsRandomColorRamp.typeString():
+            return QgsRandomColorRamp()
+
+        return None
 
 
 class ScenarioState(Enum):

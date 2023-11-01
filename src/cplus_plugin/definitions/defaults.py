@@ -461,6 +461,7 @@ DEFAULT_NCS_PATHWAYS = [
     },
 ]
 
+# IM 'model_layer' must use a default scheme for the color ramp
 DEFAULT_IMPLEMENTATION_MODELS = [
     {
         "uuid": "a0b8fd2d-1259-4141-9ad6-d4369cf0dfd4",
@@ -478,11 +479,14 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
-        "fill_style": {
-            "color": "#d80007",
-            "style": "solid",
-            "outline_width": "0",
-            "outline_color": "35,35,35,0",
+        "style": {
+            "scenario_layer": {
+                "color": "#d80007",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "Reds"},
         },
     },
     {
@@ -503,11 +507,14 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9f6c8b8f-0648-44ca-b943-58fab043f559",
             "9291a5d9-d1cd-44c2-8fc3-2b3b20f80572",
         ],
-        "fill_style": {
-            "color": "#6f6f6f",
-            "style": "solid",
-            "outline_width": "0",
-            "outline_color": "35,35,35,0",
+        "style": {
+            "scenario_layer": {
+                "color": "#6f6f6f",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "Greys"},
         },
     },
     {
@@ -529,11 +536,14 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
-        "fill_style": {
-            "color": "#81c4ff",
-            "style": "solid",
-            "outline_width": "0",
-            "outline_color": "35,35,35,0",
+        "style": {
+            "scenario_layer": {
+                "color": "#81c4ff",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "PuBu"},
         },
     },
     {
@@ -559,11 +569,14 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "86c3dfc5-58d7-4ebd-a851-3b65a6bf5edd",
             "620d5d7d-c452-498f-b848-b206a76891cd",
         ],
-        "fill_style": {
-            "color": "#e8ec18",
-            "style": "solid",
-            "outline_width": "0",
-            "outline_color": "35,35,35,0",
+        "style": {
+            "scenario_layer": {
+                "color": "#e8ec18",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "YlOrRd"},
         },
     },
     {
@@ -585,11 +598,14 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
-        "fill_style": {
-            "color": "#ff4c84",
-            "style": "solid",
-            "outline_width": "0",
-            "outline_color": "35,35,35,0",
+        "style": {
+            "scenario_layer": {
+                "color": "#ff4c84",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "RdPu"},
         },
     },
     {
@@ -611,11 +627,14 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
-        "fill_style": {
-            "color": "#1f31d3",
-            "style": "solid",
-            "outline_width": "0",
-            "outline_color": "35,35,35,0",
+        "style": {
+            "scenario_layer": {
+                "color": "#1f31d3",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "Blues"},
         },
     },
     {
@@ -640,11 +659,14 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "c5b1b81e-e1ae-41ec-adeb-7388f7597156",
             "3872be6d-f791-41f7-b031-b85173e41d5e",
         ],
-        "fill_style": {
-            "color": "#67593f",
-            "style": "solid",
-            "outline_width": "0",
-            "outline_color": "35,35,35,0",
+        "style": {
+            "scenario_layer": {
+                "color": "#67593f",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "BrBG"},
         },
     },
     {
@@ -667,11 +689,14 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "5f329f53-31ff-4039-b0ec-a8d174a50866",
             "5bcebbe2-7035-4d81-9817-0b4db8aa63e2",
         ],
-        "fill_style": {
-            "color": "#30ff01",
-            "style": "solid",
-            "outline_width": "0",
-            "outline_color": "35,35,35,0",
+        "style": {
+            "scenario_layer": {
+                "color": "#30ff01",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "BuGn"},
         },
     },
     {
@@ -691,11 +716,42 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
-        "fill_style": {
-            "color": "#bd6b70",
-            "style": "solid",
-            "outline_width": "0",
-            "outline_color": "35,35,35,0",
+        "style": {
+            "scenario_layer": {
+                "color": "#bd6b70",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "PuRd"},
+        },
+    },
+    {
+        "uuid": "4fbfcb1c-bfd7-4305-b216-7a1077a2ccf7",
+        "name": "Livestock Market Access",
+        "description": " This model aims to improve market "
+        "access for livestock producers practicing "
+        "sustainable and regenerative farming "
+        "methods. It involves creating networks, "
+        "certifications, and partnerships that "
+        "support the sale of sustainably produced "
+        "livestock products, promoting economic "
+        "viability and incentivizing environmentally "
+        "friendly practices.",
+        "pwls_ids": [
+            "c931282f-db2d-4644-9786-6720b3ab206a",
+            "88c1c7dd-c5d1-420c-a71c-a5c595c1c5be",
+            "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
+            "2f76304a-bb73-442c-9c02-ff9945389a20",
+        ],
+        "style": {
+            "scenario_layer": {
+                "color": "#6c0009",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "PRGn"},
         },
     },
     {
@@ -719,36 +775,14 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "88dc8ff3-e61f-4a48-8f9b-5791efb6603f",
             "a1bfff8e-fb87-4bca-97fa-a984d9bde712",
         ],
-        "fill_style": {
-            "color": "#ffa500",
-            "style": "solid",
-            "outline_width": "0",
-            "outline_color": "35,35,35,0",
-        },
-    },
-    {
-        "uuid": "4fbfcb1c-bfd7-4305-b216-7a1077a2ccf7",
-        "name": "Livestock Market Access",
-        "description": " This model aims to improve market "
-        "access for livestock producers practicing "
-        "sustainable and regenerative farming "
-        "methods. It involves creating networks, "
-        "certifications, and partnerships that "
-        "support the sale of sustainably produced "
-        "livestock products, promoting economic "
-        "viability and incentivizing environmentally "
-        "friendly practices.",
-        "pwls_ids": [
-            "c931282f-db2d-4644-9786-6720b3ab206a",
-            "88c1c7dd-c5d1-420c-a71c-a5c595c1c5be",
-            "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
-            "2f76304a-bb73-442c-9c02-ff9945389a20",
-        ],
-        "fill_style": {
-            "color": "#6c0009",
-            "style": "solid",
-            "outline_width": "0",
-            "outline_color": "35,35,35,0",
+        "style": {
+            "scenario_layer": {
+                "color": "#ffa500",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "YlOrBr"},
         },
     },
     {
@@ -769,11 +803,14 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
-        "fill_style": {
-            "color": "#007018",
-            "style": "solid",
-            "outline_width": "0",
-            "outline_color": "35,35,35,0",
+        "style": {
+            "scenario_layer": {
+                "color": "#007018",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "Greens"},
         },
     },
     {
@@ -789,11 +826,14 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
-        "fill_style": {
-            "color": "#c27ba0",
-            "style": "solid",
-            "outline_width": "0",
-            "outline_color": "35,35,35,0",
+        "style": {
+            "scenario_layer": {
+                "color": "#c27ba0",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "PiYG"},
         },
     },
     {
@@ -820,11 +860,14 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "ed1ee71b-e7db-4599-97a9-a97c941a615f",
             "307df1f4-206b-4f70-8db4-6505948e2a4e",
         ],
-        "fill_style": {
-            "color": "#781a8b",
-            "style": "solid",
-            "outline_width": "0",
-            "outline_color": "35,35,35,0",
+        "style": {
+            "scenario_layer": {
+                "color": "#781a8b",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "Purples"},
         },
     },
 ]

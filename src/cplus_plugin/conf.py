@@ -18,11 +18,12 @@ from qgis.core import QgsRectangle, QgsSettings
 from .definitions.defaults import PRIORITY_LAYERS
 
 from .definitions.constants import (
-    FILL_STYLE_ATTRIBUTE,
+    STYLE_ATTRIBUTE,
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
     PATH_ATTRIBUTE,
     PATHWAYS_ATTRIBUTE,
+    PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
     UUID_ATTRIBUTE,
 )
@@ -805,14 +806,18 @@ class SettingsManager(QtCore.QObject):
         """
         if isinstance(implementation_model, ImplementationModel):
             priority_layers = implementation_model.priority_layers
-            fill_style = implementation_model.fill_style
+            layer_styles = implementation_model.layer_styles
+            style_pixel_value = implementation_model.style_pixel_value
+
             ncs_pathways = []
             for ncs in implementation_model.pathways:
                 ncs_pathways.append(str(ncs.uuid))
+
             implementation_model = layer_component_to_dict(implementation_model)
             implementation_model[PRIORITY_LAYERS_SEGMENT] = priority_layers
             implementation_model[PATHWAYS_ATTRIBUTE] = ncs_pathways
-            implementation_model[FILL_STYLE_ATTRIBUTE] = fill_style
+            implementation_model[STYLE_ATTRIBUTE] = layer_styles
+            implementation_model[PIXEL_VALUE_ATTRIBUTE] = style_pixel_value
 
         if isinstance(implementation_model, dict):
             priority_layers = []
