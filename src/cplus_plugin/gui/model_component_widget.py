@@ -28,6 +28,7 @@ from ..conf import settings_manager
 from .implementation_model_editor_dialog import ImplementationModelEditorDialog
 from .model_description_editor import ModelDescriptionEditorDialog
 from .ncs_pathway_editor_dialog import NcsPathwayEditorDialog
+from .pixel_value_editor_dialog import PixelValueEditorDialog
 from ..models.base import ImplementationModel, NcsPathway
 from ..utils import FileUtils, log
 
@@ -268,6 +269,15 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
 
         return [mc.name.lower() for mc in model_components]
 
+    def add_action_widget(self, widget: QtWidgets.QWidget):
+        """Adds an auxiliary widget below the list view from the left-hand side.
+
+        :param widget: Widget to be added to the collection of controls
+        below the list view.
+        :type widget: QtWidgets.QWidget
+        """
+        self.widget_container.addWidget(widget)
+
 
 class NcsComponentWidget(ModelComponentWidget):
     """Widget for displaying and managing NCS pathways."""
@@ -420,6 +430,10 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
 
         self.btn_reload.setVisible(False)
 
+        self.btn_pixel_editor = None
+
+        self.add_auxiliary_widgets()
+
     def models(self) -> typing.List[ImplementationModel]:
         """Returns a collection of ImplementationModel objects in the
         list view.
@@ -429,6 +443,23 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         :rtype: list
         """
         return self.item_model.models()
+
+    def add_auxiliary_widgets(self):
+        """Adds additional action widgets for managing implementation models."""
+        self.btn_pixel_editor = QtWidgets.QToolButton(self)
+        style_icon = FileUtils.get_icon("rendererCategorizedSymbol.svg")
+        self.btn_pixel_editor.setIcon(style_icon)
+        self.btn_pixel_editor.setToolTip(
+            self.tr("Show dialog for ordering pixel values for styling.")
+        )
+        self.btn_pixel_editor.clicked.connect(self.on_show_pixel_value_editor)
+        self.add_action_widget(self.btn_pixel_editor)
+
+    def on_show_pixel_value_editor(self):
+        """Slot raised to show editor dialog for managing IM pixel values for styling."""
+        pixel_dialog = PixelValueEditorDialog(self)
+        if pixel_dialog.exec_() == QtWidgets.QDialog.Accepted:
+            pass
 
     def model_names(self) -> typing.List[str]:
         """Gets the names of the implementation models in the item model.
