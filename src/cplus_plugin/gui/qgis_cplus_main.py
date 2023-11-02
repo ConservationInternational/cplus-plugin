@@ -65,6 +65,7 @@ from .components.custom_tree_widget import CustomTreeWidget
 from ..resources import *
 
 from ..utils import (
+    align_rasters,
     clean_filename,
     open_documentation,
     tr,
@@ -1117,7 +1118,52 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             pathway.path = output.get("OUTPUT")
 
         if (pathway_count == len(pathways) - 1) and last_pathway:
-            self.run_pathways_normalization(models, priority_layers_groups, extent)
+            self.snap_analyzed_pathways(
+                pathways, models, priority_layers_groups, extent
+            )
+            # self.run_pathways_normalization(models, priority_layers_groups, extent)
+
+    def snap_analyzed_pathways(self, pathways, models, priority_layers_groups, extent):
+        if self.processing_cancelled:
+            # Will not proceed if processing has been cancelled by the user
+            return False
+
+        models_function = partial(
+            self.run_pathways_normalization, models, priority_layers_groups, extent
+        )
+        main_task = QgsTask.fromFunction(
+            "Main task for running pathways snapping on the background task",
+            self.main_task,
+            on_finished=models_function,
+        )
+
+        main_task.taskCompleted.connect(models_function)
+
+        previous_sub_tasks = []
+
+        reference_layer_path = settings_manager.get_value(Settings.SNAP_LAYER)
+        base_dir = settings_manager.get_value(Settings.BASE_DIR)
+
+        for pathway in pathways:
+            snapping_function = partial(
+                align_rasters, pathway.path, reference_layer_path, None, base_dir
+            )
+            log(
+                f"Used parameters for snapping pathway {pathway.name},"
+                f"pathway path {pathway.path} and reference layer path {reference_layer_path}"
+            )
+            self.task = QgsTask.fromFunction(
+                f"Snapping pathway {pathway.name}",
+                snapping_function,
+                on_finished=models_function,
+            )
+
+            main_task.addSubTask(
+                self.task, previous_sub_tasks, QgsTask.ParentDependsOnSubTask
+            )
+            previous_sub_tasks.append(self.task)
+
+        QgsApplication.taskManager().addTask(main_task)
 
     def run_pathways_normalization(self, models, priority_layers_groups, extent):
         """Runs the normalization on the models pathways layers,

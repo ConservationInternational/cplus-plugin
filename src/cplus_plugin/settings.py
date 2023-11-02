@@ -13,7 +13,7 @@ from pathlib import Path
 
 import qgis.core
 import qgis.gui
-from qgis.gui import QgsOptionsPageWidget
+from qgis.gui import QgsFileWidget, QgsOptionsPageWidget
 from qgis.gui import QgsOptionsWidgetFactory
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import (
@@ -22,6 +22,7 @@ from qgis.PyQt.QtGui import (
     QPixmap,
 )
 from qgis.utils import iface
+
 from qgis.PyQt.QtWidgets import QWidget
 
 from .conf import (
@@ -63,10 +64,22 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.logo_file.fileChanged.connect(self.logo_file_changed)
         self.folder_data.fileChanged.connect(self.base_dir_exists)
 
+        self.map_layer_file_widget.setStorageMode(QgsFileWidget.StorageMode.GetFile)
+        self.map_layer_box.layerChanged.connect(self.map_layer_changed)
+
     def apply(self) -> None:
         """This is called on OK click in the QGIS options panel."""
 
         self.save_settings()
+
+    def map_layer_changed(self, layer):
+        """Sets the file path of the selected layer in file path input
+
+        :param layer: Qgis map layer
+        :type layer: QgsMapLayer
+        """
+        if layer is not None:
+            self.map_layer_file_widget.setFilePath(layer.source())
 
     def on_settings_changed(self, name: str, value: typing.Any):
         """Slot raised when settings has been changed.
@@ -237,6 +250,14 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             Settings.PATHWAY_SUITABILITY_INDEX, pathway_suitability_index
         )
 
+        # Snapping settings saving
+
+        snap_layer_path = self.map_layer_file_widget.filePath()
+        settings_manager.set_value(Settings.SNAP_LAYER, snap_layer_path)
+        settings_manager.set_value(
+            Settings.ALLOW_RESAMPLING, self.resample_values.isChecked()
+        )
+
         # Checks if the provided base directory exists
         if not os.path.exists(base_dir_path):
             iface.messageBar().pushCritical(
@@ -300,6 +321,14 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             Settings.PATHWAY_SUITABILITY_INDEX, default=0
         )
         self.suitability_index_box.setValue(float(pathway_suitability_index))
+
+        # Snapping settings
+        snap_layer_path = settings_manager.get_value(Settings.SNAP_LAYER, default="")
+        self.map_layer_file_widget.setFilePath(snap_layer_path)
+
+        self.resample_values.setChecked(
+            settings_manager.get_value(Settings.ALLOW_RESAMPLING, default=False)
+        )
 
     def showEvent(self, event: QShowEvent) -> None:
         """Show event being called. This will display the plugin settings.

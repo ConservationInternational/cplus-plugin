@@ -210,8 +210,8 @@ def calculate_raster_value_area(
 def align_rasters(
     input_raster_source,
     reference_raster_source,
-    extent,
-    output_dir,
+    extent=None,
+    output_dir=None,
     rescale_values=False,
     resample=True,
 ):
@@ -239,46 +239,65 @@ def align_rasters(
     :type resample: bool
 
     """
-    directory = output_dir / "snap_layers"
-    FileUtils.create_new_dir(directory)
 
-    input_layer_output = f"{directory}/{uuid.uuid4()[5]}.tif"
-    reference_layer_output = f"{directory}/{uuid.uuid4()[5]}.tif"
+    log(f"Snapping {input_raster_source} and {reference_raster_source}")
 
-    FileUtils.create_new_file(input_layer_output)
-    FileUtils.create_new_file(reference_layer_output)
+    try:
+        input_layer_output = f"{output_dir}/{str(uuid.uuid4())[:6]}.tif"
+        reference_layer_output = f"{output_dir}/{str(uuid.uuid4())[:6]}.tif"
 
-    align = QgsAlignRaster()
-    lst = [
-        QgsAlignRaster.Item(input_raster_source, input_layer_output),
-        QgsAlignRaster.Item(reference_raster_source, reference_layer_output),
-    ]
+        FileUtils.create_new_file(input_layer_output)
+        FileUtils.create_new_file(reference_layer_output)
 
-    if rescale_values:
-        lst[0].rescaleValues = True
-        lst[1].rescaleValues = True
+        align = QgsAlignRaster()
+        lst = [
+            QgsAlignRaster.Item(input_raster_source, input_layer_output),
+            QgsAlignRaster.Item(reference_raster_source, reference_layer_output),
+        ]
 
-    align.setRasters(lst)
+        if rescale_values:
+            lst[0].rescaleValues = True
+            lst[1].rescaleValues = True
 
-    if resample:
-        index = align.suggestedReferenceLayer()
-    else:
-        index = 1  # have to use second layer as the reference
+        align.setRasters(lst)
 
-    align.setParametersFromRaster(lst[index].inputFilename)
+        if resample:
+            index = align.suggestedReferenceLayer()
+        else:
+            index = 1  # have to use second layer as the reference
 
-    tranformed_extent = QgsRectangle(extent[0], extent[1], extent[2], extent[3])
-    transform = QgsCoordinateTransform(
-        QgsCoordinateReferenceSystem("EPSG:4326"),
-        QgsCoordinateReferenceSystem(align.destinationCRS()),
+        align.setParametersFromRaster(lst[index].inputFilename)
+
+        log(f"passed extent {extent}")
+        if extent:
+            tranformed_extent = QgsRectangle(
+                float(extent[0]), float(extent[1]), float(extent[2]), float(extent[3])
+            )
+        else:
+            tranformed_extent = QgsRasterLayer(
+                input_raster_source, "input_layer"
+            ).extent()
+
+        transform = QgsCoordinateTransform(
+            QgsCoordinateReferenceSystem("EPSG:4326"),
+            QgsCoordinateReferenceSystem(align.destinationCRS()),
+        )
+
+        tranformed_extent = transform.transformBoundingBox(tranformed_extent)
+
+        align.setClipExtent(tranformed_extent)
+
+        if not align.run():
+            log(
+                f"Problem during snapping for {input_raster_source} and {reference_raster_source}"
+            )
+            raise Exception(align.errorMessage())
+    except Exception as e:
+        log(f"Problem occured when snapping, {str(e)}")
+
+    log(
+        f"Finished snapping with {input_layer_output} and reference {reference_layer_output}"
     )
-
-    tranformed_extent = transform.transformBoundingBox(tranformed_extent)
-
-    align.setClipExtent(tranformed_extent)
-
-    if not align.run():
-        raise Exception(align.errorMessage())
 
     return input_layer_output, reference_layer_output
 
@@ -390,6 +409,6 @@ class FileUtils:
 
         if not p.exists():
             try:
-                p.touch(exits=True)
+                p.touch(exist_ok=True)
             except FileNotFoundError:
                 log(log_message)

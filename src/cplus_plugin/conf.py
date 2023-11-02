@@ -146,6 +146,11 @@ class Settings(enum.Enum):
     # Pathway suitability index value
     PATHWAY_SUITABILITY_INDEX = "pathway_suitability_index"
 
+    # Snapping values
+    SNAP_LAYER = "snap_layer"
+    ALLOW_RESAMPLING = "snap_resampling"
+    SNAP_PIXEL_VALUE = "snap_pixel_value"
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""

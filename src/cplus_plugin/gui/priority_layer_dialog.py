@@ -114,7 +114,9 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
 
             for model in all_models:
                 model_layer_uuids = [
-                    layer.get("uuid") for layer in model.priority_layers
+                    layer.get("uuid")
+                    for layer in model.priority_layers
+                    if layer is not None
                 ]
                 if str(self.layer.get("uuid")) in model_layer_uuids:
                     self.models.append(model)
@@ -155,7 +157,9 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
 
         for model in models:
             models_layer_uuids = [
-                str(layer.get("uuid")) for layer in model.priority_layers
+                str(layer.get("uuid"))
+                for layer in model.priority_layers
+                if layer is not None
             ]
             if str(self.layer.get("uuid")) not in models_layer_uuids:
                 model.priority_layers.append(self.layer)
