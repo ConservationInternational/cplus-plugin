@@ -1,6 +1,6 @@
-# NCS pathway editor
+# Style pixel value editor
 
-::: src.cplus_plugin.gui.ncs_pathway_editor_dialog
+::: src.cplus_plugin.gui.pixel_value_editor_dialog
     handler: python
     options:
         docstring_style: sphinx

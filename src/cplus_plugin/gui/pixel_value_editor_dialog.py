@@ -5,25 +5,16 @@ Dialog for setting the pixel value for styling IMs.
 
 from collections import OrderedDict
 import os
-import typing
-import uuid
-
-from qgis.gui import QgsMessageBar
 
 from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
+from qgis.gui import QgsGui
+
 from ..conf import settings_manager
-from ..definitions.constants import (
-    COLOR_RAMP_PROPERTIES_ATTRIBUTE,
-    COLOR_RAMP_TYPE_ATTRIBUTE,
-    IM_LAYER_STYLE_ATTRIBUTE,
-    IM_SCENARIO_STYLE_ATTRIBUTE,
-)
 from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
-from ..models.base import ImplementationModel
-from ..utils import FileUtils, open_documentation, tr
+from ..utils import FileUtils, open_documentation
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/style_pixel_dialog.ui")
@@ -37,11 +28,14 @@ class PixelValueEditorDialog(QtWidgets.QDialog, WidgetUi):
         super().__init__(parent)
         self.setupUi(self)
 
+        QgsGui.enableAutoGeometryRestore(self)
+
         icon_pixmap = QtGui.QPixmap(ICON_PATH)
         self.icon_la.setPixmap(icon_pixmap)
 
         help_icon = FileUtils.get_icon("mActionHelpContents.svg")
         self.btn_help.setIcon(help_icon)
+        self.btn_help.clicked.connect(self.open_help)
 
         self._item_model = QtGui.QStandardItemModel(self)
         self._item_model.setColumnCount(1)
@@ -72,6 +66,10 @@ class PixelValueEditorDialog(QtWidgets.QDialog, WidgetUi):
             im_item.setEditable(False)
             im_item.setData(str(imp_model.uuid), QtCore.Qt.UserRole)
             self._item_model.appendRow(im_item)
+
+    def open_help(self, activated: bool):
+        """Opens the user documentation for the plugin in a browser."""
+        open_documentation(USER_DOCUMENTATION_SITE)
 
     @property
     def item_mapping(self) -> OrderedDict:

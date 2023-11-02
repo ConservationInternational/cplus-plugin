@@ -15,7 +15,7 @@ from qgis.core import (
     QgsMapLayerProxyModel,
     QgsRasterLayer,
 )
-from qgis.gui import QgsMessageBar
+from qgis.gui import QgsGui, QgsMessageBar
 
 from qgis.PyQt import QtGui, QtWidgets
 
@@ -45,6 +45,8 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
     def __init__(self, parent=None, implementation_model=None, excluded_names=None):
         super().__init__(parent)
         self.setupUi(self)
+
+        QgsGui.enableAutoGeometryRestore(self)
 
         self._message_bar = QgsMessageBar()
         self.vl_notification.addWidget(self._message_bar)
