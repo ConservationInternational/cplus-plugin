@@ -81,3 +81,4 @@ cplus_plugin_main_ade8 - https://github.com/kartoza/cplus-plugin/suites/17651683
 cplus_plugin_main_0d7d - https://github.com/kartoza/cplus-plugin/suites/17653193393/artifacts/1009478637
 cplus_plugin_main_ce11 - https://github.com/kartoza/cplus-plugin/suites/17653231694/artifacts/1009482237
 cplus_plugin_main_f973 - https://github.com/kartoza/cplus-plugin/suites/17814516048/artifacts/1021431508
+cplus_plugin_main_b2d7 - https://github.com/kartoza/cplus-plugin/suites/17841355423/artifacts/1023505004
