@@ -806,10 +806,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             # analysis in a correct order
 
             models_names = [model.name for model in self.analysis_implementation_models]
-            all_models_names = [
-                model.name
-                for model in self.implementation_model_widget.implementation_models()
-            ]
+            all_models = sorted(
+                self.implementation_model_widget.implementation_models(),
+                key=lambda model_instance: model_instance.style_pixel_value,
+            )
+            all_models_names = [model.name for model in all_models]
             sources = []
 
             absolute_path = f"{FileUtils.plugin_dir()}/app_data/layers/null_raster.tif"
@@ -1970,7 +1971,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                 # Add IM layer with styling, if available
                 if im_layer:
-                    renderer = self.style_model_layer(im_layer, im_name)
+                    renderer = self.style_model_layer(im_layer, im)
 
                     added_im_layer = qgis_instance.addMapLayer(im_layer)
                     self.move_layer_to_group(added_im_layer, im_group)
@@ -2023,7 +2024,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     im_weighted_dir + weighted_im, weighted_im_name, QGIS_GDAL_PROVIDER
                 )
 
-                renderer = self.style_model_layer(im_weighted_layer, weighted_im_name)
+                weighted_im_model = settings_manager.find_implementation_model_by_name(
+                    weighted_im
+                )
+
+                renderer = self.style_model_layer(im_weighted_layer, weighted_im_model)
                 im_weighted_layer.setRenderer(renderer)
                 im_weighted_layer.triggerRepaint()
 
@@ -2057,8 +2062,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         for model in models:
             im_name = model.name
 
-            raster_val = PILOT_AREA_SCENARIO_SYMBOLOGY[im_name]["val"]
-            color = PILOT_AREA_SCENARIO_SYMBOLOGY[im_name]["color"]
+            raster_val = model.style_pixel_value
+            color = model.scenario_fill_symbol().color()
             color_ramp_shader = QgsColorRampShader.ColorRampItem(
                 float(raster_val), QtGui.QColor(color), im_name
             )
@@ -2069,24 +2074,22 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         return renderer
 
-    def style_model_layer(self, layer, im_name):
+    def style_model_layer(self, layer, model):
         """Applies the styling to the layer that contains the passed
          implementation model name.
 
         :param layer: Raster layer to which to apply the symbology
         :type layer: QgsRasterLayer
 
-        :param im_name: Implementation model name
-        :type im_name: str
+        :param model: Implementation model
+        :type model: ImplementationModel
 
         :returns: Renderer for the symbology.
         :rtype: QgsSingleBandPseudoColorRenderer
         """
 
         # Retrieves a build-in QGIS color ramp
-        ramp_name = IM_COLOUR_RAMPS[im_name]
-        default_style = QgsStyle().defaultStyle()
-        color_ramp = default_style.colorRamp(ramp_name)
+        color_ramp = model.model_color_ramp()
 
         stats = layer.dataProvider().bandStatistics(1)
         renderer = QgsSingleBandPseudoColorRenderer(layer.dataProvider(), 1)
