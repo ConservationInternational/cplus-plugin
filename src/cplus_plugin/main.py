@@ -14,7 +14,12 @@
 
 import os.path
 
-from qgis.core import QgsApplication, QgsMasterLayoutInterface, QgsSettings
+from qgis.core import (
+    QgsApplication,
+    QgsColorBrewerColorRamp,
+    QgsMasterLayoutInterface,
+    QgsSettings,
+)
 from qgis.gui import QgsGui, QgsLayoutDesignerInterface
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
@@ -29,12 +34,16 @@ from qgis.PyQt.QtWidgets import QMenu
 
 from .conf import Settings, settings_manager
 from .definitions.constants import (
-    CARBON_COEFFICIENT_ATTRIBUTE,
     CARBON_PATHS_ATTRIBUTE,
+    COLOR_RAMP_PROPERTIES_ATTRIBUTE,
+    COLOR_RAMP_TYPE_ATTRIBUTE,
+    IM_LAYER_STYLE_ATTRIBUTE,
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
     PATH_ATTRIBUTE,
+    PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
+    STYLE_ATTRIBUTE,
     USER_DEFINED_ATTRIBUTE,
     UUID_ATTRIBUTE,
 )
@@ -106,6 +115,12 @@ class QgisCplus:
             "default_priority_layers_set", default=False, setting_type=bool
         ):
             create_priority_layers()
+
+        # Check if default NCS pathways and IMs have been loaded
+        if not settings_manager.get_value(
+            "default_ncs_im_models_set", default=False, setting_type=bool
+        ):
+            initialize_model_settings()
 
         self.main_widget = QgisCplusMain(
             iface=self.iface, parent=self.iface.mainWindow()
@@ -254,9 +269,6 @@ class QgisCplus:
         self.options_factory = CplusOptionsFactory()
         self.iface.registerOptionsWidgetFactory(self.options_factory)
 
-        # Initialize default model components
-        initialize_model_settings()
-
         # Register custom layout items
         self.register_layout_items()
 
@@ -365,11 +377,6 @@ def initialize_model_settings():
         # Create priority weighting layers subdirectory
         FileUtils.create_pwls_dir(base_dir)
 
-    # Use carbon coefficient values for older-version NCS pathways
-    carbon_coefficient = settings_manager.get_value(
-        Settings.CARBON_COEFFICIENT, 0, float
-    )
-
     # Add default pathways
     for ncs_dict in DEFAULT_NCS_PATHWAYS:
         try:
@@ -397,47 +404,53 @@ def initialize_model_settings():
                     ncs_dict[CARBON_PATHS_ATTRIBUTE] = abs_carbon_paths
 
                 ncs_dict[USER_DEFINED_ATTRIBUTE] = False
-                ncs_dict[CARBON_COEFFICIENT_ATTRIBUTE] = carbon_coefficient
                 settings_manager.save_ncs_pathway(ncs_dict)
-            else:
-                # Update carbon coefficient value
-                # Check if carbon coefficient had previously been defined
-                ncs_dict = settings_manager.get_ncs_pathway_dict(ncs_uuid)
-                if CARBON_COEFFICIENT_ATTRIBUTE in ncs_dict:
-                    continue
-                else:
-                    ncs_dict[CARBON_COEFFICIENT_ATTRIBUTE] = carbon_coefficient
-                    source_ncs = create_ncs_pathway(ncs_dict)
-                    if source_ncs is None:
-                        continue
-                    ncs = copy_layer_component_attributes(ncs, source_ncs)
-                    settings_manager.update_ncs_pathway(ncs)
         except KeyError as ke:
             log(f"Default NCS configuration load error - {str(ke)}")
             continue
 
+    # Preset color brewer scheme names
+    preset_scheme_names = QgsColorBrewerColorRamp.listSchemeNames()
+
     # Add default implementation models
-    for imp_model_dict in DEFAULT_IMPLEMENTATION_MODELS:
+    for i, imp_model_dict in enumerate(DEFAULT_IMPLEMENTATION_MODELS, start=1):
         try:
             imp_model_uuid = imp_model_dict[UUID_ATTRIBUTE]
             imp_model = settings_manager.get_implementation_model(imp_model_uuid)
             if imp_model is None:
+                if STYLE_ATTRIBUTE in imp_model_dict:
+                    style_info = imp_model_dict[STYLE_ATTRIBUTE]
+                    if IM_LAYER_STYLE_ATTRIBUTE in style_info:
+                        model_layer_style = style_info[IM_LAYER_STYLE_ATTRIBUTE]
+                        if COLOR_RAMP_PROPERTIES_ATTRIBUTE in model_layer_style:
+                            # Must be a preset color brewer scheme name
+                            scheme_name = model_layer_style[
+                                COLOR_RAMP_PROPERTIES_ATTRIBUTE
+                            ]
+                            if scheme_name in preset_scheme_names:
+                                color_ramp = QgsColorBrewerColorRamp(scheme_name, 8)
+                                color_ramp_properties = color_ramp.properties()
+                                # Save the color ramp properties instead of just the
+                                # scheme name
+                                imp_model_dict[STYLE_ATTRIBUTE][
+                                    IM_LAYER_STYLE_ATTRIBUTE
+                                ][
+                                    COLOR_RAMP_PROPERTIES_ATTRIBUTE
+                                ] = color_ramp_properties
+                                imp_model_dict[STYLE_ATTRIBUTE][
+                                    IM_LAYER_STYLE_ATTRIBUTE
+                                ][
+                                    COLOR_RAMP_TYPE_ATTRIBUTE
+                                ] = QgsColorBrewerColorRamp.typeString()
+
+                imp_model_dict[PIXEL_VALUE_ATTRIBUTE] = i
                 imp_model_dict[USER_DEFINED_ATTRIBUTE] = False
                 settings_manager.save_implementation_model(imp_model_dict)
-            else:
-                pathways = imp_model.pathways
-                # Update values
-                imp_model_dict[PRIORITY_LAYERS_SEGMENT] = imp_model.priority_layers
-                source_im = create_implementation_model(imp_model_dict)
-                if source_im is None:
-                    continue
-                imp_model = copy_layer_component_attributes(imp_model, source_im)
-                imp_model.pathways = pathways
-                settings_manager.remove_implementation_model(str(imp_model.uuid))
-                settings_manager.save_implementation_model(imp_model)
         except KeyError as ke:
             log(f"Default implementation model configuration load error - {str(ke)}")
             continue
+
+    settings_manager.set_value("default_ncs_im_models_set", True)
 
 
 def initialize_report_settings():

@@ -13,6 +13,7 @@ from qgis.PyQt import QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
+from ..conf import Settings, settings_manager
 from .component_item_model import ImplementationModelItem, ModelComponentItemType
 from .model_component_widget import (
     ImplementationModelComponentWidget,
@@ -66,6 +67,7 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         self.ipm_layout.addWidget(self.implementation_model_view)
         self.implementation_model_view.title = self.tr("Implementation Models")
 
+        settings_manager.settings_updated[str, object].connect(self.on_settings_changed)
         self.ncs_pathway_view.ncs_pathway_updated.connect(self.on_ncs_pathway_updated)
         self.ncs_pathway_view.items_reloaded.connect(self._on_ncs_pathways_reloaded)
 
@@ -190,6 +192,20 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         self._message_bar.clearWidgets()
         self._message_bar.pushMessage(message, level=level)
 
+    def on_settings_changed(self, name: str, value: typing.Any):
+        """Slot raised when settings has been changed.
+
+        :param name: Name of the setting that has changed.
+        :type name: str
+
+        :param value: New value for the given settings name.
+        :type value: Any
+        """
+        # Update the NCS pathway and carbon layer paths when
+        # BASE_DIR has been updated.
+        if name == Settings.BASE_DIR.value:
+            self.ncs_pathway_view.load()
+
     def is_valid(self) -> bool:
         """Check if the user input is valid.
 
@@ -207,7 +223,7 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
 
         status = False
         for im in implementation_models:
-            if len(im.pathways) > 0:
+            if len(im.pathways) > 0 or im.to_map_layer() is not None:
                 status = True
                 break
 

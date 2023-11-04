@@ -118,6 +118,9 @@
         </property>
        </widget>
       </item>
+      <item>
+       <layout class="QHBoxLayout" name="widget_container"/>
+      </item>
      </layout>
     </widget>
    </item>

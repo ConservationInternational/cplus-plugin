@@ -17,12 +17,13 @@ from .base import (
     SpatialExtent,
 )
 from ..definitions.constants import (
-    CARBON_COEFFICIENT_ATTRIBUTE,
     CARBON_PATHS_ATTRIBUTE,
+    STYLE_ATTRIBUTE,
     NAME_ATTRIBUTE,
     DESCRIPTION_ATTRIBUTE,
     LAYER_TYPE_ATTRIBUTE,
     PATH_ATTRIBUTE,
+    PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
     USER_DEFINED_ATTRIBUTE,
     UUID_ATTRIBUTE,
@@ -161,10 +162,6 @@ def create_ncs_pathway(source_dict) -> typing.Union[NcsPathway, None]:
     if CARBON_PATHS_ATTRIBUTE in source_dict:
         ncs.carbon_paths = source_dict[CARBON_PATHS_ATTRIBUTE]
 
-    carbon_coefficient_attr = CARBON_COEFFICIENT_ATTRIBUTE
-    if carbon_coefficient_attr in source_dict:
-        ncs.carbon_coefficient = source_dict[CARBON_COEFFICIENT_ATTRIBUTE]
-
     return ncs
 
 
@@ -182,6 +179,14 @@ def create_implementation_model(source_dict) -> typing.Union[ImplementationModel
     implementation_model = create_layer_component(source_dict, ImplementationModel)
     if PRIORITY_LAYERS_SEGMENT in source_dict.keys():
         implementation_model.priority_layers = source_dict[PRIORITY_LAYERS_SEGMENT]
+
+    # Set style
+    if STYLE_ATTRIBUTE in source_dict.keys():
+        implementation_model.layer_styles = source_dict[STYLE_ATTRIBUTE]
+
+    # Set styling pixel value
+    if PIXEL_VALUE_ATTRIBUTE in source_dict.keys():
+        implementation_model.style_pixel_value = source_dict[PIXEL_VALUE_ATTRIBUTE]
 
     return implementation_model
 
@@ -238,7 +243,6 @@ def ncs_pathway_to_dict(ncs_pathway: NcsPathway, uuid_to_str=True) -> dict:
     """
     base_ncs_dict = layer_component_to_dict(ncs_pathway, uuid_to_str)
     base_ncs_dict[CARBON_PATHS_ATTRIBUTE] = ncs_pathway.carbon_paths
-    base_ncs_dict[CARBON_COEFFICIENT_ATTRIBUTE] = ncs_pathway.carbon_coefficient
 
     return base_ncs_dict
 

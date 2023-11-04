@@ -18,10 +18,12 @@ from qgis.core import QgsRectangle, QgsSettings
 from .definitions.defaults import PRIORITY_LAYERS
 
 from .definitions.constants import (
+    STYLE_ATTRIBUTE,
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
     PATH_ATTRIBUTE,
     PATHWAYS_ATTRIBUTE,
+    PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
     UUID_ATTRIBUTE,
 )
@@ -811,12 +813,18 @@ class SettingsManager(QtCore.QObject):
         """
         if isinstance(implementation_model, ImplementationModel):
             priority_layers = implementation_model.priority_layers
+            layer_styles = implementation_model.layer_styles
+            style_pixel_value = implementation_model.style_pixel_value
+
             ncs_pathways = []
             for ncs in implementation_model.pathways:
                 ncs_pathways.append(str(ncs.uuid))
+
             implementation_model = layer_component_to_dict(implementation_model)
             implementation_model[PRIORITY_LAYERS_SEGMENT] = priority_layers
             implementation_model[PATHWAYS_ATTRIBUTE] = ncs_pathways
+            implementation_model[STYLE_ATTRIBUTE] = layer_styles
+            implementation_model[PIXEL_VALUE_ATTRIBUTE] = style_pixel_value
 
         if isinstance(implementation_model, dict):
             priority_layers = []
@@ -907,18 +915,19 @@ class SettingsManager(QtCore.QObject):
         :type implementation_model: ImplementationModel
         """
         base_dir = self.get_value(Settings.BASE_DIR)
-        if not base_dir:
-            return
 
-        # PWLs path update
-        for layer in implementation_model.priority_layers:
-            if layer in PRIORITY_LAYERS and base_dir not in layer.get(PATH_ATTRIBUTE):
-                abs_pwl_path = (
-                    f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/"
-                    f"{layer.get(PATH_ATTRIBUTE)}"
-                )
-                abs_pwl_path = str(os.path.normpath(abs_pwl_path))
-                layer[PATH_ATTRIBUTE] = abs_pwl_path
+        if base_dir:
+            # PWLs path update
+            for layer in implementation_model.priority_layers:
+                if layer in PRIORITY_LAYERS and base_dir not in layer.get(
+                    PATH_ATTRIBUTE
+                ):
+                    abs_pwl_path = (
+                        f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/"
+                        f"{layer.get(PATH_ATTRIBUTE)}"
+                    )
+                    abs_pwl_path = str(os.path.normpath(abs_pwl_path))
+                    layer[PATH_ATTRIBUTE] = abs_pwl_path
 
         # Remove then re-insert
         self.remove_implementation_model(str(implementation_model.uuid))

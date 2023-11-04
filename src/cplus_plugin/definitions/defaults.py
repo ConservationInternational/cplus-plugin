@@ -265,167 +265,6 @@ PRIORITY_LAYERS = [
         "selected": False,
         "path": "Policy.tif",
     },
-    {
-        "uuid": "fee0b421-805b-4bd9-a629-06586a760405",
-        "name": "Herding_4_Health_years",
-        "description": "Placeholder text for Herding_4_Health_years",
-        "selected": False,
-        "path": "Herding_4_Health_years.tif",
-    },
-    {
-        "uuid": "3c155210-ccd8-404b-bbe8-b1433d6158a2",
-        "name": "Alien_Plant_Removal_years_re",
-        "description": "Placeholder text for Alien_Plant_Removal_years_re",
-        "selected": False,
-        "path": "Alien_Plant_Removal_years_re.tif",
-    },
-    {
-        "uuid": "fb92cac1-7744-4b11-8238-4e1da97650e0",
-        "name": "Wattle_Naturally_years_re",
-        "description": "Placeholder text for Wattle_Naturally_years_re",
-        "selected": False,
-        "path": "Wattle_Naturally_years_re.tif",
-    },
-    {
-        "uuid": "e1a801c5-7f77-4746-be34-0138b62ff25c",
-        "name": "Bush_Thinning_years_re",
-        "description": "Placeholder text for Bush_Thinning_years_re",
-        "selected": False,
-        "path": "Bush_Thinning_years_re.tif",
-    },
-    {
-        "uuid": "6f7c1494-f73e-4e5e-8411-59676f9fa6e1",
-        "name": "Eat_Fresh_years",
-        "description": "Placeholder text for Eat_Fresh_years",
-        "selected": False,
-        "path": "Eat_Fresh_years.tif",
-    },
-    {
-        "uuid": "85cd441e-fa3d-46e4-add9-973ba58f8bd4",
-        "name": "Assisted_Nat_Regen_years",
-        "description": "Placeholder text for Assisted_Nat_Regen_years",
-        "selected": False,
-        "path": "Assisted_Nat_Regen_years.tif",
-    },
-    {
-        "uuid": "38a33633-9198-4b55-a424-135a4d522973",
-        "name": "Herding_4_Health_carbonimpact_re",
-        "description": "Placeholder text for Herding_4_Health_carbonimpact_re",
-        "selected": False,
-        "path": "Herding_4_Health_carbonimpact_re.tif",
-    },
-    {
-        "uuid": "9f6c8b8f-0648-44ca-b943-58fab043f559",
-        "name": "Alien_Plant_Removal_carbonimpact_re",
-        "description": "Placeholder text for Alien_Plant_Removal_carbonimpact_re",
-        "selected": False,
-        "path": "Alien_Plant_Removal_carbonimpact_re.tif",
-    },
-    {
-        "uuid": "478b0729-a507-4729-b1e4-b2bea7e161fd",
-        "name": "Bush_Thinning_carbonimpact",
-        "description": "Placeholder text for Bush_Thinning_carbonimpact",
-        "selected": False,
-        "path": "Bush_Thinning_carbonimpact.tif",
-    },
-    {
-        "uuid": "9e5cff3f-73e7-4734-b76a-2a9f0536fa27",
-        "name": "Wattle_Naturally_carbonimpact_re",
-        "description": "Placeholder text for Wattle_Naturally_carbonimpact_re",
-        "selected": False,
-        "path": "Wattle_Naturally_carbonimpact_re.tif",
-    },
-    {
-        "uuid": "151668e7-8ffb-4766-9534-09949ab0356b",
-        "name": "Eat_Fresh_carbonimpact_re",
-        "description": "Placeholder text for Eat_Fresh_carbonimpact_re",
-        "selected": False,
-        "path": "Eat_Fresh_carbonimpact_re.tif",
-    },
-    {
-        "uuid": "5e41f4fa-3d7f-41aa-bee7-b9e9d08b56db",
-        "name": "Assisted_Nat_Regen_carbonimpact",
-        "description": "Placeholder text for Assisted_Nat_Regen_carbonimpact",
-        "selected": False,
-        "path": "Assisted_Nat_Regen_carbonimpact.tif",
-    },
-    {
-        "uuid": "88dc8ff3-e61f-4a48-8f9b-5791efb6603f",
-        "name": "Herding_4_Health_NPV_re",
-        "description": "Placeholder text for Herding_4_Health_NPV_re",
-        "selected": False,
-        "path": "Herding_4_Health_NPV_re.tif",
-    },
-    {
-        "uuid": "5f329f53-31ff-4039-b0ec-a8d174a50866",
-        "name": "Bush_Thinning_NPV_re",
-        "description": "Placeholder text for Bush_Thinning_NPV_re",
-        "selected": False,
-        "path": "Bush_Thinning_NPV_re.tif",
-    },
-    {
-        "uuid": "c5b1b81e-e1ae-41ec-adeb-7388f7597156",
-        "name": "Wattle_Naturally_NPV",
-        "description": "Placeholder text for Wattle_Naturally_NPV",
-        "selected": False,
-        "path": "Wattle_Naturally_NPV.tif",
-    },
-    {
-        "uuid": "ed1ee71b-e7db-4599-97a9-a97c941a615f",
-        "name": "Eat_Fresh_NPV",
-        "description": "Placeholder text for Eat_Fresh_NPV",
-        "selected": False,
-        "path": "Eat_Fresh_NPV.tif",
-    },
-    {
-        "uuid": "307df1f4-206b-4f70-8db4-6505948e2a4e",
-        "name": "Eat_Fresh_mtrends",
-        "description": "Placeholder text for Eat_Fresh_mtrends",
-        "selected": False,
-        "path": "Eat_Fresh_mtrends.tif",
-    },
-    {
-        "uuid": "86c3dfc5-58d7-4ebd-a851-3b65a6bf5edd",
-        "name": "Assisted_Nat_Regen_NPV_re",
-        "description": "Placeholder text for Assisted_Nat_Regen_NPV_re",
-        "selected": False,
-        "path": "Assisted_Nat_Regen_NPV_re.tif",
-    },
-    {
-        "uuid": "a1bfff8e-fb87-4bca-97fa-a984d9bde712",
-        "name": "Herding_4_Health_mtrends_re",
-        "description": "Placeholder text for Herding_4_Health_mtrends_re",
-        "selected": False,
-        "path": "Herding_4_Health_mtrends_re.tif",
-    },
-    {
-        "uuid": "9291a5d9-d1cd-44c2-8fc3-2b3b20f80572",
-        "name": "Alien_Plant_Removal_mtrends_re",
-        "description": "Placeholder text for Alien_Plant_Removal_mtrends_re",
-        "selected": False,
-        "path": "Alien_Plant_Removal_mtrends_re.tif",
-    },
-    {
-        "uuid": "5bcebbe2-7035-4d81-9817-0b4db8aa63e2",
-        "name": "Bush_Thinning_mtrends_re",
-        "description": "Placeholder text for Bush_Thinning_mtrends_re",
-        "selected": False,
-        "path": "Bush_Thinning_mtrends_re.tif",
-    },
-    {
-        "uuid": "3872be6d-f791-41f7-b031-b85173e41d5e",
-        "name": "Wattle_Naturally_mtrends_re",
-        "description": "Placeholder text for Wattle_Naturally_mtrends_re",
-        "selected": False,
-        "path": "Wattle_Naturally_mtrends_re.tif",
-    },
-    {
-        "uuid": "620d5d7d-c452-498f-b848-b206a76891cd",
-        "name": "Assisted_Nat_Regen_mtrends_re",
-        "description": "Placeholder text for Assisted_Nat_Regen_mtrends_re",
-        "selected": False,
-        "path": "Assisted_Nat_Regen_mtrends_re.tif",
-    },
 ]
 
 
@@ -622,6 +461,7 @@ DEFAULT_NCS_PATHWAYS = [
     },
 ]
 
+# IM 'model_layer' must use a default scheme for the color ramp
 DEFAULT_IMPLEMENTATION_MODELS = [
     {
         "uuid": "a0b8fd2d-1259-4141-9ad6-d4369cf0dfd4",
@@ -639,6 +479,15 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
+        "style": {
+            "scenario_layer": {
+                "color": "#d80007",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "Reds"},
+        },
     },
     {
         "uuid": "1c8db48b-717b-451b-a644-3af1bee984ea",
@@ -658,6 +507,15 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9f6c8b8f-0648-44ca-b943-58fab043f559",
             "9291a5d9-d1cd-44c2-8fc3-2b3b20f80572",
         ],
+        "style": {
+            "scenario_layer": {
+                "color": "#6f6f6f",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "Greys"},
+        },
     },
     {
         "uuid": "de9597b2-f082-4299-9620-1da3bad8ab62",
@@ -678,6 +536,15 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
+        "style": {
+            "scenario_layer": {
+                "color": "#81c4ff",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "PuBu"},
+        },
     },
     {
         "uuid": "40f04ea6-1f91-4695-830a-7d46f821f5db",
@@ -702,6 +569,15 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "86c3dfc5-58d7-4ebd-a851-3b65a6bf5edd",
             "620d5d7d-c452-498f-b848-b206a76891cd",
         ],
+        "style": {
+            "scenario_layer": {
+                "color": "#e8ec18",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "YlOrRd"},
+        },
     },
     {
         "uuid": "43f96ed8-cd2f-4b91-b6c8-330d3b93bcc1",
@@ -722,6 +598,15 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
+        "style": {
+            "scenario_layer": {
+                "color": "#ff4c84",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "RdPu"},
+        },
     },
     {
         "uuid": "c3c5a381-2b9f-4ddc-8a77-708239314fb6",
@@ -742,6 +627,15 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
+        "style": {
+            "scenario_layer": {
+                "color": "#1f31d3",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "Blues"},
+        },
     },
     {
         "uuid": "3defbd0e-2b12-4ab2-a7d4-a035152396a7",
@@ -765,6 +659,15 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "c5b1b81e-e1ae-41ec-adeb-7388f7597156",
             "3872be6d-f791-41f7-b031-b85173e41d5e",
         ],
+        "style": {
+            "scenario_layer": {
+                "color": "#67593f",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "BrBG"},
+        },
     },
     {
         "uuid": "22f9e555-0356-4b18-b292-c2d516dcdba5",
@@ -786,6 +689,15 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "5f329f53-31ff-4039-b0ec-a8d174a50866",
             "5bcebbe2-7035-4d81-9817-0b4db8aa63e2",
         ],
+        "style": {
+            "scenario_layer": {
+                "color": "#30ff01",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "BuGn"},
+        },
     },
     {
         "uuid": "177f1f27-cace-4f3e-9c3c-ef2cf54fc283",
@@ -804,6 +716,43 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
+        "style": {
+            "scenario_layer": {
+                "color": "#bd6b70",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "PuRd"},
+        },
+    },
+    {
+        "uuid": "4fbfcb1c-bfd7-4305-b216-7a1077a2ccf7",
+        "name": "Livestock Market Access",
+        "description": " This model aims to improve market "
+        "access for livestock producers practicing "
+        "sustainable and regenerative farming "
+        "methods. It involves creating networks, "
+        "certifications, and partnerships that "
+        "support the sale of sustainably produced "
+        "livestock products, promoting economic "
+        "viability and incentivizing environmentally "
+        "friendly practices.",
+        "pwls_ids": [
+            "c931282f-db2d-4644-9786-6720b3ab206a",
+            "88c1c7dd-c5d1-420c-a71c-a5c595c1c5be",
+            "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
+            "2f76304a-bb73-442c-9c02-ff9945389a20",
+        ],
+        "style": {
+            "scenario_layer": {
+                "color": "#6c0009",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "PRGn"},
+        },
     },
     {
         "uuid": "d9d00a77-3db1-4390-944e-09b27bcbb981",
@@ -826,25 +775,15 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "88dc8ff3-e61f-4a48-8f9b-5791efb6603f",
             "a1bfff8e-fb87-4bca-97fa-a984d9bde712",
         ],
-    },
-    {
-        "uuid": "4fbfcb1c-bfd7-4305-b216-7a1077a2ccf7",
-        "name": "Livestock Market Access",
-        "description": " This model aims to improve market "
-        "access for livestock producers practicing "
-        "sustainable and regenerative farming "
-        "methods. It involves creating networks, "
-        "certifications, and partnerships that "
-        "support the sale of sustainably produced "
-        "livestock products, promoting economic "
-        "viability and incentivizing environmentally "
-        "friendly practices.",
-        "pwls_ids": [
-            "c931282f-db2d-4644-9786-6720b3ab206a",
-            "88c1c7dd-c5d1-420c-a71c-a5c595c1c5be",
-            "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
-            "2f76304a-bb73-442c-9c02-ff9945389a20",
-        ],
+        "style": {
+            "scenario_layer": {
+                "color": "#ffa500",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "YlOrBr"},
+        },
     },
     {
         "uuid": "20491092-e665-4ee7-b92f-b0ed864c7312",
@@ -864,6 +803,38 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
             "2f76304a-bb73-442c-9c02-ff9945389a20",
         ],
+        "style": {
+            "scenario_layer": {
+                "color": "#007018",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "Greens"},
+        },
+    },
+    {
+        "uuid": "1334cc3b-cb7b-46a3-923a-45d9b18d9d56",
+        "name": "Protected Area Expansion",
+        "description": "This model involves expanding existing protected "
+        "areas to protect more grassland, savanna, and forest "
+        "from converting to an anthropogenic land cover class.",
+        "pwls_ids": [
+            "f5687ced-af18-4cfc-9bc3-8006e40420b6",
+            "fce41934-5196-45d5-80bd-96423ff0e74e",
+            "88c1c7dd-c5d1-420c-a71c-a5c595c1c5be",
+            "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
+            "2f76304a-bb73-442c-9c02-ff9945389a20",
+        ],
+        "style": {
+            "scenario_layer": {
+                "color": "#c27ba0",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "PiYG"},
+        },
     },
     {
         "uuid": "92054916-e8ea-45a0-992c-b6273d1b75a7",
@@ -889,6 +860,15 @@ DEFAULT_IMPLEMENTATION_MODELS = [
             "ed1ee71b-e7db-4599-97a9-a97c941a615f",
             "307df1f4-206b-4f70-8db4-6505948e2a4e",
         ],
+        "style": {
+            "scenario_layer": {
+                "color": "#781a8b",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0",
+            },
+            "model_layer": {"color_ramp": "Purples"},
+        },
     },
 ]
 
@@ -917,5 +897,6 @@ DEFAULT_IMPLEMENTATION_MODEL_PIXEL_VALUES = {
     "4fbfcb1c-bfd7-4305-b216-7a1077a2ccf7": 10,
     "d9d00a77-3db1-4390-944e-09b27bcbb981": 11,
     "20491092-e665-4ee7-b92f-b0ed864c7312": 12,
-    "92054916-e8ea-45a0-992c-b6273d1b75a7": 13,
+    "1334cc3b-cb7b-46a3-923a-45d9b18d9d56": 13,
+    "92054916-e8ea-45a0-992c-b6273d1b75a7": 14,
 }

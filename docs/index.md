@@ -60,15 +60,15 @@ and provide guidance to developers who want to contribute to the plugin.
 Here is a quick introduction on the sections on the site:
 
 - **[Users](user/index.md)**: Help for users of the plugin
-  - *[Quick Start](user/quickstart/index.md)*: Installation guide and how to get started with the plugin
-  - *[Guide](user/guide/index.md)*: Detailed workflow on how to use the plugin
-  - *[Manual](user/manual/index.md)*: Descriptions of each UI element
+    * *[Quick Start](user/quickstart/index.md)*: Installation guide and how to get started with the plugin
+    * *[Guide](user/guide/index.md)*: Detailed workflow on how to use the plugin
+    * *[Manual](user/manual/index.md)*: Descriptions of each UI element
 - **[Administrators](administrator/index.md)**: Help for an administrator of the plugin
-  - *[Guide](administrator/guide/index.md)*: Detailed guide for administrative requirements
-  - *[Repository](administrator/repository/index.md)*: Downloadable versions of the plugin
+    * *[Guide](administrator/guide/index.md)*: Detailed guide for administrative requirements
+    * *[Repository](administrator/repository/index.md)*: Downloadable versions of the plugin
 - **[Developers](developer/index.md)**: People who want to contribute towards improving the plugin
-  - *[Setup](developer/setup/index.md)*: How to set up the developers environment for the plugin
-  - *[Architecture](developer/architecture/index.md)*:
-  - *[Documentation](developer/documentation/index.md)*: Help on adding towards the API documentation for a developer
-  - *[API](developer/index.md)*: Application programming interface for the plugin
+    * *[Setup](developer/setup/index.md)*: How to set up the developers environment for the plugin
+    * *[Architecture](developer/architecture/index.md)*:
+    * *[Documentation](developer/documentation/index.md)*: Help on adding towards the API documentation for a developer
+    * *[API](developer/index.md)*: Application programming interface for the plugin
 - **[About](about/ci.md)**: Information on CI and other contributors to the plugin
