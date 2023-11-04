@@ -647,8 +647,7 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
 
             self.clear_description()
 
-    @classmethod
-    def reassign_pixel_values(cls, start_position: int):
+    def reassign_pixel_values(self, start_position: int):
         """Reassign the styling pixel values for implementation models
         from the given start position.
 
@@ -668,6 +667,8 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         for val, imp_model in enumerate(remap_models, start=start_position):
             imp_model.style_pixel_value = val
             settings_manager.update_implementation_model(imp_model)
+
+        self.load()
 
     def add_ncs_pathway_items(self, ncs_items: typing.List[NcsPathwayItem]) -> bool:
         """Adds an NCS pathway item to the collection.
