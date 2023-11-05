@@ -483,7 +483,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                         group.addChildren(children)
 
         # Trigger check to enable/disable PWLs
-        self.on_extent_changed()
+        self.on_extent_changed(self.extent_box.outputExtent())
 
     def add_priority_layer_group(self, target_group=None, priority_layer=None):
         """Adds priority layer from the weighting layers into a priority group
@@ -706,6 +706,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.analysis_implementation_models = [
             item.implementation_model
             for item in self.implementation_model_widget.selected_im_items()
+            if item.isEnabled()
         ]
 
         base_dir = settings_manager.get_value(Settings.BASE_DIR)
@@ -738,7 +739,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if not contains:
             self.show_message(
                 tr(f"Selected area of interest is outside the pilot area."),
-                level=Qgis.Warning,
+                level=Qgis.Info,
             )
             default_ext = (
                 f"{default_extent.xMinimum()}, {default_extent.xMaximum()},"
