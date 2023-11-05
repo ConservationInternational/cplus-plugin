@@ -39,7 +39,12 @@ from qgis.core import (
     QgsRectangle,
     QgsTask,
     QgsWkbTypes,
-    QgsLayerTreeLayer,
+    QgsColorRampShader,
+    QgsSingleBandPseudoColorRenderer,
+    QgsRasterShader,
+    QgsPalettedRasterRenderer,
+    QgsStyle,
+    QgsRasterMinMaxOrigin,
 )
 
 from qgis.gui import (
@@ -83,8 +88,8 @@ from ..definitions.defaults import (
     SCENARIO_OUTPUT_FILE_NAME,
     SCENARIO_OUTPUT_LAYER_NAME,
     USER_DOCUMENTATION_SITE,
-    LAYER_STYLES,
-    LAYER_STYLES_WEIGHTED,
+    PILOT_AREA_SCENARIO_SYMBOLOGY,
+    IM_COLOUR_RAMPS,
 )
 from ..definitions.constants import (
     NCS_CARBON_SEGMENT,
@@ -801,10 +806,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             # analysis in a correct order
 
             models_names = [model.name for model in self.analysis_implementation_models]
-            all_models_names = [
-                model.name
-                for model in self.implementation_model_widget.implementation_models()
-            ]
+            all_models = sorted(
+                self.implementation_model_widget.implementation_models(),
+                key=lambda model_instance: model_instance.style_pixel_value,
+            )
+            all_models_names = [model.name for model in all_models]
             sources = []
 
             absolute_path = f"{FileUtils.plugin_dir()}/app_data/layers/null_raster.tif"
@@ -1893,6 +1899,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         # If the processing were stopped, no file will be added
         if not self.processing_cancelled:
+            list_models = scenario_result.scenario.models
             raster = scenario_result.analysis_output["OUTPUT"]
             im_weighted_dir = os.path.dirname(raster) + "/weighted_ims/"
             list_weighted_ims = (
@@ -1941,8 +1948,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             scenario_result.output_layer_name = layer_name
             layer = QgsRasterLayer(layer_file, layer_name, QGIS_GDAL_PROVIDER)
-            layer.loadNamedStyle(LAYER_STYLES["scenario_result"])
             scenario_layer = qgis_instance.addMapLayer(layer)
+
+            # Scenario result layer styling
+            renderer = self.style_models_layer(layer, list_models)
+            layer.setRenderer(renderer)
+            layer.triggerRepaint()
 
             """A workaround to add a layer to a group.
             Adding it using group.insertChildNode or group.addLayer causes issues,
@@ -1951,12 +1962,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             """
             self.move_layer_to_group(scenario_layer, scenario_group)
 
-            coefficient = settings_manager.get_value(
-                Settings.CARBON_COEFFICIENT, default=0.0
-            )
-
             # Add implementation models and pathways
-            list_models = scenario_result.scenario.models
             im_index = 0
             for im in list_models:
                 im_name = im.name
@@ -1965,16 +1971,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                 # Add IM layer with styling, if available
                 if im_layer:
-                    if float(coefficient) > 0:
-                        # Style with range 0 to 2
-                        style_to_use = LAYER_STYLES["carbon"][im_name]
-                    else:
-                        # Style with range 0 to 1
-                        style_to_use = LAYER_STYLES["normal"][im_name]
+                    renderer = self.style_model_layer(im_layer, im)
 
-                    im_layer.loadNamedStyle(style_to_use)
                     added_im_layer = qgis_instance.addMapLayer(im_layer)
                     self.move_layer_to_group(added_im_layer, im_group)
+
+                    im_layer.setRenderer(renderer)
+                    im_layer.triggerRepaint()
 
                 # Add IM pathways
                 if len(list_pathways) > 0:
@@ -1990,6 +1993,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                             added_pw_layer = qgis_instance.addMapLayer(pathway_layer)
                             self.move_layer_to_group(added_pw_layer, im_pathway_group)
+
+                            pathway_layer.triggerRepaint()
 
                             pw_index = pw_index + 1
                         except Exception as err:
@@ -2014,29 +2019,89 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     continue
 
                 weighted_im_name = weighted_im[: len(weighted_im) - 9]
-                if float(coefficient) > 0:
-                    # Style with range 0 to 2
-                    style_to_use = LAYER_STYLES_WEIGHTED["carbon"][weighted_im_name]
-                else:
-                    # Style with range 0 to 1
-                    style_to_use = LAYER_STYLES_WEIGHTED["normal"][weighted_im_name]
 
                 im_weighted_layer = QgsRasterLayer(
                     im_weighted_dir + weighted_im, weighted_im_name, QGIS_GDAL_PROVIDER
                 )
-                im_weighted_layer.loadNamedStyle(style_to_use)
+
+                weighted_im_model = settings_manager.find_implementation_model_by_name(
+                    weighted_im
+                )
+
+                renderer = self.style_model_layer(im_weighted_layer, weighted_im_model)
+                im_weighted_layer.setRenderer(renderer)
+                im_weighted_layer.triggerRepaint()
+
                 added_im_weighted_layer = qgis_instance.addMapLayer(im_weighted_layer)
                 self.move_layer_to_group(added_im_weighted_layer, im_weighted_group)
 
             # Initiate report generation
             self.run_report()
-
         else:
             # Reinitializes variables if processing were cancelled by the user
             # Not doing this breaks the processing if a user tries to run
             # the processing after cancelling or if the processing fails
             self.position_feedback = QgsProcessingFeedback()
             self.processing_context = QgsProcessingContext()
+
+    def style_models_layer(self, layer, models):
+        """Applies the styling to the passed layer that
+         contains the passed list of models.
+
+        :param layer: Layer to be styled
+        :type layer: QgsRasterLayer
+
+        :param models: List which contains the implementation
+        models
+        :type models: list
+
+        :returns: Renderer for the symbology.
+        :rtype: QgsPalettedRasterRenderer
+        """
+        area_classes = []
+        for model in models:
+            im_name = model.name
+
+            raster_val = model.style_pixel_value
+            color = model.scenario_fill_symbol().color()
+            color_ramp_shader = QgsColorRampShader.ColorRampItem(
+                float(raster_val), QtGui.QColor(color), im_name
+            )
+            area_classes.append(color_ramp_shader)
+
+        class_data = QgsPalettedRasterRenderer.colorTableToClassData(area_classes)
+        renderer = QgsPalettedRasterRenderer(layer.dataProvider(), 1, class_data)
+
+        return renderer
+
+    def style_model_layer(self, layer, model):
+        """Applies the styling to the layer that contains the passed
+         implementation model name.
+
+        :param layer: Raster layer to which to apply the symbology
+        :type layer: QgsRasterLayer
+
+        :param model: Implementation model
+        :type model: ImplementationModel
+
+        :returns: Renderer for the symbology.
+        :rtype: QgsSingleBandPseudoColorRenderer
+        """
+
+        # Retrieves a build-in QGIS color ramp
+        color_ramp = model.model_color_ramp()
+
+        stats = layer.dataProvider().bandStatistics(1)
+        renderer = QgsSingleBandPseudoColorRenderer(layer.dataProvider(), 1)
+
+        renderer.setClassificationMin(stats.minimumValue)
+        renderer.setClassificationMax(stats.maximumValue)
+
+        renderer.createShader(
+            color_ramp, QgsColorRampShader.Interpolated, QgsColorRampShader.Continuous
+        )
+
+        return renderer
 
     def update_progress_bar(self, value):
         """Sets the value of the progress bar

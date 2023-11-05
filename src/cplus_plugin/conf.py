@@ -878,6 +878,24 @@ class SettingsManager(QtCore.QObject):
 
         return implementation_model
 
+    def find_implementation_model_by_name(self, name) -> typing.Dict:
+        """Finds an implementation model setting inside
+        the plugin QgsSettings that equals or matches the name.
+
+        :param name: Implementation model name
+        :type name: str
+
+        :returns: Implementation model
+        :rtype: ImplementationModel
+        """
+        for model in self.get_all_implementation_models():
+            model_name = model.name
+            trimmed_name = model_name.replace(" ", "_")
+            if model_name == name or model_name in name or trimmed_name in name:
+                return model
+
+        return None
+
     def get_all_implementation_models(self) -> typing.List[ImplementationModel]:
         """Get all the implementation model objects stored in settings.
 

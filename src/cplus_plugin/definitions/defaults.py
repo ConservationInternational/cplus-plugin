@@ -44,142 +44,47 @@ REMOVE_LAYER_ICON_PATH = ":/plugins/cplus_plugin/cplus_right_arrow.svg"
 SCENARIO_OUTPUT_FILE_NAME = "cplus_scenario_output"
 SCENARIO_OUTPUT_LAYER_NAME = "scenario_result"
 
-STYLES_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/styles/"
-LAYER_STYLES = {
-    "scenario_result": STYLES_PATH + "0_default_scenario_style.qml",
-    "normal": {
-        "Agroforestry": STYLES_PATH + "normal/" + "1_agroforesty_style.qml",
-        "Alien Plant Removal": STYLES_PATH
-        + "normal/"
-        + "2_alien_plant_removal_style.qml",
-        "Applied Nucleation": STYLES_PATH
-        + "normal/"
-        + "3_applied_nucleation_style.qml",
-        "Assisted Natural Regeneration": STYLES_PATH
-        + "normal/"
-        + "4_assisted_natural_regen_style.qml",
-        "Avoided Deforestation and Degradation": STYLES_PATH
-        + "normal/"
-        + "5_avoided_deforestation_style.qml",
-        "Avoided Wetland Conversion/Restoration": STYLES_PATH
-        + "normal/"
-        + "6_wetland_impacts_style.qml",
-        "Bioproducts": STYLES_PATH + "normal/" + "7_bioproducts_style.qml",
-        "Bush Thinning": STYLES_PATH + "normal/" + "8_bush_thinning_style.qml",
-        "Direct Tree Seeding": STYLES_PATH + "normal/" + "9_tree_seedling_style.qml",
-        "Livestock Market Access": STYLES_PATH
-        + "normal/"
-        + "10_livestock_market_style.qml",
-        "Livestock Rangeland Management": STYLES_PATH
-        + "normal/"
-        + "11_livestock_rangeland_style.qml",
-        "Natural Woodland Livestock Management": STYLES_PATH
-        + "normal/"
-        + "12_woodland_livestock_style.qml",
-        "Sustainable Crop Farming & Aquaponics": STYLES_PATH
-        + "normal/"
-        + "13_crop_farming_style.qml",
-    },
-    "carbon": {
-        "Agroforestry": STYLES_PATH + "carbon/" + "1_agroforesty_style.qml",
-        "Alien Plant Removal": STYLES_PATH
-        + "carbon/"
-        + "2_alien_plant_removal_style.qml",
-        "Applied Nucleation": STYLES_PATH
-        + "carbon/"
-        + "3_applied_nucleation_style.qml",
-        "Assisted Natural Regeneration": STYLES_PATH
-        + "carbon/"
-        + "4_assisted_natural_regen_style.qml",
-        "Avoided Deforestation and Degradation": STYLES_PATH
-        + "carbon/"
-        + "5_avoided_deforestation_style.qml",
-        "Avoided Wetland Conversion/Restoration": STYLES_PATH
-        + "carbon/"
-        + "6_wetland_impacts_style.qml",
-        "Bioproducts": STYLES_PATH + "carbon/" + "7_bioproducts_style.qml",
-        "Bush Thinning": STYLES_PATH + "carbon/" + "8_bush_thinning_style.qml",
-        "Direct Tree Seeding": STYLES_PATH + "carbon/" + "9_tree_seedling_style.qml",
-        "Livestock Market Access": STYLES_PATH
-        + "carbon/"
-        + "10_livestock_market_style.qml",
-        "Livestock Rangeland Management": STYLES_PATH
-        + "11_livestock_rangeland_style.qml",
-        "Natural Woodland Livestock Management": STYLES_PATH
-        + "carbon/"
-        + "12_woodland_livestock_style.qml",
-        "Sustainable Crop Farming & Aquaponics": STYLES_PATH
-        + "carbon/"
-        + "13_crop_farming_style.qml",
-    },
+PILOT_AREA_SCENARIO_SYMBOLOGY = {
+    "Agroforestry": {"val": 1, "color": "#d80007"},
+    "Alien Plant Removal": {"val": 2, "color": "#6f6f6f"},
+    "Applied Nucleation": {"val": 3, "color": "#81c4ff"},
+    "Assisted Natural Regeneration": {"val": 4, "color": "#e8ec18"},
+    "Avoided Deforestation and Degradation": {"val": 5, "color": "#ff4c84"},
+    "Avoided Wetland Conversion/Restoration": {"val": 6, "color": "#1f31d3"},
+    "Bioproducts": {"val": 7, "color": "#67593f"},
+    "Bush Thinning": {"val": 8, "color": "#30ff01"},
+    "Direct Tree Seeding": {"val": 9, "color": "#bd6b70"},
+    "Livestock Market Access": {"val": 10, "color": "#6c0009"},
+    "Livestock Rangeland Management": {"val": 11, "color": "#ffa500"},
+    "Natural Woodland Livestock Management": {"val": 12, "color": "#007018"},
+    "Sustainable Crop Farming & Aquaponics": {"val": 13, "color": "#781a8b"},
 }
 
-LAYER_STYLES_WEIGHTED = {
-    "normal": {
-        "Agroforestry": STYLES_PATH + "normal/" + "1_agroforesty_style.qml",
-        "Alien_Plant_Removal": STYLES_PATH
-        + "normal/"
-        + "2_alien_plant_removal_style.qml",
-        "Applied_Nucleation": STYLES_PATH
-        + "normal/"
-        + "3_applied_nucleation_style.qml",
-        "Assisted_Natural_Regeneration": STYLES_PATH
-        + "normal/"
-        + "4_assisted_natural_regen_style.qml",
-        "Avoided_Deforestation_and_Degradation": STYLES_PATH
-        + "normal/"
-        + "5_avoided_deforestation_style.qml",
-        "Avoided_Wetland_Conversion_Restoration": STYLES_PATH
-        + "normal/"
-        + "6_wetland_impacts_style.qml",
-        "Bioproducts": STYLES_PATH + "normal/" + "7_bioproducts_style.qml",
-        "Bush_Thinning": STYLES_PATH + "normal/" + "8_bush_thinning_style.qml",
-        "Direct_Tree_Seeding": STYLES_PATH + "normal/" + "9_tree_seedling_style.qml",
-        "Livestock_Market_Access": STYLES_PATH
-        + "normal/"
-        + "10_livestock_market_style.qml",
-        "Livestock_Rangeland_Management": STYLES_PATH
-        + "normal/"
-        + "11_livestock_rangeland_style.qml",
-        "Natural_Woodland_Livestock_Management": STYLES_PATH
-        + "normal/"
-        + "12_woodland_livestock_style.qml",
-        "Sustainable_Crop_Farming_&_Aquaponics": STYLES_PATH
-        + "normal/"
-        + "13_crop_farming_style.qml",
-    },
-    "carbon": {
-        "Agroforestry": STYLES_PATH + "carbon/" + "1_agroforesty_style.qml",
-        "Alien_Plant_Removal": STYLES_PATH
-        + "carbon/"
-        + "2_alien_plant_removal_style.qml",
-        "Applied_Nucleation": STYLES_PATH
-        + "carbon/"
-        + "3_applied_nucleation_style.qml",
-        "Assisted_Natural_Regeneration": STYLES_PATH
-        + "carbon/"
-        + "4_assisted_natural_regen_style.qml",
-        "Avoided_Deforestation_and_Degradation": STYLES_PATH
-        + "carbon/"
-        + "5_avoided_deforestation_style.qml",
-        "Avoided_Wetland_Conversion_Restoration": STYLES_PATH
-        + "carbon/"
-        + "6_wetland_impacts_style.qml",
-        "Bioproducts": STYLES_PATH + "carbon/" + "7_bioproducts_style.qml",
-        "Bush_Thinning": STYLES_PATH + "carbon/" + "8_bush_thinning_style.qml",
-        "Direct_Tree_Seeding": STYLES_PATH + "carbon/" + "9_tree_seedling_style.qml",
-        "Livestock_Market_Access": STYLES_PATH
-        + "carbon/"
-        + "10_livestock_market_style.qml",
-        "Livestock_Rangeland_Management": STYLES_PATH
-        + "11_livestock_rangeland_style.qml",
-        "Natural_Woodland_Livestock_Management": STYLES_PATH
-        + "carbon/"
-        + "12_woodland_livestock_style.qml",
-        "Sustainable_Crop_Farming_&_Aquaponics": STYLES_PATH
-        + "carbon/"
-        + "13_crop_farming_style.qml",
-    },
+IM_COLOUR_RAMPS = {
+    "Agroforestry": "Reds",
+    "Alien Plant Removal": "Greys",
+    "Alien_Plant_Removal": "Greys",
+    "Applied Nucleation": "PuBu",
+    "Applied_Nucleation": "PuBu",
+    "Assisted Natural Regeneration": "YlOrRd",
+    "Assisted_Natural_Regeneration": "YlOrRd",
+    "Avoided Deforestation and Degradation": "RdPu",
+    "Avoided_Deforestation_and_Degradation": "RdPu",
+    "Avoided Wetland Conversion/Restoration": "Blues",
+    "Avoided_Wetland_Conversion_Restoration": "Blues",
+    "Bioproducts": "BrBG",
+    "Bush Thinning": "BuGn",
+    "Bush_Thinning": "BuGn",
+    "Direct Tree Seeding": "PuRd",
+    "Direct_Tree_Seeding": "PuRd",
+    "Livestock Market Access": "Rocket",
+    "Livestock_Market_Access": "Rocket",
+    "Livestock Rangeland Management": "YlOrBr",
+    "Livestock_Rangeland_Management": "YlOrBr",
+    "Natural Woodland Livestock Management": "Greens",
+    "Natural_Woodland_Livestock_Management": "Greens",
+    "Sustainable Crop Farming & Aquaponics": "Purples",
+    "Sustainable_Crop_Farming_&_Aquaponics": "Purples",
 }
 
 QGIS_GDAL_PROVIDER = "gdal"
