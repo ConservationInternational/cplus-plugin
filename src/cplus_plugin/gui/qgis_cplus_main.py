@@ -47,6 +47,8 @@ from qgis.gui import (
     QgsRubberBand,
 )
 
+from qgis.analysis import QgsAlignRaster
+
 from qgis.utils import iface
 
 from .implementation_model_widget import ImplementationModelContainerWidget
@@ -1091,8 +1093,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Slot that handles post calculations for the models pathways and
          carbon layers.
 
-        :param model_index: List index of the target model
-        :type model_index: int
+        :param pathways: List of all the avaialble pathways
+        :type pathways: list
 
         :param pathway: Target pathway
         :type pathway: NCSPathway
@@ -1118,52 +1120,176 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             pathway.path = output.get("OUTPUT")
 
         if (pathway_count == len(pathways) - 1) and last_pathway:
-            self.snap_analyzed_pathways(
-                pathways, models, priority_layers_groups, extent
+            snapping_enabled = settings_manager.get_value(
+                Settings.SNAPPING_ENABLED, default=False, setting_type=bool
             )
-            # self.run_pathways_normalization(models, priority_layers_groups, extent)
+            if snapping_enabled:
+                self.snap_analyzed_pathways(
+                    pathways, models, priority_layers_groups, extent
+                )
+            else:
+                self.run_pathways_normalization(models, priority_layers_groups, extent)
 
     def snap_analyzed_pathways(self, pathways, models, priority_layers_groups, extent):
+        """Snaps the passed pathways layers to align with the reference layer set on the settings
+        manager.
+
+        :param pathways: List of all the available pathways
+        :type pathways: list
+
+        :param models: List of the selected implementation models
+        :type models: typing.List[ImplementationModel]
+
+        :param priority_layers_groups: Used priority layers groups and their values
+        :type priority_layers_groups: dict
+
+        :param extent: The selected extent from user
+        :type extent: list
+        """
         if self.processing_cancelled:
             # Will not proceed if processing has been cancelled by the user
             return False
+        pathway_count = 0
 
-        models_function = partial(
-            self.run_pathways_normalization, models, priority_layers_groups, extent
-        )
         main_task = QgsTask.fromFunction(
             "Main task for running pathways snapping on the background task",
             self.main_task,
-            on_finished=models_function,
+            on_finished=self.main_task,
         )
 
-        main_task.taskCompleted.connect(models_function)
+        main_task.taskCompleted.connect(self.main_task)
 
         previous_sub_tasks = []
 
         reference_layer_path = settings_manager.get_value(Settings.SNAP_LAYER)
-        base_dir = settings_manager.get_value(Settings.BASE_DIR)
+        rescale_values = settings_manager.get_value(
+            Settings.RESCALE_VALUES, default=False, setting_type=bool
+        )
+
+        resampling_method = settings_manager.get_value(
+            Settings.RESAMPLING_METHOD, default=0
+        )
 
         for pathway in pathways:
+            path = Path(pathway.path)
+            directory = path.parent
             snapping_function = partial(
-                align_rasters, pathway.path, reference_layer_path, None, base_dir
+                self.run_snap_task,
+                pathway.path,
+                reference_layer_path,
+                None,
+                directory,
+                rescale_values,
+                resampling_method,
+                pathway,
             )
-            log(
-                f"Used parameters for snapping pathway {pathway.name},"
-                f"pathway path {pathway.path} and reference layer path {reference_layer_path}"
+
+            on_snap_finished = partial(
+                self.snap_task_finished,
+                pathways,
+                pathway_count,
+                models,
+                priority_layers_groups,
+                extent,
             )
             self.task = QgsTask.fromFunction(
                 f"Snapping pathway {pathway.name}",
                 snapping_function,
-                on_finished=models_function,
+                on_finished=on_snap_finished,
             )
 
             main_task.addSubTask(
                 self.task, previous_sub_tasks, QgsTask.ParentDependsOnSubTask
             )
             previous_sub_tasks.append(self.task)
+            pathway_count = pathway_count + 1
 
         QgsApplication.taskManager().addTask(main_task)
+
+    def run_snap_task(
+        self,
+        path,
+        reference_layer_path,
+        extent,
+        base_dir,
+        rescale_values,
+        resampling_method,
+        pathway,
+        task,
+    ):
+        """Intermediate function used to hold the QgsTaskWrapper (task) variable
+         which is passed dynamically when using a function as a callback for a QgsTask.
+
+         This inturns calls the align raster function that is responsible for handling the
+         snap operation.
+
+        :param path: Path of the input pathway layer
+        :type path: str
+
+        :param path: Path of the reference layer to be used when snapping
+        :type path: str
+
+        :param extent: Snapping extent
+        :type extent: list
+
+        :param base_dir: Directory where to store the snapped layer
+        :type base_dir: str
+
+        :param rescale_values: Whether to rescale snapped pixel values
+        :type rescale_values: bool
+
+        :param resampling_method: Index of the algorithm to use for sampling as
+        defined from QgsAlignRaster.ResampleAlg
+        :type resampling_method: bool
+
+        :param pathway: NCS pathway instance that contains the input path
+        :type pathway: NCSPathway
+
+         :param task: Qgis task wrapper instance
+        :type task: QgsTaskWrapper
+        """
+
+        input_result_path, reference_result_path = align_rasters(
+            path,
+            reference_layer_path,
+            extent,
+            base_dir,
+            rescale_values,
+            resampling_method,
+        )
+        pathway.path = input_result_path
+
+    def snap_task_finished(
+        self,
+        pathways,
+        pathway_count,
+        models,
+        priority_layers_groups,
+        extent,
+        exception=None,
+    ):
+        """Handles operations to be done after snap task has finished
+
+        :param pathways: List of all the available pathways
+        :type pathways: list
+
+        :param pathway_count: Count of the snapped pathways
+        :type pathway_count: int
+
+        :param models: List of the selected implementation models
+        :type models: typing.List[ImplementationModel]
+
+        :param priority_layers_groups: Used priority layers groups and their values
+        :type priority_layers_groups: dict
+
+        :param extent: The selected extent from user
+        :type extent: list
+
+        :param exception: Exception that occured while running the snapping task.
+        :type exception: Exception
+        """
+        if pathway_count == len(pathways) - 1:
+            self.run_pathways_normalization(models, priority_layers_groups, extent)
 
     def run_pathways_normalization(self, models, priority_layers_groups, extent):
         """Runs the normalization on the models pathways layers,

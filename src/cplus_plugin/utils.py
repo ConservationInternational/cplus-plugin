@@ -17,6 +17,7 @@ from qgis.core import (
     QgsDistanceArea,
     QgsMessageLog,
     QgsProcessingFeedback,
+    QgsProject,
     QgsRasterLayer,
     QgsRectangle,
     QgsUnitTypes,
@@ -213,7 +214,7 @@ def align_rasters(
     extent=None,
     output_dir=None,
     rescale_values=False,
-    resample=True,
+    resample_method=0,
 ):
     """
     Based from work on https://github.com/inasafe/inasafe/pull/2070
@@ -235,55 +236,60 @@ def align_rasters(
     :param rescale_values: Whether to rescale pixel values
     :type rescale_values: bool
 
-    :param resample: Whether to allow values resampling
-    :type resample: bool
+    :param resample_method: Method to use when resampling
+    :type resample_method: QgsAlignRaster.ResampleAlg
 
     """
 
-    log(f"Snapping {input_raster_source} and {reference_raster_source}")
-
     try:
-        input_layer_output = f"{output_dir}/{str(uuid.uuid4())[:6]}.tif"
-        reference_layer_output = f"{output_dir}/{str(uuid.uuid4())[:6]}.tif"
+        snap_directory = output_dir / "snap_layers"
+
+        FileUtils.create_new_dir(snap_directory)
+
+        input_path = Path(input_raster_source)
+
+        input_layer_output = os.path.join(
+            f"{snap_directory}", f"{input_path.stem}_{str(uuid.uuid4())[:4]}.tif"
+        )
 
         FileUtils.create_new_file(input_layer_output)
-        FileUtils.create_new_file(reference_layer_output)
 
         align = QgsAlignRaster()
         lst = [
             QgsAlignRaster.Item(input_raster_source, input_layer_output),
-            QgsAlignRaster.Item(reference_raster_source, reference_layer_output),
         ]
 
+        resample_method_value = QgsAlignRaster.ResampleAlg.RA_NearestNeighbour
+
+        for method in QgsAlignRaster.ResampleAlg:
+            if method.value == int(resample_method):
+                resample_method_value = method
+
         if rescale_values:
-            lst[0].rescaleValues = True
-            lst[1].rescaleValues = True
+            lst[0].rescaleValues = rescale_values
+
+        lst[0].resample_method = resample_method_value
 
         align.setRasters(lst)
+        align.setParametersFromRaster(reference_raster_source)
 
-        if resample:
-            index = align.suggestedReferenceLayer()
-        else:
-            index = 1  # have to use second layer as the reference
-
-        align.setParametersFromRaster(lst[index].inputFilename)
-
-        log(f"passed extent {extent}")
+        layer = QgsRasterLayer(input_raster_source, "input_layer")
         if extent:
-            tranformed_extent = QgsRectangle(
+            original_extent = QgsRectangle(
                 float(extent[0]), float(extent[1]), float(extent[2]), float(extent[3])
             )
+            source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
         else:
-            tranformed_extent = QgsRasterLayer(
-                input_raster_source, "input_layer"
-            ).extent()
+            original_extent = layer.extent()
+            source_crs = QgsCoordinateReferenceSystem(layer.crs())
+
+        destination_crs = QgsCoordinateReferenceSystem(align.destinationCrs())
 
         transform = QgsCoordinateTransform(
-            QgsCoordinateReferenceSystem("EPSG:4326"),
-            QgsCoordinateReferenceSystem(align.destinationCRS()),
+            source_crs, destination_crs, QgsProject.instance()
         )
 
-        tranformed_extent = transform.transformBoundingBox(tranformed_extent)
+        tranformed_extent = transform.transformBoundingBox(original_extent)
 
         align.setClipExtent(tranformed_extent)
 
@@ -296,10 +302,11 @@ def align_rasters(
         log(f"Problem occured when snapping, {str(e)}")
 
     log(
-        f"Finished snapping with {input_layer_output} and reference {reference_layer_output}"
+        f"Finished snapping with original layer - {input_raster_source}, "
+        f"snapped output - {input_layer_output}"
     )
 
-    return input_layer_output, reference_layer_output
+    return input_layer_output, None
 
 
 class FileUtils:

@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>594</width>
-    <height>687</height>
+    <height>719</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -37,7 +37,7 @@
         <x>0</x>
         <y>0</y>
         <width>572</width>
-        <height>665</height>
+        <height>697</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -235,13 +235,33 @@
             <property name="title">
              <string>Snapping</string>
             </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+            <property name="checked">
+             <bool>false</bool>
+            </property>
             <layout class="QVBoxLayout" name="verticalLayout">
              <item>
-              <widget class="QCheckBox" name="resample_values">
+              <widget class="QCheckBox" name="rescale_values">
                <property name="text">
-                <string>Allow resampling</string>
+                <string>Rescale values</string>
                </property>
               </widget>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_2">
+               <item>
+                <widget class="QLabel" name="resample_method">
+                 <property name="text">
+                  <string>Resample method</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QComboBox" name="resample_method_box"/>
+               </item>
+              </layout>
              </item>
              <item>
               <widget class="QLabel" name="reference_layer_label">

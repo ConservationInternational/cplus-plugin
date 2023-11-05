@@ -13,6 +13,9 @@ from pathlib import Path
 
 import qgis.core
 import qgis.gui
+
+from qgis.analysis import QgsAlignRaster
+
 from qgis.gui import QgsFileWidget, QgsOptionsPageWidget
 from qgis.gui import QgsOptionsWidgetFactory
 from qgis.PyQt import uic
@@ -66,6 +69,9 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         self.map_layer_file_widget.setStorageMode(QgsFileWidget.StorageMode.GetFile)
         self.map_layer_box.layerChanged.connect(self.map_layer_changed)
+
+        for method in QgsAlignRaster.ResampleAlg:
+            self.resample_method_box.insertItem(method.value, method.name)
 
     def apply(self) -> None:
         """This is called on OK click in the QGIS options panel."""
@@ -252,10 +258,17 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         # Snapping settings saving
 
+        settings_manager.set_value(
+            Settings.SNAPPING_ENABLED, self.snapping_group_box.isChecked()
+        )
         snap_layer_path = self.map_layer_file_widget.filePath()
         settings_manager.set_value(Settings.SNAP_LAYER, snap_layer_path)
+
         settings_manager.set_value(
-            Settings.ALLOW_RESAMPLING, self.resample_values.isChecked()
+            Settings.RESCALE_VALUES, self.rescale_values.isChecked()
+        )
+        settings_manager.set_value(
+            Settings.RESAMPLING_METHOD, self.resample_method_box.currentIndex()
         )
 
         # Checks if the provided base directory exists
@@ -323,11 +336,21 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.suitability_index_box.setValue(float(pathway_suitability_index))
 
         # Snapping settings
+        self.snapping_group_box.setChecked(
+            settings_manager.get_value(
+                Settings.SNAPPING_ENABLED, default=False, setting_type=bool
+            )
+        )
         snap_layer_path = settings_manager.get_value(Settings.SNAP_LAYER, default="")
         self.map_layer_file_widget.setFilePath(snap_layer_path)
 
-        self.resample_values.setChecked(
-            settings_manager.get_value(Settings.ALLOW_RESAMPLING, default=False)
+        self.rescale_values.setChecked(
+            settings_manager.get_value(
+                Settings.RESCALE_VALUES, default=False, setting_type=bool
+            )
+        )
+        self.resample_method_box.setCurrentIndex(
+            int(settings_manager.get_value(Settings.RESAMPLING_METHOD, default=0))
         )
 
     def showEvent(self, event: QShowEvent) -> None:

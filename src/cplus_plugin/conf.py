@@ -147,8 +147,11 @@ class Settings(enum.Enum):
     PATHWAY_SUITABILITY_INDEX = "pathway_suitability_index"
 
     # Snapping values
+    SNAPPING_ENABLED = "snapping_enabled"
     SNAP_LAYER = "snap_layer"
     ALLOW_RESAMPLING = "snap_resampling"
+    RESCALE_VALUES = "snap_rescale"
+    RESAMPLING_METHOD = "snap_method"
     SNAP_PIXEL_VALUE = "snap_pixel_value"
 
 
