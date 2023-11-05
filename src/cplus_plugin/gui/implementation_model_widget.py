@@ -9,7 +9,7 @@ import typing
 from qgis.core import Qgis
 from qgis.gui import QgsMessageBar
 
-from qgis.PyQt import QtWidgets
+from qgis.PyQt import QtCore, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
@@ -19,7 +19,6 @@ from .model_component_widget import (
     ImplementationModelComponentWidget,
     NcsComponentWidget,
 )
-from ..lib.extent_check import PilotExtentCheck
 from ..models.base import ImplementationModel, NcsPathway
 
 from ..utils import FileUtils
@@ -35,6 +34,8 @@ WidgetUi, _ = loadUiType(
 class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
     """Widget for configuring the implementation model."""
 
+    ncs_reloaded = QtCore.pyqtSignal()
+
     def __init__(
         self, parent: QtWidgets.QWidget = None, message_bar: QgsMessageBar = None
     ):
@@ -44,10 +45,6 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         self._message_bar = message_bar
 
         self._items_loaded = False
-
-        self.can_show_error_messages = False
-
-        self._extent_check = None
 
         self.btn_add_one.setIcon(FileUtils.get_icon("cplus_right_arrow.svg"))
         self.btn_add_one.setToolTip(self.tr("Add selected NCS pathway"))
@@ -72,28 +69,6 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         self.ncs_pathway_view.items_reloaded.connect(self._on_ncs_pathways_reloaded)
 
         self.load()
-
-    @property
-    def extent_check(self) -> PilotExtentCheck:
-        """Returns the object used to check if the current extent is within the pilot AOI.
-
-        :returns: Pilot extent check object for checking if extent is within AOI or
-        None if not defined.
-        :rtype: PilotExtentCheck
-        """
-        return self._extent_check
-
-    @extent_check.setter
-    def extent_check(self, extent_check: PilotExtentCheck):
-        """Specify the object for checking if the current extent is within the
-        pilot AOI.
-
-        :param extent_check: Pilot extent checker object.
-        :type extent_check: PilotExtentCheck
-        """
-        self._extent_check = extent_check
-        if self._extent_check:
-            self._extent_check.extent_changed.connect(self._on_extent_changed)
 
     def load(self):
         """Load NCS pathways and implementation models to the views.
@@ -144,38 +119,23 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
 
     def _on_ncs_pathways_reloaded(self):
         """Slot raised when NCS pathways have been reloaded."""
-        self._on_extent_changed()
+        self.ncs_reloaded.emit()
 
     def on_ncs_pathway_updated(self, ncs_pathway: NcsPathway):
         """Slot raised when an NCS pathway has been updated."""
         self.implementation_model_view.update_ncs_pathway_items(ncs_pathway)
 
-    def _on_extent_changed(self):
-        """Slot raised when map extent has changed."""
+    def enable_default_items(self, enable: bool):
+        """Enable or disable default NCS pathway and implementation model items.
+
+        :param enable: True to enable or False to disable default items.
+        :type enable: bool
+        """
         if not self._items_loaded:
             return
 
-        if self._extent_check.is_within_pilot_area():
-            self.ncs_pathway_view.enable_default_items(True)
-            self.implementation_model_view.enable_default_items(True)
-            self._message_bar.clearWidgets()
-        else:
-            self.ncs_pathway_view.enable_default_items(False)
-            self.implementation_model_view.enable_default_items(False)
-
-            if self.can_show_error_messages:
-                # Display warning
-                msg = self.tr(
-                    "Area of interest is outside the pilot area, please use your "
-                    "own NCS pathways, implementation models and PWLs."
-                )
-                self.show_message(msg)
-
-    def check_extent(self):
-        """Check if the current extent is within the pilot area and notify the
-        user accordingly.
-        """
-        self._on_extent_changed()
+        self.ncs_pathway_view.enable_default_items(enable)
+        self.implementation_model_view.enable_default_items(enable)
 
     def show_message(self, message, level=Qgis.Warning):
         """Shows message if message bar has been specified.

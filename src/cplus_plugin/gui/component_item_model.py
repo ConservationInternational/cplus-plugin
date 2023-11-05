@@ -733,24 +733,27 @@ class ComponentItemModel(QtGui.QStandardItemModel):
         return True
 
     def model_components(self) -> typing.List[BaseModelComponentType]:
-        """Returns a collection of all model component objects in the model.
+        """Returns a collection of model component objects in the model.
 
         :returns: A collection of all model component objects.
         :rtype: list
         """
-        rows = self.rowCount()
-
-        return [self.item(r).model_component for r in range(rows)]
+        return [item.model_component for item in self.model_component_items()]
 
     def model_component_items(self) -> typing.List[ModelComponentItem]:
-        """Returns all model component items in the model.
+        """Returns model component items in the model.
 
         :returns: Model component items in the model.
         :rtype: list
         """
         rows = self.rowCount()
 
-        return [self.item(r) for r in range(rows)]
+        items = []
+        for r in range(rows):
+            item = self.item(r)
+            items.append(item)
+
+        return items
 
     def _re_index_rows(self):
         """Remap UUIDs with corresponding row numbers.
@@ -1185,7 +1188,7 @@ class IMItemModel(ComponentItemModel):
     def models(self) -> typing.List[ImplementationModel]:
         """Returns implementation model objects in the model.
 
-        :returns: All implementation model objects in the model.
+        :returns: Implementation model objects in the model.
         :rtype: list
         """
         return [model_item.implementation_model for model_item in self.model_items()]
@@ -1193,7 +1196,7 @@ class IMItemModel(ComponentItemModel):
     def model_items(self) -> typing.List[ImplementationModelItem]:
         """Returns all ImplementationModelItem objects in the model.
 
-        :returns: All implementation model items in the model.
+        :returns: Implementation model items in the model.
         :rtype: list
         """
         component_items = self.model_component_items()

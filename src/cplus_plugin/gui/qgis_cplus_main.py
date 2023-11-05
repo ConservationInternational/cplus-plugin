@@ -57,7 +57,7 @@ from .priority_layer_dialog import PriorityLayerDialog
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
 from ..conf import settings_manager, Settings
 
-from ..lib.extent_check import PilotExtentCheck
+from ..lib.extent_check import extent_within_pilot
 from ..lib.reports.manager import report_manager
 from ..models.helpers import clone_implementation_model
 
@@ -88,8 +88,6 @@ from ..definitions.defaults import (
     LAYER_STYLES_WEIGHTED,
 )
 from ..definitions.constants import (
-    NCS_CARBON_SEGMENT,
-    PRIORITY_LAYERS_SEGMENT,
     IM_GROUP_LAYER_NAME,
     IM_WEIGHTED_GROUP_NAME,
     NCS_PATHWAYS_GROUP_LAYER_NAME,
@@ -122,15 +120,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.prepare_input()
 
-        # Monitors if current extents are within the pilot AOI
-        self.extent_check = PilotExtentCheck(self)
-        self.extent_check.extent_changed.connect(self.on_extent_changed)
-
         # Insert widget for step 2
         self.implementation_model_widget = ImplementationModelContainerWidget(
             self, self.message_bar
         )
-        self.implementation_model_widget.extent_check = self.extent_check
+        self.implementation_model_widget.ncs_reloaded.connect(
+            self.on_ncs_pathways_reloaded
+        )
         self.tab_widget.insertTab(
             1, self.implementation_model_widget, self.tr("Step 2")
         )
@@ -176,6 +172,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.scenario_name.textChanged.connect(self.save_scenario)
         self.scenario_description.textChanged.connect(self.save_scenario)
         self.extent_box.extentChanged.connect(self.save_scenario)
+
+        # Monitors if current extents are within the pilot AOI
+        self.extent_box.extentChanged.connect(self.on_extent_changed)
 
         icon_pixmap = QtGui.QPixmap(ICON_PATH)
         self.icon_la.setPixmap(icon_pixmap)
@@ -365,16 +364,32 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.priority_groups_list.setItemWidget(item[0], 0, item[1])
 
         # Trigger process to enable/disable PWLs based on current extents
-        self.on_extent_changed()
+        self.on_extent_changed(self.extent_box.outputExtent())
 
-    def on_extent_changed(self):
-        """Slot raised by PilotExtentCheck object when current map extents have
-        changed.
+    def on_ncs_pathways_reloaded(self):
+        """Slot raised when NCS pathways have been reloaded in the view."""
+        within_pilot_area = extent_within_pilot(self.extent_box.outputExtent())
+        self.implementation_model_widget.enable_default_items(within_pilot_area)
 
-        We use this to enable/disable default model items if they are within or
+    def on_extent_changed(self, new_extent: QgsRectangle):
+        """Slot raised when scenario extents have changed.
+
+        Used to enable/disable default model items if they are within or
         outside the pilot AOI.
         """
-        within_pilot_area = self.extent_check.is_within_pilot_area()
+        within_pilot_area = extent_within_pilot(new_extent)
+
+        if not within_pilot_area:
+            msg = tr(
+                "Area of interest is outside the pilot area. Please use your "
+                "own NCS pathways, implementation models and PWLs."
+            )
+            self.show_message(msg, Qgis.Info)
+
+        else:
+            self.message_bar.clearWidgets()
+
+        self.implementation_model_widget.enable_default_items(within_pilot_area)
 
         # Enable/disable PWL items
         for i in range(self.priority_layers_list.count()):
@@ -2219,7 +2234,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if index == 1:
             self.implementation_model_widget.can_show_error_messages = True
             self.implementation_model_widget.load()
-            self.implementation_model_widget.check_extent()
 
         elif index == 2:
             # Validate implementation model selection

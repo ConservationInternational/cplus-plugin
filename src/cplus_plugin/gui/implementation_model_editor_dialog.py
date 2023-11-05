@@ -225,6 +225,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._implementation_model = ImplementationModel(
                 uuid.uuid4(), self.txt_name.text(), self.txt_description.toPlainText()
             )
+            self.user_defined = True
         else:
             # Update mode
             self._implementation_model.name = self.txt_name.text()
