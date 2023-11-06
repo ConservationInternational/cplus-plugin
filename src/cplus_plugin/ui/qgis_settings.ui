@@ -243,13 +243,6 @@
             </property>
             <layout class="QVBoxLayout" name="verticalLayout">
              <item>
-              <widget class="QCheckBox" name="rescale_values">
-               <property name="text">
-                <string>Rescale values</string>
-               </property>
-              </widget>
-             </item>
-             <item>
               <layout class="QHBoxLayout" name="horizontalLayout_2">
                <item>
                 <widget class="QLabel" name="resample_method">
@@ -287,6 +280,13 @@
                 </widget>
                </item>
               </layout>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="rescale_values">
+               <property name="text">
+                <string>Rescale values</string>
+               </property>
+              </widget>
              </item>
             </layout>
            </widget>

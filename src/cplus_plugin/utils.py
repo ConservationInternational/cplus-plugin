@@ -302,8 +302,9 @@ def align_rasters(
         log(f"Problem occured when snapping, {str(e)}")
 
     log(
-        f"Finished snapping with original layer - {input_raster_source}, "
-        f"snapped output - {input_layer_output}"
+        f"Finished snapping using resampling method {resample_method_value.name} with"
+        f" original layer - {input_raster_source}, "
+        f"snapped output - {input_layer_output} \n"
     )
 
     return input_layer_output, None

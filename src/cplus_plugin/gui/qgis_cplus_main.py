@@ -832,7 +832,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "OUTPUT": output_file,
             }
 
-            log(f"Used parameters for highest position analysis {alg_params}")
+            log(f"Used parameters for highest position analysis {alg_params} \n")
 
             alg = QgsApplication.processingRegistry().algorithmById(
                 "native:highestpositioninrasterstack"
@@ -1056,7 +1056,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             log(
                 f"Used parameters for combining pathways"
-                f" and carbon layers generation: {alg_params}"
+                f" and carbon layers generation: {alg_params} \n"
             )
 
             alg = QgsApplication.processingRegistry().algorithmById(
@@ -1423,7 +1423,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "OUTPUT": output_file,
             }
 
-            log(f"Used parameters for normalization of the pathways: {alg_params}")
+            log(f"Used parameters for normalization of the pathways: {alg_params} \n")
 
             alg = QgsApplication.processingRegistry().algorithmById(
                 "qgis:rastercalculator"
@@ -1577,7 +1577,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             log(
                 f"Used parameters for "
-                f"implementation models generation: {alg_params}"
+                f"implementation models generation: {alg_params} \n"
             )
 
             alg = QgsApplication.processingRegistry().algorithmById(
@@ -1764,7 +1764,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "OUTPUT": output_file,
             }
 
-            log(f"Used parameters for normalization of the models: {alg_params}")
+            log(f"Used parameters for normalization of the models: {alg_params} \n")
 
             alg = QgsApplication.processingRegistry().algorithmById(
                 "qgis:rastercalculator"
@@ -1946,7 +1946,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "OUTPUT": output_file,
             }
 
-            log(f" Used parameters for calculating weighting models {alg_params}")
+            log(f" Used parameters for calculating weighting models {alg_params} \n")
 
             alg = QgsApplication.processingRegistry().algorithmById(
                 "qgis:rastercalculator"

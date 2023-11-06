@@ -37,7 +37,7 @@ from .definitions.defaults import (
     ICON_PATH,
     DEFAULT_LOGO_PATH,
 )
-from .utils import FileUtils
+from .utils import FileUtils, tr
 
 Ui_DlgSettings, _ = uic.loadUiType(str(Path(__file__).parent / "ui/qgis_settings.ui"))
 
@@ -70,8 +70,40 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.map_layer_file_widget.setStorageMode(QgsFileWidget.StorageMode.GetFile)
         self.map_layer_box.layerChanged.connect(self.map_layer_changed)
 
-        for method in QgsAlignRaster.ResampleAlg:
-            self.resample_method_box.insertItem(method.value, method.name)
+        self.resample_method_box.addItem(
+            tr("Nearest Neighbour"), QgsAlignRaster.ResampleAlg.RA_NearestNeighbour
+        )
+        self.resample_method_box.addItem(
+            tr("Bilinear (2x2 Kernel)"), QgsAlignRaster.ResampleAlg.RA_Bilinear
+        )
+        self.resample_method_box.addItem(
+            tr("Cubic (4x4 Kernel)"), QgsAlignRaster.ResampleAlg.RA_Cubic
+        )
+        self.resample_method_box.addItem(
+            tr("Cubic B-Spline (4x4 Kernel)"), QgsAlignRaster.ResampleAlg.RA_CubicSpline
+        )
+        self.resample_method_box.addItem(
+            tr("Lanczos (6x6 Kernel)"), QgsAlignRaster.ResampleAlg.RA_Lanczos
+        )
+        self.resample_method_box.addItem(
+            tr("Average"), QgsAlignRaster.ResampleAlg.RA_Average
+        )
+        self.resample_method_box.addItem(tr("Mode"), QgsAlignRaster.ResampleAlg.RA_Mode)
+        self.resample_method_box.addItem(
+            tr("Maximum"), QgsAlignRaster.ResampleAlg.RA_Max
+        )
+        self.resample_method_box.addItem(
+            tr("Minimum"), QgsAlignRaster.ResampleAlg.RA_Min
+        )
+        self.resample_method_box.addItem(
+            tr("Median"), QgsAlignRaster.ResampleAlg.RA_Median
+        )
+        self.resample_method_box.addItem(
+            tr("First Quartile (Q1)"), QgsAlignRaster.ResampleAlg.RA_Q1
+        )
+        self.resample_method_box.addItem(
+            tr("Third Quartile (Q3)"), QgsAlignRaster.ResampleAlg.RA_Q3
+        )
 
     def apply(self) -> None:
         """This is called on OK click in the QGIS options panel."""
