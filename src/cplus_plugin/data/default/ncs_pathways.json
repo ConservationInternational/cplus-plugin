@@ -9,6 +9,14 @@
         "carbon_paths": ["bou_SOC_carbonsum_norm_inverse_null_con_clip.tif"]
     },
     {
+        "uuid": "5fe775ba-0e80-4b70-a53a-1ed874b72da3",
+        "name": "Alien Plant Removal",
+        "description": "Alien Plant Class.",
+        "path": "Final_Alien_Invasive_Plant_priority_norm.tif",
+        "layer_type": 0,
+        "carbon_paths": []
+    },
+    {
         "uuid": "bd381140-64f0-43d0-be6c-50120dd6c174",
         "name": "Animal Management",
         "description": "Provides additional soil carbon sequestration, reduces methane emissions from ruminants, and improves feed efficiency.",
@@ -93,6 +101,16 @@
         "carbon_paths": [
             "bou_SOC_carbonsum_norm_inverse_null_con_clip.tif",
             "SOC_trend_30m_4_scaled_clip_norm_inverse_null_con_clip.tif"
+        ]
+    },
+    {
+        "uuid": "e6d7d4cd-dd6b-4ad5-b8a6-eab5436a89f1",
+        "name": "Sustainable Agriculture Crop Farming",
+        "description": "Change from natural grassland, woodland, forest in 1990 into cropland.",
+        "path": "Final_Sustinable_Ag_Crop_Farming_priority_norm.tif",
+        "layer_type": 0,
+        "carbon_paths": [
+            "bou_SOC_carbonsum_norm_null_con_clip.tif"
         ]
     },
     {
