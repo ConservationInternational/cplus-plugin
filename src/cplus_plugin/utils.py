@@ -316,7 +316,10 @@ def align_rasters(
             )
             raise Exception(align.errorMessage())
     except Exception as e:
-        log(f"Problem occured when snapping, {str(e)}")
+        log(
+            f"Problem occured when snapping, {str(e)}."
+            f" Update snap settings and re-run the analysis"
+        )
 
     log(
         f"Finished snapping using resampling method {resample_method_value.name} with"
