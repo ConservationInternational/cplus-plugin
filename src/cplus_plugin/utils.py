@@ -377,7 +377,7 @@ class FileUtils:
         if file_name is None:
             file_name = TEMPLATE_NAME
 
-        absolute_path = f"{FileUtils.plugin_dir()}/app_data/reports/{file_name}"
+        absolute_path = f"{FileUtils.plugin_dir()}/data/reports/{file_name}"
 
         return os.path.normpath(absolute_path)
 
