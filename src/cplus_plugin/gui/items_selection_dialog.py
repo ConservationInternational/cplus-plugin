@@ -56,7 +56,11 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
             model = settings_manager.get_implementation_model(str(model_uuid))
 
             layer_model_uuids = [model.uuid for model in self.models]
-            model_layer_uuids = [layer.get("uuid") for layer in model.priority_layers]
+            model_layer_uuids = [
+                layer.get("uuid")
+                for layer in model.priority_layers
+                if layer is not None
+            ]
 
             if (
                 self.layer is not None

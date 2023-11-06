@@ -13,7 +13,10 @@ from pathlib import Path
 
 import qgis.core
 import qgis.gui
-from qgis.gui import QgsOptionsPageWidget
+
+from qgis.analysis import QgsAlignRaster
+
+from qgis.gui import QgsFileWidget, QgsOptionsPageWidget
 from qgis.gui import QgsOptionsWidgetFactory
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import (
@@ -22,6 +25,7 @@ from qgis.PyQt.QtGui import (
     QPixmap,
 )
 from qgis.utils import iface
+
 from qgis.PyQt.QtWidgets import QWidget
 
 from .conf import (
@@ -33,7 +37,7 @@ from .definitions.defaults import (
     ICON_PATH,
     DEFAULT_LOGO_PATH,
 )
-from .utils import FileUtils
+from .utils import FileUtils, tr
 
 Ui_DlgSettings, _ = uic.loadUiType(str(Path(__file__).parent / "ui/qgis_settings.ui"))
 
@@ -63,10 +67,57 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.logo_file.fileChanged.connect(self.logo_file_changed)
         self.folder_data.fileChanged.connect(self.base_dir_exists)
 
+        self.map_layer_file_widget.setStorageMode(QgsFileWidget.StorageMode.GetFile)
+        self.map_layer_box.layerChanged.connect(self.map_layer_changed)
+
+        self.resample_method_box.addItem(
+            tr("Nearest Neighbour"), QgsAlignRaster.ResampleAlg.RA_NearestNeighbour
+        )
+        self.resample_method_box.addItem(
+            tr("Bilinear (2x2 Kernel)"), QgsAlignRaster.ResampleAlg.RA_Bilinear
+        )
+        self.resample_method_box.addItem(
+            tr("Cubic (4x4 Kernel)"), QgsAlignRaster.ResampleAlg.RA_Cubic
+        )
+        self.resample_method_box.addItem(
+            tr("Cubic B-Spline (4x4 Kernel)"), QgsAlignRaster.ResampleAlg.RA_CubicSpline
+        )
+        self.resample_method_box.addItem(
+            tr("Lanczos (6x6 Kernel)"), QgsAlignRaster.ResampleAlg.RA_Lanczos
+        )
+        self.resample_method_box.addItem(
+            tr("Average"), QgsAlignRaster.ResampleAlg.RA_Average
+        )
+        self.resample_method_box.addItem(tr("Mode"), QgsAlignRaster.ResampleAlg.RA_Mode)
+        self.resample_method_box.addItem(
+            tr("Maximum"), QgsAlignRaster.ResampleAlg.RA_Max
+        )
+        self.resample_method_box.addItem(
+            tr("Minimum"), QgsAlignRaster.ResampleAlg.RA_Min
+        )
+        self.resample_method_box.addItem(
+            tr("Median"), QgsAlignRaster.ResampleAlg.RA_Median
+        )
+        self.resample_method_box.addItem(
+            tr("First Quartile (Q1)"), QgsAlignRaster.ResampleAlg.RA_Q1
+        )
+        self.resample_method_box.addItem(
+            tr("Third Quartile (Q3)"), QgsAlignRaster.ResampleAlg.RA_Q3
+        )
+
     def apply(self) -> None:
         """This is called on OK click in the QGIS options panel."""
 
         self.save_settings()
+
+    def map_layer_changed(self, layer):
+        """Sets the file path of the selected layer in file path input
+
+        :param layer: Qgis map layer
+        :type layer: QgsMapLayer
+        """
+        if layer is not None:
+            self.map_layer_file_widget.setFilePath(layer.source())
 
     def on_settings_changed(self, name: str, value: typing.Any):
         """Slot raised when settings has been changed.
@@ -237,6 +288,21 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             Settings.PATHWAY_SUITABILITY_INDEX, pathway_suitability_index
         )
 
+        # Snapping settings saving
+
+        settings_manager.set_value(
+            Settings.SNAPPING_ENABLED, self.snapping_group_box.isChecked()
+        )
+        snap_layer_path = self.map_layer_file_widget.filePath()
+        settings_manager.set_value(Settings.SNAP_LAYER, snap_layer_path)
+
+        settings_manager.set_value(
+            Settings.RESCALE_VALUES, self.rescale_values.isChecked()
+        )
+        settings_manager.set_value(
+            Settings.RESAMPLING_METHOD, self.resample_method_box.currentIndex()
+        )
+
         # Checks if the provided base directory exists
         if not os.path.exists(base_dir_path):
             iface.messageBar().pushCritical(
@@ -300,6 +366,24 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             Settings.PATHWAY_SUITABILITY_INDEX, default=0
         )
         self.suitability_index_box.setValue(float(pathway_suitability_index))
+
+        # Snapping settings
+        self.snapping_group_box.setChecked(
+            settings_manager.get_value(
+                Settings.SNAPPING_ENABLED, default=False, setting_type=bool
+            )
+        )
+        snap_layer_path = settings_manager.get_value(Settings.SNAP_LAYER, default="")
+        self.map_layer_file_widget.setFilePath(snap_layer_path)
+
+        self.rescale_values.setChecked(
+            settings_manager.get_value(
+                Settings.RESCALE_VALUES, default=False, setting_type=bool
+            )
+        )
+        self.resample_method_box.setCurrentIndex(
+            int(settings_manager.get_value(Settings.RESAMPLING_METHOD, default=0))
+        )
 
     def showEvent(self, event: QShowEvent) -> None:
         """Show event being called. This will display the plugin settings.

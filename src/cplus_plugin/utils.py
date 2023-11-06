@@ -5,18 +5,26 @@
 
 
 import os
+import uuid
 from pathlib import Path
 
 from qgis.PyQt import QtCore, QtGui
 from qgis.core import (
     Qgis,
+    QgsCoordinateReferenceSystem,
+    QgsCoordinateTransform,
     QgsCoordinateTransformContext,
     QgsDistanceArea,
     QgsMessageLog,
     QgsProcessingFeedback,
+    QgsProject,
     QgsRasterLayer,
+    QgsRectangle,
     QgsUnitTypes,
 )
+
+from qgis.analysis import QgsAlignRaster
+
 from qgis import processing
 
 from .definitions.defaults import DOCUMENTATION_SITE, REPORT_FONT_NAME, TEMPLATE_NAME
@@ -200,6 +208,108 @@ def calculate_raster_value_area(
     return pixel_areas
 
 
+def align_rasters(
+    input_raster_source,
+    reference_raster_source,
+    extent=None,
+    output_dir=None,
+    rescale_values=False,
+    resample_method=0,
+):
+    """
+    Based from work on https://github.com/inasafe/inasafe/pull/2070
+    Aligns the passed raster files source and save the results into new files.
+
+    :param input_raster_source: Input layer source
+    :type input_raster_source: str
+
+    :param reference_raster_source: Reference layer source
+    :type reference_raster_source: str
+
+    :param extent: Clip extent
+    :type extent: list
+
+    :param output_dir: Absolute path of the output directory for the snapped
+    layers
+    :type output_dir: str
+
+    :param rescale_values: Whether to rescale pixel values
+    :type rescale_values: bool
+
+    :param resample_method: Method to use when resampling
+    :type resample_method: QgsAlignRaster.ResampleAlg
+
+    """
+
+    try:
+        snap_directory = output_dir / "snap_layers"
+
+        FileUtils.create_new_dir(snap_directory)
+
+        input_path = Path(input_raster_source)
+
+        input_layer_output = os.path.join(
+            f"{snap_directory}", f"{input_path.stem}_{str(uuid.uuid4())[:4]}.tif"
+        )
+
+        FileUtils.create_new_file(input_layer_output)
+
+        align = QgsAlignRaster()
+        lst = [
+            QgsAlignRaster.Item(input_raster_source, input_layer_output),
+        ]
+
+        resample_method_value = QgsAlignRaster.ResampleAlg.RA_NearestNeighbour
+
+        for method in QgsAlignRaster.ResampleAlg:
+            if method.value == int(resample_method):
+                resample_method_value = method
+
+        if rescale_values:
+            lst[0].rescaleValues = rescale_values
+
+        lst[0].resample_method = resample_method_value
+
+        align.setRasters(lst)
+        align.setParametersFromRaster(reference_raster_source)
+
+        layer = QgsRasterLayer(input_raster_source, "input_layer")
+        if extent:
+            original_extent = QgsRectangle(
+                float(extent[0]), float(extent[1]), float(extent[2]), float(extent[3])
+            )
+            source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
+        else:
+            original_extent = layer.extent()
+            source_crs = QgsCoordinateReferenceSystem(layer.crs())
+
+        destination_crs = QgsCoordinateReferenceSystem(align.destinationCrs())
+
+        transform = QgsCoordinateTransform(
+            source_crs, destination_crs, QgsProject.instance()
+        )
+
+        tranformed_extent = transform.transformBoundingBox(original_extent)
+
+        align.setClipExtent(tranformed_extent)
+
+        if not align.run():
+            log(
+                f"Problem during snapping for {input_raster_source} and {reference_raster_source}"
+            )
+            raise Exception(align.errorMessage())
+    except Exception as e:
+        log(f"Problem occured when snapping, {str(e)}")
+
+    log(
+        f"Finished snapping using resampling method {resample_method_value.name} with"
+        f" original layer - {input_raster_source}, "
+        f"snapped output - {input_layer_output} \n"
+    )
+
+    return input_layer_output, None
+
+
 class FileUtils:
     """
     Provides functionality for commonly used file-related operations.
@@ -297,5 +407,16 @@ class FileUtils:
         if not p.exists():
             try:
                 p.mkdir()
+            except FileNotFoundError:
+                log(log_message)
+
+    @staticmethod
+    def create_new_file(file_path: str, log_message: str = ""):
+        """Creates new file"""
+        p = Path(file_path)
+
+        if not p.exists():
+            try:
+                p.touch(exist_ok=True)
             except FileNotFoundError:
                 log(log_message)

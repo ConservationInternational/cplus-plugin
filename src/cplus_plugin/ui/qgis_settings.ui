@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>592</width>
-    <height>646</height>
+    <width>594</width>
+    <height>719</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -36,8 +36,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>570</width>
-        <height>624</height>
+        <width>572</width>
+        <height>697</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -164,33 +164,13 @@
           <string>Advanced</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_2">
-          <item row="3" column="0">
-           <widget class="QLabel" name="carbon_coefficien_la">
-            <property name="toolTip">
-             <string>The value that will be used as a coefficient when combining pathways with carbon layers. </string>
+          <item row="2" column="1">
+           <widget class="QgsFileWidget" name="folder_data">
+            <property name="storageMode">
+             <enum>QgsFileWidget::GetDirectory</enum>
             </property>
-            <property name="text">
-             <string>Coefficient for carbon layers</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="lbl_data_dir">
-            <property name="text">
-             <string>Base data directory</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <widget class="QDoubleSpinBox" name="suitability_index_box">
-            <property name="decimals">
-             <number>1</number>
-            </property>
-            <property name="maximum">
-             <double>5.000000000000000</double>
-            </property>
-            <property name="singleStep">
-             <double>0.100000000000000</double>
+            <property name="options">
+             <set>QFileDialog::ShowDirsOnly</set>
             </property>
            </widget>
           </item>
@@ -213,6 +193,23 @@
             </property>
            </widget>
           </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="lbl_data_dir">
+            <property name="text">
+             <string>Base data directory</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="carbon_coefficien_la">
+            <property name="toolTip">
+             <string>The value that will be used as a coefficient when combining pathways with carbon layers. </string>
+            </property>
+            <property name="text">
+             <string>Coefficient for carbon layers</string>
+            </property>
+           </widget>
+          </item>
           <item row="4" column="0">
            <widget class="QLabel" name="lbl_suitability_index">
             <property name="text">
@@ -220,14 +217,78 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
-           <widget class="QgsFileWidget" name="folder_data">
-            <property name="storageMode">
-             <enum>QgsFileWidget::GetDirectory</enum>
+          <item row="4" column="1">
+           <widget class="QDoubleSpinBox" name="suitability_index_box">
+            <property name="decimals">
+             <number>1</number>
             </property>
-            <property name="options">
-             <set>QFileDialog::ShowDirsOnly</set>
+            <property name="maximum">
+             <double>5.000000000000000</double>
             </property>
+            <property name="singleStep">
+             <double>0.100000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0" colspan="2">
+           <widget class="QgsCollapsibleGroupBox" name="snapping_group_box">
+            <property name="title">
+             <string>Snapping</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+            <property name="checked">
+             <bool>false</bool>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout">
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_2">
+               <item>
+                <widget class="QLabel" name="resample_method">
+                 <property name="text">
+                  <string>Resample method</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QComboBox" name="resample_method_box"/>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <widget class="QLabel" name="reference_layer_label">
+               <property name="text">
+                <string>Reference layer</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout">
+               <item>
+                <widget class="QgsFileWidget" name="map_layer_file_widget">
+                 <property name="toolTip">
+                  <string>Select the priority layer from the local filesystem.</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QgsMapLayerComboBox" name="map_layer_box">
+                 <property name="toolTip">
+                  <string>Select priority layer from the current QGIS map layers.</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="rescale_values">
+               <property name="text">
+                <string>Rescale values</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </widget>
           </item>
          </layout>
@@ -263,6 +324,11 @@
    <class>QgsFileWidget</class>
    <extends>QWidget</extends>
    <header>qgsfilewidget.h</header>
+  </customwidget>
+  <customwidget>
+   <class>QgsMapLayerComboBox</class>
+   <extends>QComboBox</extends>
+   <header>qgsmaplayercombobox.h</header>
   </customwidget>
   <customwidget>
    <class>QgsScrollArea</class>
