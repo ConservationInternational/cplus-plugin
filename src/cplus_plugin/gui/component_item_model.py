@@ -211,6 +211,17 @@ class LayerComponentItem(ModelComponentItem):
         """
         pass
 
+    @property
+    def user_defined(self) -> bool:
+        """Returns whether the model component is user-defined or default
+        that is shipped together with the plugin.
+
+        :returns: True if the model component is user-defined else False
+        if its a default component.
+        :rtype: bool
+        """
+        return self.model_component.user_defined
+
 
 class NcsPathwayItem(LayerComponentItem):
     """Standard item for an NCS pathway object."""
@@ -284,6 +295,13 @@ class NcsPathwayItem(LayerComponentItem):
         :rtype: bool
         """
         return self.ncs_pathway.is_carbon_valid()
+
+    def setEnabled(self, enabled: bool):
+        """Override for default implementation that also
+        enables or disables selection of the item.
+        """
+        self.setSelectable(enabled)
+        super().setEnabled(enabled)
 
 
 class ImplementationModelItem(LayerComponentItem):
@@ -391,7 +409,7 @@ class ImplementationModelItem(LayerComponentItem):
         """Returns the view item for the layer.
 
         :returns: Returns the view item for the map layer
-        else False if no layer has been specified for the
+        else None if no layer has been specified for the
         model.
         :rtype: QtGui.QStandardItem
         """
@@ -554,6 +572,49 @@ class ImplementationModelItem(LayerComponentItem):
 
         return ImplementationModelItem(implementation_model)
 
+    def enable_default_pathways(self, state: bool):
+        """Enable or disable default NCS pathway items.
+
+        :param state: True to enable default NCS pathways else False
+        to disable them.
+        :type state: bool
+        """
+        for ncs_item in self._ncs_items:
+            if ncs_item.user_defined:
+                continue
+
+            if ncs_item.isEnabled() != state:
+                ncs_item.setEnabled(state)
+
+    def _enable_layer_item(self, state: bool):
+        """Enable/disable layer item if it exists."""
+        item_index = self.index()
+        if not item_index.isValid():
+            return
+
+        model = self.model()
+        if model is None:
+            return
+
+        layer_item_row = item_index.row() + 1
+        layer_item = model.item(layer_item_row, 0)
+        if layer_item is None:
+            return
+
+        if not isinstance(layer_item, LayerItem):
+            return
+
+        layer_item.setEnabled(state)
+
+    def setEnabled(self, enabled: bool):
+        """Override for default implementation that
+        also enables or disables NCS pathway items.
+        """
+        self.enable_default_pathways(enabled)
+        self._enable_layer_item(enabled)
+        self.setSelectable(enabled)
+        super().setEnabled(enabled)
+
 
 class LayerItem(QtGui.QStandardItem):
     """Contains a custom identifier for an item used to define a
@@ -672,24 +733,27 @@ class ComponentItemModel(QtGui.QStandardItemModel):
         return True
 
     def model_components(self) -> typing.List[BaseModelComponentType]:
-        """Returns a collection of all model component objects in the model.
+        """Returns a collection of model component objects in the model.
 
         :returns: A collection of all model component objects.
         :rtype: list
         """
-        rows = self.rowCount()
-
-        return [self.item(r).model_component for r in range(rows)]
+        return [item.model_component for item in self.model_component_items()]
 
     def model_component_items(self) -> typing.List[ModelComponentItem]:
-        """Returns all model component items in the model.
+        """Returns model component items in the model.
 
         :returns: Model component items in the model.
         :rtype: list
         """
         rows = self.rowCount()
 
-        return [self.item(r) for r in range(rows)]
+        items = []
+        for r in range(rows):
+            item = self.item(r)
+            items.append(item)
+
+        return items
 
     def _re_index_rows(self):
         """Remap UUIDs with corresponding row numbers.
@@ -727,6 +791,19 @@ class ComponentItemModel(QtGui.QStandardItemModel):
         self._re_index_rows()
 
         return True
+
+    def enable_default_items(self, state: bool):
+        """Enable or disable items for default model components.
+
+        :param state: True to enable or False to disable.
+        :type state: bool
+        """
+        for item in self.model_component_items():
+            if not isinstance(item, LayerComponentItem):
+                continue
+
+            if not item.user_defined:
+                item.setEnabled(state)
 
 
 ComponentItemModelType = typing.TypeVar(
@@ -866,6 +943,10 @@ class NcsPathwayItemModel(ComponentItemModel):
 
             ncs_item = self.itemFromIndex(idx)
             if ncs_item is None:
+                continue
+
+            # Do not add disabled items (e.g. disabled default NCS pathway items)
+            if not ncs_item.isEnabled():
                 continue
 
             ncs_data = QtCore.QByteArray()
@@ -1025,6 +1106,10 @@ class IMItemModel(ComponentItemModel):
         if not isinstance(target_model_item, LayerComponentItem):
             return False
 
+        # Do not add if the IM item has been disabled (e.g. disabled default IMs)
+        if not target_model_item.isEnabled():
+            return False
+
         # If there is an existing layer then return
         if target_model_item.layer:
             return False
@@ -1103,7 +1188,7 @@ class IMItemModel(ComponentItemModel):
     def models(self) -> typing.List[ImplementationModel]:
         """Returns implementation model objects in the model.
 
-        :returns: All implementation model objects in the model.
+        :returns: Implementation model objects in the model.
         :rtype: list
         """
         return [model_item.implementation_model for model_item in self.model_items()]
@@ -1111,7 +1196,7 @@ class IMItemModel(ComponentItemModel):
     def model_items(self) -> typing.List[ImplementationModelItem]:
         """Returns all ImplementationModelItem objects in the model.
 
-        :returns: All implementation model items in the model.
+        :returns: Implementation model items in the model.
         :rtype: list
         """
         component_items = self.model_component_items()

@@ -6,13 +6,15 @@ Container widget for configuring the implementation widget.
 import os
 import typing
 
-from qgis.PyQt import QtWidgets
+from qgis.core import Qgis
+from qgis.gui import QgsMessageBar
+
+from qgis.PyQt import QtCore, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
 from ..conf import Settings, settings_manager
 from .component_item_model import ImplementationModelItem, ModelComponentItemType
-
 from .model_component_widget import (
     ImplementationModelComponentWidget,
     NcsComponentWidget,
@@ -32,9 +34,15 @@ WidgetUi, _ = loadUiType(
 class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
     """Widget for configuring the implementation model."""
 
-    def __init__(self, parent=None):
+    ncs_reloaded = QtCore.pyqtSignal()
+
+    def __init__(
+        self, parent: QtWidgets.QWidget = None, message_bar: QgsMessageBar = None
+    ):
         super().__init__(parent)
         self.setupUi(self)
+
+        self._message_bar = message_bar
 
         self._items_loaded = False
 
@@ -58,6 +66,7 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
 
         settings_manager.settings_updated[str, object].connect(self.on_settings_changed)
         self.ncs_pathway_view.ncs_pathway_updated.connect(self.on_ncs_pathway_updated)
+        self.ncs_pathway_view.items_reloaded.connect(self._on_ncs_pathways_reloaded)
 
         self.load()
 
@@ -108,9 +117,40 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
 
         self.implementation_model_view.add_ncs_pathway_items(all_ncs_items)
 
+    def _on_ncs_pathways_reloaded(self):
+        """Slot raised when NCS pathways have been reloaded."""
+        self.ncs_reloaded.emit()
+
     def on_ncs_pathway_updated(self, ncs_pathway: NcsPathway):
         """Slot raised when an NCS pathway has been updated."""
         self.implementation_model_view.update_ncs_pathway_items(ncs_pathway)
+
+    def enable_default_items(self, enable: bool):
+        """Enable or disable default NCS pathway and implementation model items.
+
+        :param enable: True to enable or False to disable default items.
+        :type enable: bool
+        """
+        if not self._items_loaded:
+            return
+
+        self.ncs_pathway_view.enable_default_items(enable)
+        self.implementation_model_view.enable_default_items(enable)
+
+    def show_message(self, message, level=Qgis.Warning):
+        """Shows message if message bar has been specified.
+
+        :param message: Text to display in the message bar.
+        :type message: str
+
+        :param level: Message level type
+        :type level: Qgis.MessageLevel
+        """
+        if self._message_bar is None:
+            return
+
+        self._message_bar.clearWidgets()
+        self._message_bar.pushMessage(message, level=level)
 
     def on_settings_changed(self, name: str, value: typing.Any):
         """Slot raised when settings has been changed.
@@ -153,6 +193,9 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         """Returns the selected model component item types which could be
         NCS pathway or implementation model items.
 
+        If an item is disabled then it will be excluded from the
+        selection.
+
         These are cloned objects so as not to interfere with the
         underlying data models when used for scenario analysis. Otherwise,
         one can also use the data models from the MVC item model.
@@ -163,6 +206,9 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
         ref_items = self.implementation_model_view.selected_items()
         cloned_items = []
         for ref_item in ref_items:
+            if not ref_item.isEnabled():
+                continue
+
             clone_item = ref_item.clone()
             cloned_items.append(clone_item)
 
@@ -170,6 +216,8 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
 
     def selected_im_items(self) -> typing.List[ImplementationModelItem]:
         """Returns the currently selected instances of ImplementationModelItem.
+
+        If an item is disabled then it will be excluded from the  selection.
 
         :returns: Currently selected instances of ImplementationModelItem or
         an empty list if there is no selection of IM items.

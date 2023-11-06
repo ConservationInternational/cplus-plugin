@@ -378,6 +378,9 @@ class SettingsManager(QtCore.QObject):
             priority_layer["description"] = settings.value("description")
             priority_layer["path"] = settings.value("path")
             priority_layer["selected"] = settings.value("selected", type=bool)
+            priority_layer["user_defined"] = settings.value(
+                "user_defined", defaultValue=True, type=bool
+            )
             priority_layer["groups"] = groups
         return priority_layer
 
@@ -411,6 +414,9 @@ class SettingsManager(QtCore.QObject):
                         "description": priority_settings.value("description"),
                         "path": priority_settings.value("path"),
                         "selected": priority_settings.value("selected", type=bool),
+                        "user_defined": priority_settings.value(
+                            "user_defined", defaultValue=True, type=bool
+                        ),
                         "groups": groups,
                     }
                     priority_layer_list.append(layer)
@@ -485,6 +491,7 @@ class SettingsManager(QtCore.QObject):
             settings.setValue("description", priority_layer["description"])
             settings.setValue("path", priority_layer["path"])
             settings.setValue("selected", priority_layer.get("selected", False))
+            settings.setValue("user_defined", priority_layer.get("user_defined", True))
             groups_key = f"{settings_key}/groups"
             with qgis_settings(groups_key) as groups_settings:
                 for group_id in groups_settings.childGroups():

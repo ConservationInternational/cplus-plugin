@@ -350,6 +350,7 @@ def create_priority_layers():
 
         for layer in PRIORITY_LAYERS:
             layer["groups"] = groups
+            layer["user_defined"] = False
             settings_manager.save_priority_layer(layer)
 
         settings_manager.set_value("default_priority_layers_set", True)
@@ -443,6 +444,7 @@ def initialize_model_settings():
                                 ] = QgsColorBrewerColorRamp.typeString()
 
                 imp_model_dict[PIXEL_VALUE_ATTRIBUTE] = i
+                imp_model_dict[USER_DEFINED_ATTRIBUTE] = False
                 settings_manager.save_implementation_model(imp_model_dict)
         except KeyError as ke:
             log(f"Default implementation model configuration load error - {str(ke)}")

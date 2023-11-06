@@ -62,6 +62,7 @@ from .priority_layer_dialog import PriorityLayerDialog
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
 from ..conf import settings_manager, Settings
 
+from ..lib.extent_check import extent_within_pilot
 from ..lib.reports.manager import report_manager
 from ..models.helpers import clone_implementation_model
 
@@ -92,11 +93,10 @@ from ..definitions.defaults import (
     IM_COLOUR_RAMPS,
 )
 from ..definitions.constants import (
-    NCS_CARBON_SEGMENT,
-    PRIORITY_LAYERS_SEGMENT,
     IM_GROUP_LAYER_NAME,
     IM_WEIGHTED_GROUP_NAME,
     NCS_PATHWAYS_GROUP_LAYER_NAME,
+    USER_DEFINED_ATTRIBUTE,
 )
 
 from .progress_dialog import ProgressDialog
@@ -123,17 +123,23 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.task = None
         self.processing_cancelled = False
 
+        self.prepare_input()
+
         # Insert widget for step 2
-        self.implementation_model_widget = ImplementationModelContainerWidget(self)
+        self.implementation_model_widget = ImplementationModelContainerWidget(
+            self, self.message_bar
+        )
+        self.implementation_model_widget.ncs_reloaded.connect(
+            self.on_ncs_pathways_reloaded
+        )
         self.tab_widget.insertTab(
             1, self.implementation_model_widget, self.tr("Step 2")
         )
         self.tab_widget.currentChanged.connect(self.on_tab_step_changed)
 
-        self.prepare_input()
-
         # Step 3, priority weighting layers initialization
         self.priority_groups_widgets = {}
+        self.pwl_item_flags = None
 
         self.initialize_priority_layers()
 
@@ -171,6 +177,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.scenario_name.textChanged.connect(self.save_scenario)
         self.scenario_description.textChanged.connect(self.save_scenario)
         self.extent_box.extentChanged.connect(self.save_scenario)
+
+        # Monitors if current extents are within the pilot AOI
+        self.extent_box.extentChanged.connect(self.on_extent_changed)
 
         icon_pixmap = QtGui.QPixmap(ICON_PATH)
         self.icon_la.setPixmap(icon_pixmap)
@@ -315,6 +324,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             item.setData(QtCore.Qt.DisplayRole, layer.get("name"))
             item.setData(QtCore.Qt.UserRole, layer.get("uuid"))
 
+            if self.pwl_item_flags is None:
+                self.pwl_item_flags = item.flags()
+
             self.priority_layers_list.addItem(item)
 
         list_items = []
@@ -345,6 +357,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 if item.parent() is None:
                     layer_item = QtWidgets.QTreeWidgetItem(item)
                     layer_item.setText(0, layer.get("name"))
+                    layer_item.setData(
+                        0, QtCore.Qt.UserRole, layer.get(USER_DEFINED_ATTRIBUTE)
+                    )
 
             list_items.append((item, group_widget))
             items_only.append(item)
@@ -352,6 +367,70 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.priority_groups_list.addTopLevelItems(items_only)
         for item in list_items:
             self.priority_groups_list.setItemWidget(item[0], 0, item[1])
+
+        # Trigger process to enable/disable PWLs based on current extents
+        self.on_extent_changed(self.extent_box.outputExtent())
+
+    def on_ncs_pathways_reloaded(self):
+        """Slot raised when NCS pathways have been reloaded in the view."""
+        within_pilot_area = extent_within_pilot(self.extent_box.outputExtent())
+        self.implementation_model_widget.enable_default_items(within_pilot_area)
+
+    def on_extent_changed(self, new_extent: QgsRectangle):
+        """Slot raised when scenario extents have changed.
+
+        Used to enable/disable default model items if they are within or
+        outside the pilot AOI.
+        """
+        within_pilot_area = extent_within_pilot(new_extent)
+
+        if not within_pilot_area:
+            msg = tr(
+                "Area of interest is outside the pilot area. Please use your "
+                "own NCS pathways, implementation models and PWLs."
+            )
+            self.show_message(msg, Qgis.Info)
+
+        else:
+            self.message_bar.clearWidgets()
+
+        self.implementation_model_widget.enable_default_items(within_pilot_area)
+
+        # Enable/disable PWL items
+        for i in range(self.priority_layers_list.count()):
+            pwl_item = self.priority_layers_list.item(i)
+            uuid_str = pwl_item.data(QtCore.Qt.UserRole)
+            if not uuid_str:
+                continue
+
+            pwl_uuid = uuid.UUID(uuid_str)
+            pwl = settings_manager.get_priority_layer(pwl_uuid)
+            if USER_DEFINED_ATTRIBUTE not in pwl:
+                continue
+
+            is_user_defined = pwl.get(USER_DEFINED_ATTRIBUTE)
+            if is_user_defined:
+                continue
+
+            if within_pilot_area:
+                pwl_item.setFlags(self.pwl_item_flags)
+            else:
+                pwl_item.setFlags(QtCore.Qt.NoItemFlags)
+
+        # Enable/disable PWL items already defined under the priority groups
+        for i in range(self.priority_groups_list.topLevelItemCount()):
+            group_item = self.priority_groups_list.topLevelItem(i)
+
+            for c in range(group_item.childCount()):
+                pwl_tree_item = group_item.child(c)
+                is_user_defined = pwl_tree_item.data(0, QtCore.Qt.UserRole)
+                if is_user_defined:
+                    continue
+
+                if within_pilot_area:
+                    pwl_tree_item.setFlags(self.pwl_item_flags)
+                else:
+                    pwl_tree_item.setFlags(QtCore.Qt.NoItemFlags)
 
     def group_value_changed(self, group_name, group_value):
         """Slot to handle priority group widget changes.
@@ -408,6 +487,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                             children.append(child)
                         group.addChildren(children)
 
+        # Trigger check to enable/disable PWLs
+        self.on_extent_changed(self.extent_box.outputExtent())
+
     def add_priority_layer_group(self, target_group=None, priority_layer=None):
         """Adds priority layer from the weighting layers into a priority group
         If no target_group or priority_layer is passed then the current selected
@@ -459,6 +541,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     layer_id = selected_priority_layer.data(QtCore.Qt.UserRole)
 
                     priority_layer = settings_manager.get_priority_layer(layer_id)
+                    item.setData(
+                        0,
+                        QtCore.Qt.UserRole,
+                        priority_layer.get(USER_DEFINED_ATTRIBUTE),
+                    )
                     target_group_name = (
                         group_widget.group.get("name") if group_widget.group else None
                     )
@@ -484,6 +571,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                     priority_layer["groups"] = new_groups
                     settings_manager.save_priority_layer(priority_layer)
+
+        # Trigger check to enable/disable PWLs based on current extent
+        self.on_extent_changed()
 
     def remove_priority_layer_group(self):
         """Remove the current select priority layer from the current priority group."""
@@ -604,6 +694,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "layers": [],
             }
             for layer in settings_manager.get_priority_layers():
+                pwl_items = self.priority_layers_list.findItems(
+                    layer.get("name"), QtCore.Qt.MatchExactly
+                )
+                if len(pwl_items) > 0:
+                    # Exclude adding the PWL since its for a disabled default
+                    # item outside the pilot AOI.
+                    if pwl_items[0].flags() == QtCore.Qt.NoItemFlags:
+                        continue
+
                 group_names = [group.get("name") for group in layer.get("groups", [])]
                 if group.get("name") in group_names:
                     group_layer_dict["layers"].append(layer.get("name"))
@@ -612,6 +711,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.analysis_implementation_models = [
             item.implementation_model
             for item in self.implementation_model_widget.selected_im_items()
+            if item.isEnabled()
         ]
 
         base_dir = settings_manager.get_value(Settings.BASE_DIR)
@@ -644,7 +744,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if not contains:
             self.show_message(
                 tr(f"Selected area of interest is outside the pilot area."),
-                level=Qgis.Critical,
+                level=Qgis.Info,
             )
             default_ext = (
                 f"{default_extent.xMinimum()}, {default_extent.xMaximum()},"
@@ -655,7 +755,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 f"{passed_extent}"
                 f"default extent{default_ext}"
             )
-            return
 
         if base_dir is None:
             self.show_message(
@@ -2199,14 +2298,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type index: int
         """
         if index == 1:
+            self.implementation_model_widget.can_show_error_messages = True
             self.implementation_model_widget.load()
+
         elif index == 2:
-            # Validate NCS pathway - implementation model mapping
-            valid = self.implementation_model_widget.is_valid()
-            if not valid:
-                msg = self.tr(
-                    "Define one or more NCS pathways/map layers for at least one implementation model."
-                )
+            # Validate implementation model selection
+            selected_implementation_models = (
+                self.implementation_model_widget.selected_im_items()
+            )
+            if len(selected_implementation_models) == 0:
+                msg = self.tr("Please select at least one implementation model.")
                 self.show_message(msg)
                 self.tab_widget.setCurrentIndex(1)
 

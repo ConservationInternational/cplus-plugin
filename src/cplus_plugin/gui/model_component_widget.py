@@ -41,6 +41,8 @@ WidgetUi, _ = loadUiType(
 class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
     """Widget for displaying and managing model items in a list view."""
 
+    items_reloaded = QtCore.pyqtSignal()
+
     def __init__(self, parent=None, item_model=None):
         super().__init__(parent)
         self.setupUi(self)
@@ -254,6 +256,7 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
         afresh.
         """
         self.load()
+        self.items_reloaded.emit()
 
     def model_names(self) -> typing.List[str]:
         """Gets the names of the components in the item model.
@@ -269,6 +272,25 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
 
         return [mc.name.lower() for mc in model_components]
 
+    def enable_default_items(self, state: bool):
+        """Enable or disable default model component items in the view.
+
+        :param state: True to enable or False to disable default model
+        component items.
+        :type state: bool
+        """
+        self._item_model.enable_default_items(state)
+
+        # If false, deselect default items
+        if not state:
+            selection_model = self.lst_model_items.selectionModel()
+            selected_idxs = selection_model.selectedRows()
+            for sel_idx in selected_idxs:
+                item = self._item_model.item(sel_idx.row(), 0)
+                # If not enabled then deselect
+                if not item.isEnabled():
+                    selection_model.select(sel_idx, QtCore.QItemSelectionModel.Deselect)
+
     def add_action_widget(self, widget: QtWidgets.QWidget):
         """Adds an auxiliary widget below the list view from the left-hand side.
 
@@ -283,6 +305,7 @@ class NcsComponentWidget(ModelComponentWidget):
     """Widget for displaying and managing NCS pathways."""
 
     ncs_pathway_updated = QtCore.pyqtSignal(NcsPathway)
+    items_reloaded = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -417,6 +440,8 @@ class NcsComponentWidget(ModelComponentWidget):
 
 class ImplementationModelComponentWidget(ModelComponentWidget):
     """Widget for displaying and managing implementation models."""
+
+    items_reloaded = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -622,8 +647,7 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
 
             self.clear_description()
 
-    @classmethod
-    def reassign_pixel_values(cls, start_position: int):
+    def reassign_pixel_values(self, start_position: int):
         """Reassign the styling pixel values for implementation models
         from the given start position.
 
@@ -643,6 +667,8 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         for val, imp_model in enumerate(remap_models, start=start_position):
             imp_model.style_pixel_value = val
             settings_manager.update_implementation_model(imp_model)
+
+        self.load()
 
     def add_ncs_pathway_items(self, ncs_items: typing.List[NcsPathwayItem]) -> bool:
         """Adds an NCS pathway item to the collection.
