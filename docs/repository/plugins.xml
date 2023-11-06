@@ -1,16 +1,16 @@
 <?xml version = '1.0' encoding = 'UTF-8'?>
 <plugins>
-<pyqgis_plugin name="CPLUS plugin" version="0.3.1de">
+<pyqgis_plugin name="CPLUS plugin" version="0.3.2de">
                 <description><![CDATA[QGIS plugin for the CPLUS framework]]></description>
                 <about><![CDATA[QGIS plugin for the CPLUS framework]]></about>
-                <version>0.3.1de</version>
+                <version>0.3.2de</version>
                 <qgis_minimum_version>3.0</qgis_minimum_version>
                 <homepage><![CDATA[https://github.com/kartoza/cplus-plugin]]></homepage>
-                <file_name>cplus_plugin.0.0.1.zip</file_name>
+                <file_name>cplus_plugin.0.3.2dev.zip</file_name>
                 <icon>icon.svg</icon>
                 <author_name><![CDATA[Kartoza]]></author_name>
-                <download_url>https://github.com/kartoza/cplus-plugin/releases/download/v0.3.1dev/cplus_plugin.0.0.1.zip</download_url>
-                <update_date>2023-11-06 09:10:08</update_date>
+                <download_url>https://github.com/kartoza/cplus-plugin/releases/download/v0.3.2dev/cplus_plugin.0.3.2dev.zip</download_url>
+                <update_date>2023-11-06 11:48:45</update_date>
                 <experimental>False</experimental>
                 <deprecated>False</deprecated>
                 <tracker><![CDATA[https://github.com/kartoza/cplus-plugin/issues]]></tracker>
