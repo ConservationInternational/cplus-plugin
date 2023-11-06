@@ -576,7 +576,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     settings_manager.save_priority_layer(priority_layer)
 
         # Trigger check to enable/disable PWLs based on current extent
-        self.on_extent_changed()
+        self.on_extent_changed(self.extent_box.outputExtent())
 
     def remove_priority_layer_group(self):
         """Remove the current select priority layer from the current priority group."""
