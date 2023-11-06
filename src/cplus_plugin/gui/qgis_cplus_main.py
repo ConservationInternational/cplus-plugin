@@ -1228,7 +1228,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             snapping_enabled = settings_manager.get_value(
                 Settings.SNAPPING_ENABLED, default=False, setting_type=bool
             )
-            if snapping_enabled:
+            reference_layer = settings_manager.get_value(Settings.SNAP_LAYER)
+            reference_layer_path = Path(reference_layer)
+            if (
+                snapping_enabled
+                and os.path.exists(reference_layer)
+                and reference_layer_path.is_file()
+            ):
                 self.snap_analyzed_pathways(
                     pathways, models, priority_layers_groups, extent
                 )
@@ -1999,7 +2005,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             settings_model = settings_manager.get_implementation_model(str(model.uuid))
 
             for layer in settings_model.priority_layers:
+                if layer is None:
+                    continue
+
                 settings_layer = settings_manager.get_priority_layer(layer.get("uuid"))
+                if settings_layer is None:
+                    continue
+
                 pwl = settings_layer.get("path")
 
                 missing_pwl_message = (

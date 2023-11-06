@@ -93,6 +93,23 @@ def open_documentation(url=None):
     return result
 
 
+def get_plugin_version() -> [str, None]:
+    """Returns the current plugin version
+    as saved in the metadata.txt plugin file.
+
+    :returns version: Plugin version
+    :rtype version: str
+    """
+    metadata_file = Path(__file__).parent.resolve() / "metadata.txt"
+
+    with open(metadata_file, "r") as f:
+        for line in f.readlines():
+            if line.startswith("version"):
+                version = line.strip().split("=")[1]
+                return version
+    return None
+
+
 def get_report_font(size=11.0, bold=False, italic=False) -> QtGui.QFont:
     """Uses the default font family name to create a
     font for use in the report.
@@ -299,7 +316,10 @@ def align_rasters(
             )
             raise Exception(align.errorMessage())
     except Exception as e:
-        log(f"Problem occured when snapping, {str(e)}")
+        log(
+            f"Problem occured when snapping, {str(e)}."
+            f" Update snap settings and re-run the analysis"
+        )
 
     log(
         f"Finished snapping using resampling method {resample_method_value.name} with"

@@ -209,6 +209,24 @@ class SettingsManager(QtCore.QObject):
             )
         return self.settings.value(f"{self.BASE_GROUP_NAME}/{name}", default)
 
+    def find_settings(self, name):
+        """Returns the plugin setting keys from the
+         plugin root group that matches the passed name
+
+        :param name: Setting name to search for
+        :type name: str
+
+        :returns result: List of the matching settings names
+        :rtype result: list
+        """
+
+        result = []
+        with qgis_settings(f"{self.BASE_GROUP_NAME}") as settings:
+            for settings_name in settings.childKeys():
+                if name in settings_name:
+                    result.append(settings_name)
+        return result
+
     def remove(self, name):
         """Remove the setting with the specified name.
 
@@ -366,11 +384,15 @@ class SettingsManager(QtCore.QObject):
         :returns: Priority layers dict
         :rtype: dict
         """
+        priority_layer = None
 
         settings_key = self._get_priority_layers_settings_base(identifier)
         with qgis_settings(settings_key) as settings:
             groups_key = f"{settings_key}/groups"
             groups = []
+
+            if len(settings.childKeys()) <= 0:
+                return priority_layer
 
             with qgis_settings(groups_key) as groups_settings:
                 for name in groups_settings.childGroups():
@@ -440,6 +462,7 @@ class SettingsManager(QtCore.QObject):
         :returns: Priority layers dict
         :rtype: dict
         """
+        found_id = None
         with qgis_settings(
             f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_LAYERS_GROUP_NAME}"
         ) as settings:
@@ -451,7 +474,7 @@ class SettingsManager(QtCore.QObject):
                         found_id = uuid.UUID(layer_id)
                         break
 
-        return self.get_priority_layer(found_id)
+        return self.get_priority_layer(found_id) if found_id is not None else None
 
     def find_layers_by_group(self, group) -> typing.List:
         """Finds priority layers inside the plugin QgsSettings
@@ -529,7 +552,7 @@ class SettingsManager(QtCore.QObject):
                     )
 
     def delete_priority_layers(self):
-        """Deletes all the plugin priority settings."""
+        """Deletes all the plugin priority weighting layers settings."""
         with qgis_settings(
             f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_LAYERS_GROUP_NAME}"
         ) as settings:

@@ -72,11 +72,7 @@ from .models.helpers import (
 )
 from .settings import CplusOptionsFactory
 
-from .utils import (
-    FileUtils,
-    log,
-    open_documentation,
-)
+from .utils import FileUtils, log, open_documentation, get_plugin_version
 
 
 class QgisCplus:
@@ -111,16 +107,9 @@ class QgisCplus:
         self.toolBtnAction = self.toolbar.addWidget(self.toolButton)
         self.actions.append(self.toolBtnAction)
 
-        if not settings_manager.get_value(
-            "default_priority_layers_set", default=False, setting_type=bool
-        ):
-            create_priority_layers()
+        create_priority_layers()
 
-        # Check if default NCS pathways and IMs have been loaded
-        if not settings_manager.get_value(
-            "default_ncs_im_models_set", default=False, setting_type=bool
-        ):
-            initialize_model_settings()
+        initialize_model_settings()
 
         self.main_widget = QgisCplusMain(
             iface=self.iface, parent=self.iface.mainWindow()
@@ -338,22 +327,37 @@ class QgisCplus:
 def create_priority_layers():
     """Prepares the priority weighted layers UI with the defaults priority groups"""
 
+    priority_layers_setting = f"default_priority_layers_set_{get_plugin_version()}"
+
+    log(f"Priority weighting layers plugin setting - {priority_layers_setting}")
+
     if not settings_manager.get_value(
-        "default_priority_layers_set", default=False, setting_type=bool
+        priority_layers_setting, default=False, setting_type=bool
     ):
         log(f"Initializing priority layers and groups")
+        found_settings = settings_manager.find_settings("default_priority_layers_set")
+
+        # Remove old settings as they will not be of use anymore.
+        for previous_setting in found_settings:
+            settings_manager.remove(previous_setting)
 
         groups = []
         for group in PRIORITY_GROUPS:
             group["value"] = 0
             settings_manager.save_priority_group(group)
-
+        new_uuids = []
         for layer in PRIORITY_LAYERS:
             layer["groups"] = groups
             layer["user_defined"] = False
-            settings_manager.save_priority_layer(layer)
+            new_uuids.append(layer["uuid"])
+            if not settings_manager.get_priority_layer(layer["uuid"]):
+                settings_manager.save_priority_layer(layer)
 
-        settings_manager.set_value("default_priority_layers_set", True)
+        for layer in settings_manager.get_priority_layers():
+            if layer["uuid"] not in new_uuids:
+                settings_manager.delete_priority_layer(layer["uuid"])
+
+        settings_manager.set_value(priority_layers_setting, True)
 
 
 def initialize_model_settings():
@@ -365,6 +369,21 @@ def initialize_model_settings():
 
     This is normally called during plugin startup.
     """
+
+    # Check if default NCS pathways and IMs have been loaded
+    ims_ncs_setting = f"default_ncs_im_models_set_{get_plugin_version()}"
+
+    log(f"Implementation models and NCS pathway plugin setting - {ims_ncs_setting}")
+
+    if settings_manager.get_value(ims_ncs_setting, default=False, setting_type=bool):
+        return
+
+    found_settings = settings_manager.find_settings("default_ncs_im_models_set")
+
+    # Remove old settings as they will not be of use anymore.
+    for previous_setting in found_settings:
+        settings_manager.remove(previous_setting)
+
     # Create NCS subdirectories if BASE_DIR has been defined
     base_dir = settings_manager.get_value(Settings.BASE_DIR)
     if base_dir:
@@ -377,11 +396,16 @@ def initialize_model_settings():
         # Create priority weighting layers subdirectory
         FileUtils.create_pwls_dir(base_dir)
 
+    new_pathways_uuid = []
+
     # Add default pathways
     for ncs_dict in DEFAULT_NCS_PATHWAYS:
         try:
             ncs_uuid = ncs_dict[UUID_ATTRIBUTE]
             ncs = settings_manager.get_ncs_pathway(ncs_uuid)
+
+            new_pathways_uuid.append(ncs_uuid)
+
             if ncs is None:
                 # Update dir
                 base_dir = settings_manager.get_value(Settings.BASE_DIR, None)
@@ -412,11 +436,17 @@ def initialize_model_settings():
     # Preset color brewer scheme names
     preset_scheme_names = QgsColorBrewerColorRamp.listSchemeNames()
 
+    for ncs in settings_manager.get_all_ncs_pathways():
+        if str(ncs.uuid) not in new_pathways_uuid:
+            settings_manager.remove_ncs_pathway(str(ncs.uuid))
+
+    new_models_uuid = []
     # Add default implementation models
     for i, imp_model_dict in enumerate(DEFAULT_IMPLEMENTATION_MODELS, start=1):
         try:
             imp_model_uuid = imp_model_dict[UUID_ATTRIBUTE]
             imp_model = settings_manager.get_implementation_model(imp_model_uuid)
+            new_models_uuid.append(imp_model_uuid)
             if imp_model is None:
                 if STYLE_ATTRIBUTE in imp_model_dict:
                     style_info = imp_model_dict[STYLE_ATTRIBUTE]
@@ -450,7 +480,11 @@ def initialize_model_settings():
             log(f"Default implementation model configuration load error - {str(ke)}")
             continue
 
-    settings_manager.set_value("default_ncs_im_models_set", True)
+    for model in settings_manager.get_all_implementation_models():
+        if str(model.uuid) not in new_models_uuid:
+            settings_manager.remove_implementation_model(str(model.uuid))
+
+    settings_manager.set_value(ims_ncs_setting, True)
 
 
 def initialize_report_settings():
