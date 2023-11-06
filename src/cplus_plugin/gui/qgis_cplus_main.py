@@ -1228,7 +1228,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             snapping_enabled = settings_manager.get_value(
                 Settings.SNAPPING_ENABLED, default=False, setting_type=bool
             )
-            reference_layer = settings_manager.get_value(Settings.SNAP_LAYER)
+            reference_layer = settings_manager.get_value(
+                Settings.SNAP_LAYER, default=""
+            )
             reference_layer_path = Path(reference_layer)
             if (
                 snapping_enabled
