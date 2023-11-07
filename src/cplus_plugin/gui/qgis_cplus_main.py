@@ -2301,15 +2301,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 im_index = im_index + 1
 
             for model in self.analysis_weighted_ims:
-                weighted_im = model.path
+                weighted_im_path = model.path
+                weighted_im_name = model.name
 
-                if not weighted_im.endswith(".tif"):
+                if not weighted_im_path.endswith(".tif"):
                     continue
 
-                weighted_im_name = weighted_im[: len(weighted_im) - 9]
-
                 im_weighted_layer = QgsRasterLayer(
-                    im_weighted_dir + weighted_im, weighted_im_name, QGIS_GDAL_PROVIDER
+                    weighted_im_path, weighted_im_name, QGIS_GDAL_PROVIDER
                 )
 
                 renderer = self.style_model_layer(im_weighted_layer, model)
