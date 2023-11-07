@@ -92,8 +92,6 @@ from ..definitions.defaults import (
     SCENARIO_OUTPUT_FILE_NAME,
     SCENARIO_OUTPUT_LAYER_NAME,
     USER_DOCUMENTATION_SITE,
-    PILOT_AREA_SCENARIO_SYMBOLOGY,
-    IM_COLOUR_RAMPS,
 )
 from ..definitions.constants import (
     IM_GROUP_LAYER_NAME,
@@ -233,6 +231,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.analysis_scenario_description = None
         self.analysis_extent = None
         self.analysis_implementation_models = None
+        self.analysis_weighted_ims = []
         self.analysis_priority_layers_groups = []
 
     def priority_groups_update(self, target_item, selected_items):
@@ -2111,6 +2110,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if output is not None and output.get("OUTPUT") is not None:
             model.path = output.get("OUTPUT")
 
+        self.analysis_weighted_ims.append(model)
+
         if model_index == len(models) - 1:
             self.run_highest_position_analysis()
 
@@ -2299,7 +2300,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                 im_index = im_index + 1
 
-            for weighted_im in list_weighted_ims:
+            for model in self.analysis_weighted_ims:
+                weighted_im = model.path
+
                 if not weighted_im.endswith(".tif"):
                     continue
 
@@ -2309,11 +2312,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     im_weighted_dir + weighted_im, weighted_im_name, QGIS_GDAL_PROVIDER
                 )
 
-                weighted_im_model = settings_manager.find_implementation_model_by_name(
-                    weighted_im
-                )
-
-                renderer = self.style_model_layer(im_weighted_layer, weighted_im_model)
+                renderer = self.style_model_layer(im_weighted_layer, model)
                 im_weighted_layer.setRenderer(renderer)
                 im_weighted_layer.triggerRepaint()
 
