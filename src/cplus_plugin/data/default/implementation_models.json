@@ -295,11 +295,14 @@
             "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
             "2f76304a-bb73-442c-9c02-ff9945389a20"
         ],
-        "fill_style": {
-            "color": "#c27ba0",
-            "style": "solid",
-            "outline_width": "0",
-            "outline_color": "35,35,35,0"
+        "style": {
+            "scenario_layer": {
+                "color": "#c27ba0",
+                "style": "solid",
+                "outline_width": "0",
+                "outline_color": "35,35,35,0"
+            },
+            "model_layer": {"color_ramp": "PiYG"}
         }
     },
     {
