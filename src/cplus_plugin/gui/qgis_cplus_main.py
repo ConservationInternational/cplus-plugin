@@ -875,7 +875,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             self.position_feedback.progressChanged.connect(self.update_progress_bar)
 
-            for model in self.analysis_implementation_models:
+            for model in self.analysis_weighted_ims:
                 if model.path is not None and model.path is not "":
                     raster_layer = QgsRasterLayer(model.path, model.name)
                     layers[model.name] = (
@@ -906,22 +906,17 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             # Preparing the input rasters for the highest position
             # analysis in a correct order
 
-            models_names = [model.name for model in self.analysis_implementation_models]
+            models_names = [model.name for model in self.analysis_weighted_ims]
             all_models = sorted(
-                self.implementation_model_widget.implementation_models(),
+                self.analysis_weighted_ims,
                 key=lambda model_instance: model_instance.style_pixel_value,
             )
             all_models_names = [model.name for model in all_models]
             sources = []
 
-            absolute_path = f"{FileUtils.plugin_dir()}/app_data/layers/null_raster.tif"
-            null_raster_file = os.path.normpath(absolute_path)
-
             for model_name in all_models_names:
                 if model_name in models_names:
                     sources.append(layers[model_name].source())
-                else:
-                    sources.append(null_raster_file)
 
             log(f"Layers sources {[Path(source).stem for source in sources]}")
 
@@ -2302,7 +2297,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             for model in self.analysis_weighted_ims:
                 weighted_im_path = model.path
-                weighted_im_name = model.name
+                weighted_im_name = Path(weighted_im_path).stem
 
                 if not weighted_im_path.endswith(".tif"):
                     continue
