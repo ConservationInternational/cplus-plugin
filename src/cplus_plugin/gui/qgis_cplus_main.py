@@ -716,6 +716,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             if item.isEnabled()
         ]
 
+        self.analysis_weighted_ims = []
+
         base_dir = settings_manager.get_value(Settings.BASE_DIR)
 
         if self.analysis_scenario_name == "" or self.analysis_scenario_name is None:
@@ -911,6 +913,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.analysis_weighted_ims,
                 key=lambda model_instance: model_instance.style_pixel_value,
             )
+            for index, model in enumerate(all_models):
+                model.style_pixel_value = index + 1
+
             all_models_names = [model.name for model in all_models]
             sources = []
 
@@ -2232,7 +2237,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             scenario_layer = qgis_instance.addMapLayer(layer)
 
             # Scenario result layer styling
-            renderer = self.style_models_layer(layer, list_models)
+            renderer = self.style_models_layer(layer, self.analysis_weighted_ims)
             layer.setRenderer(renderer)
             layer.triggerRepaint()
 
@@ -2330,7 +2335,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type layer: QgsRasterLayer
 
         :param models: List which contains the implementation
-        models
+        models that were passed to the highest position analysis tool
         :type models: list
 
         :returns: Renderer for the symbology.
