@@ -51,6 +51,8 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
         if self._item_model is not None:
             self.item_model = self._item_model
 
+        self.lst_model_items.doubleClicked.connect(self._on_double_click_item)
+
         add_icon = FileUtils.get_icon("symbologyAdd.svg")
         self.btn_add.setIcon(add_icon)
         self.btn_add.clicked.connect(self._on_add_item)
@@ -208,6 +210,31 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
         :type deselected: QtCore.QItemSelection
         """
         self._update_ui_on_selection_changed()
+
+    def _on_double_click_item(self, index: QtCore.QModelIndex):
+        """Slot raised when an item has been double-clicked."""
+        if self._item_model is None:
+            return
+
+        item = self._item_model.itemFromIndex(index)
+        if item is None:
+            return
+
+        if not item.isEnabled():
+            return
+
+        self._handle_double_click(item)
+
+    def _handle_double_click(self, item: ModelComponentItemType):
+        """Handle double-clicking of an item.
+
+        To be implemented by sub-classes.
+
+        :param item: Model component item that has received the
+        double click event.
+        :type item: ModelComponentItem
+        """
+        pass
 
     def _update_ui_on_selection_changed(self):
         """Update UI properties on selection changed."""
@@ -371,11 +398,17 @@ class NcsComponentWidget(ModelComponentWidget):
             return
 
         item = selected_items[0]
+        self._edit_ncs_pathway_item(item)
 
+    def _handle_double_click(self, item: NcsPathwayItem):
+        """Show editor dialog."""
+        self._edit_ncs_pathway_item(item)
+
+    def _edit_ncs_pathway_item(self, item: NcsPathwayItem):
+        """Shows dialog for editing an item."""
         # If editing, remove the current name of the model component
         excluded_names = self.model_names()
         excluded_names.remove(item.model_component.name.lower())
-
         ncs_editor = NcsPathwayEditorDialog(
             self, item.ncs_pathway, excluded_names=excluded_names
         )
@@ -559,11 +592,17 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
             return
 
         item = selected_items[0]
+        self._edit_implementation_model_item(item)
 
+    def _handle_double_click(self, item: ImplementationModelItem):
+        """Show dialog for editing implementation model."""
+        self._edit_implementation_model_item(item)
+
+    def _edit_implementation_model_item(self, item):
+        """Load dialog for editing implementation model."""
         # If editing, remove the current name of the model component
         excluded_names = self.model_names()
         excluded_names.remove(item.model_component.name.lower())
-
         editor = ImplementationModelEditorDialog(
             self, item.implementation_model, excluded_names=excluded_names
         )
