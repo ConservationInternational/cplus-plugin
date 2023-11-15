@@ -2179,9 +2179,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
 
         alg_params = {
-            "EXTENT": extent_string,
-            "TARGET_CRS": reference_layer.crs().authid(),
-            "PIXEL_SIZE": reference_layer.rasterUnitsPerPixelX(),
+            "EXTENT": "-180.0,180.0,-90.0,90.0",
+            "TARGET_CRS": "EPSG:4326",
+            "PIXEL_SIZE": 0.001,
             "NUMBER": 0,
             "OUTPUT": output_file,
         }

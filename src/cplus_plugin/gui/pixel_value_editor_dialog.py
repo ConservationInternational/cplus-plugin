@@ -43,7 +43,6 @@ class PixelValueEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self.tv_implementation_model.setDragEnabled(True)
         self.tv_implementation_model.setAcceptDrops(True)
-        # self.tv_implementation_model.setShowGrid(False)
         self.tv_implementation_model.setDragDropOverwriteMode(False)
         self.tv_implementation_model.setDragDropMode(
             QtWidgets.QAbstractItemView.InternalMove
