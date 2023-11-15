@@ -925,9 +925,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.analysis_weighted_ims,
                 key=lambda model_instance: model_instance.style_pixel_value,
             )
-            for index, model in enumerate(all_models):
-                model.style_pixel_value = index + 2
-                print(str(model.style_pixel_value))
 
             all_models_names = [model.name for model in all_models]
             sources = []

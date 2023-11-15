@@ -475,7 +475,6 @@ def initialize_model_settings():
 
                 imp_model_dict[PIXEL_VALUE_ATTRIBUTE] = i
                 imp_model_dict[USER_DEFINED_ATTRIBUTE] = False
-                log(f"{imp_model_dict['name']} - {i!s}")
                 settings_manager.save_implementation_model(imp_model_dict)
         except KeyError as ke:
             log(f"Default implementation model configuration load error - {str(ke)}")
