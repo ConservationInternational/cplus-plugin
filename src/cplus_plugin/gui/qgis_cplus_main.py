@@ -919,12 +919,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             # Preparing the input rasters for the highest position
             # analysis in a correct order
-
             models_names = [model.name for model in self.analysis_weighted_ims]
             all_models = sorted(
                 self.analysis_weighted_ims,
                 key=lambda model_instance: model_instance.style_pixel_value,
             )
+
+            for index, model in enumerate(all_models):
+                model.style_pixel_value = index + 2
 
             all_models_names = [model.name for model in all_models]
             sources = []

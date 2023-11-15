@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>365</width>
+    <width>353</width>
     <height>426</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Style Pixel Value Editor</string>
+   <string>Style Pixel Order Editor</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0" colspan="2">
@@ -66,7 +66,7 @@
       <item>
        <widget class="QLabel" name="label_123">
         <property name="text">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the pixel value that will be used for styling the implementation models in the scenario layer by dragging and dropping the rows to specify the position.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the ordering of pixel values for implementation models in the output scenario layer by dragging and dropping the rows to specify their relative position.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="wordWrap">
          <bool>true</bool>
@@ -117,6 +117,9 @@
       <enum>QAbstractItemView::SelectRows</enum>
      </property>
      <attribute name="horizontalHeaderVisible">
+      <bool>false</bool>
+     </attribute>
+     <attribute name="verticalHeaderVisible">
       <bool>false</bool>
      </attribute>
     </widget>

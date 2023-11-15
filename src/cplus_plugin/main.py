@@ -442,7 +442,7 @@ def initialize_model_settings():
 
     new_models_uuid = []
     # Add default implementation models
-    for i, imp_model_dict in enumerate(DEFAULT_IMPLEMENTATION_MODELS, start=2):
+    for i, imp_model_dict in enumerate(DEFAULT_IMPLEMENTATION_MODELS, start=1):
         try:
             imp_model_uuid = imp_model_dict[UUID_ATTRIBUTE]
             imp_model = settings_manager.get_implementation_model(imp_model_uuid)

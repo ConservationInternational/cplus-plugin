@@ -21,48 +21,6 @@ WidgetUi, _ = loadUiType(
 )
 
 
-class PixelValueItemModel(QtGui.QStandardItemModel):
-    """Custom model that prevent dropping items in the first row since
-    it is fixed for the constant value raster.
-    """
-
-    def dropMimeData(
-        self,
-        data: QtCore.QMimeData,
-        action: QtCore.Qt.DropAction,
-        row: int,
-        column: int,
-        parent: QtCore.QModelIndex,
-    ) -> bool:
-        """Implements behaviour for handling data supplied by drag
-        and drop operation.
-
-        :param data: Object containing data from the drag operation.
-        :type data: QtCore.QMimeData
-
-        :param action: Type of the drag and drop operation.
-        :type action: QtCore.Qt.DropAction
-
-        :param row: Row location of dropped data.
-        :type row: int
-
-        :param column: Column location of dropped data.
-        :type column: int
-
-        :param parent: Index location for target item where the
-        operation ended.
-        :type parent: QtCore.QModelIndex
-
-        :returns: True if the data and action can be handled by the
-        model, else False.
-        :rtype: bool
-        """
-        if row == 0:
-            return False
-
-        return super().dropMimeData(data, action, row, column, parent)
-
-
 class PixelValueEditorDialog(QtWidgets.QDialog, WidgetUi):
     """Dialog for setting the pixel value for styling IMs."""
 
@@ -79,13 +37,13 @@ class PixelValueEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.btn_help.setIcon(help_icon)
         self.btn_help.clicked.connect(self.open_help)
 
-        self._item_model = PixelValueItemModel(self)
+        self._item_model = QtGui.QStandardItemModel(self)
         self._item_model.setColumnCount(1)
         self.tv_implementation_model.setModel(self._item_model)
 
         self.tv_implementation_model.setDragEnabled(True)
         self.tv_implementation_model.setAcceptDrops(True)
-        self.tv_implementation_model.setShowGrid(False)
+        # self.tv_implementation_model.setShowGrid(False)
         self.tv_implementation_model.setDragDropOverwriteMode(False)
         self.tv_implementation_model.setDragDropMode(
             QtWidgets.QAbstractItemView.InternalMove
@@ -98,16 +56,6 @@ class PixelValueEditorDialog(QtWidgets.QDialog, WidgetUi):
 
     def _load_items(self):
         """Load implementation models to the table widget."""
-        # Add default fixed pixel-value layer.
-        fixed_value_item = QtGui.QStandardItem(
-            self.tr("Constant-value analysis layer (fixed)")
-        )
-        fixed_value_item.setEnabled(False)
-        fixed_value_item.setEditable(False)
-        fixed_value_item.setDragEnabled(False)
-        fixed_value_item.setDropEnabled(False)
-        self._item_model.appendRow(fixed_value_item)
-
         sorted_models = sorted(
             settings_manager.get_all_implementation_models(),
             key=lambda model: model.style_pixel_value,
@@ -138,7 +86,7 @@ class PixelValueEditorDialog(QtWidgets.QDialog, WidgetUi):
         """
         im_position = OrderedDict()
 
-        for i in range(1, self._item_model.rowCount()):
+        for i in range(self._item_model.rowCount()):
             item = self._item_model.item(i, 0)
             im_id = item.data(QtCore.Qt.UserRole)
             im_position[i + 1] = im_id
