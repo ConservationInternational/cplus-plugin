@@ -17,6 +17,7 @@ import os.path
 from qgis.core import (
     QgsApplication,
     QgsColorBrewerColorRamp,
+    QgsCoordinateReferenceSystem,
     QgsMasterLayoutInterface,
     QgsSettings,
 )
@@ -65,11 +66,6 @@ from .definitions.defaults import (
 from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
 from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
 from .lib.reports.manager import report_manager
-from .models.helpers import (
-    copy_layer_component_attributes,
-    create_implementation_model,
-    create_ncs_pathway,
-)
 from .settings import CplusOptionsFactory
 
 from .utils import FileUtils, log, open_documentation, get_plugin_version
@@ -110,6 +106,8 @@ class QgisCplus:
         create_priority_layers()
 
         initialize_model_settings()
+
+        initialize_zero_value_raster_path()
 
         self.main_widget = QgisCplusMain(
             iface=self.iface, parent=self.iface.mainWindow()
@@ -164,8 +162,8 @@ class QgisCplus:
 
         :param add_to_web_menu: Flag indicating whether the action should also be added to the web menu
         :type add_to_web_menu: bool
-
         :param add_to_toolbar: Flag indicating whether the action should also be added to the toolbar
+
         :type add_to_toolbar: bool
 
         :param set_as_default_action: Flag indicating whether the action is the default action
@@ -504,3 +502,9 @@ def initialize_report_settings():
 
     if settings_manager.get_value(Settings.REPORT_CI_LOGO, None) is None:
         settings_manager.set_value(Settings.REPORT_CI_LOGO, CI_LOGO_PATH)
+
+
+def initialize_zero_value_raster_path():
+    """Set the path to the default zero-value raster dataset which is in WGS84."""
+    crs = QgsCoordinateReferenceSystem.fromEpsgId(4326)
+    settings_manager.save_zero_value_raster(str(crs.srsid()), FileUtils.zero_value_raster_path())

@@ -26,6 +26,7 @@ from .definitions.constants import (
     PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
     UUID_ATTRIBUTE,
+    ZERO_VALUE_SEGMENT
 )
 
 from .models.base import (
@@ -160,12 +161,11 @@ class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""
 
     BASE_GROUP_NAME: str = "cplus_plugin"
-    SCENARIO_GROUP_NAME: str = "scenarios"
+    IMPLEMENTATION_MODEL_BASE: str = "implementation_models"
+    NCS_PATHWAY_BASE: str = "ncs_pathways"
     PRIORITY_GROUP_NAME: str = "priority_groups"
     PRIORITY_LAYERS_GROUP_NAME: str = "priority_layers"
-    NCS_PATHWAY_BASE: str = "ncs_pathways"
-
-    IMPLEMENTATION_MODEL_BASE: str = "implementation_models"
+    SCENARIO_GROUP_NAME: str = "scenarios"
 
     settings = QgsSettings()
 
@@ -1002,6 +1002,56 @@ class SettingsManager(QtCore.QObject):
         """
         if self.get_implementation_model(implementation_model_uuid) is not None:
             self.remove(f"{self.IMPLEMENTATION_MODEL_BASE}/{implementation_model_uuid}")
+
+    def _get_zero_raster_settings_base(self) -> str:
+        """Returns the path for zero raster settings.
+
+        :returns: Base path to zero raster group.
+        :rtype: str
+        """
+        return f"{self.BASE_GROUP_NAME}/" f"{ZERO_VALUE_SEGMENT}"
+
+    def save_zero_value_raster(self, srs_id: str, raster_path: str):
+        """Saves the path to the zero-value raster corresponding to the given CRS ID.
+
+        :param srs_id: The primary key of the CRS in the internal QGIS database.
+        :type srs_id: str
+
+        :param raster_path: Absolute path to the zero-value raster dataset.
+        :type raster_path: str
+        """
+        zero_raster_root = self._get_zero_raster_settings_base()
+
+        with qgis_settings(zero_raster_root) as settings:
+            settings.setValue(srs_id, raster_path)
+
+    def get_zero_value_raster(self, srs_id: str) -> str:
+        """Gets the path to the zero-value raster corresponding to the given CRS ID.
+
+        :param srs_id: The primary key of the CRS in the internal QGIS database.
+        :type srs_id: str
+
+        :returns: Returns the path matching the given identifier else an empty
+        string if not found.
+        :rtype: str
+        """
+        zero_raster_path = ""
+
+        zero_raster_root = self._get_zero_raster_settings_base()
+        with qgis_settings(zero_raster_root) as settings:
+            zero_raster_path = settings.value(srs_id, "")
+
+        return zero_raster_path
+
+    def remove_zero_value_raster(self, srs_id: str):
+        """Removes the path to the zero-value raster corresponding to the given
+        CRS ID.
+
+        :param srs_id: The primary key of the zero-value raster path to be removed.
+        :type srs_id: str
+        """
+        if self.get_zero_value_raster(srs_id) is not None:
+            self.remove(f"{ZERO_VALUE_SEGMENT}/{srs_id}")
 
 
 settings_manager = SettingsManager()
