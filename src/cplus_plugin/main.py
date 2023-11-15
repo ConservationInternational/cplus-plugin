@@ -442,7 +442,7 @@ def initialize_model_settings():
 
     new_models_uuid = []
     # Add default implementation models
-    for i, imp_model_dict in enumerate(DEFAULT_IMPLEMENTATION_MODELS, start=1):
+    for i, imp_model_dict in enumerate(DEFAULT_IMPLEMENTATION_MODELS, start=2):
         try:
             imp_model_uuid = imp_model_dict[UUID_ATTRIBUTE]
             imp_model = settings_manager.get_implementation_model(imp_model_uuid)
@@ -475,6 +475,7 @@ def initialize_model_settings():
 
                 imp_model_dict[PIXEL_VALUE_ATTRIBUTE] = i
                 imp_model_dict[USER_DEFINED_ATTRIBUTE] = False
+                log(f"{imp_model_dict['name']} - {i!s}")
                 settings_manager.save_implementation_model(imp_model_dict)
         except KeyError as ke:
             log(f"Default implementation model configuration load error - {str(ke)}")
