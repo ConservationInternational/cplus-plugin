@@ -212,7 +212,11 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
         self._update_ui_on_selection_changed()
 
     def _on_double_click_item(self, index: QtCore.QModelIndex):
-        """Slot raised when an item has been double-clicked."""
+        """Slot raised when an item has been double-clicked.
+
+        :param index: Index of the clicked item.
+        :type index: QtCore.QModelIndex
+        """
         if self._item_model is None:
             return
 
@@ -401,7 +405,11 @@ class NcsComponentWidget(ModelComponentWidget):
         self._edit_ncs_pathway_item(item)
 
     def _handle_double_click(self, item: NcsPathwayItem):
-        """Show editor dialog."""
+        """Show editor dialog.
+
+        :param item: NCS pathway item receiving the event.
+        :type item: NcsPathwayItem
+        """
         self._edit_ncs_pathway_item(item)
 
     def _edit_ncs_pathway_item(self, item: NcsPathwayItem):
@@ -595,7 +603,12 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         self._edit_implementation_model_item(item)
 
     def _handle_double_click(self, item: ImplementationModelItem):
-        """Show dialog for editing implementation model."""
+        """Show dialog for editing implementation model.
+
+        :param item: Implementation model item that has received the
+        event.
+        :type item: ImplementationModelItem
+        """
         self._edit_implementation_model_item(item)
 
     def _edit_implementation_model_item(self, item):

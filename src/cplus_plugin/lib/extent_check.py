@@ -28,10 +28,14 @@ def extent_within_pilot(new_extent: QgsRectangle) -> bool:
         extent_list[0], extent_list[2], extent_list[1], extent_list[3]
     )
 
+    print(pilot_extent.toString())
+    print(new_extent.toString())
+
     default_crs = QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
     project_crs = QgsProject.instance().crs()
 
     if default_crs != project_crs:
+        print("Projections are different")
         coordinate_xform = QgsCoordinateTransform(
             default_crs, project_crs, QgsProject.instance()
         )
