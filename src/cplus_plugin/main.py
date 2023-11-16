@@ -17,6 +17,7 @@ import os.path
 from qgis.core import (
     QgsApplication,
     QgsColorBrewerColorRamp,
+    QgsCoordinateReferenceSystem,
     QgsMasterLayoutInterface,
     QgsSettings,
 )
@@ -51,6 +52,7 @@ from .definitions.defaults import (
     ABOUT_DOCUMENTATION_SITE,
     CI_LOGO_PATH,
     CPLUS_LOGO_PATH,
+    DEFAULT_CRS_ID,
     DEFAULT_IMPLEMENTATION_MODELS,
     DEFAULT_LOGO_PATH,
     DEFAULT_NCS_PATHWAYS,
@@ -65,11 +67,6 @@ from .definitions.defaults import (
 from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
 from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
 from .lib.reports.manager import report_manager
-from .models.helpers import (
-    copy_layer_component_attributes,
-    create_implementation_model,
-    create_ncs_pathway,
-)
 from .settings import CplusOptionsFactory
 
 from .utils import FileUtils, log, open_documentation, get_plugin_version
@@ -110,6 +107,8 @@ class QgisCplus:
         create_priority_layers()
 
         initialize_model_settings()
+
+        initialize_zero_value_raster_path()
 
         self.main_widget = QgisCplusMain(
             iface=self.iface, parent=self.iface.mainWindow()
@@ -164,8 +163,8 @@ class QgisCplus:
 
         :param add_to_web_menu: Flag indicating whether the action should also be added to the web menu
         :type add_to_web_menu: bool
-
         :param add_to_toolbar: Flag indicating whether the action should also be added to the toolbar
+
         :type add_to_toolbar: bool
 
         :param set_as_default_action: Flag indicating whether the action is the default action
@@ -369,16 +368,16 @@ def initialize_model_settings():
 
     This is normally called during plugin startup.
     """
-
     # Check if default NCS pathways and IMs have been loaded
-    ims_ncs_setting = f"default_ncs_im_models_set_{get_plugin_version()}"
-
-    log(f"Implementation models and NCS pathway plugin setting - {ims_ncs_setting}")
-
-    if settings_manager.get_value(ims_ncs_setting, default=False, setting_type=bool):
+    if settings_manager.get_value(
+        Settings.DEFAULT_NCS_IM_SET.value,
+        default=False,
+        setting_type=bool,
+        append_plugin_version=True,
+    ):
         return
 
-    found_settings = settings_manager.find_settings("default_ncs_im_models_set")
+    found_settings = settings_manager.find_settings(Settings.DEFAULT_NCS_IM_SET.value)
 
     # Remove old settings as they will not be of use anymore.
     for previous_setting in found_settings:
@@ -484,7 +483,9 @@ def initialize_model_settings():
         if str(model.uuid) not in new_models_uuid:
             settings_manager.remove_implementation_model(str(model.uuid))
 
-    settings_manager.set_value(ims_ncs_setting, True)
+    settings_manager.set_value(
+        Settings.DEFAULT_NCS_IM_SET.value, True, append_plugin_version=True
+    )
 
 
 def initialize_report_settings():
@@ -504,3 +505,32 @@ def initialize_report_settings():
 
     if settings_manager.get_value(Settings.REPORT_CI_LOGO, None) is None:
         settings_manager.set_value(Settings.REPORT_CI_LOGO, CI_LOGO_PATH)
+
+
+def initialize_zero_value_raster_path():
+    """Set the path to the default zero-value raster dataset which is in WGS84."""
+    # Check if default zero-value raster has been loaded
+    if settings_manager.get_value(
+        Settings.DEFAULT_ZERO_RASTER_SET.value,
+        default=False,
+        setting_type=bool,
+        append_plugin_version=True,
+    ):
+        return
+
+    found_settings = settings_manager.find_settings(
+        Settings.DEFAULT_ZERO_RASTER_SET.value
+    )
+
+    # Remove old settings as they will not be of use anymore.
+    for previous_setting in found_settings:
+        settings_manager.remove(previous_setting)
+
+    crs = QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
+    settings_manager.save_zero_value_raster(
+        str(crs.srsid()), os.path.normpath(FileUtils.zero_value_raster_path())
+    )
+
+    settings_manager.set_value(
+        Settings.DEFAULT_ZERO_RASTER_SET.value, True, append_plugin_version=True
+    )

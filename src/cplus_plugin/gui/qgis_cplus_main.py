@@ -98,6 +98,8 @@ from ..definitions.constants import (
     IM_WEIGHTED_GROUP_NAME,
     NCS_PATHWAYS_GROUP_LAYER_NAME,
     USER_DEFINED_ATTRIBUTE,
+    ZERO_VALUE_PREFIX,
+    ZERO_VALUE_SEGMENT,
 )
 
 from .progress_dialog import ProgressDialog
@@ -831,14 +833,24 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.analysis_extent,
         )
 
-    def run_highest_position_analysis(self):
+    def run_highest_position_analysis(self, zero_value_raster_path: str):
         """Runs the highest position analysis which is last step
         in scenario analysis. Uses the models set by the current ongoing
         analysis.
 
+        :param zero_value_raster_path: Path to the zero-value raster.
+        :type zero_value_raster_path: str
+
         """
         if self.processing_cancelled:
             # Will not proceed if processing has been cancelled by the user
+            return
+
+        zero_value_raster = QgsRasterLayer(zero_value_raster_path)
+        if not zero_value_raster.isValid():
+            log(
+                "Zero-value raster is invalid. Unable to perform highest position analysis."
+            )
             return
 
         passed_extent_box = self.analysis_extent.bbox
@@ -907,17 +919,20 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             # Preparing the input rasters for the highest position
             # analysis in a correct order
-
             models_names = [model.name for model in self.analysis_weighted_ims]
             all_models = sorted(
                 self.analysis_weighted_ims,
                 key=lambda model_instance: model_instance.style_pixel_value,
             )
+
             for index, model in enumerate(all_models):
-                model.style_pixel_value = index + 1
+                model.style_pixel_value = index + 2
 
             all_models_names = [model.name for model in all_models]
             sources = []
+
+            # Add zero-value raster at the bottom of the stack
+            sources.append(zero_value_raster.source())
 
             for model_name in all_models_names:
                 if model_name in models_names:
@@ -1940,18 +1955,17 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param priority_layers_groups: Used priority layers groups and their values
         :type priority_layers_groups: dict
 
-        :param extent: selected extent from user
-        :type extent: SpatialExtent
+        :param extent: Selected extent from user
+        :type extent: str
         """
         model_count = 0
 
+        zero_raster_function = partial(self.run_zero_value_raster, extent)
         main_task = QgsTask.fromFunction(
             "Running main task for priority layers weighting",
             self.main_task,
-            on_finished=self.run_highest_position_analysis,
+            on_finished=zero_raster_function,
         )
-
-        main_task.taskCompleted.connect(self.run_highest_position_analysis)
 
         previous_sub_tasks = []
 
@@ -1983,7 +1997,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             selected_layers = []
 
             analysis_done = partial(
-                self.priority_layers_analysis_done, model_count, model, models
+                self.priority_layers_analysis_done, model_count, model, models, extent
             )
             layers.append(model.path)
             basenames.append(f'"{Path(model.path).stem}@1"')
@@ -1993,7 +2007,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     f"There are defined priority layers in groups,"
                     f" skipping models weighting step."
                 )
-                self.run_highest_position_analysis()
+                self.run_zero_value_raster(extent)
                 return
 
             if model.priority_layers is None or model.priority_layers is []:
@@ -2088,7 +2102,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         QgsApplication.taskManager().addTask(main_task)
 
     def priority_layers_analysis_done(
-        self, model_index, model, models, success, output
+        self, model_index, model, models, extent, success, output
     ):
         """Slot that handles post calculations for the models priority layers
 
@@ -2100,6 +2114,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         :param models: List of the selected implementation models
         :type models: typing.List[ImplementationModel]
+
+        :param extent: Spatial extent of the analysis.
+        :type extent: str
 
         :param success: Whether the scenario analysis was successful
         :type success: bool
@@ -2113,7 +2130,130 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.analysis_weighted_ims.append(model)
 
         if model_index == len(models) - 1:
-            self.run_highest_position_analysis()
+            self.run_zero_value_raster(extent)
+
+    def run_zero_value_raster(self, extent_string: str):
+        """Check if there is need to use or reproject the zero-value raster..
+
+        :param extent_string: Extent of the scenario analysis.
+        :type extent_string: str
+        """
+        if self.processing_cancelled:
+            # Will not proceed if processing has been cancelled by the user
+            return
+
+        # We need a reference layer to get CRS and pixel size
+        reference_layer: QgsRasterLayer = None
+        for model in self.analysis_weighted_ims:
+            if model.path is not None and model.path is not "":
+                raster_layer = QgsRasterLayer(model.path, model.name)
+                reference_layer = raster_layer if raster_layer is not None else None
+            else:
+                for pathway in model.pathways:
+                    reference_layer = QgsRasterLayer(pathway.path)
+                    break
+
+            if reference_layer is not None:
+                break
+
+        if reference_layer is None:
+            log(f"Unable to get a reference layer for creating a zero-value raster. \n")
+            return
+
+        # Check if we can use an existing zero-value raster or we need to reproject
+        reference_crs = reference_layer.crs()
+        if reference_crs is None or not reference_crs.isValid():
+            log(f"A valid CRS for the reference layer is required. \n")
+            return
+
+        # Get zero-value raster
+        srs_id = str(reference_crs.srsid())
+        zero_value_raster_path = settings_manager.get_zero_value_raster(srs_id)
+        if zero_value_raster_path:
+            log(f"Found zero-value raster dataset for {reference_crs.authid()}. \n")
+            self.run_highest_position_analysis(zero_value_raster_path)
+
+        else:
+            log(
+                f"Attempting to reproject zero-value raster "
+                f"dataset for {reference_crs.authid()}. \n"
+            )
+
+            # Reproject default one
+            self.progress_dialog.progress_bar.setMinimum(0)
+            self.progress_dialog.progress_bar.setMaximum(100)
+            self.progress_dialog.progress_bar.setValue(0)
+            self.progress_dialog.analysis_finished_message = tr(
+                "Zero-value raster created"
+            )
+            self.progress_dialog.scenario_name = ""
+            self.progress_dialog.change_status_message(
+                tr("Creating zero-value raster dataset for highest point analysis.")
+            )
+
+            self.position_feedback.progressChanged.connect(self.update_progress_bar)
+
+            base_dir = settings_manager.get_value(Settings.BASE_DIR, "")
+            if not base_dir:
+                log(
+                    f"Base directory not defined. Unable to create zero-value raster "
+                    f"for scenario analysis. \n"
+                )
+                return
+
+            input_zero_raster = os.path.normpath(FileUtils.zero_value_raster_path())
+            if not os.path.exists(input_zero_raster):
+                log(
+                    f"{input_zero_raster} does not exist. Unable to reproject default "
+                    f"zero-value raster. \n"
+                )
+                return
+
+            zero_value_directory = f"{base_dir}/{ZERO_VALUE_SEGMENT}"
+            FileUtils.create_new_dir(zero_value_directory)
+
+            output_file = f"{zero_value_directory}/{ZERO_VALUE_PREFIX}_{srs_id}.tif"
+
+            alg_params = {
+                "INPUT": input_zero_raster,
+                "SOURCE_CRS": "EPSG:4326",
+                "TARGET_CRS": reference_crs.authid(),
+                "OUTPUT": output_file,
+            }
+
+            log(f"Used parameters for creating zero-value raster {alg_params}. \n")
+
+            alg = QgsApplication.processingRegistry().algorithmById(
+                "gdal:warpreproject"
+            )
+
+            self.task = QgsProcessingAlgRunnerTask(
+                alg,
+                alg_params,
+                self.processing_context,
+                feedback=self.position_feedback,
+            )
+            reprojection_done = partial(self.zero_value_raster_done, srs_id)
+            self.task.executed.connect(reprojection_done)
+            QgsApplication.taskManager().addTask(self.task)
+
+    def zero_value_raster_done(self, srs_id, success, output):
+        """Slot raised when zero value processing run is completed.
+
+        It executes the highest position analysis.
+        """
+        if not success:
+            log("Reprojection of zero-value raster failed.")
+
+        if output is not None and output.get("OUTPUT") is not None:
+            constant_raster_path = os.path.normpath(output.get("OUTPUT"))
+
+            # Save for future re-use
+            settings_manager.save_zero_value_raster(srs_id, constant_raster_path)
+
+            self.run_highest_position_analysis(constant_raster_path)
+        else:
+            log("Zero-value raster could not be extracted from processing results.")
 
     def cancel_processing_task(self):
         """Cancels the current processing task."""

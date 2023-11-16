@@ -26,6 +26,7 @@ from .definitions.constants import (
     PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
     UUID_ATTRIBUTE,
+    ZERO_VALUE_SEGMENT,
 )
 
 from .models.base import (
@@ -41,7 +42,7 @@ from .models.helpers import (
     ncs_pathway_to_dict,
 )
 
-from .utils import log
+from .utils import get_plugin_version, log
 
 
 @contextlib.contextmanager
@@ -155,17 +156,22 @@ class Settings(enum.Enum):
     RESAMPLING_METHOD = "snap_method"
     SNAP_PIXEL_VALUE = "snap_pixel_value"
 
+    # Default NCS pathways and implementation models
+    DEFAULT_NCS_IM_SET = "default_ncs_im_models_set"
+
+    # Default zero-value raster dataset
+    DEFAULT_ZERO_RASTER_SET = "default_zero_raster_set"
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""
 
     BASE_GROUP_NAME: str = "cplus_plugin"
-    SCENARIO_GROUP_NAME: str = "scenarios"
+    IMPLEMENTATION_MODEL_BASE: str = "implementation_models"
+    NCS_PATHWAY_BASE: str = "ncs_pathways"
     PRIORITY_GROUP_NAME: str = "priority_groups"
     PRIORITY_LAYERS_GROUP_NAME: str = "priority_layers"
-    NCS_PATHWAY_BASE: str = "ncs_pathways"
-
-    IMPLEMENTATION_MODEL_BASE: str = "implementation_models"
+    SCENARIO_GROUP_NAME: str = "scenarios"
 
     settings = QgsSettings()
 
@@ -173,7 +179,7 @@ class SettingsManager(QtCore.QObject):
     priority_layers_changed = QtCore.pyqtSignal()
     settings_updated = QtCore.pyqtSignal([str, object], [Settings, object])
 
-    def set_value(self, name: str, value):
+    def set_value(self, name: str, value: object, append_plugin_version: bool = False):
         """Adds a new setting key and value on the plugin specific settings.
 
         :param name: Name of setting key
@@ -181,14 +187,27 @@ class SettingsManager(QtCore.QObject):
 
         :param value: Value of the setting
         :type value: Any
+
+        :param append_plugin_version: True to save the setting by appending
+        the plugin version to the name.
+        :type append_plugin_version: bool
         """
+        if append_plugin_version:
+            name = f"{name}_{get_plugin_version()}"
+
         self.settings.setValue(f"{self.BASE_GROUP_NAME}/{name}", value)
         if isinstance(name, Settings):
             name = name.value
 
         self.settings_updated.emit(name, value)
 
-    def get_value(self, name: str, default=None, setting_type=None):
+    def get_value(
+        self,
+        name: str,
+        default=None,
+        setting_type=None,
+        append_plugin_version: bool = False,
+    ):
         """Gets value of the setting with the passed name.
 
         :param name: Name of setting key
@@ -200,9 +219,16 @@ class SettingsManager(QtCore.QObject):
         :param setting_type: Type of the store setting
         :type setting_type: Any
 
+        :param append_plugin_version: True to search for a matching setting based
+        on the current version of the plugin.
+        :type append_plugin_version: bool
+
         :returns: Value of the setting
         :rtype: Any
         """
+        if append_plugin_version:
+            name = f"{name}_{get_plugin_version()}"
+
         if setting_type:
             return self.settings.value(
                 f"{self.BASE_GROUP_NAME}/{name}", default, setting_type
@@ -219,7 +245,6 @@ class SettingsManager(QtCore.QObject):
         :returns result: List of the matching settings names
         :rtype result: list
         """
-
         result = []
         with qgis_settings(f"{self.BASE_GROUP_NAME}") as settings:
             for settings_name in settings.childKeys():
@@ -983,7 +1008,7 @@ class SettingsManager(QtCore.QObject):
         self.save_implementation_model(implementation_model)
 
     def update_implementation_models(self):
-        """Updates the attributes of the avaialable implementation models
+        """Updates the attributes of the available implementation models
 
         :param implementation_model: Implementation model object to be updated.
         :type implementation_model: ImplementationModel
@@ -1002,6 +1027,56 @@ class SettingsManager(QtCore.QObject):
         """
         if self.get_implementation_model(implementation_model_uuid) is not None:
             self.remove(f"{self.IMPLEMENTATION_MODEL_BASE}/{implementation_model_uuid}")
+
+    def _get_zero_raster_settings_base(self) -> str:
+        """Returns the path for zero raster settings.
+
+        :returns: Base path to zero raster group.
+        :rtype: str
+        """
+        return f"{self.BASE_GROUP_NAME}/" f"{ZERO_VALUE_SEGMENT}"
+
+    def save_zero_value_raster(self, srs_id: str, raster_path: str):
+        """Saves the path to the zero-value raster corresponding to the given CRS ID.
+
+        :param srs_id: The primary key of the CRS in the internal QGIS database.
+        :type srs_id: str
+
+        :param raster_path: Absolute path to the zero-value raster dataset.
+        :type raster_path: str
+        """
+        zero_raster_root = self._get_zero_raster_settings_base()
+
+        with qgis_settings(zero_raster_root) as settings:
+            settings.setValue(srs_id, raster_path)
+
+    def get_zero_value_raster(self, srs_id: str) -> str:
+        """Gets the path to the zero-value raster corresponding to the given CRS ID.
+
+        :param srs_id: The primary key of the CRS in the internal QGIS database.
+        :type srs_id: str
+
+        :returns: Returns the path matching the given identifier else an empty
+        string if not found.
+        :rtype: str
+        """
+        zero_raster_path = ""
+
+        zero_raster_root = self._get_zero_raster_settings_base()
+        with qgis_settings(zero_raster_root) as settings:
+            zero_raster_path = settings.value(srs_id, "")
+
+        return zero_raster_path
+
+    def remove_zero_value_raster(self, srs_id: str):
+        """Removes the path to the zero-value raster corresponding to the given
+        CRS ID.
+
+        :param srs_id: The primary key of the zero-value raster path to be removed.
+        :type srs_id: str
+        """
+        if self.get_zero_value_raster(srs_id) is not None:
+            self.remove(f"{ZERO_VALUE_SEGMENT}/{srs_id}")
 
 
 settings_manager = SettingsManager()

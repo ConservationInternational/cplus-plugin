@@ -345,6 +345,15 @@ class FileUtils:
         return os.path.join(os.path.dirname(os.path.realpath(__file__)))
 
     @staticmethod
+    def data_dir() -> str:
+        """Returns the plugin's data directory.
+
+        :returns: The data directory of the plugin.
+        :rtype: str
+        """
+        return f"{FileUtils.plugin_dir()}/data"
+
+    @staticmethod
     def get_icon(file_name: str) -> QtGui.QIcon:
         """Creates an icon based on the icon name in the 'icons' folder.
 
@@ -377,9 +386,20 @@ class FileUtils:
         if file_name is None:
             file_name = TEMPLATE_NAME
 
-        absolute_path = f"{FileUtils.plugin_dir()}/data/reports/{file_name}"
+        absolute_path = f"{FileUtils.data_dir()}/reports/{file_name}"
 
         return os.path.normpath(absolute_path)
+
+    @staticmethod
+    def zero_value_raster_path() -> str:
+        """Returns the path to the zero-value raster path.
+
+        This raster file is in WGS84 coordinate system.
+
+        :returns: The path the WGS84 zero-value raster file.
+        :rtype: str
+        """
+        return f"{FileUtils.data_dir()}/layers/zero_value_wgs84.tif"
 
     @staticmethod
     def create_ncs_pathways_dir(base_dir: str):
