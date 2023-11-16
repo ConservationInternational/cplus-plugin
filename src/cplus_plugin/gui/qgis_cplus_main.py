@@ -375,7 +375,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def on_ncs_pathways_reloaded(self):
         """Slot raised when NCS pathways have been reloaded in the view."""
-        within_pilot_area = extent_within_pilot(self.extent_box.outputExtent())
+        within_pilot_area = extent_within_pilot(
+            self.extent_box.outputExtent(), self.extent_box.outputCrs()
+        )
         self.implementation_model_widget.enable_default_items(within_pilot_area)
 
     def on_extent_changed(self, new_extent: QgsRectangle):
@@ -384,7 +386,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         Used to enable/disable default model items if they are within or
         outside the pilot AOI.
         """
-        within_pilot_area = extent_within_pilot(new_extent)
+        within_pilot_area = extent_within_pilot(new_extent, self.extent_box.outputCrs())
 
         if not within_pilot_area:
             msg = tr(
