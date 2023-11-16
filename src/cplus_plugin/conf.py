@@ -42,7 +42,7 @@ from .models.helpers import (
     ncs_pathway_to_dict,
 )
 
-from .utils import log
+from .utils import get_plugin_version, log
 
 
 @contextlib.contextmanager
@@ -156,6 +156,12 @@ class Settings(enum.Enum):
     RESAMPLING_METHOD = "snap_method"
     SNAP_PIXEL_VALUE = "snap_pixel_value"
 
+    # Default NCS pathways and implementation models
+    DEFAULT_NCS_IM_SET = "default_ncs_im_models_set"
+
+    # Default zero-value raster dataset
+    DEFAULT_ZERO_RASTER_SET = "default_zero_raster_set"
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""
@@ -173,7 +179,7 @@ class SettingsManager(QtCore.QObject):
     priority_layers_changed = QtCore.pyqtSignal()
     settings_updated = QtCore.pyqtSignal([str, object], [Settings, object])
 
-    def set_value(self, name: str, value):
+    def set_value(self, name: str, value: object, append_plugin_version: bool = False):
         """Adds a new setting key and value on the plugin specific settings.
 
         :param name: Name of setting key
@@ -181,14 +187,27 @@ class SettingsManager(QtCore.QObject):
 
         :param value: Value of the setting
         :type value: Any
+
+        :param append_plugin_version: True to save the setting by appending
+        the plugin version to the name.
+        :type append_plugin_version: bool
         """
+        if append_plugin_version:
+            name = f"{name}_{get_plugin_version()}"
+
         self.settings.setValue(f"{self.BASE_GROUP_NAME}/{name}", value)
         if isinstance(name, Settings):
             name = name.value
 
         self.settings_updated.emit(name, value)
 
-    def get_value(self, name: str, default=None, setting_type=None):
+    def get_value(
+        self,
+        name: str,
+        default=None,
+        setting_type=None,
+        append_plugin_version: bool = False,
+    ):
         """Gets value of the setting with the passed name.
 
         :param name: Name of setting key
@@ -200,9 +219,16 @@ class SettingsManager(QtCore.QObject):
         :param setting_type: Type of the store setting
         :type setting_type: Any
 
+        :param append_plugin_version: True to search for a matching setting based
+        on the current version of the plugin.
+        :type append_plugin_version: bool
+
         :returns: Value of the setting
         :rtype: Any
         """
+        if append_plugin_version:
+            name = f"{name}_{get_plugin_version()}"
+
         if setting_type:
             return self.settings.value(
                 f"{self.BASE_GROUP_NAME}/{name}", default, setting_type
@@ -219,7 +245,6 @@ class SettingsManager(QtCore.QObject):
         :returns result: List of the matching settings names
         :rtype result: list
         """
-
         result = []
         with qgis_settings(f"{self.BASE_GROUP_NAME}") as settings:
             for settings_name in settings.childKeys():
@@ -983,7 +1008,7 @@ class SettingsManager(QtCore.QObject):
         self.save_implementation_model(implementation_model)
 
     def update_implementation_models(self):
-        """Updates the attributes of the avaialable implementation models
+        """Updates the attributes of the available implementation models
 
         :param implementation_model: Implementation model object to be updated.
         :type implementation_model: ImplementationModel
