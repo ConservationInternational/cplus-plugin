@@ -26,7 +26,7 @@ from .definitions.constants import (
     PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
     UUID_ATTRIBUTE,
-    ZERO_VALUE_SEGMENT
+    ZERO_VALUE_SEGMENT,
 )
 
 from .models.base import (

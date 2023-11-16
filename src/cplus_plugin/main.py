@@ -507,4 +507,6 @@ def initialize_report_settings():
 def initialize_zero_value_raster_path():
     """Set the path to the default zero-value raster dataset which is in WGS84."""
     crs = QgsCoordinateReferenceSystem.fromEpsgId(4326)
-    settings_manager.save_zero_value_raster(str(crs.srsid()), FileUtils.zero_value_raster_path())
+    settings_manager.save_zero_value_raster(
+        str(crs.srsid()), os.path.normpath(FileUtils.zero_value_raster_path())
+    )

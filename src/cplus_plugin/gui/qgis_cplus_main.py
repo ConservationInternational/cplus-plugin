@@ -1960,7 +1960,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
         model_count = 0
 
-        zero_raster_function = partial(self.run_constant_value_raster, extent)
+        zero_raster_function = partial(self.run_zero_value_raster, extent)
         main_task = QgsTask.fromFunction(
             "Running main task for priority layers weighting",
             self.main_task,
@@ -2007,7 +2007,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     f"There are defined priority layers in groups,"
                     f" skipping models weighting step."
                 )
-                self.run_constant_value_raster(extent)
+                self.run_zero_value_raster(extent)
                 return
 
             if model.priority_layers is None or model.priority_layers is []:
@@ -2130,10 +2130,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.analysis_weighted_ims.append(model)
 
         if model_index == len(models) - 1:
-            self.run_constant_value_raster(extent)
+            self.run_zero_value_raster(extent)
 
-    def run_constant_value_raster(self, extent_string: str):
-        """Creates a constant zero-value raster.
+    def run_zero_value_raster(self, extent_string: str):
+        """Check if there is need to use or reproject the zero-value raster..
 
         :param extent_string: Extent of the scenario analysis.
         :type extent_string: str
@@ -2141,15 +2141,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if self.processing_cancelled:
             # Will not proceed if processing has been cancelled by the user
             return
-
-        self.progress_dialog.progress_bar.setMinimum(0)
-        self.progress_dialog.progress_bar.setMaximum(100)
-        self.progress_dialog.progress_bar.setValue(0)
-        self.progress_dialog.analysis_finished_message = tr("Zero-value raster created")
-        self.progress_dialog.scenario_name = tr(f"<b>{self.analysis_scenario_name}</b>")
-        self.progress_dialog.change_status_message(tr("Creating zero-value raster"))
-
-        self.position_feedback.progressChanged.connect(self.update_progress_bar)
 
         # We need a reference layer to get CRS and pixel size
         reference_layer: QgsRasterLayer = None
@@ -2169,48 +2160,97 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             log(f"Unable to get a reference layer for creating a zero-value raster. \n")
             return
 
-        zero_value_directory = f"{self.scenario_directory}/{ZERO_VALUE_SEGMENT}"
-        FileUtils.create_new_dir(zero_value_directory)
+        # Check if we can use an existing zero-value raster or we need to reproject
+        reference_crs = reference_layer.crs()
+        if reference_crs is None or not reference_crs.isValid():
+            log(f"A valid CRS for the reference layer is required. \n")
+            return
 
-        output_file = (
-            f"{zero_value_directory}/"
-            f"{ZERO_VALUE_PREFIX}_"
-            f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.tif'
-        )
+        # Get zero-value raster
+        srs_id = str(reference_crs.srsid())
+        zero_value_raster_path = settings_manager.get_zero_value_raster(srs_id)
+        if zero_value_raster_path:
+            log(f"Found zero-value raster dataset for {reference_crs.authid()}. \n")
+            self.run_highest_position_analysis(zero_value_raster_path)
 
-        alg_params = {
-            "EXTENT": "-180.0,180.0,-90.0,90.0",
-            "TARGET_CRS": "EPSG:4326",
-            "PIXEL_SIZE": 0.001,
-            "NUMBER": 0,
-            "OUTPUT": output_file,
-        }
+        else:
+            log(
+                f"Attempting to reproject zero-value raster "
+                f"dataset for {reference_crs.authid()}. \n"
+            )
 
-        log(f"Used parameters for creating zero-value raster {alg_params}. \n")
+            # Reproject default one
+            self.progress_dialog.progress_bar.setMinimum(0)
+            self.progress_dialog.progress_bar.setMaximum(100)
+            self.progress_dialog.progress_bar.setValue(0)
+            self.progress_dialog.analysis_finished_message = tr(
+                "Zero-value raster created"
+            )
+            self.progress_dialog.scenario_name = ""
+            self.progress_dialog.change_status_message(
+                tr("Creating zero-value raster dataset for highest point analysis.")
+            )
 
-        alg = QgsApplication.processingRegistry().algorithmById(
-            "native:createconstantrasterlayer"
-        )
+            self.position_feedback.progressChanged.connect(self.update_progress_bar)
 
-        self.task = QgsProcessingAlgRunnerTask(
-            alg,
-            alg_params,
-            self.processing_context,
-            feedback=self.position_feedback,
-        )
-        self.task.executed.connect(self.constant_value_raster_done)
-        QgsApplication.taskManager().addTask(self.task)
+            base_dir = settings_manager.get_value(Settings.BASE_DIR, "")
+            if not base_dir:
+                log(
+                    f"Base directory not defined. Unable to create zero-value raster "
+                    f"for scenario analysis. \n"
+                )
+                return
 
-    def constant_value_raster_done(self, success, output):
-        """Slot raised when constant value processing run is completed.
+            input_zero_raster = os.path.normpath(FileUtils.zero_value_raster_path())
+            if not os.path.exists(input_zero_raster):
+                log(
+                    f"{input_zero_raster} does not exist. Unable to reproject default "
+                    f"zero-value raster. \n"
+                )
+                return
+
+            zero_value_directory = f"{base_dir}/{ZERO_VALUE_SEGMENT}"
+            FileUtils.create_new_dir(zero_value_directory)
+
+            output_file = f"{zero_value_directory}/{ZERO_VALUE_PREFIX}_{srs_id}.tif"
+
+            alg_params = {
+                "INPUT": input_zero_raster,
+                "SOURCE_CRS": "EPSG:4326",
+                "TARGET_CRS": reference_crs.authid(),
+                "OUTPUT": output_file,
+            }
+
+            log(f"Used parameters for creating zero-value raster {alg_params}. \n")
+
+            alg = QgsApplication.processingRegistry().algorithmById(
+                "gdal:warpreproject"
+            )
+
+            self.task = QgsProcessingAlgRunnerTask(
+                alg,
+                alg_params,
+                self.processing_context,
+                feedback=self.position_feedback,
+            )
+            reprojection_done = partial(self.zero_value_raster_done, srs_id)
+            self.task.executed.connect(reprojection_done)
+            QgsApplication.taskManager().addTask(self.task)
+
+    def zero_value_raster_done(self, srs_id, success, output):
+        """Slot raised when zero value processing run is completed.
 
         It executes the highest position analysis.
         """
         if not success:
-            log("Creation of zero-value raster failed.")
+            log("Reprojection of zero-value raster failed.")
 
         if output is not None and output.get("OUTPUT") is not None:
-            constant_raster_path = output.get("OUTPUT")
+            constant_raster_path = os.path.normpath(output.get("OUTPUT"))
+
+            # Save for future re-use
+            settings_manager.save_zero_value_raster(srs_id, constant_raster_path)
+
             self.run_highest_position_analysis(constant_raster_path)
         else:
             log("Zero-value raster could not be extracted from processing results.")
