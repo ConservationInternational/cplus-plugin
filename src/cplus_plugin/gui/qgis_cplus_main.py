@@ -31,21 +31,16 @@ from qgis.core import (
     QgsFeedback,
     QgsGeometry,
     QgsProject,
-    QgsProcessing,
     QgsProcessingAlgRunnerTask,
     QgsProcessingContext,
     QgsProcessingFeedback,
-    QgsRandomColorRamp,
     QgsRasterLayer,
     QgsRectangle,
     QgsTask,
     QgsWkbTypes,
     QgsColorRampShader,
     QgsSingleBandPseudoColorRenderer,
-    QgsRasterShader,
     QgsPalettedRasterRenderer,
-    QgsStyle,
-    QgsRasterMinMaxOrigin,
 )
 
 from qgis.gui import (
