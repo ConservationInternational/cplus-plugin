@@ -335,7 +335,10 @@ How to add a new IM:
 
 *Figure 20: Implementation Model creator/editor*
 
-- Open the Style pixel value editor by clicking on the button
+- Open the Style pixel value editor by clicking on the ![CPLUS add implementation model](img/button_pixels_order.png) button
+- Select the IM which needs to be moved up or down in the stack
+- Drag-and-drop the IM where it needs to be in the stack
+- Click **OK** once done
 
 ![CPLUS style pixel value editor](img/style_pixel_value_editor.png)
 
