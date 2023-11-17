@@ -1943,7 +1943,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type priority_layers_groups: dict
 
         :param extent: selected extent from user
-        :type extent: SpatialExtent
+        :type extent: str
         """
         model_count = 0
 
@@ -1952,8 +1952,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.main_task,
             on_finished=self.run_highest_position_analysis,
         )
+        models_cleaning = partial(self.run_models_cleaning, extent)
 
-        main_task.taskCompleted.connect(self.run_highest_position_analysis)
+        main_task.taskCompleted.connect(models_cleaning)
 
         previous_sub_tasks = []
 
@@ -1982,20 +1983,19 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             basenames = []
             layers = []
-            selected_layers = []
 
             analysis_done = partial(
-                self.priority_layers_analysis_done, model_count, model, models
+                self.priority_layers_analysis_done, model_count, model, models, extent
             )
             layers.append(model.path)
             basenames.append(f'"{Path(model.path).stem}@1"')
 
             if not any(priority_layers_groups):
                 log(
-                    f"There are defined priority layers in groups,"
+                    f"There are no defined priority layers in groups,"
                     f" skipping models weighting step."
                 )
-                self.run_highest_position_analysis()
+                self.run_models_cleaning(extent)
                 return
 
             if model.priority_layers is None or model.priority_layers is []:
@@ -2090,9 +2090,129 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         QgsApplication.taskManager().addTask(main_task)
 
     def priority_layers_analysis_done(
-        self, model_index, model, models, success, output
+        self, model_index, model, models, extent, success, output
     ):
         """Slot that handles post calculations for the models priority layers
+
+        :param model_index: List index of the target model
+        :type model_index: int
+
+        :param model: Target implementation model
+        :type model: ImplementationModel
+
+        :param models: List of the selected implementation models
+        :type models: typing.List[ImplementationModel]
+
+        :param extent: selected extent from user
+        :type extent: str
+
+        :param success: Whether the scenario analysis was successful
+        :type success: bool
+
+        :param output: Analysis output results
+        :type output: dict
+        """
+        if output is not None and output.get("OUTPUT") is not None:
+            model.path = output.get("OUTPUT")
+
+        self.analysis_weighted_ims.append(model)
+
+        if model_index == len(models) - 1:
+            self.run_models_cleaning(extent)
+
+    def run_models_cleaning(self, extent=None):
+        """Runs cleaning on the weighted implementation models replacing
+        zero values with no-data as they are not statistical meaningful for the
+        whole analysis.
+
+        :param extent: Selected extent from user
+        :type extent: str
+        """
+        model_count = 0
+
+        main_task = QgsTask.fromFunction(
+            "Running main task for weighted models updates",
+            self.main_task,
+            on_finished=self.run_highest_position_analysis,
+        )
+
+        main_task.taskCompleted.connect(self.run_highest_position_analysis)
+
+        previous_sub_tasks = []
+
+        self.progress_dialog.analysis_finished_message = tr(f"Updating")
+
+        self.progress_dialog.scenario_name = tr(f"implementation models")
+
+        for model in self.analysis_weighted_ims:
+            if model.path is None or model.path is "":
+                self.show_message(
+                    tr(
+                        f"Problem when running models updates, "
+                        f"there is no map layer for the model {model.name}"
+                    ),
+                    level=Qgis.Critical,
+                )
+                log(
+                    f"Problem when running models updates, "
+                    f"there is no map layer for the model {model.name}"
+                )
+                main_task.cancel()
+
+            analysis_done = partial(
+                self.models_update_done, model_count, model, self.analysis_weighted_ims
+            )
+
+            layers = [model.path]
+
+            file_name = clean_filename(model.name.replace(" ", "_"))
+
+            output_file = os.path.join(self.scenario_directory, "weighted_ims")
+            output_file = os.path.join(
+                output_file, f"{file_name}_{str(uuid.uuid4())[:4]}_cleaned.tif"
+            )
+
+            # Actual processing calculation
+            # The aim is to convert pixels values to no data, that is why we are
+            # using the sum operation with only one layer.
+
+            alg_params = {
+                "IGNORE_NODATA": True,
+                "INPUT": layers,
+                "EXTENT": extent,
+                "OUTPUT_NODATA_VALUE": 0,
+                "REFERENCE_LAYER": layers[0] if len(layers) > 0 else None,
+                "STATISTIC": 0,  # Sum
+                "OUTPUT": output_file,
+            }
+
+            log(
+                f"Used parameters for "
+                f"updates on the weighted implementation models: {alg_params} \n"
+            )
+
+            alg = QgsApplication.processingRegistry().algorithmById(
+                "native:cellstatistics"
+            )
+
+            self.task = QgsProcessingAlgRunnerTask(
+                alg, alg_params, self.processing_context, self.position_feedback
+            )
+
+            self.position_feedback.progressChanged.connect(self.update_progress_bar)
+
+            main_task.addSubTask(
+                self.task, previous_sub_tasks, QgsTask.ParentDependsOnSubTask
+            )
+            previous_sub_tasks.append(self.task)
+            self.task.executed.connect(analysis_done)
+
+            model_count = model_count + 1
+
+        QgsApplication.taskManager().addTask(main_task)
+
+    def models_update_done(self, model_index, model, models, success, output):
+        """Slot that handles post operations for the updates on the weighted models.
 
         :param model_index: List index of the target model
         :type model_index: int
@@ -2111,8 +2231,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
         if output is not None and output.get("OUTPUT") is not None:
             model.path = output.get("OUTPUT")
-
-        self.analysis_weighted_ims.append(model)
 
         if model_index == len(models) - 1:
             self.run_highest_position_analysis()
