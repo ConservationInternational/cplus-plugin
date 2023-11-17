@@ -639,7 +639,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def _on_double_click_priority_layer(self, list_item: QtWidgets.QListWidgetItem):
         """Slot raised when a priority list item has been double clicked."""
-        layer_name = list_item.text()
+        layer_name = list_item.data(QtCore.Qt.DisplayRole)
         self._show_priority_layer_editor(layer_name)
 
     def _show_priority_layer_editor(self, current_text):
