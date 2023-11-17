@@ -305,6 +305,7 @@ class NcsComponentWidget(ModelComponentWidget):
     """Widget for displaying and managing NCS pathways."""
 
     ncs_pathway_updated = QtCore.pyqtSignal(NcsPathway)
+    ncs_pathway_removed = QtCore.pyqtSignal(str)
     items_reloaded = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
@@ -402,8 +403,9 @@ class NcsComponentWidget(ModelComponentWidget):
         ncs = selected_items[0].ncs_pathway
 
         msg = self.tr(
-            f"Do you want to remove '{ncs.name}'?\nClick Yes to "
-            f"proceed or No to cancel."
+            f"Do you want to remove '{ncs.name}'? The corresponding "
+            f"NCS pathways used in the implementation models will "
+            f"also be removed.\nClick Yes to proceed or No to cancel."
         )
 
         if (
@@ -416,6 +418,7 @@ class NcsComponentWidget(ModelComponentWidget):
             == QtWidgets.QMessageBox.Yes
         ):
             self.item_model.remove_ncs_pathway(str(ncs.uuid))
+            self.ncs_pathway_removed.emit(str(ncs.uuid))
             settings_manager.remove_ncs_pathway(str(ncs.uuid))
             self.clear_description()
 
@@ -754,3 +757,13 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         :rtype: bool
         """
         return self.item_model.update_ncs_pathway_items(ncs_pathway)
+
+    def remove_ncs_pathway_items(self, ncs_pathway_uuid: str):
+        """Delete NCS pathway items used for IMs that are linked to the
+        given NCS pathway.
+
+        :param ncs_pathway_uuid: NCS pathway whose corresponding items will be
+        deleted in the implementation model items that contain it.
+        :type ncs_pathway_uuid: str
+        """
+        self.item_model.remove_ncs_pathway_items(ncs_pathway_uuid)

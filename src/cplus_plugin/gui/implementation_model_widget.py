@@ -66,6 +66,7 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
 
         settings_manager.settings_updated[str, object].connect(self.on_settings_changed)
         self.ncs_pathway_view.ncs_pathway_updated.connect(self.on_ncs_pathway_updated)
+        self.ncs_pathway_view.ncs_pathway_removed.connect(self.on_ncs_pathway_removed)
         self.ncs_pathway_view.items_reloaded.connect(self._on_ncs_pathways_reloaded)
 
         self.load()
@@ -124,6 +125,14 @@ class ImplementationModelContainerWidget(QtWidgets.QWidget, WidgetUi):
     def on_ncs_pathway_updated(self, ncs_pathway: NcsPathway):
         """Slot raised when an NCS pathway has been updated."""
         self.implementation_model_view.update_ncs_pathway_items(ncs_pathway)
+
+    def on_ncs_pathway_removed(self, ncs_pathway_uuid: str):
+        """Slot raised when an NCS pathway has been removed.
+
+        :param ncs_pathway_uuid: Unique identified of the removed NCS pathway item.
+        :type ncs_pathway_uuid: str
+        """
+        self.implementation_model_view.remove_ncs_pathway_items(ncs_pathway_uuid)
 
     def enable_default_items(self, enable: bool):
         """Enable or disable default NCS pathway and implementation model items.

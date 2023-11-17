@@ -352,19 +352,24 @@ class ImplementationModelItem(LayerComponentItem):
         return [ncs_item.ncs_pathway for ncs_item in self.ncs_items]
 
     def ncs_item_from_original_pathway(
-        self, ncs_pathway: NcsPathway
+        self, ncs_pathway: typing.Union[NcsPathway, str]
     ) -> typing.Union[NcsPathwayItem, None]:
         """Retrieves the NCS item corresponding to the original NCS
         pathway i.e. before it is added to this implementation
         model item.
 
-        :param ncs_pathway: Original NCS pathway data model.
-        :type ncs_pathway: NcsPathway
+        :param ncs_pathway: Original NCS pathway data model or
+        unique identifier of the NCS pathway.
+        :type ncs_pathway: NcsPathway, str
 
         :returns: The matching NCS pathway item in this implementation
         model item, else None if there is no matching item.
         """
-        ncs_uuid = str(ncs_pathway.uuid)
+        if isinstance(ncs_pathway, NcsPathway):
+            ncs_uuid = str(ncs_pathway.uuid)
+        else:
+            ncs_uuid = ncs_pathway
+
         if ncs_uuid not in self._uuid_remap:
             return None
 
@@ -1209,6 +1214,10 @@ class IMItemModel(ComponentItemModel):
         If the NCS pathway model is not valid then the NCS pathway items
         in the implementation model item will not be updated.
 
+        :param ncs_pathway: Original NCS pathway object whose corresponding
+        models are to be updated.
+        :type ncs_pathway: NcsPathway
+
         :returns: True if matching NCS pathway items have been updated,
         else False.
         :rtype: bool
@@ -1227,6 +1236,26 @@ class IMItemModel(ComponentItemModel):
             ncs_item_for_original.update(item_pathway)
 
         return True
+
+    def remove_ncs_pathway_items(self, ncs_pathway_uuid: str):
+        """Delete NCS pathway items matching the given NCS pathway model.
+
+        If the NCS pathway model is not valid then the NCS pathway items
+        in the implementation model item will not be deleted.
+
+        :param ncs_pathway_uuid: Unique identifier of the NCS pathway object
+        whose corresponding models are to be removed in the implementation
+        models.
+        :type ncs_pathway_uuid: str
+        """
+        for im_item in self.model_items():
+            ncs_item_for_original = im_item.ncs_item_from_original_pathway(
+                ncs_pathway_uuid
+            )
+            if ncs_item_for_original is None:
+                continue
+
+            status = self.remove_ncs_pathway_item(ncs_item_for_original.uuid, im_item)
 
     def remove_implementation_model(self, uuid_str: str) -> bool:
         """Remove an implementation model item from the model.
