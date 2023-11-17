@@ -165,11 +165,16 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
                 for layer in model.priority_layers
                 if layer is not None
             ]
-            if str(self.layer.get("uuid")) not in models_layer_uuids:
+            if (
+                self.layer is not None
+                and str(self.layer.get("uuid")) not in models_layer_uuids
+            ):
                 model.priority_layers.append(self.layer)
                 settings_manager.save_implementation_model(model)
         for model in removed_models:
             for layer in model.priority_layers:
+                if layer is None:
+                    continue
                 if str(layer.get("uuid")) == str(self.layer.get("uuid")):
                     model.priority_layers.remove(layer)
                     settings_manager.save_implementation_model(model)
