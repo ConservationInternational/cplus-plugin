@@ -54,7 +54,8 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.style_btn.setSymbolType(Qgis.SymbolType.Fill)
 
         self.btn_color_ramp.setShowNull(False)
-        self.btn_color_ramp.setRandomColorRamp()
+        self.btn_color_ramp.setToNull()
+        self.btn_color_ramp.setShowGradientOnly(True)
         self.btn_color_ramp.setColorRampDialogTitle(
             self.tr("Set Color Ramp for Output Implementation Model")
         )
@@ -207,8 +208,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._show_warning_message(msg)
             status = False
 
-        output_model_color_ramp = self.btn_color_ramp.colorRamp()
-        if output_model_color_ramp is None:
+        if self.btn_color_ramp.colorRamp() is None or self.btn_color_ramp.isNull():
             msg = tr("No color ramp defined for the output model layer.")
             self._show_warning_message(msg)
             status = False
