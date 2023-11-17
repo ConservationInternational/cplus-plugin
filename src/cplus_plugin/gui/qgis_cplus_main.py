@@ -11,6 +11,7 @@ import uuid
 import datetime
 
 from functools import partial
+from random import randint
 
 from pathlib import Path
 
@@ -2466,7 +2467,28 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             im_name = model.name
 
             raster_val = model.style_pixel_value
-            color = model.scenario_fill_symbol().color()
+
+            model_fill_symbol = model.scenario_fill_symbol()
+            if model_fill_symbol is None:
+                self.show_message(
+                    tr(
+                        f"Couldn't fetch color for the implementation model {im_name},"
+                        f" using a random color instead."
+                    ),
+                    level=Qgis.Warning,
+                )
+                log(
+                    tr(
+                        f"Couldn't fetch color for the implementation model {im_name},"
+                        f" using a random color instead, fill symbol is None"
+                    )
+                )
+                color_names = QtGui.QColor.colorNames()
+                color_name = color_names[randint(0, len(color_names))]
+                color = QtGui.QColor(color_name)
+            else:
+                color = model_fill_symbol.color()
+
             color_ramp_shader = QgsColorRampShader.ColorRampItem(
                 float(raster_val), QtGui.QColor(color), im_name
             )
