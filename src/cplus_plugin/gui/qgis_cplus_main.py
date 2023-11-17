@@ -375,7 +375,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def on_ncs_pathways_reloaded(self):
         """Slot raised when NCS pathways have been reloaded in the view."""
-        within_pilot_area = extent_within_pilot(self.extent_box.outputExtent())
+        within_pilot_area = extent_within_pilot(
+            self.extent_box.outputExtent(), self.extent_box.outputCrs()
+        )
         self.implementation_model_widget.enable_default_items(within_pilot_area)
 
     def on_extent_changed(self, new_extent: QgsRectangle):
@@ -384,7 +386,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         Used to enable/disable default model items if they are within or
         outside the pilot AOI.
         """
-        within_pilot_area = extent_within_pilot(new_extent)
+        within_pilot_area = extent_within_pilot(new_extent, self.extent_box.outputCrs())
 
         if not within_pilot_area:
             msg = tr(
@@ -2101,6 +2103,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param models: List of the selected implementation models
         :type models: typing.List[ImplementationModel]
 
+        :param extent: selected extent from user
+        :type extent: str
+
         :param success: Whether the scenario analysis was successful
         :type success: bool
 
@@ -2119,6 +2124,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Runs cleaning on the weighted implementation models replacing
         zero values with no-data as they are not statistical meaningful for the
         whole analysis.
+
+        :param extent: Selected extent from user
+        :type extent: str
         """
         model_count = 0
 
