@@ -35,6 +35,7 @@ from qgis.core import (
     QgsProcessingAlgRunnerTask,
     QgsProcessingContext,
     QgsProcessingFeedback,
+    QgsRandomColorRamp,
     QgsRasterLayer,
     QgsRectangle,
     QgsTask,

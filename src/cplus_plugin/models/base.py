@@ -522,7 +522,7 @@ class ImplementationModel(LayerModelComponent):
             return None
 
         ramp_info = model_layer_info.get(COLOR_RAMP_PROPERTIES_ATTRIBUTE, None)
-        if ramp_info is None or len(ramp_info) == 0:
+        if ramp_info is None:
             return None
 
         ramp_type = model_layer_info.get(COLOR_RAMP_TYPE_ATTRIBUTE, None)
