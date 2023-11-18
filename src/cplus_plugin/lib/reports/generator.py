@@ -44,7 +44,6 @@ from qgis.PyQt import QtCore, QtGui, QtXml
 
 from ...definitions.constants import IM_GROUP_LAYER_NAME
 from ...definitions.defaults import (
-    DEFAULT_IMPLEMENTATION_MODEL_PIXEL_VALUES,
     IMPLEMENTATION_MODEL_AREA_TABLE_ID,
     MINIMUM_ITEM_HEIGHT,
     MINIMUM_ITEM_WIDTH,
