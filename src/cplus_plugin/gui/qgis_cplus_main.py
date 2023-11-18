@@ -2268,6 +2268,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.update_progress_bar(100)
             self.scenario_result.analysis_output = output
             self.scenario_result.state = ScenarioState.FINISHED
+            self.scenario_result.scenario_directory = self.scenario_directory
             self.analysis_finished.emit(self.scenario_result)
 
         else:

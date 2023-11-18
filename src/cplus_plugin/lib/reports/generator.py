@@ -32,7 +32,6 @@ from qgis.core import (
     QgsRasterLayer,
     QgsReadWriteContext,
     QgsScaleBarSettings,
-    QgsSimpleLegendNode,
     QgsTask,
     QgsTableCell,
     QgsTextFormat,
@@ -114,7 +113,7 @@ class ReportGeneratorTask(QgsTask):
         if self._context.project_file:
             self._result = self._generator.run()
         else:
-            msg = tr("Unable to serialize current project for " "report generation.")
+            msg = tr("Unable to serialize current project for report generation.")
             msgs: typing.List[str] = [msg]
             self._result = ReportResult(
                 False, self._context.scenario.uuid, "", tuple(msgs)
@@ -386,29 +385,27 @@ class ReportGenerator:
     def output_dir(self) -> str:
         """Creates, if it does not exist, the output directory
         where the analysis reports will be saved. This is relative
-        to the base directory and outputs sub-folder.
+        to the base directory and scenario output sub-folder.
 
         :returns: Output directory where the analysis reports
         will be saved.
         :rtype: str
         """
-        output_dir = f"{self._context.scenario_output_dir}/reports"
-
         # Create reports directory
         if not self._report_output_dir:
-            p = Path(output_dir)
+            p = Path(self._context.scenario_output_dir)
             if not p.exists():
                 try:
                     p.mkdir()
                 except FileNotFoundError:
                     tr_msg = (
                         "Missing parent directory when creating "
-                        "reports subdirectory."
+                        "'report' subdirectory."
                     )
                     self._error_messages.append(tr_msg)
                     return ""
 
-        self._report_output_dir = output_dir
+        self._report_output_dir = self._context.scenario_output_dir
 
         return self._report_output_dir
 

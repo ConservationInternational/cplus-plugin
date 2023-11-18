@@ -52,13 +52,6 @@ class ReportManager(QtCore.QObject):
         self.task_manager.statusChanged.connect(self.on_task_status_changed)
 
         self.root_output_dir = ""
-        self._set_root_output_dir()
-
-    def _set_root_output_dir(self):
-        """Set the path for the root directory."""
-        base_dir = settings_manager.get_value(Settings.BASE_DIR, "")
-        if base_dir:
-            self.root_output_dir = f"{base_dir}/{OUTPUTS_SEGMENT}"
 
     @property
     def variable_register(self) -> LayoutVariableRegister:
@@ -236,9 +229,7 @@ class ReportManager(QtCore.QObject):
         if feedback is None:
             feedback = QgsFeedback(self)
 
-        ctx = self.create_report_context(
-            scenario, feedback, scenario_result.output_layer_name
-        )
+        ctx = self.create_report_context(scenario_result, feedback)
         if ctx is None:
             log("Could not create report context. Check directory settings.")
             return ReportSubmitStatus(False, None)
@@ -275,40 +266,37 @@ class ReportManager(QtCore.QObject):
 
         return self._report_results[scenario_id]
 
+    @classmethod
     def create_report_context(
-        self, scenario: Scenario, feedback: QgsFeedback, output_layer_name: str
+        cls, scenario_result: ScenarioResult, feedback: QgsFeedback
     ) -> typing.Union[ReportContext, None]:
         """Creates the report context for use in the report
         generator task.
 
-        :param scenario: Scenario whose report context will be created
-        under BASE_DIR.
-        :type scenario: Scenario
+        :param scenario_result: Result of the scenario analysis.
+        :type scenario_result: ScenarioResult
 
         :param feedback: Feedback object for reporting back to the main
         application.
         :type feedback: QgsFeedback
 
-        :param output_layer_name: Name of the output scenario layer in
-        the TOC.
-        :type output_layer_name: str
-
         :returns: A report context object containing the information
         for generating the report else None if it could not be created.
         :rtype: ReportContext
         """
-        # Try to update the root output directory.
-        self._set_root_output_dir()
-
-        output_dir = self.create_scenario_dir(scenario)
-        if not output_dir:
+        output_dir = os.path.normpath(scenario_result.scenario_directory)
+        if not output_dir or not Path(output_dir).exists():
+            log(f"Unable to generate the report. {output_dir} not found.\n")
             return None
 
-        project_file_path = f"{output_dir}/{scenario.name}.qgz"
+        scenario_report_dir = os.path.normpath(f"{output_dir}/reports")
+        FileUtils.create_new_dir(scenario_report_dir)
+
+        project_file_path = f"{scenario_report_dir}/{scenario_result.scenario.name}.qgz"
         if os.path.exists(project_file_path):
             counter = 1
             while True:
-                project_file_path = f"{output_dir}/{scenario.name}_{counter!s}.qgz"
+                project_file_path = f"{scenario_report_dir}/{scenario_result.scenario.name}_{counter!s}.qgz"
                 if not os.path.exists(project_file_path):
                     break
                 counter += 1
@@ -329,7 +317,7 @@ class ReportManager(QtCore.QObject):
         counter = 1
         context_name = ""
         while True:
-            layout_name = f"{scenario.name} {counter!s}"
+            layout_name = f"{scenario_result.scenario.name} {counter!s}"
             matching_layout = layout_manager.layoutByName(layout_name)
             if matching_layout is None:
                 context_name = layout_name
@@ -340,12 +328,12 @@ class ReportManager(QtCore.QObject):
 
         return ReportContext(
             template_path,
-            scenario,
+            scenario_result.scenario,
             context_name,
-            output_dir,
+            scenario_report_dir,
             project_file_path,
             feedback,
-            output_layer_name,
+            scenario_result.output_layer_name,
         )
 
     @classmethod
