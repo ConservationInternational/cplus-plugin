@@ -972,14 +972,10 @@ class ReportGenerator:
             name_cell.setBackgroundColor(QtGui.QColor("#e9e9e9"))
 
             # IM area
-            im_uuid = str(imp_model.uuid)
-            if im_uuid in DEFAULT_IMPLEMENTATION_MODEL_PIXEL_VALUES:
-                im_pixel_value = DEFAULT_IMPLEMENTATION_MODEL_PIXEL_VALUES[im_uuid]
-                area_info = pixel_area_info.get(im_pixel_value, None)
-                if area_info is None:
-                    area_info = "0"
+            if imp_model.style_pixel_value in pixel_area_info:
+                area_info = pixel_area_info.get(imp_model.style_pixel_value)
             else:
-                area_info = tr("<Pixel value not found>")
+                area_info = tr("<Pixel value not found in calculation>")
 
             area_cell = QgsTableCell(area_info)
             if isinstance(area_info, Number):
