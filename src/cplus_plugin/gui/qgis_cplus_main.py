@@ -96,6 +96,7 @@ from ..definitions.defaults import (
 from ..definitions.constants import (
     IM_GROUP_LAYER_NAME,
     IM_WEIGHTED_GROUP_NAME,
+    MODEL_IDENTIFIER_PROPERTY,
     NCS_PATHWAYS_GROUP_LAYER_NAME,
     USER_DEFINED_ATTRIBUTE,
 )
@@ -2374,6 +2375,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             for im in list_models:
                 im_name = im.name
                 im_layer = QgsRasterLayer(im.path, im.name)
+                im_layer.setCustomProperty(MODEL_IDENTIFIER_PROPERTY, str(im.uuid))
                 list_pathways = im.pathways
 
                 # Add IM layer with styling, if available
@@ -2430,6 +2432,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                 im_weighted_layer = QgsRasterLayer(
                     weighted_im_path, weighted_im_name, QGIS_GDAL_PROVIDER
+                )
+
+                # Set UUID for easier retrieval
+                im_weighted_layer.setCustomProperty(
+                    MODEL_IDENTIFIER_PROPERTY, str(model.uuid)
                 )
 
                 renderer = self.style_model_layer(im_weighted_layer, model)

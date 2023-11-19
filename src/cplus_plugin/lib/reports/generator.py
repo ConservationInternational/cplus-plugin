@@ -41,7 +41,11 @@ from qgis.utils import iface
 
 from qgis.PyQt import QtCore, QtGui, QtXml
 
-from ...definitions.constants import IM_GROUP_LAYER_NAME
+from ...definitions.constants import (
+    IM_GROUP_LAYER_NAME,
+    IM_WEIGHTED_GROUP_NAME,
+    MODEL_IDENTIFIER_PROPERTY,
+)
 from ...definitions.defaults import (
     IMPLEMENTATION_MODEL_AREA_TABLE_ID,
     MINIMUM_ITEM_HEIGHT,
@@ -177,6 +181,17 @@ class ReportGeneratorTask(QgsTask):
         else False.
         :type result: bool
         """
+        if len(self._result.messages) > 0:
+            log(
+                f"Warnings and errors occurred when generating the "
+                f"report for {self._context.scenario.name} "
+                f"scenario. See details below:",
+                info=False,
+            )
+            for err in self._result.messages:
+                err_msg = f"{self._context.scenario.name} - {err}\n"
+                log(err_msg, info=False)
+
         if result:
             log(
                 f"Successfully generated the report for "
@@ -202,20 +217,11 @@ class ReportGeneratorTask(QgsTask):
             if feedback is not None:
                 feedback.setProgress(100)
 
-        else:
-            log(
-                f"Error occurred when generating the "
-                f"report for {self._context.scenario.name} "
-                f"scenario. See details below:",
-                info=False,
-            )
-            for err in self._result.messages:
-                err_msg = f"{self._context.scenario.name} - {err}"
-                log(err_msg, info=False)
-
 
 class ReportGenerator:
     """Generator for CPLUS reports."""
+
+    AREA_DECIMAL_PLACES = 2
 
     def __init__(self, context: ReportContext, feedback: QgsFeedback = None):
         self._context = context
@@ -232,11 +238,13 @@ class ReportGenerator:
         self._reference_layer_group = None
         self._scenario_layer = None
         self._area_processing_feedback = None
+        self._implementation_models_area = {}
 
         if self._feedback:
             self._feedback.canceled.connect(self._on_feedback_cancelled)
 
-        self._area_calculation_progress_reference = 40
+        self._area_calculation_progress_reference = 0
+        self._area_calculation_step_increment = 0
 
     @property
     def context(self) -> ReportContext:
@@ -302,14 +310,14 @@ class ReportGenerator:
 
         self._area_processing_feedback = QgsProcessingFeedback()
         self._area_processing_feedback.progressChanged.connect(
-            self._on_area_progress_changed
+            self._area_progress_changed
         )
 
-    def _on_area_progress_changed(self, progress: float):
+    def _area_progress_changed(self, progress: float):
         """Slot raised when progress for area calculation."""
         # Check cancel or update progress
         total_progress = self._area_calculation_progress_reference + (
-            self._area_calculation_progress_reference / 100 * progress
+            self._area_calculation_step_increment / 100 * progress
         )
         self._process_check_cancelled_or_set_progress(total_progress)
 
@@ -329,7 +337,7 @@ class ReportGenerator:
 
     def _on_feedback_cancelled(self):
         # Slot raised when the main feedback object has been cancelled.
-        # Cancel area calculation as well
+        # Cancel both area calculation processes as well.
         if (
             self._area_processing_feedback
             and not self._area_processing_feedback.isCanceled()
@@ -628,7 +636,7 @@ class ReportGenerator:
         map_ref_point = QgsLayoutPoint(pos_x, pos_y, self._layout.units())
         im_map.attemptMove(map_ref_point, True, False, page)
         im_map.attemptResize(QgsLayoutSize(width, map_height, self._layout.units()))
-        im_layer = self._get_im_layer_in_project(imp_model.name)
+        im_layer = self._get_im_layer_in_project(str(imp_model.uuid), weighted=True)
         if im_layer is not None:
             ext = im_layer.extent()
             im_map.setLayers([im_layer])
@@ -839,11 +847,24 @@ class ReportGenerator:
         label.refresh()
 
     def _get_im_layer_in_project(
-        self, im_name: str
+        self, im_identifier: str, weighted: bool = False
     ) -> typing.Union[QgsRasterLayer, None]:
         """Retrieves the IM raster layer from the IM layer group in
         the project.
+
+        :param im_identifier: Unique identifier of the implementation model.
+        :type im_identifier: str
+
+        :param weighted: True to search under weighted implementation
+        model category else under the implementation models maps
+        category. Default is False.
+        :type weighted: bool
         """
+        if weighted:
+            category_name = tr(IM_WEIGHTED_GROUP_NAME)
+        else:
+            category_name = tr(IM_GROUP_LAYER_NAME)
+
         if self._project is None:
             tr_msg = tr(
                 "Project could not be recreated, unable to fetch the implementation model layer."
@@ -858,20 +879,22 @@ class ReportGenerator:
             self._error_messages.append(tr_msg)
             return None
 
-        im_layer_group = self._reference_layer_group.findGroup(tr(IM_GROUP_LAYER_NAME))
+        im_layer_group = self._reference_layer_group.findGroup(category_name)
         if im_layer_group is None:
             tr_msg = tr(
-                "Could not find the implementation model layer group, unable to fetch the implementation model layer."
+                f"Could not find the {category_name} layer group, unable to fetch the implementation model layer."
             )
             self._error_messages.append(tr_msg)
             return None
 
         matching_tree_layers = [
-            tl for tl in im_layer_group.findLayers() if tl.layer().name() == im_name
+            tl
+            for tl in im_layer_group.findLayers()
+            if tl.layer().customProperty(MODEL_IDENTIFIER_PROPERTY, "") == im_identifier
         ]
         if len(matching_tree_layers) == 0:
             tr_msg = tr(
-                "Could not find the implementation model layer in the implementation model layer group."
+                f"Could not find the implementation model layer in the {category_name} layer group."
             )
             self._error_messages.append(tr_msg)
             return None
@@ -920,17 +943,60 @@ class ReportGenerator:
     def _get_table_from_id(
         self, table_id: str
     ) -> typing.Union[QgsLayoutItemManualTable, None]:
-        """Get the table object from the corresponding item id or return None if the table was not found."""
+        """Get the table object from the corresponding item id or return None
+        if the table was not found.
+        """
         table_frame = self._layout.itemById(table_id)
         if table_frame is None:
             return None
 
         return table_frame.multiFrame()
 
+    def _calculate_implementation_model_areas(self):
+        """Calculate the area of individual weighted implementation
+        model layers.
+
+        The values are rounded off to two decimal places.
+        """
+        progress_range = 30
+
+        # Update the feedback object based on the status of calculating the
+        # area for each implementation model.
+        self._area_calculation_progress_reference = 20
+        self._area_calculation_step_increment = progress_range / len(
+            self._context.scenario.models
+        )
+
+        for imp_model in self._context.scenario.models:
+            model_layer = self._get_im_layer_in_project(str(imp_model.uuid), True)
+            if model_layer is None:
+                tr_msg = tr("Could not find raster layer for")
+                self._error_messages.append(
+                    f"{tr_msg} {imp_model.name} weighted implementation model."
+                )
+                continue
+
+            self._reset_area_processing_feedback()
+            model_area_info = calculate_raster_value_area(
+                model_layer, feedback=self._area_processing_feedback
+            )
+            self._area_calculation_progress_reference += (
+                self._area_calculation_step_increment
+            )
+            model_area = sum(list(model_area_info.values()))
+            self._implementation_models_area[str(imp_model.uuid)] = round(
+                model_area, self.AREA_DECIMAL_PLACES
+            )
+
+        log(str(self._implementation_models_area))
+
     def _populate_im_area_table(self):
         """Populate the table(s) for implementation models and
         corresponding areas.
         """
+        self._area_calculation_progress_reference = 60
+        self._area_calculation_step_increment = 20
+
         parent_table = self._get_table_from_id(IMPLEMENTATION_MODEL_AREA_TABLE_ID)
         if parent_table is None:
             tr_msg = tr(
@@ -961,6 +1027,11 @@ class ReportGenerator:
             self._error_messages.append(tr_msg)
             return
 
+        # Pixel type conversion
+        int_pixel_area_info = {
+            int(value): area for value, area in pixel_area_info.items()
+        }
+
         rows_data = []
         for imp_model in self._context.scenario.models:
             # IM name
@@ -968,8 +1039,8 @@ class ReportGenerator:
             name_cell.setBackgroundColor(QtGui.QColor("#e9e9e9"))
 
             # IM area
-            if imp_model.style_pixel_value in pixel_area_info:
-                area_info = pixel_area_info.get(imp_model.style_pixel_value)
+            if imp_model.style_pixel_value in int_pixel_area_info:
+                area_info = int_pixel_area_info.get(imp_model.style_pixel_value)
             else:
                 area_info = tr("<Pixel value not found in calculation>")
 
@@ -978,7 +1049,7 @@ class ReportGenerator:
                 number_format = QgsBasicNumericFormat()
                 number_format.setThousandsSeparator(",")
                 number_format.setShowTrailingZeros(True)
-                number_format.setNumberDecimalPlaces(2)
+                number_format.setNumberDecimalPlaces(self.AREA_DECIMAL_PLACES)
                 area_cell.setNumericFormat(number_format)
 
             rows_data.append([name_cell, area_cell])
@@ -1055,25 +1126,27 @@ class ReportGenerator:
         if self._process_check_cancelled_or_set_progress(10):
             return self._get_failed_result()
 
-        if self._process_check_cancelled_or_set_progress(15):
-            return self._get_failed_result()
-
         # Update variable values
         self._variable_register.update_variables(self.layout, self._context)
 
-        if self._process_check_cancelled_or_set_progress(20):
+        if self._process_check_cancelled_or_set_progress(15):
             return self._get_failed_result()
 
         # Set repeat page
         self._set_repeat_page()
 
-        if self._process_check_cancelled_or_set_progress(30):
+        if self._process_check_cancelled_or_set_progress(20):
+            return self._get_failed_result()
+
+        self._calculate_implementation_model_areas()
+
+        if self._process_check_cancelled_or_set_progress(50):
             return self._get_failed_result()
 
         # Render repeat items i.e. implementation models
         self._render_repeat_items()
 
-        if self._process_check_cancelled_or_set_progress(40):
+        if self._process_check_cancelled_or_set_progress(60):
             return self._get_failed_result()
 
         # Populate implementation model area table
