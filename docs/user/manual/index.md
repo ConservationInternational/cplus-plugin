@@ -214,6 +214,7 @@ Step 2 focuses on the implementation models (IMs) and pathways.
 - ![add button](img/symbologyAdd.svg): Add a new IM
 - ![remove button](img/symbologyRemove.svg): Remove the selected IM or pathway
 - ![edit button](img/mActionToggleEditing.svg): Edit the selected IM
+- ![ordering pixel values button](img/button_pixels_order.png): Order the pixel values (IMs) will be in the scenario output
 
 ##### Implementation Model Editor dialog
 
@@ -223,7 +224,16 @@ Step 2 focuses on the implementation models (IMs) and pathways.
 
 - **Name**: The name of the new IM or IM being edited. IM title will be used in the report
 - **Description**: A detailed description of the IM. This will be used in the report
+- **Style**: Styles used for the IM
+    - *Scenario layer*: Colouring which will be used in the Scenario output for this IM
+    - *Output model layer*: Colour ramp which will be applied to the IM raster output
 - **Map layer**: If enabled, a user can provide an existing IM. This has to be a raster
+
+#### Ordering of the pixel values for the scenario output
+
+A user can order the stack using the **Style pixel value editor**.
+
+![UI Step 3](img/style_pixel_value_editor.png)
 
 #### Step 3: Weighting priorities
 
@@ -232,7 +242,7 @@ Step 2 focuses on the implementation models (IMs) and pathways.
 *Figure 10: Step 3 of the dock widget*
 
 - **Priority groups**: Groups to which PWLs can be assigned
-- **Priority weighted layers (PWL)**:
+- **Priority weighted layers (PWL)**: Importance of each priority group
 - ![right arrow](img/cplus_right_arrow.svg): Remove the selected PWL from the priority group
 - ![left arrow](img/cplus_left_arrow.svg): Add the selected PWL to the selected priority group
 - ![add button](img/symbologyAdd.svg): Add a new PWL
@@ -304,3 +314,19 @@ These options will be available once the analysis has finished. The options will
     - *Base data directory*: Directory to read data from, and to which results will be written
     - *Coefficient for carbon layers*: Applied to carbon layers during processing
     - *Pathway suitability index*: Index multiplied to the pathways. Lower values means the pathway is less important, higher means its more important
+    - *Snapping*: Will set rasters to match the cell alignment of a reference layer
+        - *Resample method*: Resampling performed on pixel values.
+            - *Nearest neighbour*: Closest pixel value. This will be best to use if a user wants to preserve the original pixel values
+            - *Bilinear*: Computes the pixel values from the two closest pixels (2 x 2 kernel)
+            - *Cubic*: Computes the pixel values from the four closest pixels (4 x 4 kernel)
+            - *Cubic B-Spline*: Cubic resampling based on B-Spline (4 x 4 kernel)
+            - *Lanczos*: Lanczos windowed sinc interpolation (6 x 6 kernel)
+            - *Average*: Computes the average of all non-nodata contributing pixels
+            - *Mode*: Selects the value which appears most often of all the sampled pixels
+            - *Maximum*: Selects the maximum value which appears of all the sampled pixels
+            - *Minimum*: Selects the minimum value which appears of all the sampled pixels
+            - *Mediane*: Selects the mediane value which appears of all the sampled pixels
+            - *First quartile (Q1)*: Selects the first quartile value which appears of all the sampled pixels
+            - *Third quartile (Q3)*: Selects the third quartile value which appears of all the sampled pixels
+        - *Reference layer*: The reference layer to which the cell alignment will be applied
+        - *Rescale values*: Rescale values according to cell size

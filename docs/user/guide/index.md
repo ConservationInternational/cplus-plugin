@@ -284,8 +284,9 @@ An IM is a combination of NCS pathways represented in an AOI spatial layer. **Fi
 Step 2 buttons (**Figure 18**):
 
 - **Add**: Adds a new pathway or model
-- **Editing**: Edit and existing pathway or model
 - **Delete**: Delete a pathway or model
+- **Editing**: Edit and existing pathway or model
+- ****
 
 ![CPLUS step 2 buttons](img/plugin-step2-buttons.png)
 
@@ -333,6 +334,13 @@ How to add a new IM:
 ![CPLUS add implementation model](img/plugin-implementation-model.png)
 
 *Figure 20: Implementation Model creator/editor*
+
+- Open the Style pixel value editor by clicking on the ![CPLUS add implementation model](img/button_pixels_order.png) button
+- Select the IM which needs to be moved up or down in the stack
+- Drag-and-drop the IM where it needs to be in the stack
+- Click **OK** once done
+
+![CPLUS style pixel value editor](img/style_pixel_value_editor.png)
 
 - The final step is to select each of the IMs a user want to include in the scenario run
 - A user can exclude IMs if they don't want to include it, even if the IM has pathways
