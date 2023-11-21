@@ -203,6 +203,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.edit_pwl_btn.clicked.connect(self.edit_priority_layer)
         self.remove_pwl_btn.clicked.connect(self.remove_priority_layer)
 
+        self.priority_layers_list.itemDoubleClicked.connect(
+            self._on_double_click_priority_layer
+        )
+
         # Add priority groups list into the groups frame
         self.priority_groups_list = CustomTreeWidget()
 
@@ -620,16 +624,29 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 Qgis.Critical,
             )
             return
-        current_text = self.priority_layers_list.currentItem().data(
-            QtCore.Qt.DisplayRole
+
+        layer_identifier = self.priority_layers_list.currentItem().data(
+            QtCore.Qt.UserRole
         )
-        if current_text == "":
+
+        if layer_identifier == "":
             self.show_message(
                 tr("Could not fetch the selected priority layer for editing."),
                 Qgis.Critical,
             )
             return
-        layer = settings_manager.find_layer_by_name(current_text)
+
+        self._show_priority_layer_editor(layer_identifier)
+
+    def _on_double_click_priority_layer(self, list_item: QtWidgets.QListWidgetItem):
+        """Slot raised when a priority list item has been double clicked."""
+        layer_name = list_item.data(QtCore.Qt.UserRole)
+        self._show_priority_layer_editor(layer_name)
+
+    def _show_priority_layer_editor(self, layer_identifier: str):
+        """Shows the dialog for editing a priority layer."""
+        layer_uuid = uuid.UUID(layer_identifier)
+        layer = settings_manager.get_priority_layer(layer_uuid)
         layer_dialog = PriorityLayerDialog(layer)
         layer_dialog.exec_()
 
