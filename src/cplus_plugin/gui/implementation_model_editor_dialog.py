@@ -10,14 +10,14 @@ import uuid
 from qgis.core import (
     Qgis,
     QgsColorRamp,
-    QgsFillSymbol,
     QgsFillSymbolLayer,
+    QgsGradientColorRamp,
     QgsMapLayerProxyModel,
     QgsRasterLayer,
 )
 from qgis.gui import QgsGui, QgsMessageBar
 
-from qgis.PyQt import QtGui, QtWidgets
+from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
@@ -58,6 +58,17 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.btn_color_ramp.setShowGradientOnly(True)
         self.btn_color_ramp.setColorRampDialogTitle(
             self.tr("Set Color Ramp for Output Implementation Model")
+        )
+
+        # Default colors
+        start_color = QtGui.QColor.fromRgb(QtCore.QRandomGenerator.global_().generate())
+        stop_color = QtGui.QColor.fromRgb(QtCore.QRandomGenerator.global_().generate())
+        self.style_btn.setColor(start_color)
+        self.btn_color_ramp.setColorRamp(
+            QgsGradientColorRamp(
+                start_color,
+                stop_color
+            )
         )
 
         self.buttonBox.accepted.connect(self._on_accepted)
