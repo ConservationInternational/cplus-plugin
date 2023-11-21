@@ -64,12 +64,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         start_color = QtGui.QColor.fromRgb(QtCore.QRandomGenerator.global_().generate())
         stop_color = QtGui.QColor.fromRgb(QtCore.QRandomGenerator.global_().generate())
         self.style_btn.setColor(start_color)
-        self.btn_color_ramp.setColorRamp(
-            QgsGradientColorRamp(
-                start_color,
-                stop_color
-            )
-        )
+        self.btn_color_ramp.setColorRamp(QgsGradientColorRamp(start_color, stop_color))
 
         self.buttonBox.accepted.connect(self._on_accepted)
         self.btn_select_file.clicked.connect(self._on_select_file)
