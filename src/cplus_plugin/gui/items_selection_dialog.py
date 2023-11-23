@@ -5,13 +5,18 @@
 """
 
 import os
+import uuid
+
 from qgis.PyQt import QtCore, QtGui, QtWidgets, QtNetwork
 
 from qgis.PyQt.uic import loadUiType
 
+from ..models.base import ImplementationModel, PriorityLayer
+
 from ..conf import settings_manager
 
-from ..utils import tr
+
+from ..utils import log, tr
 
 
 DialogUi, _ = loadUiType(
@@ -22,13 +27,17 @@ DialogUi, _ = loadUiType(
 class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
     """Dialog for handling items selection"""
 
-    def __init__(self, parent, layer=None, models=[]):
+    def __init__(
+        self, parent, parent_item=None, items=[], item_type=ImplementationModel
+    ):
         """Constructor"""
         super().__init__()
         self.setupUi(self)
         self.parent = parent
-        self.layer = layer
-        self.models = models
+        self.parent_item = parent_item
+
+        self.item_type = item_type
+        self.items = items
 
         select_all_btn = QtWidgets.QPushButton(tr("Select All"))
         select_all_btn.setToolTip(tr("Select the all listed items"))
@@ -52,62 +61,113 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
 
         for index in range(self.list_widget.count()):
             item = self.list_widget.item(index)
-            model_uuid = item.data(QtCore.Qt.UserRole)
-            model = settings_manager.get_implementation_model(str(model_uuid))
+            item_uuid = item.data(QtCore.Qt.UserRole)
 
-            layer_model_uuids = [model.uuid for model in self.models]
-            model_layer_uuids = [
-                layer.get("uuid")
-                for layer in model.priority_layers
-                if layer is not None
-            ]
+            if self.item_type is ImplementationModel:
+                item = settings_manager.get_implementation_model(str(item_uuid))
 
-            if (
-                self.layer is not None
-                and str(self.layer.get("uuid")) in model_layer_uuids
-            ) or (model.uuid in layer_model_uuids):
-                item.setCheckState(QtCore.Qt.Checked)
+                layer_model_uuids = [item.uuid for item in self.items]
+                model_layer_uuids = [
+                    layer.get("uuid")
+                    for layer in item.priority_layers
+                    if layer is not None
+                ]
+
+                if (
+                    self.parent_item is not None
+                    and str(self.parent_item.get("uuid")) in model_layer_uuids
+                ) or (item.uuid in layer_model_uuids):
+                    item.setCheckState(QtCore.Qt.Checked)
+            else:
+                layer = settings_manager.get_priority_layer(str(item_uuid))
+                group_uuids = []
+
+                for group in layer.get("groups"):
+                    group = settings_manager.find_group_by_name(group.get("name"))
+                    group_uuids.append(str(group.get("uuid")))
+
+                if self.parent_item.get("uuid") in group_uuids:
+                    item.setCheckState(QtCore.Qt.Checked)
 
     def set_items(self):
         """Sets the item list in the dialog"""
-        models = settings_manager.get_all_implementation_models()
+        if self.item_type is ImplementationModel:
+            items = settings_manager.get_all_implementation_models()
+        else:
+            all_layers = settings_manager.get_priority_layers()
+            items = []
+            for layer in all_layers:
+                model_layer = PriorityLayer(
+                    uuid=uuid.UUID(layer.get("uuid")),
+                    name=layer.get("name"),
+                    description=layer.get("description"),
+                    groups=layer.get("groups"),
+                )
+                items.append(model_layer)
 
-        for model in models:
-            list_widget_item = QtWidgets.QListWidgetItem(model.name)
+        for item in items:
+            log(f"Setting item with id {item.uuid}")
+            list_widget_item = QtWidgets.QListWidgetItem(item.name)
             list_widget_item.setFlags(
                 list_widget_item.flags() | QtCore.Qt.ItemIsUserCheckable
             )
-            list_widget_item.setData(QtCore.Qt.UserRole, model.uuid)
+            list_widget_item.setData(QtCore.Qt.UserRole, item.uuid)
             list_widget_item.setCheckState(QtCore.Qt.Unchecked)
             self.list_widget.addItem(list_widget_item)
 
     def selected_items(self):
         """Returns the selected items from the dialog"""
-        models = settings_manager.get_all_implementation_models()
+        if self.item_type is ImplementationModel:
+            items = settings_manager.get_all_implementation_models()
+        else:
+            all_layers = settings_manager.get_priority_layers()
+            items = []
+            for layer in all_layers:
+                model_layer = PriorityLayer(
+                    uuid=uuid.UUID(layer.get("uuid")),
+                    name=layer.get("name"),
+                    description=layer.get("description"),
+                    groups=layer.get("groups"),
+                )
+                items.append(model_layer)
+
         items_text = []
         for index in range(self.list_widget.count()):
             item = self.list_widget.item(index)
             if item.checkState() == QtCore.Qt.Checked:
                 items_text.append(item.text())
         item_names = ",".join(items_text)
-        items = [item for item in models if item.name in item_names]
+        items = [item for item in items if item.name in item_names]
         return items
 
     def unselected_items(self):
         """Returns unselected items from the dialog"""
-        models = settings_manager.get_all_implementation_models()
+        if self.item_type is ImplementationModel:
+            items = settings_manager.get_all_implementation_models()
+        else:
+            all_layers = settings_manager.get_priority_layers()
+            items = []
+            for layer in all_layers:
+                model_layer = PriorityLayer(
+                    uuid=uuid.UUID(layer.get("uuid")),
+                    name=layer.get("name"),
+                    description=layer.get("description"),
+                    groups=layer.get("groups"),
+                )
+                items.append(model_layer)
+
         items_text = []
         for index in range(self.list_widget.count()):
             item = self.list_widget.item(index)
             if item.checkState() == QtCore.Qt.Unchecked:
                 items_text.append(item.text())
         item_names = ",".join(items_text)
-        items = [item for item in models if item.name in item_names]
+        items = [item for item in items if item.name in item_names]
         return items
 
     def accept(self):
         """Saves the item selection"""
-        self.parent.set_selected_models(self.selected_items(), self.unselected_items())
+        self.parent.set_selected_items(self.selected_items(), self.unselected_items())
         super().accept()
 
     def select_all_clicked(self):
