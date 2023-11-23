@@ -64,19 +64,19 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
             item_uuid = item.data(QtCore.Qt.UserRole)
 
             if self.item_type is ImplementationModel:
-                item = settings_manager.get_implementation_model(str(item_uuid))
+                model = settings_manager.get_implementation_model(str(item_uuid))
 
                 layer_model_uuids = [item.uuid for item in self.items]
                 model_layer_uuids = [
                     layer.get("uuid")
-                    for layer in item.priority_layers
+                    for layer in model.priority_layers
                     if layer is not None
                 ]
 
                 if (
                     self.parent_item is not None
                     and str(self.parent_item.get("uuid")) in model_layer_uuids
-                ) or (item.uuid in layer_model_uuids):
+                ) or (model.uuid in layer_model_uuids):
                     item.setCheckState(QtCore.Qt.Checked)
             else:
                 layer = settings_manager.get_priority_layer(str(item_uuid))
@@ -106,7 +106,6 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
                 items.append(model_layer)
 
         for item in items:
-            log(f"Setting item with id {item.uuid}")
             list_widget_item = QtWidgets.QListWidgetItem(item.name)
             list_widget_item.setFlags(
                 list_widget_item.flags() | QtCore.Qt.ItemIsUserCheckable
