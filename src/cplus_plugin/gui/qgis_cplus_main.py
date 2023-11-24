@@ -69,6 +69,8 @@ from ..lib.extent_check import extent_within_pilot
 from ..lib.reports.manager import report_manager
 from ..models.helpers import clone_implementation_model
 
+from ..tasks import ScenarioAnalysisTask
+
 from .components.custom_tree_widget import CustomTreeWidget
 
 from ..resources import *
@@ -964,11 +966,27 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.run_scenario_btn.setEnabled(False)
 
-        self.run_pathways_analysis(
+        analysis_task = ScenarioAnalysisTask(
+            self.analysis_scenario_name,
+            self.analysis_scenario_description,
             self.analysis_implementation_models,
             self.analysis_priority_layers_groups,
             self.analysis_extent,
         )
+
+        analysis_task.taskCompleted.connect(self.analysis_complete)
+
+        analysis_task.taskTerminated.connect(self.task_terminated)
+
+        QgsApplication.taskManager().addTask(analysis_task)
+
+    def task_terminated(self):
+        log("Main task terminated")
+        self.show_message("Main task terminated")
+
+    def analysis_complete(self, task):
+        self.scenario_result = task.scenario_result
+        self.scenario_results(task.success, task.output)
 
     def run_highest_position_analysis(self):
         """Runs the highest position analysis which is last step

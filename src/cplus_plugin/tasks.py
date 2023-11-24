@@ -74,6 +74,9 @@ class ScenarioAnalysisTask(QgsTask):
         self.analysis_extent = analysis_extent
 
         self.analysis_weighted_ims = []
+        self.scenario_result = None
+        self.success = True
+        self.output = None
         self.error = None
 
         self.processing_cancelled = False
@@ -296,7 +299,9 @@ class ScenarioAnalysisTask(QgsTask):
                 f" and carbon layers generation: {alg_params} \n"
             )
 
-            processing.run("qgis:rastercalculator", alg_params)
+            results = processing.run("qgis:rastercalculator", alg_params)
+
+            pathway.path = results["OUTPUT"]
 
         return True
 
@@ -478,7 +483,9 @@ class ScenarioAnalysisTask(QgsTask):
 
             log(f"Used parameters for normalization of the pathways: {alg_params} \n")
 
-            processing.run("qgis:rastercalculator", alg_params)
+            results = processing.run("qgis:rastercalculator", alg_params)
+
+            pathway.path = results["OUTPUT"]
 
         return True
 
@@ -554,7 +561,8 @@ class ScenarioAnalysisTask(QgsTask):
                 f"implementation models generation: {alg_params} \n"
             )
 
-            processing.run("native:cellstatistics", alg_params)
+            results = processing.run("native:cellstatistics", alg_params)
+            model.path = results["OUTPUT"]
 
         return True
 
@@ -665,7 +673,8 @@ class ScenarioAnalysisTask(QgsTask):
 
             log(f"Used parameters for normalization of the models: {alg_params} \n")
 
-            processing.run("qgis:rastercalculator", alg_params)
+            results = processing.run("qgis:rastercalculator", alg_params)
+            model.path = results["OUTPUT"]
 
         return True
 
@@ -769,7 +778,7 @@ class ScenarioAnalysisTask(QgsTask):
                                 basenames.append(f'({coefficient}*"{path_basename}@1")')
 
             if basenames is []:
-                return
+                return True
 
             new_ims_directory = f"{self.scenario_directory}/weighted_ims"
 
@@ -791,7 +800,8 @@ class ScenarioAnalysisTask(QgsTask):
 
             log(f" Used parameters for calculating weighting models {alg_params} \n")
 
-            processing.run("qgis:rastercalculator", alg_params)
+            results = processing.run("qgis:rastercalculator", alg_params)
+            model.path = results["OUTPUT"]
 
             weighted_models.append(model)
 
@@ -854,7 +864,8 @@ class ScenarioAnalysisTask(QgsTask):
                 f"updates on the weighted implementation models: {alg_params} \n"
             )
 
-            processing.run("native:cellstatistics", alg_params)
+            results = processing.run("native:cellstatistics", alg_params)
+            model.path = results["OUTPUT"]
 
         return True
 
@@ -965,7 +976,9 @@ class ScenarioAnalysisTask(QgsTask):
 
             log(f"Used parameters for highest position analysis {alg_params} \n")
 
-            processing.run("native:highestpositioninrasterstack", alg_params)
+            self.output = processing.run(
+                "native:highestpositioninrasterstack", alg_params
+            )
 
         except Exception as err:
             self.show_message(
