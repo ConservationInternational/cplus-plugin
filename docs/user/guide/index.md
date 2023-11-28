@@ -269,11 +269,11 @@ Another important option to consider is snapping, as it will improve analysis re
     - **Reference layer**: The reference layer to which the cell alignment will be applied
     - **Rescale values**: Rescale values according to cell size
 
-**Figure 37** shows an example of updating and applying CPLUS settings.
+**Figure 15** shows an example of updating and applying CPLUS settings.
 
 ![CPLUS settings example](img/settings-recording.gif)
 
-*Figure 37: CPLUS settings example*
+*Figure 15: CPLUS settings example*
 
 ## Perform analysis
 
@@ -287,7 +287,7 @@ When a user clicks on the drop-down button, they will be presented with four opt
 
 ![CPLUS plugin toolbar icon](img/plugin-toolbar-icon.png)
 
-*Figure 15: CPLUS toolbar icon*
+*Figure 16: CPLUS toolbar icon*
 
 Open the CPLUS dockwidget by clicking on the CPLUS toolbar icon (**Figure 15**).
 
@@ -457,7 +457,7 @@ use the right arrow button ![right arrow](img/cplus_right_arrow.svg) to remove t
 
 ![Priority layer editing/adding dialog](img/manual-pwl-selection.png)
 
-*Figure 23: Implementation model selection for priority layers*
+*Figure 24: Implementation model selection for priority layers*
 
 - ![remove button](img/symbologyRemove.svg): Remove the selected PWL
 
