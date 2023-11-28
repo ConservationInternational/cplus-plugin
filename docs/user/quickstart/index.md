@@ -1,5 +1,9 @@
 # Quick start
 
+Instructions for a user on how to get the plugin working. First section deals with QGIS, and what versions
+are best to work with. This is followed by a section on how to install the CPLUS plugin, ending with a
+short tutorial accompanied by a video to show the user how to use the plugin.
+
 ## QGIS version
 
 The CPLUS plugin might have issues with older versions of QGIS. QGIS 3.32 or higher has thoroughly
