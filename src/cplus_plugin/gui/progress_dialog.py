@@ -46,7 +46,9 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         self.scenario_name = scenario_name
 
         self.main_widget = main_widget
-        self.report_manager = ReportManager()
+        self.report_manager = report_manager
+
+        self.analysis_task = None
 
         # Dialog window flags
         flags = QtCore.Qt.WindowMinimizeButtonHint | QtCore.Qt.WindowCloseButtonHint
@@ -62,11 +64,8 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
 
         if scenario_name:
             self.title.setText(
-                f"<b>{self.title.text()} for scenario<b>" f" {self.scenario_name} \n"
+                f"{self.title.text()} for scenario <b>{self.scenario_name}</b>"
             )
-
-        if scenario_id:
-            self.lbl_id.setText(f"Scenario id: {self.scenario_id[:4]}")
 
         # Report status
         self.report_running = False
@@ -208,6 +207,9 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         if self.analysis_running:
             # If cancelled is clicked
             self.stop_processing()
+            if self.analysis_task:
+                self.analysis_task.processing_cancelled = True
+                self.analysis_task.cancel()
         else:
             # If close has been clicked. In this case processing were already stopped
             super().close()
@@ -224,6 +226,9 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         if self.analysis_running:
             # Stops analysis if it is still running
             self.stop_processing()
+            if self.analysis_task:
+                self.analysis_task.processing_cancelled = True
+                self.analysis_task.cancel()
 
         self.cancel_reporting()
 

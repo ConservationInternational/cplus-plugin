@@ -806,7 +806,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.dock_widget_contents.layout().insertLayout(0, self.grid_layout)
 
     def run_analysis(self):
-        """Runs the plugin analysis"""
+        """Runs the plugin analysis
+        Creates new QgsTask, progress dialog and report manager
+         for each new scenario analysis.
+        """
 
         extent_list = PILOT_AREA_EXTENT["coordinates"]
         default_extent = QgsRectangle(
@@ -922,6 +925,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 priority_layer_groups=self.analysis_priority_layers_groups,
             )
 
+            self.processing_cancelled = False
+
             # Creates and opens the progress dialog for the analysis
             progress_dialog = ProgressDialog(
                 minimum=0,
@@ -939,8 +944,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 tr("Raster calculation for models pathways")
             )
 
-            self.processing_cancelled = False
-
             analysis_task = ScenarioAnalysisTask(
                 self.analysis_scenario_name,
                 self.analysis_scenario_description,
@@ -951,6 +954,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self,
                 progress_dialog,
             )
+
+            progress_dialog.analysis_task = analysis_task
 
             report_running = partial(self.on_report_running, progress_dialog)
             report_finished = partial(self.on_report_finished, progress_dialog)
@@ -984,11 +989,23 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
 
     def task_terminated(self):
+        """Handles logging of the scenario analysis task status
+        after it has been terminated.
+        """
         log(f"Main task terminated")
 
     def analysis_complete(self, task, report_manager):
+        """Calls the responsible function for handling analysis results outputs
+
+        :param task: Analysis task
+        :type task: ScenarioAnalysisTask
+
+        :param report_manager: Report manager used to generate analysis reports
+        :type report_manager: ReportManager
+        """
+
         self.scenario_result = task.scenario_result
-        self.scenario_results(task, report_manager, task.success, task.output)
+        self.scenario_results(task, report_manager)
 
     def transform_extent(self, extent, source_crs, dest_crs):
         """Transforms the passed extent into the destination crs
@@ -1019,34 +1036,34 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Cancels the current processing task."""
         self.processing_cancelled = True
 
-        # Analysis processing tasks
-        try:
-            if self.task:
-                self.task.cancel()
-        except Exception as e:
-            self.on_progress_dialog_cancelled()
-            log(f"Problem cancelling task, {e}")
+        # # Analysis processing tasks
+        # try:
+        #     if self.task:
+        #         self.task.cancel()
+        # except Exception as e:
+        #     self.on_progress_dialog_cancelled()
+        #     log(f"Problem cancelling task, {e}")
+        #
+        # # Report generating task
+        # try:
+        #     if self.reporting_feedback:
+        #         self.reporting_feedback.cancel()
+        # except Exception as e:
+        #     self.on_progress_dialog_cancelled()
+        #     log(f"Problem cancelling report generating task, {e}")
 
-        # Report generating task
-        try:
-            if self.reporting_feedback:
-                self.reporting_feedback.cancel()
-        except Exception as e:
-            self.on_progress_dialog_cancelled()
-            log(f"Problem cancelling report generating task, {e}")
-
-    def scenario_results(self, task, report_manager, success, output):
+    def scenario_results(self, task, report_manager):
         """Called when the task ends. Sets the progress bar to 100 if it finished.
 
-        :param success: Whether the scenario analysis was successful
-        :type success: bool
+        :param task: Analysis task
+        :type task: ScenarioAnalysisTask
 
-        :param output: Analysis output results
-        :type output: dict
+        :param report_manager: Report manager used to generate analysis reports
+        :type report_manager: ReportManager
         """
-        if output is not None:
+        if task.output is not None:
             self.update_progress_bar(task.progress_dialog, 100)
-            self.scenario_result.analysis_output = output
+            self.scenario_result.analysis_output = task.output
             self.scenario_result.state = ScenarioState.FINISHED
             self.post_analysis(self.scenario_result, task, report_manager)
         else:
@@ -1080,6 +1097,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         :param scenario_result: ScenarioResult of output results
         :type scenario_result: ScenarioResult
+
+        :param task: Analysis task
+        :type task: ScenarioAnalysisTask
+
+        :param report_manager: Report manager used to generate analysis reports
+        :type report_manager: ReportManager
         """
 
         # If the processing were stopped, no file will be added
@@ -1295,10 +1318,25 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         progress_dialog,
         message=None,
     ):
+        """Run report generation. This should be called after the
+         analysis is complete.
+
+        :param progress_dialog: Dialog responsible for showing
+         all the analysis operations progress.
+        :type progress_dialog: ProgressDialog
+
+        :param message: Report manager used to generate analysis reports
+        :type message: ReportManager
+        """
+
         progress_dialog.change_status_message(message) if message is not None else None
 
     def update_progress_bar(self, progress_dialog, value):
         """Sets the value of the progress bar
+
+        :param progress_dialog: Dialog responsible for showing
+         all the analysis operations progress.
+        :type progress_dialog: ProgressDialog
 
         :param value: Value to be set on the progress bar
         :type value: float
@@ -1416,6 +1454,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def run_report(self, progress_dialog, report_manager):
         """Run report generation. This should be called after the
         analysis is complete.
+
+        :param progress_dialog: Dialog responsible for showing
+         all the analysis operations progress.
+        :type progress_dialog: ProgressDialog
+
+        :param report_manager: Report manager used to generate analysis reports
+        :type report_manager: ReportManager
         """
         if self.processing_cancelled:
             # Will not proceed if processing has been cancelled by the user
@@ -1429,6 +1474,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             return
 
         reporting_feedback = self.reset_reporting_feedback(progress_dialog)
+        self.reporting_feedback = reporting_feedback
 
         submit_result = report_manager.generate(
             self.scenario_result, reporting_feedback
@@ -1438,7 +1484,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.show_message(f"{msg} {self.scenario_result.scenario.name}.")
 
     def on_report_running(self, progress_dialog, scenario_id: str):
-        """Slot raised when report task has started."""
+        """Slot raised when report task has started.
+
+        :param progress_dialog: Dialog responsible for showing
+         all the analysis operations progress.
+        :type progress_dialog: ProgressDialog
+
+        :param scenario_id: Scenario analysis id
+        :type scenario_id: str
+        """
         if not self.report_job_is_for_current_scenario(scenario_id):
             return
 
@@ -1455,6 +1509,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         We are doing this to address cases where the feedback is canceled
         and the same object has to be reused for subsequent report
         generation tasks.
+
+        :param progress_dialog: Dialog responsible for showing
+         all the analysis operations progress.
+        :type progress_dialog: ProgressDialog
+
+        :returns reporting_feedback: Feedback instance to be used in storing
+        processing status details.
+        :rtype reporting_feedback: QgsFeedback
+
         """
 
         progress_changed = partial(self.on_reporting_progress_changed, progress_dialog)
@@ -1465,11 +1528,27 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         return reporting_feedback
 
     def on_reporting_progress_changed(self, progress_dialog, progress: float):
-        """Slot raised when the reporting progress has changed."""
+        """Slot raised when the reporting progress has changed.
+
+        :param progress_dialog: Dialog responsible for showing
+         all the analysis operations progress.
+        :type progress_dialog: ProgressDialog
+
+        :param progress: Analysis progress value between 0 and 100
+        :type progress: float
+        """
         progress_dialog.update_progress_bar(progress)
 
     def on_report_finished(self, progress_dialog, scenario_id: str):
-        """Slot raised when report task has finished."""
+        """Slot raised when report task has finished.
+
+        :param progress_dialog: Dialog responsible for showing
+         all the analysis operations progress.
+        :type progress_dialog: ProgressDialog
+
+        :param scenario_id: Scenario analysis id
+        :type scenario_id: str
+        """
         if not self.report_job_is_for_current_scenario(scenario_id):
             return
 

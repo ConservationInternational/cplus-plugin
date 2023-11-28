@@ -37,9 +37,7 @@ from .resources import *
 
 from .models.helpers import clone_implementation_model
 
-from .models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
-
-from .gui.progress_dialog import ProgressDialog
+from .models.base import ScenarioResult, SpatialExtent
 
 from .utils import (
     align_rasters,
@@ -246,7 +244,6 @@ class ScenarioAnalysisTask(QgsTask):
         :type extent: SpatialExtent
         """
         if self.processing_cancelled:
-            # Will not proceed if processing has been cancelled by the user
             return False
 
         self.main_dock.update_progress_dialog(
@@ -259,7 +256,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         for model in models:
             if not model.pathways and (model.path is None or model.path is ""):
-                self.show_message(
+                self.main_dock.show_message(
                     tr(
                         f"No defined model pathways or a"
                         f" model layer for the model {model.name}"
@@ -357,6 +354,9 @@ class ScenarioAnalysisTask(QgsTask):
 
             self.feedback.progressChanged.connect(self.update_progress_bar)
 
+            if self.processing_cancelled:
+                return False
+
             results = processing.run(
                 "qgis:rastercalculator",
                 alg_params,
@@ -392,7 +392,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         for model in models:
             if not model.pathways and (model.path is None or model.path is ""):
-                self.show_message(
+                self.main_dock.show_message(
                     tr(
                         f"No defined model pathways or a"
                         f" model layer for the model {model.name}"
@@ -421,6 +421,9 @@ class ScenarioAnalysisTask(QgsTask):
         for pathway in pathways:
             path = Path(pathway.path)
             directory = path.parent
+
+            if self.processing_cancelled:
+                return False
 
             input_result_path, reference_result_path = align_rasters(
                 pathway.path,
@@ -470,7 +473,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         for model in models:
             if not model.pathways and (model.path is None or model.path is ""):
-                self.show_message(
+                self.main_dock.show_message(
                     tr(
                         f"No defined model pathways or a"
                         f" model layer for the model {model.name}"
@@ -555,6 +558,9 @@ class ScenarioAnalysisTask(QgsTask):
 
             self.feedback.progressChanged.connect(self.update_progress_bar)
 
+            if self.processing_cancelled:
+                return False
+
             results = processing.run(
                 "qgis:rastercalculator",
                 alg_params,
@@ -598,7 +604,7 @@ class ScenarioAnalysisTask(QgsTask):
 
             layers = []
             if not model.pathways and (model.path is None and model.path is ""):
-                self.show_message(
+                self.main_dock.show_message(
                     tr(
                         f"No defined model pathways or a"
                         f" model layer for the model {model.name}"
@@ -648,6 +654,9 @@ class ScenarioAnalysisTask(QgsTask):
 
             feedback.progressChanged.connect(self.update_progress_bar)
 
+            if self.processing_cancelled:
+                return False
+
             results = processing.run(
                 "native:cellstatistics",
                 alg_params,
@@ -691,7 +700,7 @@ class ScenarioAnalysisTask(QgsTask):
         for model in models:
             if model.path is None or model.path is "":
                 if not self.processing_cancelled:
-                    self.show_message(
+                    self.main_dock.show_message(
                         tr(
                             f"Problem when running models normalization, "
                             f"there is no map layer for the model {model.name}"
@@ -704,7 +713,7 @@ class ScenarioAnalysisTask(QgsTask):
                     )
                 else:
                     # If the user cancelled the processing
-                    self.show_message(
+                    self.main_dock.show_message(
                         tr(f"Processing has been cancelled by the user."),
                         level=Qgis.Critical,
                     )
@@ -773,6 +782,9 @@ class ScenarioAnalysisTask(QgsTask):
 
             feedback.progressChanged.connect(self.update_progress_bar)
 
+            if self.processing_cancelled:
+                return False
+
             results = processing.run(
                 "qgis:rastercalculator",
                 alg_params,
@@ -797,6 +809,9 @@ class ScenarioAnalysisTask(QgsTask):
         :type extent: str
         """
 
+        if self.processing_cancelled:
+            return [], False
+
         self.main_dock.update_progress_dialog(
             self.progress_dialog,
             tr(f"Weighting implementation models"),
@@ -808,7 +823,7 @@ class ScenarioAnalysisTask(QgsTask):
             model = clone_implementation_model(original_model)
 
             if model.path is None or model.path is "":
-                self.show_message(
+                self.main_dock.show_message(
                     tr(
                         f"Problem when running models weighting, "
                         f"there is no map layer for the model {model.name}"
@@ -820,7 +835,7 @@ class ScenarioAnalysisTask(QgsTask):
                     f"there is no map layer for the model {model.name}"
                 )
 
-                return False
+                return [], False
 
             basenames = []
             layers = []
@@ -884,7 +899,7 @@ class ScenarioAnalysisTask(QgsTask):
                                 basenames.append(f'({coefficient}*"{path_basename}@1")')
 
             if basenames is []:
-                return True
+                return [], True
 
             new_ims_directory = os.path.join(self.scenario_directory, "weighted_ims")
 
@@ -912,6 +927,9 @@ class ScenarioAnalysisTask(QgsTask):
 
             feedback.progressChanged.connect(self.update_progress_bar)
 
+            if self.processing_cancelled:
+                return [], False
+
             results = processing.run(
                 "qgis:rastercalculator",
                 alg_params,
@@ -933,13 +951,16 @@ class ScenarioAnalysisTask(QgsTask):
         :type extent: str
         """
 
+        if self.processing_cancelled:
+            return False
+
         self.main_dock.update_progress_dialog(
             self.progress_dialog, tr("Updating weighted implementation models values")
         )
 
         for model in models:
             if model.path is None or model.path is "":
-                self.show_message(
+                self.main_dock.show_message(
                     tr(
                         f"Problem when running models updates, "
                         f"there is no map layer for the model {model.name}"
@@ -984,6 +1005,9 @@ class ScenarioAnalysisTask(QgsTask):
             feedback = QgsProcessingFeedback()
 
             feedback.progressChanged.connect(self.update_progress_bar)
+
+            if self.processing_cancelled:
+                return False
 
             results = processing.run(
                 "native:cellstatistics",
@@ -1090,6 +1114,9 @@ class ScenarioAnalysisTask(QgsTask):
             self.feedback = QgsProcessingFeedback()
 
             self.feedback.progressChanged.connect(self.update_progress_bar)
+
+            if self.processing_cancelled:
+                return False
 
             self.output = processing.run(
                 "native:highestpositioninrasterstack",
