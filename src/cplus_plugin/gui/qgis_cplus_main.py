@@ -60,6 +60,7 @@ from .implementation_model_widget import ImplementationModelContainerWidget
 from .priority_group_widget import PriorityGroupWidget
 
 from .priority_layer_dialog import PriorityLayerDialog
+from .priority_group_dialog import PriorityGroupDialog
 
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
 from ..conf import settings_manager, Settings
@@ -194,6 +195,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.layer_add_btn.clicked.connect(self.add_priority_layer_group)
         self.layer_remove_btn.clicked.connect(self.remove_priority_layer_group)
+
+        # Priority groups buttons
+        self.add_group_btn.setIcon(FileUtils.get_icon("symbologyAdd.svg"))
+        self.edit_group_btn.setIcon(FileUtils.get_icon("mActionToggleEditing.svg"))
+        self.remove_group_btn.setIcon(FileUtils.get_icon("symbologyRemove.svg"))
+
+        self.add_group_btn.clicked.connect(self.add_priority_group)
+        self.edit_group_btn.clicked.connect(self.edit_priority_group)
+        self.remove_group_btn.clicked.connect(self.remove_priority_group)
 
         # Priority layers buttons
         self.add_pwl_btn.setIcon(FileUtils.get_icon("symbologyAdd.svg"))
@@ -355,6 +365,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             item = QtWidgets.QTreeWidgetItem()
             item.setSizeHint(0, group_widget.sizeHint())
             item.setExpanded(True)
+            item.setData(0, QtCore.Qt.UserRole, group.get("uuid"))
 
             # Add priority layers into the group as a child items.
 
@@ -468,6 +479,47 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     new_groups.append(group)
                 layer["groups"] = new_groups
                 settings_manager.save_priority_layer(layer)
+
+    def update_priority_groups(self):
+        list_items = []
+        items_only = []
+        stored_priority_groups = settings_manager.get_priority_groups()
+        self.priority_groups_list.clear()
+
+        for group in stored_priority_groups:
+            group_widget = PriorityGroupWidget(
+                group,
+            )
+            group_widget.input_value_changed.connect(self.group_value_changed)
+            group_widget.slider_value_changed.connect(self.group_value_changed)
+
+            self.priority_groups_widgets[group["name"]] = group_widget
+
+            pw_layers = settings_manager.find_layers_by_group(group["name"])
+
+            item = QtWidgets.QTreeWidgetItem()
+            item.setSizeHint(0, group_widget.sizeHint())
+            item.setExpanded(True)
+            item.setData(0, QtCore.Qt.UserRole, group.get("uuid"))
+
+            # Add priority layers into the group as a child items.
+
+            item.setExpanded(True) if len(pw_layers) > 0 else None
+
+            for layer in pw_layers:
+                if item.parent() is None:
+                    layer_item = QtWidgets.QTreeWidgetItem(item)
+                    layer_item.setText(0, layer.get("name"))
+                    layer_item.setData(
+                        0, QtCore.Qt.UserRole, layer.get(USER_DEFINED_ATTRIBUTE)
+                    )
+
+            list_items.append((item, group_widget))
+            items_only.append(item)
+
+        self.priority_groups_list.addTopLevelItems(items_only)
+        for item in list_items:
+            self.priority_groups_list.setItemWidget(item[0], 0, item[1])
 
     def update_priority_layers(self, update_groups=True):
         """Updates the priority weighting layers list in the UI.
@@ -607,6 +659,73 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def open_help(self):
         """Opens the user documentation for the plugin in a browser"""
         open_documentation(USER_DOCUMENTATION_SITE)
+
+    def add_priority_group(self):
+        """Adds a new priority group into the plugin, then updates
+        the priority list to show the new added priority group.
+        """
+        group_dialog = PriorityGroupDialog()
+        group_dialog.exec_()
+        self.update_priority_groups()
+
+    def edit_priority_group(self):
+        """Edits the current selected priority group
+        and updates the group box list."""
+        if self.priority_groups_list.currentItem() is None:
+            self.show_message(
+                tr("Select first the priority group from the groups list."),
+                Qgis.Critical,
+            )
+            return
+
+        group_identifier = self.priority_groups_list.currentItem().data(
+            0, QtCore.Qt.UserRole
+        )
+
+        if group_identifier == "":
+            self.show_message(
+                tr("Could not fetch the selected priority groups for editing."),
+                Qgis.Critical,
+            )
+            return
+
+        group = settings_manager.get_priority_group(group_identifier)
+        group_dialog = PriorityGroupDialog(group)
+        group_dialog.exec_()
+        self.update_priority_groups()
+
+    def remove_priority_group(self):
+        """Removes the current active priority group."""
+        if self.priority_groups_list.currentItem() is None:
+            self.show_message(
+                tr("Select first the priority group from the groups list"),
+                Qgis.Critical,
+            )
+            return
+        group_identifier = self.priority_groups_list.currentItem().data(
+            0, QtCore.Qt.UserRole
+        )
+
+        group = settings_manager.get_priority_group(group_identifier)
+        current_text = group.get("name")
+
+        if group_identifier is None or group_identifier == "":
+            self.show_message(
+                tr("Could not fetch the selected priority group for editing."),
+                Qgis.Critical,
+            )
+            return
+
+        reply = QtWidgets.QMessageBox.warning(
+            self,
+            tr("QGIS CPLUS PLUGIN"),
+            tr('Remove the priority group "{}"?').format(current_text),
+            QtWidgets.QMessageBox.Yes,
+            QtWidgets.QMessageBox.No,
+        )
+        if reply == QtWidgets.QMessageBox.Yes:
+            settings_manager.delete_priority_group(group_identifier)
+            self.update_priority_groups()
 
     def add_priority_layer(self):
         """Adds a new priority layer into the plugin, then updates

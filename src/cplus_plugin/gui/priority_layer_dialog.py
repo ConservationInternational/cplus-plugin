@@ -123,7 +123,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
                 if str(self.layer.get("uuid")) in model_layer_uuids:
                     self.models.append(model)
 
-            self.set_selected_models(self.models)
+            self.set_selected_items(self.models)
 
             self._user_defined = self.layer.get(USER_DEFINED_ATTRIBUTE, True)
 
@@ -132,7 +132,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         model_select_dialog = ItemsSelectionDialog(self, self.layer, self.models)
         model_select_dialog.exec_()
 
-    def set_selected_models(self, models, removed_models=[]):
+    def set_selected_items(self, models, removed_models=[]):
         """Adds this dialog layer into the passed models and removes it from the
         unselected models passed as removed_models.
 
@@ -199,7 +199,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         settings_manager.save_priority_layer(layer)
 
         self.layer = layer
-        self.set_selected_models(self.models)
+        self.set_selected_items(self.models)
 
         super().accept()
 

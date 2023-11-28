@@ -381,7 +381,7 @@ class SettingsManager(QtCore.QObject):
         :param identifier: Priority layers identifier
         :type identifier: uuid.UUID
 
-        :returns: Priority layers dict
+        :returns: Priority layer dict
         :rtype: dict
         """
         priority_layer = None
@@ -399,6 +399,7 @@ class SettingsManager(QtCore.QObject):
                     group_settings_key = f"{groups_key}/{name}"
                     with qgis_settings(group_settings_key) as group_settings:
                         stored_group = {}
+                        stored_group["uuid"] = group_settings.value("uuid")
                         stored_group["name"] = group_settings.value("name")
                         stored_group["value"] = group_settings.value("value")
                         groups.append(stored_group)
@@ -435,6 +436,7 @@ class SettingsManager(QtCore.QObject):
                             group_settings_key = f"{groups_key}/{name}"
                             with qgis_settings(group_settings_key) as group_settings:
                                 stored_group = {}
+                                stored_group["uuid"] = group_settings.value("uuid")
                                 stored_group["name"] = group_settings.value("name")
                                 stored_group["value"] = group_settings.value("value")
                                 groups.append(stored_group)
@@ -530,6 +532,7 @@ class SettingsManager(QtCore.QObject):
             for group in groups:
                 group_key = f"{groups_key}/{group['name']}"
                 with qgis_settings(group_key) as group_settings:
+                    group_settings.setValue("uuid", group.get("uuid"))
                     group_settings.setValue("name", group["name"])
                     group_settings.setValue("value", group["value"])
 
@@ -625,6 +628,7 @@ class SettingsManager(QtCore.QObject):
             priority_group = {"uuid": identifier}
             priority_group["name"] = settings.value("name")
             priority_group["value"] = settings.value("value")
+            priority_group["description"] = settings.value("description")
         return priority_group
 
     def get_priority_groups(self) -> typing.List[typing.Dict]:
@@ -644,6 +648,7 @@ class SettingsManager(QtCore.QObject):
                         "uuid": uuid,
                         "name": priority_settings.value("name"),
                         "value": priority_settings.value("value"),
+                        "description": priority_settings.value("description"),
                     }
                     priority_groups.append(group)
         return priority_groups
@@ -660,6 +665,20 @@ class SettingsManager(QtCore.QObject):
         with qgis_settings(settings_key) as settings:
             settings.setValue("name", priority_group["name"])
             settings.setValue("value", priority_group["value"])
+            settings.setValue("description", priority_group.get("description"))
+
+    def delete_priority_group(self, identifier):
+        """Removes priority group that match the passed identifier
+
+        :param identifier: Priority group identifier
+        :type identifier: str
+        """
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_GROUP_NAME}/"
+        ) as settings:
+            for priority_group in settings.childGroups():
+                if str(priority_group) == str(identifier):
+                    settings.remove(priority_group)
 
     def delete_priority_groups(self):
         """Deletes all the plugin priority groups settings."""
