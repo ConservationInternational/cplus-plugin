@@ -1,4 +1,4 @@
-"""at the top"""
+"""Analysis progress dialog file"""
 
 import os
 
@@ -18,7 +18,7 @@ from ..definitions.defaults import (
     ICON_HELP,
     REPORT_DOCUMENTATION,
 )
-from ..lib.reports.manager import report_manager
+from ..lib.reports.manager import report_manager, ReportManager
 
 Ui_DlgProgress, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/analysis_progress_dialog.ui")
@@ -26,25 +26,27 @@ Ui_DlgProgress, _ = uic.loadUiType(
 
 
 class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
-    """This progress dialog"""
+    """Progress dialog class"""
 
     analysis_cancelled = QtCore.pyqtSignal()
 
     def __init__(
         self,
-        init_message="Processing",
-        scenario_name="Scenario",
+        message=None,
         minimum=0,
         maximum=100,
         main_widget=None,
         parent=None,
+        scenario_id=None,
+        scenario_name=None,
     ):
         super().__init__(parent)
         self.setupUi(self)
+        self.scenario_id = scenario_id
         self.scenario_name = scenario_name
-        self.scenario_id = ""
+
         self.main_widget = main_widget
-        self.report_manager = report_manager
+        self.report_manager = ReportManager()
 
         # Dialog window flags
         flags = QtCore.Qt.WindowMinimizeButtonHint | QtCore.Qt.WindowCloseButtonHint
@@ -52,7 +54,19 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
 
         # Dialog statuses
         self.analysis_running = True
-        self.change_status_message(init_message)
+
+        if message is None:
+            self.change_status_message(tr("Starting processing"))
+        else:
+            self.change_status_message(message)
+
+        if scenario_name:
+            self.title.setText(
+                f"<b>{self.title.text()} for scenario<b>" f" {self.scenario_name} \n"
+            )
+
+        if scenario_id:
+            self.lbl_id.setText(f"Scenario id: {self.scenario_id[:4]}")
 
         # Report status
         self.report_running = False
@@ -130,23 +144,15 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
             except RuntimeError:
                 log(tr("Error setting value to a progress bar"), notify=False)
 
-    def change_status_message(self, message="Processing", entity="scenario") -> None:
+    def change_status_message(self, message=None) -> None:
         """Updates the status message
 
         :param message: Message to show on the status bar
         :type message: str
-
-        :param message: The current processed entity, eg analysis scenario,
-         ncs pathway or an implementation model
-        :type message: str
         """
-        # Split like this so that the message gets translated, but not the scenario name
-        msg = "{} for {} ".format(message, entity)
-        final_msg = "{}{}".format(
-            tr(msg),
-            self.scenario_name,
-        )
-        self.lbl_status.setText(final_msg)
+
+        if message:
+            self.lbl_status.setText(message)
 
     def set_report_complete(self):
         """Enable layout designer and PDF report buttons."""
@@ -163,11 +169,11 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
             log("Scenario ID has not been set.")
             return
 
-        result = report_manager.report_result(self.scenario_id)
+        result = self.report_manager.report_result(self.scenario_id)
         if result is None:
             log("Report result not found.")
         else:
-            status = report_manager.view_pdf(result)
+            status = self.report_manager.view_pdf(result)
             if not status:
                 log("Unable to open PDF report.")
 
@@ -177,11 +183,11 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
             log("Scenario ID has not been set.")
             return
 
-        result = report_manager.report_result(self.scenario_id)
+        result = self.report_manager.report_result(self.scenario_id)
         if result is None:
             log("Report result not found.")
         else:
-            status = report_manager.open_layout_designer(result)
+            status = self.report_manager.open_layout_designer(result)
             if not status:
                 log("Unable to open layout designer.")
 
@@ -226,7 +232,7 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
     def stop_processing(self) -> None:
         """The user cancelled the processing."""
 
-        self.change_status_message("Processing has been cancelled by the user")
+        self.change_status_message(tr("Processing has been cancelled by the user"))
 
         # Stops the processing task
         if self.main_widget:

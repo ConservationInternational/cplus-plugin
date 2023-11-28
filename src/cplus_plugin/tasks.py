@@ -1,6 +1,8 @@
 import os
 import uuid
 
+import datetime
+
 from pathlib import Path
 
 from qgis.core import (
@@ -37,6 +39,7 @@ from .models.helpers import clone_implementation_model
 
 from .models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
 
+from .gui.progress_dialog import ProgressDialog
 
 from .utils import (
     align_rasters,
@@ -64,6 +67,9 @@ class ScenarioAnalysisTask(QgsTask):
         analysis_implementation_models,
         analysis_priority_layers_groups,
         analysis_extent,
+        scenario,
+        main_dock,
+        progress_dialog,
     ):
         super().__init__()
         self.analysis_scenario_name = analysis_scenario_name
@@ -72,31 +78,83 @@ class ScenarioAnalysisTask(QgsTask):
         self.analysis_implementation_models = analysis_implementation_models
         self.analysis_priority_layers_groups = analysis_priority_layers_groups
         self.analysis_extent = analysis_extent
+        self.analysis_extent_string = None
+
+        self.main_dock = main_dock
+        self.progress_dialog = progress_dialog
 
         self.analysis_weighted_ims = []
         self.scenario_result = None
+        self.scenario_directory = None
+
         self.success = True
         self.output = None
         self.error = None
 
         self.processing_cancelled = False
+        self.feedback = QgsProcessingFeedback()
+        self.processing_context = QgsProcessingContext()
+
+        self.scenario = scenario
 
     def run(self):
         """Runs the main scenario analysis task operations"""
+
+        base_dir = settings_manager.get_value(Settings.BASE_DIR)
+
+        self.scenario_directory = os.path.join(
+            f"{base_dir}",
+            f'scenario_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}',
+        )
+
+        FileUtils.create_new_dir(self.scenario_directory)
+
+        # Prepare extent to be used in the processing parameters
+        box = QgsRectangle(
+            float(self.analysis_extent.bbox[0]),
+            float(self.analysis_extent.bbox[2]),
+            float(self.analysis_extent.bbox[1]),
+            float(self.analysis_extent.bbox[3]),
+        )
+
+        source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
+
+        # Use the first model pathway crs as the destination crs
+        first_model = (
+            self.analysis_implementation_models[0]
+            if self.analysis_implementation_models
+            else None
+        )
+        pathways = first_model.pathways if first_model else None
+        pathway_path = pathways[0].path if pathways else None
+
+        dest_crs = (
+            QgsRasterLayer(pathway_path).crs()
+            if pathway_path
+            else QgsCoordinateReferenceSystem("EPSG:4326")
+        )
+        transform = QgsCoordinateTransform(source_crs, dest_crs, QgsProject.instance())
+        transformed_extent = transform.transformBoundingBox(box)
+
+        extent_string = (
+            f"{transformed_extent.xMinimum()},{transformed_extent.xMaximum()},"
+            f"{transformed_extent.yMinimum()},{transformed_extent.yMaximum()}"
+            f" [{dest_crs.authid()}]"
+        )
 
         # First we prepare all the pathways before adding them into
         # their respective models.
         self.run_pathways_analysis(
             self.analysis_implementation_models,
             self.analysis_priority_layers_groups,
-            self.analysis_extent,
+            extent_string,
         )
 
         # Run pathways layers snapping using a specified reference layer
         self.snap_analyzed_pathways(
             self.analysis_implementation_models,
             self.analysis_priority_layers_groups,
-            self.analysis_extent,
+            extent_string,
         )
 
         # Normalizing all the models pathways using the carbon coefficient and
@@ -105,7 +163,7 @@ class ScenarioAnalysisTask(QgsTask):
         self.run_pathways_normalization(
             self.analysis_implementation_models,
             self.analysis_priority_layers_groups,
-            self.analysis_extent,
+            extent_string,
         )
 
         # Creating models from the normalized pathways
@@ -113,7 +171,7 @@ class ScenarioAnalysisTask(QgsTask):
         self.run_models_analysis(
             self.analysis_implementation_models,
             self.analysis_priority_layers_groups,
-            self.analysis_extent,
+            extent_string,
         )
 
         # After creating models, we normalize them using the same coefficients
@@ -122,23 +180,22 @@ class ScenarioAnalysisTask(QgsTask):
         self.run_models_normalization(
             self.analysis_implementation_models,
             self.analysis_priority_layers_groups,
-            self.analysis_extent,
+            extent_string,
         )
 
         # Weighting the models with their corresponding priority weighting layers
         weighted_models, result = self.run_models_weighting(
             self.analysis_implementation_models,
             self.analysis_priority_layers_groups,
-            self.analysis_extent,
+            extent_string,
         )
 
         self.analysis_weighted_ims = weighted_models
 
         # Post weighting analysis
-        self.run_models_cleaning(weighted_models, self.analysis_extent)
+        self.run_models_cleaning(weighted_models, extent_string)
 
         # The highest position tool analysis
-
         self.run_highest_position_analysis()
 
         return True
@@ -150,9 +207,25 @@ class ScenarioAnalysisTask(QgsTask):
         :type result: bool
         """
         if result:
+            log("Finished from the main task")
             pass
         else:
-            log(self.error)
+            log(f"Task result {result}Error from task {self.error}")
+
+    def update_progress_bar(self, value):
+        """Sets the value of the progress bar
+
+        :param value: Value to be set on the progress bar
+        :type value: float
+        """
+        if self.main_dock and not self.processing_cancelled:
+            try:
+                self.main_dock.update_progress_bar(self.progress_dialog, int(value))
+            except RuntimeError:
+                log(tr("Error setting value to a progress bar"), notify=False)
+        else:
+            self.feedback = QgsProcessingFeedback()
+            self.processing_context = QgsProcessingContext()
 
     def run_pathways_analysis(self, models, priority_layers_groups, extent):
         """Runs the required model pathways analysis on the passed
@@ -176,8 +249,11 @@ class ScenarioAnalysisTask(QgsTask):
             # Will not proceed if processing has been cancelled by the user
             return False
 
-        self.progress_dialog.analysis_finished_message = tr("Calculating carbon layers")
-        self.progress_dialog.scenario_name = tr(f"models pathways")
+        self.main_dock.update_progress_dialog(
+            self.progress_dialog,
+            tr("Adding models pathways with carbon layers"),
+        )
+
         pathways = []
         models_paths = []
 
@@ -227,8 +303,8 @@ class ScenarioAnalysisTask(QgsTask):
 
             file_name = clean_filename(pathway.name.replace(" ", "_"))
 
-            output_file = (
-                f"{new_carbon_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            output_file = os.path.join(
+                new_carbon_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
             )
 
             if suitability_index > 0:
@@ -258,30 +334,8 @@ class ScenarioAnalysisTask(QgsTask):
                 )
             expression = " + ".join(basenames)
 
-            box = QgsRectangle(
-                float(extent.bbox[0]),
-                float(extent.bbox[2]),
-                float(extent.bbox[1]),
-                float(extent.bbox[3]),
-            )
-
-            source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
-            dest_crs = QgsRasterLayer(layers[0]).crs()
-            transform = QgsCoordinateTransform(
-                source_crs, dest_crs, QgsProject.instance()
-            )
-            transformed_extent = transform.transformBoundingBox(box)
-
-            extent_string = (
-                f"{transformed_extent.xMinimum()},{transformed_extent.xMaximum()},"
-                f"{transformed_extent.yMinimum()},{transformed_extent.yMaximum()}"
-                f" [{dest_crs.authid()}]"
-            )
-
             if carbon_coefficient <= 0 and suitability_index <= 0:
-                self.run_pathways_normalization(
-                    models, priority_layers_groups, extent_string
-                )
+                self.run_pathways_normalization(models, priority_layers_groups, extent)
                 return
 
             # Actual processing calculation
@@ -289,7 +343,7 @@ class ScenarioAnalysisTask(QgsTask):
                 "CELLSIZE": 0,
                 "CRS": None,
                 "EXPRESSION": expression,
-                "EXTENT": extent_string,
+                "EXTENT": extent,
                 "LAYERS": layers,
                 "OUTPUT": output_file,
             }
@@ -299,7 +353,16 @@ class ScenarioAnalysisTask(QgsTask):
                 f" and carbon layers generation: {alg_params} \n"
             )
 
-            results = processing.run("qgis:rastercalculator", alg_params)
+            self.feedback = QgsProcessingFeedback()
+
+            self.feedback.progressChanged.connect(self.update_progress_bar)
+
+            results = processing.run(
+                "qgis:rastercalculator",
+                alg_params,
+                context=self.processing_context,
+                feedback=self.feedback,
+            )
 
             pathway.path = results["OUTPUT"]
 
@@ -367,7 +430,8 @@ class ScenarioAnalysisTask(QgsTask):
                 rescale_values,
                 resampling_method,
             )
-            pathway.path = input_result_path
+            if input_result_path is not None:
+                pathway.path = input_result_path
 
         return True
 
@@ -396,8 +460,10 @@ class ScenarioAnalysisTask(QgsTask):
             # Will not proceed if processing has been cancelled by the user
             return False
 
-        self.progress_dialog.analysis_finished_message = tr("Normalization")
-        self.progress_dialog.scenario_name = tr("pathways")
+        self.main_dock.update_progress_dialog(
+            self.progress_dialog,
+            tr("Normalization of pathways"),
+        )
 
         pathways = []
         models_paths = []
@@ -446,7 +512,9 @@ class ScenarioAnalysisTask(QgsTask):
             FileUtils.create_new_dir(new_ims_directory)
             file_name = clean_filename(pathway.name.replace(" ", "_"))
 
-            output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            output_file = os.path.join(
+                new_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            )
 
             pathway_layer = QgsRasterLayer(pathway.path, pathway.name)
             provider = pathway_layer.dataProvider()
@@ -483,7 +551,16 @@ class ScenarioAnalysisTask(QgsTask):
 
             log(f"Used parameters for normalization of the pathways: {alg_params} \n")
 
-            results = processing.run("qgis:rastercalculator", alg_params)
+            self.feedback = QgsProcessingFeedback()
+
+            self.feedback.progressChanged.connect(self.update_progress_bar)
+
+            results = processing.run(
+                "qgis:rastercalculator",
+                alg_params,
+                context=self.processing_context,
+                feedback=self.feedback,
+            )
 
             pathway.path = results["OUTPUT"]
 
@@ -507,11 +584,15 @@ class ScenarioAnalysisTask(QgsTask):
             # Will not proceed if processing has been cancelled by the user
             return False
 
-        self.progress_dialog.analysis_finished_message = tr("Processing calculations")
-        self.progress_dialog.scenario_name = tr("implementation models")
+        self.main_dock.update_progress_dialog(
+            self.progress_dialog,
+            tr("Creating implementation models layers from pathways"),
+        )
 
         for model in models:
-            new_ims_directory = f"{self.scenario_directory}/implementation_models"
+            new_ims_directory = os.path.join(
+                self.scenario_directory, "implementation_models"
+            )
             FileUtils.create_new_dir(new_ims_directory)
             file_name = clean_filename(model.name.replace(" ", "_"))
 
@@ -531,7 +612,9 @@ class ScenarioAnalysisTask(QgsTask):
 
                 return False
 
-            output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            output_file = os.path.join(
+                new_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            )
 
             # Due to the implementation models base class
             # model only one of the following blocks will be executed,
@@ -561,7 +644,16 @@ class ScenarioAnalysisTask(QgsTask):
                 f"implementation models generation: {alg_params} \n"
             )
 
-            results = processing.run("native:cellstatistics", alg_params)
+            feedback = QgsProcessingFeedback()
+
+            feedback.progressChanged.connect(self.update_progress_bar)
+
+            results = processing.run(
+                "native:cellstatistics",
+                alg_params,
+                context=self.processing_context,
+                feedback=self.feedback,
+            )
             model.path = results["OUTPUT"]
 
         return True
@@ -591,8 +683,10 @@ class ScenarioAnalysisTask(QgsTask):
             # Will not proceed if processing has been cancelled by the user
             return False
 
-        self.progress_dialog.analysis_finished_message = tr("Normalization")
-        self.progress_dialog.scenario_name = tr("implementation models")
+        self.main_dock.update_progress_dialog(
+            self.progress_dialog,
+            tr("Normalization of the implementation models"),
+        )
 
         for model in models:
             if model.path is None or model.path is "":
@@ -619,11 +713,13 @@ class ScenarioAnalysisTask(QgsTask):
                 return False
 
             layers = []
-            new_ims_directory = f"{self.scenario_directory}/normalized_ims"
+            new_ims_directory = os.path.join(self.scenario_directory, "normalized_ims")
             FileUtils.create_new_dir(new_ims_directory)
             file_name = clean_filename(model.name.replace(" ", "_"))
 
-            output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            output_file = os.path.join(
+                new_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            )
 
             model_layer = QgsRasterLayer(model.path, model.name)
             provider = model_layer.dataProvider()
@@ -673,7 +769,16 @@ class ScenarioAnalysisTask(QgsTask):
 
             log(f"Used parameters for normalization of the models: {alg_params} \n")
 
-            results = processing.run("qgis:rastercalculator", alg_params)
+            feedback = QgsProcessingFeedback()
+
+            feedback.progressChanged.connect(self.update_progress_bar)
+
+            results = processing.run(
+                "qgis:rastercalculator",
+                alg_params,
+                context=self.processing_context,
+                feedback=self.feedback,
+            )
             model.path = results["OUTPUT"]
 
         return True
@@ -692,9 +797,10 @@ class ScenarioAnalysisTask(QgsTask):
         :type extent: str
         """
 
-        self.progress_dialog.analysis_finished_message = tr(f"Weighting")
-
-        self.progress_dialog.scenario_name = tr(f"implementation models")
+        self.main_dock.update_progress_dialog(
+            self.progress_dialog,
+            tr(f"Weighting implementation models"),
+        )
 
         weighted_models = []
 
@@ -780,12 +886,14 @@ class ScenarioAnalysisTask(QgsTask):
             if basenames is []:
                 return True
 
-            new_ims_directory = f"{self.scenario_directory}/weighted_ims"
+            new_ims_directory = os.path.join(self.scenario_directory, "weighted_ims")
 
             FileUtils.create_new_dir(new_ims_directory)
 
             file_name = clean_filename(model.name.replace(" ", "_"))
-            output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            output_file = os.path.join(
+                new_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            )
             expression = " + ".join(basenames)
 
             # Actual processing calculation
@@ -800,7 +908,16 @@ class ScenarioAnalysisTask(QgsTask):
 
             log(f" Used parameters for calculating weighting models {alg_params} \n")
 
-            results = processing.run("qgis:rastercalculator", alg_params)
+            feedback = QgsProcessingFeedback()
+
+            feedback.progressChanged.connect(self.update_progress_bar)
+
+            results = processing.run(
+                "qgis:rastercalculator",
+                alg_params,
+                context=self.processing_context,
+                feedback=self.feedback,
+            )
             model.path = results["OUTPUT"]
 
             weighted_models.append(model)
@@ -816,9 +933,9 @@ class ScenarioAnalysisTask(QgsTask):
         :type extent: str
         """
 
-        self.progress_dialog.analysis_finished_message = tr(f"Updating")
-
-        self.progress_dialog.scenario_name = tr(f"implementation models")
+        self.main_dock.update_progress_dialog(
+            self.progress_dialog, tr("Updating weighted implementation models values")
+        )
 
         for model in models:
             if model.path is None or model.path is "":
@@ -864,7 +981,16 @@ class ScenarioAnalysisTask(QgsTask):
                 f"updates on the weighted implementation models: {alg_params} \n"
             )
 
-            results = processing.run("native:cellstatistics", alg_params)
+            feedback = QgsProcessingFeedback()
+
+            feedback.progressChanged.connect(self.update_progress_bar)
+
+            results = processing.run(
+                "native:cellstatistics",
+                alg_params,
+                context=self.processing_context,
+                feedback=self.feedback,
+            )
             model.path = results["OUTPUT"]
 
         return True
@@ -887,33 +1013,18 @@ class ScenarioAnalysisTask(QgsTask):
             passed_extent_box[3],
         )
 
-        scenario = Scenario(
-            uuid=uuid.uuid4(),
-            name=self.analysis_scenario_name,
-            description=self.analysis_scenario_description,
-            extent=self.analysis_extent,
-            models=self.analysis_implementation_models,
-            priority_layer_groups=self.analysis_priority_layers_groups,
-        )
-
         self.scenario_result = ScenarioResult(
-            scenario=scenario,
+            scenario=self.scenario,
         )
 
         try:
             layers = {}
 
-            self.progress_dialog.progress_bar.setMinimum(0)
-            self.progress_dialog.progress_bar.setMaximum(100)
-            self.progress_dialog.progress_bar.setValue(0)
-            self.progress_dialog.analysis_finished_message = tr("Analysis finished")
-            self.progress_dialog.scenario_name = tr(f"<b>{scenario.name}</b>")
-            self.progress_dialog.scenario_id = str(scenario.uuid)
-            self.progress_dialog.change_status_message(
-                tr("Calculating the highest position")
-            )
+            self.progress_dialog.scenario_id = str(self.scenario.uuid)
 
-            self.position_feedback.progressChanged.connect(self.update_progress_bar)
+            self.main_dock.update_progress_dialog(
+                self.progress_dialog, tr("Calculating the highest position")
+            )
 
             for model in self.analysis_weighted_ims:
                 if model.path is not None and model.path is not "":
@@ -938,9 +1049,9 @@ class ScenarioAnalysisTask(QgsTask):
                 f" [{dest_crs.authid()}]"
             )
 
-            output_file = (
-                f"{self.scenario_directory}/"
-                f"{SCENARIO_OUTPUT_FILE_NAME}_{str(scenario.uuid)[:4]}.tif"
+            output_file = os.path.join(
+                self.scenario_directory,
+                f"{SCENARIO_OUTPUT_FILE_NAME}_{str(self.scenario.uuid)[:4]}.tif",
             )
 
             # Preparing the input rasters for the highest position
@@ -976,18 +1087,18 @@ class ScenarioAnalysisTask(QgsTask):
 
             log(f"Used parameters for highest position analysis {alg_params} \n")
 
+            self.feedback = QgsProcessingFeedback()
+
+            self.feedback.progressChanged.connect(self.update_progress_bar)
+
             self.output = processing.run(
-                "native:highestpositioninrasterstack", alg_params
+                "native:highestpositioninrasterstack",
+                alg_params,
+                context=self.processing_context,
+                feedback=self.feedback,
             )
 
         except Exception as err:
-            self.show_message(
-                tr(
-                    "An error occurred when running analysis task, "
-                    "check logs for more information"
-                ),
-                level=Qgis.Info,
-            )
             log(
                 tr(
                     "An error occurred when running task for "
