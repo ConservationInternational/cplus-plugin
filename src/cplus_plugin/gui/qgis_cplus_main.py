@@ -920,9 +920,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 f" [{dest_crs.authid()}]"
             )
 
-            output_file = (
-                f"{self.scenario_directory}/"
-                f"{SCENARIO_OUTPUT_FILE_NAME}_{str(scenario.uuid)[:4]}.tif"
+            output_file = os.path.join(
+                self.scenario_directory,
+                f"{SCENARIO_OUTPUT_FILE_NAME}_{str(scenario.uuid)[:4]}.tif",
             )
 
             # Preparing the input rasters for the highest position
@@ -1101,8 +1101,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             file_name = clean_filename(pathway.name.replace(" ", "_"))
 
-            output_file = (
-                f"{new_carbon_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            output_file = os.path.join(
+                new_carbon_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
             )
 
             if suitability_index > 0:
@@ -1509,7 +1509,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             FileUtils.create_new_dir(new_ims_directory)
             file_name = clean_filename(pathway.name.replace(" ", "_"))
 
-            output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            output_file = os.path.join(
+                new_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            )
 
             pathway_layer = QgsRasterLayer(pathway.path, pathway.name)
             provider = pathway_layer.dataProvider()
@@ -1673,7 +1675,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 main_task.cancel()
                 return False
 
-            output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            output_file = os.path.join(
+                new_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            )
 
             # Due to the implementation models base class
             # model only one of the following blocks will be executed,
@@ -1833,13 +1837,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 main_task.cancel()
                 return False
 
-            basenames = []
             layers = []
-            new_ims_directory = f"{self.scenario_directory}/normalized_ims"
-            FileUtils.create_new_dir(new_ims_directory)
+            normalized_ims_directory = f"{self.scenario_directory}/normalized_ims"
+            FileUtils.create_new_dir(normalized_ims_directory)
             file_name = clean_filename(model.name.replace(" ", "_"))
 
-            output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            output_file = os.path.join(
+                normalized_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            )
 
             model_layer = QgsRasterLayer(model.path, model.name)
             provider = model_layer.dataProvider()
@@ -2066,12 +2071,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             if basenames is []:
                 return
 
-            new_ims_directory = f"{self.scenario_directory}/weighted_ims"
+            weighted_ims_directory = f"{self.scenario_directory}/weighted_ims"
 
-            FileUtils.create_new_dir(new_ims_directory)
+            FileUtils.create_new_dir(weighted_ims_directory)
 
             file_name = clean_filename(model.name.replace(" ", "_"))
-            output_file = f"{new_ims_directory}/{file_name}_{str(uuid.uuid4())[:4]}.tif"
+
+            output_file = os.path.join(
+                weighted_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+            )
+
             expression = " + ".join(basenames)
 
             # Actual processing calculation
