@@ -1,5 +1,41 @@
 # Quick start
 
+## QGIS version
+
+The CPLUS plugin might have issues with older versions of QGIS. QGIS 3.32 or higher has thoroughly
+been tested with no major known issues. Here is a list of possible issues which may occur if using an
+outdated version of QGIS are being used:
+
+- Processing stalls and does not continue
+- Symbologies (e.g. colour ramps) cannot be applied to the output layers
+- Reports cannot be generated
+
+Best will be to update QGIS to the latest version, even for other plugins, as bugs and improvements will
+be available for those versions. To update QGIS, a user can do the following:
+
+- Go to the [QGIS download webpage](https://www.qgis.org/en/site/forusers/download.html)
+- Download or follow the instructions for the OS on which QGIS needs to be installed
+- If a specific version (not the latest version) of QGIS needs to be installed, click on the **All releases** tab
+
+![QGIS site](img/qgis-site.png)
+
+### OSGeo4W network installer
+
+This section will only be helpful for Windows users. The OSGeo4W network installer provides much more option
+in a user-friendly UI. Advantages of using this installer:
+
+- Easily allows a user to install both the latest and the latest LTR versions of QGIS
+- User can select the exact libraries and versions they want to install (e.g. gdal)
+- Option to include (or not include) GRASS and SAGA
+- Extensions for QGIS
+- If a user wants to update an existing QGIS installation, simply run the osgeo.exe in the installation directory
+- Simply run the osgeo.exe to update already installed libraries, or install new libraries
+- Easy to remove libraries or extensions
+- Python modules
+- And much more
+
+![QGIS online download](img/qgis-download.png)
+
 ## Installation
 
 ### Plugin repository
