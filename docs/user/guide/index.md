@@ -237,6 +237,44 @@ Now that the vector layer is in the correct coordinate system, the user can conv
 
 The user's data should now be ready for analysis.
 
+## CPLUS settings
+
+A short description of each available setting a user can change. Most are optional, but the user needs to set the
+base directory as its a requirement for the processing to work (e.g. outputs are stored in the base directory).
+Another important option to consider is snapping, as it will improve analysis results.
+
+**Configure Analysis**:
+
+- Settings will be added as the plugin development continues
+
+**Reports**:
+
+- Information which will be included when a report is generated. These settings are optional,
+  and will be excluded from the report if not provided
+- **Organization**: The organization(s) to be included in the report
+- **Contact Email**: Contact email for the author
+- **Website**: A website link to the project or company
+- **Custom logo**: Enable and provide a custom logo of your choosing. If disabled, the CI logo will be used in the report
+- **Footer**: Footer section for the report
+- **Disclaimer**: A disclaimer to be added to the report
+- **License**: A license to be added to the report
+
+**Advanced**:
+
+- **Base data directory** (required): Data accessed and download by the plugin will be stored here
+- **Coefficient for carbon layers**: Value applied during processing to the carbon-based layers. Default is 0
+- **Pathway suitability index**: Index multiplied to the pathways. Lower values means the pathway is less important, higher means its more important
+- **Snapping**: Will set rasters to match the cell alignment of a reference layer
+    - **Resample method**: Resampling performed on pixel values
+    - **Reference layer**: The reference layer to which the cell alignment will be applied
+    - **Rescale values**: Rescale values according to cell size
+
+**Figure 37** shows an example of updating and applying CPLUS settings.
+
+![CPLUS settings example](img/settings-recording.gif)
+
+*Figure 37: CPLUS settings example*
+
 ## Perform analysis
 
 **Figure 1** shows the toolbar button/menu for the plugin. Clicking on the icon will open the plugin.
@@ -533,35 +571,3 @@ CPLUS toolbar (**Figure 36**):
 ![CPLUS plugin toolbar icon](img/plugin-toolbar-icon.png)
 
 *Figure 36: CPLUS toolbar button*
-
-### CPLUS settings
-
-A short description of each available setting a user can change. Most are optional.
-
-**Configure Analysis**:
-
-- Settings will be added as the plugin development continues
-
-**Reports**:
-
-- Information which will be included when a report is generated. These settings are optional,
-  and will be excluded from the report if not provided
-- **Organization**: The organization(s) to be included in the report
-- **Contact Email**: Contact email for the author
-- **Website**: A website link to the project or company
-- **Custom logo**: Enable and provide a custom logo of your choosing. If disabled, the CI logo will be used in the report
-- **Footer**: Footer section for the report
-- **Disclaimer**: A disclaimer to be added to the report
-- **License**: A license to be added to the report
-
-**Advanced**:
-
-- **Base data directory** (required): Data accessed and download by the plugin will be stored here
-- **Coefficient for carbon layers**: Value applied during processing to the carbon-based layers. Default is 0
-- **Pathway suitability index**: Index multiplied to the pathways. Lower values means the pathway is less important, higher means its more important
-
-**Figure 37** shows an example of updating and applying CPLUS settings.
-
-![CPLUS settings example](img/settings-recording.gif)
-
-*Figure 37: CPLUS settings example*
