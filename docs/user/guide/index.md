@@ -266,9 +266,30 @@ comparison will be considered for each scenario.
 - **Figure 16** shows an example of Step 1
 - Once the information has been provided, click **Step 2**
 
+<blockquote> If the QGIS canvas CRS is not set to WGS84 (EPSG: 4326), the zoom to pilot area will not happen. </blockquote>
+
 ![CPLUS step 1](img/plugin-step1.png)
 
-*Figure 16: Step 1 focusses on Scenario Information*
+*Figure 16: Step 1 focuses on Scenario Information*
+
+### Pilot area
+
+The pilot study area covers Bushback Ridge, South Africa. When a user's study area is outside of this region,
+some of the Implementation models and Priority weighted layers will be disabled. This is because those datasets
+are specific to the Bushback Ridge study area and are of no use for other AOIs. It's important for a user to take this
+into account, as step 2 and step 3 will be affected by this.
+
+![Bushback Ridge AOI](img/bushback-ridge-extent.png)
+
+If the selected extent is outside of this region, the Bushback Ridge Implementation models will be disabled.
+
+![IMs disabled](img/step2-im-disabled.png)
+
+The same goes for the Priority Weighted layers.
+
+![PWL disabled](img/step3-pwl-disabled.png)
+
+If a user is outside the Bushback Ridge region, they will need to create custom IMs and/or PWLs. Explanation on these follows in the following sections.
 
 ### Step 2: Pathways and models
 
@@ -286,7 +307,7 @@ Step 2 buttons (**Figure 18**):
 - **Add**: Adds a new pathway or model
 - **Delete**: Delete a pathway or model
 - **Editing**: Edit and existing pathway or model
-- ****
+- **Refresh view**: Checks the base directory for data
 
 ![CPLUS step 2 buttons](img/plugin-step2-buttons.png)
 
@@ -357,6 +378,10 @@ model, otherwise a warning message will be displayed. </blockquote>
 The final step deals with the **Weighting priorities** and **Priority groups**. These weights
 will be applied when the user starts running the scenario. An example is shown in **Figure 22**.
 
+- Weight values ranges from 0 to 5, and affects how important a PWL is compared to other layers
+- A value of 0 indicates that the PWL has a lower importance
+- A value of 5 means that the PWL has a higher importance
+
 ![CPLUS step 3](img/plugin-step3_2.png)
 
 *Figure 22: Step 3 allows the user to set the Weights of each Priority Group*
@@ -404,7 +429,8 @@ Once done selecting weights, click **Run Scenario** button to run the analysis.
 
 ### Steps 1 to 3 example
 
-The following recording (**Figure 25**) shows an example on how to do Step 1, 2 and 3.
+The following recording (**Figure 25**) shows an example on how to do Step 1, 2 and 3. This is based on the pilot
+study area.
 
 ![Steps 1 to 3 example](img/steps_1_to_3.gif)
 
