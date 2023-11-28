@@ -5,8 +5,29 @@
 ### Plugin repository
 
 During the development phase the plugin is available to install via 
-a dedicated plugin repository 
+a dedicated plugin repository. This link should be used:
 [https://raw.githubusercontent.com/kartoza/cplus-plugin/release/docs/repository/plugins.xml](https://raw.githubusercontent.com/kartoza/cplus-plugin/release/docs/repository/plugins.xml)
+
+- Open QGIS application and open plugin manager.
+- Click on **Plugins** -> **Manage and Install Plugins** (see **Figure 1**)
+
+![QGIS plugin manager](img/install-qgis-plugins.png)
+
+- Open the **Settings** tab
+
+![QGIS plugin manager settings](img/plugin-manager-settings.png)
+
+- Click the **Add** button
+- Provide the following parameters:
+    - **Name**: Provide a name for the repository
+    - **URL**: Paste the above repository URL
+
+![QGIS plugin manager add repo](img/plugin-add-url.png)
+
+- Click **OK**
+- The result should be similar to the following:
+
+![QGIS plugin manager added repo](img/plugin-repo-added.png)
 
 ### Install from QGIS plugin repository
 
