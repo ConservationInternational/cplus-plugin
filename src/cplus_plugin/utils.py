@@ -220,7 +220,7 @@ def calculate_raster_value_area(
         pixel_value = f.attribute(0)
         area = f.attribute(2)
         pixel_value_area = area_calc.convertAreaMeasurement(area, unit_type)
-        pixel_areas[int(pixel_value)] = pixel_value_area
+        pixel_areas[pixel_value] = pixel_value_area
 
     return pixel_areas
 

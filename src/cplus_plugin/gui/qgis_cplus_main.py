@@ -96,6 +96,7 @@ from ..definitions.defaults import (
 from ..definitions.constants import (
     IM_GROUP_LAYER_NAME,
     IM_WEIGHTED_GROUP_NAME,
+    MODEL_IDENTIFIER_PROPERTY,
     NCS_PATHWAYS_GROUP_LAYER_NAME,
     USER_DEFINED_ATTRIBUTE,
 )
@@ -873,7 +874,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             name=self.analysis_scenario_name,
             description=self.analysis_scenario_description,
             extent=self.analysis_extent,
-            models=self.analysis_implementation_models,
+            models=self.analysis_weighted_ims,
             priority_layer_groups=self.analysis_priority_layers_groups,
         )
 
@@ -2285,6 +2286,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.update_progress_bar(100)
             self.scenario_result.analysis_output = output
             self.scenario_result.state = ScenarioState.FINISHED
+            self.scenario_result.scenario_directory = self.scenario_directory
             self.analysis_finished.emit(self.scenario_result)
 
         else:
@@ -2390,6 +2392,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             for im in list_models:
                 im_name = im.name
                 im_layer = QgsRasterLayer(im.path, im.name)
+                im_layer.setCustomProperty(MODEL_IDENTIFIER_PROPERTY, str(im.uuid))
                 list_pathways = im.pathways
 
                 # Add IM layer with styling, if available
@@ -2446,6 +2449,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                 im_weighted_layer = QgsRasterLayer(
                     weighted_im_path, weighted_im_name, QGIS_GDAL_PROVIDER
+                )
+
+                # Set UUID for easier retrieval
+                im_weighted_layer.setCustomProperty(
+                    MODEL_IDENTIFIER_PROPERTY, str(model.uuid)
                 )
 
                 renderer = self.style_model_layer(im_weighted_layer, model)
