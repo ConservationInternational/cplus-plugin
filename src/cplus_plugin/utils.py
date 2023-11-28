@@ -259,7 +259,7 @@ def align_rasters(
     """
 
     try:
-        snap_directory = output_dir / "snap_layers"
+        snap_directory = os.path.join(output_dir, "snap_layers")
 
         FileUtils.create_new_dir(snap_directory)
 
@@ -320,6 +320,8 @@ def align_rasters(
             f"Problem occured when snapping, {str(e)}."
             f" Update snap settings and re-run the analysis"
         )
+
+        return None, None
 
     log(
         f"Finished snapping using resampling method {resample_method_value.name} with"
