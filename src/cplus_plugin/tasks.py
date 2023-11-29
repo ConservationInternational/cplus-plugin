@@ -1,3 +1,4 @@
+import math
 import os
 import uuid
 
@@ -126,22 +127,37 @@ class ScenarioAnalysisTask(QgsTask):
         pathways = first_model.pathways if first_model else None
         pathway_path = pathways[0].path if pathways else None
 
+        target_layer = QgsRasterLayer(pathway_path)
+
         dest_crs = (
-            QgsRasterLayer(pathway_path).crs()
+            target_layer.crs()
             if pathway_path
             else QgsCoordinateReferenceSystem("EPSG:4326")
         )
         transform = QgsCoordinateTransform(source_crs, dest_crs, QgsProject.instance())
         transformed_extent = transform.transformBoundingBox(box)
 
-        extent_string = (
+        corrected_extent = self.align_extent(target_layer, transformed_extent)
+
+        original_extent_string = (
             f"{transformed_extent.xMinimum()},{transformed_extent.xMaximum()},"
             f"{transformed_extent.yMinimum()},{transformed_extent.yMaximum()}"
             f" [{dest_crs.authid()}]"
         )
 
-        # First we prepare all the pathways before adding them into
+        extent_string = (
+            f"{corrected_extent.xMinimum()},{corrected_extent.xMaximum()},"
+            f"{corrected_extent.yMinimum()},{corrected_extent.yMaximum()}"
+            f" [{dest_crs.authid()}]"
+        )
+
+        log(f"Original area of interest extent {original_extent_string} \n")
+        log(f"Snapped area of interest extent {extent_string} \n")
+
+        # Preparing all the pathways by adding them together with
+        # their carbon layers before creating
         # their respective models.
+
         self.run_pathways_analysis(
             self.analysis_implementation_models,
             self.analysis_priority_layers_groups,
@@ -225,6 +241,50 @@ class ScenarioAnalysisTask(QgsTask):
             self.feedback = QgsProcessingFeedback()
             self.processing_context = QgsProcessingContext()
 
+    def align_extent(self, raster_layer, target_extent):
+        """Snaps the passed extent to the models pathway layer pixel bounds
+
+        :param raster_layer: The target layer that the passed extent will be
+        aligned with
+        :type raster_layer: QgsRasterLayer
+
+        :param extent: Spatial extent that will be used a target extent when
+        doing alignment.
+        :type extent: QgsRectangle
+        """
+
+        try:
+            raster_extent = raster_layer.extent()
+
+            x_res = raster_layer.rasterUnitsPerPixelX()
+            y_res = raster_layer.rasterUnitsPerPixelY()
+
+            left = raster_extent.xMinimum() + x_res * math.floor(
+                (target_extent.xMinimum() - raster_extent.xMinimum()) / x_res
+            )
+            right = raster_extent.xMinimum() + x_res * math.ceil(
+                (target_extent.xMaximum() - raster_extent.xMinimum()) / x_res
+            )
+            bottom = raster_extent.yMinimum() + y_res * math.floor(
+                (target_extent.yMinimum() - raster_extent.yMinimum()) / y_res
+            )
+            top = raster_extent.yMaximum() - y_res * math.floor(
+                (raster_extent.yMaximum() - target_extent.yMaximum()) / y_res
+            )
+
+            return QgsRectangle(left, bottom, right, top)
+
+        except Exception as e:
+            log(
+                tr(
+                    f"Problem snapping area of "
+                    f"interest extent, using the original extent,"
+                    f"{str(e)}"
+                )
+            )
+
+        return target_extent
+
     def run_pathways_analysis(self, models, priority_layers_groups, extent):
         """Runs the required model pathways analysis on the passed
          implementation models. The analysis involves adding the pathways
@@ -280,7 +340,9 @@ class ScenarioAnalysisTask(QgsTask):
             self.run_pathways_normalization(models, priority_layers_groups, extent)
             return
 
-        new_carbon_directory = f"{self.scenario_directory}/pathways_carbon_layers"
+        new_carbon_directory = os.path.join(
+            self.scenario_directory, "pathways_carbon_layers"
+        )
 
         suitability_index = float(
             settings_manager.get_value(Settings.PATHWAY_SUITABILITY_INDEX, default=0)
@@ -511,12 +573,15 @@ class ScenarioAnalysisTask(QgsTask):
 
         for pathway in pathways:
             layers = []
-            new_ims_directory = f"{self.scenario_directory}/normalized_pathways"
-            FileUtils.create_new_dir(new_ims_directory)
+            normalized_pathways_directory = os.path.join(
+                self.scenario_directory, "normalized_pathways"
+            )
+            FileUtils.create_new_dir(normalized_pathways_directory)
             file_name = clean_filename(pathway.name.replace(" ", "_"))
 
             output_file = os.path.join(
-                new_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+                normalized_pathways_directory,
+                f"{file_name}_{str(uuid.uuid4())[:4]}.tif",
             )
 
             pathway_layer = QgsRasterLayer(pathway.path, pathway.name)
@@ -596,10 +661,10 @@ class ScenarioAnalysisTask(QgsTask):
         )
 
         for model in models:
-            new_ims_directory = os.path.join(
+            ims_directory = os.path.join(
                 self.scenario_directory, "implementation_models"
             )
-            FileUtils.create_new_dir(new_ims_directory)
+            FileUtils.create_new_dir(ims_directory)
             file_name = clean_filename(model.name.replace(" ", "_"))
 
             layers = []
@@ -619,7 +684,7 @@ class ScenarioAnalysisTask(QgsTask):
                 return False
 
             output_file = os.path.join(
-                new_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+                ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
             )
 
             # Due to the implementation models base class
@@ -685,7 +750,7 @@ class ScenarioAnalysisTask(QgsTask):
         :param priority_layers_groups: Used priority layers groups and their values
         :type priority_layers_groups: dict
 
-        :param extent: selected extent from user
+        :param extent: Selected area of interest extent
         :type extent: str
         """
         if self.processing_cancelled:
@@ -722,12 +787,14 @@ class ScenarioAnalysisTask(QgsTask):
                 return False
 
             layers = []
-            new_ims_directory = os.path.join(self.scenario_directory, "normalized_ims")
-            FileUtils.create_new_dir(new_ims_directory)
+            normalized_ims_directory = os.path.join(
+                self.scenario_directory, "normalized_ims"
+            )
+            FileUtils.create_new_dir(normalized_ims_directory)
             file_name = clean_filename(model.name.replace(" ", "_"))
 
             output_file = os.path.join(
-                new_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+                normalized_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
             )
 
             model_layer = QgsRasterLayer(model.path, model.name)
@@ -901,13 +968,15 @@ class ScenarioAnalysisTask(QgsTask):
             if basenames is []:
                 return [], True
 
-            new_ims_directory = os.path.join(self.scenario_directory, "weighted_ims")
+            weighted_ims_directory = os.path.join(
+                self.scenario_directory, "weighted_ims"
+            )
 
-            FileUtils.create_new_dir(new_ims_directory)
+            FileUtils.create_new_dir(weighted_ims_directory)
 
             file_name = clean_filename(model.name.replace(" ", "_"))
             output_file = os.path.join(
-                new_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+                weighted_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
             )
             expression = " + ".join(basenames)
 
