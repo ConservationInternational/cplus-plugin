@@ -564,6 +564,7 @@ class Scenario(BaseModelComponent):
 
     extent: SpatialExtent
     models: typing.List[ImplementationModel]
+    weighted_models: typing.List[ImplementationModel]
     priority_layer_groups: typing.List
     state: ScenarioState = ScenarioState.IDLE
 

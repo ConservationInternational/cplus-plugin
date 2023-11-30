@@ -922,6 +922,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 description=self.analysis_scenario_description,
                 extent=self.analysis_extent,
                 models=self.analysis_implementation_models,
+                weighted_models=[],
                 priority_layer_groups=self.analysis_priority_layers_groups,
             )
 

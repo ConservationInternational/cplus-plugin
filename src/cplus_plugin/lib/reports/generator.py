@@ -1033,7 +1033,7 @@ class ReportGenerator:
         }
 
         rows_data = []
-        for imp_model in self._context.scenario.models:
+        for imp_model in self._context.scenario.weighted_models:
             # IM name
             name_cell = QgsTableCell(imp_model.name)
             name_cell.setBackgroundColor(QtGui.QColor("#e9e9e9"))
