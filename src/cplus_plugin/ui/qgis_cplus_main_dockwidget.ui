@@ -96,8 +96,14 @@
        <layout class="QGridLayout" name="gridLayout_8">
         <item row="4" column="0" colspan="2">
          <widget class="QLineEdit" name="scenario_description">
+          <property name="toolTip">
+           <string>Information about the scenario analysis, limited to 195 characters. </string>
+          </property>
           <property name="text">
            <string/>
+          </property>
+          <property name="maxLength">
+           <number>195</number>
           </property>
          </widget>
         </item>
@@ -110,6 +116,9 @@
         </item>
         <item row="3" column="0">
          <widget class="QLabel" name="label_71">
+          <property name="toolTip">
+           <string>Information about the scenario analysis, limited to 195 characters. </string>
+          </property>
           <property name="text">
            <string>Scenario description</string>
           </property>

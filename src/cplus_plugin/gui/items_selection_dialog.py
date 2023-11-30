@@ -84,7 +84,9 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
 
                 for group in layer.get("groups"):
                     group = settings_manager.find_group_by_name(group.get("name"))
-                    group_uuids.append(str(group.get("uuid")))
+
+                    if group is not None:
+                        group_uuids.append(str(group.get("uuid")))
 
                 if self.parent_item.get("uuid") in group_uuids:
                     item.setCheckState(QtCore.Qt.Checked)
