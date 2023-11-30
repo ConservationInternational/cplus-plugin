@@ -237,9 +237,73 @@ Now that the vector layer is in the correct coordinate system, the user can conv
 
 The user's data should now be ready for analysis.
 
+## CPLUS settings
+
+The user can follow two approaches to open the CPLUS settings.
+
+QGIS options (**Figure 15**):
+
+- Click on **Settings** -> **Options**
+
+![QGIS settings](img/settings-qgis.png)
+
+*Figure 15: QGIS settings*
+
+- Select the *CPLUS* tab to the left
+- This will open the CPLUS settings dialog. See **Figure 16** for an example
+
+![CPLUS settings](img/settings-cplus-tab.png)
+
+*Figure 16: CPLUS section as loaded in the QGIS settings dialog*
+
+CPLUS toolbar (**Figure 17**):
+- Click on the CPLUS toolbar drop-down
+- Select **Settings**
+- This will take you directly to the CPLUS settings dialog in the QGIS options
+
+![CPLUS plugin toolbar icon](img/plugin-toolbar-icon.png)
+
+*Figure 17: CPLUS toolbar button*
+
+A short description of each available setting a user can change. Most are optional, but the user needs to set the
+base directory as its a requirement for the processing to work (e.g. outputs are stored in the base directory).
+Another important option to consider is snapping, as it will improve analysis results.
+
+**Configure Analysis**:
+
+- Settings will be added as the plugin development continues
+
+**Reports**:
+
+- Information which will be included when a report is generated. These settings are optional,
+  and will be excluded from the report if not provided
+- **Organization**: The organization(s) to be included in the report
+- **Contact Email**: Contact email for the author
+- **Website**: A website link to the project or company
+- **Custom logo**: Enable and provide a custom logo of your choosing. If disabled, the CI logo will be used in the report
+- **Footer**: Footer section for the report
+- **Disclaimer**: A disclaimer to be added to the report
+- **License**: A license to be added to the report
+
+**Advanced**:
+
+- **Base data directory** (required): Data accessed and download by the plugin will be stored here
+- **Coefficient for carbon layers**: Value applied during processing to the carbon-based layers. Default is 0
+- **Pathway suitability index**: Index multiplied to the pathways. Lower values means the pathway is less important, higher means its more important
+- **Snapping**: Will set rasters to match the cell alignment of a reference layer
+    - **Resample method**: Resampling performed on pixel values
+    - **Reference layer**: The reference layer to which the cell alignment will be applied
+    - **Rescale values**: Rescale values according to cell size
+
+**Figure 18** shows an example of updating and applying CPLUS settings.
+
+![CPLUS settings example](img/settings-recording.gif)
+
+*Figure 18: CPLUS settings example*
+
 ## Perform analysis
 
-**Figure 1** shows the toolbar button/menu for the plugin. Clicking on the icon will open the plugin.
+**Figure 19** shows the toolbar button/menu for the plugin. Clicking on the icon will open the plugin.
 When a user clicks on the drop-down button, they will be presented with four options:
 
 - **CPLUS**: Close or open the plugin dock widget
@@ -249,9 +313,9 @@ When a user clicks on the drop-down button, they will be presented with four opt
 
 ![CPLUS plugin toolbar icon](img/plugin-toolbar-icon.png)
 
-*Figure 15: CPLUS toolbar icon*
+*Figure 19: CPLUS toolbar icon*
 
-Open the CPLUS dockwidget by clicking on the CPLUS toolbar icon (**Figure 15**).
+Open the CPLUS dockwidget by clicking on the CPLUS toolbar icon (**Figure 19**).
 
 ### Step 1: Scenario Information
 
@@ -263,38 +327,59 @@ comparison will be considered for each scenario.
 - **Scenario description**: A detailed description of the analysis
 - **Extent**: The area of interest for this analysis. This can be calculated from the current
   canvas view extent, a layer, or an extent drawn by the user
-- **Figure 16** shows an example of Step 1
+- **Figure 20** shows an example of Step 1
 - Once the information has been provided, click **Step 2**
+
+<blockquote> If the QGIS canvas CRS is not set to WGS84 (EPSG: 4326), the zoom to pilot area will not happen. </blockquote>
 
 ![CPLUS step 1](img/plugin-step1.png)
 
-*Figure 16: Step 1 focusses on Scenario Information*
+*Figure 20: Step 1 focuses on Scenario Information*
+
+### Pilot area
+
+The pilot study area covers Bushback Ridge, South Africa. When a user's study area is outside of this region,
+some of the Implementation models and Priority weighted layers will be disabled. This is because those datasets
+are specific to the Bushback Ridge study area and are of no use for other AOIs. It's important for a user to take this
+into account, as step 2 and step 3 will be affected by this.
+
+![Bushback Ridge AOI](img/bushback-ridge-extent.png)
+
+If the selected extent is outside of this region, the Bushback Ridge Implementation models will be disabled.
+
+![IMs disabled](img/step2-im-disabled.png)
+
+The same goes for the Priority Weighted layers.
+
+![PWL disabled](img/step3-pwl-disabled.png)
+
+If a user is outside the Bushback Ridge region, they will need to create custom IMs and/or PWLs. Explanation on these follows in the following sections.
 
 ### Step 2: Pathways and models
 
 This step deals with the **Natural Climate Solution (NCS) pathways** and the **Implementation models (IM)**.
 A NCS pathway can be defined as a composite spatial layer on specific land use classes and other
 factors that determine areas ideal for a specific use case (e.g. Animal mangement).
-An IM is a combination of NCS pathways represented in an AOI spatial layer. **Figure 17** shows the UI.
+An IM is a combination of NCS pathways represented in an AOI spatial layer. **Figure 21** shows the UI.
 
 ![CPLUS step 1](img/plugin-step2.png)
 
-*Figure 17: Step 2 allows the user to create and edit NCS pathways and Implementation Models*
+*Figure 22: Step 2 allows the user to create and edit NCS pathways and Implementation Models*
 
 Step 2 buttons (**Figure 18**):
 
 - **Add**: Adds a new pathway or model
 - **Delete**: Delete a pathway or model
 - **Editing**: Edit and existing pathway or model
-- ****
+- **Refresh view**: Checks the base directory for data
 
 ![CPLUS step 2 buttons](img/plugin-step2-buttons.png)
 
-*Figure 18: Create, delete, and edit buttons*
+*Figure 23: Create, delete, and edit buttons*
 
 #### NCS Pathway
 
-- Click on the left green plus button to add a new pathway (**Figure 19**)
+- Click on the left green plus button to add a new pathway (**Figure 24**)
 - Provide a **Name** and **Description** for the pathway
 - Two approaches to select a layer: A layer from the **QGIS canvas**, or **Upload from a file**
 - Add **Carbon layers** as desired. Multiple carbon layers can be provided. These layers will be averaged
@@ -307,7 +392,7 @@ step 3. </blockquote>
 
 ![CPLUS add pathway](img/plugin-pathway-editor.png)
 
-*Figure 19: NCS Pathway creator/editor*
+*Figure 24: NCS Pathway creator/editor*
 
 <blockquote> Be sure each NCS pathway's Carbon layers is set up correctly before setting up
 the Implementation models in the steps which follows. Changes to the Carbon layers afterward will
@@ -325,7 +410,7 @@ Add pathways to an existing IM:
 
 How to add a new IM:
 
-- Click on the right green plus button to add an **Implementation model** (**Figure 20**)
+- Click on the right green plus button to add an **Implementation model** (**Figure 25**)
 - Provide a **Name** and **Description**
 - (optional) The user can provide an existing raster for the IM. Enable **Map layer** to do this
 - Click **OK**
@@ -333,7 +418,7 @@ How to add a new IM:
 
 ![CPLUS add implementation model](img/plugin-implementation-model.png)
 
-*Figure 20: Implementation Model creator/editor*
+*Figure 25: Implementation Model creator/editor*
 
 - Open the Style pixel value editor by clicking on the ![CPLUS add implementation model](img/button_pixels_order.png) button
 - Select the IM which needs to be moved up or down in the stack
@@ -347,7 +432,7 @@ How to add a new IM:
 
 ![CPLUS selected IMs](img/plugin-selected-ims.png)
 
-*Figure 21: Selected Implementation models*
+*Figure 26: Selected Implementation models*
 
 <blockquote>Before proceeding to Step 3, a user needs to define at least one NCS pathway layer for an implementation 
 model, otherwise a warning message will be displayed. </blockquote>
@@ -355,11 +440,15 @@ model, otherwise a warning message will be displayed. </blockquote>
 ### Step 3: Priority weighting
 
 The final step deals with the **Weighting priorities** and **Priority groups**. These weights
-will be applied when the user starts running the scenario. An example is shown in **Figure 22**.
+will be applied when the user starts running the scenario. An example is shown in **Figure 27**.
+
+- Weight values ranges from 0 to 5, and affects how important a PWL is compared to other layers
+- A value of 0 indicates that the PWL has a lower importance
+- A value of 5 means that the PWL has a higher importance
 
 ![CPLUS step 3](img/plugin-step3_2.png)
 
-*Figure 22: Step 3 allows the user to set the Weights of each Priority Group*
+*Figure 27: Step 3 allows the user to set the Weights of each Priority Group*
 
 The priority weighting layers can be selected and added and removed into each priority group by using the 
 arrow buttons. 
@@ -383,18 +472,18 @@ use the right arrow button ![right arrow](img/cplus_right_arrow.svg) to remove t
     - **Priority layer**: The layer which represents the priority layer
     - **Priority layer name**: A unique identifier for the priority layer
     - **Priority layer description**: A detailed description of the priority layer
-- Click the **Assign implementation models** button to select IMs to be associated with the priority layer (see **Figure 10**)
+- Click the **Assign implementation models** button to select IMs to be associated with the priority layer (see **Figure 28**)
 
 ![Priority layer editing/adding dialog](img/manual-priority-layer-dialog.png)
 
-*Figure 23: Priority layer dialog*
+*Figure 28: Priority layer dialog*
 
 - Select the IMs you want to be associated with the priority layer
 - Click **OK**
 
 ![Priority layer editing/adding dialog](img/manual-pwl-selection.png)
 
-*Figure 23: Implementation model selection for priority layers*
+*Figure 29: Implementation model selection for priority layers*
 
 - ![remove button](img/symbologyRemove.svg): Remove the selected PWL
 
@@ -404,33 +493,34 @@ Once done selecting weights, click **Run Scenario** button to run the analysis.
 
 ### Steps 1 to 3 example
 
-The following recording (**Figure 25**) shows an example on how to do Step 1, 2 and 3.
+The following recording (**Figure 25**) shows an example on how to do Step 1, 2 and 3. This is based on the pilot
+study area.
 
 ![Steps 1 to 3 example](img/steps_1_to_3.gif)
 
-*Figure 25: Shows how to implement Step 1, 2 and 3 in QGIS*
+*Figure 30: Shows how to implement Step 1, 2 and 3 in QGIS*
 
 ## Processing
 
 - Once the user has provided all desired parameters, click **Run Scenario**
-- The processing dialog will open (**Figure 26**)
+- The processing dialog will open (**Figure 31**)
 - The processing will take a while, depending on the number of IMs and pathways provided for each IM
 - Click the **Cancel** button to stop the processing
 
 ![Processing dialog running](img/plugin-processing-dialog.png)
 
-*Figure 26: Processing dialog while the algorithm is running*
+*Figure 31: Processing dialog while the algorithm is running*
 
-- **Figure 27** will be the result if the processing succceeded
+- **Figure 32** will be the result if the processing succceeded
 - The user should take note that the **View Report** button is now available
 
 ![Processing dialog success](img/plugin-processing-succeeded.png)
 
-*Figure 27: Processing dialog if successfull*
+*Figure 32: Processing dialog if successfull*
 
 ### Processing results
 
-The following groups and layers will be added to the QGIS canvas once the processing finishes (see **Figure 28**):
+The following groups and layers will be added to the QGIS canvas once the processing finishes (see **Figure 33**):
 - A group containing the Scenario results
 - **Implementation Model Maps**: Non-weighted IMs created by the user in Step 2
 - **Weighted Implementation Model Maps**: Weighted IMs based on the IMs added in Step 2 and weighing set in Step 3
@@ -438,13 +528,13 @@ The following groups and layers will be added to the QGIS canvas once the proces
 
 ![Layers added to canvas](img/plugin-added-layers.png)
 
-*Figure 28: Groups and layers added to the QGIS canvas*
+*Figure 33: Groups and layers added to the QGIS canvas*
 
-An example of output results in QGIS is detailed by **Figure 29**
+An example of output results in QGIS is detailed by **Figure 33**
 
 ![Outputs example](img/outputs-qgis.gif)
 
-*Figure 29: A recording example of an example scenario*
+*Figure 34: A recording example of an example scenario*
 
 ## Report generating
 
@@ -456,19 +546,19 @@ An example of output results in QGIS is detailed by **Figure 29**
 
 ![Report options](img/plugin-report-options.png)
 
-*Figure 30: Report options*
+*Figure 35: Report options*
 
-- **Figure 31** shows an example of a report opened in the layout designer
+- **Figure 35** shows an example of a report opened in the layout designer
 
 ![Report layout designer](img/report-layout-designer.png) 
 
-*Figure 31: Report opened in the QGIS layout designer*
+*Figure 36: Report opened in the QGIS layout designer*
 
-- **Figure 32** shows a report in PDF format
+- **Figure 36** shows a report in PDF format
 
 ![Report PDF](img/report-pdf.png)
 
-*Figure 32: PDF version of a report*
+*Figure 37: PDF version of a report*
 
 ### Generated report example
 
@@ -476,66 +566,4 @@ Here is an example on how to open a report in the QGIS layout designer, or as a 
 
 ![Generated report example](img/generated-reports.gif)
 
-*Figure 33: Example of a generated report in PDF and layout designer formats*
-
-## Settings
-
-### Open CPLUS settings
-
-The user can follow two approaches to open the CPLUS settings.
-
-QGIS options (**Figure 34**):
-
-- Click on **Settings** -> **Options**
-
-![QGIS settings](img/settings-qgis.png)
-
-*Figure 34: QGIS settings*
-
-- Select the *CPLUS* tab to the left
-- This will open the CPLUS settings dialog. See **Figure 35** for an example
-
-![CPLUS settings](img/settings-cplus-tab.png)
-
-*Figure 35: CPLUS section as loaded in the QGIS settings dialog*
-
-CPLUS toolbar (**Figure 36**):
-- Click on the CPLUS toolbar drop-down
-- Select **Settings**
-- This will take you directly to the CPLUS settings dialog in the QGIS options
-
-![CPLUS plugin toolbar icon](img/plugin-toolbar-icon.png)
-
-*Figure 36: CPLUS toolbar button*
-
-### CPLUS settings
-
-A short description of each available setting a user can change. Most are optional.
-
-**Configure Analysis**:
-
-- Settings will be added as the plugin development continues
-
-**Reports**:
-
-- Information which will be included when a report is generated. These settings are optional,
-  and will be excluded from the report if not provided
-- **Organization**: The organization(s) to be included in the report
-- **Contact Email**: Contact email for the author
-- **Website**: A website link to the project or company
-- **Custom logo**: Enable and provide a custom logo of your choosing. If disabled, the CI logo will be used in the report
-- **Footer**: Footer section for the report
-- **Disclaimer**: A disclaimer to be added to the report
-- **License**: A license to be added to the report
-
-**Advanced**:
-
-- **Base data directory** (required): Data accessed and download by the plugin will be stored here
-- **Coefficient for carbon layers**: Value applied during processing to the carbon-based layers. Default is 0
-- **Pathway suitability index**: Index multiplied to the pathways. Lower values means the pathway is less important, higher means its more important
-
-**Figure 37** shows an example of updating and applying CPLUS settings.
-
-![CPLUS settings example](img/settings-recording.gif)
-
-*Figure 37: CPLUS settings example*
+*Figure 38: Example of a generated report in PDF and layout designer formats*

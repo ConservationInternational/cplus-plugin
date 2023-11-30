@@ -1,5 +1,114 @@
 # Administrators guide
 
+## Pilot area data
+
+This section deals with making updates to the data of the pilot study area (Bushback Ridge). This needs
+to be done in the GitHub repository, or locally on the repository clone, and then pushed into the repository. The change can be made as follows:
+
+The following JSON files needs to be considered when doing this, all of which are stored in
+"src/cplus_plugin/data/default"
+
+- implementation_model.json
+- ncs_pathways.json
+- priority_weighted_layers.json
+
+### Implementation models
+
+In this file existing implementation models can be edited (e.g. change name or description), be removed
+or a new model can be added. Here is a quick overview of a model stored in the JSON file
+
+- Each model contains the following elements:
+    - **uuid**: A Universally unique identifier (UUID) for the model
+    - **name**: A unique name for the model
+    - **description**: Detailed description of the model
+    - **pwls_ids**: UUIDs of the priority weighted layers associated with the IM
+    - **style**: The style which will be applied to the 
+- Editing these will have an effect on the IM in the plugin
+
+![Implementation model json](img/im-json.png)
+
+When adding a new IM to the list (or a UUID needs to change), the user needs to provide a UUID. This can be done as follows:
+
+- Open a [UUID generator](https://www.uuidgenerator.net/). Other UUID generators can also be used, but the provided link will suffice
+- Best will be to make use of version 4
+- Click **Generate a version 4 UUID**
+- Copy and paste the newly generated UUID
+
+![UUID generator](img/uuid-generator.png)
+
+To remove an IM from the list of models, an administrator can simply remove the entry in the JSON file.
+Remove this text to remove a model:
+
+![Remove model](img/im-json-remove-model.png)
+
+To update the list of priority weighted layers for a model, the ID needs to be retrieved:
+
+- Open the priority_weighted_layers.json file
+- Each available PWL will be listed under "layers"
+- Cope and paste the UUID that needs to be added to the IM pwls_ids field
+- Save the file
+
+![PWL UUID](img/pwl-add-to-im.png)
+
+A section on PWL editing will soon follow.
+
+### NCS pathways
+
+An administrator can access/edit the NCS pathways as follows:
+
+- Open the ncs_pathways.json file
+- Here is a description of each element:
+    - **uuid**: A unique identifier for the pathway
+    - **name**: Unique title for the pathway
+    - **description**: Detailed description of the pathway
+    - **path**: Directory with file name for the pathway data
+    - **layer_type**: Zero (0) for rasters, one (1) for vector layers
+    - **carbon_paths**: A list of the carbon footprint rasters. This should be a directory with the raster name. Tif is the preferred format
+- Editing these elements will make changes to the pilot area data in the plugin
+
+![PWL UUID](img/ncs-pathway-json.png)
+
+When adding a new pathway to the list (or a UUID needs to change), the user needs to provide a UUID. This can be done as follows:
+
+- Open a [UUID generator](https://www.uuidgenerator.net/). Other UUID generators can also be used, but the provided link will suffice
+- Best will be to make use of version 4
+- Click **Generate a version 4 UUID**
+- Copy and paste the newly generated UUID
+
+![UUID generator](img/uuid-generator.png)
+
+To remove a pathway from the list of layers, an administrator can simply remove the entry in the JSON file.
+Remove this text to remove a model:
+
+![Remove model](img/pwl-remove-text.png)
+
+### Priority weighted layers
+
+Do the following to change/add/remove priority weighted layers for the pilot study area
+
+- Open the priority_weighted_layers.json file
+- Here is a description of each element:
+    - **uuid**: A unique ID for the PWL
+    - **name**: Unique name for the PWL
+    - **description**: A detailed description of the PWL
+    - **selected**: Whether the PWL should be selected on default
+    - **path**: A directory with file name for the PWL data. This should be a raster
+- Changing the above values will have an impact on the data in the plugin for the pilot study area
+
+![PWL example](img/pwl-example.png)
+
+When adding a new PWL to the list (or a UUID needs to change), the user needs to provide a UUID. This can be done as follows:
+
+- Open a [UUID generator](https://www.uuidgenerator.net/). Other UUID generators can also be used, but the provided link will suffice
+- Best will be to make use of version 4
+- Click **Generate a version 4 UUID**
+- Copy and paste the newly generated UUID
+
+To remove a PWL from the list of layers, an administrator can simply remove the entry in the JSON file.
+Remove this text to remove a model:
+
+![PWL example](img/pwl-remove.png)
+
 ## Bugs and suggestions
 
 This section relates to creating an issue for when a bug is found in the plugin, or
