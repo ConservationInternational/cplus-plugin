@@ -600,6 +600,9 @@ class SettingsManager(QtCore.QObject):
         :returns: Priority group
         :rtype: typing.Dict
         """
+
+        found_id = None
+
         with qgis_settings(
             f"{self.BASE_GROUP_NAME}/" f"{self.PRIORITY_GROUP_NAME}"
         ) as settings:
@@ -622,6 +625,9 @@ class SettingsManager(QtCore.QObject):
         :returns: Priority group
         :rtype: typing.Dict
         """
+
+        if identifier is None:
+            return None
 
         settings_key = self._get_priority_groups_settings_base(identifier)
         with qgis_settings(settings_key) as settings:

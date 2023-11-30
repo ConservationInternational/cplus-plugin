@@ -137,22 +137,16 @@ class ScenarioAnalysisTask(QgsTask):
         transform = QgsCoordinateTransform(source_crs, dest_crs, QgsProject.instance())
         transformed_extent = transform.transformBoundingBox(box)
 
-        corrected_extent = self.align_extent(target_layer, transformed_extent)
-
-        original_extent_string = (
-            f"{transformed_extent.xMinimum()},{transformed_extent.xMaximum()},"
-            f"{transformed_extent.yMinimum()},{transformed_extent.yMaximum()}"
-            f" [{dest_crs.authid()}]"
-        )
+        snapped_extent = self.align_extent(target_layer, transformed_extent)
 
         extent_string = (
-            f"{corrected_extent.xMinimum()},{corrected_extent.xMaximum()},"
-            f"{corrected_extent.yMinimum()},{corrected_extent.yMaximum()}"
+            f"{snapped_extent.xMinimum()},{snapped_extent.xMaximum()},"
+            f"{snapped_extent.yMinimum()},{snapped_extent.yMaximum()}"
             f" [{dest_crs.authid()}]"
         )
 
-        log(f"Original area of interest extent {original_extent_string} \n")
-        log(f"Snapped area of interest extent {extent_string} \n")
+        log(f"Original area of interest extent: {transformed_extent.asWktPolygon()} \n")
+        log(f"Snapped area of interest extent {snapped_extent.asWktPolygon()} \n")
 
         # Preparing all the pathways by adding them together with
         # their carbon layers before creating
@@ -205,6 +199,7 @@ class ScenarioAnalysisTask(QgsTask):
         )
 
         self.analysis_weighted_ims = weighted_models
+        self.scenario.weighted_models = weighted_models
 
         # Post weighting analysis
         self.run_models_cleaning(weighted_models, extent_string)
