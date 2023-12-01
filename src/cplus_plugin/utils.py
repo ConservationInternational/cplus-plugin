@@ -278,9 +278,10 @@ def align_rasters(
 
         resample_method_value = QgsAlignRaster.ResampleAlg.RA_NearestNeighbour
 
-        for method in QgsAlignRaster.ResampleAlg:
-            if method.value == int(resample_method):
-                resample_method_value = method
+        try:
+            resample_method_value = QgsAlignRaster.ResampleAlg(int(resample_method))
+        except Exception as e:
+            log(f"Problem creating a resample value when snapping, {e}")
 
         if rescale_values:
             lst[0].rescaleValues = rescale_values
