@@ -292,28 +292,15 @@ def align_rasters(
         align.setParametersFromRaster(reference_raster_source)
 
         layer = QgsRasterLayer(input_raster_source, "input_layer")
-        if extent:
-            original_extent = QgsRectangle(
-                float(extent[0]), float(extent[1]), float(extent[2]), float(extent[3])
-            )
-            source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
-        else:
-            original_extent = layer.extent()
-            source_crs = QgsCoordinateReferenceSystem(layer.crs())
 
-        destination_crs = QgsCoordinateReferenceSystem(align.destinationCrs())
+        align.setClipExtent(layer.extent())
 
-        transform = QgsCoordinateTransform(
-            source_crs, destination_crs, QgsProject.instance()
-        )
-
-        tranformed_extent = transform.transformBoundingBox(original_extent)
-
-        align.setClipExtent(tranformed_extent)
+        log(f"Snapping clip extent {layer.extent().asWktPolygon()}")
 
         if not align.run():
             log(
-                f"Problem during snapping for {input_raster_source} and {reference_raster_source}"
+                f"Problem during snapping for {input_raster_source} and "
+                f"{reference_raster_source}, {align.errorMessage()}"
             )
             raise Exception(align.errorMessage())
     except Exception as e:

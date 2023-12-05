@@ -6,6 +6,8 @@ import datetime
 
 from pathlib import Path
 
+from qgis.PyQt import QtCore, QtGui
+
 from qgis.core import (
     Qgis,
     QgsApplication,
@@ -59,6 +61,11 @@ from qgis.core import QgsTask
 class ScenarioAnalysisTask(QgsTask):
     """Prepares and runs the scenario analysis"""
 
+    status_message_changed = QtCore.pyqtSignal(str)
+    info_message_changed = QtCore.pyqtSignal(str, Qgis)
+
+    custom_progress_changed = QtCore.pyqtSignal(float)
+
     def __init__(
         self,
         analysis_scenario_name,
@@ -67,8 +74,6 @@ class ScenarioAnalysisTask(QgsTask):
         analysis_priority_layers_groups,
         analysis_extent,
         scenario,
-        main_dock,
-        progress_dialog,
     ):
         super().__init__()
         self.analysis_scenario_name = analysis_scenario_name
@@ -79,9 +84,6 @@ class ScenarioAnalysisTask(QgsTask):
         self.analysis_extent = analysis_extent
         self.analysis_extent_string = None
 
-        self.main_dock = main_dock
-        self.progress_dialog = progress_dialog
-
         self.analysis_weighted_ims = []
         self.scenario_result = None
         self.scenario_directory = None
@@ -89,6 +91,9 @@ class ScenarioAnalysisTask(QgsTask):
         self.success = True
         self.output = None
         self.error = None
+        self.status_message = None
+
+        self.info_message = None
 
         self.processing_cancelled = False
         self.feedback = QgsProcessingFeedback()
@@ -159,11 +164,22 @@ class ScenarioAnalysisTask(QgsTask):
         )
 
         # Run pathways layers snapping using a specified reference layer
-        self.snap_analyzed_pathways(
-            self.analysis_implementation_models,
-            self.analysis_priority_layers_groups,
-            extent_string,
+
+        snapping_enabled = settings_manager.get_value(
+            Settings.SNAPPING_ENABLED, default=False, setting_type=bool
         )
+        reference_layer = settings_manager.get_value(Settings.SNAP_LAYER, default="")
+        reference_layer_path = Path(reference_layer)
+        if (
+            snapping_enabled
+            and os.path.exists(reference_layer)
+            and reference_layer_path.is_file()
+        ):
+            self.snap_analyzed_pathways(
+                self.analysis_implementation_models,
+                self.analysis_priority_layers_groups,
+                extent_string,
+            )
 
         # Normalizing all the models pathways using the carbon coefficient and
         # the pathway suitability index
@@ -221,17 +237,26 @@ class ScenarioAnalysisTask(QgsTask):
         else:
             log(f"Task result {result}Error from task {self.error}")
 
-    def update_progress_bar(self, value):
-        """Sets the value of the progress bar
+    def set_status_message(self, message):
+        self.status_message = message
+        self.status_message_changed.emit(self.status_message)
+
+    def set_info_message(self, message, level=Qgis.Info):
+        self.info_message = message
+        self.info_message_changed.emit(self.info_message, level)
+
+    def set_custom_progress(self, value):
+        self.custom_progress = value
+        self.custom_progress_changed.emit(self.custom_progress)
+
+    def update_progress(self, value):
+        """Sets the value of the task progress
 
         :param value: Value to be set on the progress bar
         :type value: float
         """
-        if self.main_dock and not self.processing_cancelled:
-            try:
-                self.main_dock.update_progress_bar(self.progress_dialog, int(value))
-            except RuntimeError:
-                log(tr("Error setting value to a progress bar"), notify=False)
+        if not self.processing_cancelled:
+            self.set_custom_progress(value)
         else:
             self.feedback = QgsProcessingFeedback()
             self.processing_context = QgsProcessingContext()
@@ -301,17 +326,14 @@ class ScenarioAnalysisTask(QgsTask):
         if self.processing_cancelled:
             return False
 
-        self.main_dock.update_progress_dialog(
-            self.progress_dialog,
-            tr("Adding models pathways with carbon layers"),
-        )
+        self.set_status_message(tr("Adding models pathways with carbon layers"))
 
         pathways = []
         models_paths = []
 
         for model in models:
             if not model.pathways and (model.path is None or model.path is ""):
-                self.main_dock.show_message(
+                self.set_info_message(
                     tr(
                         f"No defined model pathways or a"
                         f" model layer for the model {model.name}"
@@ -409,7 +431,7 @@ class ScenarioAnalysisTask(QgsTask):
 
             self.feedback = QgsProcessingFeedback()
 
-            self.feedback.progressChanged.connect(self.update_progress_bar)
+            self.feedback.progressChanged.connect(self.update_progress)
 
             if self.processing_cancelled:
                 return False
@@ -449,7 +471,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         for model in models:
             if not model.pathways and (model.path is None or model.path is ""):
-                self.main_dock.show_message(
+                self.set_info_message(
                     tr(
                         f"No defined model pathways or a"
                         f" model layer for the model {model.name}"
@@ -520,17 +542,14 @@ class ScenarioAnalysisTask(QgsTask):
             # Will not proceed if processing has been cancelled by the user
             return False
 
-        self.main_dock.update_progress_dialog(
-            self.progress_dialog,
-            tr("Normalization of pathways"),
-        )
+        self.set_status_message(tr("Normalization of pathways"))
 
         pathways = []
         models_paths = []
 
         for model in models:
             if not model.pathways and (model.path is None or model.path is ""):
-                self.main_dock.show_message(
+                self.set_info_message(
                     tr(
                         f"No defined model pathways or a"
                         f" model layer for the model {model.name}"
@@ -616,7 +635,7 @@ class ScenarioAnalysisTask(QgsTask):
 
             self.feedback = QgsProcessingFeedback()
 
-            self.feedback.progressChanged.connect(self.update_progress_bar)
+            self.feedback.progressChanged.connect(self.update_progress)
 
             if self.processing_cancelled:
                 return False
@@ -650,9 +669,8 @@ class ScenarioAnalysisTask(QgsTask):
             # Will not proceed if processing has been cancelled by the user
             return False
 
-        self.main_dock.update_progress_dialog(
-            self.progress_dialog,
-            tr("Creating implementation models layers from pathways"),
+        self.set_status_message(
+            tr("Creating implementation models layers from pathways")
         )
 
         for model in models:
@@ -664,7 +682,7 @@ class ScenarioAnalysisTask(QgsTask):
 
             layers = []
             if not model.pathways and (model.path is None and model.path is ""):
-                self.main_dock.show_message(
+                self.set_info_message(
                     tr(
                         f"No defined model pathways or a"
                         f" model layer for the model {model.name}"
@@ -712,7 +730,7 @@ class ScenarioAnalysisTask(QgsTask):
 
             feedback = QgsProcessingFeedback()
 
-            feedback.progressChanged.connect(self.update_progress_bar)
+            feedback.progressChanged.connect(self.update_progress)
 
             if self.processing_cancelled:
                 return False
@@ -752,15 +770,12 @@ class ScenarioAnalysisTask(QgsTask):
             # Will not proceed if processing has been cancelled by the user
             return False
 
-        self.main_dock.update_progress_dialog(
-            self.progress_dialog,
-            tr("Normalization of the implementation models"),
-        )
+        self.set_status_message(tr("Normalization of the implementation models"))
 
         for model in models:
             if model.path is None or model.path is "":
                 if not self.processing_cancelled:
-                    self.main_dock.show_message(
+                    self.set_info_message(
                         tr(
                             f"Problem when running models normalization, "
                             f"there is no map layer for the model {model.name}"
@@ -773,7 +788,7 @@ class ScenarioAnalysisTask(QgsTask):
                     )
                 else:
                     # If the user cancelled the processing
-                    self.main_dock.show_message(
+                    self.set_info_message(
                         tr(f"Processing has been cancelled by the user."),
                         level=Qgis.Critical,
                     )
@@ -842,7 +857,7 @@ class ScenarioAnalysisTask(QgsTask):
 
             feedback = QgsProcessingFeedback()
 
-            feedback.progressChanged.connect(self.update_progress_bar)
+            feedback.progressChanged.connect(self.update_progress)
 
             if self.processing_cancelled:
                 return False
@@ -874,10 +889,7 @@ class ScenarioAnalysisTask(QgsTask):
         if self.processing_cancelled:
             return [], False
 
-        self.main_dock.update_progress_dialog(
-            self.progress_dialog,
-            tr(f"Weighting implementation models"),
-        )
+        self.set_status_message(tr(f"Weighting implementation models"))
 
         weighted_models = []
 
@@ -885,7 +897,7 @@ class ScenarioAnalysisTask(QgsTask):
             model = clone_implementation_model(original_model)
 
             if model.path is None or model.path is "":
-                self.main_dock.show_message(
+                self.set_info_message(
                     tr(
                         f"Problem when running models weighting, "
                         f"there is no map layer for the model {model.name}"
@@ -989,7 +1001,7 @@ class ScenarioAnalysisTask(QgsTask):
 
             feedback = QgsProcessingFeedback()
 
-            feedback.progressChanged.connect(self.update_progress_bar)
+            feedback.progressChanged.connect(self.update_progress)
 
             if self.processing_cancelled:
                 return [], False
@@ -1018,13 +1030,11 @@ class ScenarioAnalysisTask(QgsTask):
         if self.processing_cancelled:
             return False
 
-        self.main_dock.update_progress_dialog(
-            self.progress_dialog, tr("Updating weighted implementation models values")
-        )
+        self.set_status_message(tr("Updating weighted implementation models values"))
 
         for model in models:
             if model.path is None or model.path is "":
-                self.main_dock.show_message(
+                self.set_info_message(
                     tr(
                         f"Problem when running models updates, "
                         f"there is no map layer for the model {model.name}"
@@ -1068,7 +1078,7 @@ class ScenarioAnalysisTask(QgsTask):
 
             feedback = QgsProcessingFeedback()
 
-            feedback.progressChanged.connect(self.update_progress_bar)
+            feedback.progressChanged.connect(self.update_progress)
 
             if self.processing_cancelled:
                 return False
@@ -1108,11 +1118,7 @@ class ScenarioAnalysisTask(QgsTask):
         try:
             layers = {}
 
-            self.progress_dialog.scenario_id = str(self.scenario.uuid)
-
-            self.main_dock.update_progress_dialog(
-                self.progress_dialog, tr("Calculating the highest position")
-            )
+            self.set_status_message(tr("Calculating the highest position"))
 
             for model in self.analysis_weighted_ims:
                 if model.path is not None and model.path is not "":
@@ -1177,7 +1183,7 @@ class ScenarioAnalysisTask(QgsTask):
 
             self.feedback = QgsProcessingFeedback()
 
-            self.feedback.progressChanged.connect(self.update_progress_bar)
+            self.feedback.progressChanged.connect(self.update_progress)
 
             if self.processing_cancelled:
                 return False

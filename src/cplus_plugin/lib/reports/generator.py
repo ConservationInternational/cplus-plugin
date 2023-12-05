@@ -227,6 +227,7 @@ class ReportGenerator:
         self._context = context
         self._feedback = context.feedback or feedback
         self._error_messages: typing.List[str] = []
+        self._error_occured = False
         self._layout = None
         self._project = None
         self._variable_register = LayoutVariableRegister()
@@ -325,11 +326,10 @@ class ReportGenerator:
         """Check if there is a request to cancel the process
         if a feedback object had been specified.
         """
-        if self._feedback:
-            if self._feedback.isCanceled():
-                tr_msg = tr("Report generation cancelled.")
-                self._error_messages.append(tr_msg)
-                return True
+        if (self._feedback and self._feedback.isCanceled()) or self._error_occured:
+            tr_msg = tr("Report generation cancelled.")
+            self._error_messages.append(tr_msg)
+            return True
 
             self._feedback.setProgress(value)
 
@@ -1024,6 +1024,7 @@ class ReportGenerator:
         )
         if len(pixel_area_info) == 0:
             tr_msg = tr("No implementation model areas from the calculation.")
+            self._error_occured = True
             self._error_messages.append(tr_msg)
             return
 
@@ -1042,6 +1043,7 @@ class ReportGenerator:
             if imp_model.style_pixel_value in int_pixel_area_info:
                 area_info = int_pixel_area_info.get(imp_model.style_pixel_value)
             else:
+                log(f"Pixel value not found in calculation")
                 area_info = tr("<Pixel value not found in calculation>")
 
             area_cell = QgsTableCell(area_info)
