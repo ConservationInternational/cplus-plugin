@@ -153,16 +153,6 @@ class ScenarioAnalysisTask(QgsTask):
         log(f"Original area of interest extent: {transformed_extent.asWktPolygon()} \n")
         log(f"Snapped area of interest extent {snapped_extent.asWktPolygon()} \n")
 
-        # Preparing all the pathways by adding them together with
-        # their carbon layers before creating
-        # their respective models.
-
-        self.run_pathways_analysis(
-            self.analysis_implementation_models,
-            self.analysis_priority_layers_groups,
-            extent_string,
-        )
-
         # Run pathways layers snapping using a specified reference layer
 
         snapping_enabled = settings_manager.get_value(
@@ -180,6 +170,16 @@ class ScenarioAnalysisTask(QgsTask):
                 self.analysis_priority_layers_groups,
                 extent_string,
             )
+
+        # Preparing all the pathways by adding them together with
+        # their carbon layers before creating
+        # their respective models.
+
+        self.run_pathways_analysis(
+            self.analysis_implementation_models,
+            self.analysis_priority_layers_groups,
+            extent_string,
+        )
 
         # Normalizing all the models pathways using the carbon coefficient and
         # the pathway suitability index
@@ -304,6 +304,53 @@ class ScenarioAnalysisTask(QgsTask):
             )
 
         return target_extent
+
+    def replace_nodata(self, layer_path, output_path, nodata_value):
+        self.feedback = QgsProcessingFeedback()
+        self.feedback.progressChanged.connect(self.update_progress)
+
+        alg_params = {
+            "COPY_SUBDATASETS": False,
+            "DATA_TYPE": 6,  # Float32
+            "EXTRA": "",
+            "INPUT": layer_path,
+            "NODATA": None,
+            "OPTIONS": "",
+            "TARGET_CRS": None,
+            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+        }
+        translate_output = processing.run(
+            "gdal:translate",
+            alg_params,
+            context=self.processing_context,
+            feedback=self.feedback,
+            is_child_algorithm=True,
+        )
+
+        alg_params = {
+            "DATA_TYPE": 0,  # Use Input Layer Data Type
+            "EXTRA": "",
+            "INPUT": translate_output["OUTPUT"],
+            "MULTITHREADING": False,
+            "NODATA": nodata_value,
+            "OPTIONS": "",
+            "RESAMPLING": 0,  # Nearest Neighbour
+            "SOURCE_CRS": None,
+            "TARGET_CRS": None,
+            "TARGET_EXTENT": None,
+            "TARGET_EXTENT_CRS": None,
+            "TARGET_RESOLUTION": None,
+            "OUTPUT": output_path,
+        }
+        outputs = processing.run(
+            "gdal:warpreproject",
+            alg_params,
+            context=self.processing_context,
+            feedback=self.feedback,
+            is_child_algorithm=True,
+        )
+
+        return outputs is not None
 
     def run_pathways_analysis(self, models, priority_layers_groups, extent):
         """Runs the required model pathways analysis on the passed
@@ -448,7 +495,8 @@ class ScenarioAnalysisTask(QgsTask):
         return True
 
     def snap_analyzed_pathways(self, models, priority_layers_groups, extent):
-        """Snaps the passed pathways layers to align with the reference layer set on the settings
+        """Snaps the passed models pathways, carbon layers and priority layers
+         to align with the reference layer set on the settings
         manager.
 
         :param pathways: List of all the available pathways
@@ -466,6 +514,13 @@ class ScenarioAnalysisTask(QgsTask):
         if self.processing_cancelled:
             # Will not proceed if processing has been cancelled by the user
             return False
+
+        self.set_status_message(
+            tr(
+                "Snapping the selected models pathways, "
+                "carbon layers and priority layers"
+            )
+        )
 
         pathways = []
 
@@ -497,25 +552,171 @@ class ScenarioAnalysisTask(QgsTask):
             Settings.RESAMPLING_METHOD, default=0
         )
 
-        for pathway in pathways:
-            path = Path(pathway.path)
-            directory = path.parent
+        if pathways is not None and len(pathways) > 0:
+            snapped_pathways_directory = os.path.join(
+                self.scenario_directory, "pathways"
+            )
 
-            if self.processing_cancelled:
-                return False
+            FileUtils.create_new_dir(snapped_pathways_directory)
 
-            input_result_path, reference_result_path = align_rasters(
-                pathway.path,
+            for pathway in pathways:
+                path = Path(pathway.path)
+                directory = path.parent
+
+                pathway_layer = QgsRasterLayer(pathway.path, pathway.name)
+                nodata_value = pathway_layer.dataProvider().sourceNoDataValue(1)
+
+                if self.processing_cancelled:
+                    return False
+
+                # carbon layer snapping
+
+                log(f"Snapping carbon layers from {pathway.name} pathway")
+
+                if pathway.carbon_paths is not None and len(pathway.carbon_paths) > 0:
+                    snapped_carbon_directory = os.path.join(
+                        self.scenario_directory, "carbon_layers"
+                    )
+
+                    FileUtils.create_new_dir(snapped_carbon_directory)
+
+                    snapped_carbon_paths = []
+
+                    for carbon_path in pathway.carbon_paths:
+                        carbon_layer = QgsRasterLayer(
+                            carbon_path, f"{str(uuid.uuid4())[:4]}"
+                        )
+                        nodata_value_carbon = (
+                            carbon_layer.dataProvider().sourceNoDataValue(1)
+                        )
+
+                        carbon_output_path = self.snap_layer(
+                            carbon_path,
+                            reference_layer_path,
+                            extent,
+                            snapped_carbon_directory,
+                            rescale_values,
+                            resampling_method,
+                            nodata_value_carbon,
+                        )
+
+                        if carbon_output_path:
+                            snapped_carbon_paths.append(carbon_output_path)
+                        else:
+                            snapped_carbon_paths.append(carbon_path)
+
+                    pathway.carbon_paths = snapped_carbon_paths
+
+                log(f"Snapping {pathway.name} pathway layer")
+
+                # Pathway snapping
+
+                output_path = self.snap_layer(
+                    pathway.path,
+                    reference_layer_path,
+                    extent,
+                    snapped_pathways_directory,
+                    rescale_values,
+                    resampling_method,
+                    nodata_value,
+                )
+                if output_path:
+                    pathway.path = output_path
+
+        log(f"Snapping priority weighting layers from model {model.name}")
+
+        snapped_priority_directory = os.path.join(
+            self.scenario_directory, "priority_layers"
+        )
+
+        FileUtils.create_new_dir(snapped_priority_directory)
+
+        priority_layers = []
+        for priority_layer in model.priority_layers:
+            path = priority_layer.get("path")
+            if not Path(path).exists():
+                continue
+
+            layer = QgsRasterLayer(path, f"{str(uuid.uuid4())[:4]}")
+            nodata_value_priority = layer.dataProvider().sourceNoDataValue(1)
+
+            priority_output_path = self.snap_layer(
+                path,
                 reference_layer_path,
                 extent,
-                directory,
+                snapped_priority_directory,
                 rescale_values,
                 resampling_method,
+                nodata_value_priority,
             )
-            if input_result_path is not None:
-                pathway.path = input_result_path
+
+            if priority_output_path:
+                priority_layer["path"] = priority_output_path
+
+            priority_layers.append(priority_layer)
+
+        model.priority_layers = priority_layers
 
         return True
+
+    def snap_layer(
+        self,
+        input_path,
+        reference_path,
+        extent,
+        directory,
+        rescale_values,
+        resampling_method,
+        nodata_value,
+    ):
+        """Snaps the passed input layer using the reference layer and updates
+        the snap output no data value to be the same as the original input layer
+        no data value.
+
+        :param input_path: Input layer source
+        :type input_path: str
+
+        :param reference_path: Reference layer source
+        :type reference_path: str
+
+        :param extent: Clip extent
+        :type extent: list
+
+        :param directory: Absolute path of the output directory for the snapped
+        layers
+        :type directory: str
+
+        :param rescale_values: Whether to rescale pixel values
+        :type rescale_values: bool
+
+        :param resample_method: Method to use when resampling
+        :type resample_method: QgsAlignRaster.ResampleAlg
+
+        :param nodata_value: Original no data value of the input layer
+        :type nodata_value: float
+
+        """
+
+        input_result_path, reference_result_path = align_rasters(
+            input_path,
+            reference_path,
+            extent,
+            directory,
+            rescale_values,
+            resampling_method,
+        )
+
+        if input_result_path is not None:
+            result_path = Path(input_result_path)
+
+            directory = result_path.parent
+            name = result_path.stem
+
+            output_path = os.path.join(directory, f"{name}_final.tif")
+
+            self.replace_nodata(input_result_path, output_path, nodata_value)
+
+        return output_path
 
     def run_pathways_normalization(self, models, priority_layers_groups, extent):
         """Runs the normalization on the models pathways layers,
