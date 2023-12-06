@@ -1,14 +1,10 @@
-# See mkdocs base and the create-mkdocs* 
-# scripts for how this is used
-site_name: CPLUS
-site_description: 'Climate Positive Land Use Strategy (CPLUS) decision support tool.'
-site_author: 'Conservation International'
-docs_dir: src/
+site_name: CPLUS QGIS plugin
+
 repo_name: 'kartoza/cplus-plugin'
 repo_url: 'https://github.com/kartoza/cplus-plugin'
-edit_uri: "https://github.com/kartoza/cplus-plugin/blob/main/docs/src/"
-#site_dir: docs
-copyright: Copyright Conservation International, 2023
+
+site_description: CPLUS
+site_author: Kartoza
 
 nav:
   - Home: index.md
@@ -29,7 +25,7 @@ nav:
       - API:
           - Core:
             - Main: developer/api/core/api_main.md
-            - Configuration: developer/api/core/api_conf.md
+            - Configuration: developer/core/api/api_conf.md
             - Settings: developer/api/core/api_settings.md
             - Utilities: developer/api/core/api_utils.md
             - Reports:
@@ -52,7 +48,6 @@ nav:
             - Map repeat item widget: developer/api/gui/api_map_repeat_item_widget.md
             - Model component widget: developer/api/gui/api_model_component_widget.md
             - NCS Pathway editor: developer/api/gui/api_ncs_pathway_editor.md
-            - Pixel values: developer/api/gui/api_pixel_value_editor.md
             - Priority layer dialog: developer/api/gui/api_priority_layer.md
             - Priority group: developer/api/gui/api_priority_group.md
             - Progress dialog: developer/api/gui/api_progress_dialog.md
@@ -61,14 +56,13 @@ nav:
       - Kartoza: about/kartoza.md
       - License: about/license.md
 
-# See mkdocs base and the create-mkdocs* 
-# scripts for how this is used
-
 plugins:
+  - search
+  - git-revision-date-localized
+  - mkdocs-video
   - mkdocstrings:
       handlers:
         python:
-          paths: [../]
           import:
             - https://docs.python.org/3/objects.inv
             - https://mkdocstrings.github.io/autorefs/objects.inv
@@ -78,55 +72,62 @@ plugins:
             merge_init_into_class: true
             docstring_options:
               ignore_init_summary: true
-  - with-pdf:
-      # Generate the whole site as a single PDF
-      # Full details on this plugin here:
-      # https://github.com/orzih/mkdocs-with-pdf
-      # And don't get it confused with https://github.com/zhaoterryy/mkdocs-pdf-export-plugin
-      # which is intended to export a single page at a time
-      output_path: ../pdfs/CPLUS.pdf
-      author: Kartoza (Pty) Ltd. 
-      # copyright will draw in page.bottom-right 
-      # do it manually in templates/styles.scss 
-      # for more control
-      # if you comment out here or use an empty string,
-      # the copyright text from mkdocs-base.yml will be
-      # used instead
-      copyright: ' '
-      cover: true # see templates/cover.html
-      back_cover: true
-      cover_title: The CPLUS QGIS Plugin
-      cover_subtitle: Mapping conservation pathways
-      cover_logo: ../resources/img/logo/logo.svg
-      # Print css is defined in templates/styles.scss
-      #custom_template_path: TEMPLATES PATH
-      #
-      toc_title: Contents
-      #heading_shift: false
-      # Set to 0 so that it does not generate chapter numbering
-      # we do the numbering in styles.css rather
-      toc_level: 0
-      ordered_chapter_level: 0
-      #excludes_children:
-      #    - 'release-notes/:upgrading'
-      #    - 'release-notes/:changelog'
-      #
-      #exclude_pages:
-      #    - 'bugs/'
-      #    - 'appendix/contribute/'
-      #convert_iframe:
-      #    - src: IFRAME SRC
-      #      img: POSTER IMAGE URL
-      #      text: ALTERNATE TEXT
-      #    - src: ...
-      #two_columns_level: 3
-      #
-      #render_js: true
-      #headless_chrome_path: headless-chromium
-      #
-     
-      #enabled_if_env: ENABLE_PDF_EXPORT
-      # See notes at the top of templates/styles.scss
-      # for debugging workflow details.
-      #debug_html: true
-      #show_anchors: true
+
+theme:
+  name: material
+  logo: about/img/cplus_logo_white_background.svg
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - navigation.instant
+    - navigation.tabs.sticky
+    - navigation.tracking
+    - toc.integrate
+    - toc.follow
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.tabs.link
+    - content.code.annotation
+    - content.code.copy
+    - header.autohide
+  language: en
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Dark mode
+      primary: green
+      accent: purple
+    - scheme: slate
+      toggle:
+        icon: material/toggle-switch
+        name: Light mode
+      primary: teal
+      accent: lime
+extra:
+  social:
+    - icon: fontawesome/brands/github-alt
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - def_list
+  - admonition
+  - pymdownx.arithmatex:
+      generic: true
+  - footnotes
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.mark
+  - attr_list
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
