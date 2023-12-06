@@ -5,6 +5,7 @@ and handles report generation.
 """
 import os
 from pathlib import Path
+from functools import partial
 import typing
 
 from qgis.core import (
@@ -35,6 +36,7 @@ class ReportManager(QtCore.QObject):
     """
 
     generate_started = QtCore.pyqtSignal(str)
+    generate_error = QtCore.pyqtSignal(str)
     generate_completed = QtCore.pyqtSignal(str)
 
     def __init__(self, parent=None):
@@ -241,11 +243,21 @@ class ReportManager(QtCore.QObject):
         msg_tr = tr("Generating report for")
         description = f"{msg_tr} {ctx.scenario.name}"
         report_task = ReportGeneratorTask(description, ctx)
+
+        report_task_completed = partial(self.report_task_completed, report_task)
+
+        report_task.taskCompleted.connect(report_task_completed)
+        report_task.taskTerminated.connect(report_task_completed)
+
         task_id = self.task_manager.addTask(report_task)
 
         self._report_tasks[scenario_id] = task_id
 
         return ReportSubmitStatus(True, ctx.feedback)
+
+    def report_task_completed(self, task):
+        if len(task._result.messages) > 0:
+            self.generate_error.emit(",".join(task._result.messages))
 
     def report_result(self, scenario_id: str) -> typing.Union[ReportResult, None]:
         """Gets the report result for the scenario with the given ID.
