@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="Conservation International" name="author"/>
+<link href="../../img/favicon.ico" rel="shortcut icon"/>
+<title>Documentation - CPLUS</title>
+<link href="../../css/bootstrap.min.css" rel="stylesheet"/>
+<link href="../../css/font-awesome.min.css" rel="stylesheet"/>
+<link href="../../css/base.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" rel="stylesheet"/>
+<link href="../../assets/_mkdocstrings.css" rel="stylesheet"/>
+<script defer="" src="../../js/jquery-1.10.2.min.js"></script>
+<script defer="" src="../../js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<link href="../../../pdfs/CPLUS.pdf" rel="alternate" title="PDF" type="application/pdf"/></head>
+<body>
+<div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+<div class="container">
+<a class="navbar-brand" href="../..">CPLUS</a>
+<!-- Expander button -->
+<button class="navbar-toggler" data-target="#navbar-collapse" data-toggle="collapse" type="button">
+<span class="navbar-toggler-icon"></span>
+</button>
+<!-- Expanded navigation -->
+<div class="navbar-collapse collapse" id="navbar-collapse">
+<!-- Main navigation -->
+<ul class="nav navbar-nav">
+<li class="navitem">
+<a class="nav-link" href="../..">Home</a>
+</li>
+<li class="dropdown">
+<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Users <b class="caret"></b></a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../user/">Users</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../user/quickstart/">Quick Start</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../user/guide/">Guide</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../user/manual/">Manual</a>
+</li>
+</ul>
+</li>
+<li class="dropdown">
+<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Administrators <b class="caret"></b></a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../administrator/">Administrators</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../administrator/guide/">Guide</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../administrator/repository/">Repository</a>
+</li>
+</ul>
+</li>
+<li class="dropdown active">
+<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Developers <b class="caret"></b></a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../">Developers</a>
+</li>
+<li>
+<a class="dropdown-item" href="../setup/">Setup</a>
+</li>
+<li>
+<a class="dropdown-item" href="../architecture/">Architecture</a>
+</li>
+<li>
+<a class="dropdown-item active" href="./">Documentation</a>
+</li>
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">API</a>
+<ul class="dropdown-menu">
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">Core</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../api/core/api_main/">Main</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api/core/api_conf/">Configuration</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api/core/api_settings/">Settings</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api/core/api_utils/">Utilities</a>
+</li>
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">Reports</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../api/core/api_reports_generator/">Generator</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api/core/api_reports_layout_items/">Layout items</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api/core/api_reports_manager/">Manager</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api/core/api_reports_variables/">Variables</a>
+</li>
+</ul>
+</li>
+<li>
+<a class="dropdown-item" href="../api/core/api_pilot_extent/">Extents</a>
+</li>
+</ul>
+</li>
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">Models</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../api/models/api_base/">Model base</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api/models/api_helpers/">Helpers</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api/models/api_report/">Report</a>
+</li>
+</ul>
+</li>
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">GUI</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../api/gui/api_gui_main/">GUI main</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api/gui/api_carbon_layer_model/">Carbon item model</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api/gui/api_component_items/">Component item model</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api/gui/api_im_editor_dialog/">Implementation model editor</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api/gui/api_im_widget/">Implementation model widget</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api/gui/api_items_selection_dialog/">Items selection dialog</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api/gui/api_map_repeat_item_widget/">Map repeat item widget</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api/gui/api_model_component_widget/">Model component widget</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api/gui/api_ncs_pathway_editor/">NCS Pathway editor</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api/gui/api_pixel_value_editor/">Pixel values</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api/gui/api_priority_layer/">Priority layer dialog</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api/gui/api_priority_group/">Priority group</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api/gui/api_progress_dialog/">Progress dialog</a>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="dropdown">
+<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">About <b class="caret"></b></a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../about/ci/">Conservation International</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../about/kartoza/">Kartoza</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../about/license/">License</a>
+</li>
+</ul>
+</li>
+</ul>
+<ul class="nav navbar-nav ml-auto">
+<li class="nav-item">
+<a class="nav-link" href="../architecture/" rel="prev">
+<i class="fa fa-arrow-left"></i> Previous
+                                </a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../api/core/api_main/" rel="next">
+                                    Next <i class="fa fa-arrow-right"></i>
+</a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="https://github.com/kartoza/cplus-plugin/blob/main/docs/src/developer/documentation/index.md">Edit on kartoza/cplus-plugin</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="container">
+<div class="row">
+<div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+<div class="navbar-header">
+<button class="navbar-toggler collapsed" data-target="#toc-collapse" data-toggle="collapse" title="Table of Contents" type="button">
+<span class="fa fa-angle-down"></span>
+</button>
+</div>
+<div class="navbar-collapse collapse card bg-secondary" id="toc-collapse">
+<ul class="nav flex-column">
+<li class="nav-item" data-level="1"><a class="nav-link" href="#working-with-documentation">Working with documentation</a>
+<ul class="nav flex-column">
+<li class="nav-item" data-level="2"><a class="nav-link" href="#install-mkdocs">Install mkdocs</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#creating-a-new-project">Creating a new project</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#updating-the-mkdocsyml-file">Updating the mkdocs.yml file</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#mkdocstrings">mkdocstrings</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#serving-the-pages-locally">Serving the pages locally</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#github-pages">GitHub pages</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div></div>
+<div class="col-md-9" role="main">
+<h1 id="working-with-documentation">Working with documentation</h1>
+<p>Documentation is written using <a href="https://mkdocs.org/">mkdocs</a>.
+A detailed description on getting-started with mkdocs is available <a href="https://www.mkdocs.org/getting-started/">here</a>.
+Developer documentation will be created and generated using <a href="https://mkdocstrings.github.io/">mkdocstrings</a>.</p>
+<h2 id="install-mkdocs">Install mkdocs</h2>
+<ul>
+<li>Open the terminal</li>
+<li>Run "pip install mkdocs"</li>
+<li>This should install mkdocs and all requirements</li>
+</ul>
+<h2 id="creating-a-new-project">Creating a new project</h2>
+<p>This should not be required as the mkdocs has been created already, but serves more of a guide for
+a user whom are new to mkdocs.</p>
+<ul>
+<li>Open the terminal</li>
+<li>Run "mkdocs new ."</li>
+<li>This will generate the documents folder with the home page index markdown file</li>
+</ul>
+<h2 id="updating-the-mkdocsyml-file">Updating the mkdocs.yml file</h2>
+<p>Mostly, the only changes a user will need to make is to the <strong>nav</strong> section in the mkdocs.yml file (<strong>Figure 1</strong>).
+Other options, such as the themes, plugins and extensions, should require no changes.</p>
+<p><img alt="mkdocs nav example" src="img/mkdocs-nav-example.png"/></p>
+<p><em>Figure 1: Navigation example of mkdocs</em></p>
+<p>Here is an explanation on how the <strong>nav</strong> should be updated:</p>
+<ul>
+<li>It is important to keep to the structure of the mkdocs</li>
+<li>Each section focusses on a particular aspect, for example <strong>User</strong> will provide information on installing
+  the plugin, a guide on how to use the plugin, etc.</li>
+<li>The order in which the <strong>nav</strong> is structured will determine the tabs order on the site, as shown in <strong>Figure 2</strong></li>
+</ul>
+<p><img alt="mkdocs nav tabs" src="img/mkdocs-nav-tabs.png"/></p>
+<p><em>Figure 2: Tabs in a generated site</em></p>
+<ul>
+<li>Each tab, or group, will then be structured as in <strong>Figure 3</strong></li>
+</ul>
+<p><img alt="mkdocs tab content" src="img/mkdocs-nav-tab-contents.png"/></p>
+<p><em>Figure 3: Structure created by markdown headings</em></p>
+<ul>
+<li>The additional titles (in the <em>Plugin guide</em> section in the above example) is based on the headings
+  provided in the guide markdown file (<em>cplus_ui_guide.md</em> in this case)</li>
+<li>Headings for each section should be short, but descriptive</li>
+<li>The section itself can have a more detailed description</li>
+<li>Add screenshots where possible. This will make the guide(s) user-friendly</li>
+</ul>
+<h2 id="mkdocstrings">mkdocstrings</h2>
+<p>This is an important aspect of documenting code. Using mkdocstrings is an easy and effective way of keeping
+track of classes, functions, etc. Any changes to the code will automatically update here, but the developer
+needs to make the changes in the code (comments) for this to happen.</p>
+<p>The comments for mkdocstrings is three sections:</p>
+<ul>
+<li>Description: A description on what the function does. A destailed description are welcome</li>
+<li>param: List of parameters for the function. Type and description should be included</li>
+<li>returns: A list of values which the function would return. Type should be included, with a description</li>
+</ul>
+<p><img alt="Documentation mkdocstrings comments" src="img/mkdocstrings-comments.png"/></p>
+<p>Here is an example of the end-result:</p>
+<p><img alt="Documentation mkdocstrings example" src="img/mkdocstrings-example.png"/></p>
+<h3 id="mkdocstrings-options">mkdocstrings options</h3>
+<p>The user can also do fine-tuning of the resulting site. Here is a list of important options to be
+aware of: members, show_root_directory, show_source, and heading_level.</p>
+<ul>
+<li><strong>heading_level</strong>: The header level of the content (functions, etc.) which will be added</li>
+<li><strong>members</strong>: Only these function/classes will be shown</li>
+</ul>
+<p><img alt="Documentation mkdocstrings members" src="img/mkdocstrings-members-example.png"/></p>
+<ul>
+<li><strong>show_root_directory</strong>: The root directory of the code</li>
+<li>Best will be to disable this, as it looks neater</li>
+<li>Here is an example of show_root_directory enabled, followed by an example when it is disabled:</li>
+</ul>
+<p><img alt="Documentation mkdocstrings root enabled" src="img/mkdocstrings-root-dir-enabled.png"/></p>
+<p><img alt="Documentation mkdocstrings root disabled" src="img/mkdocstrings-root-dir-disabled.png"/></p>
+<ul>
+<li><strong>show_source</strong>: Shows the directory of the source code and a snippet of the code</li>
+</ul>
+<p><img alt="Documentation mkdocstrings source" src="img/mkdocstrings-source.png"/></p>
+<p>More information on this can be found <a href="https://mkdocstrings.github.io/usage/">here</a>.</p>
+<h2 id="serving-the-pages-locally">Serving the pages locally</h2>
+<p>This step is useful when making changes and the user wants to test and review their changes to the mkdocs
+before creating a pull request.</p>
+<ul>
+<li>Open the terminal</li>
+<li>Run "mkdocs serve"</li>
+<li><strong>Figure 4</strong> shows an example of the result</li>
+</ul>
+<p><img alt="Documentation mkdocs serve" src="img/mkdocs-serve-console.png"/></p>
+<p><em>Figure 4: Console example of serving mkdocs</em></p>
+<ul>
+<li>On default, mkdocs is served to localhost:8000. But if the port is already in use, the user needs to provide a port number</li>
+<li>Run "mkdocs serve -a localhost:8001". The user can use a port number of their choosing</li>
+<li>Open the URL in a browser: localhost:8000</li>
+<li>The Home page should be similar to <strong>Figure 5</strong></li>
+</ul>
+<p><img alt="Documentation example" src="img/mkdocs-pages-example.png"/></p>
+<p><em>Figure 5: Site example. This is the Home page</em></p>
+<h3 id="errors">Errors</h3>
+<p>When performing the serve, mkdocs will automatically check for any errors. An example will be when
+a file linked in the documentation cannot be found (<strong>Figure 6</strong>).</p>
+<p><img alt="Documentation error" src="img/mkdocs-serve-error.png"/></p>
+<p><em>Figure 6: Missing file example when serving mkdocs</em></p>
+<p>Be sure to check for such errors in the console prior to creating a pull request for your documentation changes.</p>
+<h2 id="github-pages">GitHub pages</h2>
+<p>This is only required if it has not been set up on GitHub for the repository, or if it has been disabled.
+Only a user with admin rights to the repository will be able to do this.</p>
+<ul>
+<li>Go to the repository and click on <strong>Settings</strong></li>
+<li>Click on <strong>Pages</strong></li>
+<li>Set the branch to "gh-pages"</li>
+<li>Click <strong>Save</strong></li>
+<li>Select the action</li>
+<li>Select <strong>Deploy</strong></li>
+<li>Open the Run mkdocs gh-deploy section</li>
+<li>The URL should be https://kartoza.github.io/cplus-plugin/</li>
+</ul></div>
+</div>
+</div>
+<footer class="col-md-12">
+<hr/>
+<p>Copyright Conservation International, 2023</p>
+<p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+</footer>
+<script>
+            var base_url = "../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+<script defer="" src="../../js/base.js"></script>
+<div aria-hidden="true" aria-labelledby="keyboardModalLabel" class="modal" id="mkdocs_keyboard_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+<button class="close" data-dismiss="modal" type="button"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>
+</div>
+<div class="modal-body">
+<table class="table">
+<thead>
+<tr>
+<th style="width: 20%;">Keys</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="help shortcut"><kbd>?</kbd></td>
+<td>Open this help</td>
+</tr>
+<tr>
+<td class="next shortcut"><kbd>n</kbd></td>
+<td>Next page</td>
+</tr>
+<tr>
+<td class="prev shortcut"><kbd>p</kbd></td>
+<td>Previous page</td>
+</tr>
+<tr>
+<td class="search shortcut"><kbd>s</kbd></td>
+<td>Search</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

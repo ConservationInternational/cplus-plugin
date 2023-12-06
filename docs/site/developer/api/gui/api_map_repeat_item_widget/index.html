@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="Conservation International" name="author"/>
+<link href="../../../../img/favicon.ico" rel="shortcut icon"/>
+<title>Map repeat item widget - CPLUS</title>
+<link href="../../../../css/bootstrap.min.css" rel="stylesheet"/>
+<link href="../../../../css/font-awesome.min.css" rel="stylesheet"/>
+<link href="../../../../css/base.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" rel="stylesheet"/>
+<link href="../../../../assets/_mkdocstrings.css" rel="stylesheet"/>
+<script defer="" src="../../../../js/jquery-1.10.2.min.js"></script>
+<script defer="" src="../../../../js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<link href="../../../../../pdfs/CPLUS.pdf" rel="alternate" title="PDF" type="application/pdf"/></head>
+<body>
+<div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+<div class="container">
+<a class="navbar-brand" href="../../../..">CPLUS</a>
+<!-- Expander button -->
+<button class="navbar-toggler" data-target="#navbar-collapse" data-toggle="collapse" type="button">
+<span class="navbar-toggler-icon"></span>
+</button>
+<!-- Expanded navigation -->
+<div class="navbar-collapse collapse" id="navbar-collapse">
+<!-- Main navigation -->
+<ul class="nav navbar-nav">
+<li class="navitem">
+<a class="nav-link" href="../../../..">Home</a>
+</li>
+<li class="dropdown">
+<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Users <b class="caret"></b></a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../../../user/">Users</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../../user/quickstart/">Quick Start</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../../user/guide/">Guide</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../../user/manual/">Manual</a>
+</li>
+</ul>
+</li>
+<li class="dropdown">
+<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Administrators <b class="caret"></b></a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../../../administrator/">Administrators</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../../administrator/guide/">Guide</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../../administrator/repository/">Repository</a>
+</li>
+</ul>
+</li>
+<li class="dropdown active">
+<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Developers <b class="caret"></b></a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../../">Developers</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../setup/">Setup</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../architecture/">Architecture</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../documentation/">Documentation</a>
+</li>
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">API</a>
+<ul class="dropdown-menu">
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">Core</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../core/api_main/">Main</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../core/api_conf/">Configuration</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../core/api_settings/">Settings</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../core/api_utils/">Utilities</a>
+</li>
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">Reports</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../core/api_reports_generator/">Generator</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../core/api_reports_layout_items/">Layout items</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../core/api_reports_manager/">Manager</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../core/api_reports_variables/">Variables</a>
+</li>
+</ul>
+</li>
+<li>
+<a class="dropdown-item" href="../../core/api_pilot_extent/">Extents</a>
+</li>
+</ul>
+</li>
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">Models</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../models/api_base/">Model base</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../models/api_helpers/">Helpers</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../models/api_report/">Report</a>
+</li>
+</ul>
+</li>
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">GUI</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../api_gui_main/">GUI main</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api_carbon_layer_model/">Carbon item model</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api_component_items/">Component item model</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api_im_editor_dialog/">Implementation model editor</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api_im_widget/">Implementation model widget</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api_items_selection_dialog/">Items selection dialog</a>
+</li>
+<li>
+<a class="dropdown-item active" href="./">Map repeat item widget</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api_model_component_widget/">Model component widget</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api_ncs_pathway_editor/">NCS Pathway editor</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api_pixel_value_editor/">Pixel values</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api_priority_layer/">Priority layer dialog</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api_priority_group/">Priority group</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api_progress_dialog/">Progress dialog</a>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="dropdown">
+<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">About <b class="caret"></b></a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../../../about/ci/">Conservation International</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../../about/kartoza/">Kartoza</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../../about/license/">License</a>
+</li>
+</ul>
+</li>
+</ul>
+<ul class="nav navbar-nav ml-auto">
+<li class="nav-item">
+<a class="nav-link" href="../api_items_selection_dialog/" rel="prev">
+<i class="fa fa-arrow-left"></i> Previous
+                                </a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../api_model_component_widget/" rel="next">
+                                    Next <i class="fa fa-arrow-right"></i>
+</a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="https://github.com/kartoza/cplus-plugin/blob/main/docs/src/developer/api/gui/api_map_repeat_item_widget.md">Edit on kartoza/cplus-plugin</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="container">
+<div class="row">
+<div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+<div class="navbar-header">
+<button class="navbar-toggler collapsed" data-target="#toc-collapse" data-toggle="collapse" title="Table of Contents" type="button">
+<span class="fa fa-angle-down"></span>
+</button>
+</div>
+<div class="navbar-collapse collapse card bg-secondary" id="toc-collapse">
+<ul class="nav flex-column">
+<li class="nav-item" data-level="1"><a class="nav-link" href="#map-repeat-item-widget">Map repeat item widget</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="1"><a class="nav-link" href="#src.cplus_plugin.gui.map_repeat_item_widget">map_repeat_item_widget</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="1"><a class="nav-link" href="#src.cplus_plugin.gui.map_repeat_item_widget.CplusMapLayoutItemGuiMetadata">CplusMapLayoutItemGuiMetadata</a>
+<ul class="nav flex-column">
+<li class="nav-item" data-level="2"><a class="nav-link" href="#src.cplus_plugin.gui.map_repeat_item_widget.CplusMapLayoutItemGuiMetadata.createItem">createItem()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#src.cplus_plugin.gui.map_repeat_item_widget.CplusMapLayoutItemGuiMetadata.createItemWidget">createItemWidget()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#src.cplus_plugin.gui.map_repeat_item_widget.CplusMapLayoutItemGuiMetadata.creationIcon">creationIcon()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#src.cplus_plugin.gui.map_repeat_item_widget.CplusMapLayoutItemGuiMetadata.newItemAddedToLayout">newItemAddedToLayout()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#src.cplus_plugin.gui.map_repeat_item_widget.CplusMapLayoutItemGuiMetadata.visibleName">visibleName()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+</ul>
+</li>
+<li class="nav-item" data-level="1"><a class="nav-link" href="#src.cplus_plugin.gui.map_repeat_item_widget.CplusMapRepeatItemWidget">CplusMapRepeatItemWidget</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+</ul>
+</div>
+</div></div>
+<div class="col-md-9" role="main">
+<h1 id="map-repeat-item-widget">Map repeat item widget</h1>
+<div class="doc doc-object doc-module">
+<a id="src.cplus_plugin.gui.map_repeat_item_widget"></a>
+<div class="doc doc-contents first">
+<p>Widget for the custom CPLUS layout map item.</p>
+<div class="doc doc-children">
+<div class="doc doc-object doc-class">
+<h1 class="doc doc-heading" id="src.cplus_plugin.gui.map_repeat_item_widget.CplusMapLayoutItemGuiMetadata">
+<span class="doc doc-object-name doc-class-name">CplusMapLayoutItemGuiMetadata</span>
+</h1>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">CplusMapLayoutItemGuiMetadata</span><span class="p">()</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+            Bases: <code><span title="qgis.gui.QgsLayoutItemAbstractGuiMetadata">QgsLayoutItemAbstractGuiMetadata</span></code></p>
+<p>GUI metadata for a CPLUS map layout item.</p>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/gui/map_repeat_item_widget.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">55</span>
+<span class="normal">56</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">CPLUS_MAP_REPEAT_ITEM_TYPE</span><span class="p">,</span> <span class="n">CPLUS_ITEM_NAME</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="src.cplus_plugin.gui.map_repeat_item_widget.CplusMapLayoutItemGuiMetadata.createItem">
+<span class="doc doc-object-name doc-function-name">createItem</span>
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">createItem</span><span class="p">(</span><span class="n">layout</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Factory override that returns the map item.</p>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/gui/map_repeat_item_widget.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">createItem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layout</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QgsLayoutItem</span><span class="p">:</span>
+    <span class="sd">"""Factory override that returns the map item."""</span>
+    <span class="k">return</span> <span class="n">CplusMapRepeatItem</span><span class="p">(</span><span class="n">layout</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="src.cplus_plugin.gui.map_repeat_item_widget.CplusMapLayoutItemGuiMetadata.createItemWidget">
+<span class="doc doc-object-name doc-function-name">createItemWidget</span>
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">createItemWidget</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Factory override for the item widget.</p>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/gui/map_repeat_item_widget.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">createItemWidget</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QWidget</span><span class="p">:</span>
+    <span class="sd">"""Factory override for the item widget."""</span>
+    <span class="k">return</span> <span class="n">CplusMapRepeatItemWidget</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="src.cplus_plugin.gui.map_repeat_item_widget.CplusMapLayoutItemGuiMetadata.creationIcon">
+<span class="doc doc-object-name doc-function-name">creationIcon</span>
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">creationIcon</span><span class="p">()</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Factory override for item icon.</p>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/gui/map_repeat_item_widget.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">70</span>
+<span class="normal">71</span>
+<span class="normal">72</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">creationIcon</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QIcon</span><span class="p">:</span>
+    <span class="sd">"""Factory override for item icon."""</span>
+    <span class="k">return</span> <span class="n">FileUtils</span><span class="o">.</span><span class="n">get_icon</span><span class="p">(</span><span class="s2">"mLayoutItemMap_cplus_add.svg"</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="src.cplus_plugin.gui.map_repeat_item_widget.CplusMapLayoutItemGuiMetadata.newItemAddedToLayout">
+<span class="doc doc-object-name doc-function-name">newItemAddedToLayout</span>
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">newItemAddedToLayout</span><span class="p">(</span><span class="n">map_repeat_item</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Define action that is called when the CplusMapItem
+is added to a layout through the GUI.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>map_repeat_item</code></td>
+<td>
+<code><a class="autorefs autorefs-internal" title="src.cplus_plugin.lib.reports.layout_items.CplusMapRepeatItem" href="../../core/api_reports_layout_items/#src.cplus_plugin.lib.reports.layout_items.CplusMapRepeatItem">CplusMapRepeatItem</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Map repeat item to be added to the layout.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/gui/map_repeat_item_widget.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">74</span>
+<span class="normal">75</span>
+<span class="normal">76</span>
+<span class="normal">77</span>
+<span class="normal">78</span>
+<span class="normal">79</span>
+<span class="normal">80</span>
+<span class="normal">81</span>
+<span class="normal">82</span>
+<span class="normal">83</span>
+<span class="normal">84</span>
+<span class="normal">85</span>
+<span class="normal">86</span>
+<span class="normal">87</span>
+<span class="normal">88</span>
+<span class="normal">89</span>
+<span class="normal">90</span>
+<span class="normal">91</span>
+<span class="normal">92</span>
+<span class="normal">93</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">newItemAddedToLayout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_repeat_item</span><span class="p">:</span> <span class="n">CplusMapRepeatItem</span><span class="p">):</span>
+    <span class="sd">"""Define action that is called when the CplusMapItem</span>
+<span class="sd">    is added to a layout through the GUI.</span>
+
+<span class="sd">    :param map_repeat_item: Map repeat item to be added to the layout.</span>
+<span class="sd">    :type map_repeat_item: CplusMapRepeatItem</span>
+<span class="sd">    """</span>
+    <span class="n">items</span> <span class="o">=</span> <span class="n">map_repeat_item</span><span class="o">.</span><span class="n">layout</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+    <span class="n">counter</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">CplusMapRepeatItem</span><span class="p">):</span>
+            <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="c1"># Set frame properties</span>
+    <span class="n">map_repeat_item</span><span class="o">.</span><span class="n">setFrameEnabled</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">map_repeat_item</span><span class="o">.</span><span class="n">setFrameJoinStyle</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">MiterJoin</span><span class="p">)</span>
+    <span class="n">map_repeat_item</span><span class="o">.</span><span class="n">setFrameStrokeColor</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="mi">132</span><span class="p">,</span> <span class="mi">192</span><span class="p">,</span> <span class="mi">68</span><span class="p">))</span>
+    <span class="n">map_repeat_item</span><span class="o">.</span><span class="n">setFrameStrokeWidth</span><span class="p">(</span><span class="n">QgsLayoutMeasurement</span><span class="p">(</span><span class="mf">0.4</span><span class="p">))</span>
+
+    <span class="n">map_repeat_item</span><span class="o">.</span><span class="n">setId</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">CPLUS_ITEM_NAME</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">counter</span><span class="si">!s}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="src.cplus_plugin.gui.map_repeat_item_widget.CplusMapLayoutItemGuiMetadata.visibleName">
+<span class="doc doc-object-name doc-function-name">visibleName</span>
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">visibleName</span><span class="p">()</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Override for user-visible name identifying the item.</p>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/gui/map_repeat_item_widget.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">visibleName</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">"""Override for user-visible name identifying the item."""</span>
+    <span class="k">return</span> <span class="n">CPLUS_ITEM_NAME</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h1 class="doc doc-heading" id="src.cplus_plugin.gui.map_repeat_item_widget.CplusMapRepeatItemWidget">
+<span class="doc doc-object-name doc-class-name">CplusMapRepeatItemWidget</span>
+</h1>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">CplusMapRepeatItemWidget</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">layout_object</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+            Bases: <code><span title="qgis.gui.QgsLayoutItemBaseWidget">QgsLayoutItemBaseWidget</span></code>, <code>WidgetUi</code></p>
+<p>Widget for configuring the CPLUS layout map repeatitem.</p>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/gui/map_repeat_item_widget.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">layout_object</span><span class="p">:</span> <span class="n">CplusMapRepeatItem</span><span class="p">):</span>
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">layout_object</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">setupUi</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">_map_item</span> <span class="o">=</span> <span class="n">layout_object</span>
+
+    <span class="c1"># Common item properties widget</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_prop_widget</span> <span class="o">=</span> <span class="n">QgsLayoutItemPropertiesWidget</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layout_object</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_prop_widget</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">cbo_map_type</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tr</span><span class="p">(</span><span class="s2">"Implementation model"</span><span class="p">),</span>
+        <span class="n">ModelComponentType</span><span class="o">.</span><span class="n">IMPLEMENTATION_MODEL</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+    <span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div>
+</div>
+</div>
+</div></div>
+</div>
+</div>
+<footer class="col-md-12">
+<hr/>
+<p>Copyright Conservation International, 2023</p>
+<p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+</footer>
+<script>
+            var base_url = "../../../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+<script defer="" src="../../../../js/base.js"></script>
+<div aria-hidden="true" aria-labelledby="keyboardModalLabel" class="modal" id="mkdocs_keyboard_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+<button class="close" data-dismiss="modal" type="button"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>
+</div>
+<div class="modal-body">
+<table class="table">
+<thead>
+<tr>
+<th style="width: 20%;">Keys</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="help shortcut"><kbd>?</kbd></td>
+<td>Open this help</td>
+</tr>
+<tr>
+<td class="next shortcut"><kbd>n</kbd></td>
+<td>Next page</td>
+</tr>
+<tr>
+<td class="prev shortcut"><kbd>p</kbd></td>
+<td>Previous page</td>
+</tr>
+<tr>
+<td class="search shortcut"><kbd>s</kbd></td>
+<td>Search</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

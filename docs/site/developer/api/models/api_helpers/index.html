@@ -1,0 +1,1996 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="Conservation International" name="author"/>
+<link href="../../../../img/favicon.ico" rel="shortcut icon"/>
+<title>Helpers - CPLUS</title>
+<link href="../../../../css/bootstrap.min.css" rel="stylesheet"/>
+<link href="../../../../css/font-awesome.min.css" rel="stylesheet"/>
+<link href="../../../../css/base.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" rel="stylesheet"/>
+<link href="../../../../assets/_mkdocstrings.css" rel="stylesheet"/>
+<script defer="" src="../../../../js/jquery-1.10.2.min.js"></script>
+<script defer="" src="../../../../js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<link href="../../../../../pdfs/CPLUS.pdf" rel="alternate" title="PDF" type="application/pdf"/></head>
+<body>
+<div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+<div class="container">
+<a class="navbar-brand" href="../../../..">CPLUS</a>
+<!-- Expander button -->
+<button class="navbar-toggler" data-target="#navbar-collapse" data-toggle="collapse" type="button">
+<span class="navbar-toggler-icon"></span>
+</button>
+<!-- Expanded navigation -->
+<div class="navbar-collapse collapse" id="navbar-collapse">
+<!-- Main navigation -->
+<ul class="nav navbar-nav">
+<li class="navitem">
+<a class="nav-link" href="../../../..">Home</a>
+</li>
+<li class="dropdown">
+<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Users <b class="caret"></b></a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../../../user/">Users</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../../user/quickstart/">Quick Start</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../../user/guide/">Guide</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../../user/manual/">Manual</a>
+</li>
+</ul>
+</li>
+<li class="dropdown">
+<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Administrators <b class="caret"></b></a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../../../administrator/">Administrators</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../../administrator/guide/">Guide</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../../administrator/repository/">Repository</a>
+</li>
+</ul>
+</li>
+<li class="dropdown active">
+<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Developers <b class="caret"></b></a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../../">Developers</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../setup/">Setup</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../architecture/">Architecture</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../documentation/">Documentation</a>
+</li>
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">API</a>
+<ul class="dropdown-menu">
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">Core</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../core/api_main/">Main</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../core/api_conf/">Configuration</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../core/api_settings/">Settings</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../core/api_utils/">Utilities</a>
+</li>
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">Reports</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../core/api_reports_generator/">Generator</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../core/api_reports_layout_items/">Layout items</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../core/api_reports_manager/">Manager</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../core/api_reports_variables/">Variables</a>
+</li>
+</ul>
+</li>
+<li>
+<a class="dropdown-item" href="../../core/api_pilot_extent/">Extents</a>
+</li>
+</ul>
+</li>
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">Models</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../api_base/">Model base</a>
+</li>
+<li>
+<a class="dropdown-item active" href="./">Helpers</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api_report/">Report</a>
+</li>
+</ul>
+</li>
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">GUI</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../gui/api_gui_main/">GUI main</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_carbon_layer_model/">Carbon item model</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_component_items/">Component item model</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_im_editor_dialog/">Implementation model editor</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_im_widget/">Implementation model widget</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_items_selection_dialog/">Items selection dialog</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_map_repeat_item_widget/">Map repeat item widget</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_model_component_widget/">Model component widget</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_ncs_pathway_editor/">NCS Pathway editor</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_pixel_value_editor/">Pixel values</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_priority_layer/">Priority layer dialog</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_priority_group/">Priority group</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_progress_dialog/">Progress dialog</a>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="dropdown">
+<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">About <b class="caret"></b></a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../../../about/ci/">Conservation International</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../../about/kartoza/">Kartoza</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../../about/license/">License</a>
+</li>
+</ul>
+</li>
+</ul>
+<ul class="nav navbar-nav ml-auto">
+<li class="nav-item">
+<a class="nav-link" href="../api_base/" rel="prev">
+<i class="fa fa-arrow-left"></i> Previous
+                                </a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../api_report/" rel="next">
+                                    Next <i class="fa fa-arrow-right"></i>
+</a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="https://github.com/kartoza/cplus-plugin/blob/main/docs/src/developer/api/models/api_helpers.md">Edit on kartoza/cplus-plugin</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="container">
+<div class="row">
+<div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+<div class="navbar-header">
+<button class="navbar-toggler collapsed" data-target="#toc-collapse" data-toggle="collapse" title="Table of Contents" type="button">
+<span class="fa fa-angle-down"></span>
+</button>
+</div>
+<div class="navbar-collapse collapse card bg-secondary" id="toc-collapse">
+<ul class="nav flex-column">
+<li class="nav-item" data-level="1"><a class="nav-link" href="#helpers">Helpers</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="1"><a class="nav-link" href="#src.cplus_plugin.models.helpers">helpers</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="1"><a class="nav-link" href="#src.cplus_plugin.models.helpers.clone_implementation_model">clone_implementation_model()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="1"><a class="nav-link" href="#src.cplus_plugin.models.helpers.clone_layer_component">clone_layer_component()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="1"><a class="nav-link" href="#src.cplus_plugin.models.helpers.clone_ncs_pathway">clone_ncs_pathway()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="1"><a class="nav-link" href="#src.cplus_plugin.models.helpers.copy_layer_component_attributes">copy_layer_component_attributes()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="1"><a class="nav-link" href="#src.cplus_plugin.models.helpers.create_implementation_model">create_implementation_model()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="1"><a class="nav-link" href="#src.cplus_plugin.models.helpers.create_layer_component">create_layer_component()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="1"><a class="nav-link" href="#src.cplus_plugin.models.helpers.create_model_component">create_model_component()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="1"><a class="nav-link" href="#src.cplus_plugin.models.helpers.create_ncs_pathway">create_ncs_pathway()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="1"><a class="nav-link" href="#src.cplus_plugin.models.helpers.extent_to_project_crs_extent">extent_to_project_crs_extent()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="1"><a class="nav-link" href="#src.cplus_plugin.models.helpers.extent_to_qgs_rectangle">extent_to_qgs_rectangle()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="1"><a class="nav-link" href="#src.cplus_plugin.models.helpers.layer_component_to_dict">layer_component_to_dict()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="1"><a class="nav-link" href="#src.cplus_plugin.models.helpers.model_component_to_dict">model_component_to_dict()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="1"><a class="nav-link" href="#src.cplus_plugin.models.helpers.ncs_pathway_to_dict">ncs_pathway_to_dict()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+</ul>
+</div>
+</div></div>
+<div class="col-md-9" role="main">
+<h1 id="helpers">Helpers</h1>
+<div class="doc doc-object doc-module">
+<a id="src.cplus_plugin.models.helpers"></a>
+<div class="doc doc-contents first">
+<p>Helper functions for supporting model management.</p>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h1 class="doc doc-heading" id="src.cplus_plugin.models.helpers.clone_implementation_model">
+<span class="doc doc-object-name doc-function-name">clone_implementation_model</span>
+</h1>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">clone_implementation_model</span><span class="p">(</span><span class="n">implementation_model</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Creates a deep copy of the given implementation model.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>implementation_model</code></td>
+<td>
+<code><a class="autorefs autorefs-internal" title="src.cplus_plugin.models.base.ImplementationModel" href="../api_base/#src.cplus_plugin.models.base.ImplementationModel">ImplementationModel</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Implementation model to clone.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>ImplementationModel</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>A deep copy of the original implementation model object.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/models/helpers.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">294</span>
+<span class="normal">295</span>
+<span class="normal">296</span>
+<span class="normal">297</span>
+<span class="normal">298</span>
+<span class="normal">299</span>
+<span class="normal">300</span>
+<span class="normal">301</span>
+<span class="normal">302</span>
+<span class="normal">303</span>
+<span class="normal">304</span>
+<span class="normal">305</span>
+<span class="normal">306</span>
+<span class="normal">307</span>
+<span class="normal">308</span>
+<span class="normal">309</span>
+<span class="normal">310</span>
+<span class="normal">311</span>
+<span class="normal">312</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">clone_implementation_model</span><span class="p">(</span>
+    <span class="n">implementation_model</span><span class="p">:</span> <span class="n">ImplementationModel</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ImplementationModel</span><span class="p">:</span>
+    <span class="sd">"""Creates a deep copy of the given implementation model.</span>
+
+<span class="sd">    :param implementation_model: Implementation model to clone.</span>
+<span class="sd">    :type implementation_model: ImplementationModel</span>
+
+<span class="sd">    :returns: A deep copy of the original implementation model object.</span>
+<span class="sd">    :rtype: ImplementationModel</span>
+<span class="sd">    """</span>
+    <span class="n">imp_model</span> <span class="o">=</span> <span class="n">clone_layer_component</span><span class="p">(</span><span class="n">implementation_model</span><span class="p">,</span> <span class="n">ImplementationModel</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">imp_model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">pathways</span> <span class="o">=</span> <span class="n">implementation_model</span><span class="o">.</span><span class="n">pathways</span>
+    <span class="n">cloned_pathways</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pathways</span><span class="p">:</span>
+        <span class="n">cloned_ncs</span> <span class="o">=</span> <span class="n">clone_ncs_pathway</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cloned_ncs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cloned_pathways</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cloned_ncs</span><span class="p">)</span>
+
+    <span class="n">imp_model</span><span class="o">.</span><span class="n">pathways</span> <span class="o">=</span> <span class="n">cloned_pathways</span>
+
+    <span class="k">return</span> <span class="n">imp_model</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h1 class="doc doc-heading" id="src.cplus_plugin.models.helpers.clone_layer_component">
+<span class="doc doc-object-name doc-function-name">clone_layer_component</span>
+</h1>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">clone_layer_component</span><span class="p">(</span><span class="n">layer_component</span><span class="p">,</span> <span class="n">model_cls</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Clones a layer-based model component.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>layer_component</code></td>
+<td>
+<code><a class="autorefs autorefs-internal" title="src.cplus_plugin.models.base.LayerModelComponent" href="../api_base/#src.cplus_plugin.models.base.LayerModelComponent">LayerModelComponent</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Layer-based model component to clone.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr>
+<td><code>model_cls</code></td>
+<td>
+<code><a class="autorefs autorefs-external" title="typing.Callable" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[<a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>], <span title="src.cplus_plugin.models.base.LayerModelComponentType">LayerModelComponentType</span>]</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Callable class that will be created based on the input argument values from the dictionary.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>LayerModelComponent</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>A new instance of the cloned model component. It will return None if the input is not a layer-based model component.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/models/helpers.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span>
+<span class="normal">254</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span>
+<span class="normal">265</span>
+<span class="normal">266</span>
+<span class="normal">267</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">clone_layer_component</span><span class="p">(</span>
+    <span class="n">layer_component</span><span class="p">:</span> <span class="n">LayerModelComponent</span><span class="p">,</span>
+    <span class="n">model_cls</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">LayerModelComponentType</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">LayerModelComponent</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="sd">"""Clones a layer-based model component.</span>
+
+<span class="sd">    :param layer_component: Layer-based model component to clone.</span>
+<span class="sd">    :type layer_component: LayerModelComponent</span>
+
+<span class="sd">    :param model_cls: Callable class that will be created based on the</span>
+<span class="sd">    input argument values from the dictionary.</span>
+<span class="sd">    :type model_cls: LayerModelComponent</span>
+
+<span class="sd">    :returns: A new instance of the cloned model component. It</span>
+<span class="sd">    will return None if the input is not a layer-based model</span>
+<span class="sd">    component.</span>
+<span class="sd">    :rtype: LayerModelComponent</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layer_component</span><span class="p">,</span> <span class="n">LayerModelComponent</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">cloned_component</span> <span class="o">=</span> <span class="n">model_cls</span><span class="p">(</span>
+        <span class="n">layer_component</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span> <span class="n">layer_component</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">layer_component</span><span class="o">.</span><span class="n">description</span>
+    <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">(</span><span class="n">layer_component</span><span class="p">):</span>
+        <span class="n">attr_val</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">layer_component</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">cloned_component</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">attr_val</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">cloned_component</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h1 class="doc doc-heading" id="src.cplus_plugin.models.helpers.clone_ncs_pathway">
+<span class="doc doc-object-name doc-function-name">clone_ncs_pathway</span>
+</h1>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">clone_ncs_pathway</span><span class="p">(</span><span class="n">ncs</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Creates a deep copy of the given NCS pathway.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ncs</code></td>
+<td>
+<code><a class="autorefs autorefs-internal" title="src.cplus_plugin.models.base.NcsPathway" href="../api_base/#src.cplus_plugin.models.base.NcsPathway">NcsPathway</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>NCS pathway to clone.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>NcsPathway</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>A deep copy of the original NCS pathway object.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/models/helpers.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">282</span>
+<span class="normal">283</span>
+<span class="normal">284</span>
+<span class="normal">285</span>
+<span class="normal">286</span>
+<span class="normal">287</span>
+<span class="normal">288</span>
+<span class="normal">289</span>
+<span class="normal">290</span>
+<span class="normal">291</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">clone_ncs_pathway</span><span class="p">(</span><span class="n">ncs</span><span class="p">:</span> <span class="n">NcsPathway</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NcsPathway</span><span class="p">:</span>
+    <span class="sd">"""Creates a deep copy of the given NCS pathway.</span>
+
+<span class="sd">    :param ncs: NCS pathway to clone.</span>
+<span class="sd">    :type ncs: NcsPathway</span>
+
+<span class="sd">    :returns: A deep copy of the original NCS pathway object.</span>
+<span class="sd">    :rtype: NcsPathway</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">clone_layer_component</span><span class="p">(</span><span class="n">ncs</span><span class="p">,</span> <span class="n">NcsPathway</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h1 class="doc doc-heading" id="src.cplus_plugin.models.helpers.copy_layer_component_attributes">
+<span class="doc doc-object-name doc-function-name">copy_layer_component_attributes</span>
+</h1>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">copy_layer_component_attributes</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">source</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Copies the attribute values of source to target. The uuid
+attribute value is not copied as well as the layer attribute.
+However, for the latter, the path is copied.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>target</code></td>
+<td>
+<code><a class="autorefs autorefs-internal" title="src.cplus_plugin.models.base.LayerModelComponent" href="../api_base/#src.cplus_plugin.models.base.LayerModelComponent">LayerModelComponent</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Target object whose attribute values will be updated.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td>
+<code><a class="autorefs autorefs-internal" title="src.cplus_plugin.models.base.LayerModelComponent" href="../api_base/#src.cplus_plugin.models.base.LayerModelComponent">LayerModelComponent</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Source object whose attribute values will be copied to the target.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>LayerModelComponent</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Target object containing the updated attribute values apart for the uuid whose value will not change.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/models/helpers.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span>
+<span class="normal">330</span>
+<span class="normal">331</span>
+<span class="normal">332</span>
+<span class="normal">333</span>
+<span class="normal">334</span>
+<span class="normal">335</span>
+<span class="normal">336</span>
+<span class="normal">337</span>
+<span class="normal">338</span>
+<span class="normal">339</span>
+<span class="normal">340</span>
+<span class="normal">341</span>
+<span class="normal">342</span>
+<span class="normal">343</span>
+<span class="normal">344</span>
+<span class="normal">345</span>
+<span class="normal">346</span>
+<span class="normal">347</span>
+<span class="normal">348</span>
+<span class="normal">349</span>
+<span class="normal">350</span>
+<span class="normal">351</span>
+<span class="normal">352</span>
+<span class="normal">353</span>
+<span class="normal">354</span>
+<span class="normal">355</span>
+<span class="normal">356</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">copy_layer_component_attributes</span><span class="p">(</span>
+    <span class="n">target</span><span class="p">:</span> <span class="n">LayerModelComponent</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">LayerModelComponent</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LayerModelComponent</span><span class="p">:</span>
+    <span class="sd">"""Copies the attribute values of source to target. The uuid</span>
+<span class="sd">    attribute value is not copied as well as the layer attribute.</span>
+<span class="sd">    However, for the latter, the path is copied.</span>
+
+<span class="sd">    :param target: Target object whose attribute values will be updated.</span>
+<span class="sd">    :type target: LayerModelComponent</span>
+
+<span class="sd">    :param source: Source object whose attribute values will be copied to</span>
+<span class="sd">    the target.</span>
+<span class="sd">    :type source: LayerModelComponent</span>
+
+<span class="sd">    :returns: Target object containing the updated attribute values apart</span>
+<span class="sd">    for the uuid whose value will not change.</span>
+<span class="sd">    :rtype: LayerModelComponent</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">LayerModelComponent</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span>
+        <span class="n">source</span><span class="p">,</span> <span class="n">LayerModelComponent</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="s2">"Source or target objects are not of type 'LayerModelComponent'"</span>
+        <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">(</span><span class="n">source</span><span class="p">):</span>
+        <span class="c1"># Exclude uuid</span>
+        <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">UUID_ATTRIBUTE</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">attr_val</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">attr_val</span><span class="p">)</span>
+
+    <span class="c1"># Force layer to be set/updated</span>
+    <span class="n">target</span><span class="o">.</span><span class="n">update_layer_type</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">target</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h1 class="doc doc-heading" id="src.cplus_plugin.models.helpers.create_implementation_model">
+<span class="doc doc-object-name doc-function-name">create_implementation_model</span>
+</h1>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">create_implementation_model</span><span class="p">(</span><span class="n">source_dict</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Factory method for creating an implementation model using
+attribute values defined in a dictionary.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>source_dict</code></td>
+<td>
+<code>dict</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Dictionary containing property values.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>ImplementationModel</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Implementation model with property values set from the dictionary.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/models/helpers.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span>
+<span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_implementation_model</span><span class="p">(</span><span class="n">source_dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">ImplementationModel</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="sd">"""Factory method for creating an implementation model using</span>
+<span class="sd">    attribute values defined in a dictionary.</span>
+
+<span class="sd">    :param source_dict: Dictionary containing property values.</span>
+<span class="sd">    :type source_dict: dict</span>
+
+<span class="sd">    :returns: Implementation model with property values set</span>
+<span class="sd">    from the dictionary.</span>
+<span class="sd">    :rtype: ImplementationModel</span>
+<span class="sd">    """</span>
+    <span class="n">implementation_model</span> <span class="o">=</span> <span class="n">create_layer_component</span><span class="p">(</span><span class="n">source_dict</span><span class="p">,</span> <span class="n">ImplementationModel</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">PRIORITY_LAYERS_SEGMENT</span> <span class="ow">in</span> <span class="n">source_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">implementation_model</span><span class="o">.</span><span class="n">priority_layers</span> <span class="o">=</span> <span class="n">source_dict</span><span class="p">[</span><span class="n">PRIORITY_LAYERS_SEGMENT</span><span class="p">]</span>
+
+    <span class="c1"># Set style</span>
+    <span class="k">if</span> <span class="n">STYLE_ATTRIBUTE</span> <span class="ow">in</span> <span class="n">source_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">implementation_model</span><span class="o">.</span><span class="n">layer_styles</span> <span class="o">=</span> <span class="n">source_dict</span><span class="p">[</span><span class="n">STYLE_ATTRIBUTE</span><span class="p">]</span>
+
+    <span class="c1"># Set styling pixel value</span>
+    <span class="k">if</span> <span class="n">PIXEL_VALUE_ATTRIBUTE</span> <span class="ow">in</span> <span class="n">source_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">implementation_model</span><span class="o">.</span><span class="n">style_pixel_value</span> <span class="o">=</span> <span class="n">source_dict</span><span class="p">[</span><span class="n">PIXEL_VALUE_ATTRIBUTE</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">implementation_model</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h1 class="doc doc-heading" id="src.cplus_plugin.models.helpers.create_layer_component">
+<span class="doc doc-object-name doc-function-name">create_layer_component</span>
+</h1>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">create_layer_component</span><span class="p">(</span><span class="n">source_dict</span><span class="p">,</span> <span class="n">model_cls</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Factory method for creating a layer model component using
+attribute values defined in a dictionary.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>source_dict</code></td>
+<td>
+<code>dict</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Dictionary containing property values.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr>
+<td><code>model_cls</code></td>
+<td>
+<code><a class="autorefs autorefs-external" title="typing.Callable" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[<a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-internal" title="src.cplus_plugin.models.base.LayerType" href="../api_base/#src.cplus_plugin.models.base.LayerType">LayerType</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a>], <span title="src.cplus_plugin.models.base.LayerModelComponentType">LayerModelComponentType</span>]</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Callable class that will be created based on the input argument values from the dictionary.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>LayerModelComponent</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Layer model component object with property values set from the dictionary.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/models/helpers.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">101</span>
+<span class="normal">102</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_layer_component</span><span class="p">(</span>
+    <span class="n">source_dict</span><span class="p">,</span>
+    <span class="n">model_cls</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">[</span>
+        <span class="p">[</span><span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">LayerType</span><span class="p">,</span> <span class="nb">bool</span><span class="p">],</span> <span class="n">LayerModelComponentType</span>
+    <span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">LayerModelComponent</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="sd">"""Factory method for creating a layer model component using</span>
+<span class="sd">    attribute values defined in a dictionary.</span>
+
+<span class="sd">    :param source_dict: Dictionary containing property values.</span>
+<span class="sd">    :type source_dict: dict</span>
+
+<span class="sd">    :param model_cls: Callable class that will be created based on the</span>
+<span class="sd">    input argument values from the dictionary.</span>
+<span class="sd">    :type model_cls: LayerModelComponent</span>
+
+<span class="sd">    :returns: Layer model component object with property values set</span>
+<span class="sd">    from the dictionary.</span>
+<span class="sd">    :rtype: LayerModelComponent</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">UUID_ATTRIBUTE</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">source_dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">source_uuid</span> <span class="o">=</span> <span class="n">source_dict</span><span class="p">[</span><span class="n">UUID_ATTRIBUTE</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">source_uuid</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">source_uuid</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span><span class="p">(</span><span class="n">source_uuid</span><span class="p">)</span>
+
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">PATH_ATTRIBUTE</span> <span class="ow">in</span> <span class="n">source_dict</span><span class="p">:</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="n">PATH_ATTRIBUTE</span><span class="p">]</span> <span class="o">=</span> <span class="n">source_dict</span><span class="p">[</span><span class="n">PATH_ATTRIBUTE</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">LAYER_TYPE_ATTRIBUTE</span> <span class="ow">in</span> <span class="n">source_dict</span><span class="p">:</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="n">LAYER_TYPE_ATTRIBUTE</span><span class="p">]</span> <span class="o">=</span> <span class="n">LayerType</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">source_dict</span><span class="p">[</span><span class="n">LAYER_TYPE_ATTRIBUTE</span><span class="p">]))</span>
+
+    <span class="k">if</span> <span class="n">USER_DEFINED_ATTRIBUTE</span> <span class="ow">in</span> <span class="n">source_dict</span><span class="p">:</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="n">USER_DEFINED_ATTRIBUTE</span><span class="p">]</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">source_dict</span><span class="p">[</span><span class="n">USER_DEFINED_ATTRIBUTE</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">model_cls</span><span class="p">(</span>
+        <span class="n">source_uuid</span><span class="p">,</span>
+        <span class="n">source_dict</span><span class="p">[</span><span class="n">NAME_ATTRIBUTE</span><span class="p">],</span>
+        <span class="n">source_dict</span><span class="p">[</span><span class="n">DESCRIPTION_ATTRIBUTE</span><span class="p">],</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h1 class="doc doc-heading" id="src.cplus_plugin.models.helpers.create_model_component">
+<span class="doc doc-object-name doc-function-name">create_model_component</span>
+</h1>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">create_model_component</span><span class="p">(</span><span class="n">source_dict</span><span class="p">,</span> <span class="n">model_cls</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Factory method for creating and setting attribute values
+for a base model component object.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>source_dict</code></td>
+<td>
+<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Dictionary containing attribute values.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr>
+<td><code>model_cls</code></td>
+<td>
+<code><a class="autorefs autorefs-external" title="typing.Callable" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[<a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>], <span title="src.cplus_plugin.models.base.BaseModelComponentType">BaseModelComponentType</span>]</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Callable class that will be created based on the input argument values from the dictionary.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>BaseModelComponent</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Base model component object with property values derived from the dictionary.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/models/helpers.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">73</span>
+<span class="normal">74</span>
+<span class="normal">75</span>
+<span class="normal">76</span>
+<span class="normal">77</span>
+<span class="normal">78</span>
+<span class="normal">79</span>
+<span class="normal">80</span>
+<span class="normal">81</span>
+<span class="normal">82</span>
+<span class="normal">83</span>
+<span class="normal">84</span>
+<span class="normal">85</span>
+<span class="normal">86</span>
+<span class="normal">87</span>
+<span class="normal">88</span>
+<span class="normal">89</span>
+<span class="normal">90</span>
+<span class="normal">91</span>
+<span class="normal">92</span>
+<span class="normal">93</span>
+<span class="normal">94</span>
+<span class="normal">95</span>
+<span class="normal">96</span>
+<span class="normal">97</span>
+<span class="normal">98</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_model_component</span><span class="p">(</span>
+    <span class="n">source_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">model_cls</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">BaseModelComponentType</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">BaseModelComponentType</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="sd">"""Factory method for creating and setting attribute values</span>
+<span class="sd">    for a base model component object.</span>
+
+<span class="sd">    :param source_dict: Dictionary containing attribute values.</span>
+<span class="sd">    :type source_dict: dict</span>
+
+<span class="sd">    :param model_cls: Callable class that will be created based on the</span>
+<span class="sd">    input argument values from the dictionary.</span>
+<span class="sd">    :type model_cls: BaseModelComponent</span>
+
+<span class="sd">    :returns: Base model component object with property values</span>
+<span class="sd">    derived from the dictionary.</span>
+<span class="sd">    :rtype: BaseModelComponent</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">model_cls</span><span class="p">,</span> <span class="n">BaseModelComponent</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">return</span> <span class="n">model_cls</span><span class="p">(</span>
+        <span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span><span class="p">(</span><span class="n">source_dict</span><span class="p">[</span><span class="n">UUID_ATTRIBUTE</span><span class="p">]),</span>
+        <span class="n">source_dict</span><span class="p">[</span><span class="n">NAME_ATTRIBUTE</span><span class="p">],</span>
+        <span class="n">source_dict</span><span class="p">[</span><span class="n">DESCRIPTION_ATTRIBUTE</span><span class="p">],</span>
+    <span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h1 class="doc doc-heading" id="src.cplus_plugin.models.helpers.create_ncs_pathway">
+<span class="doc doc-object-name doc-function-name">create_ncs_pathway</span>
+</h1>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">create_ncs_pathway</span><span class="p">(</span><span class="n">source_dict</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Factory method for creating an NcsPathway object using
+attribute values defined in a dictionary.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>source_dict</code></td>
+<td>
+<code>dict</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Dictionary containing property values.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>NcsPathway</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>NCS pathway object with property values set from the dictionary.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/models/helpers.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_ncs_pathway</span><span class="p">(</span><span class="n">source_dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">NcsPathway</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="sd">"""Factory method for creating an NcsPathway object using</span>
+<span class="sd">    attribute values defined in a dictionary.</span>
+
+<span class="sd">    :param source_dict: Dictionary containing property values.</span>
+<span class="sd">    :type source_dict: dict</span>
+
+<span class="sd">    :returns: NCS pathway object with property values set</span>
+<span class="sd">    from the dictionary.</span>
+<span class="sd">    :rtype: NcsPathway</span>
+<span class="sd">    """</span>
+    <span class="n">ncs</span> <span class="o">=</span> <span class="n">create_layer_component</span><span class="p">(</span><span class="n">source_dict</span><span class="p">,</span> <span class="n">NcsPathway</span><span class="p">)</span>
+
+    <span class="c1"># We are checking because of the various iterations of the attributes</span>
+    <span class="c1"># in the NcsPathway class where some of these attributes might</span>
+    <span class="c1"># be missing.</span>
+    <span class="k">if</span> <span class="n">CARBON_PATHS_ATTRIBUTE</span> <span class="ow">in</span> <span class="n">source_dict</span><span class="p">:</span>
+        <span class="n">ncs</span><span class="o">.</span><span class="n">carbon_paths</span> <span class="o">=</span> <span class="n">source_dict</span><span class="p">[</span><span class="n">CARBON_PATHS_ATTRIBUTE</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">ncs</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h1 class="doc doc-heading" id="src.cplus_plugin.models.helpers.extent_to_project_crs_extent">
+<span class="doc doc-object-name doc-function-name">extent_to_project_crs_extent</span>
+</h1>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">extent_to_project_crs_extent</span><span class="p">(</span><span class="n">spatial_extent</span><span class="p">,</span> <span class="n">project</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Transforms SpatialExtent model to an QGIS extent based
+on the CRS of the given project.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>spatial_extent</code></td>
+<td>
+<code><a class="autorefs autorefs-internal" title="src.cplus_plugin.models.base.SpatialExtent" href="../api_base/#src.cplus_plugin.models.base.SpatialExtent">SpatialExtent</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Spatial extent data model that defines the scenario bounds.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr>
+<td><code>project</code></td>
+<td>
+<code><span title="qgis.core.QgsProject">QgsProject</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Project whose CRS will be used to determine the values of the output extent.</p>
+</div>
+</td>
+<td>
+<code>None</code>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>QgsRectangle</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Output extent in the project's CRS. If the input extent is invalid, this function will return None.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/models/helpers.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">385</span>
+<span class="normal">386</span>
+<span class="normal">387</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span>
+<span class="normal">393</span>
+<span class="normal">394</span>
+<span class="normal">395</span>
+<span class="normal">396</span>
+<span class="normal">397</span>
+<span class="normal">398</span>
+<span class="normal">399</span>
+<span class="normal">400</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span>
+<span class="normal">407</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span>
+<span class="normal">411</span>
+<span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span>
+<span class="normal">415</span>
+<span class="normal">416</span>
+<span class="normal">417</span>
+<span class="normal">418</span>
+<span class="normal">419</span>
+<span class="normal">420</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">extent_to_project_crs_extent</span><span class="p">(</span>
+    <span class="n">spatial_extent</span><span class="p">:</span> <span class="n">SpatialExtent</span><span class="p">,</span> <span class="n">project</span><span class="p">:</span> <span class="n">QgsProject</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">QgsRectangle</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="sd">"""Transforms SpatialExtent model to an QGIS extent based</span>
+<span class="sd">    on the CRS of the given project.</span>
+
+<span class="sd">    :param spatial_extent: Spatial extent data model that defines the</span>
+<span class="sd">    scenario bounds.</span>
+<span class="sd">    :type spatial_extent: SpatialExtent</span>
+
+<span class="sd">    :param project: Project whose CRS will be used to determine</span>
+<span class="sd">    the values of the output extent.</span>
+<span class="sd">    :type project: QgsProject</span>
+
+<span class="sd">    :returns: Output extent in the project's CRS. If the input extent</span>
+<span class="sd">    is invalid, this function will return None.</span>
+<span class="sd">    :rtype: QgsRectangle</span>
+<span class="sd">    """</span>
+    <span class="n">input_rect</span> <span class="o">=</span> <span class="n">extent_to_qgs_rectangle</span><span class="p">(</span><span class="n">spatial_extent</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">input_rect</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">default_crs</span> <span class="o">=</span> <span class="n">QgsCoordinateReferenceSystem</span><span class="o">.</span><span class="n">fromEpsgId</span><span class="p">(</span><span class="n">DEFAULT_CRS_ID</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">default_crs</span><span class="o">.</span><span class="n">isValid</span><span class="p">():</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">project</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">project</span> <span class="o">=</span> <span class="n">QgsProject</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span>
+
+    <span class="n">target_crs</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="n">crs</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">default_crs</span> <span class="o">==</span> <span class="n">target_crs</span><span class="p">:</span>
+        <span class="c1"># No need for transformation</span>
+        <span class="k">return</span> <span class="n">input_rect</span>
+
+    <span class="n">coordinate_xform</span> <span class="o">=</span> <span class="n">QgsCoordinateTransform</span><span class="p">(</span><span class="n">default_crs</span><span class="p">,</span> <span class="n">project</span><span class="o">.</span><span class="n">crs</span><span class="p">(),</span> <span class="n">project</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">coordinate_xform</span><span class="o">.</span><span class="n">transformBoundingBox</span><span class="p">(</span><span class="n">input_rect</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h1 class="doc doc-heading" id="src.cplus_plugin.models.helpers.extent_to_qgs_rectangle">
+<span class="doc doc-object-name doc-function-name">extent_to_qgs_rectangle</span>
+</h1>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">extent_to_qgs_rectangle</span><span class="p">(</span><span class="n">spatial_extent</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Returns a QgsRectangle object from the SpatialExtent object.</p>
+<p>If the SpatialExtent is invalid (i.e. less than four items) then it
+will return None.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>spatial_extent</code></td>
+<td>
+<code><a class="autorefs autorefs-internal" title="src.cplus_plugin.models.base.SpatialExtent" href="../api_base/#src.cplus_plugin.models.base.SpatialExtent">SpatialExtent</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Spatial extent data model that defines the scenario bounds.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>QgsRectangle</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>QGIS rectangle defining the bounds for the scenario.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/models/helpers.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">359</span>
+<span class="normal">360</span>
+<span class="normal">361</span>
+<span class="normal">362</span>
+<span class="normal">363</span>
+<span class="normal">364</span>
+<span class="normal">365</span>
+<span class="normal">366</span>
+<span class="normal">367</span>
+<span class="normal">368</span>
+<span class="normal">369</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span>
+<span class="normal">376</span>
+<span class="normal">377</span>
+<span class="normal">378</span>
+<span class="normal">379</span>
+<span class="normal">380</span>
+<span class="normal">381</span>
+<span class="normal">382</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">extent_to_qgs_rectangle</span><span class="p">(</span>
+    <span class="n">spatial_extent</span><span class="p">:</span> <span class="n">SpatialExtent</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">QgsRectangle</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="sd">"""Returns a QgsRectangle object from the SpatialExtent object.</span>
+
+<span class="sd">    If the SpatialExtent is invalid (i.e. less than four items) then it</span>
+<span class="sd">    will return None.</span>
+
+<span class="sd">    :param spatial_extent: Spatial extent data model that defines the</span>
+<span class="sd">    scenario bounds.</span>
+<span class="sd">    :type spatial_extent: SpatialExtent</span>
+
+<span class="sd">    :returns: QGIS rectangle defining the bounds for the scenario.</span>
+<span class="sd">    :rtype: QgsRectangle</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spatial_extent</span><span class="o">.</span><span class="n">bbox</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">return</span> <span class="n">QgsRectangle</span><span class="p">(</span>
+        <span class="n">spatial_extent</span><span class="o">.</span><span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">spatial_extent</span><span class="o">.</span><span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+        <span class="n">spatial_extent</span><span class="o">.</span><span class="n">bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="n">spatial_extent</span><span class="o">.</span><span class="n">bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+    <span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h1 class="doc doc-heading" id="src.cplus_plugin.models.helpers.layer_component_to_dict">
+<span class="doc doc-object-name doc-function-name">layer_component_to_dict</span>
+</h1>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">layer_component_to_dict</span><span class="p">(</span><span class="n">layer_component</span><span class="p">,</span> <span class="n">uuid_to_str</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Creates a dictionary containing attribute
+name-value pairs from a layer model component object.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>layer_component</code></td>
+<td>
+<code><span title="src.cplus_plugin.models.base.LayerModelComponentType">LayerModelComponentType</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Source layer model component object whose values are to be mapped to the corresponding attribute names.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr>
+<td><code>uuid_to_str</code></td>
+<td>
+<code>bool</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Set True to convert the UUID to a string equivalent, else False. Some serialization engines such as JSON are unable to handle UUID objects hence the need to convert to string.</p>
+</div>
+</td>
+<td>
+<code>True</code>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>dict</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Returns a dictionary item containing attribute name-value pairs.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/models/helpers.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span>
+<span class="normal">210</span>
+<span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">layer_component_to_dict</span><span class="p">(</span>
+    <span class="n">layer_component</span><span class="p">:</span> <span class="n">LayerModelComponentType</span><span class="p">,</span> <span class="n">uuid_to_str</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="sd">"""Creates a dictionary containing attribute</span>
+<span class="sd">    name-value pairs from a layer model component object.</span>
+
+<span class="sd">    :param layer_component: Source layer model component object whose</span>
+<span class="sd">    values are to be mapped to the corresponding</span>
+<span class="sd">    attribute names.</span>
+<span class="sd">    :type layer_component: LayerModelComponent</span>
+
+<span class="sd">    :param uuid_to_str: Set True to convert the UUID to a</span>
+<span class="sd">    string equivalent, else False. Some serialization engines</span>
+<span class="sd">    such as JSON are unable to handle UUID objects hence the need</span>
+<span class="sd">    to convert to string.</span>
+<span class="sd">    :type uuid_to_str: bool</span>
+
+<span class="sd">    :returns: Returns a dictionary item containing attribute</span>
+<span class="sd">    name-value pairs.</span>
+<span class="sd">    :rtype: dict</span>
+<span class="sd">    """</span>
+    <span class="n">base_attrs</span> <span class="o">=</span> <span class="n">model_component_to_dict</span><span class="p">(</span><span class="n">layer_component</span><span class="p">,</span> <span class="n">uuid_to_str</span><span class="p">)</span>
+    <span class="n">base_attrs</span><span class="p">[</span><span class="n">PATH_ATTRIBUTE</span><span class="p">]</span> <span class="o">=</span> <span class="n">layer_component</span><span class="o">.</span><span class="n">path</span>
+    <span class="n">base_attrs</span><span class="p">[</span><span class="n">LAYER_TYPE_ATTRIBUTE</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">layer_component</span><span class="o">.</span><span class="n">layer_type</span><span class="p">)</span>
+    <span class="n">base_attrs</span><span class="p">[</span><span class="n">USER_DEFINED_ATTRIBUTE</span><span class="p">]</span> <span class="o">=</span> <span class="n">layer_component</span><span class="o">.</span><span class="n">user_defined</span>
+
+    <span class="k">return</span> <span class="n">base_attrs</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h1 class="doc doc-heading" id="src.cplus_plugin.models.helpers.model_component_to_dict">
+<span class="doc doc-object-name doc-function-name">model_component_to_dict</span>
+</h1>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">model_component_to_dict</span><span class="p">(</span><span class="n">model_component</span><span class="p">,</span> <span class="n">uuid_to_str</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Creates a dictionary containing the base attribute
+name-value pairs from a model component object.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>model_component</code></td>
+<td>
+<code><span title="src.cplus_plugin.models.base.BaseModelComponentType">BaseModelComponentType</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Source model component object whose values are to be mapped to the corresponding attribute names.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr>
+<td><code>uuid_to_str</code></td>
+<td>
+<code>bool</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Set True to convert the UUID to a string equivalent, else False. Some serialization engines such as JSON are unable to handle UUID objects hence the need to convert to string.</p>
+</div>
+</td>
+<td>
+<code>True</code>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>dict</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Returns a dictionary item containing attribute name-value pairs.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/models/helpers.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span>
+<span class="normal">69</span>
+<span class="normal">70</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">model_component_to_dict</span><span class="p">(</span>
+    <span class="n">model_component</span><span class="p">:</span> <span class="n">BaseModelComponentType</span><span class="p">,</span> <span class="n">uuid_to_str</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="sd">"""Creates a dictionary containing the base attribute</span>
+<span class="sd">    name-value pairs from a model component object.</span>
+
+<span class="sd">    :param model_component: Source model component object whose</span>
+<span class="sd">    values are to be mapped to the corresponding</span>
+<span class="sd">    attribute names.</span>
+<span class="sd">    :type model_component: BaseModelComponent</span>
+
+<span class="sd">    :param uuid_to_str: Set True to convert the UUID to a</span>
+<span class="sd">    string equivalent, else False. Some serialization engines</span>
+<span class="sd">    such as JSON are unable to handle UUID objects hence the need</span>
+<span class="sd">    to convert to string.</span>
+<span class="sd">    :type uuid_to_str: bool</span>
+
+<span class="sd">    :returns: Returns a dictionary item containing attribute</span>
+<span class="sd">    name-value pairs.</span>
+<span class="sd">    :rtype: dict</span>
+<span class="sd">    """</span>
+    <span class="n">model_uuid</span> <span class="o">=</span> <span class="n">model_component</span><span class="o">.</span><span class="n">uuid</span>
+    <span class="k">if</span> <span class="n">uuid_to_str</span><span class="p">:</span>
+        <span class="n">model_uuid</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">model_uuid</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="n">UUID_ATTRIBUTE</span><span class="p">:</span> <span class="n">model_uuid</span><span class="p">,</span>
+        <span class="n">NAME_ATTRIBUTE</span><span class="p">:</span> <span class="n">model_component</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="n">DESCRIPTION_ATTRIBUTE</span><span class="p">:</span> <span class="n">model_component</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+    <span class="p">}</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h1 class="doc doc-heading" id="src.cplus_plugin.models.helpers.ncs_pathway_to_dict">
+<span class="doc doc-object-name doc-function-name">ncs_pathway_to_dict</span>
+</h1>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">ncs_pathway_to_dict</span><span class="p">(</span><span class="n">ncs_pathway</span><span class="p">,</span> <span class="n">uuid_to_str</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Creates a dictionary containing attribute
+name-value pairs from an NCS pathway object.</p>
+<p>This function has been retained for legacy support.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ncs_pathway</code></td>
+<td>
+<code><a class="autorefs autorefs-internal" title="src.cplus_plugin.models.base.NcsPathway" href="../api_base/#src.cplus_plugin.models.base.NcsPathway">NcsPathway</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Source NCS pathway object whose values are to be mapped to the corresponding attribute names.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr>
+<td><code>uuid_to_str</code></td>
+<td>
+<code>bool</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Set True to convert the UUID to a string equivalent, else False. Some serialization engines such as JSON are unable to handle UUID objects hence the need to convert to string.</p>
+</div>
+</td>
+<td>
+<code>True</code>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>dict</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Returns a dictionary item containing attribute name-value pairs.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/models/helpers.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">ncs_pathway_to_dict</span><span class="p">(</span><span class="n">ncs_pathway</span><span class="p">:</span> <span class="n">NcsPathway</span><span class="p">,</span> <span class="n">uuid_to_str</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="sd">"""Creates a dictionary containing attribute</span>
+<span class="sd">    name-value pairs from an NCS pathway object.</span>
+
+<span class="sd">    This function has been retained for legacy support.</span>
+
+<span class="sd">    :param ncs_pathway: Source NCS pathway object whose</span>
+<span class="sd">    values are to be mapped to the corresponding</span>
+<span class="sd">    attribute names.</span>
+<span class="sd">    :type ncs_pathway: NcsPathway</span>
+
+<span class="sd">    :param uuid_to_str: Set True to convert the UUID to a</span>
+<span class="sd">    string equivalent, else False. Some serialization engines</span>
+<span class="sd">    such as JSON are unable to handle UUID objects hence the need</span>
+<span class="sd">    to convert to string.</span>
+<span class="sd">    :type uuid_to_str: bool</span>
+
+<span class="sd">    :returns: Returns a dictionary item containing attribute</span>
+<span class="sd">    name-value pairs.</span>
+<span class="sd">    :rtype: dict</span>
+<span class="sd">    """</span>
+    <span class="n">base_ncs_dict</span> <span class="o">=</span> <span class="n">layer_component_to_dict</span><span class="p">(</span><span class="n">ncs_pathway</span><span class="p">,</span> <span class="n">uuid_to_str</span><span class="p">)</span>
+    <span class="n">base_ncs_dict</span><span class="p">[</span><span class="n">CARBON_PATHS_ATTRIBUTE</span><span class="p">]</span> <span class="o">=</span> <span class="n">ncs_pathway</span><span class="o">.</span><span class="n">carbon_paths</span>
+
+    <span class="k">return</span> <span class="n">base_ncs_dict</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div></div>
+</div>
+</div>
+<footer class="col-md-12">
+<hr/>
+<p>Copyright Conservation International, 2023</p>
+<p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+</footer>
+<script>
+            var base_url = "../../../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+<script defer="" src="../../../../js/base.js"></script>
+<div aria-hidden="true" aria-labelledby="keyboardModalLabel" class="modal" id="mkdocs_keyboard_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+<button class="close" data-dismiss="modal" type="button"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>
+</div>
+<div class="modal-body">
+<table class="table">
+<thead>
+<tr>
+<th style="width: 20%;">Keys</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="help shortcut"><kbd>?</kbd></td>
+<td>Open this help</td>
+</tr>
+<tr>
+<td class="next shortcut"><kbd>n</kbd></td>
+<td>Next page</td>
+</tr>
+<tr>
+<td class="prev shortcut"><kbd>p</kbd></td>
+<td>Previous page</td>
+</tr>
+<tr>
+<td class="search shortcut"><kbd>s</kbd></td>
+<td>Search</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

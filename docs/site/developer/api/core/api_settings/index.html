@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="Conservation International" name="author"/>
+<link href="../../../../img/favicon.ico" rel="shortcut icon"/>
+<title>Settings - CPLUS</title>
+<link href="../../../../css/bootstrap.min.css" rel="stylesheet"/>
+<link href="../../../../css/font-awesome.min.css" rel="stylesheet"/>
+<link href="../../../../css/base.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" rel="stylesheet"/>
+<link href="../../../../assets/_mkdocstrings.css" rel="stylesheet"/>
+<script defer="" src="../../../../js/jquery-1.10.2.min.js"></script>
+<script defer="" src="../../../../js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<link href="../../../../../pdfs/CPLUS.pdf" rel="alternate" title="PDF" type="application/pdf"/></head>
+<body>
+<div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+<div class="container">
+<a class="navbar-brand" href="../../../..">CPLUS</a>
+<!-- Expander button -->
+<button class="navbar-toggler" data-target="#navbar-collapse" data-toggle="collapse" type="button">
+<span class="navbar-toggler-icon"></span>
+</button>
+<!-- Expanded navigation -->
+<div class="navbar-collapse collapse" id="navbar-collapse">
+<!-- Main navigation -->
+<ul class="nav navbar-nav">
+<li class="navitem">
+<a class="nav-link" href="../../../..">Home</a>
+</li>
+<li class="dropdown">
+<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Users <b class="caret"></b></a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../../../user/">Users</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../../user/quickstart/">Quick Start</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../../user/guide/">Guide</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../../user/manual/">Manual</a>
+</li>
+</ul>
+</li>
+<li class="dropdown">
+<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Administrators <b class="caret"></b></a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../../../administrator/">Administrators</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../../administrator/guide/">Guide</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../../administrator/repository/">Repository</a>
+</li>
+</ul>
+</li>
+<li class="dropdown active">
+<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Developers <b class="caret"></b></a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../../">Developers</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../setup/">Setup</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../architecture/">Architecture</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../documentation/">Documentation</a>
+</li>
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">API</a>
+<ul class="dropdown-menu">
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">Core</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../api_main/">Main</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api_conf/">Configuration</a>
+</li>
+<li>
+<a class="dropdown-item active" href="./">Settings</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api_utils/">Utilities</a>
+</li>
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">Reports</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../api_reports_generator/">Generator</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api_reports_layout_items/">Layout items</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api_reports_manager/">Manager</a>
+</li>
+<li>
+<a class="dropdown-item" href="../api_reports_variables/">Variables</a>
+</li>
+</ul>
+</li>
+<li>
+<a class="dropdown-item" href="../api_pilot_extent/">Extents</a>
+</li>
+</ul>
+</li>
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">Models</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../models/api_base/">Model base</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../models/api_helpers/">Helpers</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../models/api_report/">Report</a>
+</li>
+</ul>
+</li>
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">GUI</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../gui/api_gui_main/">GUI main</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_carbon_layer_model/">Carbon item model</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_component_items/">Component item model</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_im_editor_dialog/">Implementation model editor</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_im_widget/">Implementation model widget</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_items_selection_dialog/">Items selection dialog</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_map_repeat_item_widget/">Map repeat item widget</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_model_component_widget/">Model component widget</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_ncs_pathway_editor/">NCS Pathway editor</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_pixel_value_editor/">Pixel values</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_priority_layer/">Priority layer dialog</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_priority_group/">Priority group</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../gui/api_progress_dialog/">Progress dialog</a>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="dropdown">
+<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">About <b class="caret"></b></a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../../../../about/ci/">Conservation International</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../../about/kartoza/">Kartoza</a>
+</li>
+<li>
+<a class="dropdown-item" href="../../../../about/license/">License</a>
+</li>
+</ul>
+</li>
+</ul>
+<ul class="nav navbar-nav ml-auto">
+<li class="nav-item">
+<a class="nav-link" href="../api_conf/" rel="prev">
+<i class="fa fa-arrow-left"></i> Previous
+                                </a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../api_utils/" rel="next">
+                                    Next <i class="fa fa-arrow-right"></i>
+</a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="https://github.com/kartoza/cplus-plugin/blob/main/docs/src/developer/api/core/api_settings.md">Edit on kartoza/cplus-plugin</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="container">
+<div class="row">
+<div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+<div class="navbar-header">
+<button class="navbar-toggler collapsed" data-target="#toc-collapse" data-toggle="collapse" title="Table of Contents" type="button">
+<span class="fa fa-angle-down"></span>
+</button>
+</div>
+<div class="navbar-collapse collapse card bg-secondary" id="toc-collapse">
+<ul class="nav flex-column">
+<li class="nav-item" data-level="1"><a class="nav-link" href="#settings">Settings</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="1"><a class="nav-link" href="#src.cplus_plugin.settings">settings</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="1"><a class="nav-link" href="#src.cplus_plugin.settings.CplusOptionsFactory">CplusOptionsFactory</a>
+<ul class="nav flex-column">
+<li class="nav-item" data-level="2"><a class="nav-link" href="#src.cplus_plugin.settings.CplusOptionsFactory.createWidget">createWidget()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#src.cplus_plugin.settings.CplusOptionsFactory.icon">icon()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+</ul>
+</li>
+<li class="nav-item" data-level="1"><a class="nav-link" href="#src.cplus_plugin.settings.CplusSettings">CplusSettings</a>
+<ul class="nav flex-column">
+<li class="nav-item" data-level="2"><a class="nav-link" href="#src.cplus_plugin.settings.CplusSettings.message_bar">message_bar</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#src.cplus_plugin.settings.CplusSettings.apply">apply()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#src.cplus_plugin.settings.CplusSettings.base_dir_exists">base_dir_exists()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#src.cplus_plugin.settings.CplusSettings.closeEvent">closeEvent()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#src.cplus_plugin.settings.CplusSettings.load_settings">load_settings()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#src.cplus_plugin.settings.CplusSettings.logo_file_changed">logo_file_changed()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#src.cplus_plugin.settings.CplusSettings.logo_file_exists">logo_file_exists()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#src.cplus_plugin.settings.CplusSettings.logo_state_changed">logo_state_changed()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#src.cplus_plugin.settings.CplusSettings.map_layer_changed">map_layer_changed()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#src.cplus_plugin.settings.CplusSettings.on_settings_changed">on_settings_changed()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#src.cplus_plugin.settings.CplusSettings.save_settings">save_settings()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#src.cplus_plugin.settings.CplusSettings.showEvent">showEvent()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#src.cplus_plugin.settings.CplusSettings.update_logo">update_logo()</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div></div>
+<div class="col-md-9" role="main">
+<h1 id="settings">Settings</h1>
+<div class="doc doc-object doc-module">
+<a id="src.cplus_plugin.settings"></a>
+<div class="doc doc-contents first">
+<p>Plugin global settings.</p>
+<p>Covers the plugin global settings which a user can set and save. The settings
+will be saved using QgsSettings. Settings can be accessed via the QGIS options,
+a button on the docking widget, and from the toolbar menu.</p>
+<div class="doc doc-children">
+<div class="doc doc-object doc-class">
+<h1 class="doc doc-heading" id="src.cplus_plugin.settings.CplusOptionsFactory">
+<span class="doc doc-object-name doc-class-name">CplusOptionsFactory</span>
+</h1>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">CplusOptionsFactory</span><span class="p">()</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+            Bases: <code><span title="qgis.gui.QgsOptionsWidgetFactory">QgsOptionsWidgetFactory</span></code></p>
+<p>Options factory initializes the CPLUS settings.</p>
+<p>Class which creates the widget requied for the CPLUS settings.
+QgsOptionsWidgetFactory is used to accomplish this.</p>
+<p>QGIS CPLUS Plugin Settings factory.</p>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/settings.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">416</span>
+<span class="normal">417</span>
+<span class="normal">418</span>
+<span class="normal">419</span>
+<span class="normal">420</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">"""QGIS CPLUS Plugin Settings factory."""</span>
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">setTitle</span><span class="p">(</span><span class="n">OPTIONS_TITLE</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="src.cplus_plugin.settings.CplusOptionsFactory.createWidget">
+<span class="doc doc-object-name doc-function-name">createWidget</span>
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">createWidget</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Creates a widget for CPLUS settings.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>parent</code></td>
+<td>
+<code><span title="qgis.PyQt.QtWidgets.QWidget">QWidget</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Parent widget</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>CplusSettings</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Widget to be used in the QGIS options</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/settings.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">431</span>
+<span class="normal">432</span>
+<span class="normal">433</span>
+<span class="normal">434</span>
+<span class="normal">435</span>
+<span class="normal">436</span>
+<span class="normal">437</span>
+<span class="normal">438</span>
+<span class="normal">439</span>
+<span class="normal">440</span>
+<span class="normal">441</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">createWidget</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">:</span> <span class="n">QWidget</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CplusSettings</span><span class="p">:</span>
+    <span class="sd">"""Creates a widget for CPLUS settings.</span>
+
+<span class="sd">    :param parent: Parent widget</span>
+<span class="sd">    :type parent: QWidget</span>
+
+<span class="sd">    :returns: Widget to be used in the QGIS options</span>
+<span class="sd">    :rtype: CplusSettings</span>
+<span class="sd">    """</span>
+
+    <span class="k">return</span> <span class="n">CplusSettings</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="src.cplus_plugin.settings.CplusOptionsFactory.icon">
+<span class="doc doc-object-name doc-function-name">icon</span>
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">icon</span><span class="p">()</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Returns the icon which will be used for the CPLUS options tab.</p>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>QIcon</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>An icon object which contains the provided custom icon</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/settings.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">422</span>
+<span class="normal">423</span>
+<span class="normal">424</span>
+<span class="normal">425</span>
+<span class="normal">426</span>
+<span class="normal">427</span>
+<span class="normal">428</span>
+<span class="normal">429</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">icon</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QIcon</span><span class="p">:</span>
+    <span class="sd">"""Returns the icon which will be used for the CPLUS options tab.</span>
+
+<span class="sd">    :returns: An icon object which contains the provided custom icon</span>
+<span class="sd">    :rtype: QIcon</span>
+<span class="sd">    """</span>
+
+    <span class="k">return</span> <span class="n">QIcon</span><span class="p">(</span><span class="n">ICON_PATH</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h1 class="doc doc-heading" id="src.cplus_plugin.settings.CplusSettings">
+<span class="doc doc-object-name doc-class-name">CplusSettings</span>
+</h1>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">CplusSettings</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+            Bases: <code>Ui_DlgSettings</code>, <code><span title="qgis.gui.QgsOptionsPageWidget">QgsOptionsPageWidget</span></code></p>
+<p>QGIS CPLUS Plugin Settings dialog.</p>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/settings.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 54</span>
+<span class="normal"> 55</span>
+<span class="normal"> 56</span>
+<span class="normal"> 57</span>
+<span class="normal"> 58</span>
+<span class="normal"> 59</span>
+<span class="normal"> 60</span>
+<span class="normal"> 61</span>
+<span class="normal"> 62</span>
+<span class="normal"> 63</span>
+<span class="normal"> 64</span>
+<span class="normal"> 65</span>
+<span class="normal"> 66</span>
+<span class="normal"> 67</span>
+<span class="normal"> 68</span>
+<span class="normal"> 69</span>
+<span class="normal"> 70</span>
+<span class="normal"> 71</span>
+<span class="normal"> 72</span>
+<span class="normal"> 73</span>
+<span class="normal"> 74</span>
+<span class="normal"> 75</span>
+<span class="normal"> 76</span>
+<span class="normal"> 77</span>
+<span class="normal"> 78</span>
+<span class="normal"> 79</span>
+<span class="normal"> 80</span>
+<span class="normal"> 81</span>
+<span class="normal"> 82</span>
+<span class="normal"> 83</span>
+<span class="normal"> 84</span>
+<span class="normal"> 85</span>
+<span class="normal"> 86</span>
+<span class="normal"> 87</span>
+<span class="normal"> 88</span>
+<span class="normal"> 89</span>
+<span class="normal"> 90</span>
+<span class="normal"> 91</span>
+<span class="normal"> 92</span>
+<span class="normal"> 93</span>
+<span class="normal"> 94</span>
+<span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">"""QGIS CPLUS Plugin Settings dialog."""</span>
+    <span class="n">QgsOptionsPageWidget</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">setupUi</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">message_bar</span> <span class="o">=</span> <span class="n">qgis</span><span class="o">.</span><span class="n">gui</span><span class="o">.</span><span class="n">QgsMessageBar</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">()</span><span class="o">.</span><span class="n">insertWidget</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">message_bar</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="n">qgis</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">QgsSettings</span><span class="p">()</span>
+    <span class="n">settings_manager</span><span class="o">.</span><span class="n">settings_updated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">on_settings_changed</span><span class="p">)</span>
+
+    <span class="c1"># Connections</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">cb_custom_logo</span><span class="o">.</span><span class="n">stateChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logo_state_changed</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">logo_file</span><span class="o">.</span><span class="n">fileChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logo_file_changed</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">folder_data</span><span class="o">.</span><span class="n">fileChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_dir_exists</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">map_layer_file_widget</span><span class="o">.</span><span class="n">setStorageMode</span><span class="p">(</span><span class="n">QgsFileWidget</span><span class="o">.</span><span class="n">StorageMode</span><span class="o">.</span><span class="n">GetFile</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">map_layer_box</span><span class="o">.</span><span class="n">layerChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map_layer_changed</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">resample_method_box</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span>
+        <span class="n">tr</span><span class="p">(</span><span class="s2">"Nearest Neighbour"</span><span class="p">),</span> <span class="n">QgsAlignRaster</span><span class="o">.</span><span class="n">ResampleAlg</span><span class="o">.</span><span class="n">RA_NearestNeighbour</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">resample_method_box</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span>
+        <span class="n">tr</span><span class="p">(</span><span class="s2">"Bilinear (2x2 Kernel)"</span><span class="p">),</span> <span class="n">QgsAlignRaster</span><span class="o">.</span><span class="n">ResampleAlg</span><span class="o">.</span><span class="n">RA_Bilinear</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">resample_method_box</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span>
+        <span class="n">tr</span><span class="p">(</span><span class="s2">"Cubic (4x4 Kernel)"</span><span class="p">),</span> <span class="n">QgsAlignRaster</span><span class="o">.</span><span class="n">ResampleAlg</span><span class="o">.</span><span class="n">RA_Cubic</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">resample_method_box</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span>
+        <span class="n">tr</span><span class="p">(</span><span class="s2">"Cubic B-Spline (4x4 Kernel)"</span><span class="p">),</span> <span class="n">QgsAlignRaster</span><span class="o">.</span><span class="n">ResampleAlg</span><span class="o">.</span><span class="n">RA_CubicSpline</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">resample_method_box</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span>
+        <span class="n">tr</span><span class="p">(</span><span class="s2">"Lanczos (6x6 Kernel)"</span><span class="p">),</span> <span class="n">QgsAlignRaster</span><span class="o">.</span><span class="n">ResampleAlg</span><span class="o">.</span><span class="n">RA_Lanczos</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">resample_method_box</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span>
+        <span class="n">tr</span><span class="p">(</span><span class="s2">"Average"</span><span class="p">),</span> <span class="n">QgsAlignRaster</span><span class="o">.</span><span class="n">ResampleAlg</span><span class="o">.</span><span class="n">RA_Average</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">resample_method_box</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span><span class="n">tr</span><span class="p">(</span><span class="s2">"Mode"</span><span class="p">),</span> <span class="n">QgsAlignRaster</span><span class="o">.</span><span class="n">ResampleAlg</span><span class="o">.</span><span class="n">RA_Mode</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">resample_method_box</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span>
+        <span class="n">tr</span><span class="p">(</span><span class="s2">"Maximum"</span><span class="p">),</span> <span class="n">QgsAlignRaster</span><span class="o">.</span><span class="n">ResampleAlg</span><span class="o">.</span><span class="n">RA_Max</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">resample_method_box</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span>
+        <span class="n">tr</span><span class="p">(</span><span class="s2">"Minimum"</span><span class="p">),</span> <span class="n">QgsAlignRaster</span><span class="o">.</span><span class="n">ResampleAlg</span><span class="o">.</span><span class="n">RA_Min</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">resample_method_box</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span>
+        <span class="n">tr</span><span class="p">(</span><span class="s2">"Median"</span><span class="p">),</span> <span class="n">QgsAlignRaster</span><span class="o">.</span><span class="n">ResampleAlg</span><span class="o">.</span><span class="n">RA_Median</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">resample_method_box</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span>
+        <span class="n">tr</span><span class="p">(</span><span class="s2">"First Quartile (Q1)"</span><span class="p">),</span> <span class="n">QgsAlignRaster</span><span class="o">.</span><span class="n">ResampleAlg</span><span class="o">.</span><span class="n">RA_Q1</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">resample_method_box</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span>
+        <span class="n">tr</span><span class="p">(</span><span class="s2">"Third Quartile (Q3)"</span><span class="p">),</span> <span class="n">QgsAlignRaster</span><span class="o">.</span><span class="n">ResampleAlg</span><span class="o">.</span><span class="n">RA_Q3</span>
+    <span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-attribute">
+<h2 class="doc doc-heading" id="src.cplus_plugin.settings.CplusSettings.message_bar">
+<span class="doc doc-object-name doc-attribute-name">message_bar</span>
+<span class="doc doc-labels">
+<small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+</span>
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">message_bar</span> <span class="o">=</span> <span class="n">qgis</span><span class="o">.</span><span class="n">gui</span><span class="o">.</span><span class="n">QgsMessageBar</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>CPLUS plugin settings class.</p>
+<p>Class which manages the CPLUS settings. Initilizes the UI, which can be accessed
+from the menu drop-down or the QGIS settings.</p>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="src.cplus_plugin.settings.CplusSettings.apply">
+<span class="doc doc-object-name doc-function-name">apply</span>
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">apply</span><span class="p">()</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>This is called on OK click in the QGIS options panel.</p>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/settings.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">"""This is called on OK click in the QGIS options panel."""</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">save_settings</span><span class="p">()</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="src.cplus_plugin.settings.CplusSettings.base_dir_exists">
+<span class="doc doc-object-name doc-function-name">base_dir_exists</span>
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">base_dir_exists</span><span class="p">()</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Checks if the provided base directory exists.
+A warning messages is presented if the directory does not exist.</p>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>bool</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Whether the base directory exists</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/settings.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">base_dir_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">"""Checks if the provided base directory exists.</span>
+<span class="sd">    A warning messages is presented if the directory does not exist.</span>
+
+<span class="sd">    :returns: Whether the base directory exists</span>
+<span class="sd">    :rtype: bool</span>
+<span class="sd">    """</span>
+
+    <span class="c1"># Clears the error messages when doing next check</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">message_bar</span><span class="o">.</span><span class="n">clearWidgets</span><span class="p">()</span>
+
+    <span class="n">folder_found</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">base_dir_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">folder_data</span><span class="o">.</span><span class="n">filePath</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">base_dir_path</span><span class="p">):</span>
+        <span class="c1"># File not found</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message_bar</span><span class="o">.</span><span class="n">pushWarning</span><span class="p">(</span>
+            <span class="s2">"CPLUS - Base directory not found: "</span><span class="p">,</span> <span class="n">base_dir_path</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">folder_found</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">return</span> <span class="n">folder_found</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="src.cplus_plugin.settings.CplusSettings.closeEvent">
+<span class="doc doc-object-name doc-function-name">closeEvent</span>
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">closeEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>When closing the setings.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>event</code></td>
+<td>
+<code><span title="qgis.PyQt.QtGui.QShowEvent">QShowEvent</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Event that has been triggered</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/settings.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">399</span>
+<span class="normal">400</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">closeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">QShowEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">"""When closing the setings.</span>
+
+<span class="sd">    :param event: Event that has been triggered</span>
+<span class="sd">    :type event: QShowEvent</span>
+<span class="sd">    """</span>
+
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">closeEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="src.cplus_plugin.settings.CplusSettings.load_settings">
+<span class="doc doc-object-name doc-function-name">load_settings</span>
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">load_settings</span><span class="p">()</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Loads the settings and displays it in the options UI</p>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/settings.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">312</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span>
+<span class="normal">330</span>
+<span class="normal">331</span>
+<span class="normal">332</span>
+<span class="normal">333</span>
+<span class="normal">334</span>
+<span class="normal">335</span>
+<span class="normal">336</span>
+<span class="normal">337</span>
+<span class="normal">338</span>
+<span class="normal">339</span>
+<span class="normal">340</span>
+<span class="normal">341</span>
+<span class="normal">342</span>
+<span class="normal">343</span>
+<span class="normal">344</span>
+<span class="normal">345</span>
+<span class="normal">346</span>
+<span class="normal">347</span>
+<span class="normal">348</span>
+<span class="normal">349</span>
+<span class="normal">350</span>
+<span class="normal">351</span>
+<span class="normal">352</span>
+<span class="normal">353</span>
+<span class="normal">354</span>
+<span class="normal">355</span>
+<span class="normal">356</span>
+<span class="normal">357</span>
+<span class="normal">358</span>
+<span class="normal">359</span>
+<span class="normal">360</span>
+<span class="normal">361</span>
+<span class="normal">362</span>
+<span class="normal">363</span>
+<span class="normal">364</span>
+<span class="normal">365</span>
+<span class="normal">366</span>
+<span class="normal">367</span>
+<span class="normal">368</span>
+<span class="normal">369</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span>
+<span class="normal">376</span>
+<span class="normal">377</span>
+<span class="normal">378</span>
+<span class="normal">379</span>
+<span class="normal">380</span>
+<span class="normal">381</span>
+<span class="normal">382</span>
+<span class="normal">383</span>
+<span class="normal">384</span>
+<span class="normal">385</span>
+<span class="normal">386</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">"""Loads the settings and displays it in the options UI"""</span>
+
+    <span class="c1"># Analysis configuration settings</span>
+
+    <span class="c1"># Report settings</span>
+    <span class="n">organization</span> <span class="o">=</span> <span class="n">settings_manager</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span>
+        <span class="n">Settings</span><span class="o">.</span><span class="n">REPORT_ORGANIZATION</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">""</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">txt_organization</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">organization</span><span class="p">)</span>
+
+    <span class="n">email</span> <span class="o">=</span> <span class="n">settings_manager</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">Settings</span><span class="o">.</span><span class="n">REPORT_CONTACT_EMAIL</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">txt_email</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">email</span><span class="p">)</span>
+
+    <span class="n">website</span> <span class="o">=</span> <span class="n">settings_manager</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">Settings</span><span class="o">.</span><span class="n">REPORT_WEBSITE</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">txt_website</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">website</span><span class="p">)</span>
+
+    <span class="n">custom_logo</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
+        <span class="n">settings_manager</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span>
+            <span class="n">Settings</span><span class="o">.</span><span class="n">REPORT_CUSTOM_LOGO</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">cb_custom_logo</span><span class="o">.</span><span class="n">setCheckState</span><span class="p">(</span><span class="n">custom_logo</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">logo_file</span><span class="o">.</span><span class="n">setEnabled</span><span class="p">(</span><span class="n">custom_logo</span><span class="p">)</span>
+
+    <span class="n">custom_logo_dir</span> <span class="o">=</span> <span class="n">settings_manager</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span>
+        <span class="n">Settings</span><span class="o">.</span><span class="n">REPORT_LOGO_DIR</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">DEFAULT_LOGO_PATH</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">logo_file</span><span class="o">.</span><span class="n">setFilePath</span><span class="p">(</span><span class="n">custom_logo_dir</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">update_logo</span><span class="p">(</span><span class="n">custom_logo</span><span class="p">,</span> <span class="n">custom_logo_dir</span><span class="p">)</span>
+
+    <span class="n">footer</span> <span class="o">=</span> <span class="n">settings_manager</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">Settings</span><span class="o">.</span><span class="n">REPORT_FOOTER</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">txt_footer</span><span class="o">.</span><span class="n">setPlainText</span><span class="p">(</span><span class="n">footer</span><span class="p">)</span>
+
+    <span class="n">disclaimer</span> <span class="o">=</span> <span class="n">settings_manager</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">Settings</span><span class="o">.</span><span class="n">REPORT_DISCLAIMER</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">txt_disclaimer</span><span class="o">.</span><span class="n">setPlainText</span><span class="p">(</span><span class="n">disclaimer</span><span class="p">)</span>
+
+    <span class="n">report_license</span> <span class="o">=</span> <span class="n">settings_manager</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">Settings</span><span class="o">.</span><span class="n">REPORT_LICENSE</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">txt_license</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">report_license</span><span class="p">)</span>
+
+    <span class="c1"># Advanced settings</span>
+    <span class="n">base_dir</span> <span class="o">=</span> <span class="n">settings_manager</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">Settings</span><span class="o">.</span><span class="n">BASE_DIR</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">folder_data</span><span class="o">.</span><span class="n">setFilePath</span><span class="p">(</span><span class="n">base_dir</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">base_dir_exists</span><span class="p">()</span>
+
+    <span class="c1"># Carbon layers coefficient</span>
+    <span class="n">coefficient</span> <span class="o">=</span> <span class="n">settings_manager</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span>
+        <span class="n">Settings</span><span class="o">.</span><span class="n">CARBON_COEFFICIENT</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">carbon_coefficient_box</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">coefficient</span><span class="p">))</span>
+
+    <span class="c1"># Pathway suitability index</span>
+    <span class="n">pathway_suitability_index</span> <span class="o">=</span> <span class="n">settings_manager</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span>
+        <span class="n">Settings</span><span class="o">.</span><span class="n">PATHWAY_SUITABILITY_INDEX</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">suitability_index_box</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">pathway_suitability_index</span><span class="p">))</span>
+
+    <span class="c1"># Snapping settings</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">snapping_group_box</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span>
+        <span class="n">settings_manager</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span>
+            <span class="n">Settings</span><span class="o">.</span><span class="n">SNAPPING_ENABLED</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">setting_type</span><span class="o">=</span><span class="nb">bool</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">snap_layer_path</span> <span class="o">=</span> <span class="n">settings_manager</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">Settings</span><span class="o">.</span><span class="n">SNAP_LAYER</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">map_layer_file_widget</span><span class="o">.</span><span class="n">setFilePath</span><span class="p">(</span><span class="n">snap_layer_path</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">rescale_values</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span>
+        <span class="n">settings_manager</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span>
+            <span class="n">Settings</span><span class="o">.</span><span class="n">RESCALE_VALUES</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">setting_type</span><span class="o">=</span><span class="nb">bool</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">resample_method_box</span><span class="o">.</span><span class="n">setCurrentIndex</span><span class="p">(</span>
+        <span class="nb">int</span><span class="p">(</span><span class="n">settings_manager</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">Settings</span><span class="o">.</span><span class="n">RESAMPLING_METHOD</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+    <span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="src.cplus_plugin.settings.CplusSettings.logo_file_changed">
+<span class="doc doc-object-name doc-function-name">logo_file_changed</span>
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">logo_file_changed</span><span class="p">()</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Called when the logo file directory changes.
+Will update the logo preview.</p>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/settings.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">logo_file_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">"""Called when the logo file directory changes.</span>
+<span class="sd">    Will update the logo preview.</span>
+<span class="sd">    """</span>
+    <span class="n">custom_logo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cb_custom_logo</span><span class="o">.</span><span class="n">checkState</span><span class="p">()</span>
+    <span class="n">custom_logo_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logo_file</span><span class="o">.</span><span class="n">filePath</span><span class="p">()</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">update_logo</span><span class="p">(</span><span class="n">custom_logo</span><span class="p">,</span> <span class="n">custom_logo_path</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="src.cplus_plugin.settings.CplusSettings.logo_file_exists">
+<span class="doc doc-object-name doc-function-name">logo_file_exists</span>
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">logo_file_exists</span><span class="p">()</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Checks if the provided logo directory exists.
+A warning messages is presented if the file cannot be found.</p>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>bool</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Whether the logo file exists</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/settings.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">logo_file_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">"""Checks if the provided logo directory exists.</span>
+<span class="sd">    A warning messages is presented if the file cannot be found.</span>
+
+<span class="sd">    :returns: Whether the logo file exists</span>
+<span class="sd">    :rtype: bool</span>
+<span class="sd">    """</span>
+    <span class="c1"># Clears the error messages when doing next check</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">message_bar</span><span class="o">.</span><span class="n">clearWidgets</span><span class="p">()</span>
+
+    <span class="n">file_found</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">custom_logo_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logo_file</span><span class="o">.</span><span class="n">filePath</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">custom_logo_path</span><span class="p">):</span>
+        <span class="c1"># File not found</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message_bar</span><span class="o">.</span><span class="n">pushWarning</span><span class="p">(</span>
+            <span class="s2">"CPLUS - Custom logo not found: "</span><span class="p">,</span> <span class="n">custom_logo_path</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">file_found</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="c1"># File found</span>
+    <span class="k">return</span> <span class="n">file_found</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="src.cplus_plugin.settings.CplusSettings.logo_state_changed">
+<span class="doc doc-object-name doc-function-name">logo_state_changed</span>
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">logo_state_changed</span><span class="p">()</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Called when the custom logo option is disabled or enabled.
+Will update the logo preview.</p>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/settings.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">logo_state_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">"""Called when the custom logo option is disabled or enabled.</span>
+<span class="sd">    Will update the logo preview.</span>
+<span class="sd">    """</span>
+    <span class="n">custom_logo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cb_custom_logo</span><span class="o">.</span><span class="n">checkState</span><span class="p">()</span>
+    <span class="n">custom_logo_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logo_file</span><span class="o">.</span><span class="n">filePath</span><span class="p">()</span>
+
+    <span class="c1"># Enables/disables the file widget for the logo directory</span>
+    <span class="k">if</span> <span class="n">custom_logo</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logo_file</span><span class="o">.</span><span class="n">setEnabled</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logo_file</span><span class="o">.</span><span class="n">setEnabled</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">update_logo</span><span class="p">(</span><span class="n">custom_logo</span><span class="p">,</span> <span class="n">custom_logo_path</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="src.cplus_plugin.settings.CplusSettings.map_layer_changed">
+<span class="doc doc-object-name doc-function-name">map_layer_changed</span>
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">map_layer_changed</span><span class="p">(</span><span class="n">layer</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Sets the file path of the selected layer in file path input</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>layer</code></td>
+<td>
+<code>QgsMapLayer</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Qgis map layer</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/settings.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">map_layer_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer</span><span class="p">):</span>
+    <span class="sd">"""Sets the file path of the selected layer in file path input</span>
+
+<span class="sd">    :param layer: Qgis map layer</span>
+<span class="sd">    :type layer: QgsMapLayer</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">layer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_layer_file_widget</span><span class="o">.</span><span class="n">setFilePath</span><span class="p">(</span><span class="n">layer</span><span class="o">.</span><span class="n">source</span><span class="p">())</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="src.cplus_plugin.settings.CplusSettings.on_settings_changed">
+<span class="doc doc-object-name doc-function-name">on_settings_changed</span>
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">on_settings_changed</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Slot raised when settings has been changed.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>
+<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Name of the setting that has changed.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr>
+<td><code>value</code></td>
+<td>
+<code><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>New value for the given settings name.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/settings.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">on_settings_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">):</span>
+    <span class="sd">"""Slot raised when settings has been changed.</span>
+
+<span class="sd">    :param name: Name of the setting that has changed.</span>
+<span class="sd">    :type name: str</span>
+
+<span class="sd">    :param value: New value for the given settings name.</span>
+<span class="sd">    :type value: Any</span>
+<span class="sd">    """</span>
+    <span class="c1"># Create NCS pathway subdirectory if base directory has changed.</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">Settings</span><span class="o">.</span><span class="n">BASE_DIR</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">value</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">FileUtils</span><span class="o">.</span><span class="n">create_ncs_pathways_dir</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">FileUtils</span><span class="o">.</span><span class="n">create_ncs_carbon_dir</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">FileUtils</span><span class="o">.</span><span class="n">create_pwls_dir</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="src.cplus_plugin.settings.CplusSettings.save_settings">
+<span class="doc doc-object-name doc-function-name">save_settings</span>
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">save_settings</span><span class="p">()</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Saves the settings.
+Also does error checking for settings (e.g if the custom logo exists).
+Will present the user with an error message if an issue is found.</p>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/settings.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span>
+<span class="normal">254</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span>
+<span class="normal">265</span>
+<span class="normal">266</span>
+<span class="normal">267</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span>
+<span class="normal">282</span>
+<span class="normal">283</span>
+<span class="normal">284</span>
+<span class="normal">285</span>
+<span class="normal">286</span>
+<span class="normal">287</span>
+<span class="normal">288</span>
+<span class="normal">289</span>
+<span class="normal">290</span>
+<span class="normal">291</span>
+<span class="normal">292</span>
+<span class="normal">293</span>
+<span class="normal">294</span>
+<span class="normal">295</span>
+<span class="normal">296</span>
+<span class="normal">297</span>
+<span class="normal">298</span>
+<span class="normal">299</span>
+<span class="normal">300</span>
+<span class="normal">301</span>
+<span class="normal">302</span>
+<span class="normal">303</span>
+<span class="normal">304</span>
+<span class="normal">305</span>
+<span class="normal">306</span>
+<span class="normal">307</span>
+<span class="normal">308</span>
+<span class="normal">309</span>
+<span class="normal">310</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">"""Saves the settings.</span>
+<span class="sd">    Also does error checking for settings (e.g if the custom logo exists).</span>
+<span class="sd">    Will present the user with an error message if an issue is found.</span>
+<span class="sd">    """</span>
+
+    <span class="c1"># Analysis configuration</span>
+
+    <span class="c1"># Report settings</span>
+    <span class="n">organization</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">txt_organization</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+    <span class="n">settings_manager</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">Settings</span><span class="o">.</span><span class="n">REPORT_ORGANIZATION</span><span class="p">,</span> <span class="n">organization</span><span class="p">)</span>
+
+    <span class="n">email</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">txt_email</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+    <span class="n">settings_manager</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">Settings</span><span class="o">.</span><span class="n">REPORT_CONTACT_EMAIL</span><span class="p">,</span> <span class="n">email</span><span class="p">)</span>
+
+    <span class="n">website</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">txt_website</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+    <span class="n">settings_manager</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">Settings</span><span class="o">.</span><span class="n">REPORT_WEBSITE</span><span class="p">,</span> <span class="n">website</span><span class="p">)</span>
+
+    <span class="n">custom_logo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cb_custom_logo</span><span class="o">.</span><span class="n">checkState</span><span class="p">()</span>
+    <span class="n">settings_manager</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">Settings</span><span class="o">.</span><span class="n">REPORT_CUSTOM_LOGO</span><span class="p">,</span> <span class="n">custom_logo</span><span class="p">)</span>
+
+    <span class="c1"># Checks if the logo file exists if custom logo is enabled</span>
+    <span class="k">if</span> <span class="n">custom_logo</span><span class="p">:</span>
+        <span class="n">custom_logo_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logo_file</span><span class="o">.</span><span class="n">filePath</span><span class="p">()</span>
+        <span class="n">settings_manager</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">Settings</span><span class="o">.</span><span class="n">REPORT_LOGO_DIR</span><span class="p">,</span> <span class="n">custom_logo_path</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">custom_logo_path</span><span class="p">):</span>
+            <span class="c1"># File not found, disable custom logo</span>
+            <span class="n">settings_manager</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">Settings</span><span class="o">.</span><span class="n">REPORT_CUSTOM_LOGO</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+            <span class="n">iface</span><span class="o">.</span><span class="n">messageBar</span><span class="p">()</span><span class="o">.</span><span class="n">pushWarning</span><span class="p">(</span>
+                <span class="s2">"CPLUS - Custom logo not found, disabled: "</span><span class="p">,</span> <span class="n">custom_logo_path</span>
+            <span class="p">)</span>
+
+    <span class="n">footer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">txt_footer</span><span class="o">.</span><span class="n">toPlainText</span><span class="p">()</span>
+    <span class="n">settings_manager</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">Settings</span><span class="o">.</span><span class="n">REPORT_FOOTER</span><span class="p">,</span> <span class="n">footer</span><span class="p">)</span>
+
+    <span class="n">disclaimer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">txt_disclaimer</span><span class="o">.</span><span class="n">toPlainText</span><span class="p">()</span>
+    <span class="n">settings_manager</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">Settings</span><span class="o">.</span><span class="n">REPORT_DISCLAIMER</span><span class="p">,</span> <span class="n">disclaimer</span><span class="p">)</span>
+
+    <span class="n">report_license</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">txt_license</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+    <span class="n">settings_manager</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">Settings</span><span class="o">.</span><span class="n">REPORT_LICENSE</span><span class="p">,</span> <span class="n">report_license</span><span class="p">)</span>
+
+    <span class="c1"># Advanced settings</span>
+    <span class="n">base_dir_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">folder_data</span><span class="o">.</span><span class="n">filePath</span><span class="p">()</span>
+    <span class="n">settings_manager</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">Settings</span><span class="o">.</span><span class="n">BASE_DIR</span><span class="p">,</span> <span class="n">base_dir_path</span><span class="p">)</span>
+
+    <span class="c1"># Carbon layers coefficient saving</span>
+    <span class="n">coefficient</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">carbon_coefficient_box</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
+    <span class="n">settings_manager</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">Settings</span><span class="o">.</span><span class="n">CARBON_COEFFICIENT</span><span class="p">,</span> <span class="n">coefficient</span><span class="p">)</span>
+
+    <span class="c1"># Pathway suitability index</span>
+    <span class="n">pathway_suitability_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">suitability_index_box</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
+    <span class="n">settings_manager</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span>
+        <span class="n">Settings</span><span class="o">.</span><span class="n">PATHWAY_SUITABILITY_INDEX</span><span class="p">,</span> <span class="n">pathway_suitability_index</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Snapping settings saving</span>
+
+    <span class="n">settings_manager</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span>
+        <span class="n">Settings</span><span class="o">.</span><span class="n">SNAPPING_ENABLED</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">snapping_group_box</span><span class="o">.</span><span class="n">isChecked</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="n">snap_layer_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_layer_file_widget</span><span class="o">.</span><span class="n">filePath</span><span class="p">()</span>
+    <span class="n">settings_manager</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">Settings</span><span class="o">.</span><span class="n">SNAP_LAYER</span><span class="p">,</span> <span class="n">snap_layer_path</span><span class="p">)</span>
+
+    <span class="n">settings_manager</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span>
+        <span class="n">Settings</span><span class="o">.</span><span class="n">RESCALE_VALUES</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rescale_values</span><span class="o">.</span><span class="n">isChecked</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="n">settings_manager</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span>
+        <span class="n">Settings</span><span class="o">.</span><span class="n">RESAMPLING_METHOD</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">resample_method_box</span><span class="o">.</span><span class="n">currentIndex</span><span class="p">()</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Checks if the provided base directory exists</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">base_dir_path</span><span class="p">):</span>
+        <span class="n">iface</span><span class="o">.</span><span class="n">messageBar</span><span class="p">()</span><span class="o">.</span><span class="n">pushCritical</span><span class="p">(</span>
+            <span class="s2">"CPLUS - Base directory not found: "</span><span class="p">,</span> <span class="n">base_dir_path</span>
+        <span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="src.cplus_plugin.settings.CplusSettings.showEvent">
+<span class="doc doc-object-name doc-function-name">showEvent</span>
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">showEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Show event being called. This will display the plugin settings.
+The stored/saved settings will be loaded.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>event</code></td>
+<td>
+<code><span title="qgis.PyQt.QtGui.QShowEvent">QShowEvent</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Event that has been triggered</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/settings.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span>
+<span class="normal">393</span>
+<span class="normal">394</span>
+<span class="normal">395</span>
+<span class="normal">396</span>
+<span class="normal">397</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">showEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">QShowEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">"""Show event being called. This will display the plugin settings.</span>
+<span class="sd">    The stored/saved settings will be loaded.</span>
+
+<span class="sd">    :param event: Event that has been triggered</span>
+<span class="sd">    :type event: QShowEvent</span>
+<span class="sd">    """</span>
+
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">showEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">load_settings</span><span class="p">()</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="src.cplus_plugin.settings.CplusSettings.update_logo">
+<span class="doc doc-object-name doc-function-name">update_logo</span>
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">update_logo</span><span class="p">(</span><span class="n">custom_logo</span><span class="p">,</span> <span class="n">logo_dir</span><span class="o">=</span><span class="n">DEFAULT_LOGO_PATH</span><span class="p">)</span>
+</code></pre></div>
+<div class="doc doc-contents">
+<p>Updates the logo preview.</p>
+<p>If the logo is not found, the default logo will be used.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>custom_logo</code></td>
+<td>
+<code>bool</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If a custom logo should be used</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr>
+<td><code>logo_dir</code></td>
+<td>
+<code>str</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The custom logo directory</p>
+</div>
+</td>
+<td>
+<code><span title="src.cplus_plugin.definitions.defaults.DEFAULT_LOGO_PATH">DEFAULT_LOGO_PATH</span></code>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>/home/samweli/Workspace/Projects/cplus-plugin/src/cplus_plugin/settings.py</code></summary>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">update_logo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">custom_logo</span><span class="p">,</span> <span class="n">logo_dir</span><span class="o">=</span><span class="n">DEFAULT_LOGO_PATH</span><span class="p">):</span>
+    <span class="sd">"""Updates the logo preview.</span>
+
+<span class="sd">    If the logo is not found, the default logo will be used.</span>
+
+<span class="sd">    :param custom_logo: If a custom logo should be used</span>
+<span class="sd">    :type custom_logo: bool</span>
+
+<span class="sd">    :param logo_dir: The custom logo directory</span>
+<span class="sd">    :type logo_dir: str</span>
+<span class="sd">    """</span>
+    <span class="n">logo_found</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">custom_logo</span><span class="p">:</span>
+        <span class="c1"># If custom logo is active, check if the provided directory exists</span>
+        <span class="n">logo_found</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logo_file_exists</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">custom_logo</span> <span class="ow">and</span> <span class="n">logo_found</span><span class="p">:</span>
+        <span class="c1"># If custom logo is enabled and the logo file exists</span>
+        <span class="n">pixmap</span> <span class="o">=</span> <span class="n">QPixmap</span><span class="p">(</span><span class="n">logo_dir</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># If custom logo is disabled. The default logo will also be used when the custom logo does not exist</span>
+        <span class="n">pixmap</span> <span class="o">=</span> <span class="n">QPixmap</span><span class="p">(</span><span class="n">DEFAULT_LOGO_PATH</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">lbl_logo_image</span><span class="o">.</span><span class="n">setPixmap</span><span class="p">(</span><span class="n">pixmap</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div></div>
+</div>
+</div>
+<footer class="col-md-12">
+<hr/>
+<p>Copyright Conservation International, 2023</p>
+<p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+</footer>
+<script>
+            var base_url = "../../../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+<script defer="" src="../../../../js/base.js"></script>
+<div aria-hidden="true" aria-labelledby="keyboardModalLabel" class="modal" id="mkdocs_keyboard_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+<button class="close" data-dismiss="modal" type="button"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>
+</div>
+<div class="modal-body">
+<table class="table">
+<thead>
+<tr>
+<th style="width: 20%;">Keys</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="help shortcut"><kbd>?</kbd></td>
+<td>Open this help</td>
+</tr>
+<tr>
+<td class="next shortcut"><kbd>n</kbd></td>
+<td>Next page</td>
+</tr>
+<tr>
+<td class="prev shortcut"><kbd>p</kbd></td>
+<td>Previous page</td>
+</tr>
+<tr>
+<td class="search shortcut"><kbd>s</kbd></td>
+<td>Search</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>
