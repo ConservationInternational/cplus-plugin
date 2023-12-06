@@ -18,6 +18,7 @@ from qgis.core import (
     QgsMessageLog,
     QgsProcessingFeedback,
     QgsProject,
+    QgsProcessing,
     QgsRasterLayer,
     QgsRectangle,
     QgsUnitTypes,
@@ -185,7 +186,7 @@ def calculate_raster_value_area(
         "INPUT": layer,
         "BAND": band_number,
         "OUTPUT_TABLE": "TEMPORARY_OUTPUT",
-        "OUTPUT_HTML_FILE": "[Skip output]",
+        "OUTPUT_HTML_FILE": QgsProcessing.TEMPORARY_OUTPUT,
     }
 
     algorithm_result = processing.run(algorithm_name, params, feedback=feedback)
@@ -223,6 +224,25 @@ def calculate_raster_value_area(
         pixel_areas[pixel_value] = pixel_value_area
 
     return pixel_areas
+
+
+def transform_extent(extent, source_crs, dest_crs):
+    """Transforms the passed extent into the destination crs
+
+     :param extent: Target extent
+    :type extent: QgsRectangle
+
+    :param source_crs: Source CRS of the passed extent
+    :type source_crs: QgsCoordinateReferenceSystem
+
+    :param dest_crs: Destination CRS
+    :type dest_crs: QgsCoordinateReferenceSystem
+    """
+
+    transform = QgsCoordinateTransform(source_crs, dest_crs, QgsProject.instance())
+    transformed_extent = transform.transformBoundingBox(extent)
+
+    return transformed_extent
 
 
 def align_rasters(
@@ -292,28 +312,21 @@ def align_rasters(
         align.setParametersFromRaster(reference_raster_source)
 
         layer = QgsRasterLayer(input_raster_source, "input_layer")
-        if extent:
-            original_extent = QgsRectangle(
-                float(extent[0]), float(extent[1]), float(extent[2]), float(extent[3])
-            )
-            source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
-        else:
-            original_extent = layer.extent()
-            source_crs = QgsCoordinateReferenceSystem(layer.crs())
 
-        destination_crs = QgsCoordinateReferenceSystem(align.destinationCrs())
-
-        transform = QgsCoordinateTransform(
-            source_crs, destination_crs, QgsProject.instance()
+        extent = transform_extent(
+            layer.extent(),
+            QgsCoordinateReferenceSystem(layer.crs()),
+            QgsCoordinateReferenceSystem(align.destinationCrs()),
         )
 
-        tranformed_extent = transform.transformBoundingBox(original_extent)
+        align.setClipExtent(extent)
 
-        align.setClipExtent(tranformed_extent)
+        log(f"Snapping clip extent {layer.extent().asWktPolygon()} \n")
 
         if not align.run():
             log(
-                f"Problem during snapping for {input_raster_source} and {reference_raster_source}"
+                f"Problem during snapping for {input_raster_source} and "
+                f"{reference_raster_source}, {align.errorMessage()}"
             )
             raise Exception(align.errorMessage())
     except Exception as e:
@@ -430,7 +443,7 @@ class FileUtils:
         if not p.exists():
             try:
                 p.mkdir()
-            except FileNotFoundError:
+            except (FileNotFoundError, OSError):
                 log(log_message)
 
     @staticmethod

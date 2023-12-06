@@ -952,23 +952,38 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.analysis_priority_layers_groups,
                 self.analysis_extent,
                 scenario,
-                self,
-                progress_dialog,
             )
 
+            progress_changed = partial(self.update_progress_bar, progress_dialog)
+            analysis_task.custom_progress_changed.connect(progress_changed)
+
+            status_message_changed = partial(
+                self.update_progress_dialog, progress_dialog
+            )
+
+            analysis_task.status_message_changed.connect(status_message_changed)
+
+            analysis_task.info_message_changed.connect(self.show_message)
+
             progress_dialog.analysis_task = analysis_task
+            progress_dialog.scenario_id = str(scenario.uuid)
 
             report_running = partial(self.on_report_running, progress_dialog)
+            report_error = partial(self.on_report_error, progress_dialog)
             report_finished = partial(self.on_report_finished, progress_dialog)
 
             # Report manager
             scenario_report_manager = report_manager
 
             scenario_report_manager.generate_started.connect(report_running)
+            scenario_report_manager.generate_error.connect(report_error)
             scenario_report_manager.generate_completed.connect(report_finished)
 
             analysis_complete = partial(
-                self.analysis_complete, analysis_task, scenario_report_manager
+                self.analysis_complete,
+                analysis_task,
+                scenario_report_manager,
+                progress_dialog,
             )
 
             analysis_task.taskCompleted.connect(analysis_complete)
@@ -995,7 +1010,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
         log(f"Main task terminated")
 
-    def analysis_complete(self, task, report_manager):
+    def analysis_complete(self, task, report_manager, progress_dialog):
         """Calls the responsible function for handling analysis results outputs
 
         :param task: Analysis task
@@ -1006,7 +1021,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
 
         self.scenario_result = task.scenario_result
-        self.scenario_results(task, report_manager)
+        self.scenario_results(task, report_manager, progress_dialog)
 
     def transform_extent(self, extent, source_crs, dest_crs):
         """Transforms the passed extent into the destination crs
@@ -1053,7 +1068,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         #     self.on_progress_dialog_cancelled()
         #     log(f"Problem cancelling report generating task, {e}")
 
-    def scenario_results(self, task, report_manager):
+    def scenario_results(self, task, report_manager, progress_dialog):
         """Called when the task ends. Sets the progress bar to 100 if it finished.
 
         :param task: Analysis task
@@ -1063,14 +1078,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type report_manager: ReportManager
         """
         if task.output is not None:
-            self.update_progress_bar(task.progress_dialog, 100)
+            self.update_progress_bar(progress_dialog, 100)
             self.scenario_result.analysis_output = task.output
             self.scenario_result.state = ScenarioState.FINISHED
-            self.post_analysis(self.scenario_result, task, report_manager)
-        else:
-            task.progress_dialog.change_status_message(
-                "No valid output from the processing results."
+            self.post_analysis(
+                self.scenario_result, task, report_manager, progress_dialog
             )
+        else:
+            status_message = "No valid output from the processing results."
+            task.set_status_message(status_message)
+
             log(f"No valid output from the processing results.")
 
     def move_layer_to_group(self, layer, group) -> None:
@@ -1090,7 +1107,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             group.insertChildNode(0, layer_clone)  # Add to top of group
             parent.removeChildNode(layer)
 
-    def post_analysis(self, scenario_result, task, report_manager):
+    def post_analysis(self, scenario_result, task, report_manager, progress_dialog):
         """Handles analysis outputs from the final analysis results.
         Adds the resulting scenario raster to the canvas with styling.
         Adds each of the implementation models to the canvas with styling.
@@ -1247,7 +1264,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.move_layer_to_group(added_im_weighted_layer, im_weighted_group)
 
             # Initiate report generation
-            self.run_report(task.progress_dialog, report_manager)
+            self.run_report(progress_dialog, report_manager)
         else:
             # Reinitializes variables if processing were cancelled by the user
             # Not doing this breaks the processing if a user tries to run
@@ -1502,6 +1519,21 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         progress_dialog.change_status_message(
             tr("Generating report for the analysis output")
         )
+
+    def on_report_error(self, progress_dialog, message: str):
+        """Slot raised when report task error has occured.
+
+        :param progress_dialog: Dialog responsible for showing
+         all the analysis operations progress.
+        :type progress_dialog: ProgressDialog
+        """
+        progress_dialog.report_running = True
+        progress_dialog.change_status_message(
+            tr("Error generating report, see logs for more info.")
+        )
+        log(message)
+
+        self.run_scenario_btn.setEnabled(True)
 
     def reset_reporting_feedback(self, progress_dialog):
         """Creates a new reporting feedback object and reconnects

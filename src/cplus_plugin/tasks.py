@@ -6,6 +6,8 @@ import datetime
 
 from pathlib import Path
 
+from qgis.PyQt import QtCore, QtGui
+
 from qgis.core import (
     Qgis,
     QgsApplication,
@@ -59,6 +61,11 @@ from qgis.core import QgsTask
 class ScenarioAnalysisTask(QgsTask):
     """Prepares and runs the scenario analysis"""
 
+    status_message_changed = QtCore.pyqtSignal(str)
+    info_message_changed = QtCore.pyqtSignal(str, Qgis)
+
+    custom_progress_changed = QtCore.pyqtSignal(float)
+
     def __init__(
         self,
         analysis_scenario_name,
@@ -67,8 +74,6 @@ class ScenarioAnalysisTask(QgsTask):
         analysis_priority_layers_groups,
         analysis_extent,
         scenario,
-        main_dock,
-        progress_dialog,
     ):
         super().__init__()
         self.analysis_scenario_name = analysis_scenario_name
@@ -79,9 +84,6 @@ class ScenarioAnalysisTask(QgsTask):
         self.analysis_extent = analysis_extent
         self.analysis_extent_string = None
 
-        self.main_dock = main_dock
-        self.progress_dialog = progress_dialog
-
         self.analysis_weighted_ims = []
         self.scenario_result = None
         self.scenario_directory = None
@@ -89,6 +91,9 @@ class ScenarioAnalysisTask(QgsTask):
         self.success = True
         self.output = None
         self.error = None
+        self.status_message = None
+
+        self.info_message = None
 
         self.processing_cancelled = False
         self.feedback = QgsProcessingFeedback()
@@ -148,18 +153,29 @@ class ScenarioAnalysisTask(QgsTask):
         log(f"Original area of interest extent: {transformed_extent.asWktPolygon()} \n")
         log(f"Snapped area of interest extent {snapped_extent.asWktPolygon()} \n")
 
+        # Run pathways layers snapping using a specified reference layer
+
+        snapping_enabled = settings_manager.get_value(
+            Settings.SNAPPING_ENABLED, default=False, setting_type=bool
+        )
+        reference_layer = settings_manager.get_value(Settings.SNAP_LAYER, default="")
+        reference_layer_path = Path(reference_layer)
+        if (
+            snapping_enabled
+            and os.path.exists(reference_layer)
+            and reference_layer_path.is_file()
+        ):
+            self.snap_analyzed_pathways(
+                self.analysis_implementation_models,
+                self.analysis_priority_layers_groups,
+                extent_string,
+            )
+
         # Preparing all the pathways by adding them together with
         # their carbon layers before creating
         # their respective models.
 
         self.run_pathways_analysis(
-            self.analysis_implementation_models,
-            self.analysis_priority_layers_groups,
-            extent_string,
-        )
-
-        # Run pathways layers snapping using a specified reference layer
-        self.snap_analyzed_pathways(
             self.analysis_implementation_models,
             self.analysis_priority_layers_groups,
             extent_string,
@@ -221,17 +237,26 @@ class ScenarioAnalysisTask(QgsTask):
         else:
             log(f"Task result {result}Error from task {self.error}")
 
-    def update_progress_bar(self, value):
-        """Sets the value of the progress bar
+    def set_status_message(self, message):
+        self.status_message = message
+        self.status_message_changed.emit(self.status_message)
+
+    def set_info_message(self, message, level=Qgis.Info):
+        self.info_message = message
+        self.info_message_changed.emit(self.info_message, level)
+
+    def set_custom_progress(self, value):
+        self.custom_progress = value
+        self.custom_progress_changed.emit(self.custom_progress)
+
+    def update_progress(self, value):
+        """Sets the value of the task progress
 
         :param value: Value to be set on the progress bar
         :type value: float
         """
-        if self.main_dock and not self.processing_cancelled:
-            try:
-                self.main_dock.update_progress_bar(self.progress_dialog, int(value))
-            except RuntimeError:
-                log(tr("Error setting value to a progress bar"), notify=False)
+        if not self.processing_cancelled:
+            self.set_custom_progress(value)
         else:
             self.feedback = QgsProcessingFeedback()
             self.processing_context = QgsProcessingContext()
@@ -280,6 +305,53 @@ class ScenarioAnalysisTask(QgsTask):
 
         return target_extent
 
+    def replace_nodata(self, layer_path, output_path, nodata_value):
+        self.feedback = QgsProcessingFeedback()
+        self.feedback.progressChanged.connect(self.update_progress)
+
+        alg_params = {
+            "COPY_SUBDATASETS": False,
+            "DATA_TYPE": 6,  # Float32
+            "EXTRA": "",
+            "INPUT": layer_path,
+            "NODATA": None,
+            "OPTIONS": "",
+            "TARGET_CRS": None,
+            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+        }
+        translate_output = processing.run(
+            "gdal:translate",
+            alg_params,
+            context=self.processing_context,
+            feedback=self.feedback,
+            is_child_algorithm=True,
+        )
+
+        alg_params = {
+            "DATA_TYPE": 0,  # Use Input Layer Data Type
+            "EXTRA": "",
+            "INPUT": translate_output["OUTPUT"],
+            "MULTITHREADING": False,
+            "NODATA": nodata_value,
+            "OPTIONS": "",
+            "RESAMPLING": 0,  # Nearest Neighbour
+            "SOURCE_CRS": None,
+            "TARGET_CRS": None,
+            "TARGET_EXTENT": None,
+            "TARGET_EXTENT_CRS": None,
+            "TARGET_RESOLUTION": None,
+            "OUTPUT": output_path,
+        }
+        outputs = processing.run(
+            "gdal:warpreproject",
+            alg_params,
+            context=self.processing_context,
+            feedback=self.feedback,
+            is_child_algorithm=True,
+        )
+
+        return outputs is not None
+
     def run_pathways_analysis(self, models, priority_layers_groups, extent):
         """Runs the required model pathways analysis on the passed
          implementation models. The analysis involves adding the pathways
@@ -301,17 +373,14 @@ class ScenarioAnalysisTask(QgsTask):
         if self.processing_cancelled:
             return False
 
-        self.main_dock.update_progress_dialog(
-            self.progress_dialog,
-            tr("Adding models pathways with carbon layers"),
-        )
+        self.set_status_message(tr("Adding models pathways with carbon layers"))
 
         pathways = []
         models_paths = []
 
         for model in models:
             if not model.pathways and (model.path is None or model.path is ""):
-                self.main_dock.show_message(
+                self.set_info_message(
                     tr(
                         f"No defined model pathways or a"
                         f" model layer for the model {model.name}"
@@ -409,7 +478,7 @@ class ScenarioAnalysisTask(QgsTask):
 
             self.feedback = QgsProcessingFeedback()
 
-            self.feedback.progressChanged.connect(self.update_progress_bar)
+            self.feedback.progressChanged.connect(self.update_progress)
 
             if self.processing_cancelled:
                 return False
@@ -426,7 +495,8 @@ class ScenarioAnalysisTask(QgsTask):
         return True
 
     def snap_analyzed_pathways(self, models, priority_layers_groups, extent):
-        """Snaps the passed pathways layers to align with the reference layer set on the settings
+        """Snaps the passed models pathways, carbon layers and priority layers
+         to align with the reference layer set on the settings
         manager.
 
         :param pathways: List of all the available pathways
@@ -445,11 +515,18 @@ class ScenarioAnalysisTask(QgsTask):
             # Will not proceed if processing has been cancelled by the user
             return False
 
+        self.set_status_message(
+            tr(
+                "Snapping the selected models pathways, "
+                "carbon layers and priority layers"
+            )
+        )
+
         pathways = []
 
         for model in models:
             if not model.pathways and (model.path is None or model.path is ""):
-                self.main_dock.show_message(
+                self.set_info_message(
                     tr(
                         f"No defined model pathways or a"
                         f" model layer for the model {model.name}"
@@ -475,25 +552,171 @@ class ScenarioAnalysisTask(QgsTask):
             Settings.RESAMPLING_METHOD, default=0
         )
 
-        for pathway in pathways:
-            path = Path(pathway.path)
-            directory = path.parent
+        if pathways is not None and len(pathways) > 0:
+            snapped_pathways_directory = os.path.join(
+                self.scenario_directory, "pathways"
+            )
 
-            if self.processing_cancelled:
-                return False
+            FileUtils.create_new_dir(snapped_pathways_directory)
 
-            input_result_path, reference_result_path = align_rasters(
-                pathway.path,
+            for pathway in pathways:
+                path = Path(pathway.path)
+                directory = path.parent
+
+                pathway_layer = QgsRasterLayer(pathway.path, pathway.name)
+                nodata_value = pathway_layer.dataProvider().sourceNoDataValue(1)
+
+                if self.processing_cancelled:
+                    return False
+
+                # carbon layer snapping
+
+                log(f"Snapping carbon layers from {pathway.name} pathway")
+
+                if pathway.carbon_paths is not None and len(pathway.carbon_paths) > 0:
+                    snapped_carbon_directory = os.path.join(
+                        self.scenario_directory, "carbon_layers"
+                    )
+
+                    FileUtils.create_new_dir(snapped_carbon_directory)
+
+                    snapped_carbon_paths = []
+
+                    for carbon_path in pathway.carbon_paths:
+                        carbon_layer = QgsRasterLayer(
+                            carbon_path, f"{str(uuid.uuid4())[:4]}"
+                        )
+                        nodata_value_carbon = (
+                            carbon_layer.dataProvider().sourceNoDataValue(1)
+                        )
+
+                        carbon_output_path = self.snap_layer(
+                            carbon_path,
+                            reference_layer_path,
+                            extent,
+                            snapped_carbon_directory,
+                            rescale_values,
+                            resampling_method,
+                            nodata_value_carbon,
+                        )
+
+                        if carbon_output_path:
+                            snapped_carbon_paths.append(carbon_output_path)
+                        else:
+                            snapped_carbon_paths.append(carbon_path)
+
+                    pathway.carbon_paths = snapped_carbon_paths
+
+                log(f"Snapping {pathway.name} pathway layer")
+
+                # Pathway snapping
+
+                output_path = self.snap_layer(
+                    pathway.path,
+                    reference_layer_path,
+                    extent,
+                    snapped_pathways_directory,
+                    rescale_values,
+                    resampling_method,
+                    nodata_value,
+                )
+                if output_path:
+                    pathway.path = output_path
+
+        log(f"Snapping priority weighting layers from model {model.name}")
+
+        snapped_priority_directory = os.path.join(
+            self.scenario_directory, "priority_layers"
+        )
+
+        FileUtils.create_new_dir(snapped_priority_directory)
+
+        priority_layers = []
+        for priority_layer in model.priority_layers:
+            path = priority_layer.get("path")
+            if not Path(path).exists():
+                continue
+
+            layer = QgsRasterLayer(path, f"{str(uuid.uuid4())[:4]}")
+            nodata_value_priority = layer.dataProvider().sourceNoDataValue(1)
+
+            priority_output_path = self.snap_layer(
+                path,
                 reference_layer_path,
                 extent,
-                directory,
+                snapped_priority_directory,
                 rescale_values,
                 resampling_method,
+                nodata_value_priority,
             )
-            if input_result_path is not None:
-                pathway.path = input_result_path
+
+            if priority_output_path:
+                priority_layer["path"] = priority_output_path
+
+            priority_layers.append(priority_layer)
+
+        model.priority_layers = priority_layers
 
         return True
+
+    def snap_layer(
+        self,
+        input_path,
+        reference_path,
+        extent,
+        directory,
+        rescale_values,
+        resampling_method,
+        nodata_value,
+    ):
+        """Snaps the passed input layer using the reference layer and updates
+        the snap output no data value to be the same as the original input layer
+        no data value.
+
+        :param input_path: Input layer source
+        :type input_path: str
+
+        :param reference_path: Reference layer source
+        :type reference_path: str
+
+        :param extent: Clip extent
+        :type extent: list
+
+        :param directory: Absolute path of the output directory for the snapped
+        layers
+        :type directory: str
+
+        :param rescale_values: Whether to rescale pixel values
+        :type rescale_values: bool
+
+        :param resample_method: Method to use when resampling
+        :type resample_method: QgsAlignRaster.ResampleAlg
+
+        :param nodata_value: Original no data value of the input layer
+        :type nodata_value: float
+
+        """
+
+        input_result_path, reference_result_path = align_rasters(
+            input_path,
+            reference_path,
+            extent,
+            directory,
+            rescale_values,
+            resampling_method,
+        )
+
+        if input_result_path is not None:
+            result_path = Path(input_result_path)
+
+            directory = result_path.parent
+            name = result_path.stem
+
+            output_path = os.path.join(directory, f"{name}_final.tif")
+
+            self.replace_nodata(input_result_path, output_path, nodata_value)
+
+        return output_path
 
     def run_pathways_normalization(self, models, priority_layers_groups, extent):
         """Runs the normalization on the models pathways layers,
@@ -520,17 +743,14 @@ class ScenarioAnalysisTask(QgsTask):
             # Will not proceed if processing has been cancelled by the user
             return False
 
-        self.main_dock.update_progress_dialog(
-            self.progress_dialog,
-            tr("Normalization of pathways"),
-        )
+        self.set_status_message(tr("Normalization of pathways"))
 
         pathways = []
         models_paths = []
 
         for model in models:
             if not model.pathways and (model.path is None or model.path is ""):
-                self.main_dock.show_message(
+                self.set_info_message(
                     tr(
                         f"No defined model pathways or a"
                         f" model layer for the model {model.name}"
@@ -616,7 +836,7 @@ class ScenarioAnalysisTask(QgsTask):
 
             self.feedback = QgsProcessingFeedback()
 
-            self.feedback.progressChanged.connect(self.update_progress_bar)
+            self.feedback.progressChanged.connect(self.update_progress)
 
             if self.processing_cancelled:
                 return False
@@ -650,9 +870,8 @@ class ScenarioAnalysisTask(QgsTask):
             # Will not proceed if processing has been cancelled by the user
             return False
 
-        self.main_dock.update_progress_dialog(
-            self.progress_dialog,
-            tr("Creating implementation models layers from pathways"),
+        self.set_status_message(
+            tr("Creating implementation models layers from pathways")
         )
 
         for model in models:
@@ -664,7 +883,7 @@ class ScenarioAnalysisTask(QgsTask):
 
             layers = []
             if not model.pathways and (model.path is None and model.path is ""):
-                self.main_dock.show_message(
+                self.set_info_message(
                     tr(
                         f"No defined model pathways or a"
                         f" model layer for the model {model.name}"
@@ -712,7 +931,7 @@ class ScenarioAnalysisTask(QgsTask):
 
             feedback = QgsProcessingFeedback()
 
-            feedback.progressChanged.connect(self.update_progress_bar)
+            feedback.progressChanged.connect(self.update_progress)
 
             if self.processing_cancelled:
                 return False
@@ -752,15 +971,12 @@ class ScenarioAnalysisTask(QgsTask):
             # Will not proceed if processing has been cancelled by the user
             return False
 
-        self.main_dock.update_progress_dialog(
-            self.progress_dialog,
-            tr("Normalization of the implementation models"),
-        )
+        self.set_status_message(tr("Normalization of the implementation models"))
 
         for model in models:
             if model.path is None or model.path is "":
                 if not self.processing_cancelled:
-                    self.main_dock.show_message(
+                    self.set_info_message(
                         tr(
                             f"Problem when running models normalization, "
                             f"there is no map layer for the model {model.name}"
@@ -773,7 +989,7 @@ class ScenarioAnalysisTask(QgsTask):
                     )
                 else:
                     # If the user cancelled the processing
-                    self.main_dock.show_message(
+                    self.set_info_message(
                         tr(f"Processing has been cancelled by the user."),
                         level=Qgis.Critical,
                     )
@@ -842,7 +1058,7 @@ class ScenarioAnalysisTask(QgsTask):
 
             feedback = QgsProcessingFeedback()
 
-            feedback.progressChanged.connect(self.update_progress_bar)
+            feedback.progressChanged.connect(self.update_progress)
 
             if self.processing_cancelled:
                 return False
@@ -874,10 +1090,7 @@ class ScenarioAnalysisTask(QgsTask):
         if self.processing_cancelled:
             return [], False
 
-        self.main_dock.update_progress_dialog(
-            self.progress_dialog,
-            tr(f"Weighting implementation models"),
-        )
+        self.set_status_message(tr(f"Weighting implementation models"))
 
         weighted_models = []
 
@@ -885,7 +1098,7 @@ class ScenarioAnalysisTask(QgsTask):
             model = clone_implementation_model(original_model)
 
             if model.path is None or model.path is "":
-                self.main_dock.show_message(
+                self.set_info_message(
                     tr(
                         f"Problem when running models weighting, "
                         f"there is no map layer for the model {model.name}"
@@ -989,7 +1202,7 @@ class ScenarioAnalysisTask(QgsTask):
 
             feedback = QgsProcessingFeedback()
 
-            feedback.progressChanged.connect(self.update_progress_bar)
+            feedback.progressChanged.connect(self.update_progress)
 
             if self.processing_cancelled:
                 return [], False
@@ -1018,13 +1231,11 @@ class ScenarioAnalysisTask(QgsTask):
         if self.processing_cancelled:
             return False
 
-        self.main_dock.update_progress_dialog(
-            self.progress_dialog, tr("Updating weighted implementation models values")
-        )
+        self.set_status_message(tr("Updating weighted implementation models values"))
 
         for model in models:
             if model.path is None or model.path is "":
-                self.main_dock.show_message(
+                self.set_info_message(
                     tr(
                         f"Problem when running models updates, "
                         f"there is no map layer for the model {model.name}"
@@ -1068,7 +1279,7 @@ class ScenarioAnalysisTask(QgsTask):
 
             feedback = QgsProcessingFeedback()
 
-            feedback.progressChanged.connect(self.update_progress_bar)
+            feedback.progressChanged.connect(self.update_progress)
 
             if self.processing_cancelled:
                 return False
@@ -1108,11 +1319,7 @@ class ScenarioAnalysisTask(QgsTask):
         try:
             layers = {}
 
-            self.progress_dialog.scenario_id = str(self.scenario.uuid)
-
-            self.main_dock.update_progress_dialog(
-                self.progress_dialog, tr("Calculating the highest position")
-            )
+            self.set_status_message(tr("Calculating the highest position"))
 
             for model in self.analysis_weighted_ims:
                 if model.path is not None and model.path is not "":
@@ -1177,7 +1384,7 @@ class ScenarioAnalysisTask(QgsTask):
 
             self.feedback = QgsProcessingFeedback()
 
-            self.feedback.progressChanged.connect(self.update_progress_bar)
+            self.feedback.progressChanged.connect(self.update_progress)
 
             if self.processing_cancelled:
                 return False
