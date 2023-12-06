@@ -1,8 +1,8 @@
 # See mkdocs base and the create-mkdocs* 
 # scripts for how this is used
 site_name: CPLUS
-site_description: 'A QGIS Plugin.'
-site_author: 'Kartoza (Pty) Ltd.'
+site_description: 'Climate Positive Land Use Strategy (CPLUS) decision support tool.'
+site_author: 'Conservation International'
 docs_dir: src/
 repo_name: 'kartoza/cplus-plugin'
 repo_url: 'https://github.com/kartoza/cplus-plugin'

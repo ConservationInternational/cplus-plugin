@@ -218,7 +218,7 @@ table {
       See https://www.quackit.com/css/at-rules/css_bottom-left-corner_at-rule.cfm
       for a nice explanation of the margin properties for css print layouts */
     @top-left-corner {
-        background: url('file://[BASE_FOLDER]/templates/qgis-logo.png');
+        background: url('file://[BASE_FOLDER]/templates/logo.svg');
         background-repeat: no-repeat;
         background-position: 0% 0%;
         background-size: contain;
@@ -226,7 +226,7 @@ table {
         content: " ";
     }
     @top-left {
-        content: 'QGIS Animation Workbench';
+        content: '';
     }
     @top-center {
         /* Idiosyncratic note: The top center section is the 
@@ -255,7 +255,7 @@ table {
         /* BASE FOLDER token will be replaced at compile time by our bash script. */
         background: url('file://[BASE_FOLDER]/templates/header.svg');
         /* Hack needed or image will not show */
-        content: " ";
+        content: "Climate Positive Land Use Strategy (CPLUS) decision support tool";
     }
     @top-right {
         min-width: 100mm;
