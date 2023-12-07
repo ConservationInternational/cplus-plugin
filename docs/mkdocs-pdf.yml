@@ -2,6 +2,19 @@
 # scripts for how this is used
 
 plugins:
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [../]
+          import:
+            - https://docs.python.org/3/objects.inv
+            - https://mkdocstrings.github.io/autorefs/objects.inv
+          options:
+            docstring_style: sphinx
+            separate_signature: true
+            merge_init_into_class: true
+            docstring_options:
+              ignore_init_summary: true
   - with-pdf:
       # Generate the whole site as a single PDF
       # Full details on this plugin here:

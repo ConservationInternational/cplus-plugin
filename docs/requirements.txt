@@ -18,4 +18,6 @@ mkdocstrings-python == 1.6.0
 mkdocs-video == 1.1.0
 mkdocs == 1.2.3
 pymdown-extensions == 9.1
+# Using more recent version of pygments will give an 'outfile' error when building
+pygments == 2.11.2
 jinja2 == 3.0.3
