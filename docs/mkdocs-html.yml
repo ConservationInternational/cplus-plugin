@@ -8,6 +8,7 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
+          paths: [../]
           import:
             - https://docs.python.org/3/objects.inv
             - https://mkdocstrings.github.io/autorefs/objects.inv

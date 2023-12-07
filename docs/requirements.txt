@@ -2,7 +2,6 @@
 mkdocs-with-pdf
 mdx_gh_links
 mkdocs-pdf-export-plugin
-mkdocstrings-python
 mkdocs-redirects
 mkdocs-enumerate-headings-plugin
 mkdocs-git-revision-date-localized-plugin
