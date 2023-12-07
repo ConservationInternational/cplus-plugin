@@ -306,6 +306,26 @@ class ScenarioAnalysisTask(QgsTask):
         return target_extent
 
     def replace_nodata(self, layer_path, output_path, nodata_value):
+        """Adds nodata value info into the layer available
+        in the passed layer_path and save the layer in the passed output_path
+        path.
+
+        The addition will replace any current nodata value available in
+        the input layer.
+
+        :param layer_path: Input layer path
+        :type layer_path: str
+
+        :param output_path: Output layer path
+        :type output_path: str
+
+        :param nodata_value: Nodata value to be used
+        :type output_path: int
+
+        :returns: If the process was successful
+        :rtype: bool
+
+        """
         self.feedback = QgsProcessingFeedback()
         self.feedback.progressChanged.connect(self.update_progress)
 
