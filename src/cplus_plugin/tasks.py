@@ -332,7 +332,7 @@ class ScenarioAnalysisTask(QgsTask):
             "EXTRA": "",
             "INPUT": translate_output["OUTPUT"],
             "MULTITHREADING": False,
-            "NODATA": nodata_value,
+            "NODATA": -9999,
             "OPTIONS": "",
             "RESAMPLING": 0,  # Nearest Neighbour
             "SOURCE_CRS": None,
