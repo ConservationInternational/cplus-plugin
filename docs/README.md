@@ -29,13 +29,13 @@ which will create a seamless entry into the development environment.
 You need to have a local copy of this project in order to build the documentation. To do that you can do:
 
 ```
-git clone https://github.com/timlinux/QGISAnimationWorkbench.git
+git clone https://github.com/kartoza/cplus-plugin.git
 ```
 
 or
 
 ```
-git clone git@github.com:timlinux/QGISAnimationWorkbench.git
+git clone git@github.com:kartoza/cplus-plugin.git
 ```
 
 ### Open the project in your terminal
@@ -43,7 +43,7 @@ git clone git@github.com:timlinux/QGISAnimationWorkbench.git
 Open your favourite terminal and enter into this documentation folder:
 
 ```
-cd QGISAnimationWorkbench/docs/
+cd QPLUS/docs/
 ```
 
 ### Install the build environment
@@ -63,7 +63,7 @@ When the setup process completes, you will see something like this in your shell
 
 
 ```
-direnv: loading ~/dev/python/QGISAnimationWorkbench/docs/.envrc
+direnv: loading ~/dev/python/QPLUS/docs/.envrc
 direnv: using nix
 Using venvShellHook
 Executing venvHook
@@ -199,7 +199,7 @@ mkdocs serve
 ```
 
 By default the mkdocs serve will generate the PDF into the ``pdfs`` folder as
-file [QGISAnimationWorkbench.pdf](pdfs/CPLUS.pdf).
+file [QPLUS.pdf](pdfs/CPLUS.pdf).
 
 In your PDF viewer you can then peruse the generated document. To stop the server,
 return to your shell and press ``Crtl-c``.
