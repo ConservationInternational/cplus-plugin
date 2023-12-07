@@ -42,6 +42,8 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._on_selection_changed
         )
 
+        self.txt_description.textChanged.connect(self.description_changed)
+
         self.buttonBox.accepted.connect(self._on_accepted)
         self.btn_add_layer.clicked.connect(self._on_select_file)
 
@@ -108,6 +110,16 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         :rtype: QgsRasterLayer
         """
         return self._layer
+
+    def description_changed(self):
+        """Slot to handle description text changes, it currently
+        limits the number of characters to only be 300 characters
+        per description
+        """
+
+        description = self.txt_description.toPlainText()
+        if len(description) > 300:
+            self.txt_description.setPlainText(description[:300])
 
     def _update_controls(self):
         """Update controls with data from the NcsPathway object."""
