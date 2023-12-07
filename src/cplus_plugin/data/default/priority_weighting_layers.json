@@ -2,52 +2,59 @@
   "layers" :[
     {
       "uuid": "c931282f-db2d-4644-9786-6720b3ab206a",
-      "name": "social_int_clip_norm",
-      "description": "Placeholder text for social_int_clip_norm",
+      "name": "Social norm",
+      "description": "Placeholder text for social norm ",
       "selected": true,
       "path": "social_int_clip_norm.tif"
     },
     {
       "uuid": "f5687ced-af18-4cfc-9bc3-8006e40420b6",
-      "name": "social_int_clip_norm_inverse",
-      "description": "Placeholder text for social_int_clip_norm_inverse",
+      "name": "Social norm inverse",
+      "description": "Placeholder text for social norm inverse",
       "selected": false,
       "path": "social_int_clip_norm_inverse.tif"
     },
     {
       "uuid": "fef3c7e4-0cdf-477f-823b-a99da42f931e",
-      "name": "cccombo_clip_norm_inverse",
-      "description": "Placeholder text for cccombo_clip_norm_inverse",
+      "name": "Climate Resilience norm inverse",
+      "description": "Placeholder text for climate resilience",
       "selected": false,
       "path": "cccombo_clip_norm_inverse.tif"
     },
     {
       "uuid": "fce41934-5196-45d5-80bd-96423ff0e74e",
-      "name": "cccombo_clip_norm",
-      "description": "Placeholder text for cccombo_clip_norm",
+      "name": "Climate Resilience norm",
+      "description": "Placeholder text for climate resilience norm",
       "selected": false,
       "path": "cccombo_clip_norm.tif"
     },
     {
       "uuid": "88c1c7dd-c5d1-420c-a71c-a5c595c1c5be",
-      "name": "ei_all_gknp_clip_norm",
-      "description": "Placeholder text for ei_all_gknp_clip_norm",
+      "name": "Ecological Infrastructure",
+      "description": "Placeholder text for ecological infrastructure",
+      "selected": false,
+      "path": "ei_all_gknp_clip_norm.tif"
+    },
+    {
+      "uuid": "3e0c7dff-51f2-48c5-a316-15d9ca2407cb",
+      "name": "Ecological Infrastructure inverse",
+      "description": "Placeholder text for ecological infrastructure inverse",
       "selected": false,
       "path": "ei_all_gknp_clip_norm.tif"
     },
     {
       "uuid": "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
-      "name": "biocombine_clip_norm",
-      "description": "Placeholder text for biocombine_clip_norm",
+      "name": "Biodiversity norm",
+      "description": "Placeholder text for biodiversity norm",
       "selected": false,
       "path": "biocombine_clip_norm.tif"
     },
     {
-      "uuid": "2f76304a-bb73-442c-9c02-ff9945389a20",
-      "name": "Policy",
-      "description": "Placeholder text for Policy",
+      "uuid": "c2dddd0f-a430-444a-811c-72b987b5e8ce",
+      "name": "Biodiversity norm inverse",
+      "description": "Placeholder text for biodiversity norm inverse",
       "selected": false,
-      "path": "Policy.tif"
+      "path": "biocombine_clip_norm_inverse.tif"
     }
   ]
 }
