@@ -350,7 +350,15 @@ def create_priority_layers():
             layer["groups"] = groups
             layer["user_defined"] = False
             new_uuids.append(layer["uuid"])
-            if not settings_manager.get_priority_layer(layer["uuid"]):
+
+            plugin_priority_layer = settings_manager.get_priority_layer(layer["uuid"])
+
+            if plugin_priority_layer is not None:
+                plugin_priority_layer["name"] = layer["name"]
+                plugin_priority_layer["description"] = layer["description"]
+                plugin_priority_layer["path"] = layer["path"]
+                settings_manager.save_priority_layer(plugin_priority_layer)
+            else:
                 settings_manager.save_priority_layer(layer)
 
         for layer in settings_manager.get_priority_layers():
