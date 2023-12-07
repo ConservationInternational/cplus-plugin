@@ -29,7 +29,7 @@ nav:
       - API:
           - Core:
             - Main: developer/api/core/api_main.md
-            - Configuration: developer/core/api/api_conf.md
+            - Configuration: developer/api/core/api_conf.md
             - Settings: developer/api/core/api_settings.md
             - Utilities: developer/api/core/api_utils.md
             - Reports:
@@ -52,6 +52,7 @@ nav:
             - Map repeat item widget: developer/api/gui/api_map_repeat_item_widget.md
             - Model component widget: developer/api/gui/api_model_component_widget.md
             - NCS Pathway editor: developer/api/gui/api_ncs_pathway_editor.md
+            - Pixel values: developer/api/gui/api_pixel_value_editor.md
             - Priority layer dialog: developer/api/gui/api_priority_layer.md
             - Priority group: developer/api/gui/api_priority_group.md
             - Progress dialog: developer/api/gui/api_progress_dialog.md
