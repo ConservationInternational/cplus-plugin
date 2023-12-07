@@ -84,6 +84,8 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         help_icon = FileUtils.get_icon("mActionHelpContents.svg")
         self.btn_help.setIcon(help_icon)
 
+        self.txt_description.textChanged.connect(self.description_changed)
+
     @property
     def implementation_model(self) -> ImplementationModel:
         """Returns a reference to the ImplementationModel object.
@@ -115,6 +117,16 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         :rtype: QgsRasterLayer
         """
         return self._layer
+
+    def description_changed(self):
+        """Slot to handle description text changes, it currently
+        limits the number of characters to only be 300 characters
+        per description
+        """
+
+        description = self.txt_description.toPlainText()
+        if len(description) > 300:
+            self.txt_description.setPlainText(description[:300])
 
     def _update_controls(self):
         """Update controls with data from the ImplementationModel

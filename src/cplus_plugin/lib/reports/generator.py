@@ -26,6 +26,7 @@ from qgis.core import (
     QgsLayoutPoint,
     QgsLayoutSize,
     QgsMapLayerLegendUtils,
+    QgsNumericFormatContext,
     QgsPrintLayout,
     QgsProcessingFeedback,
     QgsProject,
@@ -240,6 +241,7 @@ class ReportGenerator:
         self._scenario_layer = None
         self._area_processing_feedback = None
         self._implementation_models_area = {}
+        self._pixel_area_info = {}
 
         if self._feedback:
             self._feedback.canceled.connect(self._on_feedback_cancelled)
@@ -667,6 +669,75 @@ class ReportGenerator:
         }
         symbol = QgsFillSymbol.createSimple(symbol_props)
         im_shape.setSymbol(symbol)
+
+        # Area details
+
+        area_shape_item = QgsLayoutItemShape(self._layout)
+        self._layout.addLayoutItem(area_shape_item)
+        area_shape_item.setShapeType(QgsLayoutItemShape.Shape.Ellipse)
+        area_shape_ref_point = QgsLayoutPoint(
+            pos_x + 0.05 * width,
+            pos_y + map_height - (0.75 * height),
+            self._layout.units(),
+        )
+
+        area_shape_item.attemptMove(area_shape_ref_point, True, False, page)
+        area_shape_item.attemptResize(
+            QgsLayoutSize(0.18 * width, 0.18 * width, self._layout.units())
+        )
+        symbol_props_area = {
+            "color": "#ffffff",
+            "style": "solid",
+            "outline_style": "solid",
+            "line_color": "#b2df8a",
+            "outline_width": "1.2",
+        }
+        symbol = QgsFillSymbol.createSimple(symbol_props_area)
+        area_shape_item.setSymbol(symbol)
+
+        # Area title name label
+
+        area_name_lbl = QgsLayoutItemLabel(self._layout)
+        self._layout.addLayoutItem(area_name_lbl)
+        area_name_lbl.setText("Area")
+        self.set_label_font(area_name_lbl, 10)
+
+        name_lbl_ref_point = QgsLayoutPoint(
+            pos_x + (0.105 * width),
+            pos_y + map_height - (0.71 * height),
+            self._layout.units(),
+        )
+        area_name_lbl.attemptMove(name_lbl_ref_point, True, False, page)
+        area_name_lbl.attemptResize(
+            QgsLayoutSize(0.05 * width, 0.05 * height, self._layout.units())
+        )
+
+        # Area size label
+
+        area_size_lbl = QgsLayoutItemLabel(self._layout)
+        self._layout.addLayoutItem(area_size_lbl)
+
+        area_size = self._implementation_models_area[str(imp_model.uuid)]
+
+        number_format = QgsBasicNumericFormat()
+        number_format.setThousandsSeparator(",")
+        number_format.setShowTrailingZeros(True)
+        number_format.setNumberDecimalPlaces(self.AREA_DECIMAL_PLACES)
+
+        area_size_lbl.setText(
+            number_format.formatDouble(area_size, QgsNumericFormatContext())
+        )
+        self.set_label_font(area_size_lbl, 8)
+
+        size_lbl_ref_point = QgsLayoutPoint(
+            pos_x + (0.09 * width),
+            pos_y + map_height - (0.67 * height),
+            self._layout.units(),
+        )
+        area_size_lbl.attemptMove(size_lbl_ref_point, True, False, page)
+        area_size_lbl.attemptResize(
+            QgsLayoutSize(0.05 * width, 0.05 * height, self._layout.units())
+        )
 
         # North arrow
         arrow_item = QgsLayoutItemPicture(self._layout)
