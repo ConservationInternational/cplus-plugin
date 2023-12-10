@@ -1174,7 +1174,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             scenario_layer = qgis_instance.addMapLayer(layer)
 
             # Scenario result layer styling
-            renderer = self.style_models_layer(layer, self.analysis_weighted_ims)
+            renderer = self.style_models_layer(layer, task.analysis_weighted_ims)
             layer.setRenderer(renderer)
             layer.triggerRepaint()
 

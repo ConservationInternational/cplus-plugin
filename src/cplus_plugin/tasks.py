@@ -232,10 +232,9 @@ class ScenarioAnalysisTask(QgsTask):
         :type result: bool
         """
         if result:
-            log("Finished from the main task")
-            pass
+            log("Finished from the main task \n")
         else:
-            log(f"Task result {result}Error from task {self.error}")
+            log(f"Error from task scenario task {self.error}")
 
     def set_status_message(self, message):
         self.status_message = message
@@ -398,119 +397,133 @@ class ScenarioAnalysisTask(QgsTask):
         pathways = []
         models_paths = []
 
-        for model in models:
-            if not model.pathways and (model.path is None or model.path is ""):
-                self.set_info_message(
-                    tr(
-                        f"No defined model pathways or a"
-                        f" model layer for the model {model.name}"
-                    ),
-                    level=Qgis.Critical,
-                )
-                log(
-                    f"No defined model pathways or a "
-                    f"model layer for the model {model.name}"
-                )
-                return False
+        try:
+            for model in models:
+                if not model.pathways and (model.path is None or model.path is ""):
+                    self.set_info_message(
+                        tr(
+                            f"No defined model pathways or a"
+                            f" model layer for the model {model.name}"
+                        ),
+                        level=Qgis.Critical,
+                    )
+                    log(
+                        f"No defined model pathways or a "
+                        f"model layer for the model {model.name}"
+                    )
+                    return False
 
-            for pathway in model.pathways:
-                if not (pathway in pathways):
-                    pathways.append(pathway)
+                for pathway in model.pathways:
+                    if not (pathway in pathways):
+                        pathways.append(pathway)
 
-            if model.path is not None and model.path is not "":
-                models_paths.append(model.path)
+                if model.path is not None and model.path is not "":
+                    models_paths.append(model.path)
 
-        if not pathways and len(models_paths) > 0:
-            self.run_pathways_normalization(models, priority_layers_groups, extent)
-            return
-
-        new_carbon_directory = os.path.join(
-            self.scenario_directory, "pathways_carbon_layers"
-        )
-
-        suitability_index = float(
-            settings_manager.get_value(Settings.PATHWAY_SUITABILITY_INDEX, default=0)
-        )
-
-        carbon_coefficient = float(
-            settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.0)
-        )
-
-        FileUtils.create_new_dir(new_carbon_directory)
-
-        for pathway in pathways:
-            basenames = []
-            layers = []
-            path_basename = Path(pathway.path).stem
-            layers.append(pathway.path)
-
-            file_name = clean_filename(pathway.name.replace(" ", "_"))
-
-            output_file = os.path.join(
-                new_carbon_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
-            )
-
-            if suitability_index > 0:
-                basenames.append(f'{suitability_index} * "{path_basename}@1"')
-            else:
-                basenames.append(f'"{path_basename}@1"')
-
-            carbon_names = []
-
-            for carbon_path in pathway.carbon_paths:
-                carbon_full_path = Path(carbon_path)
-                if not carbon_full_path.exists():
-                    continue
-                layers.append(carbon_path)
-                carbon_names.append(f'"{carbon_full_path.stem}@1"')
-
-            if len(carbon_names) == 1 and carbon_coefficient > 0:
-                basenames.append(f"{carbon_coefficient} * ({carbon_names[0]})")
-
-            # Setting up calculation to use carbon layers average when
-            # a pathway has more than one carbon layer.
-            if len(carbon_names) > 1 and carbon_coefficient > 0:
-                basenames.append(
-                    f"{carbon_coefficient} * ("
-                    f'({" + ".join(carbon_names)}) / '
-                    f"{len(pathway.carbon_paths)})"
-                )
-            expression = " + ".join(basenames)
-
-            if carbon_coefficient <= 0 and suitability_index <= 0:
+            if not pathways and len(models_paths) > 0:
                 self.run_pathways_normalization(models, priority_layers_groups, extent)
                 return
 
-            # Actual processing calculation
-            alg_params = {
-                "CELLSIZE": 0,
-                "CRS": None,
-                "EXPRESSION": expression,
-                "EXTENT": extent,
-                "LAYERS": layers,
-                "OUTPUT": output_file,
-            }
-
-            log(
-                f"Used parameters for combining pathways"
-                f" and carbon layers generation: {alg_params} \n"
+            new_carbon_directory = os.path.join(
+                self.scenario_directory, "pathways_carbon_layers"
             )
 
-            self.feedback = QgsProcessingFeedback()
-
-            self.feedback.progressChanged.connect(self.update_progress)
-
-            if self.processing_cancelled:
-                return False
-
-            results = processing.run(
-                "qgis:rastercalculator",
-                alg_params,
-                context=self.processing_context,
-                feedback=self.feedback,
+            suitability_index = float(
+                settings_manager.get_value(
+                    Settings.PATHWAY_SUITABILITY_INDEX, default=0
+                )
             )
 
-            pathway.path = results["OUTPUT"]
+            carbon_coefficient = float(
+                settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.0)
+            )
+
+            FileUtils.create_new_dir(new_carbon_directory)
+
+            for pathway in pathways:
+                basenames = []
+                layers = []
+                path_basename = Path(pathway.path).stem
+                layers.append(pathway.path)
+
+                file_name = clean_filename(pathway.name.replace(" ", "_"))
+
+                output_file = os.path.join(
+                    new_carbon_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+                )
+
+                if suitability_index > 0:
+                    basenames.append(f'{suitability_index} * "{path_basename}@1"')
+                else:
+                    basenames.append(f'"{path_basename}@1"')
+
+                carbon_names = []
+
+                if len(pathway.carbon_paths) <= 0:
+                    continue
+
+                for carbon_path in pathway.carbon_paths:
+                    carbon_full_path = Path(carbon_path)
+                    if not carbon_full_path.exists():
+                        continue
+                    layers.append(carbon_path)
+                    carbon_names.append(f'"{carbon_full_path.stem}@1"')
+
+                if len(carbon_names) == 1 and carbon_coefficient > 0:
+                    basenames.append(f"{carbon_coefficient} * ({carbon_names[0]})")
+
+                # Setting up calculation to use carbon layers average when
+                # a pathway has more than one carbon layer.
+                if len(carbon_names) > 1 and carbon_coefficient > 0:
+                    basenames.append(
+                        f"{carbon_coefficient} * ("
+                        f'({" + ".join(carbon_names)}) / '
+                        f"{len(pathway.carbon_paths)})"
+                    )
+                expression = " + ".join(basenames)
+
+                if carbon_coefficient <= 0 and suitability_index <= 0:
+                    self.run_pathways_normalization(
+                        models, priority_layers_groups, extent
+                    )
+                    return
+
+                # Actual processing calculation
+                alg_params = {
+                    "CELLSIZE": 0,
+                    "CRS": None,
+                    "EXPRESSION": expression,
+                    "EXTENT": extent,
+                    "LAYERS": layers,
+                    "OUTPUT": output_file,
+                }
+
+                log(
+                    f"Used parameters for combining pathways"
+                    f" and carbon layers generation: {alg_params} \n"
+                )
+
+                self.feedback = QgsProcessingFeedback()
+
+                self.feedback.progressChanged.connect(self.update_progress)
+
+                if self.processing_cancelled:
+                    return False
+
+                results = processing.run(
+                    "qgis:rastercalculator",
+                    alg_params,
+                    context=self.processing_context,
+                    feedback=self.feedback,
+                )
+
+                # self.replace_nodata(results["OUTPUT"], output_file, -9999)
+
+                pathway.path = output_file
+        except Exception as e:
+            log(f"Problem running pathway analysis,  {e}")
+            self.error = e
+            self.cancel()
 
         return True
 
@@ -544,138 +557,147 @@ class ScenarioAnalysisTask(QgsTask):
 
         pathways = []
 
-        for model in models:
-            if not model.pathways and (model.path is None or model.path is ""):
-                self.set_info_message(
-                    tr(
-                        f"No defined model pathways or a"
-                        f" model layer for the model {model.name}"
-                    ),
-                    level=Qgis.Critical,
-                )
-                log(
-                    f"No defined model pathways or a "
-                    f"model layer for the model {model.name}"
-                )
-                return False
-
-            for pathway in model.pathways:
-                if not (pathway in pathways):
-                    pathways.append(pathway)
-
-        reference_layer_path = settings_manager.get_value(Settings.SNAP_LAYER)
-        rescale_values = settings_manager.get_value(
-            Settings.RESCALE_VALUES, default=False, setting_type=bool
-        )
-
-        resampling_method = settings_manager.get_value(
-            Settings.RESAMPLING_METHOD, default=0
-        )
-
-        if pathways is not None and len(pathways) > 0:
-            snapped_pathways_directory = os.path.join(
-                self.scenario_directory, "pathways"
-            )
-
-            FileUtils.create_new_dir(snapped_pathways_directory)
-
-            for pathway in pathways:
-                path = Path(pathway.path)
-                directory = path.parent
-
-                pathway_layer = QgsRasterLayer(pathway.path, pathway.name)
-                nodata_value = pathway_layer.dataProvider().sourceNoDataValue(1)
-
-                if self.processing_cancelled:
+        try:
+            for model in models:
+                if not model.pathways and (model.path is None or model.path is ""):
+                    self.set_info_message(
+                        tr(
+                            f"No defined model pathways or a"
+                            f" model layer for the model {model.name}"
+                        ),
+                        level=Qgis.Critical,
+                    )
+                    log(
+                        f"No defined model pathways or a "
+                        f"model layer for the model {model.name}"
+                    )
                     return False
 
-                # carbon layer snapping
+                for pathway in model.pathways:
+                    if not (pathway in pathways):
+                        pathways.append(pathway)
 
-                log(f"Snapping carbon layers from {pathway.name} pathway")
-
-                if pathway.carbon_paths is not None and len(pathway.carbon_paths) > 0:
-                    snapped_carbon_directory = os.path.join(
-                        self.scenario_directory, "carbon_layers"
-                    )
-
-                    FileUtils.create_new_dir(snapped_carbon_directory)
-
-                    snapped_carbon_paths = []
-
-                    for carbon_path in pathway.carbon_paths:
-                        carbon_layer = QgsRasterLayer(
-                            carbon_path, f"{str(uuid.uuid4())[:4]}"
-                        )
-                        nodata_value_carbon = (
-                            carbon_layer.dataProvider().sourceNoDataValue(1)
-                        )
-
-                        carbon_output_path = self.snap_layer(
-                            carbon_path,
-                            reference_layer_path,
-                            extent,
-                            snapped_carbon_directory,
-                            rescale_values,
-                            resampling_method,
-                            nodata_value_carbon,
-                        )
-
-                        if carbon_output_path:
-                            snapped_carbon_paths.append(carbon_output_path)
-                        else:
-                            snapped_carbon_paths.append(carbon_path)
-
-                    pathway.carbon_paths = snapped_carbon_paths
-
-                log(f"Snapping {pathway.name} pathway layer")
-
-                # Pathway snapping
-
-                output_path = self.snap_layer(
-                    pathway.path,
-                    reference_layer_path,
-                    extent,
-                    snapped_pathways_directory,
-                    rescale_values,
-                    resampling_method,
-                    nodata_value,
-                )
-                if output_path:
-                    pathway.path = output_path
-
-        log(f"Snapping priority weighting layers from model {model.name}")
-
-        snapped_priority_directory = os.path.join(
-            self.scenario_directory, "priority_layers"
-        )
-
-        FileUtils.create_new_dir(snapped_priority_directory)
-
-        priority_layers = []
-        for priority_layer in model.priority_layers:
-            path = priority_layer.get("path")
-            if not Path(path).exists():
-                continue
-
-            layer = QgsRasterLayer(path, f"{str(uuid.uuid4())[:4]}")
-            nodata_value_priority = layer.dataProvider().sourceNoDataValue(1)
-
-            priority_output_path = self.snap_layer(
-                path,
-                reference_layer_path,
-                extent,
-                snapped_priority_directory,
-                rescale_values,
-                resampling_method,
-                nodata_value_priority,
+            reference_layer_path = settings_manager.get_value(Settings.SNAP_LAYER)
+            rescale_values = settings_manager.get_value(
+                Settings.RESCALE_VALUES, default=False, setting_type=bool
             )
 
-            if priority_output_path:
-                priority_layer["path"] = priority_output_path
+            resampling_method = settings_manager.get_value(
+                Settings.RESAMPLING_METHOD, default=0
+            )
 
-            priority_layers.append(priority_layer)
+            if pathways is not None and len(pathways) > 0:
+                snapped_pathways_directory = os.path.join(
+                    self.scenario_directory, "pathways"
+                )
 
-        model.priority_layers = priority_layers
+                FileUtils.create_new_dir(snapped_pathways_directory)
+
+                for pathway in pathways:
+                    path = Path(pathway.path)
+
+                    pathway_layer = QgsRasterLayer(pathway.path, pathway.name)
+                    nodata_value = pathway_layer.dataProvider().sourceNoDataValue(1)
+
+                    if self.processing_cancelled:
+                        return False
+
+                    # carbon layer snapping
+
+                    log(f"Snapping carbon layers from {pathway.name} pathway")
+
+                    if (
+                        pathway.carbon_paths is not None
+                        and len(pathway.carbon_paths) > 0
+                    ):
+                        snapped_carbon_directory = os.path.join(
+                            self.scenario_directory, "carbon_layers"
+                        )
+
+                        FileUtils.create_new_dir(snapped_carbon_directory)
+
+                        snapped_carbon_paths = []
+
+                        for carbon_path in pathway.carbon_paths:
+                            carbon_layer = QgsRasterLayer(
+                                carbon_path, f"{str(uuid.uuid4())[:4]}"
+                            )
+                            nodata_value_carbon = (
+                                carbon_layer.dataProvider().sourceNoDataValue(1)
+                            )
+
+                            carbon_output_path = self.snap_layer(
+                                carbon_path,
+                                reference_layer_path,
+                                extent,
+                                snapped_carbon_directory,
+                                rescale_values,
+                                resampling_method,
+                                nodata_value_carbon,
+                            )
+
+                            if carbon_output_path:
+                                snapped_carbon_paths.append(carbon_output_path)
+                            else:
+                                snapped_carbon_paths.append(carbon_path)
+
+                        pathway.carbon_paths = snapped_carbon_paths
+
+                    log(f"Snapping {pathway.name} pathway layer \n")
+
+                    # Pathway snapping
+
+                    output_path = self.snap_layer(
+                        pathway.path,
+                        reference_layer_path,
+                        extent,
+                        snapped_pathways_directory,
+                        rescale_values,
+                        resampling_method,
+                        nodata_value,
+                    )
+                    if output_path:
+                        pathway.path = output_path
+
+            log(f"Snapping priority weighting layers from model {model.name} \n")
+
+            snapped_priority_directory = os.path.join(
+                self.scenario_directory, "priority_layers"
+            )
+
+            FileUtils.create_new_dir(snapped_priority_directory)
+
+            priority_layers = []
+            for priority_layer in model.priority_layers:
+                path = priority_layer.get("path")
+                if not Path(path).exists():
+                    continue
+
+                layer = QgsRasterLayer(path, f"{str(uuid.uuid4())[:4]}")
+                nodata_value_priority = layer.dataProvider().sourceNoDataValue(1)
+
+                priority_output_path = self.snap_layer(
+                    path,
+                    reference_layer_path,
+                    extent,
+                    snapped_priority_directory,
+                    rescale_values,
+                    resampling_method,
+                    nodata_value_priority,
+                )
+
+                if priority_output_path:
+                    priority_layer["path"] = priority_output_path
+
+                priority_layers.append(priority_layer)
+
+            model.priority_layers = priority_layers
+
+        except Exception as e:
+            log(f"Problem snapping layers, {e}")
+            self.error = e
+            self.cancel()
+            return False
 
         return True
 
@@ -768,107 +790,124 @@ class ScenarioAnalysisTask(QgsTask):
         pathways = []
         models_paths = []
 
-        for model in models:
-            if not model.pathways and (model.path is None or model.path is ""):
-                self.set_info_message(
-                    tr(
-                        f"No defined model pathways or a"
-                        f" model layer for the model {model.name}"
-                    ),
-                    level=Qgis.Critical,
+        try:
+            log(f"normalizing from models {models}")
+
+            for model in models:
+                if not model.pathways and (model.path is None or model.path is ""):
+                    self.set_info_message(
+                        tr(
+                            f"No defined model pathways or a"
+                            f" model layer for the model {model.name}"
+                        ),
+                        level=Qgis.Critical,
+                    )
+                    log(
+                        f"No defined model pathways or a "
+                        f"model layer for the model {model.name}"
+                    )
+
+                    return False
+
+                log(f"collecting pathways {model.pathways}")
+
+                for pathway in model.pathways:
+                    if not (pathway in pathways):
+                        pathways.append(pathway)
+
+                if model.path is not None and model.path is not "":
+                    models_paths.append(model.path)
+
+            if not pathways and len(models_paths) > 0:
+                self.run_models_analysis(models, priority_layers_groups, extent)
+
+                return
+
+            carbon_coefficient = float(
+                settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.0)
+            )
+
+            suitability_index = float(
+                settings_manager.get_value(
+                    Settings.PATHWAY_SUITABILITY_INDEX, default=0
                 )
+            )
+
+            normalization_index = carbon_coefficient + suitability_index
+
+            for pathway in pathways:
+                layers = []
+                normalized_pathways_directory = os.path.join(
+                    self.scenario_directory, "normalized_pathways"
+                )
+                FileUtils.create_new_dir(normalized_pathways_directory)
+                file_name = clean_filename(pathway.name.replace(" ", "_"))
+
+                output_file = os.path.join(
+                    normalized_pathways_directory,
+                    f"{file_name}_{str(uuid.uuid4())[:4]}.tif",
+                )
+
+                pathway_layer = QgsRasterLayer(pathway.path, pathway.name)
+                provider = pathway_layer.dataProvider()
+                band_statistics = provider.bandStatistics(1)
+
+                min_value = band_statistics.minimumValue
+                max_value = band_statistics.maximumValue
+
+                layer_name = Path(pathway.path).stem
+
+                layers.append(pathway.path)
+
+                if normalization_index > 0:
+                    expression = (
+                        f" {normalization_index} * "
+                        f'("{layer_name}@1" - {min_value}) /'
+                        f" ({max_value} - {min_value})"
+                    )
+                else:
+                    expression = (
+                        f'("{layer_name}@1" - {min_value}) /'
+                        f" ({max_value} - {min_value})"
+                    )
+
+                # Actual processing calculation
+                alg_params = {
+                    "CELLSIZE": 0,
+                    "CRS": None,
+                    "EXPRESSION": expression,
+                    "EXTENT": extent,
+                    "LAYERS": layers,
+                    "OUTPUT": output_file,
+                }
+
                 log(
-                    f"No defined model pathways or a "
-                    f"model layer for the model {model.name}"
+                    f"Used parameters for normalization of the pathways: {alg_params} \n"
                 )
 
-                return False
+                self.feedback = QgsProcessingFeedback()
 
-            for pathway in model.pathways:
-                if not (pathway in pathways):
-                    pathways.append(pathway)
+                self.feedback.progressChanged.connect(self.update_progress)
 
-            if model.path is not None and model.path is not "":
-                models_paths.append(model.path)
+                if self.processing_cancelled:
+                    return False
 
-        if not pathways and len(models_paths) > 0:
-            self.run_models_analysis(models, priority_layers_groups, extent)
-
-            return
-
-        carbon_coefficient = float(
-            settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.0)
-        )
-
-        suitability_index = float(
-            settings_manager.get_value(Settings.PATHWAY_SUITABILITY_INDEX, default=0)
-        )
-
-        normalization_index = carbon_coefficient + suitability_index
-
-        for pathway in pathways:
-            layers = []
-            normalized_pathways_directory = os.path.join(
-                self.scenario_directory, "normalized_pathways"
-            )
-            FileUtils.create_new_dir(normalized_pathways_directory)
-            file_name = clean_filename(pathway.name.replace(" ", "_"))
-
-            output_file = os.path.join(
-                normalized_pathways_directory,
-                f"{file_name}_{str(uuid.uuid4())[:4]}.tif",
-            )
-
-            pathway_layer = QgsRasterLayer(pathway.path, pathway.name)
-            provider = pathway_layer.dataProvider()
-            band_statistics = provider.bandStatistics(1)
-
-            min_value = band_statistics.minimumValue
-            max_value = band_statistics.maximumValue
-
-            layer_name = Path(pathway.path).stem
-
-            layers.append(pathway.path)
-
-            if normalization_index > 0:
-                expression = (
-                    f" {normalization_index} * "
-                    f'("{layer_name}@1" - {min_value}) /'
-                    f" ({max_value} - {min_value})"
-                )
-            else:
-                expression = (
-                    f'("{layer_name}@1" - {min_value}) /'
-                    f" ({max_value} - {min_value})"
+                results = processing.run(
+                    "qgis:rastercalculator",
+                    alg_params,
+                    context=self.processing_context,
+                    feedback=self.feedback,
                 )
 
-            # Actual processing calculation
-            alg_params = {
-                "CELLSIZE": 0,
-                "CRS": None,
-                "EXPRESSION": expression,
-                "EXTENT": extent,
-                "LAYERS": layers,
-                "OUTPUT": output_file,
-            }
+                # self.replace_nodata(results["OUTPUT"], output_file, -9999)
 
-            log(f"Used parameters for normalization of the pathways: {alg_params} \n")
+                pathway.path = results["OUTPUT"]
 
-            self.feedback = QgsProcessingFeedback()
-
-            self.feedback.progressChanged.connect(self.update_progress)
-
-            if self.processing_cancelled:
-                return False
-
-            results = processing.run(
-                "qgis:rastercalculator",
-                alg_params,
-                context=self.processing_context,
-                feedback=self.feedback,
-            )
-
-            pathway.path = results["OUTPUT"]
+        except Exception as e:
+            log(f"Problem normalizing pathways layers, {e}")
+            self.error = e
+            self.cancel()
+            return False
 
         return True
 
@@ -894,75 +933,82 @@ class ScenarioAnalysisTask(QgsTask):
             tr("Creating implementation models layers from pathways")
         )
 
-        for model in models:
-            ims_directory = os.path.join(
-                self.scenario_directory, "implementation_models"
-            )
-            FileUtils.create_new_dir(ims_directory)
-            file_name = clean_filename(model.name.replace(" ", "_"))
-
-            layers = []
-            if not model.pathways and (model.path is None and model.path is ""):
-                self.set_info_message(
-                    tr(
-                        f"No defined model pathways or a"
-                        f" model layer for the model {model.name}"
-                    ),
-                    level=Qgis.Critical,
+        try:
+            for model in models:
+                ims_directory = os.path.join(
+                    self.scenario_directory, "implementation_models"
                 )
+                FileUtils.create_new_dir(ims_directory)
+                file_name = clean_filename(model.name.replace(" ", "_"))
+
+                layers = []
+                if not model.pathways and (model.path is None and model.path is ""):
+                    self.set_info_message(
+                        tr(
+                            f"No defined model pathways or a"
+                            f" model layer for the model {model.name}"
+                        ),
+                        level=Qgis.Critical,
+                    )
+                    log(
+                        f"No defined model pathways or a "
+                        f"model layer for the model {model.name}"
+                    )
+
+                    return False
+
+                output_file = os.path.join(
+                    ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+                )
+
+                # Due to the implementation models base class
+                # model only one of the following blocks will be executed,
+                # the implementation model either contain a path or
+                # pathways
+
+                if model.path is not None and model.path is not "":
+                    layers = [model.path]
+
+                for pathway in model.pathways:
+                    layers.append(pathway.path)
+
+                # Actual processing calculation
+
+                alg_params = {
+                    "IGNORE_NODATA": True,
+                    "INPUT": layers,
+                    "EXTENT": extent,
+                    "OUTPUT_NODATA_VALUE": -9999,
+                    "REFERENCE_LAYER": layers[0] if len(layers) > 0 else None,
+                    "STATISTIC": 0,  # Sum
+                    "OUTPUT": output_file,
+                }
+
                 log(
-                    f"No defined model pathways or a "
-                    f"model layer for the model {model.name}"
+                    f"Used parameters for "
+                    f"implementation models generation: {alg_params} \n"
                 )
 
-                return False
+                feedback = QgsProcessingFeedback()
 
-            output_file = os.path.join(
-                ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
-            )
+                feedback.progressChanged.connect(self.update_progress)
 
-            # Due to the implementation models base class
-            # model only one of the following blocks will be executed,
-            # the implementation model either contain a path or
-            # pathways
+                if self.processing_cancelled:
+                    return False
 
-            if model.path is not None and model.path is not "":
-                layers = [model.path]
+                results = processing.run(
+                    "native:cellstatistics",
+                    alg_params,
+                    context=self.processing_context,
+                    feedback=self.feedback,
+                )
+                model.path = results["OUTPUT"]
 
-            for pathway in model.pathways:
-                layers.append(pathway.path)
-
-            # Actual processing calculation
-
-            alg_params = {
-                "IGNORE_NODATA": True,
-                "INPUT": layers,
-                "EXTENT": extent,
-                "OUTPUT_NODATA_VALUE": -9999,
-                "REFERENCE_LAYER": layers[0] if len(layers) > 0 else None,
-                "STATISTIC": 0,  # Sum
-                "OUTPUT": output_file,
-            }
-
-            log(
-                f"Used parameters for "
-                f"implementation models generation: {alg_params} \n"
-            )
-
-            feedback = QgsProcessingFeedback()
-
-            feedback.progressChanged.connect(self.update_progress)
-
-            if self.processing_cancelled:
-                return False
-
-            results = processing.run(
-                "native:cellstatistics",
-                alg_params,
-                context=self.processing_context,
-                feedback=self.feedback,
-            )
-            model.path = results["OUTPUT"]
+        except Exception as e:
+            log(f"Problem creating models layers, {e}")
+            self.error = e
+            self.cancel()
+            return False
 
         return True
 
@@ -993,103 +1039,110 @@ class ScenarioAnalysisTask(QgsTask):
 
         self.set_status_message(tr("Normalization of the implementation models"))
 
-        for model in models:
-            if model.path is None or model.path is "":
-                if not self.processing_cancelled:
-                    self.set_info_message(
-                        tr(
+        try:
+            for model in models:
+                if model.path is None or model.path is "":
+                    if not self.processing_cancelled:
+                        self.set_info_message(
+                            tr(
+                                f"Problem when running models normalization, "
+                                f"there is no map layer for the model {model.name}"
+                            ),
+                            level=Qgis.Critical,
+                        )
+                        log(
                             f"Problem when running models normalization, "
                             f"there is no map layer for the model {model.name}"
-                        ),
-                        level=Qgis.Critical,
+                        )
+                    else:
+                        # If the user cancelled the processing
+                        self.set_info_message(
+                            tr(f"Processing has been cancelled by the user."),
+                            level=Qgis.Critical,
+                        )
+                        log(f"Processing has been cancelled by the user.")
+
+                    return False
+
+                layers = []
+                normalized_ims_directory = os.path.join(
+                    self.scenario_directory, "normalized_ims"
+                )
+                FileUtils.create_new_dir(normalized_ims_directory)
+                file_name = clean_filename(model.name.replace(" ", "_"))
+
+                output_file = os.path.join(
+                    normalized_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+                )
+
+                model_layer = QgsRasterLayer(model.path, model.name)
+                provider = model_layer.dataProvider()
+                band_statistics = provider.bandStatistics(1)
+
+                min_value = band_statistics.minimumValue
+                max_value = band_statistics.maximumValue
+
+                layer_name = Path(model.path).stem
+
+                layers.append(model.path)
+
+                carbon_coefficient = float(
+                    settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.0)
+                )
+
+                suitability_index = float(
+                    settings_manager.get_value(
+                        Settings.PATHWAY_SUITABILITY_INDEX, default=0
                     )
-                    log(
-                        f"Problem when running models normalization, "
-                        f"there is no map layer for the model {model.name}"
+                )
+
+                normalization_index = carbon_coefficient + suitability_index
+
+                if normalization_index > 0:
+                    expression = (
+                        f" {normalization_index} * "
+                        f'("{layer_name}@1" - {min_value}) /'
+                        f" ({max_value} - {min_value})"
                     )
+
                 else:
-                    # If the user cancelled the processing
-                    self.set_info_message(
-                        tr(f"Processing has been cancelled by the user."),
-                        level=Qgis.Critical,
+                    expression = (
+                        f'("{layer_name}@1" - {min_value}) /'
+                        f" ({max_value} - {min_value})"
                     )
-                    log(f"Processing has been cancelled by the user.")
 
-                return False
+                # Actual processing calculation
+                alg_params = {
+                    "CELLSIZE": 0,
+                    "CRS": None,
+                    "EXPRESSION": expression,
+                    "EXTENT": extent,
+                    "LAYERS": layers,
+                    "OUTPUT": output_file,
+                }
 
-            layers = []
-            normalized_ims_directory = os.path.join(
-                self.scenario_directory, "normalized_ims"
-            )
-            FileUtils.create_new_dir(normalized_ims_directory)
-            file_name = clean_filename(model.name.replace(" ", "_"))
+                log(f"Used parameters for normalization of the models: {alg_params} \n")
 
-            output_file = os.path.join(
-                normalized_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
-            )
+                feedback = QgsProcessingFeedback()
 
-            model_layer = QgsRasterLayer(model.path, model.name)
-            provider = model_layer.dataProvider()
-            band_statistics = provider.bandStatistics(1)
+                feedback.progressChanged.connect(self.update_progress)
 
-            min_value = band_statistics.minimumValue
-            max_value = band_statistics.maximumValue
+                if self.processing_cancelled:
+                    return False
 
-            layer_name = Path(model.path).stem
-
-            layers.append(model.path)
-
-            carbon_coefficient = float(
-                settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.0)
-            )
-
-            suitability_index = float(
-                settings_manager.get_value(
-                    Settings.PATHWAY_SUITABILITY_INDEX, default=0
+                results = processing.run(
+                    "qgis:rastercalculator",
+                    alg_params,
+                    context=self.processing_context,
+                    feedback=self.feedback,
                 )
-            )
+                model.path = results["OUTPUT"]
 
-            normalization_index = carbon_coefficient + suitability_index
-
-            if normalization_index > 0:
-                expression = (
-                    f" {normalization_index} * "
-                    f'("{layer_name}@1" - {min_value}) /'
-                    f" ({max_value} - {min_value})"
-                )
-
-            else:
-                expression = (
-                    f'("{layer_name}@1" - {min_value}) /'
-                    f" ({max_value} - {min_value})"
-                )
-
-            # Actual processing calculation
-            alg_params = {
-                "CELLSIZE": 0,
-                "CRS": None,
-                "EXPRESSION": expression,
-                "EXTENT": extent,
-                "LAYERS": layers,
-                "OUTPUT": output_file,
-            }
-
-            log(f"Used parameters for normalization of the models: {alg_params} \n")
-
-            feedback = QgsProcessingFeedback()
-
-            feedback.progressChanged.connect(self.update_progress)
-
-            if self.processing_cancelled:
-                return False
-
-            results = processing.run(
-                "qgis:rastercalculator",
-                alg_params,
-                context=self.processing_context,
-                feedback=self.feedback,
-            )
-            model.path = results["OUTPUT"]
+        except Exception as e:
+            log(f"Problem normalizaing models layers, {e}")
+            self.error = e
+            self.cancel()
+            return False
 
         return True
 
@@ -1114,128 +1167,143 @@ class ScenarioAnalysisTask(QgsTask):
 
         weighted_models = []
 
-        for original_model in models:
-            model = clone_implementation_model(original_model)
+        try:
+            for original_model in models:
+                model = clone_implementation_model(original_model)
 
-            if model.path is None or model.path is "":
-                self.set_info_message(
-                    tr(
-                        f"Problem when running models weighting, "
+                if model.path is None or model.path is "":
+                    self.set_info_message(
+                        tr(
+                            f"Problem when running models weighting, "
+                            f"there is no map layer for the model {model.name}"
+                        ),
+                        level=Qgis.Critical,
+                    )
+                    log(
+                        f"Problem when running models normalization, "
                         f"there is no map layer for the model {model.name}"
-                    ),
-                    level=Qgis.Critical,
+                    )
+
+                    return [], False
+
+                basenames = []
+                layers = []
+
+                layers.append(model.path)
+                basenames.append(f'"{Path(model.path).stem}@1"')
+
+                if not any(priority_layers_groups):
+                    log(
+                        f"There are no defined priority layers in groups,"
+                        f" skipping models weighting step."
+                    )
+                    self.run_models_cleaning(extent)
+                    return
+
+                if model.priority_layers is None or model.priority_layers is []:
+                    log(
+                        f"There are no associated "
+                        f"priority weighting layers for model {model.name}"
+                    )
+                    continue
+
+                settings_model = settings_manager.get_implementation_model(
+                    str(model.uuid)
                 )
+
+                for layer in settings_model.priority_layers:
+                    if layer is None:
+                        continue
+
+                    settings_layer = settings_manager.get_priority_layer(
+                        layer.get("uuid")
+                    )
+                    if settings_layer is None:
+                        continue
+
+                    pwl = settings_layer.get("path")
+
+                    missing_pwl_message = (
+                        f"Path {pwl} for priority "
+                        f"weighting layer {layer.get('name')} "
+                        f"doesn't exist, skipping the layer "
+                        f"from the model {model.name} weighting."
+                    )
+                    if pwl is None:
+                        log(missing_pwl_message)
+                        continue
+
+                    pwl_path = Path(pwl)
+
+                    if not pwl_path.exists():
+                        log(missing_pwl_message)
+                        continue
+
+                    path_basename = pwl_path.stem
+
+                    for priority_layer in settings_manager.get_priority_layers():
+                        if priority_layer.get("name") == layer.get("name"):
+                            for group in priority_layer.get("groups", []):
+                                value = group.get("value")
+                                coefficient = float(value)
+                                if coefficient > 0:
+                                    if pwl not in layers:
+                                        layers.append(pwl)
+                                    basenames.append(
+                                        f'({coefficient}*"{path_basename}@1")'
+                                    )
+
+                if basenames is []:
+                    return [], True
+
+                weighted_ims_directory = os.path.join(
+                    self.scenario_directory, "weighted_ims"
+                )
+
+                FileUtils.create_new_dir(weighted_ims_directory)
+
+                file_name = clean_filename(model.name.replace(" ", "_"))
+                output_file = os.path.join(
+                    weighted_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+                )
+                expression = " + ".join(basenames)
+
+                # Actual processing calculation
+                alg_params = {
+                    "CELLSIZE": 0,
+                    "CRS": None,
+                    "EXPRESSION": expression,
+                    "EXTENT": extent,
+                    "LAYERS": layers,
+                    "OUTPUT": output_file,
+                }
+
                 log(
-                    f"Problem when running models normalization, "
-                    f"there is no map layer for the model {model.name}"
+                    f" Used parameters for calculating weighting models {alg_params} \n"
                 )
 
-                return [], False
+                feedback = QgsProcessingFeedback()
 
-            basenames = []
-            layers = []
+                feedback.progressChanged.connect(self.update_progress)
 
-            layers.append(model.path)
-            basenames.append(f'"{Path(model.path).stem}@1"')
+                if self.processing_cancelled:
+                    return [], False
 
-            if not any(priority_layers_groups):
-                log(
-                    f"There are no defined priority layers in groups,"
-                    f" skipping models weighting step."
+                results = processing.run(
+                    "qgis:rastercalculator",
+                    alg_params,
+                    context=self.processing_context,
+                    feedback=self.feedback,
                 )
-                self.run_models_cleaning(extent)
-                return
+                model.path = results["OUTPUT"]
 
-            if model.priority_layers is None or model.priority_layers is []:
-                log(
-                    f"There are no associated "
-                    f"priority weighting layers for model {model.name}"
-                )
-                continue
+                weighted_models.append(model)
 
-            settings_model = settings_manager.get_implementation_model(str(model.uuid))
-
-            for layer in settings_model.priority_layers:
-                if layer is None:
-                    continue
-
-                settings_layer = settings_manager.get_priority_layer(layer.get("uuid"))
-                if settings_layer is None:
-                    continue
-
-                pwl = settings_layer.get("path")
-
-                missing_pwl_message = (
-                    f"Path {pwl} for priority "
-                    f"weighting layer {layer.get('name')} "
-                    f"doesn't exist, skipping the layer "
-                    f"from the model {model.name} weighting."
-                )
-                if pwl is None:
-                    log(missing_pwl_message)
-                    continue
-
-                pwl_path = Path(pwl)
-
-                if not pwl_path.exists():
-                    log(missing_pwl_message)
-                    continue
-
-                path_basename = pwl_path.stem
-
-                for priority_layer in settings_manager.get_priority_layers():
-                    if priority_layer.get("name") == layer.get("name"):
-                        for group in priority_layer.get("groups", []):
-                            value = group.get("value")
-                            coefficient = float(value)
-                            if coefficient > 0:
-                                if pwl not in layers:
-                                    layers.append(pwl)
-                                basenames.append(f'({coefficient}*"{path_basename}@1")')
-
-            if basenames is []:
-                return [], True
-
-            weighted_ims_directory = os.path.join(
-                self.scenario_directory, "weighted_ims"
-            )
-
-            FileUtils.create_new_dir(weighted_ims_directory)
-
-            file_name = clean_filename(model.name.replace(" ", "_"))
-            output_file = os.path.join(
-                weighted_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
-            )
-            expression = " + ".join(basenames)
-
-            # Actual processing calculation
-            alg_params = {
-                "CELLSIZE": 0,
-                "CRS": None,
-                "EXPRESSION": expression,
-                "EXTENT": extent,
-                "LAYERS": layers,
-                "OUTPUT": output_file,
-            }
-
-            log(f" Used parameters for calculating weighting models {alg_params} \n")
-
-            feedback = QgsProcessingFeedback()
-
-            feedback.progressChanged.connect(self.update_progress)
-
-            if self.processing_cancelled:
-                return [], False
-
-            results = processing.run(
-                "qgis:rastercalculator",
-                alg_params,
-                context=self.processing_context,
-                feedback=self.feedback,
-            )
-            model.path = results["OUTPUT"]
-
-            weighted_models.append(model)
+        except Exception as e:
+            log(f"Problem weighting implementation models, {e}")
+            self.error = e
+            self.cancel()
+            return None, False
 
         return weighted_models, True
 
@@ -1253,64 +1321,71 @@ class ScenarioAnalysisTask(QgsTask):
 
         self.set_status_message(tr("Updating weighted implementation models values"))
 
-        for model in models:
-            if model.path is None or model.path is "":
-                self.set_info_message(
-                    tr(
+        try:
+            for model in models:
+                if model.path is None or model.path is "":
+                    self.set_info_message(
+                        tr(
+                            f"Problem when running models updates, "
+                            f"there is no map layer for the model {model.name}"
+                        ),
+                        level=Qgis.Critical,
+                    )
+                    log(
                         f"Problem when running models updates, "
                         f"there is no map layer for the model {model.name}"
-                    ),
-                    level=Qgis.Critical,
+                    )
+
+                    return False
+
+                layers = [model.path]
+
+                file_name = clean_filename(model.name.replace(" ", "_"))
+
+                output_file = os.path.join(self.scenario_directory, "weighted_ims")
+                output_file = os.path.join(
+                    output_file, f"{file_name}_{str(uuid.uuid4())[:4]}_cleaned.tif"
                 )
+
+                # Actual processing calculation
+                # The aim is to convert pixels values to no data, that is why we are
+                # using the sum operation with only one layer.
+
+                alg_params = {
+                    "IGNORE_NODATA": True,
+                    "INPUT": layers,
+                    "EXTENT": extent,
+                    "OUTPUT_NODATA_VALUE": 0,
+                    "REFERENCE_LAYER": layers[0] if len(layers) > 0 else None,
+                    "STATISTIC": 0,  # Sum
+                    "OUTPUT": output_file,
+                }
+
                 log(
-                    f"Problem when running models updates, "
-                    f"there is no map layer for the model {model.name}"
+                    f"Used parameters for "
+                    f"updates on the weighted implementation models: {alg_params} \n"
                 )
 
-                return False
+                feedback = QgsProcessingFeedback()
 
-            layers = [model.path]
+                feedback.progressChanged.connect(self.update_progress)
 
-            file_name = clean_filename(model.name.replace(" ", "_"))
+                if self.processing_cancelled:
+                    return False
 
-            output_file = os.path.join(self.scenario_directory, "weighted_ims")
-            output_file = os.path.join(
-                output_file, f"{file_name}_{str(uuid.uuid4())[:4]}_cleaned.tif"
-            )
+                results = processing.run(
+                    "native:cellstatistics",
+                    alg_params,
+                    context=self.processing_context,
+                    feedback=self.feedback,
+                )
+                model.path = results["OUTPUT"]
 
-            # Actual processing calculation
-            # The aim is to convert pixels values to no data, that is why we are
-            # using the sum operation with only one layer.
-
-            alg_params = {
-                "IGNORE_NODATA": True,
-                "INPUT": layers,
-                "EXTENT": extent,
-                "OUTPUT_NODATA_VALUE": 0,
-                "REFERENCE_LAYER": layers[0] if len(layers) > 0 else None,
-                "STATISTIC": 0,  # Sum
-                "OUTPUT": output_file,
-            }
-
-            log(
-                f"Used parameters for "
-                f"updates on the weighted implementation models: {alg_params} \n"
-            )
-
-            feedback = QgsProcessingFeedback()
-
-            feedback.progressChanged.connect(self.update_progress)
-
-            if self.processing_cancelled:
-                return False
-
-            results = processing.run(
-                "native:cellstatistics",
-                alg_params,
-                context=self.processing_context,
-                feedback=self.feedback,
-            )
-            model.path = results["OUTPUT"]
+        except Exception as e:
+            log(f"Problem cleaning implementation models, {e}")
+            self.error = e
+            self.cancel()
+            return False
 
         return True
 
@@ -1333,7 +1408,7 @@ class ScenarioAnalysisTask(QgsTask):
         )
 
         self.scenario_result = ScenarioResult(
-            scenario=self.scenario,
+            scenario=self.scenario, scenario_directory=self.scenario_directory
         )
 
         try:
@@ -1423,5 +1498,8 @@ class ScenarioAnalysisTask(QgsTask):
                     'scenario analysis, error message "{}"'.format(str(err))
                 )
             )
+            self.error = err
+            self.cancel()
+            return False
 
         return True
