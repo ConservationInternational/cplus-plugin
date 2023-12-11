@@ -951,6 +951,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.analysis_implementation_models,
                 self.analysis_priority_layers_groups,
                 self.analysis_extent,
+                passed_extent,
                 scenario,
             )
 

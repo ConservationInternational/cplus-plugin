@@ -73,6 +73,7 @@ class ScenarioAnalysisTask(QgsTask):
         analysis_implementation_models,
         analysis_priority_layers_groups,
         analysis_extent,
+        passed_extent,
         scenario,
     ):
         super().__init__()
@@ -82,6 +83,7 @@ class ScenarioAnalysisTask(QgsTask):
         self.analysis_implementation_models = analysis_implementation_models
         self.analysis_priority_layers_groups = analysis_priority_layers_groups
         self.analysis_extent = analysis_extent
+        self.passed_extent = passed_extent
         self.analysis_extent_string = None
 
         self.analysis_weighted_ims = []
@@ -113,13 +115,15 @@ class ScenarioAnalysisTask(QgsTask):
 
         FileUtils.create_new_dir(self.scenario_directory)
 
-        # Prepare extent to be used in the processing parameters
-        box = QgsRectangle(
-            float(self.analysis_extent.bbox[0]),
-            float(self.analysis_extent.bbox[2]),
-            float(self.analysis_extent.bbox[1]),
-            float(self.analysis_extent.bbox[3]),
-        )
+        # # Prepare extent to be used in the processing parameters
+        # box = QgsRectangle(
+        #     float(self.analysis_extent.bbox[0]),
+        #     float(self.analysis_extent.bbox[2]),
+        #     float(self.analysis_extent.bbox[1]),
+        #     float(self.analysis_extent.bbox[3]),
+        # )
+
+        box = self.passed_extent
 
         source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
 
@@ -141,6 +145,7 @@ class ScenarioAnalysisTask(QgsTask):
         )
         transform = QgsCoordinateTransform(source_crs, dest_crs, QgsProject.instance())
         transformed_extent = transform.transformBoundingBox(box)
+        t_extent = transform.transform(box)
 
         snapped_extent = self.align_extent(target_layer, transformed_extent)
 
@@ -150,8 +155,17 @@ class ScenarioAnalysisTask(QgsTask):
             f" [{dest_crs.authid()}]"
         )
 
+        # log(f"none snapped extent, {box.xMinimum()},{box.xMaximum()},"
+        #     f"{box.yMinimum()},{box.yMaximum()} extent \n")
+        # log(f"none snapped extent {box.asWktPolygon()} \n")
+        #
+        # log(f"second tranformed extent {t_extent} extent \n")
+        # log(f"second tranformed extent {t_extent.asWktPolygon()} \n")
+
         log(f"Original area of interest extent: {transformed_extent.asWktPolygon()} \n")
         log(f"Snapped area of interest extent {snapped_extent.asWktPolygon()} \n")
+
+        log(f"source crs {source_crs.authid()}, destination crs {dest_crs.authid()} \n")
 
         # Run pathways layers snapping using a specified reference layer
 
@@ -791,8 +805,6 @@ class ScenarioAnalysisTask(QgsTask):
         models_paths = []
 
         try:
-            log(f"normalizing from models {models}")
-
             for model in models:
                 if not model.pathways and (model.path is None or model.path is ""):
                     self.set_info_message(
@@ -808,8 +820,6 @@ class ScenarioAnalysisTask(QgsTask):
                     )
 
                     return False
-
-                log(f"collecting pathways {model.pathways}")
 
                 for pathway in model.pathways:
                     if not (pathway in pathways):
@@ -858,6 +868,20 @@ class ScenarioAnalysisTask(QgsTask):
                 layer_name = Path(pathway.path).stem
 
                 layers.append(pathway.path)
+
+                log(
+                    f"Found minimum {min_value} and "
+                    f"maximum {max_value} for pathway "
+                    f" \n"
+                )
+
+                if max_value < min_value:
+                    raise Exception(
+                        tr(
+                            f"Pathway contains "
+                            f"invalid minimum and maxmum band values"
+                        )
+                    )
 
                 if normalization_index > 0:
                     expression = (
@@ -1081,6 +1105,12 @@ class ScenarioAnalysisTask(QgsTask):
 
                 min_value = band_statistics.minimumValue
                 max_value = band_statistics.maximumValue
+
+                log(
+                    f"Found minimum {min_value} and "
+                    f"maximum {max_value} for pathway "
+                    f"{pathway.name, pathway.path} \n"
+                )
 
                 layer_name = Path(model.path).stem
 
