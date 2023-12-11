@@ -304,11 +304,16 @@ class ReportManager(QtCore.QObject):
         scenario_report_dir = os.path.normpath(f"{output_dir}/reports")
         FileUtils.create_new_dir(scenario_report_dir)
 
-        project_file_path = f"{scenario_report_dir}/{scenario_result.scenario.name}.qgz"
+        project_file_path = os.path.join(
+            scenario_report_dir, f"{scenario_result.scenario.name}.qgz"
+        )
         if os.path.exists(project_file_path):
             counter = 1
             while True:
-                project_file_path = f"{scenario_report_dir}/{scenario_result.scenario.name}_{counter!s}.qgz"
+                project_file_path = os.path.join(
+                    scenario_report_dir,
+                    f"{scenario_result.scenario.name}_{counter!s}.qgz",
+                )
                 if not os.path.exists(project_file_path):
                     break
                 counter += 1
