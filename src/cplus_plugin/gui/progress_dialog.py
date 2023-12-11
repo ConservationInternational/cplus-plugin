@@ -232,10 +232,15 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         if self.analysis_running:
             # Stops analysis if it is still running
             self.stop_processing()
-            if self.analysis_task:
-                self.analysis_task.processing_cancelled = True
-                self.analysis_task.cancel()
-
+            try:
+                if self.analysis_task:
+                    self.analysis_task.processing_cancelled = True
+                    self.analysis_task.cancel()
+            except RuntimeError as e:
+                # The analysis task should have been removed after
+                # scenario analyis is done, this is the only way to find
+                # out if the analysis has been completed.
+                pass
         self.cancel_reporting()
 
         super().reject()

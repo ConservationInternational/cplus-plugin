@@ -951,6 +951,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.analysis_implementation_models,
                 self.analysis_priority_layers_groups,
                 self.analysis_extent,
+                passed_extent,
                 scenario,
             )
 
@@ -1174,7 +1175,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             scenario_layer = qgis_instance.addMapLayer(layer)
 
             # Scenario result layer styling
-            renderer = self.style_models_layer(layer, self.analysis_weighted_ims)
+            renderer = self.style_models_layer(layer, task.analysis_weighted_ims)
             layer.setRenderer(renderer)
             layer.triggerRepaint()
 
