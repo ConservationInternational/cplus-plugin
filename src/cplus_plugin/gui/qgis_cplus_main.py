@@ -945,29 +945,46 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 tr("Raster calculation for models pathways")
             )
 
-            # box = QgsRectangle(
-            #     float(self.analysis_extent.bbox[0]),
-            #     float(self.analysis_extent.bbox[2]),
-            #     float(self.analysis_extent.bbox[1]),
-            #     float(self.analysis_extent.bbox[3]),
-            # )
+            selected_pathway = None
+            pathway_found = False
 
-            # source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
-            # destination_crs = QgsCoordinateReferenceSystem("EPSG:32735")
-            #
-            # trans_extent = self.transform_extent(box, source_crs, destination_crs)
-            #
-            # log(
-            #     f"from main original extent {box.xMinimum()}, {box.xMaximum()}, {box.yMinimum()}, {box.yMaximum()} \n"
-            # )
-            #
-            # log(f"from main original extent {box.asWktPolygon()} \n")
-            #
-            # log(
-            #     f"from main tranformed extent {trans_extent.xMinimum()}, {trans_extent.xMaximum()}, {trans_extent.yMinimum()}, {trans_extent.yMaximum()} \n"
-            # )
-            #
-            # log(f"from main tranformed extent {trans_extent.asWktPolygon()} \n")
+            for model in self.analysis_implementation_models:
+                if pathway_found:
+                    break
+                for pathway in model.pathways:
+                    if pathway is not None:
+                        pathway_found = True
+                        selected_pathway = pathway
+                        break
+
+            extent_box = QgsRectangle(
+                float(self.analysis_extent.bbox[0]),
+                float(self.analysis_extent.bbox[2]),
+                float(self.analysis_extent.bbox[1]),
+                float(self.analysis_extent.bbox[3]),
+            )
+
+            selected_pathway_layer = QgsRasterLayer(
+                selected_pathway.path, selected_pathway.name
+            )
+
+            source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
+
+            if selected_pathway_layer.crs() is not None:
+                destination_crs = selected_pathway_layer.crs()
+            else:
+                destination_crs = QgsProject.instance().crs()
+
+            transformed_extent = self.transform_extent(
+                extent_box, source_crs, destination_crs
+            )
+
+            self.analysis_extent.bbox = [
+                transformed_extent.xMinimum(),
+                transformed_extent.xMaximum(),
+                transformed_extent.yMinimum(),
+                transformed_extent.yMaximum(),
+            ]
 
             analysis_task = ScenarioAnalysisTask(
                 self.analysis_scenario_name,
@@ -975,7 +992,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.analysis_implementation_models,
                 self.analysis_priority_layers_groups,
                 self.analysis_extent,
-                passed_extent,
                 scenario,
             )
 

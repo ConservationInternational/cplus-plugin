@@ -94,13 +94,36 @@
         <string>Step 1</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_8">
-        <item row="4" column="0">
-         <widget class="QLabel" name="label_71">
+        <item row="10" column="0" colspan="2">
+         <spacer name="verticalSpacer_3">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>182</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="6" column="0" colspan="2">
+         <widget class="QLineEdit" name="scenario_description">
           <property name="toolTip">
            <string>Information about the scenario analysis, limited to 195 characters. </string>
           </property>
           <property name="text">
-           <string>Scenario description</string>
+           <string/>
+          </property>
+          <property name="maxLength">
+           <number>195</number>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLineEdit" name="scenario_name">
+          <property name="text">
+           <string/>
           </property>
          </widget>
         </item>
@@ -114,14 +137,7 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="label_64">
-          <property name="text">
-           <string>Scenario name</string>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="0">
+        <item row="7" column="0">
          <widget class="QgsExtentGroupBox" name="extent_box">
           <property name="title">
            <string>Area of interest</string>
@@ -134,7 +150,17 @@
           </property>
          </widget>
         </item>
-        <item row="8" column="0">
+        <item row="5" column="0">
+         <widget class="QLabel" name="label_71">
+          <property name="toolTip">
+           <string>Information about the scenario analysis, limited to 195 characters. </string>
+          </property>
+          <property name="text">
+           <string>Scenario description</string>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="0">
          <widget class="QPushButton" name="pilot_area_btn">
           <property name="toolTip">
            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;pre style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; background-color:#ffffff;&quot;&gt;&lt;span style=&quot; font-family:'JetBrains Mono','monospace'; font-size:9.8pt; color:#067d17;&quot;&gt;Changes the current map canvas extent to the pilot area extent. Zoom only occurs&lt;/span&gt;&lt;/pre&gt;&lt;pre style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; background-color:#ffffff;&quot;&gt;&lt;span style=&quot; font-family:'JetBrains Mono','monospace'; font-size:9.8pt; color:#067d17;&quot;&gt;if the map canvas is using EPSG:4326 coordinate system.&lt;/span&gt;&lt;/pre&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -144,36 +170,10 @@
           </property>
          </widget>
         </item>
-        <item row="5" column="0" colspan="2">
-         <widget class="QLineEdit" name="scenario_description">
-          <property name="toolTip">
-           <string>Information about the scenario analysis, limited to 195 characters. </string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="maxLength">
-           <number>195</number>
-          </property>
-         </widget>
-        </item>
-        <item row="9" column="0" colspan="2">
-         <spacer name="verticalSpacer_3">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>182</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
         <item row="1" column="0">
-         <widget class="QLineEdit" name="scenario_name">
+         <widget class="QLabel" name="label_64">
           <property name="text">
-           <string/>
+           <string>Scenario name</string>
           </property>
          </widget>
         </item>
@@ -278,7 +278,7 @@
             </property>
             <property name="icon">
              <iconset>
-              <normaloff>../../../../../../../../../../../../../../resources/cplus_right_arrow.svg</normaloff>../../../../../../../../../../../../../../resources/cplus_right_arrow.svg</iconset>
+              <normaloff>../../../../../../../../../../../../../../../../../../resources/cplus_right_arrow.svg</normaloff>../../../../../../../../../../../../../../../../../../resources/cplus_right_arrow.svg</iconset>
             </property>
            </widget>
           </item>
@@ -292,7 +292,7 @@
             </property>
             <property name="icon">
              <iconset>
-              <normaloff>../../../../../../../../../../../../../../resources/cplus_left_arrow.svg</normaloff>../../../../../../../../../../../../../../resources/cplus_left_arrow.svg</iconset>
+              <normaloff>../../../../../../../../../../../../../../../../../../resources/cplus_left_arrow.svg</normaloff>../../../../../../../../../../../../../../../../../../resources/cplus_left_arrow.svg</iconset>
             </property>
            </widget>
           </item>
