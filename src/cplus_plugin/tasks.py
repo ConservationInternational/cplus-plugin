@@ -62,7 +62,7 @@ class ScenarioAnalysisTask(QgsTask):
     """Prepares and runs the scenario analysis"""
 
     status_message_changed = QtCore.pyqtSignal(str)
-    info_message_changed = QtCore.pyqtSignal(str, Qgis)
+    info_message_changed = QtCore.pyqtSignal(str, int)
 
     custom_progress_changed = QtCore.pyqtSignal(float)
 
@@ -73,7 +73,6 @@ class ScenarioAnalysisTask(QgsTask):
         analysis_implementation_models,
         analysis_priority_layers_groups,
         analysis_extent,
-        passed_extent,
         scenario,
     ):
         super().__init__()
@@ -83,7 +82,6 @@ class ScenarioAnalysisTask(QgsTask):
         self.analysis_implementation_models = analysis_implementation_models
         self.analysis_priority_layers_groups = analysis_priority_layers_groups
         self.analysis_extent = analysis_extent
-        self.passed_extent = passed_extent
         self.analysis_extent_string = None
 
         self.analysis_weighted_ims = []
@@ -115,39 +113,34 @@ class ScenarioAnalysisTask(QgsTask):
 
         FileUtils.create_new_dir(self.scenario_directory)
 
-        # # Prepare extent to be used in the processing parameters
-        # box = QgsRectangle(
-        #     float(self.analysis_extent.bbox[0]),
-        #     float(self.analysis_extent.bbox[2]),
-        #     float(self.analysis_extent.bbox[1]),
-        #     float(self.analysis_extent.bbox[3]),
-        # )
+        selected_pathway = None
+        pathway_found = False
 
-        box = self.passed_extent
+        for model in self.analysis_implementation_models:
+            if pathway_found:
+                break
+            for pathway in model.pathways:
+                if pathway is not None:
+                    pathway_found = True
+                    selected_pathway = pathway
+                    break
 
-        source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
-
-        # Use the first model pathway crs as the destination crs
-        first_model = (
-            self.analysis_implementation_models[0]
-            if self.analysis_implementation_models
-            else None
-        )
-        pathways = first_model.pathways if first_model else None
-        pathway_path = pathways[0].path if pathways else None
-
-        target_layer = QgsRasterLayer(pathway_path)
+        target_layer = QgsRasterLayer(selected_pathway.path, selected_pathway.name)
 
         dest_crs = (
             target_layer.crs()
-            if pathway_path
+            if selected_pathway and selected_pathway.path
             else QgsCoordinateReferenceSystem("EPSG:4326")
         )
-        transform = QgsCoordinateTransform(source_crs, dest_crs, QgsProject.instance())
-        transformed_extent = transform.transformBoundingBox(box)
-        t_extent = transform.transform(box)
 
-        snapped_extent = self.align_extent(target_layer, transformed_extent)
+        processing_extent = QgsRectangle(
+            float(self.analysis_extent.bbox[0]),
+            float(self.analysis_extent.bbox[2]),
+            float(self.analysis_extent.bbox[1]),
+            float(self.analysis_extent.bbox[3]),
+        )
+
+        snapped_extent = self.align_extent(target_layer, processing_extent)
 
         extent_string = (
             f"{snapped_extent.xMinimum()},{snapped_extent.xMaximum()},"
@@ -155,17 +148,8 @@ class ScenarioAnalysisTask(QgsTask):
             f" [{dest_crs.authid()}]"
         )
 
-        # log(f"none snapped extent, {box.xMinimum()},{box.xMaximum()},"
-        #     f"{box.yMinimum()},{box.yMaximum()} extent \n")
-        # log(f"none snapped extent {box.asWktPolygon()} \n")
-        #
-        # log(f"second tranformed extent {t_extent} extent \n")
-        # log(f"second tranformed extent {t_extent.asWktPolygon()} \n")
-        #
-        # log(f"Original area of interest extent: {transformed_extent.asWktPolygon()} \n")
-        # log(f"Snapped area of interest extent {snapped_extent.asWktPolygon()} \n")
-        #
-        # log(f"source crs {source_crs.authid()}, destination crs {dest_crs.authid()} \n")
+        log(f"Original area of interest extent: {processing_extent.asWktPolygon()} \n")
+        log(f"Snapped area of interest extent {snapped_extent.asWktPolygon()} \n")
 
         # Run pathways layers snapping using a specified reference layer
 
@@ -179,7 +163,7 @@ class ScenarioAnalysisTask(QgsTask):
             and os.path.exists(reference_layer)
             and reference_layer_path.is_file()
         ):
-            self.snap_analyzed_pathways(
+            self.snap_analysis_data(
                 self.analysis_implementation_models,
                 self.analysis_priority_layers_groups,
                 extent_string,
@@ -541,13 +525,10 @@ class ScenarioAnalysisTask(QgsTask):
 
         return True
 
-    def snap_analyzed_pathways(self, models, priority_layers_groups, extent):
+    def snap_analysis_data(self, models, priority_layers_groups, extent):
         """Snaps the passed models pathways, carbon layers and priority layers
          to align with the reference layer set on the settings
         manager.
-
-        :param pathways: List of all the available pathways
-        :type pathways: list
 
         :param models: List of the selected implementation models
         :type models: typing.List[ImplementationModel]
@@ -608,8 +589,6 @@ class ScenarioAnalysisTask(QgsTask):
                 FileUtils.create_new_dir(snapped_pathways_directory)
 
                 for pathway in pathways:
-                    path = Path(pathway.path)
-
                     pathway_layer = QgsRasterLayer(pathway.path, pathway.name)
                     nodata_value = pathway_layer.dataProvider().sourceNoDataValue(1)
 
@@ -673,39 +652,43 @@ class ScenarioAnalysisTask(QgsTask):
                     if output_path:
                         pathway.path = output_path
 
-            log(f"Snapping priority weighting layers from model {model.name} \n")
-
-            snapped_priority_directory = os.path.join(
-                self.scenario_directory, "priority_layers"
+            log(
+                f"Snapping {len(model.priority_layers)} "
+                f"priority weighting layers from model {model.name} \n"
             )
 
-            FileUtils.create_new_dir(snapped_priority_directory)
-
-            priority_layers = []
-            for priority_layer in model.priority_layers:
-                path = priority_layer.get("path")
-                if not Path(path).exists():
-                    continue
-
-                layer = QgsRasterLayer(path, f"{str(uuid.uuid4())[:4]}")
-                nodata_value_priority = layer.dataProvider().sourceNoDataValue(1)
-
-                priority_output_path = self.snap_layer(
-                    path,
-                    reference_layer_path,
-                    extent,
-                    snapped_priority_directory,
-                    rescale_values,
-                    resampling_method,
-                    nodata_value_priority,
+            if model.priority_layers is not None and len(model.priority_layers) > 0:
+                snapped_priority_directory = os.path.join(
+                    self.scenario_directory, "priority_layers"
                 )
 
-                if priority_output_path:
-                    priority_layer["path"] = priority_output_path
+                FileUtils.create_new_dir(snapped_priority_directory)
 
-                priority_layers.append(priority_layer)
+                priority_layers = []
+                for priority_layer in model.priority_layers:
+                    path = priority_layer.get("path")
+                    if not Path(path).exists():
+                        continue
 
-            model.priority_layers = priority_layers
+                    layer = QgsRasterLayer(path, f"{str(uuid.uuid4())[:4]}")
+                    nodata_value_priority = layer.dataProvider().sourceNoDataValue(1)
+
+                    priority_output_path = self.snap_layer(
+                        path,
+                        reference_layer_path,
+                        extent,
+                        snapped_priority_directory,
+                        rescale_values,
+                        resampling_method,
+                        nodata_value_priority,
+                    )
+
+                    if priority_output_path:
+                        priority_layer["path"] = priority_output_path
+
+                    priority_layers.append(priority_layer)
+
+                model.priority_layers = priority_layers
 
         except Exception as e:
             log(f"Problem snapping layers, {e}")
@@ -1169,7 +1152,7 @@ class ScenarioAnalysisTask(QgsTask):
                 model.path = results["OUTPUT"]
 
         except Exception as e:
-            log(f"Problem normalizaing models layers, {e}")
+            log(f"Problem normalizing models layers, {e}")
             self.error = e
             self.cancel()
             return False
@@ -1458,14 +1441,10 @@ class ScenarioAnalysisTask(QgsTask):
 
             source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
             dest_crs = list(layers.values())[0].crs() if len(layers) > 0 else source_crs
-            transform = QgsCoordinateTransform(
-                source_crs, dest_crs, QgsProject.instance()
-            )
-            transformed_extent = transform.transformBoundingBox(passed_extent)
 
             extent_string = (
-                f"{transformed_extent.xMinimum()},{transformed_extent.xMaximum()},"
-                f"{transformed_extent.yMinimum()},{transformed_extent.yMaximum()}"
+                f"{passed_extent.xMinimum()},{passed_extent.xMaximum()},"
+                f"{passed_extent.yMinimum()},{passed_extent.yMaximum()}"
                 f" [{dest_crs.authid()}]"
             )
 

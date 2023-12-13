@@ -30,6 +30,8 @@ from ..definitions.constants import (
 )
 from ..definitions.defaults import DEFAULT_CRS_ID
 
+from ..utils import log
+
 from qgis.core import (
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransform,
@@ -139,7 +141,7 @@ def create_layer_component(
         source_uuid,
         source_dict[NAME_ATTRIBUTE],
         source_dict[DESCRIPTION_ATTRIBUTE],
-        **kwargs
+        **kwargs,
     )
 
 
@@ -416,5 +418,10 @@ def extent_to_project_crs_extent(
         # No need for transformation
         return input_rect
 
-    coordinate_xform = QgsCoordinateTransform(default_crs, project.crs(), project)
-    return coordinate_xform.transformBoundingBox(input_rect)
+    try:
+        coordinate_xform = QgsCoordinateTransform(default_crs, project.crs(), project)
+        return coordinate_xform.transformBoundingBox(input_rect)
+    except Exception as e:
+        log(f"{e}, using the default input extent.")
+
+    return input_rect
