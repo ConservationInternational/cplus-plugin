@@ -945,6 +945,30 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 tr("Raster calculation for models pathways")
             )
 
+            # box = QgsRectangle(
+            #     float(self.analysis_extent.bbox[0]),
+            #     float(self.analysis_extent.bbox[2]),
+            #     float(self.analysis_extent.bbox[1]),
+            #     float(self.analysis_extent.bbox[3]),
+            # )
+
+            # source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
+            # destination_crs = QgsCoordinateReferenceSystem("EPSG:32735")
+            #
+            # trans_extent = self.transform_extent(box, source_crs, destination_crs)
+            #
+            # log(
+            #     f"from main original extent {box.xMinimum()}, {box.xMaximum()}, {box.yMinimum()}, {box.yMaximum()} \n"
+            # )
+            #
+            # log(f"from main original extent {box.asWktPolygon()} \n")
+            #
+            # log(
+            #     f"from main tranformed extent {trans_extent.xMinimum()}, {trans_extent.xMaximum()}, {trans_extent.yMinimum()}, {trans_extent.yMaximum()} \n"
+            # )
+            #
+            # log(f"from main tranformed extent {trans_extent.asWktPolygon()} \n")
+
             analysis_task = ScenarioAnalysisTask(
                 self.analysis_scenario_name,
                 self.analysis_scenario_description,
