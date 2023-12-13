@@ -161,11 +161,11 @@ class ScenarioAnalysisTask(QgsTask):
         #
         # log(f"second tranformed extent {t_extent} extent \n")
         # log(f"second tranformed extent {t_extent.asWktPolygon()} \n")
-
-        log(f"Original area of interest extent: {transformed_extent.asWktPolygon()} \n")
-        log(f"Snapped area of interest extent {snapped_extent.asWktPolygon()} \n")
-
-        log(f"source crs {source_crs.authid()}, destination crs {dest_crs.authid()} \n")
+        #
+        # log(f"Original area of interest extent: {transformed_extent.asWktPolygon()} \n")
+        # log(f"Snapped area of interest extent {snapped_extent.asWktPolygon()} \n")
+        #
+        # log(f"source crs {source_crs.authid()}, destination crs {dest_crs.authid()} \n")
 
         # Run pathways layers snapping using a specified reference layer
 

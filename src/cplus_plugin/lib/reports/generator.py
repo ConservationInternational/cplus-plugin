@@ -32,6 +32,8 @@ from qgis.core import (
     QgsProject,
     QgsRasterLayer,
     QgsReadWriteContext,
+    QgsLegendRenderer,
+    QgsLegendStyle,
     QgsScaleBarSettings,
     QgsTask,
     QgsTableCell,
@@ -555,7 +557,7 @@ class ReportGenerator:
 
         max_items_page = num_rows * num_cols
 
-        num_implementation_models = len(self._context.scenario.models)
+        num_implementation_models = len(self._context.scenario.weighted_models)
 
         if num_implementation_models == 0:
             tr_msg = "No implementation models in the scenario"
@@ -579,6 +581,10 @@ class ReportGenerator:
             page_pos = self._repeat_page_num + p
             _ = self.duplicate_repeat_page(page_pos)
 
+        self._pixel_area_info = calculate_raster_value_area(
+            self._scenario_layer, feedback=self._area_processing_feedback
+        )
+
         # Now, add IMs to the pages
         im_count = 0
         for p in range(num_pages):
@@ -589,7 +595,7 @@ class ReportGenerator:
                     if im_count == num_implementation_models:
                         break
 
-                    imp_model = self._context.scenario.models[im_count]
+                    imp_model = self._context.scenario.weighted_models[im_count]
                     reference_x_pos = repeat_ref_x + (c * adjusted_item_width)
                     self._add_implementation_model_items(
                         reference_x_pos,
@@ -717,23 +723,30 @@ class ReportGenerator:
         area_size_lbl = QgsLayoutItemLabel(self._layout)
         self._layout.addLayoutItem(area_size_lbl)
 
-        area_size = self._implementation_models_area[str(imp_model.uuid)]
+        int_pixel_area_info = {
+            int(value): area for value, area in self._pixel_area_info.items()
+        }
+
+        area_size = int_pixel_area_info.get(imp_model.style_pixel_value, 0)
 
         number_format = QgsBasicNumericFormat()
         number_format.setThousandsSeparator(",")
         number_format.setShowTrailingZeros(True)
         number_format.setNumberDecimalPlaces(self.AREA_DECIMAL_PLACES)
 
+        font_size = 8 if area_size < 100000 else 6
+
         area_size_lbl.setText(
             number_format.formatDouble(area_size, QgsNumericFormatContext())
         )
-        self.set_label_font(area_size_lbl, 8)
+        self.set_label_font(area_size_lbl, font_size)
 
         size_lbl_ref_point = QgsLayoutPoint(
             pos_x + (0.09 * width),
             pos_y + map_height - (0.67 * height),
             self._layout.units(),
         )
+
         area_size_lbl.attemptMove(size_lbl_ref_point, True, False, page)
         # area_size_lbl.attemptResize(
         #     QgsLayoutSize(0.05 * width, 0.05 * height, self._layout.units())
@@ -983,6 +996,16 @@ class ReportGenerator:
         legend_item.setAutoUpdateModel(False)
         model = legend_item.model()
         im_names = [im.name.lower() for im in self._context.scenario.models]
+
+        # Hiding the first root group child title
+        root_group = legend_item.model().rootGroup()
+        root_children = root_group.children() if root_group is not None else []
+
+        if len(root_children) > 0:
+            QgsLegendRenderer.setNodeLegendStyle(
+                root_children[0], QgsLegendStyle.Hidden
+            )
+
         for tree_layer in legend_item.model().rootGroup().findLayers():
             if tree_layer.name() == self._context.output_layer_name:
                 # We need to refresh the tree layer for the nodes to be loaded
@@ -996,8 +1019,10 @@ class ReportGenerator:
                         im_node_indices.append(i)
 
                 QgsMapLayerLegendUtils.setLegendNodeOrder(tree_layer, im_node_indices)
-                # Removing the tree layer title
-                tree_layer.setCustomProperty("legend/title-label", tr(" "))
+
+                # Removing the tree layer band title
+                QgsLegendRenderer.setNodeLegendStyle(tree_layer, QgsLegendStyle.Hidden)
+
                 model.refreshLayerLegend(tree_layer)
             else:
                 # Remove all other non-scenario layers
@@ -1035,10 +1060,10 @@ class ReportGenerator:
         # area for each implementation model.
         self._area_calculation_progress_reference = 20
         self._area_calculation_step_increment = progress_range / len(
-            self._context.scenario.models
+            self._context.scenario.weighted_models
         )
 
-        for imp_model in self._context.scenario.models:
+        for imp_model in self._context.scenario.weighted_models:
             model_layer = self._get_im_layer_in_project(str(imp_model.uuid), True)
             if model_layer is None:
                 tr_msg = tr("Could not find raster layer for")
@@ -1090,9 +1115,8 @@ class ReportGenerator:
         self._reset_area_processing_feedback()
 
         # Calculate pixel area
-        pixel_area_info = calculate_raster_value_area(
-            self._scenario_layer, feedback=self._area_processing_feedback
-        )
+        pixel_area_info = self._pixel_area_info
+
         if len(pixel_area_info) == 0:
             tr_msg = tr("No implementation model areas from the calculation.")
             self._error_occured = True
@@ -1115,7 +1139,7 @@ class ReportGenerator:
                 area_info = int_pixel_area_info.get(imp_model.style_pixel_value)
             else:
                 log(f"Pixel value not found in calculation")
-                area_info = tr("<Pixel value not found in calculation>")
+                area_info = tr("<Pixel value not found>")
 
             area_cell = QgsTableCell(area_info)
             if isinstance(area_info, Number):
