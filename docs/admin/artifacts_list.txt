@@ -113,3 +113,4 @@ cplus_plugin_main_f20f - https://github.com/kartoza/cplus-plugin/suites/18848236
 cplus_plugin_main_febc - https://github.com/kartoza/cplus-plugin/suites/18859370968/artifacts/1100414087
 cplus_plugin_main_02f4 - https://github.com/kartoza/cplus-plugin/suites/18919081460/artifacts/1104992849
 cplus_plugin_main_9476 - https://github.com/kartoza/cplus-plugin/suites/19002772845/artifacts/1111411994
+cplus_plugin_main_c812 - https://github.com/kartoza/cplus-plugin/suites/19010413829/artifacts/1111972725
