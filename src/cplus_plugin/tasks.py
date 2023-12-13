@@ -1091,8 +1091,7 @@ class ScenarioAnalysisTask(QgsTask):
 
                 log(
                     f"Found minimum {min_value} and "
-                    f"maximum {max_value} for pathway "
-                    f"{pathway.name, pathway.path} \n"
+                    f"maximum {max_value} for model {model.name} \n"
                 )
 
                 layer_name = Path(model.path).stem

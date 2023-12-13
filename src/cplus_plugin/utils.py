@@ -338,8 +338,8 @@ def align_rasters(
         return None, None
 
     log(
-        f"Finished snapping using resampling method {resample_method_value.name} with"
-        f" original layer - {input_raster_source}, "
+        f"Finished snapping"
+        f" original layer - {input_raster_source},"
         f"snapped output - {input_layer_output} \n"
     )
 
