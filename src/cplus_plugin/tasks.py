@@ -422,10 +422,6 @@ class ScenarioAnalysisTask(QgsTask):
                 self.run_pathways_normalization(models, priority_layers_groups, extent)
                 return
 
-            new_carbon_directory = os.path.join(
-                self.scenario_directory, "pathways_carbon_layers"
-            )
-
             suitability_index = float(
                 settings_manager.get_value(
                     Settings.PATHWAY_SUITABILITY_INDEX, default=0
@@ -436,8 +432,6 @@ class ScenarioAnalysisTask(QgsTask):
                 settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.0)
             )
 
-            FileUtils.create_new_dir(new_carbon_directory)
-
             for pathway in pathways:
                 basenames = []
                 layers = []
@@ -445,10 +439,6 @@ class ScenarioAnalysisTask(QgsTask):
                 layers.append(pathway.path)
 
                 file_name = clean_filename(pathway.name.replace(" ", "_"))
-
-                output_file = os.path.join(
-                    new_carbon_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
-                )
 
                 if suitability_index > 0:
                     basenames.append(f'{suitability_index} * "{path_basename}@1"')
@@ -459,6 +449,16 @@ class ScenarioAnalysisTask(QgsTask):
 
                 if len(pathway.carbon_paths) <= 0:
                     continue
+
+                new_carbon_directory = os.path.join(
+                    self.scenario_directory, "pathways_carbon_layers"
+                )
+
+                FileUtils.create_new_dir(new_carbon_directory)
+
+                output_file = os.path.join(
+                    new_carbon_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+                )
 
                 for carbon_path in pathway.carbon_paths:
                     carbon_full_path = Path(carbon_path)
@@ -652,46 +652,62 @@ class ScenarioAnalysisTask(QgsTask):
                     if output_path:
                         pathway.path = output_path
 
-            log(
-                f"Snapping {len(model.priority_layers)} "
-                f"priority weighting layers from model {model.name} \n"
-            )
-
-            if model.priority_layers is not None and len(model.priority_layers) > 0:
-                snapped_priority_directory = os.path.join(
-                    self.scenario_directory, "priority_layers"
+            for model in models:
+                log(
+                    f"Snapping {len(model.priority_layers)} "
+                    f"priority weighting layers from model {model.name} with layers\n"
                 )
 
-                FileUtils.create_new_dir(snapped_priority_directory)
-
-                priority_layers = []
-                for priority_layer in model.priority_layers:
-                    path = priority_layer.get("path")
-                    if not Path(path).exists():
-                        continue
-
-                    layer = QgsRasterLayer(path, f"{str(uuid.uuid4())[:4]}")
-                    nodata_value_priority = layer.dataProvider().sourceNoDataValue(1)
-
-                    priority_output_path = self.snap_layer(
-                        path,
-                        reference_layer_path,
-                        extent,
-                        snapped_priority_directory,
-                        rescale_values,
-                        resampling_method,
-                        nodata_value_priority,
+                if model.priority_layers is not None and len(model.priority_layers) > 0:
+                    snapped_priority_directory = os.path.join(
+                        self.scenario_directory, "priority_layers"
                     )
 
-                    if priority_output_path:
-                        priority_layer["path"] = priority_output_path
+                    FileUtils.create_new_dir(snapped_priority_directory)
 
-                    priority_layers.append(priority_layer)
+                    priority_layers = []
+                    for priority_layer in model.priority_layers:
+                        if priority_layer is None:
+                            continue
 
-                model.priority_layers = priority_layers
+                        priority_layer_settings = settings_manager.get_priority_layer(
+                            priority_layer.get("uuid")
+                        )
+                        if priority_layer_settings is None:
+                            continue
+
+                        priority_layer_path = priority_layer_settings.get("path")
+
+                        if not Path(priority_layer_path).exists():
+                            priority_layers.append(priority_layer)
+                            continue
+
+                        layer = QgsRasterLayer(
+                            priority_layer_path, f"{str(uuid.uuid4())[:4]}"
+                        )
+                        nodata_value_priority = layer.dataProvider().sourceNoDataValue(
+                            1
+                        )
+
+                        priority_output_path = self.snap_layer(
+                            priority_layer_path,
+                            reference_layer_path,
+                            extent,
+                            snapped_priority_directory,
+                            rescale_values,
+                            resampling_method,
+                            nodata_value_priority,
+                        )
+
+                        if priority_output_path:
+                            priority_layer["path"] = priority_output_path
+
+                        priority_layers.append(priority_layer)
+
+                    model.priority_layers = priority_layers
 
         except Exception as e:
-            log(f"Problem snapping layers, {e}")
+            log(f"Problem snapping layers, {e} \n")
             self.error = e
             self.cancel()
             return False
@@ -911,7 +927,7 @@ class ScenarioAnalysisTask(QgsTask):
                 pathway.path = results["OUTPUT"]
 
         except Exception as e:
-            log(f"Problem normalizing pathways layers, {e}")
+            log(f"Problem normalizing pathways layers, {e} \n")
             self.error = e
             self.cancel()
             return False
@@ -1151,7 +1167,7 @@ class ScenarioAnalysisTask(QgsTask):
                 model.path = results["OUTPUT"]
 
         except Exception as e:
-            log(f"Problem normalizing models layers, {e}")
+            log(f"Problem normalizing models layers, {e} \n")
             self.error = e
             self.cancel()
             return False
@@ -1312,7 +1328,7 @@ class ScenarioAnalysisTask(QgsTask):
                 weighted_models.append(model)
 
         except Exception as e:
-            log(f"Problem weighting implementation models, {e}")
+            log(f"Problem weighting implementation models, {e}\n")
             self.error = e
             self.cancel()
             return None, False
