@@ -74,8 +74,6 @@ from .components.custom_tree_widget import CustomTreeWidget
 from ..resources import *
 
 from ..utils import (
-    align_rasters,
-    clean_filename,
     open_documentation,
     tr,
     log,
@@ -85,12 +83,10 @@ from ..utils import (
 from ..definitions.defaults import (
     ADD_LAYER_ICON_PATH,
     PILOT_AREA_EXTENT,
-    PRIORITY_LAYERS,
     OPTIONS_TITLE,
     ICON_PATH,
     QGIS_GDAL_PROVIDER,
     REMOVE_LAYER_ICON_PATH,
-    SCENARIO_OUTPUT_FILE_NAME,
     SCENARIO_OUTPUT_LAYER_NAME,
     USER_DOCUMENTATION_SITE,
 )

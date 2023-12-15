@@ -171,6 +171,17 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
             ):
                 model.priority_layers.append(self.layer)
                 settings_manager.save_implementation_model(model)
+
+            # remove redundant priority layers
+            for layer in model.priority_layers:
+                if layer is not None:
+                    layer_settings = settings_manager.get_priority_layer(
+                        str(layer.get("uuid"))
+                    )
+                    if layer_settings is None:
+                        model.priority_layers.remove(layer)
+                        settings_manager.save_implementation_model(model)
+
         for model in removed_models:
             for layer in model.priority_layers:
                 if layer is None:
