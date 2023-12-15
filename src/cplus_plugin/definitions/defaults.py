@@ -93,18 +93,18 @@ IM_COLOUR_RAMPS = {
 QGIS_GDAL_PROVIDER = "gdal"
 
 DEFAULT_LOGO_PATH = (
-    os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/logos/ci_logo.png"
+    os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/icons/ci_logo.png"
 )
 CPLUS_LOGO_PATH = str(
     os.path.normpath(
         os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-        + "/logos/cplus_logo.svg"
+        + "/icons/cplus_logo.svg"
     )
 )
 CI_LOGO_PATH = str(
     os.path.normpath(
         os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-        + "/logos/ci_logo.svg"
+        + "/icons/ci_logo.svg"
     )
 )
 

@@ -692,7 +692,7 @@ class ReportGenerator:
             QgsLayoutSize(0.18 * width, 0.18 * width, self._layout.units())
         )
         symbol_props_area = {
-            "color": "255,255,255,70",
+            "color": "255,255,255,179",
             "style": "solid",
             "outline_style": "solid",
             "line_color": "#b2df8a",
@@ -714,9 +714,9 @@ class ReportGenerator:
             self._layout.units(),
         )
         area_name_lbl.attemptMove(name_lbl_ref_point, True, False, page)
-        # area_name_lbl.attemptResize(
-        #     QgsLayoutSize(0.05 * width, 0.05 * height, self._layout.units())
-        # )
+        area_name_lbl.attemptResize(
+            QgsLayoutSize(0.15 * width, 0.15 * height, self._layout.units())
+        )
 
         # Area size label
 
@@ -748,9 +748,9 @@ class ReportGenerator:
         )
 
         area_size_lbl.attemptMove(size_lbl_ref_point, True, False, page)
-        # area_size_lbl.attemptResize(
-        #     QgsLayoutSize(0.05 * width, 0.05 * height, self._layout.units())
-        # )
+        area_size_lbl.attemptResize(
+            QgsLayoutSize(0.2 * width, 0.2 * height, self._layout.units())
+        )
 
         # North arrow
         arrow_item = QgsLayoutItemPicture(self._layout)
