@@ -1,3 +1,9 @@
+# coding=utf-8
+"""
+ Plugin tasks related to the scenario analysis
+
+"""
+
 import math
 import os
 import uuid
@@ -265,9 +271,9 @@ class ScenarioAnalysisTask(QgsTask):
         aligned with
         :type raster_layer: QgsRasterLayer
 
-        :param extent: Spatial extent that will be used a target extent when
+        :param target_extent: Spatial extent that will be used a target extent when
         doing alignment.
-        :type extent: QgsRectangle
+        :type target_extent: QgsRectangle
         """
 
         try:
@@ -432,9 +438,12 @@ class ScenarioAnalysisTask(QgsTask):
                 settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.0)
             )
 
+            print(f"Found pathways {pathways}")
+
             for pathway in pathways:
                 basenames = []
                 layers = []
+                print(f"Pathway path {pathway.path}")
                 path_basename = Path(pathway.path).stem
                 layers.append(pathway.path)
 
@@ -459,6 +468,8 @@ class ScenarioAnalysisTask(QgsTask):
                 output_file = os.path.join(
                     new_carbon_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
                 )
+
+                print(f"Carbon paths {pathway.carbon_paths}")
 
                 for carbon_path in pathway.carbon_paths:
                     carbon_full_path = Path(carbon_path)
@@ -493,7 +504,7 @@ class ScenarioAnalysisTask(QgsTask):
                     "EXPRESSION": expression,
                     "EXTENT": extent,
                     "LAYERS": layers,
-                    "OUTPUT": output_file,
+                    "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
                 }
 
                 log(
@@ -515,9 +526,7 @@ class ScenarioAnalysisTask(QgsTask):
                     feedback=self.feedback,
                 )
 
-                # self.replace_nodata(results["OUTPUT"], output_file, -9999)
-
-                pathway.path = output_file
+                pathway.path = results["OUTPUT"]
         except Exception as e:
             log(f"Problem running pathway analysis,  {e}")
             self.error = e
