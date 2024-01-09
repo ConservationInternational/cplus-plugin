@@ -2862,9 +2862,9 @@
     <Option type="QString" value=""/>
     <Option type="QString" value=""/>
     <Option type="QString" value=""/>
-    <Option type="QString" value="/home/samweli/Workspace/Projects/cplus-plugin/build/cplus_plugin/logos/ci_logo.png"/>
-    <Option type="QString" value="/home/samweli/Workspace/Projects/cplus-plugin/build/cplus_plugin/logos/cplus_logo.svg"/>
-    <Option type="QString" value="/home/samweli/Workspace/Projects/cplus-plugin/build/cplus_plugin/logos/ci_logo.svg"/>
+    <Option type="QString" value="../../icons/ci_logo.png"/>
+    <Option type="QString" value="../../icons/cplus_logo.png"/>
+    <Option type="QString" value="../../icons/ci_logo.png"/>
     <Option type="QString" value=""/>
     <Option type="QString" value="The boundaries, names, and designations used in this report do not imply official endorsement or acceptance by Conservation International Foundation, or its partner organizations and contributors."/>
     <Option type="QString" value="Creative Commons Attribution 4.0 International License (CC BY 4.0)"/>
