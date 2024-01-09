@@ -111,6 +111,9 @@ class QgisCplus:
 
         initialize_model_settings()
 
+        # Initialize default report settings
+        initialize_report_settings()
+
         self.main_widget = QgisCplusMain(
             iface=self.iface, parent=self.iface.mainWindow()
         )
@@ -250,9 +253,6 @@ class QgisCplus:
             parent=self.iface.mainWindow(),
             status_tip=self.tr("CPLUS About"),
         )
-
-        # Initialize default report settings
-        initialize_report_settings()
 
         # Adds the settings to the QGIS options panel
         self.options_factory = CplusOptionsFactory()
@@ -499,16 +499,26 @@ def initialize_report_settings():
     """Sets the default report settings on first time use
     of the plugin.
     """
-    if settings_manager.get_value(Settings.REPORT_DISCLAIMER, None) is None:
-        settings_manager.set_value(
-            Settings.REPORT_DISCLAIMER, DEFAULT_REPORT_DISCLAIMER
-        )
 
-    if settings_manager.get_value(Settings.REPORT_LICENSE, None) is None:
-        settings_manager.set_value(Settings.REPORT_LICENSE, DEFAULT_REPORT_LICENSE)
+    log(f"Initializing report settings")
 
-    if settings_manager.get_value(Settings.REPORT_CPLUS_LOGO, None) is None:
-        settings_manager.set_value(Settings.REPORT_CPLUS_LOGO, CPLUS_LOGO_PATH)
+    # Check if default report settings have already been set
+    report_setting = f"default_report_settings_set_{get_plugin_version()}"
 
-    if settings_manager.get_value(Settings.REPORT_CI_LOGO, None) is None:
-        settings_manager.set_value(Settings.REPORT_CI_LOGO, CI_LOGO_PATH)
+    if settings_manager.get_value(report_setting, default=False, setting_type=bool):
+        return
+
+    found_settings = settings_manager.find_settings("default_report_settings_set")
+
+    # Remove old settings as they will not be of use anymore.
+    for previous_setting in found_settings:
+        settings_manager.remove(previous_setting)
+
+    settings_manager.set_value(Settings.REPORT_DISCLAIMER, DEFAULT_REPORT_DISCLAIMER)
+
+    settings_manager.set_value(Settings.REPORT_LICENSE, DEFAULT_REPORT_LICENSE)
+
+    settings_manager.set_value(Settings.REPORT_CPLUS_LOGO, CPLUS_LOGO_PATH)
+    settings_manager.set_value(Settings.REPORT_CI_LOGO, CI_LOGO_PATH)
+
+    settings_manager.set_value(report_setting, True)
