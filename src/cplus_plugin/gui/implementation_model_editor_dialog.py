@@ -86,6 +86,9 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self.txt_description.textChanged.connect(self.description_changed)
 
+        # Hide map layer handling
+        self.layer_gb.setVisible(False)
+
     @property
     def implementation_model(self) -> ImplementationModel:
         """Returns a reference to the ImplementationModel object.
