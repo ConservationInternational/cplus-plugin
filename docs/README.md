@@ -15,7 +15,7 @@ If you are on ubuntu, windows (under WSL2) or macOS you can install the nix
 package manager which will fetch all the dependencies needed to build this
 project.
 
-To do this, please go to the [Nix Download Page]() and follow the instructions
+To do this, please go to the [Nix Download Page](https://nixos.org/download) and follow the instructions
 under `Nix: the package manager` as appropriate to your operating system.
 
 A special note for NixOS users:
@@ -43,7 +43,7 @@ git clone git@github.com:kartoza/cplus-plugin.git
 Open your favourite terminal and enter into this documentation folder:
 
 ```
-cd QPLUS/docs/
+cd cplus-plugin/docs/
 ```
 
 ### Install the build environment
@@ -63,7 +63,7 @@ When the setup process completes, you will see something like this in your shell
 
 
 ```
-direnv: loading ~/dev/python/QPLUS/docs/.envrc
+direnv: loading ~/dev/python/cplus-plugin/docs/.envrc
 direnv: using nix
 Using venvShellHook
 Executing venvHook
