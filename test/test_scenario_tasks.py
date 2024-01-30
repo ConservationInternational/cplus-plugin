@@ -7,8 +7,10 @@ import unittest
 
 import os
 import uuid
-import logging
+import processing
 import datetime
+
+from processing.core.Processing import Processing
 
 from qgis.core import QgsRasterLayer
 
@@ -20,7 +22,7 @@ from cplus_plugin.models.base import Scenario, NcsPathway, ImplementationModel
 
 class ScenarioAnalysisTaskTest(unittest.TestCase):
     def setUp(self):
-        pass
+        Processing.initialize()
 
     def test_scenario_pathways_analysis(self):
         pathway_layer_directory = os.path.join(
