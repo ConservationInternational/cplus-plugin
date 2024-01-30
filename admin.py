@@ -209,7 +209,7 @@ def build(
     :returns: Build directory path.
     :rtype: Path
     """
-    if clean:
+    if clean and output_directory.exists():
         shutil.rmtree(str(output_directory), ignore_errors=True)
     output_directory.mkdir(parents=True, exist_ok=True)
     copy_source_files(output_directory, tests=tests)
@@ -266,14 +266,26 @@ def copy_source_files(
     for child in (LOCAL_ROOT_DIR / "src" / SRC_NAME).iterdir():
         if child.name != "__pycache__":
             target_path = output_directory / child.name
-            handler = shutil.copytree if child.is_dir() else shutil.copy
-            handler(str(child.resolve()), str(target_path))
+            if child.is_dir():
+                shutil.copytree(
+                    str(child.resolve()),
+                    str(target_path),
+                    ignore=shutil.ignore_patterns("*.pyc", "__pycache*"),
+                )
+            else:
+                shutil.copy(str(child.resolve()), str(target_path))
     if tests:
         for child in LOCAL_ROOT_DIR.iterdir():
             if child.name in TEST_FILES:
                 target_path = output_directory / child.name
-                handler = shutil.copytree if child.is_dir() else shutil.copy
-                handler(str(child.resolve()), str(target_path))
+                if child.is_dir():
+                    shutil.copytree(
+                        str(child.resolve()),
+                        str(target_path),
+                        ignore=shutil.ignore_patterns("*.pyc", "__pycache*"),
+                    )
+                else:
+                    shutil.copy(str(child.resolve()), str(target_path))
 
 
 @app.command()

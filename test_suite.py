@@ -63,7 +63,7 @@ def test_package(package="test"):
     """
     test_loader = unittest.defaultTestLoader
     try:
-        test_suite = test_loader.discover(package, pattern="test_tasks.py")
+        test_suite = test_loader.discover(package)
     except ImportError:
         test_suite = unittest.TestSuite()
     _run_tests(test_suite, package)

@@ -375,7 +375,9 @@ class ScenarioAnalysisTask(QgsTask):
 
         return outputs is not None
 
-    def run_pathways_analysis(self, models, priority_layers_groups, extent):
+    def run_pathways_analysis(
+        self, models, priority_layers_groups, extent, temporary_output=False
+    ):
         """Runs the required model pathways analysis on the passed
          implementation models. The analysis involves adding the pathways
          carbon layers into the pathway layer.
@@ -392,6 +394,10 @@ class ScenarioAnalysisTask(QgsTask):
 
         :param extent: The selected extent from user
         :type extent: SpatialExtent
+
+        :param temporary_output: Whether to save the processing outputs as temporary
+        files
+        :type temporary_output: bool
         """
         if self.processing_cancelled:
             return False
@@ -438,12 +444,9 @@ class ScenarioAnalysisTask(QgsTask):
                 settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.0)
             )
 
-            print(f"Found pathways {pathways}")
-
             for pathway in pathways:
                 basenames = []
                 layers = []
-                print(f"Pathway path {pathway.path}")
                 path_basename = Path(pathway.path).stem
                 layers.append(pathway.path)
 
@@ -468,8 +471,6 @@ class ScenarioAnalysisTask(QgsTask):
                 output_file = os.path.join(
                     new_carbon_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
                 )
-
-                print(f"Carbon paths {pathway.carbon_paths}")
 
                 for carbon_path in pathway.carbon_paths:
                     carbon_full_path = Path(carbon_path)
@@ -497,6 +498,10 @@ class ScenarioAnalysisTask(QgsTask):
                     )
                     return
 
+                output = (
+                    QgsProcessing.TEMPORARY_OUTPUT if temporary_output else output_file
+                )
+
                 # Actual processing calculation
                 alg_params = {
                     "CELLSIZE": 0,
@@ -504,7 +509,7 @@ class ScenarioAnalysisTask(QgsTask):
                     "EXPRESSION": expression,
                     "EXTENT": extent,
                     "LAYERS": layers,
-                    "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+                    "OUTPUT": output,
                 }
 
                 log(
@@ -782,7 +787,9 @@ class ScenarioAnalysisTask(QgsTask):
 
         return output_path
 
-    def run_pathways_normalization(self, models, priority_layers_groups, extent):
+    def run_pathways_normalization(
+        self, models, priority_layers_groups, extent, temporary_output=False
+    ):
         """Runs the normalization on the models pathways layers,
         adjusting band values measured on different scale, the resulting scale
         is computed using the below formula
@@ -802,6 +809,10 @@ class ScenarioAnalysisTask(QgsTask):
 
         :param extent: selected extent from user
         :type extent: str
+
+        :param temporary_output: Whether to save the processing outputs as temporary
+        files
+        :type temporary_output: bool
         """
         if self.processing_cancelled:
             # Will not proceed if processing has been cancelled by the user
@@ -903,6 +914,10 @@ class ScenarioAnalysisTask(QgsTask):
                         f" ({max_value} - {min_value})"
                     )
 
+                output = (
+                    QgsProcessing.TEMPORARY_OUTPUT if temporary_output else output_file
+                )
+
                 # Actual processing calculation
                 alg_params = {
                     "CELLSIZE": 0,
@@ -910,7 +925,7 @@ class ScenarioAnalysisTask(QgsTask):
                     "EXPRESSION": expression,
                     "EXTENT": extent,
                     "LAYERS": layers,
-                    "OUTPUT": output_file,
+                    "OUTPUT": output,
                 }
 
                 log(
@@ -943,7 +958,9 @@ class ScenarioAnalysisTask(QgsTask):
 
         return True
 
-    def run_models_analysis(self, models, priority_layers_groups, extent):
+    def run_models_analysis(
+        self, models, priority_layers_groups, extent, temporary_output=False
+    ):
         """Runs the required model analysis on the passed
         implementation models.
 
@@ -956,6 +973,10 @@ class ScenarioAnalysisTask(QgsTask):
 
         :param extent: selected extent from user
         :type extent: SpatialExtent
+
+        :param temporary_output: Whether to save the processing outputs as temporary
+        files
+        :type temporary_output: bool
         """
         if self.processing_cancelled:
             # Will not proceed if processing has been cancelled by the user
@@ -1004,6 +1025,10 @@ class ScenarioAnalysisTask(QgsTask):
                 for pathway in model.pathways:
                     layers.append(pathway.path)
 
+                output = (
+                    QgsProcessing.TEMPORARY_OUTPUT if temporary_output else output_file
+                )
+
                 # Actual processing calculation
 
                 alg_params = {
@@ -1013,7 +1038,7 @@ class ScenarioAnalysisTask(QgsTask):
                     "OUTPUT_NODATA_VALUE": -9999,
                     "REFERENCE_LAYER": layers[0] if len(layers) > 0 else None,
                     "STATISTIC": 0,  # Sum
-                    "OUTPUT": output_file,
+                    "OUTPUT": output,
                 }
 
                 log(
@@ -1044,7 +1069,9 @@ class ScenarioAnalysisTask(QgsTask):
 
         return True
 
-    def run_models_normalization(self, models, priority_layers_groups, extent):
+    def run_models_normalization(
+        self, models, priority_layers_groups, extent, temporary_output=False
+    ):
         """Runs the normalization analysis on the models layers,
         adjusting band values measured on different scale, the resulting scale
         is computed using the below formula
@@ -1064,6 +1091,10 @@ class ScenarioAnalysisTask(QgsTask):
 
         :param extent: Selected area of interest extent
         :type extent: str
+
+        :param temporary_output: Whether to save the processing outputs as temporary
+        files
+        :type temporary_output: bool
         """
         if self.processing_cancelled:
             # Will not proceed if processing has been cancelled by the user
@@ -1148,6 +1179,10 @@ class ScenarioAnalysisTask(QgsTask):
                         f" ({max_value} - {min_value})"
                     )
 
+                output = (
+                    QgsProcessing.TEMPORARY_OUTPUT if temporary_output else output_file
+                )
+
                 # Actual processing calculation
                 alg_params = {
                     "CELLSIZE": 0,
@@ -1155,7 +1190,7 @@ class ScenarioAnalysisTask(QgsTask):
                     "EXPRESSION": expression,
                     "EXTENT": extent,
                     "LAYERS": layers,
-                    "OUTPUT": output_file,
+                    "OUTPUT": output,
                 }
 
                 log(f"Used parameters for normalization of the models: {alg_params} \n")
