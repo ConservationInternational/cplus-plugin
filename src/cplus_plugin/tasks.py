@@ -1218,7 +1218,9 @@ class ScenarioAnalysisTask(QgsTask):
 
         return True
 
-    def run_models_weighting(self, models, priority_layers_groups, extent):
+    def run_models_weighting(
+        self, models, priority_layers_groups, extent, temporary_output=False
+    ):
         """Runs weighting analysis on the passed implementation models using
         the corresponding models weighting analysis.
 
@@ -1230,6 +1232,10 @@ class ScenarioAnalysisTask(QgsTask):
 
         :param extent: selected extent from user
         :type extent: str
+
+        :param temporary_output: Whether to save the processing outputs as temporary
+        files
+        :type temporary_output: bool
         """
 
         if self.processing_cancelled:
@@ -1340,6 +1346,10 @@ class ScenarioAnalysisTask(QgsTask):
                 )
                 expression = " + ".join(basenames)
 
+                output = (
+                    QgsProcessing.TEMPORARY_OUTPUT if temporary_output else output_file
+                )
+
                 # Actual processing calculation
                 alg_params = {
                     "CELLSIZE": 0,
@@ -1347,7 +1357,7 @@ class ScenarioAnalysisTask(QgsTask):
                     "EXPRESSION": expression,
                     "EXTENT": extent,
                     "LAYERS": layers,
-                    "OUTPUT": output_file,
+                    "OUTPUT": output,
                 }
 
                 log(
