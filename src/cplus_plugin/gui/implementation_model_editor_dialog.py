@@ -10,14 +10,14 @@ import uuid
 from qgis.core import (
     Qgis,
     QgsColorRamp,
-    QgsFillSymbol,
     QgsFillSymbolLayer,
+    QgsGradientColorRamp,
     QgsMapLayerProxyModel,
     QgsRasterLayer,
 )
 from qgis.gui import QgsGui, QgsMessageBar
 
-from qgis.PyQt import QtGui, QtWidgets
+from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
@@ -54,10 +54,17 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.style_btn.setSymbolType(Qgis.SymbolType.Fill)
 
         self.btn_color_ramp.setShowNull(False)
-        self.btn_color_ramp.setRandomColorRamp()
+        self.btn_color_ramp.setToNull()
+        self.btn_color_ramp.setShowGradientOnly(True)
         self.btn_color_ramp.setColorRampDialogTitle(
             self.tr("Set Color Ramp for Output Implementation Model")
         )
+
+        # Default colors
+        start_color = QtGui.QColor.fromRgb(QtCore.QRandomGenerator.global_().generate())
+        stop_color = QtGui.QColor.fromRgb(QtCore.QRandomGenerator.global_().generate())
+        self.style_btn.setColor(start_color)
+        self.btn_color_ramp.setColorRamp(QgsGradientColorRamp(start_color, stop_color))
 
         self.buttonBox.accepted.connect(self._on_accepted)
         self.btn_select_file.clicked.connect(self._on_select_file)
@@ -222,8 +229,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._show_warning_message(msg)
             status = False
 
-        output_model_color_ramp = self.btn_color_ramp.colorRamp()
-        if output_model_color_ramp is None:
+        if self.btn_color_ramp.colorRamp() is None or self.btn_color_ramp.isNull():
             msg = tr("No color ramp defined for the output model layer.")
             self._show_warning_message(msg)
             status = False

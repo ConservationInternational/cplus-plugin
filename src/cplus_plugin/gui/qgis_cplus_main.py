@@ -31,7 +31,6 @@ from qgis.core import (
     QgsFeedback,
     QgsGeometry,
     QgsProject,
-    QgsProcessing,
     QgsProcessingAlgRunnerTask,
     QgsProcessingContext,
     QgsProcessingFeedback,
@@ -41,10 +40,7 @@ from qgis.core import (
     QgsWkbTypes,
     QgsColorRampShader,
     QgsSingleBandPseudoColorRenderer,
-    QgsRasterShader,
     QgsPalettedRasterRenderer,
-    QgsStyle,
-    QgsRasterMinMaxOrigin,
 )
 
 from qgis.gui import (
