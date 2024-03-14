@@ -605,14 +605,15 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         item = selected_items[0]
         self._edit_implementation_model_item(item)
 
-    def _handle_double_click(self, item: ImplementationModelItem):
+    def _handle_double_click(self, item: ModelComponentItemType):
         """Show dialog for editing implementation model.
 
-        :param item: Implementation model item that has received the
-        event.
-        :type item: ImplementationModelItem
+        :param item: Model component item that has received the event.
+        :type item: ModelComponentItem
         """
-        self._edit_implementation_model_item(item)
+        # Only handle if it is an implementation model object
+        if isinstance(item, ImplementationModelItem):
+            self._edit_implementation_model_item(item)
 
     def _edit_implementation_model_item(self, item):
         """Load dialog for editing implementation model."""
