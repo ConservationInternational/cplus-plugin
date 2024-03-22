@@ -64,6 +64,7 @@ from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
 from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
 from .lib.reports.manager import report_manager
 from .gui.settings.cplus_options import CplusOptionsFactory
+from .gui.settings.report_options import ReportOptionsFactory
 
 from .utils import FileUtils, log, open_documentation, get_plugin_version
 
@@ -99,6 +100,10 @@ class QgisCplus:
         self.toolButton.setPopupMode(QToolButton.MenuButtonPopup)
         self.toolBtnAction = self.toolbar.addWidget(self.toolButton)
         self.actions.append(self.toolBtnAction)
+
+        # Create options factories
+        self.cplus_options_factory = CplusOptionsFactory()
+        self.reports_options_factory = ReportOptionsFactory()
 
         create_priority_layers()
 
@@ -247,9 +252,9 @@ class QgisCplus:
             status_tip=self.tr("CPLUS About"),
         )
 
-        # Adds the settings to the QGIS options panel
-        self.options_factory = CplusOptionsFactory()
-        self.iface.registerOptionsWidgetFactory(self.options_factory)
+        # Register plugin options factories
+        self.iface.registerOptionsWidgetFactory(self.cplus_options_factory)
+        self.iface.registerOptionsWidgetFactory(self.reports_options_factory)
 
         # Register custom layout items
         self.register_layout_items()
@@ -269,8 +274,12 @@ class QgisCplus:
                 self.iface.removePluginWebMenu(self.tr("&CPLUS"), action)
                 self.iface.removeToolBarIcon(action)
 
+            # Unregister plugin options factories
+            self.iface.unregisterOptionsWidgetFactory(self.cplus_options_factory)
+            self.iface.unregisterOptionsWidgetFactory(self.reports_options_factory)
+
         except Exception as e:
-            pass
+            log(str(e), info=False)
 
     def run(self):
         """Creates the main widget for the plugin."""

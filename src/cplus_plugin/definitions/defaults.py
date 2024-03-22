@@ -23,6 +23,7 @@ REPORT_DOCUMENTATION = (
 )
 
 OPTIONS_TITLE = "CPLUS"  # Title in the QGIS settings
+REPORT_OPTIONS_TILE = "Reports"
 ICON_PATH = ":/plugins/cplus_plugin/icon.svg"
 ICON_PDF = (
     os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
