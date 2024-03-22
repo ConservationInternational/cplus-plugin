@@ -28,18 +28,23 @@ from qgis.utils import iface
 
 from qgis.PyQt.QtWidgets import QWidget
 
-from .conf import (
+from ...conf import (
     settings_manager,
     Settings,
 )
-from .definitions.defaults import (
+from ...definitions.defaults import (
     OPTIONS_TITLE,
     ICON_PATH,
     DEFAULT_LOGO_PATH,
 )
-from .utils import FileUtils, tr
+from ...utils import FileUtils, tr
 
-Ui_DlgSettings, _ = uic.loadUiType(str(Path(__file__).parent / "ui/qgis_settings.ui"))
+
+Ui_DlgSettings, _ = uic.loadUiType(
+    os.path.join(
+        os.path.dirname(__file__), "../../ui/cplus_settings.ui"
+    )
+)
 
 
 class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
@@ -47,7 +52,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
     """CPLUS plugin settings class.
 
-    Class which manages the CPLUS settings. Initilizes the UI, which can be accessed
+    Class which manages the CPLUS settings. Initializes the UI, which can be accessed
     from the menu drop-down or the QGIS settings.
     """
 

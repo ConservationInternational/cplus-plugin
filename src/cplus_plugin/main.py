@@ -21,9 +21,9 @@ from qgis.core import (
     QgsSettings,
 )
 from qgis.gui import QgsGui, QgsLayoutDesignerInterface
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
+from qgis.PyQt.QtCore import QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QDockWidget, QMainWindow, QVBoxLayout
+from qgis.PyQt.QtWidgets import QAction
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -42,7 +42,6 @@ from .definitions.constants import (
     NCS_PATHWAY_SEGMENT,
     PATH_ATTRIBUTE,
     PIXEL_VALUE_ATTRIBUTE,
-    PRIORITY_LAYERS_SEGMENT,
     STYLE_ATTRIBUTE,
     USER_DEFINED_ATTRIBUTE,
     UUID_ATTRIBUTE,
@@ -52,7 +51,6 @@ from .definitions.defaults import (
     CI_LOGO_PATH,
     CPLUS_LOGO_PATH,
     DEFAULT_IMPLEMENTATION_MODELS,
-    DEFAULT_LOGO_PATH,
     DEFAULT_NCS_PATHWAYS,
     DEFAULT_REPORT_DISCLAIMER,
     DEFAULT_REPORT_LICENSE,
@@ -65,12 +63,7 @@ from .definitions.defaults import (
 from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
 from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
 from .lib.reports.manager import report_manager
-from .models.helpers import (
-    copy_layer_component_attributes,
-    create_implementation_model,
-    create_ncs_pathway,
-)
-from .settings import CplusOptionsFactory
+from .gui.settings.cplus_options import CplusOptionsFactory
 
 from .utils import FileUtils, log, open_documentation, get_plugin_version
 
