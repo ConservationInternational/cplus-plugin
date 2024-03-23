@@ -1,6 +1,6 @@
 # coding=utf-8
 
-"""Plugin report settings."""
+"""Scenario log settings."""
 
 import os
 import typing
@@ -26,18 +26,18 @@ from ...conf import (
     settings_manager,
     Settings,
 )
-from ...definitions.constants import CPLUS_OPTIONS_KEY, REPORTS_OPTIONS_KEY
-from ...definitions.defaults import REPORT_OPTIONS_TITLE, REPORT_SETTINGS_ICON_PATH
+from ...definitions.constants import CPLUS_OPTIONS_KEY, LOG_OPTIONS_KEY
+from ...definitions.defaults import LOG_OPTIONS_TITLE, LOG_SETTINGS_ICON_PATH
 from ...utils import FileUtils, tr
 
 
-Ui_ReportSettingsWidget, _ = uic.loadUiType(
-    os.path.join(os.path.dirname(__file__), "../../ui/report_settings.ui")
+Ui_LogSettingsWidget, _ = uic.loadUiType(
+    os.path.join(os.path.dirname(__file__), "../../ui/log_settings.ui")
 )
 
 
-class ReportSettingsWidget(QgsOptionsPageWidget, Ui_ReportSettingsWidget):
-    """Report settings widget."""
+class LogSettingsWidget(QgsOptionsPageWidget, Ui_LogSettingsWidget):
+    """Log settings widget."""
 
     def __init__(self, parent=None):
         QgsOptionsPageWidget.__init__(self, parent)
@@ -48,28 +48,28 @@ class ReportSettingsWidget(QgsOptionsPageWidget, Ui_ReportSettingsWidget):
         pass
 
 
-class ReportOptionsFactory(QgsOptionsWidgetFactory):
-    """Factory for defining CPLUS report settings."""
+class LogOptionsFactory(QgsOptionsWidgetFactory):
+    """Factory for defining CPLUS log settings."""
 
     def __init__(self) -> None:
         super().__init__()
 
-        self.setTitle(REPORT_OPTIONS_TITLE)
-        self.setKey(REPORTS_OPTIONS_KEY)
+        self.setTitle(LOG_OPTIONS_TITLE)
+        self.setKey(LOG_OPTIONS_KEY)
 
     def icon(self) -> QIcon:
-        """Returns the icon which will be used for the report settings item.
+        """Returns the icon which will be used for the log settings item.
 
         :returns: An icon object which contains the provided custom icon
         :rtype: QIcon
         """
-        return QIcon(REPORT_SETTINGS_ICON_PATH)
+        return QIcon(LOG_SETTINGS_ICON_PATH)
 
     def path(self) -> typing.List[str]:
         """
         Returns the path to place the widget page at.
 
-        This instructs the registry to place the report options tab under the
+        This instructs the registry to place the log options tab under the
         main CPLUS settings.
 
         :returns: Path name of the main CPLUS settings.
@@ -77,13 +77,13 @@ class ReportOptionsFactory(QgsOptionsWidgetFactory):
         """
         return [CPLUS_OPTIONS_KEY]
 
-    def createWidget(self, parent: QWidget) -> ReportSettingsWidget:
-        """Creates a widget for report settings.
+    def createWidget(self, parent: QWidget) -> LogSettingsWidget:
+        """Creates a widget for defining log settings.
 
         :param parent: Parent widget
         :type parent: QWidget
 
-        :returns: Widget for defining report settings.
-        :rtype: ReportSettingsWidget
+        :returns: Widget for defining log settings.
+        :rtype: LogSettingsWidget
         """
-        return ReportSettingsWidget(parent)
+        return LogSettingsWidget(parent)

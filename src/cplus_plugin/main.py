@@ -64,6 +64,7 @@ from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
 from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
 from .lib.reports.manager import report_manager
 from .gui.settings.cplus_options import CplusOptionsFactory
+from .gui.settings.log_options import LogOptionsFactory
 from .gui.settings.report_options import ReportOptionsFactory
 
 from .utils import FileUtils, log, open_documentation, get_plugin_version
@@ -104,6 +105,7 @@ class QgisCplus:
         # Create options factories
         self.cplus_options_factory = CplusOptionsFactory()
         self.reports_options_factory = ReportOptionsFactory()
+        self.log_options_factory = LogOptionsFactory()
 
         create_priority_layers()
 
@@ -255,6 +257,7 @@ class QgisCplus:
         # Register plugin options factories
         self.iface.registerOptionsWidgetFactory(self.cplus_options_factory)
         self.iface.registerOptionsWidgetFactory(self.reports_options_factory)
+        self.iface.registerOptionsWidgetFactory(self.log_options_factory)
 
         # Register custom layout items
         self.register_layout_items()
@@ -277,6 +280,7 @@ class QgisCplus:
             # Unregister plugin options factories
             self.iface.unregisterOptionsWidgetFactory(self.cplus_options_factory)
             self.iface.unregisterOptionsWidgetFactory(self.reports_options_factory)
+            self.iface.unregisterOptionsWidgetFactory(self.log_options_factory)
 
         except Exception as e:
             log(str(e), info=False)
