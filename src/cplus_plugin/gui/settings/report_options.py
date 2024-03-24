@@ -50,7 +50,7 @@ class ReportSettingsWidget(QgsOptionsPageWidget, Ui_ReportSettingsWidget):
 
     def apply(self) -> None:
         """This is called on OK click in the QGIS options panel."""
-        pass
+        self.save_settings()
 
     def update_logo(self, custom_logo, logo_dir=DEFAULT_LOGO_PATH):
         """Updates the logo preview.
@@ -162,6 +162,12 @@ class ReportSettingsWidget(QgsOptionsPageWidget, Ui_ReportSettingsWidget):
         report_license = self.txt_license.text()
         settings_manager.set_value(Settings.REPORT_LICENSE, report_license)
 
+        stakeholders = self.txt_stakeholders.text()
+        settings_manager.set_value(Settings.REPORT_STAKEHOLDERS, stakeholders)
+
+        policies = self.txt_culture_policies.text()
+        settings_manager.set_value(Settings.REPORT_CULTURE_POLICIES, policies)
+
     def load_settings(self):
         """Loads the settings and displays it in the options UI."""
         organization = settings_manager.get_value(
@@ -198,6 +204,16 @@ class ReportSettingsWidget(QgsOptionsPageWidget, Ui_ReportSettingsWidget):
 
         report_license = settings_manager.get_value(Settings.REPORT_LICENSE, default="")
         self.txt_license.setText(report_license)
+
+        stakeholders = settings_manager.get_value(
+            Settings.REPORT_STAKEHOLDERS, default=""
+        )
+        self.txt_stakeholders.setText(stakeholders)
+
+        policies = settings_manager.get_value(
+            Settings.REPORT_CULTURE_POLICIES, default=""
+        )
+        self.txt_culture_policies.setText(policies)
 
     def showEvent(self, event: QShowEvent) -> None:
         """Show event being called. This will display the plugin settings.

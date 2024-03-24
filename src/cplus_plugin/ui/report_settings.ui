@@ -108,7 +108,7 @@
       <item row="13" column="0">
        <widget class="QLabel" name="label">
         <property name="text">
-         <string>List of stakeholders and relatiionships</string>
+         <string>List of stakeholders and relationships</string>
         </property>
         <property name="wordWrap">
          <bool>false</bool>
