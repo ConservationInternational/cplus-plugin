@@ -27,6 +27,7 @@ from ...definitions.defaults import (
     REPORT_OPTIONS_TITLE,
     REPORT_SETTINGS_ICON_PATH,
 )
+from ...utils import tr
 
 
 Ui_ReportSettingsWidget, _ = uic.loadUiType(
@@ -240,7 +241,7 @@ class ReportOptionsFactory(QgsOptionsWidgetFactory):
     def __init__(self) -> None:
         super().__init__()
 
-        self.setTitle(REPORT_OPTIONS_TITLE)
+        self.setTitle(tr(REPORT_OPTIONS_TITLE))
         self.setKey(REPORTS_OPTIONS_KEY)
 
     def icon(self) -> QIcon:

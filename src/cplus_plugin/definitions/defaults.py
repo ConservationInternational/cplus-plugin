@@ -23,7 +23,7 @@ REPORT_DOCUMENTATION = (
 )
 
 OPTIONS_TITLE = "CPLUS"  # Title in the QGIS settings
-REPORT_OPTIONS_TITLE = "Reports"
+REPORT_OPTIONS_TITLE = "Reporting"
 LOG_OPTIONS_TITLE = "Logs"
 ICON_PATH = ":/plugins/cplus_plugin/icon.svg"
 REPORT_SETTINGS_ICON_PATH = str(
