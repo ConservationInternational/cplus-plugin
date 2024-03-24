@@ -7,14 +7,14 @@
     <x>0</x>
     <y>0</y>
     <width>606</width>
-    <height>476</height>
+    <height>609</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout_2">
-   <item row="0" column="0">
+  <layout class="QVBoxLayout" name="layout">
+   <item>
     <widget class="QgsCollapsibleGroupBox" name="gb_reports">
      <property name="title">
       <string>Report Information</string>
@@ -165,7 +165,7 @@
      </layout>
     </widget>
    </item>
-   <item row="1" column="0">
+   <item>
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>

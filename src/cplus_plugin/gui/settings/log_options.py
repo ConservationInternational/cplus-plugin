@@ -5,11 +5,6 @@
 import os
 import typing
 
-import qgis.core
-import qgis.gui
-
-from qgis.analysis import QgsAlignRaster
-
 from qgis.gui import QgsFileWidget, QgsOptionsPageWidget
 from qgis.gui import QgsOptionsWidgetFactory
 from qgis.PyQt import uic
