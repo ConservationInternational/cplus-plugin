@@ -122,6 +122,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.task = None
         self.processing_cancelled = False
 
+        # Set icons for buttons
+        help_icon = FileUtils.get_icon("mActionHelpContents_green.svg")
+        self.help_btn.setIcon(help_icon)
+
+        settings_icon = FileUtils.get_icon("settings.svg")
+        self.options_btn.setIcon(settings_icon)
+
         self.prepare_input()
 
         # Insert widget for step 2
