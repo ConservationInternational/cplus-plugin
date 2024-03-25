@@ -119,3 +119,4 @@ cplus_plugin_main_2891 - https://github.com/kartoza/cplus-plugin/suites/19094120
 cplus_plugin_main_f753 - https://github.com/kartoza/cplus-plugin/suites/19622684596/artifacts/1156096301
 cplus_plugin_main_3539 - https://github.com/kartoza/cplus-plugin/suites/19624110336/artifacts/1156195686
 cplus_plugin_main_e25b - https://github.com/kartoza/cplus-plugin/suites/20483447209/artifacts/1223043008
+cplus_plugin_main_6845 - https://github.com/ConservationInternational/cplus-plugin/suites/22072289846/artifacts/1355516867
