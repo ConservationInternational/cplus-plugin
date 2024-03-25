@@ -15,12 +15,14 @@ PILOT_AREA_EXTENT = {
 
 DEFAULT_CRS_ID = 4326
 
-DOCUMENTATION_SITE = "https://kartoza.github.io/cplus-plugin"
-USER_DOCUMENTATION_SITE = "https://kartoza.github.io/cplus-plugin/user/guide"
-ABOUT_DOCUMENTATION_SITE = "https://kartoza.github.io/cplus-plugin/about/ci"
-REPORT_DOCUMENTATION = (
-    "https://kartoza.github.io/cplus-plugin/user/guide/#report-generating"
+DOCUMENTATION_SITE = "https://conservationinternational.github.io/cplus-plugin"
+USER_DOCUMENTATION_SITE = (
+    "https://conservationinternational.github.io/cplus-plugin/user/guide"
 )
+ABOUT_DOCUMENTATION_SITE = (
+    "https://conservationinternational.github.io/cplus-plugin/about/ci"
+)
+REPORT_DOCUMENTATION = "https://conservationinternational.github.io/cplus-plugin/user/guide/#report-generating"
 
 OPTIONS_TITLE = "CPLUS"  # Title in the QGIS settings
 ICON_PATH = ":/plugins/cplus_plugin/icon.svg"
