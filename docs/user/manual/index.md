@@ -297,21 +297,18 @@ These options will be available once the analysis has finished. The options will
 
 ### Settings
 
+#### a) Main Plugin Settings
+<mark>Screenshot to be updated</mark>
+
 ![CPLUS settings](img/manual-settings.png)
 
-*Figure 15: Settings available to the user*
+*Figure 15: Main settings available to the user*
 
-- **Reports**: Information to be added to the report
-    - *Organization*: (optional) Organization or institute name
-    - *Contact email*: (optional) Contact email of the user
-    - *Website*: (optional) Link to website of your company or institute
-    - *Custom logo*: (optional) If enabled, the user needs to provide a custom logo. Most formats should suffice (png, jpeg, etc.)
-    - *Logo preview*: Visual previre of the default CI logo, or the custom logo a user selected
-    - *Footer*: (optional) Will be added to the report
-    - *Disclaimer*: Change as desired, otherwise use the default disclaimer
-    - *License*: Change as desired, otherwise use the default license description
-- **Advanced**:
+- **General**:
     - *Base data directory*: Directory to read data from, and to which results will be written
+
+
+- **Scenario Analysis**:
     - *Coefficient for carbon layers*: Applied to carbon layers during processing
     - *Pathway suitability index*: Index multiplied to the pathways. Lower values means the pathway is less important, higher means its more important
     - *Snapping*: Will set rasters to match the cell alignment of a reference layer
@@ -330,3 +327,22 @@ These options will be available once the analysis has finished. The options will
             - *Third quartile (Q3)*: Selects the third quartile value which appears of all the sampled pixels
         - *Reference layer*: The reference layer to which the cell alignment will be applied
         - *Rescale values*: Rescale values according to cell size
+
+#### b) Report Settings
+<mark>Screenshot to be updated</mark>
+
+![CPLUS settings](img/manual-settings.png)
+
+*Figure 16: Report settings available to the user*
+
+- **Reporting**: Information to be added to the report
+    - *Organization*: (optional) Organization or institute name
+    - *Contact email*: (optional) Contact email of the user
+    - *Website*: (optional) Link to website of your company or institute
+    - *Custom logo*: (optional) If enabled, the user needs to provide a custom logo. Most formats should suffice (png, jpeg, etc.)
+    - *Logo preview*: Visual previre of the default CI logo, or the custom logo a user selected
+    - *Footer*: (optional) Will be added to the report
+    - *Disclaimer*: Change as desired, otherwise use the default disclaimer
+    - *License*: Change as desired, otherwise use the default license description
+    - *List of stakeholders and relationships*: Stakeholders involved in the project and their respective relationships
+    - *Cultural considerations and policies*: Key cultural or policy considerations or recommendations
