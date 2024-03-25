@@ -298,9 +298,8 @@ These options will be available once the analysis has finished. The options will
 ### Settings
 
 #### a) Main Plugin Settings
-<mark>Screenshot to be updated</mark>
 
-![CPLUS settings](img/manual-settings.png)
+![CPLUS settings](img/manual-settings-main.png)
 
 *Figure 15: Main settings available to the user*
 
@@ -329,11 +328,10 @@ These options will be available once the analysis has finished. The options will
         - *Rescale values*: Rescale values according to cell size
 
 #### b) Report Settings
-<mark>Screenshot to be updated</mark>
 
-![CPLUS settings](img/manual-settings.png)
+![CPLUS settings](img/manual-settings-reporting.png)
 
-*Figure 16: Report settings available to the user*
+*Figure 16: Report settings*
 
 - **Reporting**: Information to be added to the report
     - *Organization*: (optional) Organization or institute name
