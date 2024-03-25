@@ -1,0 +1,3727 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="CPLUS">
+      
+      
+        <meta name="author" content="Kartoza">
+      
+      
+      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.7">
+    
+    
+      
+        <title>Model component widget - CPLUS QGIS plugin</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.cd566b2a.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.e6a45f82.min.css">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../../..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="green" data-md-color-accent="purple">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#model-component-widget" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../../.." title="CPLUS QGIS plugin" class="md-header__button md-logo" aria-label="CPLUS QGIS plugin" data-md-component="logo">
+      
+  <img src="../../../../about/img/cplus_logo_white_background.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CPLUS QGIS plugin
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Model component widget
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="green" data-md-color-accent="purple"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="lime"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/kartoza/cplus-plugin/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kartoza/cplus-plugin
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../../../.." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../user/" class="md-tabs__link">
+        Users
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../administrator/" class="md-tabs__link">
+        Administrators
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../" class="md-tabs__link md-tabs__link--active">
+        Developers
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../about/ci/" class="md-tabs__link">
+        About
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../../.." title="CPLUS QGIS plugin" class="md-nav__button md-logo" aria-label="CPLUS QGIS plugin" data-md-component="logo">
+      
+  <img src="../../../../about/img/cplus_logo_white_background.svg" alt="logo">
+
+    </a>
+    CPLUS QGIS plugin
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/kartoza/cplus-plugin/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kartoza/cplus-plugin
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" data-md-state="indeterminate" type="checkbox" id="__nav_2" checked>
+      
+      
+      
+        
+          
+            
+          
+        
+          
+            
+          
+        
+          
+            
+          
+        
+          
+            
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../../../user/">Users</a>
+          
+            <label for="__nav_2">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" aria-label="Users" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Users
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../user/quickstart/" class="md-nav__link">
+        Quick Start
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../user/guide/" class="md-nav__link">
+        Guide
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../user/manual/" class="md-nav__link">
+        Manual
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" data-md-state="indeterminate" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+        
+          
+            
+          
+        
+          
+            
+          
+        
+          
+            
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../../../administrator/">Administrators</a>
+          
+            <label for="__nav_3">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" aria-label="Administrators" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Administrators
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../administrator/guide/" class="md-nav__link">
+        Guide
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../administrator/repository/" class="md-nav__link">
+        Repository
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
+      
+      
+      
+        
+          
+            
+          
+        
+          
+            
+          
+        
+          
+            
+          
+        
+          
+            
+          
+        
+          
+        
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../../">Developers</a>
+          
+            <label for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" aria-label="Developers" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Developers
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../setup/" class="md-nav__link">
+        Setup
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/" class="md-nav__link">
+        Architecture
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../documentation/" class="md-nav__link">
+        Documentation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_5" type="checkbox" id="__nav_4_5" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_5">
+          API
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="API" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_5">
+          <span class="md-nav__icon md-icon"></span>
+          API
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_5_1" data-md-state="indeterminate" type="checkbox" id="__nav_4_5_1" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_5_1">
+          Core
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Core" data-md-level="3">
+        <label class="md-nav__title" for="__nav_4_5_1">
+          <span class="md-nav__icon md-icon"></span>
+          Core
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/api_main/" class="md-nav__link">
+        Main
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/api_conf/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/api_tasks/" class="md-nav__link">
+        Processing
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/api_settings/" class="md-nav__link">
+        Settings
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/api_utils/" class="md-nav__link">
+        Utilities
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_5_1_6" data-md-state="indeterminate" type="checkbox" id="__nav_4_5_1_6" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_5_1_6">
+          Reports
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reports" data-md-level="4">
+        <label class="md-nav__title" for="__nav_4_5_1_6">
+          <span class="md-nav__icon md-icon"></span>
+          Reports
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/api_reports_generator/" class="md-nav__link">
+        Generator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/api_reports_layout_items/" class="md-nav__link">
+        Layout items
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/api_reports_manager/" class="md-nav__link">
+        Manager
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/api_reports_variables/" class="md-nav__link">
+        Variables
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/api_pilot_extent/" class="md-nav__link">
+        Extents
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_5_2" data-md-state="indeterminate" type="checkbox" id="__nav_4_5_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_5_2">
+          Models
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Models" data-md-level="3">
+        <label class="md-nav__title" for="__nav_4_5_2">
+          <span class="md-nav__icon md-icon"></span>
+          Models
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../models/api_base/" class="md-nav__link">
+        Model base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../models/api_helpers/" class="md-nav__link">
+        Helpers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../models/api_report/" class="md-nav__link">
+        Report
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_5_3" type="checkbox" id="__nav_4_5_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4_5_3">
+          GUI
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="GUI" data-md-level="3">
+        <label class="md-nav__title" for="__nav_4_5_3">
+          <span class="md-nav__icon md-icon"></span>
+          GUI
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api_gui_main/" class="md-nav__link">
+        GUI main
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api_carbon_layer_model/" class="md-nav__link">
+        Carbon item model
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api_component_items/" class="md-nav__link">
+        Component item model
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api_im_editor_dialog/" class="md-nav__link">
+        Implementation model editor
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api_im_widget/" class="md-nav__link">
+        Implementation model widget
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api_items_selection_dialog/" class="md-nav__link">
+        Items selection dialog
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api_map_repeat_item_widget/" class="md-nav__link">
+        Map repeat item widget
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Model component widget
+      </a>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api_ncs_pathway_editor/" class="md-nav__link">
+        NCS Pathway editor
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api_pixel_value_editor/" class="md-nav__link">
+        Pixel Values editor
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api_priority_layer/" class="md-nav__link">
+        Priority layer dialog
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api_priority_group/" class="md-nav__link">
+        Priority group
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api_progress_dialog/" class="md-nav__link">
+        Progress dialog
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" data-md-state="indeterminate" type="checkbox" id="__nav_5" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          About
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="About" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          About
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../about/ci/" class="md-nav__link">
+        Conservation International
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../about/kartoza/" class="md-nav__link">
+        Kartoza
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../about/license/" class="md-nav__link">
+        License
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+<a href="https://github.com/kartoza/cplus-plugin/edit/master/docs/developer/api/gui/api_model_component_widget.md" title="Edit this page" class="md-content__button md-icon">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+</a>
+
+
+<h1 id="model-component-widget">Model component widget</h1>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<a id="src.cplus_plugin.gui.model_component_widget"></a>
+  <div class="doc doc-contents first">
+  
+      <p>Composite list view-based widgets for displaying implementation model
+and NCS pathway items.</p>
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+
+<h1 id="src.cplus_plugin.gui.model_component_widget.ImplementationModelComponentWidget" class="doc doc-heading">
+          <span class="doc doc-object-name doc-class-name">ImplementationModelComponentWidget</span>
+
+
+</h1>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ImplementationModelComponentWidget</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-internal" title="src.cplus_plugin.gui.model_component_widget.ModelComponentWidget" href="#src.cplus_plugin.gui.model_component_widget.ModelComponentWidget">ModelComponentWidget</a></code></p>
+
+  
+      <p>Widget for displaying and managing implementation models.</p>
+
+              <details class="quote">
+                <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+                <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-490">490</a></span>
+<span class="normal"><a href="#__codelineno-0-491">491</a></span>
+<span class="normal"><a href="#__codelineno-0-492">492</a></span>
+<span class="normal"><a href="#__codelineno-0-493">493</a></span>
+<span class="normal"><a href="#__codelineno-0-494">494</a></span>
+<span class="normal"><a href="#__codelineno-0-495">495</a></span>
+<span class="normal"><a href="#__codelineno-0-496">496</a></span>
+<span class="normal"><a href="#__codelineno-0-497">497</a></span>
+<span class="normal"><a href="#__codelineno-0-498">498</a></span>
+<span class="normal"><a href="#__codelineno-0-499">499</a></span>
+<span class="normal"><a href="#__codelineno-0-500">500</a></span>
+<span class="normal"><a href="#__codelineno-0-501">501</a></span>
+<span class="normal"><a href="#__codelineno-0-502">502</a></span>
+<span class="normal"><a href="#__codelineno-0-503">503</a></span>
+<span class="normal"><a href="#__codelineno-0-504">504</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-490" name="__codelineno-0-490"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<a id="__codelineno-0-491" name="__codelineno-0-491"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+<a id="__codelineno-0-492" name="__codelineno-0-492"></a>
+<a id="__codelineno-0-493" name="__codelineno-0-493"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">item_model</span> <span class="o">=</span> <span class="n">IMItemModel</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+<a id="__codelineno-0-494" name="__codelineno-0-494"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">item_model</span><span class="o">.</span><span class="n">im_pathways_updated</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">on_pathways_updated</span><span class="p">)</span>
+<a id="__codelineno-0-495" name="__codelineno-0-495"></a>
+<a id="__codelineno-0-496" name="__codelineno-0-496"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">lst_model_items</span><span class="o">.</span><span class="n">setAcceptDrops</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-0-497" name="__codelineno-0-497"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">lst_model_items</span><span class="o">.</span><span class="n">setDragDropMode</span><span class="p">(</span><span class="n">QtWidgets</span><span class="o">.</span><span class="n">QAbstractItemView</span><span class="o">.</span><span class="n">DropOnly</span><span class="p">)</span>
+<a id="__codelineno-0-498" name="__codelineno-0-498"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">lst_model_items</span><span class="o">.</span><span class="n">setDropIndicatorShown</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-0-499" name="__codelineno-0-499"></a>
+<a id="__codelineno-0-500" name="__codelineno-0-500"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">btn_reload</span><span class="o">.</span><span class="n">setVisible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-0-501" name="__codelineno-0-501"></a>
+<a id="__codelineno-0-502" name="__codelineno-0-502"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">btn_pixel_editor</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-503" name="__codelineno-0-503"></a>
+<a id="__codelineno-0-504" name="__codelineno-0-504"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">add_auxiliary_widgets</span><span class="p">()</span>
+</code></pre></div>
+</td></tr></table>
+              </details>
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ImplementationModelComponentWidget.add_auxiliary_widgets" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">add_auxiliary_widgets</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">add_auxiliary_widgets</span><span class="p">()</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Adds additional action widgets for managing implementation models.</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-516">516</a></span>
+<span class="normal"><a href="#__codelineno-0-517">517</a></span>
+<span class="normal"><a href="#__codelineno-0-518">518</a></span>
+<span class="normal"><a href="#__codelineno-0-519">519</a></span>
+<span class="normal"><a href="#__codelineno-0-520">520</a></span>
+<span class="normal"><a href="#__codelineno-0-521">521</a></span>
+<span class="normal"><a href="#__codelineno-0-522">522</a></span>
+<span class="normal"><a href="#__codelineno-0-523">523</a></span>
+<span class="normal"><a href="#__codelineno-0-524">524</a></span>
+<span class="normal"><a href="#__codelineno-0-525">525</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-516" name="__codelineno-0-516"></a><span class="k">def</span> <span class="nf">add_auxiliary_widgets</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-517" name="__codelineno-0-517"></a>    <span class="sd">&quot;&quot;&quot;Adds additional action widgets for managing implementation models.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-518" name="__codelineno-0-518"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">btn_pixel_editor</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QToolButton</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-519" name="__codelineno-0-519"></a>    <span class="n">style_icon</span> <span class="o">=</span> <span class="n">FileUtils</span><span class="o">.</span><span class="n">get_icon</span><span class="p">(</span><span class="s2">&quot;rendererCategorizedSymbol.svg&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-520" name="__codelineno-0-520"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">btn_pixel_editor</span><span class="o">.</span><span class="n">setIcon</span><span class="p">(</span><span class="n">style_icon</span><span class="p">)</span>
+<a id="__codelineno-0-521" name="__codelineno-0-521"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">btn_pixel_editor</span><span class="o">.</span><span class="n">setToolTip</span><span class="p">(</span>
+<a id="__codelineno-0-522" name="__codelineno-0-522"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">tr</span><span class="p">(</span><span class="s2">&quot;Show dialog for ordering pixel values for styling.&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-523" name="__codelineno-0-523"></a>    <span class="p">)</span>
+<a id="__codelineno-0-524" name="__codelineno-0-524"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">btn_pixel_editor</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">on_show_pixel_value_editor</span><span class="p">)</span>
+<a id="__codelineno-0-525" name="__codelineno-0-525"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">add_action_widget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">btn_pixel_editor</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ImplementationModelComponentWidget.add_implementation_model" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">add_implementation_model</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">add_implementation_model</span><span class="p">(</span><span class="n">implementation_model</span><span class="p">,</span> <span class="n">layer</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Adds an implementation model object to the view with the option of
+specifying the layer.</p>
+
+
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>implementation_model</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="src.cplus_plugin.models.base.ImplementationModel" href="../../models/api_base/#src.cplus_plugin.models.base.ImplementationModel">ImplementationModel</a></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Implementation model object to be added to the view.</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>layer</code></td>
+          <td>
+                <code><span title="qgis.core.QgsMapLayer">QgsMapLayer</span></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Optional map layer to be added to the model.</p>
+            </div>
+          </td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>bool</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>True if the implementation model was successfully added, else False.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-765">765</a></span>
+<span class="normal"><a href="#__codelineno-0-766">766</a></span>
+<span class="normal"><a href="#__codelineno-0-767">767</a></span>
+<span class="normal"><a href="#__codelineno-0-768">768</a></span>
+<span class="normal"><a href="#__codelineno-0-769">769</a></span>
+<span class="normal"><a href="#__codelineno-0-770">770</a></span>
+<span class="normal"><a href="#__codelineno-0-771">771</a></span>
+<span class="normal"><a href="#__codelineno-0-772">772</a></span>
+<span class="normal"><a href="#__codelineno-0-773">773</a></span>
+<span class="normal"><a href="#__codelineno-0-774">774</a></span>
+<span class="normal"><a href="#__codelineno-0-775">775</a></span>
+<span class="normal"><a href="#__codelineno-0-776">776</a></span>
+<span class="normal"><a href="#__codelineno-0-777">777</a></span>
+<span class="normal"><a href="#__codelineno-0-778">778</a></span>
+<span class="normal"><a href="#__codelineno-0-779">779</a></span>
+<span class="normal"><a href="#__codelineno-0-780">780</a></span>
+<span class="normal"><a href="#__codelineno-0-781">781</a></span>
+<span class="normal"><a href="#__codelineno-0-782">782</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-765" name="__codelineno-0-765"></a><span class="k">def</span> <span class="nf">add_implementation_model</span><span class="p">(</span>
+<a id="__codelineno-0-766" name="__codelineno-0-766"></a>    <span class="bp">self</span><span class="p">,</span> <span class="n">implementation_model</span><span class="p">:</span> <span class="n">ImplementationModel</span><span class="p">,</span> <span class="n">layer</span><span class="p">:</span> <span class="n">QgsMapLayer</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-767" name="__codelineno-0-767"></a><span class="p">):</span>
+<a id="__codelineno-0-768" name="__codelineno-0-768"></a>    <span class="sd">&quot;&quot;&quot;Adds an implementation model object to the view with the option of</span>
+<a id="__codelineno-0-769" name="__codelineno-0-769"></a><span class="sd">    specifying the layer.</span>
+<a id="__codelineno-0-770" name="__codelineno-0-770"></a>
+<a id="__codelineno-0-771" name="__codelineno-0-771"></a><span class="sd">    :param implementation_model: Implementation model object</span>
+<a id="__codelineno-0-772" name="__codelineno-0-772"></a><span class="sd">    to be added to the view.</span>
+<a id="__codelineno-0-773" name="__codelineno-0-773"></a><span class="sd">    :type implementation_model: ImplementationModel</span>
+<a id="__codelineno-0-774" name="__codelineno-0-774"></a>
+<a id="__codelineno-0-775" name="__codelineno-0-775"></a><span class="sd">    :param layer: Optional map layer to be added to the model.</span>
+<a id="__codelineno-0-776" name="__codelineno-0-776"></a><span class="sd">    :type layer: QgsMapLayer</span>
+<a id="__codelineno-0-777" name="__codelineno-0-777"></a>
+<a id="__codelineno-0-778" name="__codelineno-0-778"></a><span class="sd">    :returns: True if the implementation model was successfully added, else</span>
+<a id="__codelineno-0-779" name="__codelineno-0-779"></a><span class="sd">    False.</span>
+<a id="__codelineno-0-780" name="__codelineno-0-780"></a><span class="sd">    :rtype: bool</span>
+<a id="__codelineno-0-781" name="__codelineno-0-781"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-782" name="__codelineno-0-782"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">item_model</span><span class="o">.</span><span class="n">add_implementation_model</span><span class="p">(</span><span class="n">implementation_model</span><span class="p">,</span> <span class="n">layer</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ImplementationModelComponentWidget.add_ncs_pathway_items" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">add_ncs_pathway_items</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">add_ncs_pathway_items</span><span class="p">(</span><span class="n">ncs_items</span><span class="p">)</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Adds an NCS pathway item to the collection.</p>
+<p>One, and only one, target implementation model item needs
+to have been selected.</p>
+
+
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>ncs_items</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.List" href="https://docs.python.org/3/library/typing.html#typing.List">List</a>[<a class="autorefs autorefs-internal" title="src.cplus_plugin.gui.component_item_model.NcsPathwayItem" href="../api_component_items/#src.cplus_plugin.gui.component_item_model.NcsPathwayItem">NcsPathwayItem</a>]</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>NCS pathway items to be added to the implementation model.</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>bool</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>True if the item was successfully added, else False.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-729">729</a></span>
+<span class="normal"><a href="#__codelineno-0-730">730</a></span>
+<span class="normal"><a href="#__codelineno-0-731">731</a></span>
+<span class="normal"><a href="#__codelineno-0-732">732</a></span>
+<span class="normal"><a href="#__codelineno-0-733">733</a></span>
+<span class="normal"><a href="#__codelineno-0-734">734</a></span>
+<span class="normal"><a href="#__codelineno-0-735">735</a></span>
+<span class="normal"><a href="#__codelineno-0-736">736</a></span>
+<span class="normal"><a href="#__codelineno-0-737">737</a></span>
+<span class="normal"><a href="#__codelineno-0-738">738</a></span>
+<span class="normal"><a href="#__codelineno-0-739">739</a></span>
+<span class="normal"><a href="#__codelineno-0-740">740</a></span>
+<span class="normal"><a href="#__codelineno-0-741">741</a></span>
+<span class="normal"><a href="#__codelineno-0-742">742</a></span>
+<span class="normal"><a href="#__codelineno-0-743">743</a></span>
+<span class="normal"><a href="#__codelineno-0-744">744</a></span>
+<span class="normal"><a href="#__codelineno-0-745">745</a></span>
+<span class="normal"><a href="#__codelineno-0-746">746</a></span>
+<span class="normal"><a href="#__codelineno-0-747">747</a></span>
+<span class="normal"><a href="#__codelineno-0-748">748</a></span>
+<span class="normal"><a href="#__codelineno-0-749">749</a></span>
+<span class="normal"><a href="#__codelineno-0-750">750</a></span>
+<span class="normal"><a href="#__codelineno-0-751">751</a></span>
+<span class="normal"><a href="#__codelineno-0-752">752</a></span>
+<span class="normal"><a href="#__codelineno-0-753">753</a></span>
+<span class="normal"><a href="#__codelineno-0-754">754</a></span>
+<span class="normal"><a href="#__codelineno-0-755">755</a></span>
+<span class="normal"><a href="#__codelineno-0-756">756</a></span>
+<span class="normal"><a href="#__codelineno-0-757">757</a></span>
+<span class="normal"><a href="#__codelineno-0-758">758</a></span>
+<span class="normal"><a href="#__codelineno-0-759">759</a></span>
+<span class="normal"><a href="#__codelineno-0-760">760</a></span>
+<span class="normal"><a href="#__codelineno-0-761">761</a></span>
+<span class="normal"><a href="#__codelineno-0-762">762</a></span>
+<span class="normal"><a href="#__codelineno-0-763">763</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-729" name="__codelineno-0-729"></a><span class="k">def</span> <span class="nf">add_ncs_pathway_items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ncs_items</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">NcsPathwayItem</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<a id="__codelineno-0-730" name="__codelineno-0-730"></a>    <span class="sd">&quot;&quot;&quot;Adds an NCS pathway item to the collection.</span>
+<a id="__codelineno-0-731" name="__codelineno-0-731"></a>
+<a id="__codelineno-0-732" name="__codelineno-0-732"></a><span class="sd">    One, and only one, target implementation model item needs</span>
+<a id="__codelineno-0-733" name="__codelineno-0-733"></a><span class="sd">    to have been selected.</span>
+<a id="__codelineno-0-734" name="__codelineno-0-734"></a>
+<a id="__codelineno-0-735" name="__codelineno-0-735"></a><span class="sd">    :param ncs_items: NCS pathway items to be added to the</span>
+<a id="__codelineno-0-736" name="__codelineno-0-736"></a><span class="sd">    implementation model.</span>
+<a id="__codelineno-0-737" name="__codelineno-0-737"></a><span class="sd">    :type ncs_items: list</span>
+<a id="__codelineno-0-738" name="__codelineno-0-738"></a>
+<a id="__codelineno-0-739" name="__codelineno-0-739"></a><span class="sd">    :returns: True if the item was successfully added, else False.</span>
+<a id="__codelineno-0-740" name="__codelineno-0-740"></a><span class="sd">    :rtype: bool</span>
+<a id="__codelineno-0-741" name="__codelineno-0-741"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-742" name="__codelineno-0-742"></a>    <span class="n">selected_models</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_items</span><span class="p">()</span>
+<a id="__codelineno-0-743" name="__codelineno-0-743"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">selected_models</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">selected_models</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+<a id="__codelineno-0-744" name="__codelineno-0-744"></a>        <span class="k">return</span> <span class="kc">False</span>
+<a id="__codelineno-0-745" name="__codelineno-0-745"></a>
+<a id="__codelineno-0-746" name="__codelineno-0-746"></a>    <span class="n">sel_model</span> <span class="o">=</span> <span class="n">selected_models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-747" name="__codelineno-0-747"></a>    <span class="n">item_type</span> <span class="o">=</span> <span class="n">sel_model</span><span class="o">.</span><span class="n">type</span><span class="p">()</span>
+<a id="__codelineno-0-748" name="__codelineno-0-748"></a>
+<a id="__codelineno-0-749" name="__codelineno-0-749"></a>    <span class="c1"># Use the parent to add the NCS item</span>
+<a id="__codelineno-0-750" name="__codelineno-0-750"></a>    <span class="k">if</span> <span class="n">item_type</span> <span class="o">==</span> <span class="n">NCS_PATHWAY_TYPE</span><span class="p">:</span>
+<a id="__codelineno-0-751" name="__codelineno-0-751"></a>        <span class="k">if</span> <span class="n">sel_model</span><span class="o">.</span><span class="n">parent</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-752" name="__codelineno-0-752"></a>            <span class="k">return</span> <span class="kc">False</span>
+<a id="__codelineno-0-753" name="__codelineno-0-753"></a>
+<a id="__codelineno-0-754" name="__codelineno-0-754"></a>        <span class="n">sel_model</span> <span class="o">=</span> <span class="n">sel_model</span><span class="o">.</span><span class="n">parent</span>
+<a id="__codelineno-0-755" name="__codelineno-0-755"></a>
+<a id="__codelineno-0-756" name="__codelineno-0-756"></a>    <span class="k">elif</span> <span class="n">item_type</span> <span class="o">==</span> <span class="n">LAYER_ITEM_TYPE</span><span class="p">:</span>
+<a id="__codelineno-0-757" name="__codelineno-0-757"></a>        <span class="k">return</span> <span class="kc">False</span>
+<a id="__codelineno-0-758" name="__codelineno-0-758"></a>
+<a id="__codelineno-0-759" name="__codelineno-0-759"></a>    <span class="n">status</span> <span class="o">=</span> <span class="kc">True</span>
+<a id="__codelineno-0-760" name="__codelineno-0-760"></a>    <span class="k">for</span> <span class="n">ncs_item</span> <span class="ow">in</span> <span class="n">ncs_items</span><span class="p">:</span>
+<a id="__codelineno-0-761" name="__codelineno-0-761"></a>        <span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item_model</span><span class="o">.</span><span class="n">add_ncs_pathway</span><span class="p">(</span><span class="n">ncs_item</span><span class="p">,</span> <span class="n">sel_model</span><span class="p">)</span>
+<a id="__codelineno-0-762" name="__codelineno-0-762"></a>
+<a id="__codelineno-0-763" name="__codelineno-0-763"></a>    <span class="k">return</span> <span class="n">status</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ImplementationModelComponentWidget.clear" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">clear</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">clear</span><span class="p">()</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Removes all implementation model items in the view.</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-572">572</a></span>
+<span class="normal"><a href="#__codelineno-0-573">573</a></span>
+<span class="normal"><a href="#__codelineno-0-574">574</a></span>
+<span class="normal"><a href="#__codelineno-0-575">575</a></span>
+<span class="normal"><a href="#__codelineno-0-576">576</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-572" name="__codelineno-0-572"></a><span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-573" name="__codelineno-0-573"></a>    <span class="sd">&quot;&quot;&quot;Removes all implementation model items in the view.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-574" name="__codelineno-0-574"></a>    <span class="n">items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_items</span><span class="p">()</span>
+<a id="__codelineno-0-575" name="__codelineno-0-575"></a>    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+<a id="__codelineno-0-576" name="__codelineno-0-576"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">item_model</span><span class="o">.</span><span class="n">remove_implementation_model</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">uuid</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ImplementationModelComponentWidget.load" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">load</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">load</span><span class="p">()</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Load implementation models from settings.</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-578">578</a></span>
+<span class="normal"><a href="#__codelineno-0-579">579</a></span>
+<span class="normal"><a href="#__codelineno-0-580">580</a></span>
+<span class="normal"><a href="#__codelineno-0-581">581</a></span>
+<span class="normal"><a href="#__codelineno-0-582">582</a></span>
+<span class="normal"><a href="#__codelineno-0-583">583</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-578" name="__codelineno-0-578"></a><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-579" name="__codelineno-0-579"></a>    <span class="sd">&quot;&quot;&quot;Load implementation models from settings.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-580" name="__codelineno-0-580"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+<a id="__codelineno-0-581" name="__codelineno-0-581"></a>
+<a id="__codelineno-0-582" name="__codelineno-0-582"></a>    <span class="k">for</span> <span class="n">imp_model</span> <span class="ow">in</span> <span class="n">settings_manager</span><span class="o">.</span><span class="n">get_all_implementation_models</span><span class="p">():</span>
+<a id="__codelineno-0-583" name="__codelineno-0-583"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_implementation_model</span><span class="p">(</span><span class="n">imp_model</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ImplementationModelComponentWidget.model_items" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">model_items</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">model_items</span><span class="p">()</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Returns a collection of all ImplementationModelItem objects
+in the list view.</p>
+
+
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>list</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Collection of ImplementationModelItem objects in the list view.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-562">562</a></span>
+<span class="normal"><a href="#__codelineno-0-563">563</a></span>
+<span class="normal"><a href="#__codelineno-0-564">564</a></span>
+<span class="normal"><a href="#__codelineno-0-565">565</a></span>
+<span class="normal"><a href="#__codelineno-0-566">566</a></span>
+<span class="normal"><a href="#__codelineno-0-567">567</a></span>
+<span class="normal"><a href="#__codelineno-0-568">568</a></span>
+<span class="normal"><a href="#__codelineno-0-569">569</a></span>
+<span class="normal"><a href="#__codelineno-0-570">570</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-562" name="__codelineno-0-562"></a><span class="k">def</span> <span class="nf">model_items</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">ImplementationModelItem</span><span class="p">]:</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a>    <span class="sd">&quot;&quot;&quot;Returns a collection of all ImplementationModelItem objects</span>
+<a id="__codelineno-0-564" name="__codelineno-0-564"></a><span class="sd">    in the list view.</span>
+<a id="__codelineno-0-565" name="__codelineno-0-565"></a>
+<a id="__codelineno-0-566" name="__codelineno-0-566"></a><span class="sd">    :returns: Collection of ImplementationModelItem objects in</span>
+<a id="__codelineno-0-567" name="__codelineno-0-567"></a><span class="sd">    the list view.</span>
+<a id="__codelineno-0-568" name="__codelineno-0-568"></a><span class="sd">    :rtype: list</span>
+<a id="__codelineno-0-569" name="__codelineno-0-569"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">item_model</span><span class="o">.</span><span class="n">model_items</span><span class="p">()</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ImplementationModelComponentWidget.model_names" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">model_names</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">model_names</span><span class="p">()</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Gets the names of the implementation models in the item model.</p>
+
+
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>list</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Returns the names of implementation models in lower case or an empty list if the item model has not been set.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-542">542</a></span>
+<span class="normal"><a href="#__codelineno-0-543">543</a></span>
+<span class="normal"><a href="#__codelineno-0-544">544</a></span>
+<span class="normal"><a href="#__codelineno-0-545">545</a></span>
+<span class="normal"><a href="#__codelineno-0-546">546</a></span>
+<span class="normal"><a href="#__codelineno-0-547">547</a></span>
+<span class="normal"><a href="#__codelineno-0-548">548</a></span>
+<span class="normal"><a href="#__codelineno-0-549">549</a></span>
+<span class="normal"><a href="#__codelineno-0-550">550</a></span>
+<span class="normal"><a href="#__codelineno-0-551">551</a></span>
+<span class="normal"><a href="#__codelineno-0-552">552</a></span>
+<span class="normal"><a href="#__codelineno-0-553">553</a></span>
+<span class="normal"><a href="#__codelineno-0-554">554</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-542" name="__codelineno-0-542"></a><span class="k">def</span> <span class="nf">model_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<a id="__codelineno-0-543" name="__codelineno-0-543"></a>    <span class="sd">&quot;&quot;&quot;Gets the names of the implementation models in the item model.</span>
+<a id="__codelineno-0-544" name="__codelineno-0-544"></a>
+<a id="__codelineno-0-545" name="__codelineno-0-545"></a><span class="sd">    :returns: Returns the names of implementation models in lower</span>
+<a id="__codelineno-0-546" name="__codelineno-0-546"></a><span class="sd">    case or an empty list if the item model has not been set.</span>
+<a id="__codelineno-0-547" name="__codelineno-0-547"></a><span class="sd">    :rtype: list</span>
+<a id="__codelineno-0-548" name="__codelineno-0-548"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-549" name="__codelineno-0-549"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_item_model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="k">return</span> <span class="p">[]</span>
+<a id="__codelineno-0-551" name="__codelineno-0-551"></a>
+<a id="__codelineno-0-552" name="__codelineno-0-552"></a>    <span class="n">model_components</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_item_model</span><span class="o">.</span><span class="n">models</span><span class="p">()</span>
+<a id="__codelineno-0-553" name="__codelineno-0-553"></a>
+<a id="__codelineno-0-554" name="__codelineno-0-554"></a>    <span class="k">return</span> <span class="p">[</span><span class="n">mc</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">mc</span> <span class="ow">in</span> <span class="n">model_components</span><span class="p">]</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ImplementationModelComponentWidget.models" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">models</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">models</span><span class="p">()</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Returns a collection of ImplementationModel objects in the
+list view.</p>
+
+
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>list</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Collection of ImplementationModel objects in the list view.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-506">506</a></span>
+<span class="normal"><a href="#__codelineno-0-507">507</a></span>
+<span class="normal"><a href="#__codelineno-0-508">508</a></span>
+<span class="normal"><a href="#__codelineno-0-509">509</a></span>
+<span class="normal"><a href="#__codelineno-0-510">510</a></span>
+<span class="normal"><a href="#__codelineno-0-511">511</a></span>
+<span class="normal"><a href="#__codelineno-0-512">512</a></span>
+<span class="normal"><a href="#__codelineno-0-513">513</a></span>
+<span class="normal"><a href="#__codelineno-0-514">514</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-506" name="__codelineno-0-506"></a><span class="k">def</span> <span class="nf">models</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">ImplementationModel</span><span class="p">]:</span>
+<a id="__codelineno-0-507" name="__codelineno-0-507"></a>    <span class="sd">&quot;&quot;&quot;Returns a collection of ImplementationModel objects in the</span>
+<a id="__codelineno-0-508" name="__codelineno-0-508"></a><span class="sd">    list view.</span>
+<a id="__codelineno-0-509" name="__codelineno-0-509"></a>
+<a id="__codelineno-0-510" name="__codelineno-0-510"></a><span class="sd">    :returns: Collection of ImplementationModel objects in the</span>
+<a id="__codelineno-0-511" name="__codelineno-0-511"></a><span class="sd">    list view.</span>
+<a id="__codelineno-0-512" name="__codelineno-0-512"></a><span class="sd">    :rtype: list</span>
+<a id="__codelineno-0-513" name="__codelineno-0-513"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-514" name="__codelineno-0-514"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">item_model</span><span class="o">.</span><span class="n">models</span><span class="p">()</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ImplementationModelComponentWidget.on_pathways_updated" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">on_pathways_updated</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">on_pathways_updated</span><span class="p">(</span><span class="n">im_item</span><span class="p">)</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Slot raised when the pathways of an ImplementationModelItem
+have been added or removed. Persist this information in settings.</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-556">556</a></span>
+<span class="normal"><a href="#__codelineno-0-557">557</a></span>
+<span class="normal"><a href="#__codelineno-0-558">558</a></span>
+<span class="normal"><a href="#__codelineno-0-559">559</a></span>
+<span class="normal"><a href="#__codelineno-0-560">560</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-556" name="__codelineno-0-556"></a><span class="k">def</span> <span class="nf">on_pathways_updated</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im_item</span><span class="p">:</span> <span class="n">ImplementationModelItem</span><span class="p">):</span>
+<a id="__codelineno-0-557" name="__codelineno-0-557"></a>    <span class="sd">&quot;&quot;&quot;Slot raised when the pathways of an ImplementationModelItem</span>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a><span class="sd">    have been added or removed. Persist this information in settings.</span>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_save_item</span><span class="p">(</span><span class="n">im_item</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ImplementationModelComponentWidget.on_show_pixel_value_editor" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">on_show_pixel_value_editor</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">on_show_pixel_value_editor</span><span class="p">()</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Slot raised to show editor dialog for managing IM pixel values for styling.</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-527">527</a></span>
+<span class="normal"><a href="#__codelineno-0-528">528</a></span>
+<span class="normal"><a href="#__codelineno-0-529">529</a></span>
+<span class="normal"><a href="#__codelineno-0-530">530</a></span>
+<span class="normal"><a href="#__codelineno-0-531">531</a></span>
+<span class="normal"><a href="#__codelineno-0-532">532</a></span>
+<span class="normal"><a href="#__codelineno-0-533">533</a></span>
+<span class="normal"><a href="#__codelineno-0-534">534</a></span>
+<span class="normal"><a href="#__codelineno-0-535">535</a></span>
+<span class="normal"><a href="#__codelineno-0-536">536</a></span>
+<span class="normal"><a href="#__codelineno-0-537">537</a></span>
+<span class="normal"><a href="#__codelineno-0-538">538</a></span>
+<span class="normal"><a href="#__codelineno-0-539">539</a></span>
+<span class="normal"><a href="#__codelineno-0-540">540</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-527" name="__codelineno-0-527"></a><span class="k">def</span> <span class="nf">on_show_pixel_value_editor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-528" name="__codelineno-0-528"></a>    <span class="sd">&quot;&quot;&quot;Slot raised to show editor dialog for managing IM pixel values for styling.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-529" name="__codelineno-0-529"></a>    <span class="n">pixel_dialog</span> <span class="o">=</span> <span class="n">PixelValueEditorDialog</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-530" name="__codelineno-0-530"></a>    <span class="k">if</span> <span class="n">pixel_dialog</span><span class="o">.</span><span class="n">exec_</span><span class="p">()</span> <span class="o">==</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QDialog</span><span class="o">.</span><span class="n">Accepted</span><span class="p">:</span>
+<a id="__codelineno-0-531" name="__codelineno-0-531"></a>        <span class="c1"># Update pixel values</span>
+<a id="__codelineno-0-532" name="__codelineno-0-532"></a>        <span class="n">pixel_values</span> <span class="o">=</span> <span class="n">pixel_dialog</span><span class="o">.</span><span class="n">item_mapping</span>
+<a id="__codelineno-0-533" name="__codelineno-0-533"></a>        <span class="k">for</span> <span class="n">val</span><span class="p">,</span> <span class="n">im_id</span> <span class="ow">in</span> <span class="n">pixel_values</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-0-534" name="__codelineno-0-534"></a>            <span class="n">imp_model</span> <span class="o">=</span> <span class="n">settings_manager</span><span class="o">.</span><span class="n">get_implementation_model</span><span class="p">(</span><span class="n">im_id</span><span class="p">)</span>
+<a id="__codelineno-0-535" name="__codelineno-0-535"></a>            <span class="k">if</span> <span class="ow">not</span> <span class="n">imp_model</span><span class="p">:</span>
+<a id="__codelineno-0-536" name="__codelineno-0-536"></a>                <span class="k">continue</span>
+<a id="__codelineno-0-537" name="__codelineno-0-537"></a>            <span class="n">imp_model</span><span class="o">.</span><span class="n">style_pixel_value</span> <span class="o">=</span> <span class="n">val</span>
+<a id="__codelineno-0-538" name="__codelineno-0-538"></a>            <span class="n">settings_manager</span><span class="o">.</span><span class="n">update_implementation_model</span><span class="p">(</span><span class="n">imp_model</span><span class="p">)</span>
+<a id="__codelineno-0-539" name="__codelineno-0-539"></a>
+<a id="__codelineno-0-540" name="__codelineno-0-540"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ImplementationModelComponentWidget.reassign_pixel_values" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">reassign_pixel_values</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">reassign_pixel_values</span><span class="p">(</span><span class="n">start_position</span><span class="p">)</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Reassign the styling pixel values for implementation models
+from the given start position.</p>
+<p>It is important to call this function when the maximum pixel
+value does not match the number of implementation models such
+as when one or more implementation models have been deleted.</p>
+
+
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>start_position</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Position to start reassigning the pixel values.</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-706">706</a></span>
+<span class="normal"><a href="#__codelineno-0-707">707</a></span>
+<span class="normal"><a href="#__codelineno-0-708">708</a></span>
+<span class="normal"><a href="#__codelineno-0-709">709</a></span>
+<span class="normal"><a href="#__codelineno-0-710">710</a></span>
+<span class="normal"><a href="#__codelineno-0-711">711</a></span>
+<span class="normal"><a href="#__codelineno-0-712">712</a></span>
+<span class="normal"><a href="#__codelineno-0-713">713</a></span>
+<span class="normal"><a href="#__codelineno-0-714">714</a></span>
+<span class="normal"><a href="#__codelineno-0-715">715</a></span>
+<span class="normal"><a href="#__codelineno-0-716">716</a></span>
+<span class="normal"><a href="#__codelineno-0-717">717</a></span>
+<span class="normal"><a href="#__codelineno-0-718">718</a></span>
+<span class="normal"><a href="#__codelineno-0-719">719</a></span>
+<span class="normal"><a href="#__codelineno-0-720">720</a></span>
+<span class="normal"><a href="#__codelineno-0-721">721</a></span>
+<span class="normal"><a href="#__codelineno-0-722">722</a></span>
+<span class="normal"><a href="#__codelineno-0-723">723</a></span>
+<span class="normal"><a href="#__codelineno-0-724">724</a></span>
+<span class="normal"><a href="#__codelineno-0-725">725</a></span>
+<span class="normal"><a href="#__codelineno-0-726">726</a></span>
+<span class="normal"><a href="#__codelineno-0-727">727</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-706" name="__codelineno-0-706"></a><span class="k">def</span> <span class="nf">reassign_pixel_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_position</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<a id="__codelineno-0-707" name="__codelineno-0-707"></a>    <span class="sd">&quot;&quot;&quot;Reassign the styling pixel values for implementation models</span>
+<a id="__codelineno-0-708" name="__codelineno-0-708"></a><span class="sd">    from the given start position.</span>
+<a id="__codelineno-0-709" name="__codelineno-0-709"></a>
+<a id="__codelineno-0-710" name="__codelineno-0-710"></a><span class="sd">    It is important to call this function when the maximum pixel</span>
+<a id="__codelineno-0-711" name="__codelineno-0-711"></a><span class="sd">    value does not match the number of implementation models such</span>
+<a id="__codelineno-0-712" name="__codelineno-0-712"></a><span class="sd">    as when one or more implementation models have been deleted.</span>
+<a id="__codelineno-0-713" name="__codelineno-0-713"></a>
+<a id="__codelineno-0-714" name="__codelineno-0-714"></a><span class="sd">    :param start_position: Position to start reassigning the pixel</span>
+<a id="__codelineno-0-715" name="__codelineno-0-715"></a><span class="sd">    values.</span>
+<a id="__codelineno-0-716" name="__codelineno-0-716"></a><span class="sd">    :type start_position: int</span>
+<a id="__codelineno-0-717" name="__codelineno-0-717"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-718" name="__codelineno-0-718"></a>    <span class="n">sorted_models</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+<a id="__codelineno-0-719" name="__codelineno-0-719"></a>        <span class="n">settings_manager</span><span class="o">.</span><span class="n">get_all_implementation_models</span><span class="p">(),</span>
+<a id="__codelineno-0-720" name="__codelineno-0-720"></a>        <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">model</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">style_pixel_value</span><span class="p">,</span>
+<a id="__codelineno-0-721" name="__codelineno-0-721"></a>    <span class="p">)</span>
+<a id="__codelineno-0-722" name="__codelineno-0-722"></a>    <span class="n">remap_models</span> <span class="o">=</span> <span class="n">sorted_models</span><span class="p">[</span><span class="n">start_position</span> <span class="o">-</span> <span class="mi">1</span> <span class="p">:]</span>
+<a id="__codelineno-0-723" name="__codelineno-0-723"></a>    <span class="k">for</span> <span class="n">val</span><span class="p">,</span> <span class="n">imp_model</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">remap_models</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start_position</span><span class="p">):</span>
+<a id="__codelineno-0-724" name="__codelineno-0-724"></a>        <span class="n">imp_model</span><span class="o">.</span><span class="n">style_pixel_value</span> <span class="o">=</span> <span class="n">val</span>
+<a id="__codelineno-0-725" name="__codelineno-0-725"></a>        <span class="n">settings_manager</span><span class="o">.</span><span class="n">update_implementation_model</span><span class="p">(</span><span class="n">imp_model</span><span class="p">)</span>
+<a id="__codelineno-0-726" name="__codelineno-0-726"></a>
+<a id="__codelineno-0-727" name="__codelineno-0-727"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ImplementationModelComponentWidget.remove_ncs_pathway_items" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">remove_ncs_pathway_items</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">remove_ncs_pathway_items</span><span class="p">(</span><span class="n">ncs_pathway_uuid</span><span class="p">)</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Delete NCS pathway items used for IMs that are linked to the
+given NCS pathway.</p>
+
+
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>ncs_pathway_uuid</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>NCS pathway whose corresponding items will be deleted in the implementation model items that contain it.</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-814">814</a></span>
+<span class="normal"><a href="#__codelineno-0-815">815</a></span>
+<span class="normal"><a href="#__codelineno-0-816">816</a></span>
+<span class="normal"><a href="#__codelineno-0-817">817</a></span>
+<span class="normal"><a href="#__codelineno-0-818">818</a></span>
+<span class="normal"><a href="#__codelineno-0-819">819</a></span>
+<span class="normal"><a href="#__codelineno-0-820">820</a></span>
+<span class="normal"><a href="#__codelineno-0-821">821</a></span>
+<span class="normal"><a href="#__codelineno-0-822">822</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-814" name="__codelineno-0-814"></a><span class="k">def</span> <span class="nf">remove_ncs_pathway_items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ncs_pathway_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<a id="__codelineno-0-815" name="__codelineno-0-815"></a>    <span class="sd">&quot;&quot;&quot;Delete NCS pathway items used for IMs that are linked to the</span>
+<a id="__codelineno-0-816" name="__codelineno-0-816"></a><span class="sd">    given NCS pathway.</span>
+<a id="__codelineno-0-817" name="__codelineno-0-817"></a>
+<a id="__codelineno-0-818" name="__codelineno-0-818"></a><span class="sd">    :param ncs_pathway_uuid: NCS pathway whose corresponding items will be</span>
+<a id="__codelineno-0-819" name="__codelineno-0-819"></a><span class="sd">    deleted in the implementation model items that contain it.</span>
+<a id="__codelineno-0-820" name="__codelineno-0-820"></a><span class="sd">    :type ncs_pathway_uuid: str</span>
+<a id="__codelineno-0-821" name="__codelineno-0-821"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-822" name="__codelineno-0-822"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">item_model</span><span class="o">.</span><span class="n">remove_ncs_pathway_items</span><span class="p">(</span><span class="n">ncs_pathway_uuid</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ImplementationModelComponentWidget.update_ncs_pathway_items" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">update_ncs_pathway_items</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">update_ncs_pathway_items</span><span class="p">(</span><span class="n">ncs_pathway</span><span class="p">)</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Update NCS pathway items used for IMs that are linked to the
+given NCS pathway.</p>
+
+
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>ncs_pathway</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="src.cplus_plugin.models.base.NcsPathway" href="../../models/api_base/#src.cplus_plugin.models.base.NcsPathway">NcsPathway</a></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>NCS pathway whose attribute values will be updated for the related pathways used in the IMs.</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>bool</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>True if NCS pathway items were updated, else False.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-801">801</a></span>
+<span class="normal"><a href="#__codelineno-0-802">802</a></span>
+<span class="normal"><a href="#__codelineno-0-803">803</a></span>
+<span class="normal"><a href="#__codelineno-0-804">804</a></span>
+<span class="normal"><a href="#__codelineno-0-805">805</a></span>
+<span class="normal"><a href="#__codelineno-0-806">806</a></span>
+<span class="normal"><a href="#__codelineno-0-807">807</a></span>
+<span class="normal"><a href="#__codelineno-0-808">808</a></span>
+<span class="normal"><a href="#__codelineno-0-809">809</a></span>
+<span class="normal"><a href="#__codelineno-0-810">810</a></span>
+<span class="normal"><a href="#__codelineno-0-811">811</a></span>
+<span class="normal"><a href="#__codelineno-0-812">812</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-801" name="__codelineno-0-801"></a><span class="k">def</span> <span class="nf">update_ncs_pathway_items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ncs_pathway</span><span class="p">:</span> <span class="n">NcsPathway</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<a id="__codelineno-0-802" name="__codelineno-0-802"></a>    <span class="sd">&quot;&quot;&quot;Update NCS pathway items used for IMs that are linked to the</span>
+<a id="__codelineno-0-803" name="__codelineno-0-803"></a><span class="sd">    given NCS pathway.</span>
+<a id="__codelineno-0-804" name="__codelineno-0-804"></a>
+<a id="__codelineno-0-805" name="__codelineno-0-805"></a><span class="sd">    :param ncs_pathway: NCS pathway whose attribute values will be updated</span>
+<a id="__codelineno-0-806" name="__codelineno-0-806"></a><span class="sd">    for the related pathways used in the IMs.</span>
+<a id="__codelineno-0-807" name="__codelineno-0-807"></a><span class="sd">    :type ncs_pathway: NcsPathway</span>
+<a id="__codelineno-0-808" name="__codelineno-0-808"></a>
+<a id="__codelineno-0-809" name="__codelineno-0-809"></a><span class="sd">    :returns: True if NCS pathway items were updated, else False.</span>
+<a id="__codelineno-0-810" name="__codelineno-0-810"></a><span class="sd">    :rtype: bool</span>
+<a id="__codelineno-0-811" name="__codelineno-0-811"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-812" name="__codelineno-0-812"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">item_model</span><span class="o">.</span><span class="n">update_ncs_pathway_items</span><span class="p">(</span><span class="n">ncs_pathway</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+
+<h1 id="src.cplus_plugin.gui.model_component_widget.ModelComponentWidget" class="doc doc-heading">
+          <span class="doc doc-object-name doc-class-name">ModelComponentWidget</span>
+
+
+</h1>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ModelComponentWidget</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">item_model</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+          <p class="doc doc-class-bases">
+            Bases: <code><span title="qgis.PyQt.QtWidgets.QWidget">QWidget</span></code>, <code>WidgetUi</code></p>
+
+  
+      <p>Widget for displaying and managing model items in a list view.</p>
+
+              <details class="quote">
+                <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+                <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-46">46</a></span>
+<span class="normal"><a href="#__codelineno-0-47">47</a></span>
+<span class="normal"><a href="#__codelineno-0-48">48</a></span>
+<span class="normal"><a href="#__codelineno-0-49">49</a></span>
+<span class="normal"><a href="#__codelineno-0-50">50</a></span>
+<span class="normal"><a href="#__codelineno-0-51">51</a></span>
+<span class="normal"><a href="#__codelineno-0-52">52</a></span>
+<span class="normal"><a href="#__codelineno-0-53">53</a></span>
+<span class="normal"><a href="#__codelineno-0-54">54</a></span>
+<span class="normal"><a href="#__codelineno-0-55">55</a></span>
+<span class="normal"><a href="#__codelineno-0-56">56</a></span>
+<span class="normal"><a href="#__codelineno-0-57">57</a></span>
+<span class="normal"><a href="#__codelineno-0-58">58</a></span>
+<span class="normal"><a href="#__codelineno-0-59">59</a></span>
+<span class="normal"><a href="#__codelineno-0-60">60</a></span>
+<span class="normal"><a href="#__codelineno-0-61">61</a></span>
+<span class="normal"><a href="#__codelineno-0-62">62</a></span>
+<span class="normal"><a href="#__codelineno-0-63">63</a></span>
+<span class="normal"><a href="#__codelineno-0-64">64</a></span>
+<span class="normal"><a href="#__codelineno-0-65">65</a></span>
+<span class="normal"><a href="#__codelineno-0-66">66</a></span>
+<span class="normal"><a href="#__codelineno-0-67">67</a></span>
+<span class="normal"><a href="#__codelineno-0-68">68</a></span>
+<span class="normal"><a href="#__codelineno-0-69">69</a></span>
+<span class="normal"><a href="#__codelineno-0-70">70</a></span>
+<span class="normal"><a href="#__codelineno-0-71">71</a></span>
+<span class="normal"><a href="#__codelineno-0-72">72</a></span>
+<span class="normal"><a href="#__codelineno-0-73">73</a></span>
+<span class="normal"><a href="#__codelineno-0-74">74</a></span>
+<span class="normal"><a href="#__codelineno-0-75">75</a></span>
+<span class="normal"><a href="#__codelineno-0-76">76</a></span>
+<span class="normal"><a href="#__codelineno-0-77">77</a></span>
+<span class="normal"><a href="#__codelineno-0-78">78</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-46" name="__codelineno-0-46"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">item_model</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<a id="__codelineno-0-47" name="__codelineno-0-47"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+<a id="__codelineno-0-48" name="__codelineno-0-48"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">setupUi</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-49" name="__codelineno-0-49"></a>
+<a id="__codelineno-0-50" name="__codelineno-0-50"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_item_model</span> <span class="o">=</span> <span class="n">item_model</span>
+<a id="__codelineno-0-51" name="__codelineno-0-51"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_item_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-52" name="__codelineno-0-52"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">item_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_item_model</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a>
+<a id="__codelineno-0-54" name="__codelineno-0-54"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">lst_model_items</span><span class="o">.</span><span class="n">doubleClicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_double_click_item</span><span class="p">)</span>
+<a id="__codelineno-0-55" name="__codelineno-0-55"></a>
+<a id="__codelineno-0-56" name="__codelineno-0-56"></a>    <span class="n">add_icon</span> <span class="o">=</span> <span class="n">FileUtils</span><span class="o">.</span><span class="n">get_icon</span><span class="p">(</span><span class="s2">&quot;symbologyAdd.svg&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">btn_add</span><span class="o">.</span><span class="n">setIcon</span><span class="p">(</span><span class="n">add_icon</span><span class="p">)</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">btn_add</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_add_item</span><span class="p">)</span>
+<a id="__codelineno-0-59" name="__codelineno-0-59"></a>
+<a id="__codelineno-0-60" name="__codelineno-0-60"></a>    <span class="n">remove_icon</span> <span class="o">=</span> <span class="n">FileUtils</span><span class="o">.</span><span class="n">get_icon</span><span class="p">(</span><span class="s2">&quot;symbologyRemove.svg&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-61" name="__codelineno-0-61"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">btn_remove</span><span class="o">.</span><span class="n">setIcon</span><span class="p">(</span><span class="n">remove_icon</span><span class="p">)</span>
+<a id="__codelineno-0-62" name="__codelineno-0-62"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">btn_remove</span><span class="o">.</span><span class="n">setEnabled</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">btn_remove</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_remove_item</span><span class="p">)</span>
+<a id="__codelineno-0-64" name="__codelineno-0-64"></a>
+<a id="__codelineno-0-65" name="__codelineno-0-65"></a>    <span class="n">edit_icon</span> <span class="o">=</span> <span class="n">FileUtils</span><span class="o">.</span><span class="n">get_icon</span><span class="p">(</span><span class="s2">&quot;mActionToggleEditing.svg&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-66" name="__codelineno-0-66"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">btn_edit</span><span class="o">.</span><span class="n">setIcon</span><span class="p">(</span><span class="n">edit_icon</span><span class="p">)</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">btn_edit</span><span class="o">.</span><span class="n">setEnabled</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-0-68" name="__codelineno-0-68"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">btn_edit</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_edit_item</span><span class="p">)</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a>
+<a id="__codelineno-0-70" name="__codelineno-0-70"></a>    <span class="n">reload_icon</span> <span class="o">=</span> <span class="n">FileUtils</span><span class="o">.</span><span class="n">get_icon</span><span class="p">(</span><span class="s2">&quot;mActionReload.svg&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-71" name="__codelineno-0-71"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">btn_reload</span><span class="o">.</span><span class="n">setIcon</span><span class="p">(</span><span class="n">reload_icon</span><span class="p">)</span>
+<a id="__codelineno-0-72" name="__codelineno-0-72"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">btn_reload</span><span class="o">.</span><span class="n">setToolTip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tr</span><span class="p">(</span><span class="s2">&quot;Refresh view&quot;</span><span class="p">))</span>
+<a id="__codelineno-0-73" name="__codelineno-0-73"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">btn_reload</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_reload</span><span class="p">)</span>
+<a id="__codelineno-0-74" name="__codelineno-0-74"></a>
+<a id="__codelineno-0-75" name="__codelineno-0-75"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">btn_edit_description</span><span class="o">.</span><span class="n">setIcon</span><span class="p">(</span><span class="n">edit_icon</span><span class="p">)</span>
+<a id="__codelineno-0-76" name="__codelineno-0-76"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">btn_edit_description</span><span class="o">.</span><span class="n">setToolTip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tr</span><span class="p">(</span><span class="s2">&quot;Edit description&quot;</span><span class="p">))</span>
+<a id="__codelineno-0-77" name="__codelineno-0-77"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">btn_edit_description</span><span class="o">.</span><span class="n">setEnabled</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-0-78" name="__codelineno-0-78"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">btn_edit_description</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_update_description</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+              </details>
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ModelComponentWidget.item_model" class="doc doc-heading">
+          <span class="doc doc-object-name doc-attribute-name">item_model</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+      <small class="doc doc-label doc-label-writable"><code>writable</code></small>
+  </span>
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">item_model</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Returns the component item model for managing items the list view.</p>
+
+
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>ComponentItemModel</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Component item model for managing items the list view.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ModelComponentWidget.selection_model" class="doc doc-heading">
+          <span class="doc doc-object-name doc-attribute-name">selection_model</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">selection_model</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Gets the item's view selection model.</p>
+
+
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>QtCore.QItemSelectionModel</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>The item's view selection model.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ModelComponentWidget.title" class="doc doc-heading">
+          <span class="doc doc-object-name doc-attribute-name">title</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+      <small class="doc doc-label doc-label-writable"><code>writable</code></small>
+  </span>
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">title</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Returns the title of the view.</p>
+
+
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>str</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Title of the view.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+  </div>
+
+</div>
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ModelComponentWidget.add_action_widget" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">add_action_widget</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">add_action_widget</span><span class="p">(</span><span class="n">widget</span><span class="p">)</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Adds an auxiliary widget below the list view from the left-hand side.</p>
+
+
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>widget</code></td>
+          <td>
+                <code><span title="qgis.PyQt.QtWidgets.QWidget">QWidget</span></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Widget to be added to the collection of controls below the list view.</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-325">325</a></span>
+<span class="normal"><a href="#__codelineno-0-326">326</a></span>
+<span class="normal"><a href="#__codelineno-0-327">327</a></span>
+<span class="normal"><a href="#__codelineno-0-328">328</a></span>
+<span class="normal"><a href="#__codelineno-0-329">329</a></span>
+<span class="normal"><a href="#__codelineno-0-330">330</a></span>
+<span class="normal"><a href="#__codelineno-0-331">331</a></span>
+<span class="normal"><a href="#__codelineno-0-332">332</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-325" name="__codelineno-0-325"></a><span class="k">def</span> <span class="nf">add_action_widget</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">widget</span><span class="p">:</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QWidget</span><span class="p">):</span>
+<a id="__codelineno-0-326" name="__codelineno-0-326"></a>    <span class="sd">&quot;&quot;&quot;Adds an auxiliary widget below the list view from the left-hand side.</span>
+<a id="__codelineno-0-327" name="__codelineno-0-327"></a>
+<a id="__codelineno-0-328" name="__codelineno-0-328"></a><span class="sd">    :param widget: Widget to be added to the collection of controls</span>
+<a id="__codelineno-0-329" name="__codelineno-0-329"></a><span class="sd">    below the list view.</span>
+<a id="__codelineno-0-330" name="__codelineno-0-330"></a><span class="sd">    :type widget: QtWidgets.QWidget</span>
+<a id="__codelineno-0-331" name="__codelineno-0-331"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-332" name="__codelineno-0-332"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">widget_container</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">widget</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ModelComponentWidget.clear" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">clear</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">clear</span><span class="p">()</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Remove all items in the view. To be implemented
+by subclasses.</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-279">279</a></span>
+<span class="normal"><a href="#__codelineno-0-280">280</a></span>
+<span class="normal"><a href="#__codelineno-0-281">281</a></span>
+<span class="normal"><a href="#__codelineno-0-282">282</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-280" name="__codelineno-0-280"></a>    <span class="sd">&quot;&quot;&quot;Remove all items in the view. To be implemented</span>
+<a id="__codelineno-0-281" name="__codelineno-0-281"></a><span class="sd">    by subclasses.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-282" name="__codelineno-0-282"></a>    <span class="k">pass</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ModelComponentWidget.clear_description" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">clear_description</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">clear_description</span><span class="p">()</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Clears the content in the description text box.</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-195">195</a></span>
+<span class="normal"><a href="#__codelineno-0-196">196</a></span>
+<span class="normal"><a href="#__codelineno-0-197">197</a></span>
+<span class="normal"><a href="#__codelineno-0-198">198</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-195" name="__codelineno-0-195"></a><span class="k">def</span> <span class="nf">clear_description</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-196" name="__codelineno-0-196"></a>    <span class="sd">&quot;&quot;&quot;Clears the content in the description text box.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-197" name="__codelineno-0-197"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">txt_item_description</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+<a id="__codelineno-0-198" name="__codelineno-0-198"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">txt_item_description</span><span class="o">.</span><span class="n">setToolTip</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ModelComponentWidget.enable_default_items" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">enable_default_items</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">enable_default_items</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Enable or disable default model component items in the view.</p>
+
+
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>state</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>True to enable or False to disable default model component items.</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-306">306</a></span>
+<span class="normal"><a href="#__codelineno-0-307">307</a></span>
+<span class="normal"><a href="#__codelineno-0-308">308</a></span>
+<span class="normal"><a href="#__codelineno-0-309">309</a></span>
+<span class="normal"><a href="#__codelineno-0-310">310</a></span>
+<span class="normal"><a href="#__codelineno-0-311">311</a></span>
+<span class="normal"><a href="#__codelineno-0-312">312</a></span>
+<span class="normal"><a href="#__codelineno-0-313">313</a></span>
+<span class="normal"><a href="#__codelineno-0-314">314</a></span>
+<span class="normal"><a href="#__codelineno-0-315">315</a></span>
+<span class="normal"><a href="#__codelineno-0-316">316</a></span>
+<span class="normal"><a href="#__codelineno-0-317">317</a></span>
+<span class="normal"><a href="#__codelineno-0-318">318</a></span>
+<span class="normal"><a href="#__codelineno-0-319">319</a></span>
+<span class="normal"><a href="#__codelineno-0-320">320</a></span>
+<span class="normal"><a href="#__codelineno-0-321">321</a></span>
+<span class="normal"><a href="#__codelineno-0-322">322</a></span>
+<span class="normal"><a href="#__codelineno-0-323">323</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-306" name="__codelineno-0-306"></a><span class="k">def</span> <span class="nf">enable_default_items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
+<a id="__codelineno-0-307" name="__codelineno-0-307"></a>    <span class="sd">&quot;&quot;&quot;Enable or disable default model component items in the view.</span>
+<a id="__codelineno-0-308" name="__codelineno-0-308"></a>
+<a id="__codelineno-0-309" name="__codelineno-0-309"></a><span class="sd">    :param state: True to enable or False to disable default model</span>
+<a id="__codelineno-0-310" name="__codelineno-0-310"></a><span class="sd">    component items.</span>
+<a id="__codelineno-0-311" name="__codelineno-0-311"></a><span class="sd">    :type state: bool</span>
+<a id="__codelineno-0-312" name="__codelineno-0-312"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-313" name="__codelineno-0-313"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_item_model</span><span class="o">.</span><span class="n">enable_default_items</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+<a id="__codelineno-0-314" name="__codelineno-0-314"></a>
+<a id="__codelineno-0-315" name="__codelineno-0-315"></a>    <span class="c1"># If false, deselect default items</span>
+<a id="__codelineno-0-316" name="__codelineno-0-316"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">state</span><span class="p">:</span>
+<a id="__codelineno-0-317" name="__codelineno-0-317"></a>        <span class="n">selection_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lst_model_items</span><span class="o">.</span><span class="n">selectionModel</span><span class="p">()</span>
+<a id="__codelineno-0-318" name="__codelineno-0-318"></a>        <span class="n">selected_idxs</span> <span class="o">=</span> <span class="n">selection_model</span><span class="o">.</span><span class="n">selectedRows</span><span class="p">()</span>
+<a id="__codelineno-0-319" name="__codelineno-0-319"></a>        <span class="k">for</span> <span class="n">sel_idx</span> <span class="ow">in</span> <span class="n">selected_idxs</span><span class="p">:</span>
+<a id="__codelineno-0-320" name="__codelineno-0-320"></a>            <span class="n">item</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_item_model</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">sel_idx</span><span class="o">.</span><span class="n">row</span><span class="p">(),</span> <span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-0-321" name="__codelineno-0-321"></a>            <span class="c1"># If not enabled then deselect</span>
+<a id="__codelineno-0-322" name="__codelineno-0-322"></a>            <span class="k">if</span> <span class="ow">not</span> <span class="n">item</span><span class="o">.</span><span class="n">isEnabled</span><span class="p">():</span>
+<a id="__codelineno-0-323" name="__codelineno-0-323"></a>                <span class="n">selection_model</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">sel_idx</span><span class="p">,</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QItemSelectionModel</span><span class="o">.</span><span class="n">Deselect</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ModelComponentWidget.load" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">load</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">load</span><span class="p">()</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Subclass to determine how to initialize the items.</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-130">130</a></span>
+<span class="normal"><a href="#__codelineno-0-131">131</a></span>
+<span class="normal"><a href="#__codelineno-0-132">132</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-130" name="__codelineno-0-130"></a><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-131" name="__codelineno-0-131"></a>    <span class="sd">&quot;&quot;&quot;Subclass to determine how to initialize the items.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-132" name="__codelineno-0-132"></a>    <span class="k">pass</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ModelComponentWidget.model_names" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">model_names</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">model_names</span><span class="p">()</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Gets the names of the components in the item model.</p>
+
+
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>list</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Returns the model names in lower case or an empty list if the item model has not been set.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-292">292</a></span>
+<span class="normal"><a href="#__codelineno-0-293">293</a></span>
+<span class="normal"><a href="#__codelineno-0-294">294</a></span>
+<span class="normal"><a href="#__codelineno-0-295">295</a></span>
+<span class="normal"><a href="#__codelineno-0-296">296</a></span>
+<span class="normal"><a href="#__codelineno-0-297">297</a></span>
+<span class="normal"><a href="#__codelineno-0-298">298</a></span>
+<span class="normal"><a href="#__codelineno-0-299">299</a></span>
+<span class="normal"><a href="#__codelineno-0-300">300</a></span>
+<span class="normal"><a href="#__codelineno-0-301">301</a></span>
+<span class="normal"><a href="#__codelineno-0-302">302</a></span>
+<span class="normal"><a href="#__codelineno-0-303">303</a></span>
+<span class="normal"><a href="#__codelineno-0-304">304</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-292" name="__codelineno-0-292"></a><span class="k">def</span> <span class="nf">model_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<a id="__codelineno-0-293" name="__codelineno-0-293"></a>    <span class="sd">&quot;&quot;&quot;Gets the names of the components in the item model.</span>
+<a id="__codelineno-0-294" name="__codelineno-0-294"></a>
+<a id="__codelineno-0-295" name="__codelineno-0-295"></a><span class="sd">    :returns: Returns the model names in lower case or an empty</span>
+<a id="__codelineno-0-296" name="__codelineno-0-296"></a><span class="sd">    list if the item model has not been set.</span>
+<a id="__codelineno-0-297" name="__codelineno-0-297"></a><span class="sd">    :rtype: list</span>
+<a id="__codelineno-0-298" name="__codelineno-0-298"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-299" name="__codelineno-0-299"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_item_model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-300" name="__codelineno-0-300"></a>        <span class="k">return</span> <span class="p">[]</span>
+<a id="__codelineno-0-301" name="__codelineno-0-301"></a>
+<a id="__codelineno-0-302" name="__codelineno-0-302"></a>    <span class="n">model_components</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_item_model</span><span class="o">.</span><span class="n">model_components</span><span class="p">()</span>
+<a id="__codelineno-0-303" name="__codelineno-0-303"></a>
+<a id="__codelineno-0-304" name="__codelineno-0-304"></a>    <span class="k">return</span> <span class="p">[</span><span class="n">mc</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">mc</span> <span class="ow">in</span> <span class="n">model_components</span><span class="p">]</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ModelComponentWidget.selected_items" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">selected_items</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">selected_items</span><span class="p">()</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Returns the selected items in the list view.</p>
+
+
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>list</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>A collection of the selected model component items. Returns an empty list if the item model has not been set.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-264">264</a></span>
+<span class="normal"><a href="#__codelineno-0-265">265</a></span>
+<span class="normal"><a href="#__codelineno-0-266">266</a></span>
+<span class="normal"><a href="#__codelineno-0-267">267</a></span>
+<span class="normal"><a href="#__codelineno-0-268">268</a></span>
+<span class="normal"><a href="#__codelineno-0-269">269</a></span>
+<span class="normal"><a href="#__codelineno-0-270">270</a></span>
+<span class="normal"><a href="#__codelineno-0-271">271</a></span>
+<span class="normal"><a href="#__codelineno-0-272">272</a></span>
+<span class="normal"><a href="#__codelineno-0-273">273</a></span>
+<span class="normal"><a href="#__codelineno-0-274">274</a></span>
+<span class="normal"><a href="#__codelineno-0-275">275</a></span>
+<span class="normal"><a href="#__codelineno-0-276">276</a></span>
+<span class="normal"><a href="#__codelineno-0-277">277</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-264" name="__codelineno-0-264"></a><span class="k">def</span> <span class="nf">selected_items</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">ModelComponentItemType</span><span class="p">]:</span>
+<a id="__codelineno-0-265" name="__codelineno-0-265"></a>    <span class="sd">&quot;&quot;&quot;Returns the selected items in the list view.</span>
+<a id="__codelineno-0-266" name="__codelineno-0-266"></a>
+<a id="__codelineno-0-267" name="__codelineno-0-267"></a><span class="sd">    :returns: A collection of the selected model component items. Returns</span>
+<a id="__codelineno-0-268" name="__codelineno-0-268"></a><span class="sd">    an empty list if the item model has not been set.</span>
+<a id="__codelineno-0-269" name="__codelineno-0-269"></a><span class="sd">    :rtype: list</span>
+<a id="__codelineno-0-270" name="__codelineno-0-270"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-271" name="__codelineno-0-271"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_item_model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-272" name="__codelineno-0-272"></a>        <span class="k">return</span> <span class="p">[]</span>
+<a id="__codelineno-0-273" name="__codelineno-0-273"></a>
+<a id="__codelineno-0-274" name="__codelineno-0-274"></a>    <span class="n">selection_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lst_model_items</span><span class="o">.</span><span class="n">selectionModel</span><span class="p">()</span>
+<a id="__codelineno-0-275" name="__codelineno-0-275"></a>    <span class="n">idxs</span> <span class="o">=</span> <span class="n">selection_model</span><span class="o">.</span><span class="n">selectedRows</span><span class="p">()</span>
+<a id="__codelineno-0-276" name="__codelineno-0-276"></a>
+<a id="__codelineno-0-277" name="__codelineno-0-277"></a>    <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_item_model</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">idx</span><span class="o">.</span><span class="n">row</span><span class="p">())</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">idxs</span><span class="p">]</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.ModelComponentWidget.set_description" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">set_description</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">set_description</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Updates the text for the selected item.</p>
+
+
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>description</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Description for the selected item.</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-186">186</a></span>
+<span class="normal"><a href="#__codelineno-0-187">187</a></span>
+<span class="normal"><a href="#__codelineno-0-188">188</a></span>
+<span class="normal"><a href="#__codelineno-0-189">189</a></span>
+<span class="normal"><a href="#__codelineno-0-190">190</a></span>
+<span class="normal"><a href="#__codelineno-0-191">191</a></span>
+<span class="normal"><a href="#__codelineno-0-192">192</a></span>
+<span class="normal"><a href="#__codelineno-0-193">193</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-186" name="__codelineno-0-186"></a><span class="k">def</span> <span class="nf">set_description</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<a id="__codelineno-0-187" name="__codelineno-0-187"></a>    <span class="sd">&quot;&quot;&quot;Updates the text for the selected item.</span>
+<a id="__codelineno-0-188" name="__codelineno-0-188"></a>
+<a id="__codelineno-0-189" name="__codelineno-0-189"></a><span class="sd">    :param description: Description for the selected item.</span>
+<a id="__codelineno-0-190" name="__codelineno-0-190"></a><span class="sd">    :type description: str</span>
+<a id="__codelineno-0-191" name="__codelineno-0-191"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-192" name="__codelineno-0-192"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">txt_item_description</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
+<a id="__codelineno-0-193" name="__codelineno-0-193"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">txt_item_description</span><span class="o">.</span><span class="n">setToolTip</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+
+<h1 id="src.cplus_plugin.gui.model_component_widget.NcsComponentWidget" class="doc doc-heading">
+          <span class="doc doc-object-name doc-class-name">NcsComponentWidget</span>
+
+
+</h1>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">NcsComponentWidget</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-internal" title="src.cplus_plugin.gui.model_component_widget.ModelComponentWidget" href="#src.cplus_plugin.gui.model_component_widget.ModelComponentWidget">ModelComponentWidget</a></code></p>
+
+  
+      <p>Widget for displaying and managing NCS pathways.</p>
+
+              <details class="quote">
+                <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+                <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-342">342</a></span>
+<span class="normal"><a href="#__codelineno-0-343">343</a></span>
+<span class="normal"><a href="#__codelineno-0-344">344</a></span>
+<span class="normal"><a href="#__codelineno-0-345">345</a></span>
+<span class="normal"><a href="#__codelineno-0-346">346</a></span>
+<span class="normal"><a href="#__codelineno-0-347">347</a></span>
+<span class="normal"><a href="#__codelineno-0-348">348</a></span>
+<span class="normal"><a href="#__codelineno-0-349">349</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-342" name="__codelineno-0-342"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<a id="__codelineno-0-343" name="__codelineno-0-343"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+<a id="__codelineno-0-344" name="__codelineno-0-344"></a>
+<a id="__codelineno-0-345" name="__codelineno-0-345"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">item_model</span> <span class="o">=</span> <span class="n">NcsPathwayItemModel</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+<a id="__codelineno-0-346" name="__codelineno-0-346"></a>
+<a id="__codelineno-0-347" name="__codelineno-0-347"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">lst_model_items</span><span class="o">.</span><span class="n">setDragEnabled</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-0-348" name="__codelineno-0-348"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">lst_model_items</span><span class="o">.</span><span class="n">setDragDropMode</span><span class="p">(</span><span class="n">QtWidgets</span><span class="o">.</span><span class="n">QAbstractItemView</span><span class="o">.</span><span class="n">DragOnly</span><span class="p">)</span>
+<a id="__codelineno-0-349" name="__codelineno-0-349"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">lst_model_items</span><span class="o">.</span><span class="n">setAcceptDrops</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+              </details>
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.NcsComponentWidget.add_ncs_pathway" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">add_ncs_pathway</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">add_ncs_pathway</span><span class="p">(</span><span class="n">ncs_pathway</span><span class="p">)</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Adds an NCS pathway object to the view.</p>
+
+
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>ncs_pathway</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="src.cplus_plugin.models.base.NcsPathway" href="../../models/api_base/#src.cplus_plugin.models.base.NcsPathway">NcsPathway</a></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>NCS pathway object to be added to the view.</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>bool</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Returns True if the NcsPathway was successfully added, else False.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-351">351</a></span>
+<span class="normal"><a href="#__codelineno-0-352">352</a></span>
+<span class="normal"><a href="#__codelineno-0-353">353</a></span>
+<span class="normal"><a href="#__codelineno-0-354">354</a></span>
+<span class="normal"><a href="#__codelineno-0-355">355</a></span>
+<span class="normal"><a href="#__codelineno-0-356">356</a></span>
+<span class="normal"><a href="#__codelineno-0-357">357</a></span>
+<span class="normal"><a href="#__codelineno-0-358">358</a></span>
+<span class="normal"><a href="#__codelineno-0-359">359</a></span>
+<span class="normal"><a href="#__codelineno-0-360">360</a></span>
+<span class="normal"><a href="#__codelineno-0-361">361</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-351" name="__codelineno-0-351"></a><span class="k">def</span> <span class="nf">add_ncs_pathway</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ncs_pathway</span><span class="p">:</span> <span class="n">NcsPathway</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<a id="__codelineno-0-352" name="__codelineno-0-352"></a>    <span class="sd">&quot;&quot;&quot;Adds an NCS pathway object to the view.</span>
+<a id="__codelineno-0-353" name="__codelineno-0-353"></a>
+<a id="__codelineno-0-354" name="__codelineno-0-354"></a><span class="sd">    :param ncs_pathway: NCS pathway object to be added to the view.</span>
+<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">    :type ncs_pathway: NcsPathway</span>
+<a id="__codelineno-0-356" name="__codelineno-0-356"></a>
+<a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">    :returns: Returns True if the NcsPathway was successfully added,</span>
+<a id="__codelineno-0-358" name="__codelineno-0-358"></a><span class="sd">    else False.</span>
+<a id="__codelineno-0-359" name="__codelineno-0-359"></a><span class="sd">    :rtype: bool</span>
+<a id="__codelineno-0-360" name="__codelineno-0-360"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-361" name="__codelineno-0-361"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">item_model</span><span class="o">.</span><span class="n">add_ncs_pathway</span><span class="p">(</span><span class="n">ncs_pathway</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.NcsComponentWidget.clear" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">clear</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">clear</span><span class="p">()</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Removes all NCS pathway items in the view.</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-363">363</a></span>
+<span class="normal"><a href="#__codelineno-0-364">364</a></span>
+<span class="normal"><a href="#__codelineno-0-365">365</a></span>
+<span class="normal"><a href="#__codelineno-0-366">366</a></span>
+<span class="normal"><a href="#__codelineno-0-367">367</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-363" name="__codelineno-0-363"></a><span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-364" name="__codelineno-0-364"></a>    <span class="sd">&quot;&quot;&quot;Removes all NCS pathway items in the view.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-365" name="__codelineno-0-365"></a>    <span class="n">items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ncs_items</span><span class="p">()</span>
+<a id="__codelineno-0-366" name="__codelineno-0-366"></a>    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+<a id="__codelineno-0-367" name="__codelineno-0-367"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">item_model</span><span class="o">.</span><span class="n">remove_ncs_pathway</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">uuid</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.NcsComponentWidget.load" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">load</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">load</span><span class="p">()</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Load items from settings.</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-466">466</a></span>
+<span class="normal"><a href="#__codelineno-0-467">467</a></span>
+<span class="normal"><a href="#__codelineno-0-468">468</a></span>
+<span class="normal"><a href="#__codelineno-0-469">469</a></span>
+<span class="normal"><a href="#__codelineno-0-470">470</a></span>
+<span class="normal"><a href="#__codelineno-0-471">471</a></span>
+<span class="normal"><a href="#__codelineno-0-472">472</a></span>
+<span class="normal"><a href="#__codelineno-0-473">473</a></span>
+<span class="normal"><a href="#__codelineno-0-474">474</a></span>
+<span class="normal"><a href="#__codelineno-0-475">475</a></span>
+<span class="normal"><a href="#__codelineno-0-476">476</a></span>
+<span class="normal"><a href="#__codelineno-0-477">477</a></span>
+<span class="normal"><a href="#__codelineno-0-478">478</a></span>
+<span class="normal"><a href="#__codelineno-0-479">479</a></span>
+<span class="normal"><a href="#__codelineno-0-480">480</a></span>
+<span class="normal"><a href="#__codelineno-0-481">481</a></span>
+<span class="normal"><a href="#__codelineno-0-482">482</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-466" name="__codelineno-0-466"></a><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-467" name="__codelineno-0-467"></a>    <span class="sd">&quot;&quot;&quot;Load items from settings.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-468" name="__codelineno-0-468"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+<a id="__codelineno-0-469" name="__codelineno-0-469"></a>
+<a id="__codelineno-0-470" name="__codelineno-0-470"></a>    <span class="n">settings_manager</span><span class="o">.</span><span class="n">update_ncs_pathways</span><span class="p">()</span>
+<a id="__codelineno-0-471" name="__codelineno-0-471"></a>    <span class="n">ncs_pathways</span> <span class="o">=</span> <span class="n">settings_manager</span><span class="o">.</span><span class="n">get_all_ncs_pathways</span><span class="p">()</span>
+<a id="__codelineno-0-472" name="__codelineno-0-472"></a>
+<a id="__codelineno-0-473" name="__codelineno-0-473"></a>    <span class="n">progress_dialog</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QProgressDialog</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-474" name="__codelineno-0-474"></a>    <span class="n">progress_dialog</span><span class="o">.</span><span class="n">setWindowTitle</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tr</span><span class="p">(</span><span class="s2">&quot;Load NCS Pathways&quot;</span><span class="p">))</span>
+<a id="__codelineno-0-475" name="__codelineno-0-475"></a>    <span class="n">progress_dialog</span><span class="o">.</span><span class="n">setMinimum</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-0-476" name="__codelineno-0-476"></a>    <span class="n">progress_dialog</span><span class="o">.</span><span class="n">setMaximum</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ncs_pathways</span><span class="p">))</span>
+<a id="__codelineno-0-477" name="__codelineno-0-477"></a>    <span class="n">progress_dialog</span><span class="o">.</span><span class="n">setLabelText</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tr</span><span class="p">(</span><span class="s2">&quot;Updating NCS pathways...&quot;</span><span class="p">))</span>
+<a id="__codelineno-0-478" name="__codelineno-0-478"></a>    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ncs</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ncs_pathways</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<a id="__codelineno-0-479" name="__codelineno-0-479"></a>        <span class="n">progress_dialog</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<a id="__codelineno-0-480" name="__codelineno-0-480"></a>        <span class="k">if</span> <span class="n">progress_dialog</span><span class="o">.</span><span class="n">wasCanceled</span><span class="p">():</span>
+<a id="__codelineno-0-481" name="__codelineno-0-481"></a>            <span class="k">break</span>
+<a id="__codelineno-0-482" name="__codelineno-0-482"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_ncs_pathway</span><span class="p">(</span><span class="n">ncs</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.NcsComponentWidget.ncs_items" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">ncs_items</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ncs_items</span><span class="p">()</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Returns a collection of all NcsPathwayItem objects in the
+list view.</p>
+
+
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>list</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Collection of NcsPathwayItem objects in the list view.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-381">381</a></span>
+<span class="normal"><a href="#__codelineno-0-382">382</a></span>
+<span class="normal"><a href="#__codelineno-0-383">383</a></span>
+<span class="normal"><a href="#__codelineno-0-384">384</a></span>
+<span class="normal"><a href="#__codelineno-0-385">385</a></span>
+<span class="normal"><a href="#__codelineno-0-386">386</a></span>
+<span class="normal"><a href="#__codelineno-0-387">387</a></span>
+<span class="normal"><a href="#__codelineno-0-388">388</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-381" name="__codelineno-0-381"></a><span class="k">def</span> <span class="nf">ncs_items</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">NcsPathwayItem</span><span class="p">]:</span>
+<a id="__codelineno-0-382" name="__codelineno-0-382"></a>    <span class="sd">&quot;&quot;&quot;Returns a collection of all NcsPathwayItem objects in the</span>
+<a id="__codelineno-0-383" name="__codelineno-0-383"></a><span class="sd">    list view.</span>
+<a id="__codelineno-0-384" name="__codelineno-0-384"></a>
+<a id="__codelineno-0-385" name="__codelineno-0-385"></a><span class="sd">    :returns: Collection of NcsPathwayItem objects in the list view.</span>
+<a id="__codelineno-0-386" name="__codelineno-0-386"></a><span class="sd">    :rtype: list</span>
+<a id="__codelineno-0-387" name="__codelineno-0-387"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-388" name="__codelineno-0-388"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">item_model</span><span class="o">.</span><span class="n">model_component_items</span><span class="p">()</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.cplus_plugin.gui.model_component_widget.NcsComponentWidget.pathways" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">pathways</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">pathways</span><span class="p">(</span><span class="n">valid_only</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Returns a collection of NcsPathway objects in the list view.</p>
+
+
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>valid_only</code></td>
+          <td>
+                <code>bool</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>True to only return those NcsPathway objects that are valid, default is False.</p>
+            </div>
+          </td>
+          <td>
+                <code>False</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>list</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Collection of NcsPathway objects in the list view.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+          <details class="quote">
+            <summary>Source code in <code>src/cplus_plugin/gui/model_component_widget.py</code></summary>
+            <table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-369">369</a></span>
+<span class="normal"><a href="#__codelineno-0-370">370</a></span>
+<span class="normal"><a href="#__codelineno-0-371">371</a></span>
+<span class="normal"><a href="#__codelineno-0-372">372</a></span>
+<span class="normal"><a href="#__codelineno-0-373">373</a></span>
+<span class="normal"><a href="#__codelineno-0-374">374</a></span>
+<span class="normal"><a href="#__codelineno-0-375">375</a></span>
+<span class="normal"><a href="#__codelineno-0-376">376</a></span>
+<span class="normal"><a href="#__codelineno-0-377">377</a></span>
+<span class="normal"><a href="#__codelineno-0-378">378</a></span>
+<span class="normal"><a href="#__codelineno-0-379">379</a></span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><a id="__codelineno-0-369" name="__codelineno-0-369"></a><span class="k">def</span> <span class="nf">pathways</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">valid_only</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">NcsPathway</span><span class="p">]:</span>
+<a id="__codelineno-0-370" name="__codelineno-0-370"></a>    <span class="sd">&quot;&quot;&quot;Returns a collection of NcsPathway objects in the list view.</span>
+<a id="__codelineno-0-371" name="__codelineno-0-371"></a>
+<a id="__codelineno-0-372" name="__codelineno-0-372"></a><span class="sd">    :param valid_only: True to only return those NcsPathway objects that</span>
+<a id="__codelineno-0-373" name="__codelineno-0-373"></a><span class="sd">    are valid, default is False.</span>
+<a id="__codelineno-0-374" name="__codelineno-0-374"></a><span class="sd">    :type valid_only: bool</span>
+<a id="__codelineno-0-375" name="__codelineno-0-375"></a>
+<a id="__codelineno-0-376" name="__codelineno-0-376"></a><span class="sd">    :returns: Collection of NcsPathway objects in the list view.</span>
+<a id="__codelineno-0-377" name="__codelineno-0-377"></a><span class="sd">    :rtype: list</span>
+<a id="__codelineno-0-378" name="__codelineno-0-378"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-379" name="__codelineno-0-379"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">item_model</span><span class="o">.</span><span class="n">pathways</span><span class="p">(</span><span class="n">valid_only</span><span class="p">)</span>
+</code></pre></div>
+</td></tr></table>
+          </details>
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+  <hr>
+<div class="md-source-file">
+  <small>
+    
+      Last update:
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">March 25, 2024</span>
+      
+    
+  </small>
+</div>
+
+              
+            </article>
+          </div>
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" data-md-state="hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="../api_map_repeat_item_widget/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Map repeat item widget" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Map repeat item widget
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../api_ncs_pathway_editor/" class="md-footer__link md-footer__link--next" aria-label="Next: NCS Pathway editor" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              NCS Pathway editor
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    <a href="" target="_blank" rel="noopener" title="" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 512"><path d="M186.1 328.7c0 20.9-10.9 55.1-36.7 55.1s-36.7-34.2-36.7-55.1 10.9-55.1 36.7-55.1 36.7 34.2 36.7 55.1zM480 278.2c0 31.9-3.2 65.7-17.5 95-37.9 76.6-142.1 74.8-216.7 74.8-75.8 0-186.2 2.7-225.6-74.8-14.6-29-20.2-63.1-20.2-95 0-41.9 13.9-81.5 41.5-113.6-5.2-15.8-7.7-32.4-7.7-48.8 0-21.5 4.9-32.3 14.6-51.8 45.3 0 74.3 9 108.8 36 29-6.9 58.8-10 88.7-10 27 0 54.2 2.9 80.4 9.2 34-26.7 63-35.2 107.8-35.2 9.8 19.5 14.6 30.3 14.6 51.8 0 16.4-2.6 32.7-7.7 48.2 27.5 32.4 39 72.3 39 114.2zm-64.3 50.5c0-43.9-26.7-82.6-73.5-82.6-18.9 0-37 3.4-56 6-14.9 2.3-29.8 3.2-45.1 3.2-15.2 0-30.1-.9-45.1-3.2-18.7-2.6-37-6-56-6-46.8 0-73.5 38.7-73.5 82.6 0 87.8 80.4 101.3 150.4 101.3h48.2c70.3 0 150.6-13.4 150.6-101.3zm-82.6-55.1c-25.8 0-36.7 34.2-36.7 55.1s10.9 55.1 36.7 55.1 36.7-34.2 36.7-55.1-10.9-55.1-36.7-55.1z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.indexes", "navigation.instant", "navigation.tabs.sticky", "navigation.tracking", "toc.integrate", "toc.follow", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.tabs.link", "content.code.annotation", "content.code.copy", "header.autohide"], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../../../assets/javascripts/workers/search.22074ed6.min.js"}</script>
+    
+    
+      <script src="../../../../assets/javascripts/bundle.01de222e.min.js"></script>
+      
+        <script src="../../../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
