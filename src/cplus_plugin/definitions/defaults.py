@@ -35,7 +35,7 @@ REPORT_SETTINGS_ICON_PATH = str(
 LOG_SETTINGS_ICON_PATH = str(
     os.path.normpath(
         os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-        + "/icons/report_settings.svg"
+        + "/icons/log_settings.svg"
     )
 )
 ICON_PDF = (
