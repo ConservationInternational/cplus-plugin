@@ -21,9 +21,9 @@ from qgis.core import (
     QgsSettings,
 )
 from qgis.gui import QgsGui, QgsLayoutDesignerInterface
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
+from qgis.PyQt.QtCore import QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QDockWidget, QMainWindow, QVBoxLayout
+from qgis.PyQt.QtWidgets import QAction
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -42,7 +42,6 @@ from .definitions.constants import (
     NCS_PATHWAY_SEGMENT,
     PATH_ATTRIBUTE,
     PIXEL_VALUE_ATTRIBUTE,
-    PRIORITY_LAYERS_SEGMENT,
     STYLE_ATTRIBUTE,
     USER_DEFINED_ATTRIBUTE,
     UUID_ATTRIBUTE,
@@ -52,7 +51,6 @@ from .definitions.defaults import (
     CI_LOGO_PATH,
     CPLUS_LOGO_PATH,
     DEFAULT_IMPLEMENTATION_MODELS,
-    DEFAULT_LOGO_PATH,
     DEFAULT_NCS_PATHWAYS,
     DEFAULT_REPORT_DISCLAIMER,
     DEFAULT_REPORT_LICENSE,
@@ -65,12 +63,9 @@ from .definitions.defaults import (
 from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
 from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
 from .lib.reports.manager import report_manager
-from .models.helpers import (
-    copy_layer_component_attributes,
-    create_implementation_model,
-    create_ncs_pathway,
-)
-from .settings import CplusOptionsFactory
+from .gui.settings.cplus_options import CplusOptionsFactory
+from .gui.settings.log_options import LogOptionsFactory
+from .gui.settings.report_options import ReportOptionsFactory
 
 from .utils import FileUtils, log, open_documentation, get_plugin_version
 
@@ -106,6 +101,11 @@ class QgisCplus:
         self.toolButton.setPopupMode(QToolButton.MenuButtonPopup)
         self.toolBtnAction = self.toolbar.addWidget(self.toolButton)
         self.actions.append(self.toolBtnAction)
+
+        # Create options factories
+        self.cplus_options_factory = CplusOptionsFactory()
+        self.reports_options_factory = ReportOptionsFactory()
+        self.log_options_factory = LogOptionsFactory()
 
         create_priority_layers()
 
@@ -254,9 +254,10 @@ class QgisCplus:
             status_tip=self.tr("CPLUS About"),
         )
 
-        # Adds the settings to the QGIS options panel
-        self.options_factory = CplusOptionsFactory()
-        self.iface.registerOptionsWidgetFactory(self.options_factory)
+        # Register plugin options factories
+        self.iface.registerOptionsWidgetFactory(self.cplus_options_factory)
+        self.iface.registerOptionsWidgetFactory(self.reports_options_factory)
+        self.iface.registerOptionsWidgetFactory(self.log_options_factory)
 
         # Register custom layout items
         self.register_layout_items()
@@ -276,8 +277,13 @@ class QgisCplus:
                 self.iface.removePluginWebMenu(self.tr("&CPLUS"), action)
                 self.iface.removeToolBarIcon(action)
 
+            # Unregister plugin options factories
+            self.iface.unregisterOptionsWidgetFactory(self.cplus_options_factory)
+            self.iface.unregisterOptionsWidgetFactory(self.reports_options_factory)
+            self.iface.unregisterOptionsWidgetFactory(self.log_options_factory)
+
         except Exception as e:
-            pass
+            log(str(e), info=False)
 
     def run(self):
         """Creates the main widget for the plugin."""
