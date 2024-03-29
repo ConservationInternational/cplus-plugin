@@ -65,11 +65,6 @@ from .definitions.defaults import (
 from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
 from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
 from .lib.reports.manager import report_manager
-from .models.helpers import (
-    copy_layer_component_attributes,
-    create_activity,
-    create_ncs_pathway,
-)
 from .settings import CplusOptionsFactory
 
 from .utils import FileUtils, log, open_documentation, get_plugin_version
