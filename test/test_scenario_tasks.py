@@ -313,7 +313,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         self.assertEqual(second_layer_stat.minimumValue, 7.0)
         self.assertEqual(second_layer_stat.maximumValue, 10.0)
 
-        results = analysis_task.run_models_analysis(
+        results = analysis_task.run_activities_analysis(
             [test_model],
             [],
             extent_string,
@@ -396,7 +396,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         self.assertEqual(first_layer_stat.minimumValue, 1.0)
         self.assertEqual(first_layer_stat.maximumValue, 19.0)
 
-        results = analysis_task.run_models_normalization(
+        results = analysis_task.run_activities_normalization(
             [test_model],
             [],
             extent_string,
@@ -509,7 +509,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         self.assertEqual(first_layer_stat.minimumValue, 1.0)
         self.assertEqual(first_layer_stat.maximumValue, 19.0)
 
-        results = analysis_task.run_models_weighting(
+        results = analysis_task.run_activities_weighting(
             [test_model],
             [test_priority_group],
             extent_string,

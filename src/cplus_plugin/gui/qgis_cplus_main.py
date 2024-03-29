@@ -1201,7 +1201,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             scenario_layer = qgis_instance.addMapLayer(layer)
 
             # Scenario result layer styling
-            renderer = self.style_activities_layer(layer, task.analysis_weighted_ims)
+            renderer = self.style_activities_layer(
+                layer, task.analysis_weighted_activities
+            )
             layer.setRenderer(renderer)
             layer.triggerRepaint()
 
@@ -1271,7 +1273,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                 activity_index = activity_index + 1
 
-            weighted_activities = task.analysis_weighted_ims if task is not None else []
+            weighted_activities = (
+                task.analysis_weighted_activities if task is not None else []
+            )
 
             for weighted_activity in weighted_activities:
                 weighted_activity_path = weighted_activity.path

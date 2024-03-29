@@ -76,7 +76,7 @@ class ScenarioAnalysisTask(QgsTask):
         self,
         analysis_scenario_name,
         analysis_scenario_description,
-        analysis_implementation_models,
+        analysis_activities,
         analysis_priority_layers_groups,
         analysis_extent,
         scenario,
@@ -85,12 +85,12 @@ class ScenarioAnalysisTask(QgsTask):
         self.analysis_scenario_name = analysis_scenario_name
         self.analysis_scenario_description = analysis_scenario_description
 
-        self.analysis_implementation_models = analysis_implementation_models
+        self.analysis_activities = analysis_activities
         self.analysis_priority_layers_groups = analysis_priority_layers_groups
         self.analysis_extent = analysis_extent
         self.analysis_extent_string = None
 
-        self.analysis_weighted_ims = []
+        self.analysis_weighted_activities = []
         self.scenario_result = None
         self.scenario_directory = None
 
@@ -122,10 +122,10 @@ class ScenarioAnalysisTask(QgsTask):
         selected_pathway = None
         pathway_found = False
 
-        for model in self.analysis_implementation_models:
+        for activity in self.analysis_activities:
             if pathway_found:
                 break
-            for pathway in model.pathways:
+            for pathway in activity.pathways:
                 if pathway is not None:
                     pathway_found = True
                     selected_pathway = pathway
@@ -170,59 +170,59 @@ class ScenarioAnalysisTask(QgsTask):
             and reference_layer_path.is_file()
         ):
             self.snap_analysis_data(
-                self.analysis_implementation_models,
+                self.analysis_activities,
                 self.analysis_priority_layers_groups,
                 extent_string,
             )
 
         # Preparing all the pathways by adding them together with
         # their carbon layers before creating
-        # their respective models.
+        # their respective activities.
 
         self.run_pathways_analysis(
-            self.analysis_implementation_models,
+            self.analysis_activities,
             self.analysis_priority_layers_groups,
             extent_string,
         )
 
-        # Normalizing all the models pathways using the carbon coefficient and
+        # Normalizing all the activities pathways using the carbon coefficient and
         # the pathway suitability index
 
         self.run_pathways_normalization(
-            self.analysis_implementation_models,
+            self.analysis_activities,
             self.analysis_priority_layers_groups,
             extent_string,
         )
 
-        # Creating models from the normalized pathways
+        # Creating activities from the normalized pathways
 
-        self.run_models_analysis(
-            self.analysis_implementation_models,
+        self.run_activities_analysis(
+            self.analysis_activities,
             self.analysis_priority_layers_groups,
             extent_string,
         )
 
-        # After creating models, we normalize them using the same coefficients
+        # After creating activities, we normalize them using the same coefficients
         # used in normalizing their respective pathways.
 
-        self.run_models_normalization(
-            self.analysis_implementation_models,
+        self.run_activities_normalization(
+            self.analysis_activities,
             self.analysis_priority_layers_groups,
             extent_string,
         )
 
-        # Weighting the models with their corresponding priority weighting layers
-        weighted_models, result = self.run_models_weighting(
-            self.analysis_implementation_models,
+        # Weighting the activities with their corresponding priority weighting layers
+        weighted_activities, result = self.run_activities_weighting(
+            self.analysis_activities,
             self.analysis_priority_layers_groups,
             extent_string,
         )
 
-        self.analysis_weighted_ims = weighted_models
-        self.scenario.weighted_activities = weighted_models
+        self.analysis_weighted_activities = weighted_activities
+        self.scenario.weighted_activities = weighted_activities
 
         # Post weighting analysis
-        self.run_models_cleaning(weighted_models, extent_string)
+        self.run_activities_cleaning(weighted_activities, extent_string)
 
         # The highest position tool analysis
         self.run_highest_position_analysis()
@@ -265,7 +265,7 @@ class ScenarioAnalysisTask(QgsTask):
             self.processing_context = QgsProcessingContext()
 
     def align_extent(self, raster_layer, target_extent):
-        """Snaps the passed extent to the models pathway layer pixel bounds
+        """Snaps the passed extent to the activities pathway layer pixel bounds
 
         :param raster_layer: The target layer that the passed extent will be
         aligned with
@@ -376,18 +376,18 @@ class ScenarioAnalysisTask(QgsTask):
         return outputs is not None
 
     def run_pathways_analysis(
-        self, models, priority_layers_groups, extent, temporary_output=False
+        self, activities, priority_layers_groups, extent, temporary_output=False
     ):
-        """Runs the required model pathways analysis on the passed
-         implementation models. The analysis involves adding the pathways
+        """Runs the required activity pathways analysis on the passed
+         activities. The analysis involves adding the pathways
          carbon layers into the pathway layer.
 
          If the pathway layer has more than one carbon layer, the resulting
          weighted pathway will contain the sum of the pathway layer values
          with the average of the pathway carbon layers values.
 
-        :param models: List of the selected implementation models
-        :type models: typing.List[ImplementationModel]
+        :param activities: List of the selected activities
+        :type activities: typing.List[Activity]
 
         :param priority_layers_groups: Used priority layers groups and their values
         :type priority_layers_groups: dict
@@ -402,36 +402,40 @@ class ScenarioAnalysisTask(QgsTask):
         if self.processing_cancelled:
             return False
 
-        self.set_status_message(tr("Adding models pathways with carbon layers"))
+        self.set_status_message(tr("Adding activities pathways with carbon layers"))
 
         pathways = []
-        models_paths = []
+        activities_paths = []
 
         try:
-            for model in models:
-                if not model.pathways and (model.path is None or model.path is ""):
+            for activity in activities:
+                if not activity.pathways and (
+                    activity.path is None or activity.path is ""
+                ):
                     self.set_info_message(
                         tr(
-                            f"No defined model pathways or a"
-                            f" model layer for the model {model.name}"
+                            f"No defined activity pathways or an"
+                            f" activity layer for the activity {activity.name}"
                         ),
                         level=Qgis.Critical,
                     )
                     log(
-                        f"No defined model pathways or a "
-                        f"model layer for the model {model.name}"
+                        f"No defined activity pathways or a "
+                        f"activity layer for the activity {activity.name}"
                     )
                     return False
 
-                for pathway in model.pathways:
+                for pathway in activity.pathways:
                     if not (pathway in pathways):
                         pathways.append(pathway)
 
-                if model.path is not None and model.path is not "":
-                    models_paths.append(model.path)
+                if activity.path is not None and activity.path is not "":
+                    activities_paths.append(activity.path)
 
-            if not pathways and len(models_paths) > 0:
-                self.run_pathways_normalization(models, priority_layers_groups, extent)
+            if not pathways and len(activities_paths) > 0:
+                self.run_pathways_normalization(
+                    activities, priority_layers_groups, extent
+                )
                 return
 
             suitability_index = float(
@@ -494,7 +498,7 @@ class ScenarioAnalysisTask(QgsTask):
 
                 if carbon_coefficient <= 0 and suitability_index <= 0:
                     self.run_pathways_normalization(
-                        models, priority_layers_groups, extent
+                        activities, priority_layers_groups, extent
                     )
                     return
 
@@ -539,13 +543,13 @@ class ScenarioAnalysisTask(QgsTask):
 
         return True
 
-    def snap_analysis_data(self, models, priority_layers_groups, extent):
-        """Snaps the passed models pathways, carbon layers and priority layers
+    def snap_analysis_data(self, activities, priority_layers_groups, extent):
+        """Snaps the passed activities pathways, carbon layers and priority layers
          to align with the reference layer set on the settings
         manager.
 
-        :param models: List of the selected implementation models
-        :type models: typing.List[ImplementationModel]
+        :param activities: List of the selected activities
+        :type activities: typing.List[Activity]
 
         :param priority_layers_groups: Used priority layers groups and their values
         :type priority_layers_groups: dict
@@ -559,7 +563,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         self.set_status_message(
             tr(
-                "Snapping the selected models pathways, "
+                "Snapping the selected activities pathways, "
                 "carbon layers and priority layers"
             )
         )
@@ -567,22 +571,24 @@ class ScenarioAnalysisTask(QgsTask):
         pathways = []
 
         try:
-            for model in models:
-                if not model.pathways and (model.path is None or model.path is ""):
+            for activity in activities:
+                if not activity.pathways and (
+                    activity.path is None or activity.path is ""
+                ):
                     self.set_info_message(
                         tr(
-                            f"No defined model pathways or a"
-                            f" model layer for the model {model.name}"
+                            f"No defined activity pathways or a"
+                            f" activity layer for the activity {activity.name}"
                         ),
                         level=Qgis.Critical,
                     )
                     log(
-                        f"No defined model pathways or a "
-                        f"model layer for the model {model.name}"
+                        f"No defined activity pathways or a "
+                        f"activity layer for the activity {activity.name}"
                     )
                     return False
 
-                for pathway in model.pathways:
+                for pathway in activity.pathways:
                     if not (pathway in pathways):
                         pathways.append(pathway)
 
@@ -666,13 +672,16 @@ class ScenarioAnalysisTask(QgsTask):
                     if output_path:
                         pathway.path = output_path
 
-            for model in models:
+            for activity in activities:
                 log(
-                    f"Snapping {len(model.priority_layers)} "
-                    f"priority weighting layers from model {model.name} with layers\n"
+                    f"Snapping {len(activity.priority_layers)} "
+                    f"priority weighting layers from activity {activity.name} with layers\n"
                 )
 
-                if model.priority_layers is not None and len(model.priority_layers) > 0:
+                if (
+                    activity.priority_layers is not None
+                    and len(activity.priority_layers) > 0
+                ):
                     snapped_priority_directory = os.path.join(
                         self.scenario_directory, "priority_layers"
                     )
@@ -680,7 +689,7 @@ class ScenarioAnalysisTask(QgsTask):
                     FileUtils.create_new_dir(snapped_priority_directory)
 
                     priority_layers = []
-                    for priority_layer in model.priority_layers:
+                    for priority_layer in activity.priority_layers:
                         if priority_layer is None:
                             continue
 
@@ -718,7 +727,7 @@ class ScenarioAnalysisTask(QgsTask):
 
                         priority_layers.append(priority_layer)
 
-                    model.priority_layers = priority_layers
+                    activity.priority_layers = priority_layers
 
         except Exception as e:
             log(f"Problem snapping layers, {e} \n")
@@ -788,21 +797,21 @@ class ScenarioAnalysisTask(QgsTask):
         return output_path
 
     def run_pathways_normalization(
-        self, models, priority_layers_groups, extent, temporary_output=False
+        self, activities, priority_layers_groups, extent, temporary_output=False
     ):
-        """Runs the normalization on the models pathways layers,
+        """Runs the normalization on the activities pathways layers,
         adjusting band values measured on different scale, the resulting scale
         is computed using the below formula
         Normalized_Pathway = (Carbon coefficient + Suitability index) * (
-                            (Model layer value) - (Model band minimum value)) /
-                            (Model band maximum value - Model band minimum value))
+                            (activity layer value) - (activity band minimum value)) /
+                            (activity band maximum value - activity band minimum value))
 
         If the carbon coefficient and suitability index are both zero then
         the computation won't take them into account in the normalization
         calculation.
 
-        :param models: List of the analyzed implementation models
-        :type models: typing.List[ImplementationModel]
+        :param activities: List of the analyzed activities
+        :type activities: typing.List[Activity]
 
         :param priority_layers_groups: Used priority layers groups and their values
         :type priority_layers_groups: dict
@@ -821,34 +830,36 @@ class ScenarioAnalysisTask(QgsTask):
         self.set_status_message(tr("Normalization of pathways"))
 
         pathways = []
-        models_paths = []
+        activities_paths = []
 
         try:
-            for model in models:
-                if not model.pathways and (model.path is None or model.path is ""):
+            for activity in activities:
+                if not activity.pathways and (
+                    activity.path is None or activity.path is ""
+                ):
                     self.set_info_message(
                         tr(
-                            f"No defined model pathways or a"
-                            f" model layer for the model {model.name}"
+                            f"No defined activity pathways or an"
+                            f" activity layer for the activity {activity.name}"
                         ),
                         level=Qgis.Critical,
                     )
                     log(
-                        f"No defined model pathways or a "
-                        f"model layer for the model {model.name}"
+                        f"No defined activity pathways or an "
+                        f"activity layer for the activity {activity.name}"
                     )
 
                     return False
 
-                for pathway in model.pathways:
+                for pathway in activity.pathways:
                     if not (pathway in pathways):
                         pathways.append(pathway)
 
-                if model.path is not None and model.path is not "":
-                    models_paths.append(model.path)
+                if activity.path is not None and activity.path is not "":
+                    activities_paths.append(activity.path)
 
-            if not pathways and len(models_paths) > 0:
-                self.run_models_analysis(models, priority_layers_groups, extent)
+            if not pathways and len(activities_paths) > 0:
+                self.run_activities_analysis(activities, priority_layers_groups, extent)
 
                 return
 
@@ -958,14 +969,14 @@ class ScenarioAnalysisTask(QgsTask):
 
         return True
 
-    def run_models_analysis(
-        self, models, priority_layers_groups, extent, temporary_output=False
+    def run_activities_analysis(
+        self, activities, priority_layers_groups, extent, temporary_output=False
     ):
-        """Runs the required model analysis on the passed
-        implementation models.
+        """Runs the required activity analysis on the passed
+        activities.
 
-        :param models: List of the selected implementation models
-        :type models: typing.List[ImplementationModel]
+        :param activities: List of the selected activities
+        :type activities: typing.List[Activity]
 
         :param priority_layers_groups: Used priority layers
         groups and their values
@@ -982,47 +993,47 @@ class ScenarioAnalysisTask(QgsTask):
             # Will not proceed if processing has been cancelled by the user
             return False
 
-        self.set_status_message(
-            tr("Creating implementation models layers from pathways")
-        )
+        self.set_status_message(tr("Creating activities layers from pathways"))
 
         try:
-            for model in models:
-                ims_directory = os.path.join(
-                    self.scenario_directory, "implementation_models"
+            for activity in activities:
+                activities_directory = os.path.join(
+                    self.scenario_directory, "activities"
                 )
-                FileUtils.create_new_dir(ims_directory)
-                file_name = clean_filename(model.name.replace(" ", "_"))
+                FileUtils.create_new_dir(activities_directory)
+                file_name = clean_filename(activity.name.replace(" ", "_"))
 
                 layers = []
-                if not model.pathways and (model.path is None and model.path is ""):
+                if not activity.pathways and (
+                    activity.path is None and activity.path is ""
+                ):
                     self.set_info_message(
                         tr(
-                            f"No defined model pathways or a"
-                            f" model layer for the model {model.name}"
+                            f"No defined activity pathways or a"
+                            f" activity layer for the activity {activity.name}"
                         ),
                         level=Qgis.Critical,
                     )
                     log(
-                        f"No defined model pathways or a "
-                        f"model layer for the model {model.name}"
+                        f"No defined activity pathways or an "
+                        f"activity layer for the activity {activity.name}"
                     )
 
                     return False
 
                 output_file = os.path.join(
-                    ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+                    activities_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
                 )
 
-                # Due to the implementation models base class
-                # model only one of the following blocks will be executed,
-                # the implementation model either contain a path or
+                # Due to the activities base class
+                # activity only one of the following blocks will be executed,
+                # the activity either contain a path or
                 # pathways
 
-                if model.path is not None and model.path is not "":
-                    layers = [model.path]
+                if activity.path is not None and activity.path is not "":
+                    layers = [activity.path]
 
-                for pathway in model.pathways:
+                for pathway in activity.pathways:
                     layers.append(pathway.path)
 
                 output = (
@@ -1041,10 +1052,7 @@ class ScenarioAnalysisTask(QgsTask):
                     "OUTPUT": output,
                 }
 
-                log(
-                    f"Used parameters for "
-                    f"implementation models generation: {alg_params} \n"
-                )
+                log(f"Used parameters for " f"activities generation: {alg_params} \n")
 
                 feedback = QgsProcessingFeedback()
 
@@ -1059,32 +1067,32 @@ class ScenarioAnalysisTask(QgsTask):
                     context=self.processing_context,
                     feedback=self.feedback,
                 )
-                model.path = results["OUTPUT"]
+                activity.path = results["OUTPUT"]
 
         except Exception as e:
-            log(f"Problem creating models layers, {e}")
+            log(f"Problem creating activities layers, {e}")
             self.error = e
             self.cancel()
             return False
 
         return True
 
-    def run_models_normalization(
-        self, models, priority_layers_groups, extent, temporary_output=False
+    def run_activities_normalization(
+        self, activities, priority_layers_groups, extent, temporary_output=False
     ):
-        """Runs the normalization analysis on the models layers,
+        """Runs the normalization analysis on the activities' layers,
         adjusting band values measured on different scale, the resulting scale
         is computed using the below formula
-        Normalized_Model = (Carbon coefficient + Suitability index) * (
-                            (Model layer value) - (Model band minimum value)) /
-                            (Model band maximum value - Model band minimum value))
+        Normalized_activity = (Carbon coefficient + Suitability index) * (
+                            (Activity layer value) - (Activity band minimum value)) /
+                            (Activity band maximum value - Activity band minimum value))
 
         If the carbon coefficient and suitability index are both zero then
         the computation won't take them into account in the normalization
         calculation.
 
-        :param models: List of the analyzed implementation models
-        :type models: typing.List[ImplementationModel]
+        :param activities: List of the analyzed activities
+        :type activities: typing.List[Activity]
 
         :param priority_layers_groups: Used priority layers groups and their values
         :type priority_layers_groups: dict
@@ -1100,22 +1108,22 @@ class ScenarioAnalysisTask(QgsTask):
             # Will not proceed if processing has been cancelled by the user
             return False
 
-        self.set_status_message(tr("Normalization of the implementation models"))
+        self.set_status_message(tr("Normalization of the activities"))
 
         try:
-            for model in models:
-                if model.path is None or model.path is "":
+            for activity in activities:
+                if activity.path is None or activity.path is "":
                     if not self.processing_cancelled:
                         self.set_info_message(
                             tr(
-                                f"Problem when running models normalization, "
-                                f"there is no map layer for the model {model.name}"
+                                f"Problem when running activities normalization, "
+                                f"there is no map layer for the activity {activity.name}"
                             ),
                             level=Qgis.Critical,
                         )
                         log(
-                            f"Problem when running models normalization, "
-                            f"there is no map layer for the model {model.name}"
+                            f"Problem when running activities normalization, "
+                            f"there is no map layer for the activity {activity.name}"
                         )
                     else:
                         # If the user cancelled the processing
@@ -1128,18 +1136,19 @@ class ScenarioAnalysisTask(QgsTask):
                     return False
 
                 layers = []
-                normalized_ims_directory = os.path.join(
-                    self.scenario_directory, "normalized_ims"
+                normalized_activities_directory = os.path.join(
+                    self.scenario_directory, "normalized_activities"
                 )
-                FileUtils.create_new_dir(normalized_ims_directory)
-                file_name = clean_filename(model.name.replace(" ", "_"))
+                FileUtils.create_new_dir(normalized_activities_directory)
+                file_name = clean_filename(activity.name.replace(" ", "_"))
 
                 output_file = os.path.join(
-                    normalized_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+                    normalized_activities_directory,
+                    f"{file_name}_{str(uuid.uuid4())[:4]}.tif",
                 )
 
-                model_layer = QgsRasterLayer(model.path, model.name)
-                provider = model_layer.dataProvider()
+                activity_layer = QgsRasterLayer(activity.path, activity.name)
+                provider = activity_layer.dataProvider()
                 band_statistics = provider.bandStatistics(1)
 
                 min_value = band_statistics.minimumValue
@@ -1147,12 +1156,12 @@ class ScenarioAnalysisTask(QgsTask):
 
                 log(
                     f"Found minimum {min_value} and "
-                    f"maximum {max_value} for model {model.name} \n"
+                    f"maximum {max_value} for activity {activity.name} \n"
                 )
 
-                layer_name = Path(model.path).stem
+                layer_name = Path(activity.path).stem
 
-                layers.append(model.path)
+                layers.append(activity.path)
 
                 carbon_coefficient = float(
                     settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.0)
@@ -1193,7 +1202,9 @@ class ScenarioAnalysisTask(QgsTask):
                     "OUTPUT": output,
                 }
 
-                log(f"Used parameters for normalization of the models: {alg_params} \n")
+                log(
+                    f"Used parameters for normalization of the activities: {alg_params} \n"
+                )
 
                 feedback = QgsProcessingFeedback()
 
@@ -1208,24 +1219,24 @@ class ScenarioAnalysisTask(QgsTask):
                     context=self.processing_context,
                     feedback=self.feedback,
                 )
-                model.path = results["OUTPUT"]
+                activity.path = results["OUTPUT"]
 
         except Exception as e:
-            log(f"Problem normalizing models layers, {e} \n")
+            log(f"Problem normalizing activities layers, {e} \n")
             self.error = e
             self.cancel()
             return False
 
         return True
 
-    def run_models_weighting(
-        self, models, priority_layers_groups, extent, temporary_output=False
+    def run_activities_weighting(
+        self, activities, priority_layers_groups, extent, temporary_output=False
     ):
-        """Runs weighting analysis on the passed implementation models using
-        the corresponding models weighting analysis.
+        """Runs weighting analysis on the passed activities using
+        the corresponding activities weighting analysis.
 
-        :param models: List of the selected implementation models
-        :type models: typing.List[ImplementationModel]
+        :param activities: List of the selected activities
+        :type activities: typing.List[Activity]
 
         :param priority_layers_groups: Used priority layers groups and their values
         :type priority_layers_groups: dict
@@ -1241,25 +1252,25 @@ class ScenarioAnalysisTask(QgsTask):
         if self.processing_cancelled:
             return [], False
 
-        self.set_status_message(tr(f"Weighting implementation models"))
+        self.set_status_message(tr(f"Weighting activities"))
 
-        weighted_models = []
+        weighted_activities = []
 
         try:
-            for original_model in models:
-                model = clone_activity(original_model)
+            for original_activity in activities:
+                activity = clone_activity(original_activity)
 
-                if model.path is None or model.path is "":
+                if activity.path is None or activity.path is "":
                     self.set_info_message(
                         tr(
-                            f"Problem when running models weighting, "
-                            f"there is no map layer for the model {model.name}"
+                            f"Problem when running activities weighting, "
+                            f"there is no map layer for the activity {activity.name}"
                         ),
                         level=Qgis.Critical,
                     )
                     log(
-                        f"Problem when running models normalization, "
-                        f"there is no map layer for the model {model.name}"
+                        f"Problem when running activities normalization, "
+                        f"there is no map layer for the activity {activity.name}"
                     )
 
                     return [], False
@@ -1267,27 +1278,27 @@ class ScenarioAnalysisTask(QgsTask):
                 basenames = []
                 layers = []
 
-                layers.append(model.path)
-                basenames.append(f'"{Path(model.path).stem}@1"')
+                layers.append(activity.path)
+                basenames.append(f'"{Path(activity.path).stem}@1"')
 
                 if not any(priority_layers_groups):
                     log(
                         f"There are no defined priority layers in groups,"
-                        f" skipping models weighting step."
+                        f" skipping activities weighting step."
                     )
-                    self.run_models_cleaning(extent)
+                    self.run_activities_cleaning(extent)
                     return
 
-                if model.priority_layers is None or model.priority_layers is []:
+                if activity.priority_layers is None or activity.priority_layers is []:
                     log(
                         f"There are no associated "
-                        f"priority weighting layers for model {model.name}"
+                        f"priority weighting layers for activity {activity.name}"
                     )
                     continue
 
-                settings_model = settings_manager.get_activity(str(model.uuid))
+                settings_activity = settings_manager.get_activity(str(activity.uuid))
 
-                for layer in settings_model.priority_layers:
+                for layer in settings_activity.priority_layers:
                     if layer is None:
                         continue
 
@@ -1303,7 +1314,7 @@ class ScenarioAnalysisTask(QgsTask):
                         f"Path {pwl} for priority "
                         f"weighting layer {layer.get('name')} "
                         f"doesn't exist, skipping the layer "
-                        f"from the model {model.name} weighting."
+                        f"from the activity {activity.name} weighting."
                     )
                     if pwl is None:
                         log(missing_pwl_message)
@@ -1332,15 +1343,16 @@ class ScenarioAnalysisTask(QgsTask):
                 if basenames is []:
                     return [], True
 
-                weighted_ims_directory = os.path.join(
-                    self.scenario_directory, "weighted_ims"
+                weighted_activities_directory = os.path.join(
+                    self.scenario_directory, "weighted_activities"
                 )
 
-                FileUtils.create_new_dir(weighted_ims_directory)
+                FileUtils.create_new_dir(weighted_activities_directory)
 
-                file_name = clean_filename(model.name.replace(" ", "_"))
+                file_name = clean_filename(activity.name.replace(" ", "_"))
                 output_file = os.path.join(
-                    weighted_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+                    weighted_activities_directory,
+                    f"{file_name}_{str(uuid.uuid4())[:4]}.tif",
                 )
                 expression = " + ".join(basenames)
 
@@ -1359,7 +1371,7 @@ class ScenarioAnalysisTask(QgsTask):
                 }
 
                 log(
-                    f" Used parameters for calculating weighting models {alg_params} \n"
+                    f" Used parameters for calculating weighting activities {alg_params} \n"
                 )
 
                 feedback = QgsProcessingFeedback()
@@ -1375,20 +1387,20 @@ class ScenarioAnalysisTask(QgsTask):
                     context=self.processing_context,
                     feedback=self.feedback,
                 )
-                model.path = results["OUTPUT"]
+                activity.path = results["OUTPUT"]
 
-                weighted_models.append(model)
+                weighted_activities.append(activity)
 
         except Exception as e:
-            log(f"Problem weighting implementation models, {e}\n")
+            log(f"Problem weighting activities, {e}\n")
             self.error = e
             self.cancel()
             return None, False
 
-        return weighted_models, True
+        return weighted_activities, True
 
-    def run_models_cleaning(self, models, extent=None):
-        """Cleans the weighted implementation models replacing
+    def run_activities_cleaning(self, activities, extent=None):
+        """Cleans the weighted activities replacing
         zero values with no-data as they are not statistical meaningful for the
         scenario analysis.
 
@@ -1399,30 +1411,32 @@ class ScenarioAnalysisTask(QgsTask):
         if self.processing_cancelled:
             return False
 
-        self.set_status_message(tr("Updating weighted implementation models values"))
+        self.set_status_message(tr("Updating weighted activities values"))
 
         try:
-            for model in models:
-                if model.path is None or model.path is "":
+            for activity in activities:
+                if activity.path is None or activity.path is "":
                     self.set_info_message(
                         tr(
-                            f"Problem when running models updates, "
-                            f"there is no map layer for the model {model.name}"
+                            f"Problem when running activities updates, "
+                            f"there is no map layer for the activity {activity.name}"
                         ),
                         level=Qgis.Critical,
                     )
                     log(
-                        f"Problem when running models updates, "
-                        f"there is no map layer for the model {model.name}"
+                        f"Problem when running activities updates, "
+                        f"there is no map layer for the activity {activity.name}"
                     )
 
                     return False
 
-                layers = [model.path]
+                layers = [activity.path]
 
-                file_name = clean_filename(model.name.replace(" ", "_"))
+                file_name = clean_filename(activity.name.replace(" ", "_"))
 
-                output_file = os.path.join(self.scenario_directory, "weighted_ims")
+                output_file = os.path.join(
+                    self.scenario_directory, "weighted_activities"
+                )
                 output_file = os.path.join(
                     output_file, f"{file_name}_{str(uuid.uuid4())[:4]}_cleaned.tif"
                 )
@@ -1443,7 +1457,7 @@ class ScenarioAnalysisTask(QgsTask):
 
                 log(
                     f"Used parameters for "
-                    f"updates on the weighted implementation models: {alg_params} \n"
+                    f"updates on the weighted activities: {alg_params} \n"
                 )
 
                 feedback = QgsProcessingFeedback()
@@ -1459,10 +1473,10 @@ class ScenarioAnalysisTask(QgsTask):
                     context=self.processing_context,
                     feedback=self.feedback,
                 )
-                model.path = results["OUTPUT"]
+                activity.path = results["OUTPUT"]
 
         except Exception as e:
-            log(f"Problem cleaning implementation models, {e}")
+            log(f"Problem cleaning activities, {e}")
             self.error = e
             self.cancel()
             return False
@@ -1471,7 +1485,7 @@ class ScenarioAnalysisTask(QgsTask):
 
     def run_highest_position_analysis(self):
         """Runs the highest position analysis which is last step
-        in scenario analysis. Uses the models set by the current ongoing
+        in scenario analysis. Uses the activities set by the current ongoing
         analysis.
 
         """
@@ -1496,15 +1510,15 @@ class ScenarioAnalysisTask(QgsTask):
 
             self.set_status_message(tr("Calculating the highest position"))
 
-            for model in self.analysis_weighted_ims:
-                if model.path is not None and model.path is not "":
-                    raster_layer = QgsRasterLayer(model.path, model.name)
-                    layers[model.name] = (
+            for activity in self.analysis_weighted_activities:
+                if activity.path is not None and activity.path is not "":
+                    raster_layer = QgsRasterLayer(activity.path, activity.name)
+                    layers[activity.name] = (
                         raster_layer if raster_layer is not None else None
                     )
                 else:
-                    for pathway in model.pathways:
-                        layers[model.name] = QgsRasterLayer(pathway.path)
+                    for pathway in activity.pathways:
+                        layers[activity.name] = QgsRasterLayer(pathway.path)
 
             source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
             dest_crs = list(layers.values())[0].crs() if len(layers) > 0 else source_crs
@@ -1523,20 +1537,22 @@ class ScenarioAnalysisTask(QgsTask):
             # Preparing the input rasters for the highest position
             # analysis in a correct order
 
-            models_names = [model.name for model in self.analysis_weighted_ims]
-            all_models = sorted(
-                self.analysis_weighted_ims,
-                key=lambda model_instance: model_instance.style_pixel_value,
+            activity_names = [
+                activity.name for activity in self.analysis_weighted_activities
+            ]
+            all_activities = sorted(
+                self.analysis_weighted_activities,
+                key=lambda activity_instance: activity_instance.style_pixel_value,
             )
-            for index, model in enumerate(all_models):
-                model.style_pixel_value = index + 1
+            for index, activity in enumerate(all_activities):
+                activity.style_pixel_value = index + 1
 
-            all_models_names = [model.name for model in all_models]
+            all_activity_names = [activity.name for activity in all_activities]
             sources = []
 
-            for model_name in all_models_names:
-                if model_name in models_names:
-                    sources.append(layers[model_name].source())
+            for activity_name in all_activity_names:
+                if activity_name in activity_names:
+                    sources.append(layers[activity_name].source())
 
             log(f"Layers sources {[Path(source).stem for source in sources]}")
 
