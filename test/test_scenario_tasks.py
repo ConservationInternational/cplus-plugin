@@ -17,7 +17,7 @@ from qgis.core import QgsRasterLayer
 from cplus_plugin.conf import settings_manager, Settings
 
 from cplus_plugin.tasks import ScenarioAnalysisTask
-from cplus_plugin.models.base import Scenario, NcsPathway, ImplementationModel
+from cplus_plugin.models.base import Scenario, NcsPathway, Activity
 
 
 class ScenarioAnalysisTaskTest(unittest.TestCase):
@@ -49,9 +49,9 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         test_extent = test_layer.extent()
 
-        test_model = ImplementationModel(
+        test_activity = Activity(
             uuid=uuid.uuid4(),
-            name="test_model",
+            name="test_activity",
             description="test_description",
             pathways=[test_pathway],
         )
@@ -60,16 +60,16 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             uuid=uuid.uuid4(),
             name="Scenario",
             description="Scenario description",
-            models=[test_model],
+            activities=[test_activity],
             extent=test_extent,
-            weighted_models=[],
+            weighted_activities=[],
             priority_layer_groups=[],
         )
 
         analysis_task = ScenarioAnalysisTask(
             "test_scenario_pathways_analysis",
             "test_scenario_pathways_analysis_description",
-            [test_model],
+            [test_activity],
             [],
             test_layer.extent(),
             scenario,
@@ -105,7 +105,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         self.assertEqual(past_stat.maximumValue, 10.0)
 
         results = analysis_task.run_pathways_analysis(
-            [test_model],
+            [test_activity],
             [],
             extent_string,
             temporary_output=True,
@@ -145,9 +145,9 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         test_extent = test_layer.extent()
 
-        test_model = ImplementationModel(
+        test_activity = Activity(
             uuid=uuid.uuid4(),
-            name="test_model",
+            name="test_activity",
             description="test_description",
             pathways=[test_pathway],
         )
@@ -156,16 +156,16 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             uuid=uuid.uuid4(),
             name="Scenario",
             description="Scenario description",
-            models=[test_model],
+            activities=[test_activity],
             extent=test_extent,
-            weighted_models=[],
+            weighted_activities=[],
             priority_layer_groups=[],
         )
 
         analysis_task = ScenarioAnalysisTask(
             "test_scenario_pathways_normalization",
             "test_scenario_pathways_normalization_description",
-            [test_model],
+            [test_activity],
             [],
             test_layer.extent(),
             scenario,
@@ -201,7 +201,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         self.assertEqual(past_stat.maximumValue, 10.0)
 
         results = analysis_task.run_pathways_normalization(
-            [test_model],
+            [test_activity],
             [],
             extent_string,
             temporary_output=True,
@@ -216,7 +216,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         self.assertEqual(stat.minimumValue, 0.0)
         self.assertEqual(stat.maximumValue, 2.0)
 
-    def test_scenario_models_creation(self):
+    def test_scenario_activities_creation(self):
         pathway_layer_directory = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "data", "pathways", "layers"
         )
@@ -254,9 +254,9 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         test_extent = first_test_layer.extent()
 
-        test_model = ImplementationModel(
+        test_activity = Activity(
             uuid=uuid.uuid4(),
-            name="test_model",
+            name="test_activity",
             description="test_description",
             pathways=[first_test_pathway, second_test_pathway],
         )
@@ -265,16 +265,16 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             uuid=uuid.uuid4(),
             name="Scenario",
             description="Scenario description",
-            models=[test_model],
+            activities=[test_activity],
             extent=test_extent,
-            weighted_models=[],
+            weighted_activities=[],
             priority_layer_groups=[],
         )
 
         analysis_task = ScenarioAnalysisTask(
-            "test_scenario_models_creation",
-            "test_scenario_models_creation_description",
-            [test_model],
+            "test_scenario_activities_creation",
+            "test_scenario_activities_creation_description",
+            [test_activity],
             [],
             test_extent,
             scenario,
@@ -314,7 +314,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         self.assertEqual(second_layer_stat.maximumValue, 10.0)
 
         results = analysis_task.run_activities_analysis(
-            [test_model],
+            [test_activity],
             [],
             extent_string,
             temporary_output=True,
@@ -322,46 +322,48 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         self.assertTrue(results)
 
-        result_layer = QgsRasterLayer(test_model.path, test_model.name)
+        result_layer = QgsRasterLayer(test_activity.path, test_activity.name)
 
         stat = result_layer.dataProvider().bandStatistics(1)
 
         self.assertEqual(stat.minimumValue, 1.0)
         self.assertEqual(stat.maximumValue, 19.0)
 
-    def test_scenario_models_normalization(self):
-        models_layer_directory = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "data", "models", "layers"
+    def test_scenario_activities_normalization(self):
+        activities_layer_directory = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "data", "activities", "layers"
         )
 
-        model_layer_path_1 = os.path.join(models_layer_directory, "test_model_1.tif")
+        activity_layer_path_1 = os.path.join(
+            activities_layer_directory, "test_model_1.tif"
+        )
 
-        test_model = ImplementationModel(
+        test_activity = Activity(
             uuid=uuid.uuid4(),
-            name="test_model",
+            name="test_activity",
             description="test_description",
             pathways=[],
-            path=model_layer_path_1,
+            path=activity_layer_path_1,
         )
 
-        model_layer = QgsRasterLayer(test_model.path, test_model.name)
+        activity_layer = QgsRasterLayer(test_activity.path, test_activity.name)
 
-        test_extent = model_layer.extent()
+        test_extent = activity_layer.extent()
 
         scenario = Scenario(
             uuid=uuid.uuid4(),
             name="Scenario",
             description="Scenario description",
-            models=[test_model],
+            activities=[test_activity],
             extent=test_extent,
-            weighted_models=[],
+            weighted_activities=[],
             priority_layer_groups=[],
         )
 
         analysis_task = ScenarioAnalysisTask(
-            "test_scenario_models_creation",
-            "test_scenario_models_creation_description",
-            [test_model],
+            "test_scenario_activities_creation",
+            "test_scenario_activities_creation_description",
+            [test_activity],
             [],
             test_extent,
             scenario,
@@ -370,13 +372,13 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         extent_string = (
             f"{test_extent.xMinimum()},{test_extent.xMaximum()},"
             f"{test_extent.yMinimum()},{test_extent.yMaximum()}"
-            f" [{model_layer.crs().authid()}]"
+            f" [{activity_layer.crs().authid()}]"
         )
 
         base_dir = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "data",
-            "models",
+            "activities",
         )
 
         scenario_directory = os.path.join(
@@ -391,13 +393,13 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         settings_manager.set_value(Settings.PATHWAY_SUITABILITY_INDEX, 1.0)
         settings_manager.set_value(Settings.CARBON_COEFFICIENT, 1.0)
 
-        first_layer_stat = model_layer.dataProvider().bandStatistics(1)
+        first_layer_stat = activity_layer.dataProvider().bandStatistics(1)
 
         self.assertEqual(first_layer_stat.minimumValue, 1.0)
         self.assertEqual(first_layer_stat.maximumValue, 19.0)
 
         results = analysis_task.run_activities_normalization(
-            [test_model],
+            [test_activity],
             [],
             extent_string,
             temporary_output=True,
@@ -405,23 +407,25 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         self.assertTrue(results)
 
-        result_layer = QgsRasterLayer(test_model.path, test_model.name)
+        result_layer = QgsRasterLayer(test_activity.path, test_activity.name)
 
         stat = result_layer.dataProvider().bandStatistics(1)
 
         self.assertEqual(stat.minimumValue, 0.0)
         self.assertEqual(round(stat.maximumValue, 2), 1.89)
 
-    def test_scenario_models_weighting(self):
-        models_layer_directory = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "data", "models", "layers"
+    def test_scenario_activities_weighting(self):
+        activities_layer_directory = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "data", "activities", "layers"
         )
 
         priority_layers_directory = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "data", "priority", "layers"
         )
 
-        model_layer_path_1 = os.path.join(models_layer_directory, "test_model_1.tif")
+        activity_layer_path_1 = os.path.join(
+            activities_layer_directory, "test_model_1.tif"
+        )
         priority_layer_path_1 = os.path.join(
             priority_layers_directory, "test_priority_1.tif"
         )
@@ -446,35 +450,35 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         settings_manager.save_priority_layer(priority_layer_1)
 
-        test_model = ImplementationModel(
+        test_activity = Activity(
             uuid=uuid.uuid4(),
-            name="test_model",
+            name="test_activity",
             description="test_description",
             pathways=[],
-            path=model_layer_path_1,
+            path=activity_layer_path_1,
             priority_layers=[priority_layer_1],
         )
 
-        settings_manager.save_activity(test_model)
+        settings_manager.save_activity(test_activity)
 
-        model_layer = QgsRasterLayer(test_model.path, test_model.name)
+        activity_layer = QgsRasterLayer(test_activity.path, test_activity.name)
 
-        test_extent = model_layer.extent()
+        test_extent = activity_layer.extent()
 
         scenario = Scenario(
             uuid=uuid.uuid4(),
             name="Scenario",
             description="Scenario description",
-            models=[test_model],
+            activities=[test_activity],
             extent=test_extent,
-            weighted_models=[],
+            weighted_activities=[],
             priority_layer_groups=[],
         )
 
         analysis_task = ScenarioAnalysisTask(
-            "test_scenario_models_creation",
-            "test_scenario_models_creation_description",
-            [test_model],
+            "test_scenario_activities_creation",
+            "test_scenario_activities_creation_description",
+            [test_activity],
             [],
             test_extent,
             scenario,
@@ -483,13 +487,13 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         extent_string = (
             f"{test_extent.xMinimum()},{test_extent.xMaximum()},"
             f"{test_extent.yMinimum()},{test_extent.yMaximum()}"
-            f" [{model_layer.crs().authid()}]"
+            f" [{activity_layer.crs().authid()}]"
         )
 
         base_dir = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "data",
-            "models",
+            "activities",
         )
 
         scenario_directory = os.path.join(
@@ -504,13 +508,13 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         settings_manager.set_value(Settings.PATHWAY_SUITABILITY_INDEX, 1.0)
         settings_manager.set_value(Settings.CARBON_COEFFICIENT, 1.0)
 
-        first_layer_stat = model_layer.dataProvider().bandStatistics(1)
+        first_layer_stat = activity_layer.dataProvider().bandStatistics(1)
 
         self.assertEqual(first_layer_stat.minimumValue, 1.0)
         self.assertEqual(first_layer_stat.maximumValue, 19.0)
 
         results = analysis_task.run_activities_weighting(
-            [test_model],
+            [test_activity],
             [test_priority_group],
             extent_string,
             temporary_output=True,
@@ -524,11 +528,11 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         self.assertIsInstance(results[0], list)
         self.assertIsNotNone(results[0][0])
 
-        self.assertEqual(results[0][0].name, test_model.name)
+        self.assertEqual(results[0][0].name, test_activity.name)
 
         self.assertIsNotNone(results[0][0].path)
 
-        result_layer = QgsRasterLayer(results[0][0].path, test_model.name)
+        result_layer = QgsRasterLayer(results[0][0].path, test_activity.name)
 
         stat = result_layer.dataProvider().bandStatistics(1)
 
