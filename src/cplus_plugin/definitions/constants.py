@@ -11,8 +11,8 @@ PRIORITY_LAYERS_SEGMENT = "priority_layers"
 # Naming for outputs sub-folder relative to base directory
 OUTPUTS_SEGMENT = "outputs"
 
-IM_GROUP_LAYER_NAME = "Implementation Model Maps"
-IM_WEIGHTED_GROUP_NAME = "Weighted Implementation Model Maps"
+ACTIVITY_GROUP_LAYER_NAME = "Activity Maps"
+ACTIVITY_WEIGHTED_GROUP_NAME = "Weighted Activity Maps"
 NCS_PATHWAYS_GROUP_LAYER_NAME = "NCS Pathways Maps"
 
 # Attribute names
@@ -21,8 +21,8 @@ CARBON_PATHS_ATTRIBUTE = "carbon_paths"
 COLOR_RAMP_PROPERTIES_ATTRIBUTE = "color_ramp"
 COLOR_RAMP_TYPE_ATTRIBUTE = "ramp_type"
 DESCRIPTION_ATTRIBUTE = "description"
-IM_LAYER_STYLE_ATTRIBUTE = "model_layer"
-IM_SCENARIO_STYLE_ATTRIBUTE = "scenario_layer"
+ACTIVITY_LAYER_STYLE_ATTRIBUTE = "activity_layer"
+ACTIVITY_SCENARIO_STYLE_ATTRIBUTE = "scenario_layer"
 LAYER_TYPE_ATTRIBUTE = "layer_type"
 NAME_ATTRIBUTE = "name"
 PATH_ATTRIBUTE = "path"
@@ -32,4 +32,4 @@ STYLE_ATTRIBUTE = "style"
 USER_DEFINED_ATTRIBUTE = "user_defined"
 UUID_ATTRIBUTE = "uuid"
 
-MODEL_IDENTIFIER_PROPERTY = "model_identifier"
+ACTIVITY_IDENTIFIER_PROPERTY = "activity_identifier"

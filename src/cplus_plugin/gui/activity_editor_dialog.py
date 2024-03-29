@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Dialog for creating or editing an implementation model.
+Dialog for creating or editing an activity.
 """
 
 import os
@@ -25,24 +25,22 @@ from ..conf import Settings, settings_manager
 from ..definitions.constants import (
     COLOR_RAMP_PROPERTIES_ATTRIBUTE,
     COLOR_RAMP_TYPE_ATTRIBUTE,
-    IM_LAYER_STYLE_ATTRIBUTE,
-    IM_SCENARIO_STYLE_ATTRIBUTE,
+    ACTIVITY_LAYER_STYLE_ATTRIBUTE,
+    ACTIVITY_SCENARIO_STYLE_ATTRIBUTE,
 )
 from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
-from ..models.base import ImplementationModel
+from ..models.base import Activity
 from ..utils import FileUtils, open_documentation, tr
 
 WidgetUi, _ = loadUiType(
-    os.path.join(
-        os.path.dirname(__file__), "../ui/implementation_model_editor_dialog.ui"
-    )
+    os.path.join(os.path.dirname(__file__), "../ui/activity_editor_dialog.ui")
 )
 
 
-class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
-    """Dialog for creating or editing an implementation model entry."""
+class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
+    """Dialog for creating or editing an activity."""
 
-    def __init__(self, parent=None, implementation_model=None, excluded_names=None):
+    def __init__(self, parent=None, activity=None, excluded_names=None):
         super().__init__(parent)
         self.setupUi(self)
 
@@ -56,7 +54,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.btn_color_ramp.setShowNull(False)
         self.btn_color_ramp.setRandomColorRamp()
         self.btn_color_ramp.setColorRampDialogTitle(
-            self.tr("Set Color Ramp for Output Implementation Model")
+            self.tr("Set Color Ramp for Output Activity")
         )
 
         self.buttonBox.accepted.connect(self._on_accepted)
@@ -75,10 +73,10 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         if excluded_names is None:
             self._excluded_names = []
 
-        self._implementation_model = implementation_model
-        if self._implementation_model is not None:
+        self._activity = activity
+        if self._activity is not None:
             self._edit_mode = True
-            self._layer = self._implementation_model.to_map_layer()
+            self._layer = self._activity.to_map_layer()
             self._update_controls()
 
         help_icon = FileUtils.get_icon("mActionHelpContents.svg")
@@ -90,20 +88,20 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.layer_gb.setVisible(False)
 
     @property
-    def implementation_model(self) -> ImplementationModel:
-        """Returns a reference to the ImplementationModel object.
+    def activity(self) -> Activity:
+        """Returns a reference to the activity object.
 
-        :returns: Reference to the ImplementationModel object.
-        :rtype: ImplementationModel
+        :returns: Reference to the activity object.
+        :rtype: Activity
         """
-        return self._implementation_model
+        return self._activity
 
     @property
     def edit_mode(self) -> bool:
         """Returns the state of the editor.
 
         :returns: True if the editor is editing an existing
-        ImplementationModel object, else False if its creating
+        activity object, else False if its creating
         a new object.
         :rtype: bool
         """
@@ -132,18 +130,16 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
             self.txt_description.setPlainText(description[:300])
 
     def _update_controls(self):
-        """Update controls with data from the ImplementationModel
-        object.
-        """
-        if self._implementation_model is None:
+        """Update controls with data from the activity object."""
+        if self._activity is None:
             return
 
-        self.txt_name.setText(self._implementation_model.name)
-        self.txt_description.setPlainText(self._implementation_model.description)
+        self.txt_name.setText(self._activity.name)
+        self.txt_description.setPlainText(self._activity.description)
 
         self.layer_gb.setCollapsed(True)
 
-        if len(self._implementation_model.pathways) > 0:
+        if len(self._activity.pathways) > 0:
             self.layer_gb.setEnabled(False)
         else:
             self.layer_gb.setEnabled(True)
@@ -156,12 +152,12 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._add_layer_path(layer_path)
 
         # Set scenario fill style
-        symbol = self._implementation_model.scenario_fill_symbol()
+        symbol = self._activity.scenario_fill_symbol()
         if symbol:
             self.style_btn.setSymbol(symbol)
 
         # Set output layer color ramp
-        output_model_color_ramp = self._implementation_model.model_color_ramp()
+        output_model_color_ramp = self._activity.color_ramp()
         if output_model_color_ramp:
             self.btn_color_ramp.setColorRamp(output_model_color_ramp)
 
@@ -196,7 +192,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         name = self.txt_name.text()
         if not name:
-            msg = tr("Implementation model name cannot be empty.")
+            msg = tr("Activity name cannot be empty.")
             self._show_warning_message(msg)
             status = False
 
@@ -234,35 +230,35 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         """Shows a warning message in the message bar."""
         self._message_bar.pushMessage(message, Qgis.MessageLevel.Warning)
 
-    def _create_implementation_model(self):
-        """Create or update implementation model from user input."""
-        if self._implementation_model is None:
-            self._implementation_model = ImplementationModel(
+    def _create_activity(self):
+        """Create or update an activity based on user input."""
+        if self._activity is None:
+            self._activity = Activity(
                 uuid.uuid4(), self.txt_name.text(), self.txt_description.toPlainText()
             )
-            self._implementation_model.user_defined = True
+            self._activity.user_defined = True
         else:
             # Update mode
-            self._implementation_model.name = self.txt_name.text()
-            self._implementation_model.description = self.txt_description.toPlainText()
+            self._activity.name = self.txt_name.text()
+            self._activity.description = self.txt_description.toPlainText()
 
         self._layer = self._get_selected_map_layer()
 
         scenario_fill_symbol_layer = self.scenario_fill_symbol_layer()
-        self._implementation_model.layer_styles = {}
+        self._activity.layer_styles = {}
         if scenario_fill_symbol_layer:
-            self._implementation_model.layer_styles[
-                IM_SCENARIO_STYLE_ATTRIBUTE
+            self._activity.layer_styles[
+                ACTIVITY_SCENARIO_STYLE_ATTRIBUTE
             ] = scenario_fill_symbol_layer.properties()
 
-        output_model_color_ramp = self.btn_color_ramp.colorRamp()
-        if output_model_color_ramp:
+        output_activity_color_ramp = self.btn_color_ramp.colorRamp()
+        if output_activity_color_ramp:
             color_ramp_info = {
-                COLOR_RAMP_PROPERTIES_ATTRIBUTE: output_model_color_ramp.properties(),
-                COLOR_RAMP_TYPE_ATTRIBUTE: output_model_color_ramp.typeString(),
+                COLOR_RAMP_PROPERTIES_ATTRIBUTE: output_activity_color_ramp.properties(),
+                COLOR_RAMP_TYPE_ATTRIBUTE: output_activity_color_ramp.typeString(),
             }
-            self._implementation_model.layer_styles[
-                IM_LAYER_STYLE_ATTRIBUTE
+            self._activity.layer_styles[
+                ACTIVITY_LAYER_STYLE_ATTRIBUTE
             ] = color_ramp_info
 
     def _get_selected_map_layer(self) -> typing.Union[QgsRasterLayer, None]:
@@ -288,7 +284,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         if not self.validate():
             return
 
-        self._create_implementation_model()
+        self._create_activity()
         self.accept()
 
     def scenario_fill_symbol_layer(self) -> QgsFillSymbolLayer:
@@ -298,8 +294,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
         It checks to ensure that there is at least one fill symbol
         layer contained in the symbol.
 
-        :returns: Fill symbol layer to be used in the implementation
-        model.
+        :returns: Fill symbol layer to be used in the activity.
         :rtype: QgsFillSymbolLayer
         """
         fill_symbol_layer = None
@@ -342,7 +337,7 @@ class ImplementationModelEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         layer_path, _ = QtWidgets.QFileDialog.getOpenFileName(
             self,
-            self.tr("Select Implementation Model Layer"),
+            self.tr("Select Activity Layer"),
             data_dir,
             f"{filter_tr} (*.*)",
             options=QtWidgets.QFileDialog.DontResolveSymlinks,

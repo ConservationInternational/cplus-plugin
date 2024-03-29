@@ -44,7 +44,7 @@ from .conf import settings_manager, Settings
 
 from .resources import *
 
-from .models.helpers import clone_implementation_model
+from .models.helpers import clone_activity
 
 from .models.base import ScenarioResult, SpatialExtent
 
@@ -219,7 +219,7 @@ class ScenarioAnalysisTask(QgsTask):
         )
 
         self.analysis_weighted_ims = weighted_models
-        self.scenario.weighted_models = weighted_models
+        self.scenario.weighted_activities = weighted_models
 
         # Post weighting analysis
         self.run_models_cleaning(weighted_models, extent_string)
@@ -1247,7 +1247,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         try:
             for original_model in models:
-                model = clone_implementation_model(original_model)
+                model = clone_activity(original_model)
 
                 if model.path is None or model.path is "":
                     self.set_info_message(
@@ -1285,9 +1285,7 @@ class ScenarioAnalysisTask(QgsTask):
                     )
                     continue
 
-                settings_model = settings_manager.get_implementation_model(
-                    str(model.uuid)
-                )
+                settings_model = settings_manager.get_activity(str(model.uuid))
 
                 for layer in settings_model.priority_layers:
                     if layer is None:

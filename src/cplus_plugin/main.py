@@ -37,7 +37,7 @@ from .definitions.constants import (
     CARBON_PATHS_ATTRIBUTE,
     COLOR_RAMP_PROPERTIES_ATTRIBUTE,
     COLOR_RAMP_TYPE_ATTRIBUTE,
-    IM_LAYER_STYLE_ATTRIBUTE,
+    ACTIVITY_LAYER_STYLE_ATTRIBUTE,
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
     PATH_ATTRIBUTE,
@@ -51,7 +51,7 @@ from .definitions.defaults import (
     ABOUT_DOCUMENTATION_SITE,
     CI_LOGO_PATH,
     CPLUS_LOGO_PATH,
-    DEFAULT_IMPLEMENTATION_MODELS,
+    DEFAULT_ACTIVITIES,
     DEFAULT_LOGO_PATH,
     DEFAULT_NCS_PATHWAYS,
     DEFAULT_REPORT_DISCLAIMER,
@@ -67,7 +67,7 @@ from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
 from .lib.reports.manager import report_manager
 from .models.helpers import (
     copy_layer_component_attributes,
-    create_implementation_model,
+    create_activity,
     create_ncs_pathway,
 )
 from .settings import CplusOptionsFactory
@@ -370,7 +370,7 @@ def create_priority_layers():
 
 def initialize_model_settings():
     """Initialize default model components such as NCS pathways
-    and implementation models.
+    and activities.
 
     It will check if there are existing components using the UUID
     and only add the ones that do not exist in the settings.
@@ -378,15 +378,17 @@ def initialize_model_settings():
     This is normally called during plugin startup.
     """
 
-    # Check if default NCS pathways and IMs have been loaded
-    ims_ncs_setting = f"default_ncs_im_models_set_{get_plugin_version()}"
+    # Check if default NCS pathways and activities have been loaded
+    activity_ncs_setting = f"default_ncs_activity_models_set_{get_plugin_version()}"
 
-    log(f"Implementation models and NCS pathway plugin setting - {ims_ncs_setting}")
+    log(f"Activities and NCS pathway plugin setting - {activity_ncs_setting}")
 
-    if settings_manager.get_value(ims_ncs_setting, default=False, setting_type=bool):
+    if settings_manager.get_value(
+        activity_ncs_setting, default=False, setting_type=bool
+    ):
         return
 
-    found_settings = settings_manager.find_settings("default_ncs_im_models_set")
+    found_settings = settings_manager.find_settings("default_ncs_activity_models_set")
 
     # Remove old settings as they will not be of use anymore.
     for previous_setting in found_settings:
@@ -448,21 +450,23 @@ def initialize_model_settings():
         if str(ncs.uuid) not in new_pathways_uuid:
             settings_manager.remove_ncs_pathway(str(ncs.uuid))
 
-    new_models_uuid = []
-    # Add default implementation models
-    for i, imp_model_dict in enumerate(DEFAULT_IMPLEMENTATION_MODELS, start=1):
+    new_activities_uuids = []
+    # Add default activities
+    for i, activity_dict in enumerate(DEFAULT_ACTIVITIES, start=1):
         try:
-            imp_model_uuid = imp_model_dict[UUID_ATTRIBUTE]
-            imp_model = settings_manager.get_implementation_model(imp_model_uuid)
-            new_models_uuid.append(imp_model_uuid)
-            if imp_model is None:
-                if STYLE_ATTRIBUTE in imp_model_dict:
-                    style_info = imp_model_dict[STYLE_ATTRIBUTE]
-                    if IM_LAYER_STYLE_ATTRIBUTE in style_info:
-                        model_layer_style = style_info[IM_LAYER_STYLE_ATTRIBUTE]
-                        if COLOR_RAMP_PROPERTIES_ATTRIBUTE in model_layer_style:
+            activity_uuid = activity_dict[UUID_ATTRIBUTE]
+            activity = settings_manager.get_activity(activity_uuid)
+            new_activities_uuids.append(activity_uuid)
+            if activity is None:
+                if STYLE_ATTRIBUTE in activity_dict:
+                    style_info = activity_dict[STYLE_ATTRIBUTE]
+                    if ACTIVITY_LAYER_STYLE_ATTRIBUTE in style_info:
+                        activity_layer_style = style_info[
+                            ACTIVITY_LAYER_STYLE_ATTRIBUTE
+                        ]
+                        if COLOR_RAMP_PROPERTIES_ATTRIBUTE in activity_layer_style:
                             # Must be a preset color brewer scheme name
-                            scheme_name = model_layer_style[
+                            scheme_name = activity_layer_style[
                                 COLOR_RAMP_PROPERTIES_ATTRIBUTE
                             ]
                             if scheme_name in preset_scheme_names:
@@ -470,29 +474,29 @@ def initialize_model_settings():
                                 color_ramp_properties = color_ramp.properties()
                                 # Save the color ramp properties instead of just the
                                 # scheme name
-                                imp_model_dict[STYLE_ATTRIBUTE][
-                                    IM_LAYER_STYLE_ATTRIBUTE
+                                activity_dict[STYLE_ATTRIBUTE][
+                                    ACTIVITY_LAYER_STYLE_ATTRIBUTE
                                 ][
                                     COLOR_RAMP_PROPERTIES_ATTRIBUTE
                                 ] = color_ramp_properties
-                                imp_model_dict[STYLE_ATTRIBUTE][
-                                    IM_LAYER_STYLE_ATTRIBUTE
+                                activity_dict[STYLE_ATTRIBUTE][
+                                    ACTIVITY_LAYER_STYLE_ATTRIBUTE
                                 ][
                                     COLOR_RAMP_TYPE_ATTRIBUTE
                                 ] = QgsColorBrewerColorRamp.typeString()
 
-                imp_model_dict[PIXEL_VALUE_ATTRIBUTE] = i
-                imp_model_dict[USER_DEFINED_ATTRIBUTE] = False
-                settings_manager.save_implementation_model(imp_model_dict)
+                activity_dict[PIXEL_VALUE_ATTRIBUTE] = i
+                activity_dict[USER_DEFINED_ATTRIBUTE] = False
+                settings_manager.save_activity(activity_dict)
         except KeyError as ke:
-            log(f"Default implementation model configuration load error - {str(ke)}")
+            log(f"Default activity configuration load error - {str(ke)}")
             continue
 
-    for model in settings_manager.get_all_implementation_models():
-        if str(model.uuid) not in new_models_uuid:
-            settings_manager.remove_implementation_model(str(model.uuid))
+    for activity in settings_manager.get_all_activities():
+        if str(activity.uuid) not in new_activities_uuids:
+            settings_manager.activities(str(activity.uuid))
 
-    settings_manager.set_value(ims_ncs_setting, True)
+    settings_manager.set_value(activity_ncs_setting, True)
 
 
 def initialize_report_settings():

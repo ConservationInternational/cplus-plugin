@@ -11,7 +11,7 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets, QtNetwork
 
 from qgis.PyQt.uic import loadUiType
 
-from ..models.base import ImplementationModel, PriorityLayer
+from ..models.base import Activity, PriorityLayer
 
 from ..conf import settings_manager
 
@@ -27,9 +27,7 @@ DialogUi, _ = loadUiType(
 class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
     """Dialog for handling items selection"""
 
-    def __init__(
-        self, parent, parent_item=None, items=[], item_type=ImplementationModel
-    ):
+    def __init__(self, parent, parent_item=None, items=[], item_type=Activity):
         """Constructor"""
         super().__init__()
         self.setupUi(self)
@@ -63,20 +61,20 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
             item = self.list_widget.item(index)
             item_uuid = item.data(QtCore.Qt.UserRole)
 
-            if self.item_type is ImplementationModel:
-                model = settings_manager.get_implementation_model(str(item_uuid))
+            if self.item_type is Activity:
+                activity = settings_manager.get_activity(str(item_uuid))
 
                 layer_model_uuids = [item.uuid for item in self.items]
-                model_layer_uuids = [
+                activity_layer_uuids = [
                     layer.get("uuid")
-                    for layer in model.priority_layers
+                    for layer in activity.priority_layers
                     if layer is not None
                 ]
 
                 if (
                     self.parent_item is not None
-                    and str(self.parent_item.get("uuid")) in model_layer_uuids
-                ) or (model.uuid in layer_model_uuids):
+                    and str(self.parent_item.get("uuid")) in activity_layer_uuids
+                ) or (activity.uuid in layer_model_uuids):
                     item.setCheckState(QtCore.Qt.Checked)
             else:
                 layer = settings_manager.get_priority_layer(str(item_uuid))
@@ -93,8 +91,8 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
 
     def set_items(self):
         """Sets the item list in the dialog"""
-        if self.item_type is ImplementationModel:
-            items = settings_manager.get_all_implementation_models()
+        if self.item_type is Activity:
+            items = settings_manager.get_all_activities()
         else:
             all_layers = settings_manager.get_priority_layers()
             items = []
@@ -118,8 +116,8 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
 
     def selected_items(self):
         """Returns the selected items from the dialog"""
-        if self.item_type is ImplementationModel:
-            items = settings_manager.get_all_implementation_models()
+        if self.item_type is Activity:
+            items = settings_manager.get_all_activities()
         else:
             all_layers = settings_manager.get_priority_layers()
             items = []
@@ -143,8 +141,8 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
 
     def unselected_items(self):
         """Returns unselected items from the dialog"""
-        if self.item_type is ImplementationModel:
-            items = settings_manager.get_all_implementation_models()
+        if self.item_type is Activity:
+            items = settings_manager.get_all_activities()
         else:
             all_layers = settings_manager.get_priority_layers()
             items = []
@@ -178,7 +176,7 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
             item_item.setCheckState(QtCore.Qt.Checked)
 
     def clear_all_clicked(self):
-        """Slot for handling clear fselection for all items."""
+        """Slot for handling clear selection for all items."""
         for item_index in range(self.list_widget.count()):
             item_item = self.list_widget.item(item_index)
             item_item.setCheckState(QtCore.Qt.Unchecked)

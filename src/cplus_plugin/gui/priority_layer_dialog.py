@@ -60,7 +60,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
 
         self._user_defined = True
 
-        self.models = []
+        self.activities = []
         self.initialize_ui()
 
     def map_layer_changed(self, layer):
@@ -112,86 +112,88 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
 
             self.map_layer_file_widget.setFilePath(layer_path)
 
-            all_models = settings_manager.get_all_implementation_models()
+            all_activities = settings_manager.get_all_activities()
 
-            for model in all_models:
+            for activity in all_activities:
                 model_layer_uuids = [
                     layer.get("uuid")
-                    for layer in model.priority_layers
+                    for layer in activity.priority_layers
                     if layer is not None
                 ]
                 if str(self.layer.get("uuid")) in model_layer_uuids:
-                    self.models.append(model)
+                    self.activities.append(activity)
 
-            self.set_selected_items(self.models)
+            self.set_selected_items(self.activities)
 
             self._user_defined = self.layer.get(USER_DEFINED_ATTRIBUTE, True)
 
     def open_layer_select_dialog(self):
         """Opens priority layer item selection dialog"""
-        model_select_dialog = ItemsSelectionDialog(self, self.layer, self.models)
-        model_select_dialog.exec_()
+        activity_select_dialog = ItemsSelectionDialog(self, self.layer, self.activities)
+        activity_select_dialog.exec_()
 
-    def set_selected_items(self, models, removed_models=[]):
-        """Adds this dialog layer into the passed models and removes it from the
-        unselected models passed as removed_models.
+    def set_selected_items(self, activities, removed_activities=[]):
+        """Adds this dialog layer into the passed activities and removes it from the
+        unselected activities passed as removed_activities.
 
-        :param models: Selected implementation models
-        :type models: list
+        :param activities: Selected activities.
+        :type activities: list
 
-        :param removed_models: Implementation models that dialog
+        :param removed_activities: Activities that dialog
         layer should be removed from.
-        :type removed_models: list
+        :type removed_activities: list
 
         """
 
-        self.models = models
+        self.activities = activities
 
-        models_names = [model.name for model in models]
-        self.selected_models_le.setText(" , ".join(models_names))
+        activity_names = [activity.name for activity in activities]
+        self.selected_models_le.setText(" , ".join(activity_names))
 
         if not self.layer:
             return
 
-        if len(removed_models) <= 0:
-            all_models = settings_manager.get_all_implementation_models()
-            removed_models = [
-                model for model in all_models if model.name not in models_names
+        if len(removed_activities) <= 0:
+            all_activities = settings_manager.get_all_activities()
+            removed_activities = [
+                activity
+                for activity in all_activities
+                if activity.name not in activity_names
             ]
 
-        for model in models:
+        for activity in activities:
             models_layer_uuids = [
                 str(layer.get("uuid"))
-                for layer in model.priority_layers
+                for layer in activity.priority_layers
                 if layer is not None
             ]
             if (
                 self.layer is not None
                 and str(self.layer.get("uuid")) not in models_layer_uuids
             ):
-                model.priority_layers.append(self.layer)
-                settings_manager.save_implementation_model(model)
+                activity.priority_layers.append(self.layer)
+                settings_manager.save_activity(activity)
 
             # remove redundant priority layers
-            for layer in model.priority_layers:
+            for layer in activity.priority_layers:
                 if layer is not None:
                     layer_settings = settings_manager.get_priority_layer(
                         str(layer.get("uuid"))
                     )
                     if layer_settings is None:
-                        model.priority_layers.remove(layer)
-                        settings_manager.save_implementation_model(model)
+                        activity.priority_layers.remove(layer)
+                        settings_manager.save_activity(activity)
 
-        for model in removed_models:
-            for layer in model.priority_layers:
+        for activity in removed_activities:
+            for layer in activity.priority_layers:
                 if layer is None:
                     continue
                 if str(layer.get("uuid")) == str(self.layer.get("uuid")):
-                    model.priority_layers.remove(layer)
-                    settings_manager.save_implementation_model(model)
+                    activity.priority_layers.remove(layer)
+                    settings_manager.save_activity(activity)
 
     def accept(self):
-        """Handles logic for adding new priority layer and edit existing one"""
+        """Handles logic for adding new priority layer and an edit existing one."""
         layer_id = uuid.uuid4()
         layer_groups = []
         layer = {}
@@ -210,7 +212,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         settings_manager.save_priority_layer(layer)
 
         self.layer = layer
-        self.set_selected_items(self.models)
+        self.set_selected_items(self.activities)
 
         super().accept()
 

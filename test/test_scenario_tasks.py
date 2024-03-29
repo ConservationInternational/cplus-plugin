@@ -455,7 +455,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             priority_layers=[priority_layer_1],
         )
 
-        settings_manager.save_implementation_model(test_model)
+        settings_manager.save_activity(test_model)
 
         model_layer = QgsRasterLayer(test_model.path, test_model.name)
 

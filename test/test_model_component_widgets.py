@@ -64,7 +64,7 @@ class TestImplementationModelComponentWidget(TestCase):
         """
         im_model = get_implementation_model()
         im_widget = ImplementationModelComponentWidget(PARENT)
-        result = im_widget.add_implementation_model(im_model)
+        result = im_widget.add_activity(im_model)
         self.assertTrue(result)
 
     def test_add_implementation_model_with_layer(self):
@@ -74,24 +74,24 @@ class TestImplementationModelComponentWidget(TestCase):
         im_model = get_implementation_model()
         layer = get_test_layer()
         im_widget = ImplementationModelComponentWidget(PARENT)
-        result = im_widget.add_implementation_model(im_model, layer)
+        result = im_widget.add_activity(im_model, layer)
         self.assertTrue(result)
 
     def test_get_implementation_models(self):
         """Assert number of ImplementationModel objects retrieved."""
         im_model = get_implementation_model()
         im_widget = ImplementationModelComponentWidget(PARENT)
-        _ = im_widget.add_implementation_model(im_model)
-        imp_models = im_widget.models()
+        _ = im_widget.add_activity(im_model)
+        imp_models = im_widget.activities()
         self.assertEqual(len(imp_models), 1)
 
     def test_clear_implementation_models(self):
         """Assert ImplementationModel objects are cleared."""
         im_model = get_implementation_model()
         im_widget = ImplementationModelComponentWidget(PARENT)
-        _ = im_widget.add_implementation_model(im_model)
+        _ = im_widget.add_activity(im_model)
         im_widget.clear()
-        imp_models = im_widget.models()
+        imp_models = im_widget.activities()
         self.assertEqual(len(imp_models), 0)
 
     def test_can_add_ncs_pathway_items(self):
@@ -101,7 +101,7 @@ class TestImplementationModelComponentWidget(TestCase):
         im_model = get_implementation_model()
         im_model.clear_layer()
         im_widget = ImplementationModelComponentWidget(PARENT)
-        _ = im_widget.add_implementation_model(im_model)
+        _ = im_widget.add_activity(im_model)
 
         # Select the added implementation model.
         sel_model = im_widget.selection_model
@@ -121,7 +121,7 @@ class TestImplementationModelComponentWidget(TestCase):
         """
         im_model = get_implementation_model()
         im_widget = ImplementationModelComponentWidget(PARENT)
-        _ = im_widget.add_implementation_model(im_model)
+        _ = im_widget.add_activity(im_model)
 
         # Select the added implementation model.
         sel_model = im_widget.selection_model

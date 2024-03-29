@@ -94,7 +94,7 @@
     </widget>
    </item>
    <item>
-    <layout class="QVBoxLayout" name="ipm_layout"/>
+    <layout class="QVBoxLayout" name="activity_layout"/>
    </item>
   </layout>
  </widget>
