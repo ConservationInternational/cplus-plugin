@@ -28,7 +28,7 @@ from ..definitions.constants import (
     COLOR_RAMP_PROPERTIES_ATTRIBUTE,
     COLOR_RAMP_TYPE_ATTRIBUTE,
     ACTIVITY_LAYER_STYLE_ATTRIBUTE,
-    IM_SCENARIO_STYLE_ATTRIBUTE,
+    ACTIVITY_SCENARIO_STYLE_ATTRIBUTE,
     STYLE_ATTRIBUTE,
 )
 
@@ -473,11 +473,11 @@ class Activity(LayerModelComponent):
         """
         if (
             len(self.layer_styles) == 0
-            or IM_SCENARIO_STYLE_ATTRIBUTE not in self.layer_styles
+            or ACTIVITY_SCENARIO_STYLE_ATTRIBUTE not in self.layer_styles
         ):
             return dict()
 
-        return self.layer_styles[IM_SCENARIO_STYLE_ATTRIBUTE]
+        return self.layer_styles[ACTIVITY_SCENARIO_STYLE_ATTRIBUTE]
 
     def activity_layer_style_info(self) -> dict:
         """Returns the color ramp properties for styling the activity

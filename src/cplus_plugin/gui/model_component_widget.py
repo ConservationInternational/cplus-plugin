@@ -575,7 +575,7 @@ class ActivityComponentWidget(ModelComponentWidget):
         """Removes all activity items in the view."""
         items = self.model_items()
         for item in items:
-            self.item_model.remove_implementation_model(item.uuid)
+            self.item_model.remove_activity(item.uuid)
 
     def load(self):
         """Load activities from settings."""
@@ -592,7 +592,7 @@ class ActivityComponentWidget(ModelComponentWidget):
             layer = editor.layer
             num_models = len(settings_manager.get_all_activities())
             activity.style_pixel_value = num_models + 1
-            result = self.item_model.add_implementation_model(activity, layer)
+            result = self.item_model.add_activity(activity, layer)
             if result:
                 settings_manager.save_activity(activity)
 
@@ -615,13 +615,13 @@ class ActivityComponentWidget(ModelComponentWidget):
         if isinstance(item, ActivityItem):
             self._edit_activity_item(item)
 
-    def _edit_activity_item(self, item):
+    def _edit_activity_item(self, item: ActivityItem):
         """Load dialog for editing activity."""
         # If editing, remove the current name of the model component
         excluded_names = self.model_names()
         excluded_names.remove(item.model_component.name.lower())
         editor = ActivityEditorDialog(
-            self, item.activities, excluded_names=excluded_names
+            self, item.activity, excluded_names=excluded_names
         )
         if editor.exec_() == QtWidgets.QDialog.Accepted:
             activity = editor.activity
@@ -670,7 +670,7 @@ class ActivityComponentWidget(ModelComponentWidget):
         if (
             QtWidgets.QMessageBox.question(
                 self,
-                self.tr("Remove activity Item"),
+                self.tr("Remove Activity Item"),
                 msg,
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
             )

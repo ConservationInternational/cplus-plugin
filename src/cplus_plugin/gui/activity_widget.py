@@ -59,7 +59,7 @@ class ActivityContainerWidget(QtWidgets.QWidget, WidgetUi):
 
         # activity view
         self.activity_view = ActivityComponentWidget()
-        self.ipm_layout.addWidget(self.activity_view)
+        self.activity_layout.addWidget(self.activity_view)
         self.activity_view.title = self.tr("Activities")
 
         settings_manager.settings_updated[str, object].connect(self.on_settings_changed)
