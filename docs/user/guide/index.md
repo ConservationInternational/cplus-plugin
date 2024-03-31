@@ -339,13 +339,13 @@ comparison will be considered for each scenario.
 ### Pilot area
 
 The pilot study area covers Bushback Ridge, South Africa. When a user's study area is outside of this region,
-some of the Implementation models and Priority weighted layers will be disabled. This is because those datasets
+some of the activities and Priority weighted layers will be disabled. This is because those datasets
 are specific to the Bushback Ridge study area and are of no use for other AOIs. It's important for a user to take this
 into account, as step 2 and step 3 will be affected by this.
 
 ![Bushback Ridge AOI](img/bushback-ridge-extent.png)
 
-If the selected extent is outside of this region, the Bushback Ridge Implementation models will be disabled.
+If the selected extent is outside of this region, the Bushback Ridge activities will be disabled.
 
 ![IMs disabled](img/step2-im-disabled.png)
 
@@ -353,24 +353,24 @@ The same goes for the Priority Weighted layers.
 
 ![PWL disabled](img/step3-pwl-disabled.png)
 
-If a user is outside the Bushback Ridge region, they will need to create custom IMs and/or PWLs. Explanation on these follows in the following sections.
+If a user is outside the Bushback Ridge region, they will need to create custom activities and/or PWLs. Explanation on these follows in the following sections.
 
-### Step 2: Pathways and models
+### Step 2: Pathways and activities
 
-This step deals with the **Natural Climate Solution (NCS) pathways** and the **Implementation models (IM)**.
+This step deals with the **Natural Climate Solution (NCS) pathways** and the **Activities**.
 A NCS pathway can be defined as a composite spatial layer on specific land use classes and other
-factors that determine areas ideal for a specific use case (e.g. Animal mangement).
-An IM is a combination of NCS pathways represented in an AOI spatial layer. **Figure 21** shows the UI.
+factors that determine areas ideal for a specific use case (e.g. Animal management).
+An activity is a combination of NCS pathways represented in an AOI spatial layer. **Figure 21** shows the UI.
 
 ![CPLUS step 1](img/plugin-step2.png)
 
-*Figure 22: Step 2 allows the user to create and edit NCS pathways and Implementation Models*
+*Figure 22: Step 2 allows the user to create and edit NCS pathways and Activities*
 
 Step 2 buttons (**Figure 18**):
 
-- **Add**: Adds a new pathway or model
-- **Delete**: Delete a pathway or model
-- **Editing**: Edit and existing pathway or model
+- **Add**: Adds a new pathway or activity
+- **Delete**: Delete a pathway or activity
+- **Editing**: Edit and existing pathway or activity
 - **Refresh view**: Checks the base directory for data
 
 ![CPLUS step 2 buttons](img/plugin-step2-buttons.png)
@@ -395,47 +395,46 @@ step 3. </blockquote>
 *Figure 24: NCS Pathway creator/editor*
 
 <blockquote> Be sure each NCS pathway's Carbon layers is set up correctly before setting up
-the Implementation models in the steps which follows. Changes to the Carbon layers afterward will
-require the user to set up the Implementation model again. </blockquote>
+the activities in the steps which follows. Changes to the Carbon layers afterward will
+require the user to set up the activities again. </blockquote>
 
-#### Implementation model
+#### Activity
 
-Add pathways to an existing IM:
+Add pathways to an existing activity:
 
-- Select the IM to which a pathway should be added
-- Select the pathway you want to add to the IM
-- Click the right arrow ![right arrow](img/cplus_right_arrow.svg) to add a pathway to the selected IM
-- Click the double right arrow ![right arrow](img/cplus_double_right_arrows.svg) to add all pathways to the IM
-- The user can also drag-and-drop a pathway onto the desired IM
+- Select the activity to which a pathway should be added
+- Select the pathway you want to add to the activity
+- Click the right arrow ![right arrow](img/cplus_right_arrow.svg) to add a pathway to the selected activity
+- Click the double right arrow ![right arrow](img/cplus_double_right_arrows.svg) to add all pathways to the activity
+- The user can also drag-and-drop a pathway onto the desired activity
 
-How to add a new IM:
+How to add a new activity:
 
-- Click on the right green plus button to add an **Implementation model** (**Figure 25**)
+- Click on the right green plus button to add an **activity** (**Figure 25**)
 - Provide a **Name** and **Description**
-- (optional) The user can provide an existing raster for the IM. Enable **Map layer** to do this
+- (optional) The user can provide an existing raster for the activity. Enable **Map layer** to do this
 - Click **OK**
-- The new **Implementation model** will be added
+- The new **activity** will be added
 
-![CPLUS add implementation model](img/plugin-implementation-model.png)
+![CPLUS add implementation model](img/plugin-activity.png)
 
-*Figure 25: Implementation Model creator/editor*
+*Figure 25: Activity creator/editor*
 
 - Open the Style pixel value editor by clicking on the ![CPLUS add implementation model](img/button_pixels_order.png) button
-- Select the IM which needs to be moved up or down in the stack
-- Drag-and-drop the IM where it needs to be in the stack
+- Select the activity which needs to be moved up or down in the stack
+- Drag-and-drop the activity where it needs to be in the stack
 - Click **OK** once done
 
 ![CPLUS style pixel value editor](img/style_pixel_value_editor.png)
 
-- The final step is to select each of the IMs a user want to include in the scenario run
-- A user can exclude IMs if they don't want to include it, even if the IM has pathways
+- The final step is to select each of the activities a user wants to include in the scenario run
+- A user can exclude activities if they don't want to include it, even if the activity has pathways
 
-![CPLUS selected IMs](img/plugin-selected-ims.png)
+![CPLUS selected IMs](img/plugin-selected-activities.png)
 
-*Figure 26: Selected Implementation models*
+*Figure 26: Selected activities*
 
-<blockquote>Before proceeding to Step 3, a user needs to define at least one NCS pathway layer for an implementation 
-model, otherwise a warning message will be displayed. </blockquote>
+<blockquote>Before proceeding to Step 3, a user needs to define at least one NCS pathway layer for an activity, otherwise a warning message will be displayed. </blockquote>
 
 ### Step 3: Priority weighting
 
@@ -472,18 +471,18 @@ use the right arrow button ![right arrow](img/cplus_right_arrow.svg) to remove t
     - **Priority layer**: The layer which represents the priority layer
     - **Priority layer name**: A unique identifier for the priority layer
     - **Priority layer description**: A detailed description of the priority layer
-- Click the **Assign implementation models** button to select IMs to be associated with the priority layer (see **Figure 28**)
+- Click the **Assign activities** button to select activities to be associated with the priority layer (see **Figure 28**)
 
 ![Priority layer editing/adding dialog](img/manual-priority-layer-dialog.png)
 
 *Figure 28: Priority layer dialog*
 
-- Select the IMs you want to be associated with the priority layer
+- Select the activities you want to be associated with the priority layer
 - Click **OK**
 
 ![Priority layer editing/adding dialog](img/manual-pwl-selection.png)
 
-*Figure 29: Implementation model selection for priority layers*
+*Figure 29: Activity selection for priority layers*
 
 - ![remove button](img/symbologyRemove.svg): Remove the selected PWL
 
@@ -504,7 +503,7 @@ study area.
 
 - Once the user has provided all desired parameters, click **Run Scenario**
 - The processing dialog will open (**Figure 31**)
-- The processing will take a while, depending on the number of IMs and pathways provided for each IM
+- The processing will take a while, depending on the number of activities and pathways provided for each activity
 - Click the **Cancel** button to stop the processing
 
 ![Processing dialog running](img/plugin-processing-dialog.png)
@@ -522,9 +521,9 @@ study area.
 
 The following groups and layers will be added to the QGIS canvas once the processing finishes (see **Figure 33**):
 - A group containing the Scenario results
-- **Implementation Model Maps**: Non-weighted IMs created by the user in Step 2
-- **Weighted Implementation Model Maps**: Weighted IMs based on the IMs added in Step 2 and weighing set in Step 3
-- **NCS Pathways Maps**: Pathways used for each IM in Step 2. If a IM layer were provided as the IM in Step 2, this will contain no pathways
+- **Activity Maps**: Non-weighted activities created by the user in Step 2
+- **Weighted Activity Maps**: Weighted activities based on the activities added in Step 2 and weighing set in Step 3
+- **NCS Pathways Maps**: Pathways used for each activity in Step 2. If an activity layer were provided as the activity in Step 2, this will contain no pathways
 
 ![Layers added to canvas](img/plugin-added-layers.png)
 

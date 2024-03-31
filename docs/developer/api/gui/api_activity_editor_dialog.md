@@ -1,6 +1,6 @@
-# Implementation model editor
+# Activity editor
 
-::: src.cplus_plugin.gui.implementation_model_editor_dialog
+::: src.cplus_plugin.gui.activity_editor_dialog
     handler: python
     options:
         docstring_style: sphinx
