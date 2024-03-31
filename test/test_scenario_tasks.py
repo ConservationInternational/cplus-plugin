@@ -335,7 +335,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         )
 
         activity_layer_path_1 = os.path.join(
-            activities_layer_directory, "test_model_1.tif"
+            activities_layer_directory, "test_activity_1.tif"
         )
 
         test_activity = Activity(
@@ -424,7 +424,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         )
 
         activity_layer_path_1 = os.path.join(
-            activities_layer_directory, "test_model_1.tif"
+            activities_layer_directory, "test_activity_1.tif"
         )
         priority_layer_path_1 = os.path.join(
             priority_layers_directory, "test_priority_1.tif"
