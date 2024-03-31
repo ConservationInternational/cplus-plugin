@@ -89,7 +89,7 @@ class TestActivityItemModel(TestCase):
         """Assert an activity can be removed."""
         activity_item_model = ActivityItemModel(PARENT)
         _ = activity_item_model.add_activity(get_activity())
-        result = activity_item_model.activities(ACTIVITY_UUID_STR)
+        result = activity_item_model.remove_activity(ACTIVITY_UUID_STR)
         self.assertTrue(result)
 
     def test_add_activity_with_layer(self):
@@ -106,7 +106,7 @@ class TestActivityItemModel(TestCase):
         activity = get_activity()
         layer = get_test_layer()
         _ = activity_item_model.add_activity(activity, layer)
-        result = activity_item_model.activities(ACTIVITY_UUID_STR)
+        result = activity_item_model.remove_activity(ACTIVITY_UUID_STR)
         self.assertTrue(result)
 
 
