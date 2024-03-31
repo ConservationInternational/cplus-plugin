@@ -402,7 +402,7 @@ class ScenarioAnalysisTask(QgsTask):
         if self.processing_cancelled:
             return False
 
-        self.set_status_message(tr("Adding activities pathways with carbon layers"))
+        self.set_status_message(tr("Adding activity pathways with carbon layers"))
 
         pathways = []
         activities_paths = []
@@ -563,7 +563,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         self.set_status_message(
             tr(
-                "Snapping the selected activities pathways, "
+                "Snapping the selected activity pathways, "
                 "carbon layers and priority layers"
             )
         )
@@ -993,7 +993,7 @@ class ScenarioAnalysisTask(QgsTask):
             # Will not proceed if processing has been cancelled by the user
             return False
 
-        self.set_status_message(tr("Creating activities layers from pathways"))
+        self.set_status_message(tr("Creating activity layers from pathways"))
 
         try:
             for activity in activities:
@@ -1070,7 +1070,7 @@ class ScenarioAnalysisTask(QgsTask):
                 activity.path = results["OUTPUT"]
 
         except Exception as e:
-            log(f"Problem creating activities layers, {e}")
+            log(f"Problem creating activity layers, {e}")
             self.error = e
             self.cancel()
             return False
@@ -1222,7 +1222,7 @@ class ScenarioAnalysisTask(QgsTask):
                 activity.path = results["OUTPUT"]
 
         except Exception as e:
-            log(f"Problem normalizing activities layers, {e} \n")
+            log(f"Problem normalizing activity layers, {e} \n")
             self.error = e
             self.cancel()
             return False
@@ -1411,20 +1411,20 @@ class ScenarioAnalysisTask(QgsTask):
         if self.processing_cancelled:
             return False
 
-        self.set_status_message(tr("Updating weighted activities values"))
+        self.set_status_message(tr("Updating weighted activity values"))
 
         try:
             for activity in activities:
                 if activity.path is None or activity.path is "":
                     self.set_info_message(
                         tr(
-                            f"Problem when running activities updates, "
+                            f"Problem when running activity updates, "
                             f"there is no map layer for the activity {activity.name}"
                         ),
                         level=Qgis.Critical,
                     )
                     log(
-                        f"Problem when running activities updates, "
+                        f"Problem when running activity updates, "
                         f"there is no map layer for the activity {activity.name}"
                     )
 
