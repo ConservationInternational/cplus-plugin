@@ -200,7 +200,7 @@
         <item row="1" column="0" colspan="3">
          <widget class="QLabel" name="label_77">
           <property name="text">
-           <string>Assign priority weights using the sliders. Add the priority weighting layers unique to each implementation model by clicking and dragging the layer under a group title.</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Assign priority weights using the sliders. Add the priority weighting layers unique to each activity by clicking and dragging the layer under a group title.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="wordWrap">
            <bool>true</bool>
