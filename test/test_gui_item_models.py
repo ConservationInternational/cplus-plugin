@@ -8,18 +8,18 @@ from unittest import TestCase
 from cplus_plugin.gui.carbon_item_model import CarbonLayerModel
 
 from cplus_plugin.gui.component_item_model import (
-    IMItemModel,
-    ImplementationModelItem,
+    ActivityItemModel,
+    ActivityItem,
     NcsPathwayItem,
     NcsPathwayItemModel,
 )
 
 from model_data_for_testing import (
-    get_implementation_model,
+    get_activity,
     get_invalid_ncs_pathway,
     get_test_layer,
     get_valid_ncs_pathway,
-    IMPLEMENTATION_MODEL_UUID_STR,
+    ACTIVITY_UUID_STR,
     TEST_RASTER_PATH,
     VALID_NCS_UUID_STR,
 )
@@ -65,52 +65,48 @@ class TestNcsPathwayItemModel(TestCase):
         self.assertTrue(result)
 
 
-class TestIMItemModel(TestCase):
-    """Tests for the implementation model item model."""
+class TestActivityItemModel(TestCase):
+    """Tests for the activity item model."""
 
     def setUp(self):
         self.ncs = get_valid_ncs_pathway()
         self.invalid_ncs = get_invalid_ncs_pathway()
 
     def test_add_implementation_model(self):
-        """Assert an implementation model can be added."""
-        im_item_model = IMItemModel(PARENT)
-        result = im_item_model.add_implementation_model(get_implementation_model())
+        """Assert an activity can be added."""
+        activity_item_model = ActivityItemModel(PARENT)
+        result = activity_item_model.add_activity(get_activity())
         self.assertTrue(result)
 
     def test_model_has_items(self):
         """Assert the item model actually contains items."""
-        im_item_model = IMItemModel(PARENT)
-        _ = im_item_model.add_implementation_model(get_implementation_model())
-        models = im_item_model.models()
-        self.assertEqual(len(models), 1)
+        activity_item_model = ActivityItemModel(PARENT)
+        _ = activity_item_model.add_activity(get_activity())
+        activities = activity_item_model.activities()
+        self.assertEqual(len(activities), 1)
 
-    def test_remove_implementation_model(self):
-        """Assert an implementation model can be removed."""
-        im_item_model = IMItemModel(PARENT)
-        _ = im_item_model.add_implementation_model(get_implementation_model())
-        result = im_item_model.remove_implementation_model(
-            IMPLEMENTATION_MODEL_UUID_STR
-        )
+    def test_remove_activity(self):
+        """Assert an activity can be removed."""
+        activity_item_model = ActivityItemModel(PARENT)
+        _ = activity_item_model.add_activity(get_activity())
+        result = activity_item_model.remove_activity(ACTIVITY_UUID_STR)
         self.assertTrue(result)
 
-    def test_add_implementation_model_with_layer(self):
-        """Assert can add map layer to implementation model."""
-        im_item_model = IMItemModel(PARENT)
-        im_model = get_implementation_model()
+    def test_add_activity_with_layer(self):
+        """Assert can add map layer to an activity."""
+        activity_item_model = ActivityItemModel(PARENT)
+        activity = get_activity()
         layer = get_test_layer()
-        result = im_item_model.add_implementation_model(im_model, layer)
+        result = activity_item_model.add_activity(activity, layer)
         self.assertTrue(result)
 
-    def test_remove_implementation_model_with_layer(self):
-        """Assert an implementation model with layer can be removed."""
-        im_item_model = IMItemModel(PARENT)
-        im_model = get_implementation_model()
+    def test_remove_activity_with_layer(self):
+        """Assert an activity with layer can be removed."""
+        activity_item_model = ActivityItemModel(PARENT)
+        activity = get_activity()
         layer = get_test_layer()
-        _ = im_item_model.add_implementation_model(im_model, layer)
-        result = im_item_model.remove_implementation_model(
-            IMPLEMENTATION_MODEL_UUID_STR
-        )
+        _ = activity_item_model.add_activity(activity, layer)
+        result = activity_item_model.remove_activity(ACTIVITY_UUID_STR)
         self.assertTrue(result)
 
 

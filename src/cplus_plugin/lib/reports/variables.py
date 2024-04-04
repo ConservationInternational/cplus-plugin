@@ -208,28 +208,28 @@ class LayoutVariableRegister:
         scenario_desc_var_info = ScenarioDescriptionVariableInfo()
         self._var_infos[scenario_desc_var_info.name] = scenario_desc_var_info
 
-    def _create_implementation_models_var_infos(self):
-        """Add variable info objects for implementation models."""
-        imp_models = settings_manager.get_all_implementation_models()
-        for im_model in imp_models:
-            normalized_name = im_model.name.replace(" ", "_").lower()
-            im_model_name = f"model_{normalized_name}"
-            # Implementation model name only
-            im_var_info = CplusVariableInfo(
-                f"{self.VAR_PREFIX}_{im_model_name}", f"{im_model.name}", "", ""
+    def _create_activities_var_infos(self):
+        """Add variable info objects for activities."""
+        activities = settings_manager.get_all_activities()
+        for activity in activities:
+            normalized_name = activity.name.replace(" ", "_").lower()
+            activity_name = f"activity_{normalized_name}"
+            # Activity name only
+            activity_var_info = CplusVariableInfo(
+                f"{self.VAR_PREFIX}_{activity_name}", f"{activity.name}", "", ""
             )
-            self._var_infos[im_var_info.name] = im_var_info
+            self._var_infos[activity_var_info.name] = activity_var_info
 
-            # Implementation model with NCS pathway names
+            # Activity with NCS pathway names
             ncs_pathway_tr = tr("NCS pathway")
             with_tr = tr("with")
             init_value = create_bulleted_text(
-                im_model.name, [f"{ncs_pathway_tr} 1", f"{ncs_pathway_tr} 2", "..."]
+                activity.name, [f"{ncs_pathway_tr} 1", f"{ncs_pathway_tr} 2", "..."]
             )
-            im_ncs_var_info = CplusVariableInfo(
-                f"{self.VAR_PREFIX}_{im_model_name}_{with_tr}_ncs", init_value, "", ""
+            activity_ncs_var_info = CplusVariableInfo(
+                f"{self.VAR_PREFIX}_{activity_name}_{with_tr}_ncs", init_value, "", ""
             )
-            self._var_infos[im_ncs_var_info.name] = im_ncs_var_info
+            self._var_infos[activity_ncs_var_info.name] = activity_ncs_var_info
 
     @classmethod
     def remove_var_name_in_collection(

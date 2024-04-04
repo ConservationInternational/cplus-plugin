@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Composite list view-based widgets for displaying implementation model
+Composite list view-based widgets for displaying activity
 and NCS pathway items.
 """
 import os
@@ -12,11 +12,11 @@ from qgis.PyQt.uic import loadUiType
 from qgis.core import QgsApplication, QgsMapLayer
 
 from .component_item_model import (
+    ActivityItem,
+    ActivityItemModel,
+    ACTIVITY_TYPE,
     ComponentItemModel,
     ComponentItemModelType,
-    IMItemModel,
-    ImplementationModelItem,
-    IMPLEMENTATION_MODEL_TYPE,
     LAYER_ITEM_TYPE,
     ModelComponentItem,
     ModelComponentItemType,
@@ -25,11 +25,11 @@ from .component_item_model import (
     NCS_PATHWAY_TYPE,
 )
 from ..conf import settings_manager
-from .implementation_model_editor_dialog import ImplementationModelEditorDialog
+from .activity_editor_dialog import ActivityEditorDialog
 from .model_description_editor import ModelDescriptionEditorDialog
 from .ncs_pathway_editor_dialog import NcsPathwayEditorDialog
 from .pixel_value_editor_dialog import PixelValueEditorDialog
-from ..models.base import ImplementationModel, NcsPathway
+from ..models.base import Activity, NcsPathway
 from ..utils import FileUtils, log
 
 
@@ -445,7 +445,7 @@ class NcsComponentWidget(ModelComponentWidget):
 
         msg = self.tr(
             f"Do you want to remove '{ncs.name}'? The corresponding "
-            f"NCS pathways used in the implementation models will "
+            f"NCS pathways used in the activitys will "
             f"also be removed.\nClick Yes to proceed or No to cancel."
         )
 
@@ -482,16 +482,16 @@ class NcsComponentWidget(ModelComponentWidget):
             self.add_ncs_pathway(ncs)
 
 
-class ImplementationModelComponentWidget(ModelComponentWidget):
-    """Widget for displaying and managing implementation models."""
+class ActivityComponentWidget(ModelComponentWidget):
+    """Widget for displaying and managing activities."""
 
     items_reloaded = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.item_model = IMItemModel(parent)
-        self.item_model.im_pathways_updated.connect(self.on_pathways_updated)
+        self.item_model = ActivityItemModel(parent)
+        self.item_model.activity_pathways_updated.connect(self.on_pathways_updated)
 
         self.lst_model_items.setAcceptDrops(True)
         self.lst_model_items.setDragDropMode(QtWidgets.QAbstractItemView.DropOnly)
@@ -503,18 +503,18 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
 
         self.add_auxiliary_widgets()
 
-    def models(self) -> typing.List[ImplementationModel]:
-        """Returns a collection of ImplementationModel objects in the
+    def activities(self) -> typing.List[Activity]:
+        """Returns a collection of activity objects in the
         list view.
 
-        :returns: Collection of ImplementationModel objects in the
+        :returns: Collection of activity objects in the
         list view.
         :rtype: list
         """
-        return self.item_model.models()
+        return self.item_model.activities()
 
     def add_auxiliary_widgets(self):
-        """Adds additional action widgets for managing implementation models."""
+        """Adds additional action widgets for managing activities."""
         self.btn_pixel_editor = QtWidgets.QToolButton(self)
         style_icon = FileUtils.get_icon("rendererCategorizedSymbol.svg")
         self.btn_pixel_editor.setIcon(style_icon)
@@ -525,120 +525,120 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         self.add_action_widget(self.btn_pixel_editor)
 
     def on_show_pixel_value_editor(self):
-        """Slot raised to show editor dialog for managing IM pixel values for styling."""
+        """Slot raised to show editor dialog for managing activity pixel
+        values for styling.
+        """
         pixel_dialog = PixelValueEditorDialog(self)
         if pixel_dialog.exec_() == QtWidgets.QDialog.Accepted:
             # Update pixel values
             pixel_values = pixel_dialog.item_mapping
-            for val, im_id in pixel_values.items():
-                imp_model = settings_manager.get_implementation_model(im_id)
-                if not imp_model:
+            for val, activity_id in pixel_values.items():
+                activity = settings_manager.get_activity(activity_id)
+                if not activity:
                     continue
-                imp_model.style_pixel_value = val
-                settings_manager.update_implementation_model(imp_model)
+                activity.style_pixel_value = val
+                settings_manager.update_activity(activity)
 
             self.load()
 
     def model_names(self) -> typing.List[str]:
-        """Gets the names of the implementation models in the item model.
+        """Gets the names of the activities in the item model.
 
-        :returns: Returns the names of implementation models in lower
+        :returns: Returns the names of activities in lower
         case or an empty list if the item model has not been set.
         :rtype: list
         """
         if self._item_model is None:
             return []
 
-        model_components = self._item_model.models()
+        model_components = self._item_model.activities()
 
         return [mc.name.lower() for mc in model_components]
 
-    def on_pathways_updated(self, im_item: ImplementationModelItem):
-        """Slot raised when the pathways of an ImplementationModelItem
+    def on_pathways_updated(self, activity_item: ActivityItem):
+        """Slot raised when the pathways of an ActivityItem
         have been added or removed. Persist this information in settings.
         """
-        self._save_item(im_item)
+        self._save_item(activity_item)
 
-    def model_items(self) -> typing.List[ImplementationModelItem]:
-        """Returns a collection of all ImplementationModelItem objects
+    def model_items(self) -> typing.List[ActivityItem]:
+        """Returns a collection of all ActivityItem objects
         in the list view.
 
-        :returns: Collection of ImplementationModelItem objects in
+        :returns: Collection of ActivityItem objects in
         the list view.
         :rtype: list
         """
-        return self.item_model.model_items()
+        return self.item_model.activity_items()
 
     def clear(self):
-        """Removes all implementation model items in the view."""
+        """Removes all activity items in the view."""
         items = self.model_items()
         for item in items:
-            self.item_model.remove_implementation_model(item.uuid)
+            self.item_model.remove_activity(item.uuid)
 
     def load(self):
-        """Load implementation models from settings."""
+        """Load activities from settings."""
         self.clear()
 
-        for imp_model in settings_manager.get_all_implementation_models():
-            self.add_implementation_model(imp_model)
+        for imp_model in settings_manager.get_all_activities():
+            self.add_activity(imp_model)
 
     def _on_add_item(self):
-        """Show implementation model editor."""
-        editor = ImplementationModelEditorDialog(
-            self, excluded_names=self.model_names()
-        )
+        """Show activity editor."""
+        editor = ActivityEditorDialog(self, excluded_names=self.model_names())
         if editor.exec_() == QtWidgets.QDialog.Accepted:
-            model = editor.implementation_model
+            activity = editor.activity
             layer = editor.layer
-            num_models = len(settings_manager.get_all_implementation_models())
-            model.style_pixel_value = num_models + 1
-            result = self.item_model.add_implementation_model(model, layer)
+            num_models = len(settings_manager.get_all_activities())
+            activity.style_pixel_value = num_models + 1
+            result = self.item_model.add_activity(activity, layer)
             if result:
-                settings_manager.save_implementation_model(model)
+                settings_manager.save_activity(activity)
 
     def _on_edit_item(self):
-        """Edit selected implementation model object."""
+        """Edit selected activity object."""
         selected_items = self.selected_items()
         if len(selected_items) == 0 or len(selected_items) > 1:
             return
 
         item = selected_items[0]
-        self._edit_implementation_model_item(item)
+        self._edit_activity_item(item)
 
     def _handle_double_click(self, item: ModelComponentItemType):
-        """Show dialog for editing implementation model.
+        """Show dialog for editing activity.
 
         :param item: Model component item that has received the event.
         :type item: ModelComponentItem
         """
-        # Only handle if it is an implementation model object
-        if isinstance(item, ImplementationModelItem):
-            self._edit_implementation_model_item(item)
+        # Only handle if it is an activity object
+        if isinstance(item, ActivityItem):
+            self._edit_activity_item(item)
 
-    def _edit_implementation_model_item(self, item):
-        """Load dialog for editing implementation model."""
+    def _edit_activity_item(self, item: ActivityItem):
+        """Load dialog for editing activity."""
         # If editing, remove the current name of the model component
         excluded_names = self.model_names()
         excluded_names.remove(item.model_component.name.lower())
-        editor = ImplementationModelEditorDialog(
-            self, item.implementation_model, excluded_names=excluded_names
+        editor = ActivityEditorDialog(
+            self, item.activity, excluded_names=excluded_names
         )
         if editor.exec_() == QtWidgets.QDialog.Accepted:
-            model = editor.implementation_model
+            activity = editor.activity
             layer = editor.layer
-            result = self.item_model.update_implementation_model(model, layer)
+            result = self.item_model.update_activity(activity, layer)
             if result:
                 self._save_item(item)
             self._update_ui_on_selection_changed()
 
-    def _save_item(self, item: ImplementationModelItem):
+    def _save_item(self, item: ActivityItem):
         """Update the underlying IM in the item in settings."""
-        cloned_im_item = item.clone()
-        cloned_im = cloned_im_item.implementation_model
-        settings_manager.update_implementation_model(cloned_im)
+        cloned_activity_item = item.clone()
+        cloned_activity = cloned_activity_item.activity
+        settings_manager.update_activity(cloned_activity)
 
     def _on_remove_item(self):
-        """Delete implementation model object."""
+        """Delete activity object."""
         selected_items = self.selected_items()
         if len(selected_items) == 0 or len(selected_items) > 1:
             return
@@ -654,7 +654,7 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         additional_note = ""
 
         if is_model_component_item:
-            if item.type() == IMPLEMENTATION_MODEL_TYPE:
+            if item.type() == ACTIVITY_TYPE:
                 additional_note = self.tr("and its children")
 
             msg = self.tr(
@@ -663,14 +663,14 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
             )
         else:
             msg = self.tr(
-                "Do you want to remove the layer for the implementation model?"
+                "Do you want to remove the layer for the activity?"
                 "\nClick Yes to proceed or No to cancel"
             )
 
         if (
             QtWidgets.QMessageBox.question(
                 self,
-                self.tr("Remove Implementation Model Item"),
+                self.tr("Remove Activity Item"),
                 msg,
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
             )
@@ -682,104 +682,98 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
                     parent = item.parent
                     self.item_model.remove_ncs_pathway_item(item.uuid, parent)
                 else:
-                    # Implementation model item
-                    implementation_model_uuid = str(model_component.uuid)
-                    result = self.item_model.remove_implementation_model(
-                        implementation_model_uuid
-                    )
+                    # Activity item
+                    activity_uuid = str(model_component.uuid)
+                    result = self.item_model.remove_activity(activity_uuid)
                     if result:
                         ref_pixel_value = model_component.style_pixel_value
-                        settings_manager.remove_implementation_model(
-                            implementation_model_uuid
-                        )
+                        settings_manager.remove_activity(activity_uuid)
 
                         # Reassign pixel values
                         self.reassign_pixel_values(ref_pixel_value)
             else:
-                implementation_model_item = item.data()
-                if implementation_model_item:
-                    self.item_model.remove_layer(implementation_model_item)
-                    self._save_item(implementation_model_item)
+                activity_item = item.data()
+                if activity_item:
+                    self.item_model.remove_layer(activity_item)
+                    self._save_item(activity_item)
 
             self.clear_description()
 
     def reassign_pixel_values(self, start_position: int):
-        """Reassign the styling pixel values for implementation models
+        """Reassign the styling pixel values for activities
         from the given start position.
 
         It is important to call this function when the maximum pixel
-        value does not match the number of implementation models such
-        as when one or more implementation models have been deleted.
+        value does not match the number of activities such
+        as when one or more activities have been deleted.
 
         :param start_position: Position to start reassigning the pixel
         values.
         :type start_position: int
         """
-        sorted_models = sorted(
-            settings_manager.get_all_implementation_models(),
-            key=lambda model: model.style_pixel_value,
+        sorted_activities = sorted(
+            settings_manager.get_all_activities(),
+            key=lambda activity: activity.style_pixel_value,
         )
-        remap_models = sorted_models[start_position - 1 :]
-        for val, imp_model in enumerate(remap_models, start=start_position):
-            imp_model.style_pixel_value = val
-            settings_manager.update_implementation_model(imp_model)
+        remap_activities = sorted_activities[start_position - 1 :]
+        for val, activity in enumerate(remap_activities, start=start_position):
+            activity.style_pixel_value = val
+            settings_manager.update_activity(activity)
 
         self.load()
 
     def add_ncs_pathway_items(self, ncs_items: typing.List[NcsPathwayItem]) -> bool:
         """Adds an NCS pathway item to the collection.
 
-        One, and only one, target implementation model item needs
+        One, and only one, target activity item needs
         to have been selected.
 
         :param ncs_items: NCS pathway items to be added to the
-        implementation model.
+        activity.
         :type ncs_items: list
 
         :returns: True if the item was successfully added, else False.
         :rtype: bool
         """
-        selected_models = self.selected_items()
-        if len(selected_models) == 0 or len(selected_models) > 1:
+        selected_activities = self.selected_items()
+        if len(selected_activities) == 0 or len(selected_activities) > 1:
             return False
 
-        sel_model = selected_models[0]
-        item_type = sel_model.type()
+        sel_activity = selected_activities[0]
+        item_type = sel_activity.type()
 
         # Use the parent to add the NCS item
         if item_type == NCS_PATHWAY_TYPE:
-            if sel_model.parent is None:
+            if sel_activity.parent is None:
                 return False
 
-            sel_model = sel_model.parent
+            sel_activity = sel_activity.parent
 
         elif item_type == LAYER_ITEM_TYPE:
             return False
 
         status = True
         for ncs_item in ncs_items:
-            status = self.item_model.add_ncs_pathway(ncs_item, sel_model)
+            status = self.item_model.add_ncs_pathway(ncs_item, sel_activity)
 
         return status
 
-    def add_implementation_model(
-        self, implementation_model: ImplementationModel, layer: QgsMapLayer = None
-    ):
-        """Adds an implementation model object to the view with the option of
+    def add_activity(self, activity: Activity, layer: QgsMapLayer = None):
+        """Adds an activity object to the view with the option of
         specifying the layer.
 
-        :param implementation_model: Implementation model object
+        :param activity: activity object
         to be added to the view.
-        :type implementation_model: ImplementationModel
+        :type activity: Activity
 
-        :param layer: Optional map layer to be added to the model.
+        :param layer: Optional map layer to be added to the activity.
         :type layer: QgsMapLayer
 
-        :returns: True if the implementation model was successfully added, else
+        :returns: True if the activity was successfully added, else
         False.
         :rtype: bool
         """
-        return self.item_model.add_implementation_model(implementation_model, layer)
+        return self.item_model.add_activity(activity, layer)
 
     def _update_ui_on_selection_changed(self):
         """Check type of item selected and update UI
@@ -794,16 +788,16 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         item = selected_items[0]
         self.btn_edit.setEnabled(False)
         self.btn_edit_description.setEnabled(False)
-        if item.type() == IMPLEMENTATION_MODEL_TYPE:
+        if item.type() == ACTIVITY_TYPE:
             self.btn_edit.setEnabled(True)
             self.btn_edit_description.setEnabled(True)
 
     def update_ncs_pathway_items(self, ncs_pathway: NcsPathway) -> bool:
-        """Update NCS pathway items used for IMs that are linked to the
+        """Update NCS pathway items used for activities that are linked to the
         given NCS pathway.
 
         :param ncs_pathway: NCS pathway whose attribute values will be updated
-        for the related pathways used in the IMs.
+        for the related pathways used in the activities.
         :type ncs_pathway: NcsPathway
 
         :returns: True if NCS pathway items were updated, else False.
@@ -812,11 +806,11 @@ class ImplementationModelComponentWidget(ModelComponentWidget):
         return self.item_model.update_ncs_pathway_items(ncs_pathway)
 
     def remove_ncs_pathway_items(self, ncs_pathway_uuid: str):
-        """Delete NCS pathway items used for IMs that are linked to the
+        """Delete NCS pathway items used for activities that are linked to the
         given NCS pathway.
 
         :param ncs_pathway_uuid: NCS pathway whose corresponding items will be
-        deleted in the implementation model items that contain it.
+        deleted in the activity items that contain it.
         :type ncs_pathway_uuid: str
         """
         self.item_model.remove_ncs_pathway_items(ncs_pathway_uuid)

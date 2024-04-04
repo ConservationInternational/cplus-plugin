@@ -8,26 +8,26 @@ to be done in the GitHub repository, or locally on the repository clone, and the
 The following JSON files needs to be considered when doing this, all of which are stored in
 "src/cplus_plugin/data/default"
 
-- implementation_model.json
+- activities.json
 - ncs_pathways.json
 - priority_weighted_layers.json
 
-### Implementation models
+### Activities
 
-In this file existing implementation models can be edited (e.g. change name or description), be removed
-or a new model can be added. Here is a quick overview of a model stored in the JSON file
+In this file existing activities can be edited (e.g. change name or description), be removed
+or a new activity can be added. Here is a quick overview of an activity stored in the JSON file
 
-- Each model contains the following elements:
-    - **uuid**: A Universally unique identifier (UUID) for the model
-    - **name**: A unique name for the model
-    - **description**: Detailed description of the model
-    - **pwls_ids**: UUIDs of the priority weighted layers associated with the IM
-    - **style**: The style which will be applied to the 
-- Editing these will have an effect on the IM in the plugin
+- Each activity contains the following elements:
+    - **uuid**: A Universally unique identifier (UUID) for the activity
+    - **name**: A unique name for the activity
+    - **description**: Detailed description of the activity
+    - **pwls_ids**: UUIDs of the priority weighted layers associated with the activity
+    - **style**: The style which will be applied to the activity
+- Editing these will have an effect on the activity in the plugin
 
-![Implementation model json](img/im-json.png)
+![Implementation model json](img/activity-json.png)
 
-When adding a new IM to the list (or a UUID needs to change), the user needs to provide a UUID. This can be done as follows:
+When adding a new activity to the list (or a UUID needs to change), the user needs to provide a UUID. This can be done as follows:
 
 - Open a [UUID generator](https://www.uuidgenerator.net/). Other UUID generators can also be used, but the provided link will suffice
 - Best will be to make use of version 4
@@ -36,16 +36,16 @@ When adding a new IM to the list (or a UUID needs to change), the user needs to 
 
 ![UUID generator](img/uuid-generator.png)
 
-To remove an IM from the list of models, an administrator can simply remove the entry in the JSON file.
-Remove this text to remove a model:
+To remove an activity from the list of activities, an administrator can simply remove the entry in the JSON file.
+Remove this text to remove an activity:
 
-![Remove model](img/im-json-remove-model.png)
+![Remove model](img/activity-json-remove-activity.png)
 
-To update the list of priority weighted layers for a model, the ID needs to be retrieved:
+To update the list of priority weighted layers for an activity, the ID needs to be retrieved:
 
 - Open the priority_weighted_layers.json file
 - Each available PWL will be listed under "layers"
-- Cope and paste the UUID that needs to be added to the IM pwls_ids field
+- Cope and paste the UUID that needs to be added to the activity pwls_ids field
 - Save the file
 
 ![PWL UUID](img/pwl-add-to-im.png)
@@ -78,7 +78,7 @@ When adding a new pathway to the list (or a UUID needs to change), the user need
 ![UUID generator](img/uuid-generator.png)
 
 To remove a pathway from the list of layers, an administrator can simply remove the entry in the JSON file.
-Remove this text to remove a model:
+Remove this text to remove an activity:
 
 ![Remove model](img/pwl-remove-text.png)
 
@@ -105,7 +105,7 @@ When adding a new PWL to the list (or a UUID needs to change), the user needs to
 - Copy and paste the newly generated UUID
 
 To remove a PWL from the list of layers, an administrator can simply remove the entry in the JSON file.
-Remove this text to remove a model:
+Remove this text to remove a PWL:
 
 ![PWL example](img/pwl-remove.png)
 

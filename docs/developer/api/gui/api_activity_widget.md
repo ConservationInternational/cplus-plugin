@@ -1,4 +1,4 @@
-# Implementation model widget
+# Activity widget
 
 ::: src.cplus_plugin.gui.implementation_model_widget
     handler: python

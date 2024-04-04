@@ -2,8 +2,8 @@
 
 The manual covers two sections. Firstly the workflow will be covered. This includes a discussion on the calculations
 and formulas. This is so that a user can understand how the CPLUS processing workflow and calculations for each step is
-done when processing the pathways and carbon layers, how the implementations models (IM) are created, algorithms applied to
-create the priority weighted layer (weighted IM), and the last step, which is the highest position calculation.
+done when processing the pathways and carbon layers, how the activities are created, algorithms applied to
+create the priority weighted layer (weighted activity), and the last step, which is the highest position calculation.
 
 The second section deals with the plugin itself. It covers each step, explains each element of each step and why its
 needed. A description of the generated report are also provided.
@@ -13,8 +13,8 @@ needed. A description of the generated report are also provided.
 **Figure 1** shows the workflow of the CPLUS model. The workflow can be split into four parts:
 
 - Natural climate solution (NCS) weighted carbon pathway(s)
-- Implementation model (IM)
-- Priority weighted layer (Weighted IM)
+- Activity
+- Priority weighted layer (Weighted activity)
 - Highest position (Scenario result)
 
 ![QGIS highest position example](img/cplus-workflow.png)
@@ -66,32 +66,32 @@ where *value* is the pixel value;
 
 &emsp;&emsp;&nbsp;&nbsp;&nbsp; *max* is the maximum value of the raster.
 
-### Implementation model
+### Activity
 
-- Because an IM can consist of multiple pathways, the normalized results will be summed
+- Because an activity can consist of multiple pathways, the normalized results will be summed
 - All NCS weighted carbon layers, as created from **Equation 2**, is summed as shown in **Equation 3** to
-create the IM from the pathways
+create the activity from the pathways
 
 $$
 \operatorname{Summed pathways} = NcsWeightedCarbon_1 + NcsWeightedCarbon_2 + ... + NcsWeightedCarbon_n
 $$
 
-*Equation 3: Summed pathways for the IM*
+*Equation 3: Summed pathways for the activity*
 
 where *NcsWeightedCarbon* is a pathway set up by the user; and
 
 &emsp;&emsp;&nbsp;&nbsp;&nbsp; *n* is the number of pathways.
 
-- Now that the pathways has been summed for the IM, the result needs to be normalized
+- Now that the pathways has been summed for the activity, the result needs to be normalized
 - The Suitability index and the Carbon coefficient then needs to be taken into account after the normalized raster
 has been created
 - This calculation is shown in **Equation 4**
 
 $$
-\operatorname{Final IM} ={(SuitabilityIndex + CarbonCoefficient)}\times{\frac{value - min}{max - min}}
+\operatorname{Final activity} ={(SuitabilityIndex + CarbonCoefficient)}\times{\frac{value - min}{max - min}}
 $$
 
-*Equation 4: Final IM created from pathways*
+*Equation 4: Final activity created from pathways*
 
 where *value* is the pixel value;
 
@@ -103,19 +103,19 @@ where *value* is the pixel value;
 
 &emsp;&emsp;&nbsp;&nbsp;&nbsp; *CarbonCoefficient* is the carbon coefficient value multiplied with the averaged carbon raster.
 
-- The resulting output is the final IM
+- The resulting output is the final activity
 
-### Priority weighted layer (Weighted IM)
+### Priority weighted layer (Weighted activity)
 
-- This step is performed after the IMs has been created
+- This step is performed after the activities has been created
 - The PWL is more important, and will therefore be multiplied by five to take this into account
 - The PWL weighted is calculated as shown in **Equation 5**
 
 $$
-\operatorname{Priority weighted layer} ={FinalImplementationModel} + ({5}\times{Priority weighted layer})
+\operatorname{Priority weighted layer} ={FinalActivity} + ({5}\times{Priority weighted layer})
 $$
 
-*Equation 5: Priority weighted layer (Weighted IM) calculation*
+*Equation 5: Priority weighted layer (Weighted activity) calculation*
 
 - The resulting PWL will then be used as input to the Highest position calculation
 
@@ -123,7 +123,7 @@ $$
 
 The <a href="https://docs.qgis.org/3.28/en/docs/user_manual/processing_algs/qgis/rasteranalysis.html#qgishighestpositioninrasterstack">Highest position</a>
 tool determines the raster in a stack with the highest value at a given pixel. Essentially the result
-is a classification, where each class represents a specific IM. If multiple rasters has the highest
+is a classification, where each class represents a specific activity. If multiple rasters has the highest
 pixel value at a given pixel, the first raster with that pixel value in the stack will be used.
 Figure 2 shows an example from the QGIS description of the Highest position tool.
 
@@ -131,7 +131,7 @@ Figure 2 shows an example from the QGIS description of the Highest position tool
 
 *Figure 2: Highest position example*
 
-In the plugin the nodata values are ignored. This means that if atleast one raster has a pixel value
+In the plugin the nodata values are ignored. This means that if at least one raster has a pixel value
 at that cell there will be a raster stack value. If none of the rasters in the stack has a pixel value
 at that cell (e.g. each raster pixel is nodata) the output will be nodata at that pixel.
 
@@ -176,8 +176,8 @@ The dock widget consist of three tabs, each focussing on a particular phase of t
 Here is a short description of those steps:
 
 - **Step 1**: Scenario information
-- **Step 2**: NCS pathways and IMs
-- **Step 3**: Weighting priorities (weighted IMs)
+- **Step 2**: NCS pathways and activities
+- **Step 3**: Weighting priorities (weighted activities)
 
 #### Step 1: Scenario information
 
@@ -198,36 +198,36 @@ Step 1 allows a user to set up the scenario details and parameters.
 
 Figure 7: Bushbuckridge study area
 
-#### Step 2: NCS pathways and Implementation models
+#### Step 2: NCS Pathways and Activities
 
-Step 2 focuses on the implementation models (IMs) and pathways.
+Step 2 focuses on the activities and pathways.
 
 ![UI Step 2](img/manual-step2.png)
 
 *Figure 8: Step 2 of the dock widget*
 
-- **NCS pathways**: Pathways which can be added to IMs. Multiple pathways can be added to each IM
-- **Implementation models**: Each selected model will be created in used to perform the analysis
-- **Description**: A description of the IM or pathway selected
-- ![right arrow](img/cplus_right_arrow.svg): Add the selected pathway to the selected IM
-- ![double right arrow](img/cplus_double_right_arrows.svg): Adds all pathways to the selected IM
-- ![add button](img/symbologyAdd.svg): Add a new IM
-- ![remove button](img/symbologyRemove.svg): Remove the selected IM or pathway
-- ![edit button](img/mActionToggleEditing.svg): Edit the selected IM
-- ![ordering pixel values button](img/button_pixels_order.png): Order the pixel values (IMs) will be in the scenario output
+- **NCS pathways**: Pathways which can be added to activities. Multiple pathways can be added to each activity
+- **Activities**: Each selected activity will be created in used to perform the analysis
+- **Description**: A description of the activity or pathway selected
+- ![right arrow](img/cplus_right_arrow.svg): Add the selected pathway to the selected activity
+- ![double right arrow](img/cplus_double_right_arrows.svg): Adds all pathways to the selected activity
+- ![add button](img/symbologyAdd.svg): Add a new activity
+- ![remove button](img/symbologyRemove.svg): Remove the selected activity or pathway
+- ![edit button](img/mActionToggleEditing.svg): Edit the selected a activity
+- ![ordering pixel values button](img/button_pixels_order.png): Order the pixel values (activities) will be in the scenario output
 
-##### Implementation Model Editor dialog
+##### Activity Editor dialog
 
-![add IM dialog](img/manual-add-im.png)
+![add IM dialog](img/manual-add-activity.png)
 
-*Figure 9: Implementation model editing/adding dialog*
+*Figure 9: Activity editing/adding dialog*
 
-- **Name**: The name of the new IM or IM being edited. IM title will be used in the report
-- **Description**: A detailed description of the IM. This will be used in the report
-- **Style**: Styles used for the IM
-    - *Scenario layer*: Colouring which will be used in the Scenario output for this IM
-    - *Output model layer*: Colour ramp which will be applied to the IM raster output
-- **Map layer**: If enabled, a user can provide an existing IM. This has to be a raster
+- **Name**: The name of the new activity or activity being edited. Activity title will be used in the report
+- **Description**: A detailed description of the activity. This will be used in the report
+- **Style**: Styles used for the activity:
+    - *Scenario layer*: Colouring which will be used in the Scenario output for this activity
+    - *Output activity layer*: Colour ramp which will be applied to the activity raster output
+- **Map layer**: If enabled, a user can provide an existing activity. This has to be a raster
 
 #### Ordering of the pixel values for the scenario output
 
@@ -259,16 +259,16 @@ A user can order the stack using the **Style pixel value editor**.
 - **Priority layer**: Select the priority layer
 - **Priority layer name**: A unique name for the priority layer
 - **Priority layer description**: A detailed description for the priority layer
-- **Assign implementation models**: Selected IMs associated with the priority layer
+- **Assign activities**: Selected activities associated with the priority layer
 
 ![UI Priority layer dialog](img/manual-pwl-selection.png)
 
-*Figure 12: Selection of IMs for a custom priority layer*
+*Figure 12: Selection of activities for a custom priority layer*
 
-- List of IMs a user can select. Multiple IMs can be selected
-- **OK**: Save the selected models
-- **Select All**: Selects each of the available IMs
-- **Clear Selection**: Deselects each of the selected IMs
+- List of activities a user can select. Multiple activities can be selected
+- **OK**: Save the selected activities
+- **Select All**: Selects each of the available activities
+- **Clear Selection**: Deselects each of the selected activities
 - **Toggle Selection**: Switches each option from deselected to selected, or selected to deselected
 
 ### Progress dialog
@@ -306,7 +306,7 @@ These options will be available once the analysis has finished. The options will
     - *Contact email*: (optional) Contact email of the user
     - *Website*: (optional) Link to website of your company or institute
     - *Custom logo*: (optional) If enabled, the user needs to provide a custom logo. Most formats should suffice (png, jpeg, etc.)
-    - *Logo preview*: Visual previre of the default CI logo, or the custom logo a user selected
+    - *Logo preview*: Visual preview of the default CI logo, or the custom logo a user selected
     - *Footer*: (optional) Will be added to the report
     - *Disclaimer*: Change as desired, otherwise use the default disclaimer
     - *License*: Change as desired, otherwise use the default license description

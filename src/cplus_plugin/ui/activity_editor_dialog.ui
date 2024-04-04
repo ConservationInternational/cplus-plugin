@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ImplementationModelDialog</class>
- <widget class="QDialog" name="ImplementationModelDialog">
+ <class>ActivityDialog</class>
+ <widget class="QDialog" name="ActivityDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>436</width>
-    <height>449</height>
+    <height>456</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -17,7 +17,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>Implementation Model Editor</string>
+   <string>Activity Editor</string>
   </property>
   <layout class="QGridLayout" name="gridLayout_2">
    <item row="0" column="0" colspan="3">
@@ -72,7 +72,7 @@
       <item>
        <widget class="QLabel" name="label_123">
         <property name="text">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Define your own Implementation Model for a scenario. Click Help for more information.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Define your own activity for a scenario. Click Help for more information.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="wordWrap">
          <bool>true</bool>
@@ -288,7 +288,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>ImplementationModelDialog</receiver>
+   <receiver>ActivityDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
