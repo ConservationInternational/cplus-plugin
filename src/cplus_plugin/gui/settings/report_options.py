@@ -163,11 +163,16 @@ class ReportSettingsWidget(QgsOptionsPageWidget, Ui_ReportSettingsWidget):
         report_license = self.txt_license.text()
         settings_manager.set_value(Settings.REPORT_LICENSE, report_license)
 
-        stakeholders = self.txt_stakeholders.text()
+        stakeholders = self.txt_stakeholders.toPlainText()
         settings_manager.set_value(Settings.REPORT_STAKEHOLDERS, stakeholders)
 
-        policies = self.txt_culture_policies.text()
-        settings_manager.set_value(Settings.REPORT_CULTURE_POLICIES, policies)
+        culture_policies = self.txt_policies.toPlainText()
+        settings_manager.set_value(Settings.REPORT_CULTURE_POLICIES, culture_policies)
+
+        culture_considerations = self.txt_culture.toPlainText()
+        settings_manager.set_value(
+            Settings.REPORT_CULTURE_CONSIDERATIONS, culture_considerations
+        )
 
     def load_settings(self):
         """Loads the settings and displays it in the options UI."""
@@ -209,12 +214,17 @@ class ReportSettingsWidget(QgsOptionsPageWidget, Ui_ReportSettingsWidget):
         stakeholders = settings_manager.get_value(
             Settings.REPORT_STAKEHOLDERS, default=""
         )
-        self.txt_stakeholders.setText(stakeholders)
+        self.txt_stakeholders.setPlainText(stakeholders)
 
-        policies = settings_manager.get_value(
+        culture_policies = settings_manager.get_value(
             Settings.REPORT_CULTURE_POLICIES, default=""
         )
-        self.txt_culture_policies.setText(policies)
+        self.txt_policies.setPlainText(culture_policies)
+
+        culture_considerations = settings_manager.get_value(
+            Settings.REPORT_CULTURE_CONSIDERATIONS, default=""
+        )
+        self.txt_culture.setPlainText(culture_considerations)
 
     def showEvent(self, event: QShowEvent) -> None:
         """Show event being called. This will display the plugin settings.
