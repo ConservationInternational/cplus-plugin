@@ -10,7 +10,7 @@
     "tracker": "https://github.com/kartoza/cplus-plugin/issues",
     "repository": "https://github.com/kartoza/cplus-plugin",
     "tags": ["cplus", "maps", "raster", "analytics"],
-    "category": "Plugins",
+    "category": "[plugins]",
     "hasProcessingProvider": "no",
     "about": "Adds functionality to use the CPLUS decision support tool in making informed decisions, from spatial information such as land cover, carbon stocks, and potential for carbon sequestration, CPLUS enables the identification of key areas for intervention and investment.",
     "author": "Kartoza",
