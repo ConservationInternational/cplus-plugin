@@ -1,7 +1,7 @@
 {
   "general": {
     "name" : "CPLUS plugin",
-    "qgisMinimumVersion": 3.22,
+    "qgisMinimumVersion": 3.0,
     "qgisMaximumVersion": 3.99,
     "icon": "icon.svg",
     "experimental": false,
