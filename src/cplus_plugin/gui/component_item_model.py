@@ -15,13 +15,13 @@ from qgis.PyQt import QtCore, QtGui
 from ..models.base import (
     BaseModelComponent,
     BaseModelComponentType,
-    ImplementationModel,
+    Activity,
     LayerModelComponent,
     LayerType,
     NcsPathway,
 )
 from ..models.helpers import (
-    clone_implementation_model,
+    clone_activity,
     clone_ncs_pathway,
     copy_layer_component_attributes,
     create_ncs_pathway,
@@ -32,7 +32,7 @@ from ..utils import FileUtils
 
 
 NCS_PATHWAY_TYPE = QtGui.QStandardItem.UserType + 2
-IMPLEMENTATION_MODEL_TYPE = QtGui.QStandardItem.UserType + 3
+ACTIVITY_TYPE = QtGui.QStandardItem.UserType + 3
 LAYER_ITEM_TYPE = QtGui.QStandardItem.UserType + 4
 
 NCS_MIME_TYPE = "application/x-qabstractitemmodeldatalist"
@@ -241,12 +241,12 @@ class NcsPathwayItem(LayerComponentItem):
         return self._ncs_pathway
 
     @property
-    def parent(self) -> "ImplementationModelItem":
-        """Returns the parent ImplementationModelItem if specified.
+    def parent(self) -> "ActivityItem":
+        """Returns the parent activity item if specified.
 
         :returns: Returns the parent item if set when this item is
-        mapped to an ImplementationModelItem.
-        :rtype: ImplementationModelItem
+        mapped to an ActivityItem.
+        :rtype: ActivityItem
         """
         return self._parent
 
@@ -304,12 +304,12 @@ class NcsPathwayItem(LayerComponentItem):
         super().setEnabled(enabled)
 
 
-class ImplementationModelItem(LayerComponentItem):
-    """Standard item for an implementation model object."""
+class ActivityItem(LayerComponentItem):
+    """Standard item for an activity object."""
 
-    def __init__(self, implementation_model: ImplementationModel):
-        super().__init__(implementation_model)
-        self._implementation_model = implementation_model
+    def __init__(self, activity: Activity):
+        super().__init__(activity)
+        self._activity = activity
 
         font = self.font()
         font.setBold(True)
@@ -318,25 +318,25 @@ class ImplementationModelItem(LayerComponentItem):
         self._ncs_items = []
 
         # Remap pathway uuids so that there are no duplicate
-        # pathways under each implementation model.
+        # pathways under each activity.
         self._uuid_remap = {}
 
     @property
-    def implementation_model(self) -> ImplementationModel:
-        """Returns an instance of the underlying ImplementationModel object.
+    def activity(self) -> Activity:
+        """Returns an instance of the underlying activity object.
 
-        :returns: The underlying ImplementationModel object.
-        :rtype: ImplementationModel
+        :returns: The underlying activity object.
+        :rtype: Activity
         """
-        return self._implementation_model
+        return self._activity
 
     @property
     def ncs_items(self) -> typing.List[NcsPathwayItem]:
-        """Returns a collection of NcsPathwayItem in this implementation
-        model.
+        """Returns a collection of NcsPathwayItem in this activity
+        object.
 
         :returns: Collection of NcsPathwayItem objects in this
-        implementation model.
+        activity object.
         :rtype: list
         """
         return self._ncs_items
@@ -346,7 +346,7 @@ class ImplementationModelItem(LayerComponentItem):
         """Returns a collection of NcsPathway objects.
 
         :returns: Collection of NcsPathway objects linked to the
-        underlying ImplementationModel object.
+        underlying activity object.
         :rtype: list
         """
         return [ncs_item.ncs_pathway for ncs_item in self.ncs_items]
@@ -355,15 +355,14 @@ class ImplementationModelItem(LayerComponentItem):
         self, ncs_pathway: typing.Union[NcsPathway, str]
     ) -> typing.Union[NcsPathwayItem, None]:
         """Retrieves the NCS item corresponding to the original NCS
-        pathway i.e. before it is added to this implementation
-        model item.
+        pathway i.e. before it is added to this activity item.
 
         :param ncs_pathway: Original NCS pathway data model or
         unique identifier of the NCS pathway.
         :type ncs_pathway: NcsPathway, str
 
-        :returns: The matching NCS pathway item in this implementation
-        model item, else None if there is no matching item.
+        :returns: The matching NCS pathway item in this activity
+         item, else None if there is no matching item.
         """
         if isinstance(ncs_pathway, NcsPathway):
             ncs_uuid = str(ncs_pathway.uuid)
@@ -383,11 +382,10 @@ class ImplementationModelItem(LayerComponentItem):
         their original UUIDs.
 
         These are used for persisting the NCsPathway objects
-        related to the underlying IM object.
+        related to the underlying activity object.
 
         :returns: Collection of NcsPathway objects with their
-        original UUIDs linked to the underlying ImplementationModel
-        object.
+        original UUIDs linked to the underlying activity object.
         :rtype: list
         """
         ncs_pathways = []
@@ -422,7 +420,7 @@ class ImplementationModelItem(LayerComponentItem):
 
     def clear_layer(self):
         """Clears the layer reference in the model component."""
-        self._implementation_model.clear_layer()
+        self._activity.clear_layer()
 
     def ncs_item_by_uuid(self, ncs_uuid: str) -> typing.Union[NcsPathwayItem, None]:
         """Returns an NcsPathway item matching the given UUID.
@@ -458,8 +456,7 @@ class ImplementationModelItem(LayerComponentItem):
         return True
 
     def add_ncs_pathway_item(self, ncs_item: NcsPathwayItem) -> bool:
-        """Adds an NCS pathway item to this implementation model
-        item.
+        """Adds an NCS pathway item to this activity item.
 
         If the item already contains a layer, then the add operation
         will not be successful.
@@ -488,10 +485,10 @@ class ImplementationModelItem(LayerComponentItem):
         if not ncs_item.is_valid():
             return False
 
-        if self._implementation_model.contains_pathway(ncs_item.uuid):
+        if self._activity.contains_pathway(ncs_item.uuid):
             return False
 
-        if not self._implementation_model.add_ncs_pathway(ncs_item.ncs_pathway):
+        if not self._activity.add_ncs_pathway(ncs_item.ncs_pathway):
             return False
 
         self._ncs_items.append(ncs_item)
@@ -522,7 +519,7 @@ class ImplementationModelItem(LayerComponentItem):
         item._parent = None
         del item
 
-        self._implementation_model.remove_ncs_pathway(item_uuid)
+        self._activity.remove_ncs_pathway(item_uuid)
 
         old_uuids = [k for k, v in self._uuid_remap.items() if v == item_uuid]
         if len(old_uuids) > 0:
@@ -532,7 +529,7 @@ class ImplementationModelItem(LayerComponentItem):
 
     def bottom_ncs_item_index(self) -> typing.Union[QtCore.QModelIndex, None]:
         """Returns the model index of the bottom-most NcsPathwayItem
-        under this implementation model item.
+        under this activity item.
 
         :returns: Model index of the bottom-most NcsPathwayItem.
         :rtype: QModelIndex
@@ -550,32 +547,32 @@ class ImplementationModelItem(LayerComponentItem):
         :returns: Type identifier of the standard item.
         :rtype: int
         """
-        return IMPLEMENTATION_MODEL_TYPE
+        return ACTIVITY_TYPE
 
     @staticmethod
-    def create(implementation_model: ImplementationModel) -> "ImplementationModelItem":
-        """Creates an instance of the ImplementationModelItem from
+    def create(activity: Activity) -> "ActivityItem":
+        """Creates an instance of the activity item from
         the model object.
 
-        :returns: An instance of the ImplementationModelItem item to
+        :returns: An instance of the activity item to
         be used in a standard model.
-        :rtype: ImplementationModel
+        :rtype: Activity
         """
-        return ImplementationModelItem(implementation_model)
+        return ActivityItem(activity)
 
-    def clone(self) -> "ImplementationModelItem":
+    def clone(self) -> "ActivityItem":
         """Creates a cloned version of this item.
 
         The cloned IM will contain pathways with the
-        original UUID. The UUID of the IM will not change.
+        original UUID. The UUID of the activity object will not change.
         """
-        implementation_model = clone_implementation_model(
-            self.implementation_model,
+        activity = clone_activity(
+            self.activity,
         )
         # Use NCS pathways with original UUIDs
-        implementation_model.pathways = self.original_ncs_pathways
+        activity.pathways = self.original_ncs_pathways
 
-        return ImplementationModelItem(implementation_model)
+        return ActivityItem(activity)
 
     def enable_default_pathways(self, state: bool):
         """Enable or disable default NCS pathway items.
@@ -623,7 +620,7 @@ class ImplementationModelItem(LayerComponentItem):
 
 class LayerItem(QtGui.QStandardItem):
     """Contains a custom identifier for an item used to define a
-    layer for an implementation model.
+    layer for an activity.
     """
 
     def type(self) -> int:
@@ -963,95 +960,91 @@ class NcsPathwayItemModel(ComponentItemModel):
         return mime_data
 
 
-class IMItemModel(ComponentItemModel):
-    """View model for implementation model."""
+class ActivityItemModel(ComponentItemModel):
+    """View model for activity."""
 
     # Signal raised when the pathways have been updated (added or removed)
-    im_pathways_updated = QtCore.pyqtSignal(ImplementationModelItem)
+    activity_pathways_updated = QtCore.pyqtSignal(ActivityItem)
 
-    def add_implementation_model(
-        self, implementation_model: ImplementationModel, layer: QgsMapLayer = None
-    ) -> bool:
-        """Add an ImplementationModel object to the model.
+    def add_activity(self, activity: Activity, layer: QgsMapLayer = None) -> bool:
+        """Add an activity object to the model.
 
-        :param implementation_model: ImplementationModel object to be
+        :param activity: Activity object to be
         added to the view.
-        :type implementation_model: ImplementationModel
+        :type activity: Activity
 
-        :param layer: Map layer for the implementation model.
+        :param layer: Map layer for the activity.
         :type layer: QgsMapLayer
 
-        :returns: True if ImplementationModel object was added
+        :returns: True if an activity object was added
         successfully, else False.
         :rtype: bool
         """
         # Check if we can retrieve the layer from the path
         if layer is None:
-            if implementation_model.path:
-                layer = implementation_model.to_map_layer()
+            if activity.path:
+                layer = activity.to_map_layer()
 
-        implementation_model_item = ImplementationModelItem.create(implementation_model)
-        result = self.add_component_item(implementation_model_item)
+        activity_item = ActivityItem.create(activity)
+        result = self.add_component_item(activity_item)
         if layer:
-            status = self.set_model_layer(implementation_model_item, layer)
+            status = self.set_model_layer(activity_item, layer)
             if not status:
                 result = False
         else:
             # Add NCS pathways. If there are underlying NCS pathway objects then
             # clone them, remove then re-insert so that the underlying NCS pathways can
-            # have the unique UUID in the IM item.
+            # have the unique UUID in the activity item.
             if result:
-                cloned_implementation_model = clone_implementation_model(
-                    implementation_model
-                )
-                cloned_ncs_pathways = cloned_implementation_model.pathways
+                cloned_activity = clone_activity(activity)
+                cloned_ncs_pathways = cloned_activity.pathways
 
                 # Remove pathways in the IM
-                implementation_model.pathways = []
+                activity.pathways = []
 
                 # Now add the NCSs afresh
                 for ncs in cloned_ncs_pathways:
                     ncs_item = NcsPathwayItem.create(ncs)
-                    self.add_ncs_pathway(ncs_item, implementation_model_item)
+                    self.add_ncs_pathway(ncs_item, activity_item)
 
         return result
 
-    def remove_layer(self, implementation_model_item: ImplementationModelItem):
+    def remove_layer(self, activity_item: ActivityItem):
         """Removes the layer reference from the underlying
-        implementation model.
+        activity.
 
-        :param implementation_model_item: Implementation model
+        :param activity_item: activity
         item whose layer is to be removed.
-        :type implementation_model_item: ImplementationModelItem
+        :type activity_item: ActivityItem
         """
-        if implementation_model_item.layer is None:
+        if activity_item.layer is None:
             return
 
-        if not self.contains_item(implementation_model_item.uuid):
+        if not self.contains_item(activity_item.uuid):
             return
 
         # Remove item in model
-        item_idx = self.index_by_uuid(implementation_model_item.uuid)
+        item_idx = self.index_by_uuid(activity_item.uuid)
         layer_row = item_idx.row() + 1
         self.removeRows(layer_row, 1)
         self._re_index_rows()
 
         # Remove underlying layer reference
-        implementation_model_item.clear_layer()
+        activity_item.clear_layer()
 
     def set_model_layer(
         self,
-        implementation_model_item: ImplementationModelItem,
+        activity_item: ActivityItem,
         layer: QgsMapLayer,
         display_name: str = "",
     ) -> bool:
-        """Set the layer for the given implementation model item.
+        """Set the layer for the given activity item.
 
-        :param implementation_model_item: Implementation model item
+        :param activity_item: activity item
         whose layer is to be specified.
-        :type implementation_model_item: ImplementationModelItem
+        :type activity_item: ActivityItem
 
-        :param layer: Map layer to be set for the implementation model.
+        :param layer: Map layer to be set for the activity.
         :type layer: QgsMapLayer
 
         :param display_name: Display name for the layer node. If not
@@ -1059,18 +1052,18 @@ class IMItemModel(ComponentItemModel):
         :type display_name: str
 
         :returns: True if the layer was successfully set for the
-        implementation model, else False if the layer is invalid, if
-        there are already existing NCS pathways in the implementation
-        model or if the item is not in the model.
+        activity, else False if the layer is invalid, if
+        there are already existing NCS pathways in the activity
+         or if the item is not in the model.
         :rtype: bool
         """
-        if len(implementation_model_item.ncs_items) > 0:
+        if len(activity_item.ncs_items) > 0:
             return False
 
-        if not self.contains_item(implementation_model_item.uuid):
+        if not self.contains_item(activity_item.uuid):
             return False
 
-        if not implementation_model_item.set_layer(layer):
+        if not activity_item.set_layer(layer):
             return False
 
         if not display_name:
@@ -1079,9 +1072,9 @@ class IMItemModel(ComponentItemModel):
         icon = FileUtils.get_icon("mIconRaster.svg")
         item = LayerItem(icon, display_name)
         item.setToolTip(layer.source())
-        item.setData(implementation_model_item)
+        item.setData(activity_item)
 
-        item_idx = self.index_by_uuid(implementation_model_item.uuid)
+        item_idx = self.index_by_uuid(activity_item.uuid)
         layer_row = item_idx.row() + 1
         self.insertRow(layer_row, item)
         self._re_index_rows()
@@ -1089,60 +1082,59 @@ class IMItemModel(ComponentItemModel):
         return True
 
     def add_ncs_pathway(
-        self, ncs_item: NcsPathwayItem, target_model_item: ImplementationModelItem
+        self, ncs_item: NcsPathwayItem, target_activity_item: ActivityItem
     ) -> bool:
-        """Adds an NCS pathway item to the model.
+        """Adds an NCS pathway item to the activity.
 
         :param ncs_item: NCS pathway item to the collection.
         :type ncs_item: NcsPathwayItem
 
-        :param target_model_item: Target implementation model for the NCS item.
-        :type target_model_item: ImplementationModelItem
+        :param target_activity_item: Target activity for the NCS item.
+        :type target_activity_item: ActivityItem
 
         :returns: True if the NCS pathway item was successfully added, else
         False if there underlying NCS pathway object was invalid, there
         is an existing item with the same UUID or if there is already
-        a map layer defined for the implementation model.
+        a map layer defined for the activity.
         """
-        idx = target_model_item.index()
+        idx = target_activity_item.index()
         if not idx.isValid():
             return False
 
-        if not isinstance(target_model_item, LayerComponentItem):
+        if not isinstance(target_activity_item, LayerComponentItem):
             return False
 
-        # Do not add if the IM item has been disabled (e.g. disabled default IMs)
-        if not target_model_item.isEnabled():
+        # Do not add if the activity item has been disabled
+        # (e.g. disabled default activities)
+        if not target_activity_item.isEnabled():
             return False
 
         # If there is an existing layer then return
-        if target_model_item.layer:
+        if target_activity_item.layer:
             return False
 
         clone_ncs_item = ncs_item.clone()
-        status = target_model_item.add_ncs_pathway_item(clone_ncs_item)
+        status = target_activity_item.add_ncs_pathway_item(clone_ncs_item)
         if not status:
             return False
 
-        bottom_idx = target_model_item.bottom_ncs_item_index()
+        bottom_idx = target_activity_item.bottom_ncs_item_index()
         reference_row = max(bottom_idx.row(), idx.row())
         self.add_component_item(clone_ncs_item, reference_row + 1)
 
-        self.im_pathways_updated.emit(target_model_item)
+        self.activity_pathways_updated.emit(target_activity_item)
 
         return True
 
-    def remove_ncs_pathway_item(
-        self, ncs_uuid: str, parent: ImplementationModelItem
-    ) -> bool:
-        """Remove an NCS pathway item from the model.
+    def remove_ncs_pathway_item(self, ncs_uuid: str, parent: ActivityItem) -> bool:
+        """Remove an NCS pathway item from the activity.
 
         param uuid: UUID of the NCS pathway item to be removed.
         :type ncs_uuid: str
 
-        :param parent: Reference implementation model item that
+        :param parent: Reference activity item that
         is the parent to the NCS pathway item.
-        :type parent: ImplementationModelItem
+        :type parent: ActivityItem
 
         :returns: True if the NCS pathway item has been
         successfully removed, else False if there was
@@ -1153,27 +1145,25 @@ class IMItemModel(ComponentItemModel):
         if not status:
             return False
 
-        self.im_pathways_updated.emit(parent)
+        self.activity_pathways_updated.emit(parent)
 
         return self.remove_component_item(ncs_uuid)
 
-    def update_implementation_model(
-        self, implementation_model: ImplementationModel, layer: QgsMapLayer = None
-    ) -> bool:
-        """Updates the implementation model item in the model.
+    def update_activity(self, activity: Activity, layer: QgsMapLayer = None) -> bool:
+        """Updates the activity item using the given activity.
 
-        :param implementation_model: implementation_model object whose
+        :param activity: Activity object whose
         corresponding item is to be updated.
-        :type implementation_model: ImplementationModel
+        :type activity: Activity
 
         :param layer: Map layer to be updated for the
-        implementation if specified.
+        activity if specified.
         :type layer: QgsMapLayer
 
         :returns: Returns True if the operation was successful else False
-        if the matching item was not found in the model.
+        if the matching item was not found in the activity.
         """
-        item = self.component_item_by_uuid(str(implementation_model.uuid))
+        item = self.component_item_by_uuid(str(activity.uuid))
         if item is None:
             return False
 
@@ -1190,29 +1180,29 @@ class IMItemModel(ComponentItemModel):
 
         return True
 
-    def models(self) -> typing.List[ImplementationModel]:
-        """Returns implementation model objects in the model.
+    def activities(self) -> typing.List[Activity]:
+        """Returns activity objects in the view model.
 
-        :returns: Implementation model objects in the model.
+        :returns: Activity objects in the view model.
         :rtype: list
         """
-        return [model_item.implementation_model for model_item in self.model_items()]
+        return [model_item.activity for model_item in self.activity_items()]
 
-    def model_items(self) -> typing.List[ImplementationModelItem]:
-        """Returns all ImplementationModelItem objects in the model.
+    def activity_items(self) -> typing.List[ActivityItem]:
+        """Returns all activity item objects in the model.
 
-        :returns: Implementation model items in the model.
+        :returns: Activity items in the model.
         :rtype: list
         """
         component_items = self.model_component_items()
 
-        return [ci for ci in component_items if ci.type() == IMPLEMENTATION_MODEL_TYPE]
+        return [ci for ci in component_items if ci.type() == ACTIVITY_TYPE]
 
     def update_ncs_pathway_items(self, ncs_pathway: NcsPathway) -> bool:
         """Update NCS pathway items matching the given NCS pathway model.
 
         If the NCS pathway model is not valid then the NCS pathway items
-        in the implementation model item will not be updated.
+        in the activity item will not be updated.
 
         :param ncs_pathway: Original NCS pathway object whose corresponding
         models are to be updated.
@@ -1225,8 +1215,10 @@ class IMItemModel(ComponentItemModel):
         if not ncs_pathway.is_valid():
             return False
 
-        for im_item in self.model_items():
-            ncs_item_for_original = im_item.ncs_item_from_original_pathway(ncs_pathway)
+        for activity_item in self.activity_items():
+            ncs_item_for_original = activity_item.ncs_item_from_original_pathway(
+                ncs_pathway
+            )
             if ncs_item_for_original is None:
                 continue
 
@@ -1241,14 +1233,13 @@ class IMItemModel(ComponentItemModel):
         """Delete NCS pathway items matching the given NCS pathway model.
 
         If the NCS pathway model is not valid then the NCS pathway items
-        in the implementation model item will not be deleted.
+        in the activity item will not be deleted.
 
         :param ncs_pathway_uuid: Unique identifier of the NCS pathway object
-        whose corresponding models are to be removed in the implementation
-        models.
+        whose corresponding models are to be removed in the activities.
         :type ncs_pathway_uuid: str
         """
-        for im_item in self.model_items():
+        for im_item in self.activity_items():
             ncs_item_for_original = im_item.ncs_item_from_original_pathway(
                 ncs_pathway_uuid
             )
@@ -1257,28 +1248,28 @@ class IMItemModel(ComponentItemModel):
 
             status = self.remove_ncs_pathway_item(ncs_item_for_original.uuid, im_item)
 
-    def remove_implementation_model(self, uuid_str: str) -> bool:
-        """Remove an implementation model item from the model.
+    def remove_activity(self, uuid_str: str) -> bool:
+        """Remove an activity item from the view model.
 
-        param uuid: UUID of the implementation model item to
+        param uuid: UUID of the activity item to
         be removed.
         :type uuid_str: str
 
-        :returns: True if the implementation model item as successfully
+        :returns: True if the activity item was successfully
         removed, else False if there was not matching UUID.
         :rtype: bool
         """
-        implementation_model_item = self.component_item_by_uuid(uuid_str)
-        if implementation_model_item is None:
+        activity_item = self.component_item_by_uuid(uuid_str)
+        if activity_item is None:
             return False
 
-        if len(implementation_model_item.ncs_items) > 0:
-            ncs_items = implementation_model_item.ncs_items
+        if len(activity_item.ncs_items) > 0:
+            ncs_items = activity_item.ncs_items
             for item in ncs_items:
                 self.remove_component_item(item.uuid)
         else:
             # Layer item
-            self.remove_layer(implementation_model_item)
+            self.remove_layer(activity_item)
 
         return self.remove_component_item(uuid_str)
 
@@ -1339,24 +1330,24 @@ class IMItemModel(ComponentItemModel):
             ncs_item = NcsPathwayItem(ncs_pathway)
             ncs_items.append(ncs_item)
 
-        # Get reference ImplementationModel item
+        # Get reference to activity item
         if parent.isValid():
-            model_item = self.itemFromIndex(parent)
+            activity_item = self.itemFromIndex(parent)
         else:
             row_count = self.rowCount()
-            model_item = self.item(row_count - 1)
+            activity_item = self.item(row_count - 1)
 
-        if model_item is None or isinstance(model_item, LayerItem):
+        if activity_item is None or isinstance(activity_item, LayerItem):
             return False
 
-        if model_item.type() == NCS_PATHWAY_TYPE:
-            target_im_item = model_item.parent
+        if activity_item.type() == NCS_PATHWAY_TYPE:
+            target_activity_item = activity_item.parent
         else:
-            target_im_item = model_item
+            target_activity_item = activity_item
 
-        # Add NCS items to model.
+        # Add NCS items to the activity.
         status = True
         for item in ncs_items:
-            status = self.add_ncs_pathway(item, target_im_item)
+            status = self.add_ncs_pathway(item, target_activity_item)
 
         return status

@@ -15,12 +15,14 @@ PILOT_AREA_EXTENT = {
 
 DEFAULT_CRS_ID = 4326
 
-DOCUMENTATION_SITE = "https://kartoza.github.io/cplus-plugin"
-USER_DOCUMENTATION_SITE = "https://kartoza.github.io/cplus-plugin/user/guide"
-ABOUT_DOCUMENTATION_SITE = "https://kartoza.github.io/cplus-plugin/about/ci"
-REPORT_DOCUMENTATION = (
-    "https://kartoza.github.io/cplus-plugin/user/guide/#report-generating"
+DOCUMENTATION_SITE = "https://conservationinternational.github.io/cplus-plugin"
+USER_DOCUMENTATION_SITE = (
+    "https://conservationinternational.github.io/cplus-plugin/user/guide"
 )
+ABOUT_DOCUMENTATION_SITE = (
+    "https://conservationinternational.github.io/cplus-plugin/about/ci"
+)
+REPORT_DOCUMENTATION = "https://conservationinternational.github.io/cplus-plugin/user/guide/#report-generating"
 
 OPTIONS_TITLE = "CPLUS"  # Title in the QGIS settings
 REPORT_OPTIONS_TITLE = "Reporting"
@@ -77,7 +79,7 @@ PILOT_AREA_SCENARIO_SYMBOLOGY = {
     "Sustainable Crop Farming & Aquaponics": {"val": 13, "color": "#781a8b"},
 }
 
-IM_COLOUR_RAMPS = {
+ACTIVITY_COLOUR_RAMPS = {
     "Agroforestry": "Reds",
     "Alien Plant Removal": "Greys",
     "Alien_Plant_Removal": "Greys",
@@ -133,7 +135,7 @@ MINIMUM_ITEM_HEIGHT = 100
 REPORT_FONT_NAME = "Ubuntu"
 
 # IDs for the given tables in the report template
-IMPLEMENTATION_MODEL_AREA_TABLE_ID = "implementation_model_area_table"
+ACTIVITY_AREA_TABLE_ID = "activity_area_table"
 PRIORITY_GROUP_WEIGHT_TABLE_ID = "assigned_weights_table"
 
 # Initiliazing the plugin default data as found in the data directory
@@ -159,17 +161,14 @@ with pathways_path.open("r") as fh:
 DEFAULT_NCS_PATHWAYS = pathways_dict["pathways"]
 
 
-models_path = (
-    Path(__file__).parent.parent.resolve()
-    / "data"
-    / "default"
-    / "implementation_models.json"
+activities_path = (
+    Path(__file__).parent.parent.resolve() / "data" / "default" / "activities.json"
 )
 
-with models_path.open("r") as fh:
+with activities_path.open("r") as fh:
     models_dict = json.load(fh)
 
-DEFAULT_IMPLEMENTATION_MODELS = models_dict["models"]
+DEFAULT_ACTIVITIES = models_dict["activities"]
 
 
 PRIORITY_GROUPS = [

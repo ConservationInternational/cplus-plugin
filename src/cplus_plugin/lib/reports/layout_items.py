@@ -20,8 +20,7 @@ CPLUS_MAP_REPEAT_ITEM_TYPE = QgsLayoutItemRegistry.PluginItem + 2350
 
 class CplusMapRepeatItem(QgsLayoutItemShape):
     """Defines an outline area within a layout where map items
-    containing NCS pathway or implementation model will be
-    drawn.
+    containing NCS pathway or activity will be drawn.
     """
 
     def __init__(self, *args, **kwargs):
@@ -49,8 +48,7 @@ class CplusMapRepeatItem(QgsLayoutItemShape):
     @property
     def model_component_type(self) -> ModelComponentType:
         """Gets the model component type associated with
-        this map item i.e. NCS pathway or implementation
-        model.
+        this map item i.e. NCS pathway or activity.
 
         :returns: Type of the model component.
         :rtype: Enum
@@ -60,8 +58,7 @@ class CplusMapRepeatItem(QgsLayoutItemShape):
     @model_component_type.setter
     def model_component_type(self, component_type: ModelComponentType):
         """Set the model component type associated with
-        this map item i.e. NCS pathway or implementation
-        model.
+        this map item i.e. NCS pathway or activity.
 
         :param component_type: Type of the model component.
         :type component_type: Enum

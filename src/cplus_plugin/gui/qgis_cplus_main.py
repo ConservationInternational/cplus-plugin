@@ -54,7 +54,7 @@ from qgis.gui import (
 
 from qgis.utils import iface
 
-from .implementation_model_widget import ImplementationModelContainerWidget
+from .activity_widget import ActivityContainerWidget
 from .priority_group_widget import PriorityGroupWidget
 
 from .priority_layer_dialog import PriorityLayerDialog
@@ -65,7 +65,7 @@ from ..conf import settings_manager, Settings
 
 from ..lib.extent_check import extent_within_pilot
 from ..lib.reports.manager import report_manager, ReportManager
-from ..models.helpers import clone_implementation_model
+from ..models.helpers import clone_activity
 
 from ..tasks import ScenarioAnalysisTask
 
@@ -91,9 +91,9 @@ from ..definitions.defaults import (
     USER_DOCUMENTATION_SITE,
 )
 from ..definitions.constants import (
-    IM_GROUP_LAYER_NAME,
-    IM_WEIGHTED_GROUP_NAME,
-    MODEL_IDENTIFIER_PROPERTY,
+    ACTIVITY_GROUP_LAYER_NAME,
+    ACTIVITY_IDENTIFIER_PROPERTY,
+    ACTIVITY_WEIGHTED_GROUP_NAME,
     NCS_PATHWAYS_GROUP_LAYER_NAME,
     USER_DEFINED_ATTRIBUTE,
 )
@@ -132,15 +132,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.prepare_input()
 
         # Insert widget for step 2
-        self.implementation_model_widget = ImplementationModelContainerWidget(
-            self, self.message_bar
-        )
-        self.implementation_model_widget.ncs_reloaded.connect(
-            self.on_ncs_pathways_reloaded
-        )
-        self.tab_widget.insertTab(
-            1, self.implementation_model_widget, self.tr("Step 2")
-        )
+        self.activity_widget = ActivityContainerWidget(self, self.message_bar)
+        self.activity_widget.ncs_reloaded.connect(self.on_ncs_pathways_reloaded)
+        self.tab_widget.insertTab(1, self.activity_widget, self.tr("Step 2"))
         self.tab_widget.currentChanged.connect(self.on_tab_step_changed)
 
         # Step 3, priority weighting layers initialization
@@ -242,7 +236,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.analysis_scenario_name = None
         self.analysis_scenario_description = None
         self.analysis_extent = None
-        self.analysis_implementation_models = None
+        self.analysis_activities = None
         self.analysis_weighted_ims = []
         self.analysis_priority_layers_groups = []
 
@@ -264,27 +258,22 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def update_pwl_layers(self, notify=False):
         """Updates the priority layers path available in
-        the store implementation models
+        the store activities.
 
         :param notify: Whether to show message to user about the update
         :type notify: bool
         """
-        settings_manager.update_implementation_models()
+        settings_manager.update_activities()
         self.update_priority_layers()
         if notify:
             self.show_message(
                 tr(
-                    "Updated all the implementation models"
+                    "Updated all the activities"
                     " with their respective priority layers"
                 ),
                 Qgis.Info,
             )
-        log(
-            tr(
-                "Updated all the implementation models"
-                " with their respective priority layers"
-            )
-        )
+        log(tr("Updated all the activities" " with their respective priority layers"))
 
     def save_scenario(self):
         """Save current scenario details into settings"""
@@ -391,7 +380,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         within_pilot_area = extent_within_pilot(
             self.extent_box.outputExtent(), self.extent_box.outputCrs()
         )
-        self.implementation_model_widget.enable_default_items(within_pilot_area)
+        self.activity_widget.enable_default_items(within_pilot_area)
 
     def on_extent_changed(self, new_extent: QgsRectangle):
         """Slot raised when scenario extents have changed.
@@ -404,14 +393,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if not within_pilot_area:
             msg = tr(
                 "Area of interest is outside the pilot area. Please use your "
-                "own NCS pathways, implementation models and PWLs."
+                "own NCS pathways, activities and PWLs."
             )
             self.show_message(msg, Qgis.Info)
 
         else:
             self.message_bar.clearWidgets()
 
-        self.implementation_model_widget.enable_default_items(within_pilot_area)
+        self.activity_widget.enable_default_items(within_pilot_area)
 
         # Enable/disable PWL items
         for i in range(self.priority_layers_list.count()):
@@ -849,9 +838,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     group_layer_dict["layers"].append(layer.get("name"))
             self.analysis_priority_layers_groups.append(group_layer_dict)
 
-        self.analysis_implementation_models = [
-            item.implementation_model
-            for item in self.implementation_model_widget.selected_im_items()
+        self.analysis_activities = [
+            item.activity
+            for item in self.activity_widget.selected_activity_items()
             if item.isEnabled()
         ]
 
@@ -874,12 +863,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 level=Qgis.Critical,
             )
             return
-        if (
-            self.analysis_implementation_models == []
-            or self.analysis_implementation_models is None
-        ):
+        if self.analysis_activities == [] or self.analysis_activities is None:
             self.show_message(
-                tr("Select at least one implementation models from step two."),
+                tr("Select at least one activity from step two."),
                 level=Qgis.Critical,
             )
             return
@@ -924,8 +910,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 name=self.analysis_scenario_name,
                 description=self.analysis_scenario_description,
                 extent=self.analysis_extent,
-                models=self.analysis_implementation_models,
-                weighted_models=[],
+                activities=self.analysis_activities,
+                weighted_activities=[],
                 priority_layer_groups=self.analysis_priority_layers_groups,
             )
 
@@ -945,16 +931,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             progress_dialog.run_dialog()
 
             progress_dialog.change_status_message(
-                tr("Raster calculation for models pathways")
+                tr("Raster calculation for activities' pathways")
             )
 
             selected_pathway = None
             pathway_found = False
 
-            for model in self.analysis_implementation_models:
+            for activity in self.analysis_activities:
                 if pathway_found:
                     break
-                for pathway in model.pathways:
+                for pathway in activity.pathways:
                     if pathway is not None:
                         pathway_found = True
                         selected_pathway = pathway
@@ -992,7 +978,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             analysis_task = ScenarioAnalysisTask(
                 self.analysis_scenario_name,
                 self.analysis_scenario_description,
-                self.analysis_implementation_models,
+                self.analysis_activities,
                 self.analysis_priority_layers_groups,
                 self.analysis_extent,
                 scenario,
@@ -1154,8 +1140,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def post_analysis(self, scenario_result, task, report_manager, progress_dialog):
         """Handles analysis outputs from the final analysis results.
         Adds the resulting scenario raster to the canvas with styling.
-        Adds each of the implementation models to the canvas with styling.
-        Adds each IMs pathways to the canvas.
+        Adds each of the activities to the canvas with styling.
+        Adds each activities' pathways to the canvas.
 
         :param scenario_result: ScenarioResult of output results
         :type scenario_result: ScenarioResult
@@ -1169,9 +1155,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         # If the processing were stopped, no file will be added
         if not self.processing_cancelled:
-            list_models = scenario_result.scenario.models
+            list_activities = scenario_result.scenario.activities
             raster = scenario_result.analysis_output["OUTPUT"]
-            im_weighted_dir = os.path.join(os.path.dirname(raster), "weighted_ims")
+            im_weighted_dir = os.path.join(
+                os.path.dirname(raster), "weighted_activities"
+            )
 
             scenario_name = scenario_result.scenario.name
             qgis_instance = QgsProject.instance()
@@ -1193,17 +1181,19 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             # Groups
             scenario_group = instance_root.insertGroup(0, group_name)
-            im_group = scenario_group.addGroup(tr(IM_GROUP_LAYER_NAME))
-            im_weighted_group = (
-                scenario_group.addGroup(tr(IM_WEIGHTED_GROUP_NAME))
+            activity_group = scenario_group.addGroup(tr(ACTIVITY_GROUP_LAYER_NAME))
+            activity_weighted_group = (
+                scenario_group.addGroup(tr(ACTIVITY_WEIGHTED_GROUP_NAME))
                 if os.path.exists(im_weighted_dir)
                 else None
             )
             pathways_group = scenario_group.addGroup(tr(NCS_PATHWAYS_GROUP_LAYER_NAME))
 
             # Group settings
-            im_group.setExpanded(False)
-            im_weighted_group.setExpanded(False) if im_weighted_group else None
+            activity_group.setExpanded(False)
+            activity_weighted_group.setExpanded(
+                False
+            ) if activity_weighted_group else None
             pathways_group.setExpanded(False)
             pathways_group.setItemVisibilityCheckedRecursive(False)
 
@@ -1218,7 +1208,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             scenario_layer = qgis_instance.addMapLayer(layer)
 
             # Scenario result layer styling
-            renderer = self.style_models_layer(layer, task.analysis_weighted_ims)
+            renderer = self.style_activities_layer(
+                layer, task.analysis_weighted_activities
+            )
             layer.setRenderer(renderer)
             layer.triggerRepaint()
 
@@ -1229,29 +1221,33 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             """
             self.move_layer_to_group(scenario_layer, scenario_group)
 
-            # Add implementation models and pathways
-            im_index = 0
-            for im in list_models:
-                im_name = im.name
-                im_layer = QgsRasterLayer(im.path, im.name)
-                im_layer.setCustomProperty(MODEL_IDENTIFIER_PROPERTY, str(im.uuid))
-                list_pathways = im.pathways
+            # Add activities and pathways
+            activity_index = 0
+            for activity in list_activities:
+                activity_name = activity.name
+                activity_layer = QgsRasterLayer(activity.path, activity.name)
+                activity_layer.setCustomProperty(
+                    ACTIVITY_IDENTIFIER_PROPERTY, str(activity.uuid)
+                )
+                list_pathways = activity.pathways
 
-                # Add IM layer with styling, if available
-                if im_layer:
-                    renderer = self.style_model_layer(im_layer, im)
+                # Add activity layer with styling, if available
+                if activity_layer:
+                    renderer = self.style_activity_layer(activity_layer, activity)
 
-                    added_im_layer = qgis_instance.addMapLayer(im_layer)
-                    self.move_layer_to_group(added_im_layer, im_group)
+                    added_activity_layer = qgis_instance.addMapLayer(activity_layer)
+                    self.move_layer_to_group(added_activity_layer, activity_group)
 
-                    im_layer.setRenderer(renderer)
-                    im_layer.triggerRepaint()
+                    activity_layer.setRenderer(renderer)
+                    activity_layer.triggerRepaint()
 
-                # Add IM pathways
+                # Add activity pathways
                 if len(list_pathways) > 0:
                     # im_pathway_group = pathways_group.addGroup(im_name)
-                    im_pathway_group = pathways_group.insertGroup(im_index, im_name)
-                    im_pathway_group.setExpanded(False)
+                    activity_pathway_group = pathways_group.insertGroup(
+                        activity_index, activity_name
+                    )
+                    activity_pathway_group.setExpanded(False)
 
                     pw_index = 0
                     for pathway in list_pathways:
@@ -1260,7 +1256,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                             pathway_layer = pathway.to_map_layer()
 
                             added_pw_layer = qgis_instance.addMapLayer(pathway_layer)
-                            self.move_layer_to_group(added_pw_layer, im_pathway_group)
+                            self.move_layer_to_group(
+                                added_pw_layer, activity_pathway_group
+                            )
 
                             pathway_layer.triggerRepaint()
 
@@ -1280,64 +1278,72 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                                 )
                             )
 
-                im_index = im_index + 1
+                activity_index = activity_index + 1
 
-            weighted_ims = task.analysis_weighted_ims if task is not None else []
+            weighted_activities = (
+                task.analysis_weighted_activities if task is not None else []
+            )
 
-            for model in weighted_ims:
-                weighted_im_path = model.path
-                weighted_im_name = Path(weighted_im_path).stem
+            for weighted_activity in weighted_activities:
+                weighted_activity_path = weighted_activity.path
+                weighted_activity_name = Path(weighted_activity_path).stem
 
-                if not weighted_im_path.endswith(".tif"):
+                if not weighted_activity_path.endswith(".tif"):
                     continue
 
-                im_weighted_layer = QgsRasterLayer(
-                    weighted_im_path, weighted_im_name, QGIS_GDAL_PROVIDER
+                activity_weighted_layer = QgsRasterLayer(
+                    weighted_activity_path, weighted_activity_name, QGIS_GDAL_PROVIDER
                 )
 
                 # Set UUID for easier retrieval
-                im_weighted_layer.setCustomProperty(
-                    MODEL_IDENTIFIER_PROPERTY, str(model.uuid)
+                activity_weighted_layer.setCustomProperty(
+                    ACTIVITY_IDENTIFIER_PROPERTY, str(weighted_activity.uuid)
                 )
 
-                renderer = self.style_model_layer(im_weighted_layer, model)
-                im_weighted_layer.setRenderer(renderer)
-                im_weighted_layer.triggerRepaint()
+                renderer = self.style_activity_layer(
+                    activity_weighted_layer, weighted_activity
+                )
+                activity_weighted_layer.setRenderer(renderer)
+                activity_weighted_layer.triggerRepaint()
 
-                added_im_weighted_layer = qgis_instance.addMapLayer(im_weighted_layer)
-                self.move_layer_to_group(added_im_weighted_layer, im_weighted_group)
+                added_im_weighted_layer = qgis_instance.addMapLayer(
+                    activity_weighted_layer
+                )
+                self.move_layer_to_group(
+                    added_im_weighted_layer, activity_weighted_group
+                )
 
             # Initiate report generation
             self.run_report(progress_dialog, report_manager)
         else:
-            # Reinitializes variables if processing were cancelled by the user
+            # Re-initializes variables if processing were cancelled by the user
             # Not doing this breaks the processing if a user tries to run
             # the processing after cancelling or if the processing fails
             self.position_feedback = QgsProcessingFeedback()
             self.processing_context = QgsProcessingContext()
 
-    def style_models_layer(self, layer, models):
+    def style_activities_layer(self, layer, activities):
         """Applies the styling to the passed layer that
-         contains the passed list of models.
+         contains the passed list of activities.
 
         :param layer: Layer to be styled
         :type layer: QgsRasterLayer
 
-        :param models: List which contains the implementation
-        models that were passed to the highest position analysis tool
-        :type models: list
+        :param activities: List which contains the activities
+         that were passed to the highest position analysis tool.
+        :type activities: list
 
         :returns: Renderer for the symbology.
         :rtype: QgsPalettedRasterRenderer
         """
         area_classes = []
-        for model in models:
-            im_name = model.name
+        for activity in activities:
+            activity_name = activity.name
 
-            raster_val = model.style_pixel_value
-            color = model.scenario_fill_symbol().color()
+            raster_val = activity.style_pixel_value
+            color = activity.scenario_fill_symbol().color()
             color_ramp_shader = QgsColorRampShader.ColorRampItem(
-                float(raster_val), QtGui.QColor(color), im_name
+                float(raster_val), QtGui.QColor(color), activity_name
             )
             area_classes.append(color_ramp_shader)
 
@@ -1346,22 +1352,22 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         return renderer
 
-    def style_model_layer(self, layer, model):
+    def style_activity_layer(self, layer, activity):
         """Applies the styling to the layer that contains the passed
-         implementation model name.
+         activity name.
 
         :param layer: Raster layer to which to apply the symbology
         :type layer: QgsRasterLayer
 
-        :param model: Implementation model
-        :type model: ImplementationModel
+        :param activity: activity
+        :type activity: Activity
 
         :returns: Renderer for the symbology.
         :rtype: QgsSingleBandPseudoColorRenderer
         """
 
         # Retrieves a build-in QGIS color ramp
-        color_ramp = model.model_color_ramp()
+        color_ramp = activity.color_ramp()
 
         stats = layer.dataProvider().bandStatistics(1)
         renderer = QgsSingleBandPseudoColorRenderer(layer.dataProvider(), 1)
@@ -1493,16 +1499,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type index: int
         """
         if index == 1:
-            self.implementation_model_widget.can_show_error_messages = True
-            self.implementation_model_widget.load()
+            self.activity_widget.can_show_error_messages = True
+            self.activity_widget.load()
 
         elif index == 2:
-            # Validate implementation model selection
-            selected_implementation_models = (
-                self.implementation_model_widget.selected_im_items()
-            )
-            if len(selected_implementation_models) == 0:
-                msg = self.tr("Please select at least one implementation model.")
+            # Validate activity selection
+            selected_activities = self.activity_widget.selected_activity_items()
+            if len(selected_activities) == 0:
+                msg = self.tr("Please select at least one activity.")
                 self.show_message(msg)
                 self.tab_widget.setCurrentIndex(1)
 

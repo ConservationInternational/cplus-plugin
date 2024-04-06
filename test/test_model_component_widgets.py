@@ -10,16 +10,16 @@ from qgis.PyQt import QtCore
 
 from cplus_plugin.gui.component_item_model import NcsPathwayItem
 from cplus_plugin.gui.model_component_widget import (
-    ImplementationModelComponentWidget,
+    ActivityComponentWidget,
     NcsComponentWidget,
 )
 
 
 from model_data_for_testing import (
-    get_implementation_model,
+    get_activity,
     get_test_layer,
     get_valid_ncs_pathway,
-    IMPLEMENTATION_MODEL_UUID_STR,
+    ACTIVITY_UUID_STR,
 )
 from utilities_for_testing import get_qgis_app
 
@@ -55,82 +55,82 @@ class TestNcsComponentWidget(TestCase):
         self.assertEqual(len(pathways), 0)
 
 
-class TestImplementationModelComponentWidget(TestCase):
-    """Tests for ImplementationModelComponentWidget."""
+class TestActivityComponentWidget(TestCase):
+    """Tests for ActivityComponentWidget."""
 
-    def test_add_implementation_model(self):
-        """Assert an ImplementationModel object can be added
+    def test_add_activity(self):
+        """Assert an activity object can be added
         to the widget.
         """
-        im_model = get_implementation_model()
-        im_widget = ImplementationModelComponentWidget(PARENT)
-        result = im_widget.add_implementation_model(im_model)
+        activity = get_activity()
+        activity_widget = ActivityComponentWidget(PARENT)
+        result = activity_widget.add_activity(activity)
         self.assertTrue(result)
 
-    def test_add_implementation_model_with_layer(self):
-        """Assert an ImplementationModel object with a layer
+    def test_add_activity_with_layer(self):
+        """Assert an activity object with a layer
         can be added to the widget.
         """
-        im_model = get_implementation_model()
+        activity = get_activity()
         layer = get_test_layer()
-        im_widget = ImplementationModelComponentWidget(PARENT)
-        result = im_widget.add_implementation_model(im_model, layer)
+        activity_widget = ActivityComponentWidget(PARENT)
+        result = activity_widget.add_activity(activity, layer)
         self.assertTrue(result)
 
-    def test_get_implementation_models(self):
-        """Assert number of ImplementationModel objects retrieved."""
-        im_model = get_implementation_model()
-        im_widget = ImplementationModelComponentWidget(PARENT)
-        _ = im_widget.add_implementation_model(im_model)
-        imp_models = im_widget.models()
-        self.assertEqual(len(imp_models), 1)
+    def test_get_activities(self):
+        """Assert number of activity objects retrieved."""
+        activity = get_activity()
+        activity_widget = ActivityComponentWidget(PARENT)
+        _ = activity_widget.add_activity(activity)
+        activities = activity_widget.activities()
+        self.assertEqual(len(activities), 1)
 
-    def test_clear_implementation_models(self):
-        """Assert ImplementationModel objects are cleared."""
-        im_model = get_implementation_model()
-        im_widget = ImplementationModelComponentWidget(PARENT)
-        _ = im_widget.add_implementation_model(im_model)
-        im_widget.clear()
-        imp_models = im_widget.models()
-        self.assertEqual(len(imp_models), 0)
+    def test_clear_activities(self):
+        """Assert activities objects can be cleared."""
+        activity = get_activity()
+        activity_widget = ActivityComponentWidget(PARENT)
+        _ = activity_widget.add_activity(activity)
+        activity_widget.clear()
+        activities = activity_widget.activities()
+        self.assertEqual(len(activities), 0)
 
     def test_can_add_ncs_pathway_items(self):
         """Assert ncsPathwayItem objects can be added to the
-        widget to an implementation model without a layer.
+        widget to an activity without a layer.
         """
-        im_model = get_implementation_model()
-        im_model.clear_layer()
-        im_widget = ImplementationModelComponentWidget(PARENT)
-        _ = im_widget.add_implementation_model(im_model)
+        activity = get_activity()
+        activity.clear_layer()
+        activity_widget = ActivityComponentWidget(PARENT)
+        _ = activity_widget.add_activity(activity)
 
-        # Select the added implementation model.
-        sel_model = im_widget.selection_model
-        item_model = im_widget.item_model
-        model_idx = item_model.index_by_uuid(IMPLEMENTATION_MODEL_UUID_STR)
+        # Select the added activity.
+        sel_model = activity_widget.selection_model
+        item_model = activity_widget.item_model
+        model_idx = item_model.index_by_uuid(ACTIVITY_UUID_STR)
         sel_model.select(model_idx, QtCore.QItemSelectionModel.ClearAndSelect)
 
         # Now we can add the NcsPathwayItem
         ncs = get_valid_ncs_pathway()
         ncs_item = NcsPathwayItem(ncs)
-        result = im_widget.add_ncs_pathway_items([ncs_item])
+        result = activity_widget.add_ncs_pathway_items([ncs_item])
         self.assertTrue(result)
 
     def test_cannot_add_ncs_pathway_items(self):
         """Assert ncsPathwayItem objects cannot be added to the
-        widget as the implementation model has a layer defined.
+        widget as the activity has a layer defined.
         """
-        im_model = get_implementation_model()
-        im_widget = ImplementationModelComponentWidget(PARENT)
-        _ = im_widget.add_implementation_model(im_model)
+        activity = get_activity()
+        activity_widget = ActivityComponentWidget(PARENT)
+        _ = activity_widget.add_activity(activity)
 
-        # Select the added implementation model.
-        sel_model = im_widget.selection_model
-        item_model = im_widget.item_model
-        model_idx = item_model.index_by_uuid(IMPLEMENTATION_MODEL_UUID_STR)
+        # Select the added activity.
+        sel_model = activity_widget.selection_model
+        item_model = activity_widget.item_model
+        model_idx = item_model.index_by_uuid(ACTIVITY_UUID_STR)
         sel_model.select(model_idx, QtCore.QItemSelectionModel.ClearAndSelect)
 
         # Now we can add the NcsPathwayItem
         ncs = get_valid_ncs_pathway()
         ncs_item = NcsPathwayItem(ncs)
-        result = im_widget.add_ncs_pathway_items([ncs_item])
+        result = activity_widget.add_ncs_pathway_items([ncs_item])
         self.assertFalse(result)

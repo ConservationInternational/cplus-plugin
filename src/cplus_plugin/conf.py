@@ -29,13 +29,13 @@ from .definitions.constants import (
 )
 
 from .models.base import (
-    ImplementationModel,
+    Activity,
     NcsPathway,
     Scenario,
     SpatialExtent,
 )
 from .models.helpers import (
-    create_implementation_model,
+    create_activity,
     create_ncs_pathway,
     layer_component_to_dict,
     ncs_pathway_to_dict,
@@ -167,7 +167,7 @@ class SettingsManager(QtCore.QObject):
     PRIORITY_LAYERS_GROUP_NAME: str = "priority_layers"
     NCS_PATHWAY_BASE: str = "ncs_pathways"
 
-    IMPLEMENTATION_MODEL_BASE: str = "implementation_models"
+    ACTIVITY_BASE: str = "activities"
 
     settings = QgsSettings()
 
@@ -851,150 +851,144 @@ class SettingsManager(QtCore.QObject):
         if self.get_ncs_pathway(ncs_uuid) is not None:
             self.remove(f"{self.NCS_PATHWAY_BASE}/{ncs_uuid}")
 
-    def _get_implementation_model_settings_base(self) -> str:
-        """Returns the path for implementation model settings.
+    def _get_activity_settings_base(self) -> str:
+        """Returns the path for activity settings.
 
-        :returns: Base path to implementation model group.
+        :returns: Base path to activity group.
         :rtype: str
         """
-        return f"{self.BASE_GROUP_NAME}/" f"{self.IMPLEMENTATION_MODEL_BASE}"
+        return f"{self.BASE_GROUP_NAME}/" f"{self.ACTIVITY_BASE}"
 
-    def save_implementation_model(
-        self, implementation_model: typing.Union[ImplementationModel, dict]
-    ):
-        """Saves an implementation model object serialized to a json string
+    def save_activity(self, activity: typing.Union[Activity, dict]):
+        """Saves an activity object serialized to a json string
         indexed by the UUID.
 
-        :param implementation_model: Implementation model object or attribute
+        :param activity: Activity object or attribute
         values in a dictionary which are then serialized to a JSON string.
-        :type implementation_model: ImplementationModel, dict
+        :type activity: Activity, dict
         """
-        if isinstance(implementation_model, ImplementationModel):
-            priority_layers = implementation_model.priority_layers
-            layer_styles = implementation_model.layer_styles
-            style_pixel_value = implementation_model.style_pixel_value
+        if isinstance(activity, Activity):
+            priority_layers = activity.priority_layers
+            layer_styles = activity.layer_styles
+            style_pixel_value = activity.style_pixel_value
 
             ncs_pathways = []
-            for ncs in implementation_model.pathways:
+            for ncs in activity.pathways:
                 ncs_pathways.append(str(ncs.uuid))
 
-            implementation_model = layer_component_to_dict(implementation_model)
-            implementation_model[PRIORITY_LAYERS_SEGMENT] = priority_layers
-            implementation_model[PATHWAYS_ATTRIBUTE] = ncs_pathways
-            implementation_model[STYLE_ATTRIBUTE] = layer_styles
-            implementation_model[PIXEL_VALUE_ATTRIBUTE] = style_pixel_value
+            activity = layer_component_to_dict(activity)
+            activity[PRIORITY_LAYERS_SEGMENT] = priority_layers
+            activity[PATHWAYS_ATTRIBUTE] = ncs_pathways
+            activity[STYLE_ATTRIBUTE] = layer_styles
+            activity[PIXEL_VALUE_ATTRIBUTE] = style_pixel_value
 
-        if isinstance(implementation_model, dict):
+        if isinstance(activity, dict):
             priority_layers = []
-            if implementation_model.get("pwls_ids") is not None:
-                for layer_id in implementation_model.get("pwls_ids", []):
+            if activity.get("pwls_ids") is not None:
+                for layer_id in activity.get("pwls_ids", []):
                     layer = self.get_priority_layer(layer_id)
                     priority_layers.append(layer)
                 if len(priority_layers) > 0:
-                    implementation_model[PRIORITY_LAYERS_SEGMENT] = priority_layers
+                    activity[PRIORITY_LAYERS_SEGMENT] = priority_layers
 
-        implementation_model_str = json.dumps(implementation_model)
+        activity_str = json.dumps(activity)
 
-        implementation_model_uuid = implementation_model[UUID_ATTRIBUTE]
-        implementation_model_root = self._get_implementation_model_settings_base()
+        activity_uuid = activity[UUID_ATTRIBUTE]
+        activity_root = self._get_activity_settings_base()
 
-        with qgis_settings(implementation_model_root) as settings:
-            settings.setValue(implementation_model_uuid, implementation_model_str)
+        with qgis_settings(activity_root) as settings:
+            settings.setValue(activity_uuid, activity_str)
 
-    def get_implementation_model(
-        self, implementation_model_uuid: str
-    ) -> typing.Union[ImplementationModel, None]:
-        """Gets an implementation model object matching the given unique
-        identified.
+    def get_activity(self, activity_uuid: str) -> typing.Union[Activity, None]:
+        """Gets an activity object matching the given unique
+        identifier.
 
-        :param implementation_model_uuid: Unique identifier for the
-        implementation model object.
-        :type implementation_model_uuid: str
+        :param activity_uuid: Unique identifier of the
+        activity object.
+        :type activity_uuid: str
 
-        :returns: Returns the implementation model object matching the given
+        :returns: Returns the activity object matching the given
         identifier else None if not found.
-        :rtype: ImplementationModel
+        :rtype: Activity
         """
-        implementation_model = None
+        activity = None
 
-        implementation_model_root = self._get_implementation_model_settings_base()
+        activity_root = self._get_activity_settings_base()
 
-        with qgis_settings(implementation_model_root) as settings:
-            implementation_model = settings.value(implementation_model_uuid, None)
+        with qgis_settings(activity_root) as settings:
+            activity = settings.value(activity_uuid, None)
             ncs_uuids = []
-            if implementation_model is not None:
-                implementation_model_dict = {}
+            if activity is not None:
+                activity_dict = {}
                 try:
-                    implementation_model_dict = json.loads(implementation_model)
+                    activity_dict = json.loads(activity)
                 except json.JSONDecodeError:
-                    log("Implementation model JSON is invalid.")
+                    log("Activity JSON is invalid.")
 
-                if PATHWAYS_ATTRIBUTE in implementation_model_dict:
-                    ncs_uuids = implementation_model_dict[PATHWAYS_ATTRIBUTE]
+                if PATHWAYS_ATTRIBUTE in activity_dict:
+                    ncs_uuids = activity_dict[PATHWAYS_ATTRIBUTE]
 
-                implementation_model = create_implementation_model(
-                    implementation_model_dict
-                )
-                if implementation_model is not None:
+                activity = create_activity(activity_dict)
+                if activity is not None:
                     for ncs_uuid in ncs_uuids:
                         ncs = self.get_ncs_pathway(ncs_uuid)
                         if ncs is not None:
-                            implementation_model.add_ncs_pathway(ncs)
+                            activity.add_ncs_pathway(ncs)
 
-        return implementation_model
+        return activity
 
-    def find_implementation_model_by_name(self, name) -> typing.Dict:
-        """Finds an implementation model setting inside
+    def find_activity_by_name(self, name) -> typing.Dict:
+        """Finds an activity setting inside
         the plugin QgsSettings that equals or matches the name.
 
-        :param name: Implementation model name
+        :param name: Activity name.
         :type name: str
 
-        :returns: Implementation model
-        :rtype: ImplementationModel
+        :returns: Activity object.
+        :rtype: Activity
         """
-        for model in self.get_all_implementation_models():
-            model_name = model.name
+        for activity in self.get_all_activities():
+            model_name = activity.name
             trimmed_name = model_name.replace(" ", "_")
             if model_name == name or model_name in name or trimmed_name in name:
-                return model
+                return activity
 
         return None
 
-    def get_all_implementation_models(self) -> typing.List[ImplementationModel]:
-        """Get all the implementation model objects stored in settings.
+    def get_all_activities(self) -> typing.List[Activity]:
+        """Get all the activity objects stored in settings.
 
-        :returns: Returns all the implementation model objects.
+        :returns: Returns all the activity objects.
         :rtype: list
         """
-        implementation_models = []
+        activities = []
 
-        implementation_model_root = self._get_implementation_model_settings_base()
+        activity_root = self._get_activity_settings_base()
 
-        with qgis_settings(implementation_model_root) as settings:
+        with qgis_settings(activity_root) as settings:
             keys = settings.childKeys()
             for k in keys:
-                implementation_model = self.get_implementation_model(k)
-                if implementation_model is not None:
-                    implementation_models.append(implementation_model)
+                activity = self.get_activity(k)
+                if activity is not None:
+                    activities.append(activity)
 
-        return sorted(implementation_models, key=lambda imp_model: imp_model.name)
+        return sorted(activities, key=lambda activity: activity.name)
 
-    def update_implementation_model(self, implementation_model: ImplementationModel):
-        """Updates the attributes of the Implementation object
+    def update_activity(self, activity: Activity):
+        """Updates the attributes of the activity object
         in settings. On the path, the BASE_DIR in settings
         is used to reflect the absolute path of each NCS
         pathway layer. If BASE_DIR is empty then the NCS
         pathway setting will not be updated.
 
-        :param implementation_model: ImplementationModel object to be updated.
-        :type implementation_model: ImplementationModel
+        :param activity: Activity object to be updated.
+        :type activity: Activity
         """
         base_dir = self.get_value(Settings.BASE_DIR)
 
         if base_dir:
             # PWLs path update
-            for layer in implementation_model.priority_layers:
+            for layer in activity.priority_layers:
                 if layer in PRIORITY_LAYERS and base_dir not in layer.get(
                     PATH_ATTRIBUTE
                 ):
@@ -1006,29 +1000,25 @@ class SettingsManager(QtCore.QObject):
                     layer[PATH_ATTRIBUTE] = abs_pwl_path
 
         # Remove then re-insert
-        self.remove_implementation_model(str(implementation_model.uuid))
-        self.save_implementation_model(implementation_model)
+        self.remove_activity(str(activity.uuid))
+        self.save_activity(activity)
 
-    def update_implementation_models(self):
-        """Updates the attributes of the avaialable implementation models
+    def update_activities(self):
+        """Updates the attributes of the existing activities."""
+        activities = self.get_all_activities()
 
-        :param implementation_model: Implementation model object to be updated.
-        :type implementation_model: ImplementationModel
+        for activity in activities:
+            self.update_activity(activity)
+
+    def remove_activity(self, activity_uuid: str):
+        """Removes an activity settings entry using the UUID.
+
+        :param activity_uuid: Unique identifier of the activity
+        to be removed.
+        :type activity_uuid: str
         """
-        models = self.get_all_implementation_models()
-
-        for implementation_model in models:
-            self.update_implementation_model(implementation_model)
-
-    def remove_implementation_model(self, implementation_model_uuid: str):
-        """Removes an implementation model settings entry using the UUID.
-
-        :param implementation_model_uuid: Unique identifier of the
-        implementation model entry to removed.
-        :type implementation_model_uuid: str
-        """
-        if self.get_implementation_model(implementation_model_uuid) is not None:
-            self.remove(f"{self.IMPLEMENTATION_MODEL_BASE}/{implementation_model_uuid}")
+        if self.get_activity(activity_uuid) is not None:
+            self.remove(f"{self.ACTIVITY_BASE}/{activity_uuid}")
 
 
 settings_manager = SettingsManager()

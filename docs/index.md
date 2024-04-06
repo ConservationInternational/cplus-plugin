@@ -30,7 +30,7 @@ biodiversity, ecosystem services co-benefits of different scenarios.
 
 ## CPLUS model
 
-### Implementation models
+### Activities
 
 **Figure 1** shows a flow diagram of the CPLUS analysis model.
 

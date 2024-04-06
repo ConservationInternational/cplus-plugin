@@ -31,7 +31,7 @@ CPLUS_ITEM_NAME = tr("CPLUS Map Repeat Area")
 
 
 class CplusMapRepeatItemWidget(QgsLayoutItemBaseWidget, WidgetUi):
-    """Widget for configuring the CPLUS layout map repeatitem."""
+    """Widget for configuring the CPLUS layout map repeat item."""
 
     def __init__(self, parent, layout_object: CplusMapRepeatItem):
         super().__init__(parent, layout_object)
@@ -44,8 +44,8 @@ class CplusMapRepeatItemWidget(QgsLayoutItemBaseWidget, WidgetUi):
         self.layout.addWidget(self._prop_widget, 2, 0, 1, 2)
 
         self.cbo_map_type.addItem(
-            self.tr("Implementation model"),
-            ModelComponentType.IMPLEMENTATION_MODEL.value,
+            self.tr("Activity"),
+            ModelComponentType.ACTIVITY.value,
         )
 
 

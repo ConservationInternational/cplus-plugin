@@ -22,7 +22,7 @@ WidgetUi, _ = loadUiType(
 
 
 class PixelValueEditorDialog(QtWidgets.QDialog, WidgetUi):
-    """Dialog for setting the pixel value for styling IMs."""
+    """Dialog for setting the pixel value for styling activities."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -39,16 +39,14 @@ class PixelValueEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self._item_model = QtGui.QStandardItemModel(self)
         self._item_model.setColumnCount(1)
-        self.tv_implementation_model.setModel(self._item_model)
+        self.tv_activities.setModel(self._item_model)
 
-        self.tv_implementation_model.setDragEnabled(True)
-        self.tv_implementation_model.setAcceptDrops(True)
-        self.tv_implementation_model.setShowGrid(False)
-        self.tv_implementation_model.setDragDropOverwriteMode(False)
-        self.tv_implementation_model.setDragDropMode(
-            QtWidgets.QAbstractItemView.InternalMove
-        )
-        self.tv_implementation_model.horizontalHeader().setSectionResizeMode(
+        self.tv_activities.setDragEnabled(True)
+        self.tv_activities.setAcceptDrops(True)
+        self.tv_activities.setShowGrid(False)
+        self.tv_activities.setDragDropOverwriteMode(False)
+        self.tv_activities.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
+        self.tv_activities.horizontalHeader().setSectionResizeMode(
             QtWidgets.QHeaderView.Stretch
         )
 
@@ -57,7 +55,7 @@ class PixelValueEditorDialog(QtWidgets.QDialog, WidgetUi):
     def _load_items(self):
         """Load implementation models to the table widget."""
         sorted_models = sorted(
-            settings_manager.get_all_implementation_models(),
+            settings_manager.get_all_activities(),
             key=lambda model: model.style_pixel_value,
         )
         for i, imp_model in enumerate(sorted_models):
@@ -73,22 +71,22 @@ class PixelValueEditorDialog(QtWidgets.QDialog, WidgetUi):
 
     @property
     def item_mapping(self) -> OrderedDict:
-        """Returns a mapping of the implementation model position in
+        """Returns a mapping of the activity position in
         the table and its corresponding unique identifier.
 
         We are using an OrderedDict to ensure consistency across
         different Python versions in the different platforms that QGIS
         runs on.
 
-        :returns: The mapping of the implementation model position in
+        :returns: The mapping of the activities' positions in
         the table and its corresponding unique identifier.
         :rtype: OrderedDict
         """
-        im_position = OrderedDict()
+        activity_position = OrderedDict()
 
         for i in range(self._item_model.rowCount()):
             item = self._item_model.item(i, 0)
-            im_id = item.data(QtCore.Qt.UserRole)
-            im_position[i + 1] = im_id
+            activity_id = item.data(QtCore.Qt.UserRole)
+            activity_position[i + 1] = activity_id
 
-        return im_position
+        return activity_position

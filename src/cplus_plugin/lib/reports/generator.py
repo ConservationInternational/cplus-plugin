@@ -45,18 +45,18 @@ from qgis.utils import iface
 from qgis.PyQt import QtCore, QtGui, QtXml
 
 from ...definitions.constants import (
-    IM_GROUP_LAYER_NAME,
-    IM_WEIGHTED_GROUP_NAME,
-    MODEL_IDENTIFIER_PROPERTY,
+    ACTIVITY_GROUP_LAYER_NAME,
+    ACTIVITY_WEIGHTED_GROUP_NAME,
+    ACTIVITY_IDENTIFIER_PROPERTY,
 )
 from ...definitions.defaults import (
-    IMPLEMENTATION_MODEL_AREA_TABLE_ID,
+    ACTIVITY_AREA_TABLE_ID,
     MINIMUM_ITEM_HEIGHT,
     MINIMUM_ITEM_WIDTH,
     PRIORITY_GROUP_WEIGHT_TABLE_ID,
 )
 from .layout_items import CplusMapRepeatItem
-from ...models.base import ImplementationModel
+from ...models.base import Activity
 from ...models.helpers import extent_to_project_crs_extent
 from ...models.report import ReportContext, ReportResult
 from ...utils import (
@@ -242,7 +242,7 @@ class ReportGenerator:
         self._reference_layer_group = None
         self._scenario_layer = None
         self._area_processing_feedback = None
-        self._implementation_models_area = {}
+        self._activities_area = {}
         self._pixel_area_info = {}
 
         if self._feedback:
@@ -297,7 +297,7 @@ class ReportGenerator:
     @property
     def repeat_page(self) -> typing.Union[QgsLayoutItemPage, None]:
         """Returns the page item that will be repeated based on the
-        number of implementation models in the scenario.
+        number of activities in the scenario.
 
         A repeat page is a layout page item that contains the
         first instance of a CplusMapRepeatItem.
@@ -499,13 +499,11 @@ class ReportGenerator:
         return True
 
     def _render_repeat_items(self):
-        """Render implementation models in the layout based on the
+        """Render activities in the layout based on the
         scenario result.
         """
         if self._repeat_item is None:
-            tr_msg = tr(
-                "Unable to render implementation models as no repeat " "item was found."
-            )
+            tr_msg = tr("Unable to render activities as no repeat " "item was found.")
             self._error_messages.append(tr_msg)
             return
 
@@ -526,9 +524,7 @@ class ReportGenerator:
         num_cols = -1
         adjusted_item_width = MINIMUM_ITEM_WIDTH
         if repeat_width < MINIMUM_ITEM_WIDTH:
-            tr_msg = tr(
-                "Repeat item width is too small to render the " "implementation models."
-            )
+            tr_msg = tr("Repeat item width is too small to render the activities.")
             self._error_messages.append(tr_msg)
             return
         else:
@@ -542,10 +538,7 @@ class ReportGenerator:
         num_rows = -1
         adjusted_item_height = MINIMUM_ITEM_HEIGHT
         if repeat_height < MINIMUM_ITEM_HEIGHT:
-            tr_msg = tr(
-                "Repeat item height is too small to render the "
-                "implementation models."
-            )
+            tr_msg = tr("Repeat item height is too small to render the " "activities.")
             self._error_messages.append(tr_msg)
             return
         else:
@@ -557,17 +550,17 @@ class ReportGenerator:
 
         max_items_page = num_rows * num_cols
 
-        num_implementation_models = len(self._context.scenario.weighted_models)
+        num_activities = len(self._context.scenario.weighted_activities)
 
-        if num_implementation_models == 0:
-            tr_msg = "No implementation models in the scenario"
+        if num_activities == 0:
+            tr_msg = "No activities in the scenario."
             self._error_messages.append(tr_msg)
             return
 
-        progress_percent_per_im = 10 / num_implementation_models
+        progress_percent_per_im = 10 / num_activities
 
         # Calculate number of pages required
-        num_pages, req_pages = divmod(num_implementation_models, int(max_items_page))
+        num_pages, req_pages = divmod(num_activities, int(max_items_page))
 
         # Check if there is an additional page required
         if req_pages != 0:
@@ -592,18 +585,18 @@ class ReportGenerator:
             for r in range(num_rows):
                 reference_y_pos = repeat_ref_y + (r * adjusted_item_height)
                 for c in range(num_cols):
-                    if im_count == num_implementation_models:
+                    if im_count == num_activities:
                         break
 
-                    imp_model = self._context.scenario.weighted_models[im_count]
+                    activity = self._context.scenario.weighted_activities[im_count]
                     reference_x_pos = repeat_ref_x + (c * adjusted_item_width)
-                    self._add_implementation_model_items(
+                    self._add_activity_items(
                         reference_x_pos,
                         reference_y_pos,
                         adjusted_item_width,
                         adjusted_item_height,
                         page_pos,
-                        imp_model,
+                        activity,
                     )
 
                     # Check cancel or update progress
@@ -621,17 +614,17 @@ class ReportGenerator:
                 if isinstance(item, CplusMapRepeatItem):
                     item.setFrameEnabled(False)
 
-    def _add_implementation_model_items(
+    def _add_activity_items(
         self,
         pos_x: float,
         pos_y: float,
         width: float,
         height: float,
         page: int,
-        imp_model: ImplementationModel,
+        activity: Activity,
     ):
         """Add a group item with map, labels etc. to the layout for the
-        given IM.
+        given activity.
         """
         # Map
         map_height = 0.8 * height
@@ -639,12 +632,14 @@ class ReportGenerator:
         self._layout.addLayoutItem(im_map)
         im_map.setFrameEnabled(False)
         im_map.setBackgroundColor(self._project.backgroundColor())
-        im_name = imp_model.name.lower().replace(" ", "_")
+        im_name = activity.name.lower().replace(" ", "_")
         im_map.setId(f"map_{im_name}")
         map_ref_point = QgsLayoutPoint(pos_x, pos_y, self._layout.units())
         im_map.attemptMove(map_ref_point, True, False, page)
         im_map.attemptResize(QgsLayoutSize(width, map_height, self._layout.units()))
-        im_layer = self._get_im_layer_in_project(str(imp_model.uuid), weighted=True)
+        im_layer = self._get_activity_layer_in_project(
+            str(activity.uuid), weighted=True
+        )
         if im_layer is not None:
             ext = im_layer.extent()
             im_map.setLayers([im_layer])
@@ -652,9 +647,7 @@ class ReportGenerator:
             # Resize item again after the scale has been set correctly
             im_map.attemptResize(QgsLayoutSize(width, map_height, self._layout.units()))
         else:
-            log(
-                f"Could not find matching map layer for {imp_model.name} implementation model."
-            )
+            log(f"Could not find matching map layer for {activity.name} activity.")
 
         # Background IM details shape
         shape_height = 0.2 * height
@@ -727,7 +720,7 @@ class ReportGenerator:
             int(value): area for value, area in self._pixel_area_info.items()
         }
 
-        area_size = int_pixel_area_info.get(imp_model.style_pixel_value, 0)
+        area_size = int_pixel_area_info.get(activity.style_pixel_value, 0)
 
         number_format = QgsBasicNumericFormat()
         number_format.setThousandsSeparator(",")
@@ -820,7 +813,7 @@ class ReportGenerator:
         name_label_height = 0.15 * shape_height
         im_name_lbl = QgsLayoutItemLabel(self._layout)
         self._layout.addLayoutItem(im_name_lbl)
-        im_name_lbl.setText(imp_model.name)
+        im_name_lbl.setText(activity.name)
         self.set_label_font(im_name_lbl, title_font_size)
         name_lbl_ref_point = QgsLayoutPoint(
             pos_x + margin, pos_y + map_height + margin, self._layout.units()
@@ -834,7 +827,7 @@ class ReportGenerator:
         desc_label_height = 0.85 * shape_height - (margin * 2)
         im_desc_lbl = QgsLayoutItemLabel(self._layout)
         self._layout.addLayoutItem(im_desc_lbl)
-        im_desc_lbl.setText(imp_model.description)
+        im_desc_lbl.setText(activity.description)
         self.set_label_font(im_desc_lbl, description_font_size)
         desc_lbl_ref_point = QgsLayoutPoint(
             pos_x + margin,
@@ -863,10 +856,10 @@ class ReportGenerator:
         )
 
         # NCS Pathways for IM label
-        if len(imp_model.pathways) == 0:
-            ncs_txt = tr("No NCS pathways in the implementation model")
+        if len(activity.pathways) == 0:
+            ncs_txt = tr("No NCS pathways in the activity")
         else:
-            ncs_names = [ncs.name for ncs in imp_model.pathways]
+            ncs_names = [ncs.name for ncs in activity.pathways]
             ncs_txt = create_bulleted_text("", ncs_names)
 
         im_pathways_lbl_height = 0.85 * shape_height - (margin * 2)
@@ -930,55 +923,56 @@ class ReportGenerator:
 
         label.refresh()
 
-    def _get_im_layer_in_project(
-        self, im_identifier: str, weighted: bool = False
+    def _get_activity_layer_in_project(
+        self, activity_identifier: str, weighted: bool = False
     ) -> typing.Union[QgsRasterLayer, None]:
-        """Retrieves the IM raster layer from the IM layer group in
+        """Retrieves the activity raster layer from the activity layer group in
         the project.
 
-        :param im_identifier: Unique identifier of the implementation model.
-        :type im_identifier: str
+        :param activity_identifier: Unique identifier of the activity.
+        :type activity_identifier: str
 
-        :param weighted: True to search under weighted implementation
-        model category else under the implementation models maps
+        :param weighted: True to search under weighted activity
+        category else under the activities maps.
         category. Default is False.
         :type weighted: bool
         """
         if weighted:
-            category_name = tr(IM_WEIGHTED_GROUP_NAME)
+            category_name = tr(ACTIVITY_WEIGHTED_GROUP_NAME)
         else:
-            category_name = tr(IM_GROUP_LAYER_NAME)
+            category_name = tr(ACTIVITY_GROUP_LAYER_NAME)
 
         if self._project is None:
             tr_msg = tr(
-                "Project could not be recreated, unable to fetch the implementation model layer."
+                "Project could not be recreated, unable to fetch the activity layer."
             )
             self._error_messages.append(tr_msg)
             return None
 
         if self._reference_layer_group is None:
             tr_msg = tr(
-                "Could not find the scenario layer group, unable to fetch the implementation model layer."
+                "Could not find the scenario layer group, unable to fetch the activity layer."
             )
             self._error_messages.append(tr_msg)
             return None
 
-        im_layer_group = self._reference_layer_group.findGroup(category_name)
-        if im_layer_group is None:
+        activity_layer_group = self._reference_layer_group.findGroup(category_name)
+        if activity_layer_group is None:
             tr_msg = tr(
-                f"Could not find the {category_name} layer group, unable to fetch the implementation model layer."
+                f"Could not find the {category_name} layer group, unable to fetch the activity layer."
             )
             self._error_messages.append(tr_msg)
             return None
 
         matching_tree_layers = [
             tl
-            for tl in im_layer_group.findLayers()
-            if tl.layer().customProperty(MODEL_IDENTIFIER_PROPERTY, "") == im_identifier
+            for tl in activity_layer_group.findLayers()
+            if tl.layer().customProperty(ACTIVITY_IDENTIFIER_PROPERTY, "")
+            == activity_identifier
         ]
         if len(matching_tree_layers) == 0:
             tr_msg = tr(
-                f"Could not find the implementation model layer in the {category_name} layer group."
+                f"Could not find the activity layer in the {category_name} layer group."
             )
             self._error_messages.append(tr_msg)
             return None
@@ -995,7 +989,9 @@ class ReportGenerator:
 
         legend_item.setAutoUpdateModel(False)
         model = legend_item.model()
-        im_names = [im.name.lower() for im in self._context.scenario.models]
+        activity_names = [
+            activity.name.lower() for activity in self._context.scenario.activities
+        ]
 
         # Hiding the first root group child title
         root_group = legend_item.model().rootGroup()
@@ -1011,14 +1007,16 @@ class ReportGenerator:
                 # We need to refresh the tree layer for the nodes to be loaded
                 model.refreshLayerLegend(tree_layer)
                 scenario_child_nodes = model.layerLegendNodes(tree_layer)
-                im_node_indices = []
+                activity_node_indices = []
                 for i, child_node in enumerate(scenario_child_nodes):
                     node_name = str(child_node.data(QtCore.Qt.DisplayRole))
-                    # Only show nodes for implementation nodes used for the scenario
-                    if node_name.lower() in im_names:
-                        im_node_indices.append(i)
+                    # Only show nodes for activity nodes used for the scenario
+                    if node_name.lower() in activity_names:
+                        activity_node_indices.append(i)
 
-                QgsMapLayerLegendUtils.setLegendNodeOrder(tree_layer, im_node_indices)
+                QgsMapLayerLegendUtils.setLegendNodeOrder(
+                    tree_layer, activity_node_indices
+                )
 
                 # Removing the tree layer band title
                 QgsLegendRenderer.setNodeLegendStyle(tree_layer, QgsLegendStyle.Hidden)
@@ -1048,62 +1046,59 @@ class ReportGenerator:
 
         return table_frame.multiFrame()
 
-    def _calculate_implementation_model_areas(self):
-        """Calculate the area of individual weighted implementation
-        model layers.
+    def _calculate_activities_areas(self):
+        """Calculate the area of individual weighted activity layers.
 
         The values are rounded off to two decimal places.
         """
         progress_range = 30
 
         # Update the feedback object based on the status of calculating the
-        # area for each implementation model.
+        # area for each activity.
         self._area_calculation_progress_reference = 20
         self._area_calculation_step_increment = progress_range / len(
-            self._context.scenario.weighted_models
+            self._context.scenario.weighted_activities
         )
 
-        for imp_model in self._context.scenario.weighted_models:
-            model_layer = self._get_im_layer_in_project(str(imp_model.uuid), True)
-            if model_layer is None:
+        for activity in self._context.scenario.weighted_activities:
+            activity_layer = self._get_activity_layer_in_project(
+                str(activity.uuid), True
+            )
+            if activity_layer is None:
                 tr_msg = tr("Could not find raster layer for")
                 self._error_messages.append(
-                    f"{tr_msg} {imp_model.name} weighted implementation model."
+                    f"{tr_msg} {activity.name} weighted activity."
                 )
                 continue
 
             self._reset_area_processing_feedback()
-            model_area_info = calculate_raster_value_area(
-                model_layer, feedback=self._area_processing_feedback
+            activity_area_info = calculate_raster_value_area(
+                activity_layer, feedback=self._area_processing_feedback
             )
             self._area_calculation_progress_reference += (
                 self._area_calculation_step_increment
             )
-            model_area = sum(list(model_area_info.values()))
-            self._implementation_models_area[str(imp_model.uuid)] = round(
-                model_area, self.AREA_DECIMAL_PLACES
+            activity_area = sum(list(activity_area_info.values()))
+            self._activities_area[str(activity.uuid)] = round(
+                activity_area, self.AREA_DECIMAL_PLACES
             )
 
-        log(str(self._implementation_models_area))
-
-    def _populate_im_area_table(self):
-        """Populate the table(s) for implementation models and
+    def _populate_activity_area_table(self):
+        """Populate the table(s) for activities and
         corresponding areas.
         """
         self._area_calculation_progress_reference = 60
         self._area_calculation_step_increment = 20
 
-        parent_table = self._get_table_from_id(IMPLEMENTATION_MODEL_AREA_TABLE_ID)
+        parent_table = self._get_table_from_id(ACTIVITY_AREA_TABLE_ID)
         if parent_table is None:
-            tr_msg = tr(
-                "Could not find parent table for areas of implementation models."
-            )
+            tr_msg = tr("Could not find parent table for areas of activities.")
             self._error_messages.append(tr_msg)
             return
 
-        num_implementation_models = len(self._context.scenario.models)
-        if num_implementation_models == 0:
-            tr_msg = tr("No implementation models in the scenario.")
+        num_activities = len(self._context.scenario.activities)
+        if num_activities == 0:
+            tr_msg = tr("No activities in the scenario.")
             self._error_messages.append(tr_msg)
             return
 
@@ -1118,7 +1113,7 @@ class ReportGenerator:
         pixel_area_info = self._pixel_area_info
 
         if len(pixel_area_info) == 0:
-            tr_msg = tr("No implementation model areas from the calculation.")
+            tr_msg = tr("No activity areas from the calculation.")
             self._error_occured = True
             self._error_messages.append(tr_msg)
             return
@@ -1129,14 +1124,14 @@ class ReportGenerator:
         }
 
         rows_data = []
-        for imp_model in self._context.scenario.weighted_models:
-            # IM name
-            name_cell = QgsTableCell(imp_model.name)
+        for activity in self._context.scenario.weighted_activities:
+            # Activity name column
+            name_cell = QgsTableCell(activity.name)
             name_cell.setBackgroundColor(QtGui.QColor("#e9e9e9"))
 
-            # IM area
-            if imp_model.style_pixel_value in int_pixel_area_info:
-                area_info = int_pixel_area_info.get(imp_model.style_pixel_value)
+            # Activity area column
+            if activity.style_pixel_value in int_pixel_area_info:
+                area_info = int_pixel_area_info.get(activity.style_pixel_value)
             else:
                 log(f"Pixel value not found in calculation")
                 area_info = tr("<Pixel value not found>")
@@ -1235,19 +1230,19 @@ class ReportGenerator:
         if self._process_check_cancelled_or_set_progress(20):
             return self._get_failed_result()
 
-        self._calculate_implementation_model_areas()
+        self._calculate_activities_areas()
 
         if self._process_check_cancelled_or_set_progress(50):
             return self._get_failed_result()
 
-        # Render repeat items i.e. implementation models
+        # Render repeat items i.e. activities
         self._render_repeat_items()
 
         if self._process_check_cancelled_or_set_progress(60):
             return self._get_failed_result()
 
-        # Populate implementation model area table
-        self._populate_im_area_table()
+        # Populate activity area table
+        self._populate_activity_area_table()
 
         if self._process_check_cancelled_or_set_progress(80):
             return self._get_failed_result()

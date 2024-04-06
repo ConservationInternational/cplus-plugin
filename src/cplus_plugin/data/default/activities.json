@@ -1,5 +1,5 @@
 {
-  "models": [
+  "activities": [
     {
         "uuid": "a0b8fd2d-1259-4141-9ad6-d4369cf0dfd4",
         "name": "Agroforestry",
@@ -18,7 +18,7 @@
                 "outline_width": "0",
                 "outline_color": "35,35,35,0"
             },
-            "model_layer": {"color_ramp": "Reds"}
+            "activity_layer": {"color_ramp": "Reds"}
         }
     },
     {
@@ -41,7 +41,7 @@
                 "outline_width": "0",
                 "outline_color": "35,35,35,0"
             },
-            "model_layer": {"color_ramp": "Greys"}
+            "activity_layer": {"color_ramp": "Greys"}
         }
     },
     {
@@ -61,7 +61,7 @@
                 "outline_width": "0",
                 "outline_color": "35,35,35,0"
             },
-            "model_layer": {"color_ramp": "PuBu"}
+            "activity_layer": {"color_ramp": "PuBu"}
         }
     },
     {
@@ -85,7 +85,7 @@
                 "outline_width": "0",
                 "outline_color": "35,35,35,0"
             },
-            "model_layer": {"color_ramp": "YlOrRd"}
+            "activity_layer": {"color_ramp": "YlOrRd"}
         }
     },
     {
@@ -106,7 +106,7 @@
                 "outline_width": "0",
                 "outline_color": "35,35,35,0"
             },
-            "model_layer": {"color_ramp": "RdPu"}
+            "activity_layer": {"color_ramp": "RdPu"}
         }
     },
     {
@@ -127,7 +127,7 @@
                 "outline_width": "0",
                 "outline_color": "35,35,35,0"
             },
-            "model_layer": {"color_ramp": "Blues"}
+            "activity_layer": {"color_ramp": "Blues"}
         }
     },
     {
@@ -151,7 +151,7 @@
                 "outline_width": "0",
                 "outline_color": "35,35,35,0"
             },
-            "model_layer": {"color_ramp": "BrBG"}
+            "activity_layer": {"color_ramp": "BrBG"}
         }
     },
     {
@@ -175,7 +175,7 @@
                 "outline_width": "0",
                 "outline_color": "35,35,35,0"
             },
-            "model_layer": {"color_ramp": "BuGn"}
+            "activity_layer": {"color_ramp": "BuGn"}
         }
     },
     {
@@ -195,7 +195,7 @@
                 "outline_width": "0",
                 "outline_color": "35,35,35,0"
             },
-            "model_layer": {"color_ramp": "PuRd"}
+            "activity_layer": {"color_ramp": "PuRd"}
         }
     },
     {
@@ -219,7 +219,7 @@
                 "outline_width": "0",
                 "outline_color": "35,35,35,0"
             },
-            "model_layer": {"color_ramp": "YlOrBr"}
+            "activity_layer": {"color_ramp": "YlOrBr"}
         }
     },
     {
@@ -239,7 +239,7 @@
                 "outline_width": "0",
                 "outline_color": "35,35,35,0"
             },
-            "model_layer": {"color_ramp": "PRGn"}
+            "activity_layer": {"color_ramp": "PRGn"}
         }
     },
     {
@@ -260,7 +260,7 @@
                 "outline_width": "0",
                 "outline_color": "35,35,35,0"
             },
-            "model_layer": {"color_ramp": "Greens"}
+            "activity_layer": {"color_ramp": "Greens"}
         }
     },
     {
@@ -281,7 +281,7 @@
                 "outline_width": "0",
                 "outline_color": "35,35,35,0"
             },
-            "model_layer": {"color_ramp": "PiYG"}
+            "activity_layer": {"color_ramp": "PiYG"}
         }
     },
     {
@@ -302,7 +302,7 @@
                 "outline_width": "0",
                 "outline_color": "35,35,35,0"
             },
-            "model_layer": {"color_ramp": "PiYG"}
+            "activity_layer": {"color_ramp": "PiYG"}
         }
     },
     {
@@ -326,7 +326,7 @@
                 "outline_width": "0",
                 "outline_color": "35,35,35,0"
             },
-            "model_layer": {"color_ramp": "Purples"}
+            "activity_layer": {"color_ramp": "Purples"}
         }
     }
 ]
