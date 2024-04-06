@@ -301,16 +301,6 @@ These options will be available once the analysis has finished. The options will
 
 ![CPLUS settings](img/manual-settings-main.png)
 
-- **Reports**: Information to be added to the report
-    - *Organization*: (optional) Organization or institute name
-    - *Contact email*: (optional) Contact email of the user
-    - *Website*: (optional) Link to website of your company or institute
-    - *Custom logo*: (optional) If enabled, the user needs to provide a custom logo. Most formats should suffice (png, jpeg, etc.)
-    - *Logo preview*: Visual preview of the default CI logo, or the custom logo a user selected
-    - *Footer*: (optional) Will be added to the report
-    - *Disclaimer*: Change as desired, otherwise use the default disclaimer
-    - *License*: Change as desired, otherwise use the default license description
-- **Advanced**:
 *Figure 15: Main settings available to the user*
 
 - **General**:
