@@ -125,7 +125,7 @@ class ReportSettingsTest(unittest.TestCase):
         report_settings_widget.txt_license.setText(save_report_license)
         report_settings_widget.txt_stakeholders.setPlainText(save_stakeholders)
         report_settings_widget.txt_policies.setPlainText(save_culture_policies)
-        report_settings_widget.txt_culture.setText(save_culture_considerations)
+        report_settings_widget.txt_culture.setPlainText(save_culture_considerations)
 
         # Saves the settings set in the GUI
         report_settings_widget.save_settings()
