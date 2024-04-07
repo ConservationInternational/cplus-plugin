@@ -111,7 +111,8 @@ class ReportSettingsTest(unittest.TestCase):
         save_disclaimer = "a disclaimer"
         save_report_license = "license"
         save_stakeholders = "academia, cso"
-        save_culture_policies = "barter trade of cattle"
+        save_culture_policies = "customary land laws"
+        save_culture_considerations = "barter trade of cattle"
 
         # Sets the values in the GUI
         report_settings_widget.txt_organization.setText(save_organization)
@@ -122,8 +123,9 @@ class ReportSettingsTest(unittest.TestCase):
         report_settings_widget.txt_footer.setPlainText(save_footer)
         report_settings_widget.txt_disclaimer.setPlainText(save_disclaimer)
         report_settings_widget.txt_license.setText(save_report_license)
-        report_settings_widget.txt_stakeholders.setText(save_stakeholders)
-        report_settings_widget.txt_culture_policies.setText(save_culture_policies)
+        report_settings_widget.txt_stakeholders.setPlainText(save_stakeholders)
+        report_settings_widget.txt_policies.setPlainText(save_culture_policies)
+        report_settings_widget.txt_culture.setText(save_culture_considerations)
 
         # Saves the settings set in the GUI
         report_settings_widget.save_settings()
@@ -159,6 +161,11 @@ class ReportSettingsTest(unittest.TestCase):
         culture_policies = settings_manager.get_value(Settings.REPORT_CULTURE_POLICIES)
         self.assertEqual(save_culture_policies, culture_policies)
 
+        culture_considerations = settings_manager.get_value(
+            Settings.REPORT_CULTURE_CONSIDERATIONS
+        )
+        self.assertEqual(save_culture_considerations, culture_considerations)
+
     def test_load(self):
         """A test which will check if the report settings are loaded correctly
         into the settings UI when calling the load_settings function.
@@ -174,7 +181,8 @@ class ReportSettingsTest(unittest.TestCase):
         save_disclaimer = "a disclaimer 2"
         save_report_license = "license 2"
         save_stakeholders = "academia, cso 2"
-        save_culture_policies = "barter trade of cattle 2"
+        save_culture_policies = "customary land laws"
+        save_culture_considerations = "barter trade of cattle"
 
         # Set values for testing
         settings_manager.set_value(Settings.REPORT_ORGANIZATION, save_organization)
@@ -190,6 +198,9 @@ class ReportSettingsTest(unittest.TestCase):
         settings_manager.set_value(Settings.REPORT_STAKEHOLDERS, save_stakeholders)
         settings_manager.set_value(
             Settings.REPORT_CULTURE_POLICIES, save_culture_policies
+        )
+        settings_manager.set_value(
+            Settings.REPORT_CULTURE_CONSIDERATIONS, save_culture_considerations
         )
 
         # Loads the values into the GUI
@@ -220,11 +231,14 @@ class ReportSettingsTest(unittest.TestCase):
         report_license = report_settings_widget.txt_license.text()
         self.assertEqual(save_report_license, report_license)
 
-        stakeholders = report_settings_widget.txt_stakeholders.text()
+        stakeholders = report_settings_widget.txt_stakeholders.toPlainText()
         self.assertEqual(save_stakeholders, stakeholders)
 
-        culture_policies = report_settings_widget.txt_culture_policies.text()
+        culture_policies = report_settings_widget.txt_policies.toPlainText()
         self.assertEqual(save_culture_policies, culture_policies)
+
+        culture_considerations = report_settings_widget.txt_culture.toPlainText()
+        self.assertEqual(save_culture_considerations, culture_considerations)
 
     def test_logo_exist(self):
         """A test which checks if the logo_file_exists function works
