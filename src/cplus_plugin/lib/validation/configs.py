@@ -43,3 +43,12 @@ carbon_resolution_validation_config = RuleConfiguration(
     "Carbon Resolution Check",
     tr("Use the warp tool to resize the raster cells"),
 )
+
+
+# NoData validation check
+no_data_validation_config = RuleConfiguration(
+    ValidationCategory.ERROR,
+    tr("NoData value must be -9999"),
+    "NoData Value Check",
+    tr("Use the 'Fill nodata' or 'Translate' tool to change the nodata value"),
+)
