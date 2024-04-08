@@ -158,6 +158,11 @@ class Settings(enum.Enum):
     RESAMPLING_METHOD = "snap_method"
     SNAP_PIXEL_VALUE = "snap_pixel_value"
 
+    # Sieve function parameters
+    SIEVE_ENABLED = "sieve_enabled"
+    SIEVE_THRESHOLD = "sieve_threshold"
+    SIEVE_MASK_PATH = "mask_path"
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""

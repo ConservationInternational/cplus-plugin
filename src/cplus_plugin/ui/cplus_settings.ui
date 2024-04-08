@@ -35,12 +35,12 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>0</y>
-        <width>572</width>
-        <height>697</height>
+        <y>-119</y>
+        <width>558</width>
+        <height>824</height>
        </rect>
       </property>
-      <layout class="QVBoxLayout" name="verticalLayout_5">
+      <layout class="QVBoxLayout" name="verticalLayout_4">
        <item>
         <widget class="QgsCollapsibleGroupBox" name="gb_advanced">
          <property name="title">
@@ -54,16 +54,13 @@
             </property>
             <property name="options">
              <set>QFileDialog::ShowDirsOnly</set>
+          <item row="3" column="0">
+           <widget class="QLabel" name="carbon_coefficien_la">
+            <property name="toolTip">
+             <string>The value that will be used as a coefficient when combining pathways with carbon layers. </string>
             </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="lbl_data_dir">
             <property name="text">
-             <string>Base data directory</string>
-            </property>
-           </widget>
-          </item>
+             <string>Coefficient for carbon layers</string>
          </layout>
         </widget>
        </item>
@@ -192,6 +189,102 @@
             </layout>
            </widget>
           </item>
+          <item row="2" column="1">
+           <widget class="QgsFileWidget" name="folder_data">
+            <property name="storageMode">
+             <enum>QgsFileWidget::GetDirectory</enum>
+            </property>
+            <property name="options">
+             <set>QFileDialog::ShowDirsOnly</set>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QDoubleSpinBox" name="carbon_coefficient_box">
+            <property name="toolTip">
+             <string>The value that will be used as a coefficient when combining pathways with carbon layers. </string>
+            </property>
+            <property name="decimals">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <double>5.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>1.000000000000000</double>
+            </property>
+            <property name="value">
+             <double>0.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QDoubleSpinBox" name="suitability_index_box">
+            <property name="decimals">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <double>5.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>1.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="0" colspan="2">
+           <widget class="QgsCollapsibleGroupBox" name="sieve_group_box">
+            <property name="title">
+             <string>Sieve </string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+            <property name="checked">
+             <bool>false</bool>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_2">
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_3">
+               <item>
+                <widget class="QLabel" name="resample_method_2">
+                 <property name="text">
+                  <string>Pixel size</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QgsDoubleSpinBox" name="pixel_size_box"/>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <widget class="QLabel" name="reference_layer_label_2">
+               <property name="text">
+                <string>Mask layer</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_4">
+               <item>
+                <widget class="QgsFileWidget" name="mask_layer_widget">
+                 <property name="toolTip">
+                  <string>Select the priority layer from the local filesystem.</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QgsMapLayerComboBox" name="mask_layer_box">
+                 <property name="toolTip">
+                  <string>Select priority layer from the current QGIS map layers.</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
@@ -220,6 +313,11 @@
    <extends>QGroupBox</extends>
    <header>qgscollapsiblegroupbox.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>QgsDoubleSpinBox</class>
+   <extends>QDoubleSpinBox</extends>
+   <header>qgsdoublespinbox.h</header>
   </customwidget>
   <customwidget>
    <class>QgsFileWidget</class>
