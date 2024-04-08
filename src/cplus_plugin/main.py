@@ -88,6 +88,8 @@ class QgisCplus:
         self.actions = []
         self.pluginIsActive = False
 
+        self.cplus_action = None
+
         self.menu = QMenu("&CPLUS")
         self.menu.setIcon(QIcon(ICON_PATH))
 
@@ -98,6 +100,7 @@ class QgisCplus:
         self.toolbar.setObjectName("CPLUS")
         self.toolButton = QToolButton()
         self.toolButton.setMenu(QMenu())
+        self.toolButton.setCheckable(True)
         self.toolButton.setPopupMode(QToolButton.MenuButtonPopup)
         self.toolBtnAction = self.toolbar.addWidget(self.toolButton)
         self.actions.append(self.toolBtnAction)
@@ -206,22 +209,14 @@ class QgisCplus:
             if set_as_default_action:
                 self.toolButton.setDefaultAction(action)
 
-        if add_to_menu:
-            self.menu.addAction(action)
-
         self.actions.append(action)
 
         return action
 
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
-        self.add_action(
-            ICON_PATH,
-            text=self.tr("CPLUS"),
-            callback=self.run,
-            parent=self.iface.mainWindow(),
-            set_as_default_action=True,
-        )
+        # Create main dock widget action
+        self.create_dock_widget_action()
 
         self.add_action(
             os.path.join(os.path.dirname(__file__), "icons", "settings.svg"),
@@ -280,12 +275,24 @@ class QgisCplus:
             self.main_widget = QgisCplusMain(
                 iface=self.iface, parent=self.iface.mainWindow()
             )
+            self.create_dock_widget_action()
 
         self.iface.addDockWidget(Qt.RightDockWidgetArea, self.main_widget)
         self.main_widget.show()
 
         if not self.pluginIsActive:
             self.pluginIsActive = True
+
+    def create_dock_widget_action(self):
+        """Create the action corresponding to the main dock widget."""
+        self.cplus_action = self.main_widget.toggleViewAction()
+        self.cplus_action.setIcon(QIcon(ICON_PATH))
+        self.cplus_action.setText(self.tr("CPLUS"))
+        self.menu.addAction(self.cplus_action)
+        self.toolButton.menu().addAction(self.cplus_action)
+        self.toolButton.setDefaultAction(self.cplus_action)
+
+        self.actions.append(self.cplus_action)
 
     def run_settings(self):
         """Options the CPLUS settings in the QGIS options dialog."""
