@@ -32,7 +32,7 @@ class RuleConfiguration:
 
     category: ValidationCategory
     description: str
-    layers: typing.List[LayerModelComponent]
+    # layers: typing.List[LayerModelComponent]
     rule_name: str
     recommendation: str = ""
 
