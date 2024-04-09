@@ -1,19 +1,19 @@
 # CPLUS QGIS plugin
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/kartoza/cplus-plugin/ci.yml?branch=main&logo=github)
-![GitHub](https://img.shields.io/github/license/kartoza/cplus-plugin?logo=docsdotrs)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/ConservationInternational/cplus-plugin/ci.yml?branch=main&logo=github)
+![GitHub](https://img.shields.io/github/license/ConservationInternational/cplus-plugin?logo=docsdotrs)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?logo=python)](https://github.com/psf/black)
 [![QGIS.org](https://img.shields.io/badge/QGIS.org-ondevelopment-yellow?logo=qgis)](https://plugins.qgis.org/plugins/ci-cplus-plugin/)
 
-[![Documentation](https://img.shields.io/badge/Documentation-available-active?logo=readthedocs)]( https://kartoza.github.io/cplus-plugin)
-[![Tests](https://img.shields.io/badge/Tests-onprogress-inactive?logo=pytest)](https://github.com/kartoza/ci-cplus-plugin/actions/workflows/ci.yml)
+[![Documentation](https://img.shields.io/badge/Documentation-available-active?logo=readthedocs)]( https://ConservationInternational.github.io/cplus-plugin)
+[![Tests](https://img.shields.io/badge/Tests-onprogress-inactive?logo=pytest)](https://github.com/ConservationInternational/ci-cplus-plugin/actions/workflows/ci.yml)
 
-![GitHub all releases](https://img.shields.io/github/downloads/kartoza/cplus-plugin/total?logo=github&label=github-downloads)
+![GitHub all releases](https://img.shields.io/github/downloads/ConservationInternational/cplus-plugin/total?logo=github&label=github-downloads)
 
 
 
 ### QGIS plugin for the CPLUS framework.
 
-<img src="https://raw.githubusercontent.com/kartoza/cplus-plugin/master/docs/about/img/cplus_logo.svg" alt="CPLUS logo" width=200 height=200>
+<img src="https://raw.githubusercontent.com/ConservationInternational/cplus-plugin/master/docs/about/img/cplus_logo.svg" alt="CPLUS logo" width=200 height=200>
 
 
 ### 📚 Versions
@@ -22,7 +22,7 @@
 
 | Plugin version(s)                                                                                                                                                                                                          | Minimum QGIS version | Maximum QGIS version |
 |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|------|
-| ![GitHub Epic 1 Release)](https://img.shields.io/github/v/release/kartoza/cplus-plugin?logo=semanticrelease&label=latest-release)<br> ![](https://img.shields.io/badge/stable_version-v0.2.0dev-blue?logo=semanticrelease) | 3.22                 | 3.99 |
+| ![GitHub Epic 1 Release)](https://img.shields.io/github/v/release/ConservationInternational/cplus-plugin?logo=semanticrelease&label=latest-release)<br> ![](https://img.shields.io/badge/stable_version-v0.2.0dev-blue?logo=semanticrelease) | 3.22                 | 3.99 |
 
 
 ### ⚙️ Installation
@@ -30,7 +30,7 @@
 During the development phase the plugin is available to install via
 a dedicated plugin repository 
 
-[https://raw.githubusercontent.com/kartoza/cplus-plugin/release/docs/repository/plugins.xml](https://raw.githubusercontent.com/kartoza/cplus-plugin/release/docs/repository/plugins.xml)
+[https://raw.githubusercontent.com/ConservationInternational/cplus-plugin/release/docs/repository/plugins.xml](https://raw.githubusercontent.com/ConservationInternational/cplus-plugin/release/docs/repository/plugins.xml)
 
 [//]: # ()
 [//]: # (#### Install from QGIS plugin repository)
@@ -53,8 +53,8 @@ Alternatively the plugin can be installed using **Install from ZIP** option on t
 QGIS plugin manager.
 
 - Download zip file from the required plugin released version
-https://github.com/kartoza/cplus-plugin/releases/download/{tagname}/cplus.{version}.zip or create one
-using the admin interface as explained [here](https://github.com/kartoza/cplus-plugin#plugin-admin-interface).
+https://github.com/ConservationInternational/cplus-plugin/releases/download/{tagname}/cplus.{version}.zip or create one
+using the admin interface as explained [here](https://github.com/ConservationInternational/cplus-plugin#plugin-admin-interface).
 
 - From the **Install from ZIP** page, select the zip file and click the **Install** button to install plugin.
 
@@ -69,7 +69,7 @@ These artifacts can be used to test the submitted changes before deploying them 
 then publishing them to the QGIS official plugin repository.
 
 Pull request artifacts can be accessed from their respective pull request page, under a comment created by a 
-`github-actions` bot. Main branch merge artifacts can be viewed and fetched from the plugin site here https://kartoza.github.io/cplus-plugin/administrator/repository
+`github-actions` bot. Main branch merge artifacts can be viewed and fetched from the plugin site here https://ConservationInternational.github.io/cplus-plugin/administrator/repository
 
 ![main_pr_artifacts.png](docs%2Fimg%2Fplugin%2Fmain_pr_artifacts.png)
 _Look of the main branch and pull requests artifacts page_
@@ -169,4 +169,4 @@ locally. After the tests have finished running the Docker containers created for
 
 ### 📃 Documentation
 
-The plugin documentation page is available at https://kartoza.github.io/cplus-plugin
+The plugin documentation page is available at https://ConservationInternational.github.io/cplus-plugin
