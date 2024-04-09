@@ -259,7 +259,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         mask_layer_path = settings_manager.get_value(
             Settings.SIEVE_MASK_PATH, default=""
         )
-        self.map_layer_file_widget.setFilePath(mask_layer_path)
+        self.mask_layer_widget.setFilePath(mask_layer_path)
 
         self.pixel_size_box.setValue(
             float(settings_manager.get_value(Settings.SIEVE_THRESHOLD, default=10.0))

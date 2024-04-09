@@ -35,9 +35,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-119</y>
+        <y>-128</y>
         <width>558</width>
-        <height>824</height>
+        <height>825</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -260,7 +260,7 @@
              <item>
               <widget class="QLabel" name="reference_layer_label_2">
                <property name="text">
-                <string>Mask layer</string>
+                <string>Reference layer</string>
                </property>
               </widget>
              </item>
@@ -269,14 +269,14 @@
                <item>
                 <widget class="QgsFileWidget" name="mask_layer_widget">
                  <property name="toolTip">
-                  <string>Select the priority layer from the local filesystem.</string>
+                  <string>Select reference layer from the local filesystem.</string>
                  </property>
                 </widget>
                </item>
                <item>
                 <widget class="QgsMapLayerComboBox" name="mask_layer_box">
                  <property name="toolTip">
-                  <string>Select priority layer from the current QGIS map layers.</string>
+                  <string>Select reference layer from the current QGIS map layers.</string>
                  </property>
                 </widget>
                </item>
