@@ -46,7 +46,7 @@ in a user-friendly UI. Advantages of using this installer:
 
 During the development phase the plugin is available to install via 
 a dedicated plugin repository. This link should be used:
-[https://raw.githubusercontent.com/kartoza/cplus-plugin/release/docs/repository/plugins.xml](https://raw.githubusercontent.com/kartoza/cplus-plugin/release/docs/repository/plugins.xml)
+[https://raw.githubusercontent.com/ConservationInternational/cplus-plugin/release/docs/repository/plugins.xml](https://raw.githubusercontent.com/ConservationInternational/cplus-plugin/release/docs/repository/plugins.xml)
 
 - Open QGIS application and open plugin manager.
 - Click on **Plugins** -> **Manage and Install Plugins** (see **Figure 1**)
@@ -88,7 +88,7 @@ Alternatively the plugin can be installed using **Install from ZIP** option on t
 QGIS plugin manager. 
 
 - Download zip file from the required plugin released version
-https://github.com/kartoza/cplus-plugin/releases/download/{tagname}/cplus.{version}.zip
+https://github.com/ConservationInternational/cplus-plugin/releases/download/{tagname}/cplus.{version}.zip
 
 - Open QGIS application and open plugin manager
 - Click on **Plugins** -> **Manage and Install Plugins**
@@ -104,7 +104,7 @@ https://github.com/kartoza/cplus-plugin/releases/download/{tagname}/cplus.{versi
 
 ### Install from custom plugin repository
 
-Current repository: [https://raw.githubusercontent.com/kartoza/cplus-plugin/release/docs/repository/plugins.xml](https://raw.githubusercontent.com/kartoza/cplus-plugin/release/docs/repository/plugins.xml)
+Current repository: [https://raw.githubusercontent.com/ConservationInternational/cplus-plugin/release/docs/repository/plugins.xml](https://raw.githubusercontent.com/ConservationInternational/cplus-plugin/release/docs/repository/plugins.xml)
 
 - Open the QGIS plugin manager, then select the **Settings** page (**Figure 3**)
 

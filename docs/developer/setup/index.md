@@ -1,7 +1,7 @@
 # Setup
 
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/kartoza/cplus-plugin/ci.yml?branch=master)
-![GitHub](https://img.shields.io/github/license/kartoza/cplus-plugin)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/ConservationInternational/cplus-plugin/ci.yml?branch=master)
+![GitHub](https://img.shields.io/github/license/ConservationInternational/cplus-plugin)
 
 To use the plugin for development purposes, clone the repository locally,
 install pip, a python dependencies management tool see https://pypi.org/project/pip/

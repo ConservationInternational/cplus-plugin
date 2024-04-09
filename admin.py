@@ -491,7 +491,10 @@ def _get_existing_releases(
     :returns: List of github releases
     :rtype: List[GithubRelease]
     """
-    base_url = "https://api.github.com/repos/" "kartoza/cplus-plugin/releases"
+    base_url = (
+        "https://api.github.com/repos/"
+        "ConservationInternational/cplus-plugin/releases"
+    )
     response = httpx.get(base_url)
     result = []
     if response.status_code == 200:
