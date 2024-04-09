@@ -71,6 +71,9 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.map_layer_file_widget.setStorageMode(QgsFileWidget.StorageMode.GetFile)
         self.map_layer_box.layerChanged.connect(self.map_layer_changed)
 
+        self.mask_layer_widget.setStorageMode(QgsFileWidget.StorageMode.GetFile)
+        self.mask_layer_box.layerChanged.connect(self.mask_layer_changed)
+
         self.resample_method_box.addItem(
             tr("Nearest Neighbour"), QgsAlignRaster.ResampleAlg.RA_NearestNeighbour
         )
@@ -119,6 +122,15 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         """
         if layer is not None:
             self.map_layer_file_widget.setFilePath(layer.source())
+
+    def mask_layer_changed(self, layer):
+        """Sets the file path of the selected mask layer in file path input
+
+        :param layer: Qgis map layer
+        :type layer: QgsMapLayer
+        """
+        if layer is not None:
+            self.mask_layer_widget.setFilePath(layer.source())
 
     def on_settings_changed(self, name: str, value: typing.Any):
         """Slot raised when settings has been changed.
