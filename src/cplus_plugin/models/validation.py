@@ -32,7 +32,6 @@ class RuleConfiguration:
 
     category: ValidationCategory
     description: str
-    # layers: typing.List[LayerModelComponent]
     rule_name: str
     recommendation: str = ""
 
@@ -54,7 +53,7 @@ class RuleResult:
     config: "RuleConfiguration"
     recommendation: str
     summary: str
-    validate_info: typing.List[tuple]
+    validate_info: typing.List[tuple] = dataclasses.field(default_factory=list)
 
     @property
     def success(self) -> bool:
@@ -83,7 +82,7 @@ class ValidationResult:
     an aggregation of RuleResult objects.
     """
 
-    rule_results: typing.List[RuleResult]
+    rule_results: typing.List[RuleResult] = dataclasses.field(default_factory=list)
 
     @property
     def errors(self) -> typing.List[RuleResult]:
