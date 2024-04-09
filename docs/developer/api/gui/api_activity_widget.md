@@ -1,6 +1,6 @@
 # Activity widget
 
-::: src.cplus_plugin.gui.implementation_model_widget
+::: src.cplus_plugin.gui.activity_widget
     handler: python
     options:
         docstring_style: sphinx
