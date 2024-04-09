@@ -196,6 +196,60 @@
         </widget>
        </item>
        <item>
+        <widget class="QgsCollapsibleGroupBox" name="sieve_group_box">
+         <property name="title">
+          <string>Sieve </string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="checked">
+          <bool>false</bool>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_3">
+            <item>
+             <widget class="QLabel" name="resample_method_2">
+              <property name="text">
+               <string>Pixel size</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QgsDoubleSpinBox" name="pixel_size_box"/>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="reference_layer_label_2">
+            <property name="text">
+             <string>Reference layer</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_4">
+            <item>
+             <widget class="QgsFileWidget" name="mask_layer_widget">
+              <property name="toolTip">
+               <string>Select reference layer from the local filesystem.</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QgsMapLayerComboBox" name="mask_layer_box">
+              <property name="toolTip">
+               <string>Select reference layer from the current QGIS map layers.</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
         <spacer name="scroll_area_vspacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -220,6 +274,11 @@
    <extends>QGroupBox</extends>
    <header>qgscollapsiblegroupbox.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>QgsDoubleSpinBox</class>
+   <extends>QDoubleSpinBox</extends>
+   <header>qgsdoublespinbox.h</header>
   </customwidget>
   <customwidget>
    <class>QgsFileWidget</class>

@@ -71,6 +71,9 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.map_layer_file_widget.setStorageMode(QgsFileWidget.StorageMode.GetFile)
         self.map_layer_box.layerChanged.connect(self.map_layer_changed)
 
+        self.mask_layer_widget.setStorageMode(QgsFileWidget.StorageMode.GetFile)
+        self.mask_layer_box.layerChanged.connect(self.mask_layer_changed)
+
         self.resample_method_box.addItem(
             tr("Nearest Neighbour"), QgsAlignRaster.ResampleAlg.RA_NearestNeighbour
         )
@@ -119,6 +122,15 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         """
         if layer is not None:
             self.map_layer_file_widget.setFilePath(layer.source())
+
+    def mask_layer_changed(self, layer):
+        """Sets the file path of the selected mask layer in file path input
+
+        :param layer: Qgis map layer
+        :type layer: QgsMapLayer
+        """
+        if layer is not None:
+            self.mask_layer_widget.setFilePath(layer.source())
 
     def on_settings_changed(self, name: str, value: typing.Any):
         """Slot raised when settings has been changed.
@@ -195,6 +207,18 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             Settings.RESAMPLING_METHOD, self.resample_method_box.currentIndex()
         )
 
+        # Saving sieve function settings
+
+        settings_manager.set_value(
+            Settings.SIEVE_ENABLED, self.sieve_group_box.isChecked()
+        )
+        mask_layer_path = self.mask_layer_widget.filePath()
+        settings_manager.set_value(Settings.SIEVE_MASK_PATH, mask_layer_path)
+
+        settings_manager.set_value(
+            Settings.SIEVE_THRESHOLD, self.pixel_size_box.value()
+        )
+
         # Checks if the provided base directory exists
         if not os.path.exists(base_dir_path):
             iface.messageBar().pushCritical(
@@ -236,6 +260,21 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         )
         self.resample_method_box.setCurrentIndex(
             int(settings_manager.get_value(Settings.RESAMPLING_METHOD, default=0))
+        )
+
+        # Sieve settings
+        self.sieve_group_box.setChecked(
+            settings_manager.get_value(
+                Settings.SIEVE_ENABLED, default=False, setting_type=bool
+            )
+        )
+        mask_layer_path = settings_manager.get_value(
+            Settings.SIEVE_MASK_PATH, default=""
+        )
+        self.mask_layer_widget.setFilePath(mask_layer_path)
+
+        self.pixel_size_box.setValue(
+            float(settings_manager.get_value(Settings.SIEVE_THRESHOLD, default=10.0))
         )
 
     def showEvent(self, event: QShowEvent) -> None:
