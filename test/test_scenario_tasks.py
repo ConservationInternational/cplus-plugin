@@ -330,38 +330,40 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         self.assertEqual(stat.maximumValue, 19.0)
 
     def test_scenario_sieve_function(self):
-        models_layer_directory = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "data", "models", "layers"
+        activities_layer_directory = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "data", "activities", "layers"
         )
 
-        model_layer_path_1 = os.path.join(models_layer_directory, "test_model_1.tif")
+        activity_layer_path_1 = os.path.join(
+            activities_layer_directory, "test_activity_1.tif"
+        )
 
-        test_model = ImplementationModel(
+        test_activity = Activity(
             uuid=uuid.uuid4(),
-            name="test_model",
+            name="test_activity",
             description="test_description",
             pathways=[],
-            path=model_layer_path_1,
+            path=activity_layer_path_1,
         )
 
-        model_layer = QgsRasterLayer(test_model.path, test_model.name)
+        activity_layer = QgsRasterLayer(test_activity.path, test_activity.name)
 
-        test_extent = model_layer.extent()
+        test_extent = activity_layer.extent()
 
         scenario = Scenario(
             uuid=uuid.uuid4(),
             name="Scenario",
             description="Scenario description",
-            models=[test_model],
+            activities=[test_activity],
             extent=test_extent,
-            weighted_models=[],
+            weighted_activities=[],
             priority_layer_groups=[],
         )
 
         analysis_task = ScenarioAnalysisTask(
-            "test_scenario_models_sieve_function",
-            "test_scenario_models_sieve_function_description",
-            [test_model],
+            "test_scenario_activities_sieve_function",
+            "test_scenario_activities_sieve_function_description",
+            [test_activity],
             [],
             test_extent,
             scenario,
@@ -370,13 +372,13 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         extent_string = (
             f"{test_extent.xMinimum()},{test_extent.xMaximum()},"
             f"{test_extent.yMinimum()},{test_extent.yMaximum()}"
-            f" [{model_layer.crs().authid()}]"
+            f" [{activity_layer.crs().authid()}]"
         )
 
         base_dir = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "data",
-            "models",
+            "activities",
         )
 
         scenario_directory = os.path.join(
@@ -391,13 +393,13 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         settings_manager.set_value(Settings.PATHWAY_SUITABILITY_INDEX, 1.0)
         settings_manager.set_value(Settings.CARBON_COEFFICIENT, 1.0)
 
-        first_layer_stat = model_layer.dataProvider().bandStatistics(1)
+        first_layer_stat = activity_layer.dataProvider().bandStatistics(1)
 
         self.assertEqual(first_layer_stat.minimumValue, 1.0)
         self.assertEqual(first_layer_stat.maximumValue, 19.0)
 
-        results = analysis_task.run_models_sieve(
-            [test_model],
+        results = analysis_task.run_activities_sieve(
+            [test_activity],
             [],
             extent_string,
             temporary_output=True,
@@ -405,7 +407,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         self.assertTrue(results)
 
-        result_layer = QgsRasterLayer(test_model.path, test_model.name)
+        result_layer = QgsRasterLayer(test_activity.path, test_activity.name)
 
         stat = result_layer.dataProvider().bandStatistics(1)
 

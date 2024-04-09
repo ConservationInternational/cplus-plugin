@@ -209,8 +209,8 @@ class ScenarioAnalysisTask(QgsTask):
         )
 
         if sieve_enabled:
-            self.run_models_sieve(
-                self.analysis_implementation_models,
+            self.run_activities_sieve(
+                self.analysis_activities,
                 self.analysis_priority_layers_groups,
                 extent_string,
             )
@@ -1090,7 +1090,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         return True
 
-    def run_models_sieve(
+    def run_activities_sieve(
         self, models, priority_layers_groups, extent, temporary_output=False
     ):
         """Runs the sieve functionality analysis on the passed models layers,
@@ -1202,7 +1202,7 @@ class ScenarioAnalysisTask(QgsTask):
         return True
 
     def run_activities_normalization(
-            self, activities, priority_layers_groups, extent, temporary_output=False
+        self, activities, priority_layers_groups, extent, temporary_output=False
     ):
         """Runs the normalization analysis on the activities' layers,
         adjusting band values measured on different scale, the resulting scale
