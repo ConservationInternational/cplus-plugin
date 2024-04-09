@@ -10,7 +10,7 @@
                 <icon>icon.svg</icon>
                 <author_name><![CDATA[Kartoza]]></author_name>
                 <download_url>https://github.com/ConservationInternational/cplus-plugin/releases/download/v0.0.2dev.1/cplus_plugin.0.0.2dev.1.zip</download_url>
-                <update_date>2024-04-09 11:04:04</update_date>
+                <update_date>2024-04-09 11:14:32</update_date>
                 <experimental>False</experimental>
                 <deprecated>False</deprecated>
                 <tracker><![CDATA[https://github.com/ConservationInternational/cplus-plugin/issues]]></tracker>
@@ -18,4 +18,4 @@
                 <tags><![CDATA[cplus, maps, raster, analytics]]></tags>
                 <server>False</server>
             </pyqgis_plugin>
-</plugins>
+</plugins> 
