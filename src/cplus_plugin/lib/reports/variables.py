@@ -208,6 +208,18 @@ class LayoutVariableRegister:
         scenario_desc_var_info = ScenarioDescriptionVariableInfo()
         self._var_infos[scenario_desc_var_info.name] = scenario_desc_var_info
 
+        # Setting - report stakeholders
+        stakeholders_var_info = SettingsVariableInfo(
+            "stakeholders", Settings.REPORT_STAKEHOLDERS
+        )
+        self._var_infos[stakeholders_var_info.name] = stakeholders_var_info
+
+        # Setting - report cultural considerations
+        culture_var_info = SettingsVariableInfo(
+            "culture_policies", Settings.REPORT_CULTURE_POLICIES
+        )
+        self._var_infos[culture_var_info.name] = culture_var_info
+
     def _create_activities_var_infos(self):
         """Add variable info objects for activities."""
         activities = settings_manager.get_all_activities()

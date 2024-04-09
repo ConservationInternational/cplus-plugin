@@ -25,7 +25,21 @@ ABOUT_DOCUMENTATION_SITE = (
 REPORT_DOCUMENTATION = "https://conservationinternational.github.io/cplus-plugin/user/guide/#report-generating"
 
 OPTIONS_TITLE = "CPLUS"  # Title in the QGIS settings
+REPORT_OPTIONS_TITLE = "Reporting"
+LOG_OPTIONS_TITLE = "Logs"
 ICON_PATH = ":/plugins/cplus_plugin/icon.svg"
+REPORT_SETTINGS_ICON_PATH = str(
+    os.path.normpath(
+        os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        + "/icons/report_settings.svg"
+    )
+)
+LOG_SETTINGS_ICON_PATH = str(
+    os.path.normpath(
+        os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        + "/icons/log_settings.svg"
+    )
+)
 ICON_PDF = (
     os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     + "/icons/mActionSaveAsPDF.svg"

@@ -129,6 +129,9 @@ class Settings(enum.Enum):
     REPORT_FOOTER = "report/footer"
     REPORT_DISCLAIMER = "report/disclaimer"
     REPORT_LICENSE = "report/license"
+    REPORT_STAKEHOLDERS = "report/stakeholders"
+    REPORT_CULTURE_POLICIES = "report/culture_policies"
+    REPORT_CULTURE_CONSIDERATIONS = "report/culture_considerations"
 
     # Last selected data directory
     LAST_DATA_DIR = "last_data_dir"

@@ -33,3 +33,8 @@ USER_DEFINED_ATTRIBUTE = "user_defined"
 UUID_ATTRIBUTE = "uuid"
 
 ACTIVITY_IDENTIFIER_PROPERTY = "activity_identifier"
+
+# Option / settings keys
+CPLUS_OPTIONS_KEY = "cplus_main"
+LOG_OPTIONS_KEY = "cplus_log"
+REPORTS_OPTIONS_KEY = "cplus_report"
