@@ -138,4 +138,4 @@ Only a user with admin rights to the repository will be able to do this.
 - Select the action
 - Select **Deploy**
 - Open the Run mkdocs gh-deploy section
-- The URL should be https://kartoza.github.io/cplus-plugin/
+- The URL should be https://ConservationInternational.github.io/cplus-plugin/

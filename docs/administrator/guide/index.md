@@ -114,7 +114,7 @@ Remove this text to remove a PWL:
 This section relates to creating an issue for when a bug is found in the plugin, or
 if the user has a suggested improvement for the plugin.
 
-- Go to the [CPLUS repository](https://github.com/kartoza/cplus-plugin)
+- Go to the [CPLUS repository](https://github.com/ConservationInternational/cplus-plugin)
 - Click on the **Issues** tab
 - Click on **New Issue** (see **Figure 1**)
   - Title: Short, but descriptive
@@ -156,7 +156,7 @@ approach is to show the client to progress of the plugin.
 
 ### Get the staging version
 
-- Go to the repository: https://github.com/kartoza/cplus-plugin
+- Go to the repository: https://github.com/ConservationInternational/cplus-plugin
 - To the right there is a section named **Releases**
 
 ![admin github releases](img/admin-releases.png)

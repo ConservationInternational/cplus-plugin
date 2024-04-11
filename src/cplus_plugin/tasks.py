@@ -202,6 +202,19 @@ class ScenarioAnalysisTask(QgsTask):
             extent_string,
         )
 
+        # Run sieve function on the created models if user has enabled it
+
+        sieve_enabled = settings_manager.get_value(
+            Settings.SIEVE_ENABLED, default=False
+        )
+
+        if sieve_enabled:
+            self.run_activities_sieve(
+                self.analysis_activities,
+                self.analysis_priority_layers_groups,
+                extent_string,
+            )
+
         # After creating activities, we normalize them using the same coefficients
         # used in normalizing their respective pathways.
 
@@ -1071,6 +1084,117 @@ class ScenarioAnalysisTask(QgsTask):
 
         except Exception as e:
             log(f"Problem creating activity layers, {e}")
+            self.error = e
+            self.cancel()
+            return False
+
+        return True
+
+    def run_activities_sieve(
+        self, models, priority_layers_groups, extent, temporary_output=False
+    ):
+        """Runs the sieve functionality analysis on the passed models layers,
+        removing the models layer polygons that are smaller than the provided
+        threshold size (in pixels) and replaces them with the pixel value of
+        the largest neighbour polygon.
+
+        :param models: List of the analyzed implementation models
+        :type models: typing.List[ImplementationModel]
+
+        :param priority_layers_groups: Used priority layers groups and their values
+        :type priority_layers_groups: dict
+
+        :param extent: Selected area of interest extent
+        :type extent: str
+
+        :param temporary_output: Whether to save the processing outputs as temporary
+        files
+        :type temporary_output: bool
+        """
+        if self.processing_cancelled:
+            # Will not proceed if processing has been cancelled by the user
+            return False
+
+        self.set_status_message(
+            tr("Applying sieve function to the implementation models")
+        )
+
+        try:
+            for model in models:
+                if model.path is None or model.path is "":
+                    if not self.processing_cancelled:
+                        self.set_info_message(
+                            tr(
+                                f"Problem when running sieve function on models, "
+                                f"there is no map layer for the model {model.name}"
+                            ),
+                            level=Qgis.Critical,
+                        )
+                        log(
+                            f"Problem when running sieve function on models, "
+                            f"there is no map layer for the model {model.name}"
+                        )
+                    else:
+                        # If the user cancelled the processing
+                        self.set_info_message(
+                            tr(f"Processing has been cancelled by the user."),
+                            level=Qgis.Critical,
+                        )
+                        log(f"Processing has been cancelled by the user.")
+
+                    return False
+
+                sieved_ims_directory = os.path.join(
+                    self.scenario_directory, "sieved_ims"
+                )
+                FileUtils.create_new_dir(sieved_ims_directory)
+                file_name = clean_filename(model.name.replace(" ", "_"))
+
+                output_file = os.path.join(
+                    sieved_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+                )
+
+                threshold_value = float(
+                    settings_manager.get_value(Settings.SIEVE_THRESHOLD, default=10.0)
+                )
+
+                mask_layer = settings_manager.get_value(
+                    Settings.SIEVE_MASK_PATH, default=""
+                )
+
+                output = (
+                    QgsProcessing.TEMPORARY_OUTPUT if temporary_output else output_file
+                )
+
+                # Actual processing calculation
+                alg_params = {
+                    "INPUT": model.path,
+                    "THRESHOLD": threshold_value,
+                    "MASK_LAYER": mask_layer,
+                    "OUTPUT": output,
+                }
+
+                log(
+                    f"Used parameters for running sieve function to the models: {alg_params} \n"
+                )
+
+                feedback = QgsProcessingFeedback()
+
+                feedback.progressChanged.connect(self.update_progress)
+
+                if self.processing_cancelled:
+                    return False
+
+                results = processing.run(
+                    "gdal:sieve",
+                    alg_params,
+                    context=self.processing_context,
+                    feedback=self.feedback,
+                )
+                model.path = results["OUTPUT"]
+
+        except Exception as e:
+            log(f"Problem running sieve function on models layers, {e} \n")
             self.error = e
             self.cancel()
             return False

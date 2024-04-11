@@ -5,7 +5,7 @@
 <body>
 <div id="loading_div" style="align-content: center;">
 
-<img src="https://kartoza.github.io/cplus-plugin/user/guide/img/icon_loading.gif" style="align-content: center; background:transparent;"/>
+<img src="https://ConservationInternational.github.io/cplus-plugin/user/guide/img/icon_loading.gif" style="align-content: center; background:transparent;"/>
 </div>
 <div>
     <h2><a href="#pull"> Pull requests artifacts </a></h2>
@@ -53,12 +53,12 @@ import { Octokit, App } from "https://esm.sh/octokit";
 const octokit = new Octokit();
 
 const pulls = await octokit.request(
-"GET /repos/kartoza/cplus-plugin/pulls",
+"GET /repos/ConservationInternational/cplus-plugin/pulls",
 {'state':'all'}
 );
 
 const fetched_artifacts = await octokit.request(
-"GET /repos/kartoza/cplus-plugin/actions/artifacts",
+"GET /repos/ConservationInternational/cplus-plugin/actions/artifacts",
 {'per_page': 30}
 );
 
@@ -97,7 +97,7 @@ for ( const artifact of fetched_artifacts.data.artifacts){
         continue;
     }
     const commit = await octokit.request(
-    "GET /repos/kartoza/cplus-plugin/commits/"+
+    "GET /repos/ConservationInternational/cplus-plugin/commits/"+
     artifact['workflow_run']['head_sha'] 
     );
 
@@ -249,7 +249,7 @@ for (const commit_artifact of commits_artifacts){
 }
 
 const response = await fetch(
-"https://raw.githubusercontent.com/kartoza/cplus-plugin/docs/docs/admin/artifacts_list.txt"
+"https://raw.githubusercontent.com/ConservationInternational/cplus-plugin/docs/docs/admin/artifacts_list.txt"
 );
 
 const file_text_promise = response.text();

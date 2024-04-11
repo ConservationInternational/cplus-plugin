@@ -329,6 +329,91 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         self.assertEqual(stat.minimumValue, 1.0)
         self.assertEqual(stat.maximumValue, 19.0)
 
+    def test_scenario_sieve_function(self):
+        activities_layer_directory = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "data", "activities", "layers"
+        )
+
+        activity_layer_path_1 = os.path.join(
+            activities_layer_directory, "test_activity_1.tif"
+        )
+
+        test_activity = Activity(
+            uuid=uuid.uuid4(),
+            name="test_activity",
+            description="test_description",
+            pathways=[],
+            path=activity_layer_path_1,
+        )
+
+        activity_layer = QgsRasterLayer(test_activity.path, test_activity.name)
+
+        test_extent = activity_layer.extent()
+
+        scenario = Scenario(
+            uuid=uuid.uuid4(),
+            name="Scenario",
+            description="Scenario description",
+            activities=[test_activity],
+            extent=test_extent,
+            weighted_activities=[],
+            priority_layer_groups=[],
+        )
+
+        analysis_task = ScenarioAnalysisTask(
+            "test_scenario_activities_sieve_function",
+            "test_scenario_activities_sieve_function_description",
+            [test_activity],
+            [],
+            test_extent,
+            scenario,
+        )
+
+        extent_string = (
+            f"{test_extent.xMinimum()},{test_extent.xMaximum()},"
+            f"{test_extent.yMinimum()},{test_extent.yMaximum()}"
+            f" [{activity_layer.crs().authid()}]"
+        )
+
+        base_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "data",
+            "activities",
+        )
+
+        scenario_directory = os.path.join(
+            f"{base_dir}",
+            f'scenario_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+            f"_{str(uuid.uuid4())[:4]}",
+        )
+
+        analysis_task.scenario_directory = scenario_directory
+
+        settings_manager.set_value(Settings.BASE_DIR, base_dir)
+        settings_manager.set_value(Settings.PATHWAY_SUITABILITY_INDEX, 1.0)
+        settings_manager.set_value(Settings.CARBON_COEFFICIENT, 1.0)
+
+        first_layer_stat = activity_layer.dataProvider().bandStatistics(1)
+
+        self.assertEqual(first_layer_stat.minimumValue, 1.0)
+        self.assertEqual(first_layer_stat.maximumValue, 19.0)
+
+        results = analysis_task.run_activities_sieve(
+            [test_activity],
+            [],
+            extent_string,
+            temporary_output=True,
+        )
+
+        self.assertTrue(results)
+
+        result_layer = QgsRasterLayer(test_activity.path, test_activity.name)
+
+        stat = result_layer.dataProvider().bandStatistics(1)
+
+        self.assertEqual(stat.minimumValue, 1.0)
+        self.assertEqual(stat.maximumValue, 19.0)
+
     def test_scenario_activities_normalization(self):
         activities_layer_directory = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "data", "activities", "layers"

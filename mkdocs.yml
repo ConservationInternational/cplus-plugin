@@ -1,7 +1,7 @@
 site_name: CPLUS QGIS plugin
 
-repo_name: 'kartoza/cplus-plugin'
-repo_url: 'https://github.com/kartoza/cplus-plugin'
+repo_name: 'ConservationInternational/cplus-plugin'
+repo_url: 'https://github.com/ConservationInternational/cplus-plugin'
 
 site_description: CPLUS
 site_author: Kartoza

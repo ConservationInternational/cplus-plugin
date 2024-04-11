@@ -129,6 +129,9 @@ class Settings(enum.Enum):
     REPORT_FOOTER = "report/footer"
     REPORT_DISCLAIMER = "report/disclaimer"
     REPORT_LICENSE = "report/license"
+    REPORT_STAKEHOLDERS = "report/stakeholders"
+    REPORT_CULTURE_POLICIES = "report/culture_policies"
+    REPORT_CULTURE_CONSIDERATIONS = "report/culture_considerations"
 
     # Last selected data directory
     LAST_DATA_DIR = "last_data_dir"
@@ -154,6 +157,11 @@ class Settings(enum.Enum):
     RESCALE_VALUES = "snap_rescale"
     RESAMPLING_METHOD = "snap_method"
     SNAP_PIXEL_VALUE = "snap_pixel_value"
+
+    # Sieve function parameters
+    SIEVE_ENABLED = "sieve_enabled"
+    SIEVE_THRESHOLD = "sieve_threshold"
+    SIEVE_MASK_PATH = "mask_path"
 
 
 class SettingsManager(QtCore.QObject):
