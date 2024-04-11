@@ -9,13 +9,17 @@ from qgis.PyQt import QtCore
 
 from qgis.core import QgsRasterLayer, QgsTask
 
-
+from .configs import (
+    crs_validation_config,
+    no_data_validation_config,
+    raster_validation_config,
+    resolution_validation_config,
+)
 from ...models.base import LayerModelComponent, NcsPathway
 from ...models.validation import (
     RuleConfiguration,
     RuleResult,
     RuleType,
-    ValidationCategory,
     ValidationResult,
 )
 from ...utils import log, tr
@@ -145,6 +149,8 @@ class RasterValidator(BaseRuleValidator):
             summary = tr("There are invalid non-raster datasets")
             invalid_layer_names = ", ".join(non_raster_model_components)
             validate_info = [(tr("Non-raster datasets"), invalid_layer_names)]
+        else:
+            summary = tr("All datasets are rasters")
 
         self._result = RuleResult(
             self._config, self._config.recommendation, summary, validate_info
@@ -159,6 +165,84 @@ class RasterValidator(BaseRuleValidator):
         :rtype: RuleType
         """
         return RuleType.DATA_TYPE
+
+
+class CrsValidator(BaseRuleValidator):
+    """Checks if the input datasets have the same CRS."""
+
+    def _validate(self) -> bool:
+        """Checks whether all input datasets have the same CRS.
+
+        :returns: True if the validation process succeeded
+        or False if it failed.
+        :rtype: bool
+        """
+        status = True
+
+        # key: CRS name or 'undefined', value: list of model/layer names
+        crs_definitions = {}
+        undefined_msg = tr("Undefined")
+        has_undefined = False
+
+        for model_component in self.model_components:
+            is_valid = model_component.is_valid()
+            if not is_valid:
+                if status:
+                    status = False
+
+                tr_msg = tr("is not a valid data source.")
+                self.log(f"{model_component.name} {tr_msg}")
+
+            else:
+                layer = model_component.to_map_layer()
+                crs = layer.crs()
+                if crs is None:
+                    # Flag that there is at least one dataset with an undefined CRS
+                    if not has_undefined:
+                        has_undefined = True
+
+                    if status:
+                        status = False
+
+                    if undefined_msg in crs_definitions:
+                        layers = crs_definitions.get(undefined_msg)
+                        layers.append(model_component.name)
+                    else:
+                        crs_definitions[undefined_msg] = [model_component.name]
+                else:
+                    crs_id = crs.authid()
+                    if crs_id in crs_definitions:
+                        layers = crs_definitions.get(crs_id)
+                        layers.append(model_component.name)
+                    else:
+                        crs_definitions[crs_id] = [model_component.name]
+
+        if len(crs_definitions) > 1 and status:
+            status = False
+
+        summary = ""
+        validate_info = []
+        if not status:
+            summary = tr("Datasets have different CRS definitions")
+            for crs_str, layers in crs_definitions.items():
+                validate_info.append((crs_str, ", ".join(layers)))
+        else:
+            summary_tr = tr("All datasets have the same CRS")
+            summary = f"{summary_tr} - {list(crs_definitions.keys())[0]}"
+
+        self._result = RuleResult(
+            self._config, self._config.recommendation, summary, validate_info
+        )
+
+        return status
+
+    def rule_type(self) -> RuleType:
+        """Returns the CRS rule validator.
+
+        :returns: CRS rule validator.
+        :rtype: RuleType
+        """
+        return RuleType.CRS
 
 
 class DataValidator(QgsTask):
@@ -211,6 +295,15 @@ class DataValidator(QgsTask):
         """
         msg = f"{self.NAME} - {message}"
         log(message=msg, info=info)
+
+    @property
+    def result(self) -> ValidationResult:
+        """Returns the result of the validation process.
+
+        :returns: Result of the validation process.
+        :rtype: ValidationResult
+        """
+        return self._result
 
     def cancel(self):
         """Cancel the validation process."""
@@ -322,3 +415,28 @@ class DataValidator(QgsTask):
             ]
             self._result = ValidationResult(rule_results)
             self.validation_completed.emit()
+
+
+class NcsDataValidator(DataValidator):
+    """Validates both NCS pathway and carbon layer datasets. The resolution
+    check for carbon layers is tagged as a warning rather than an error.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.model_components = kwargs.pop("ncs_pathways", list)
+        self._initialize_rule_validators()
+
+    def _initialize_rule_validators(self):
+        """Add rule validators."""
+        # Raster data type validator
+        self._raster_type_validator = DataValidator.create_rule_validator(
+            RuleType.DATA_TYPE, raster_validation_config
+        )
+        self.add_rule_validator(self._raster_type_validator)
+
+        # CRS validator
+        self._crs_validator = DataValidator.create_rule_validator(
+            RuleType.CRS, crs_validation_config
+        )
+        self.add_rule_validator(self._crs_validator)

@@ -3,7 +3,6 @@
 Configurations for validation rules.
 """
 
-
 from ...models.validation import RuleConfiguration, ValidationCategory
 from ...utils import tr
 
