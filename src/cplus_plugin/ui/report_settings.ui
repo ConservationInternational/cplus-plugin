@@ -119,6 +119,9 @@
           <height>100</height>
          </size>
         </property>
+        <property name="placeholderText">
+         <string>Please enter the stakeholder name and a brief description of the relationship separated by a dash i.e. stakeholder name - relstionship description. Each entry should be in a new line.</string>
+        </property>
        </widget>
       </item>
       <item row="14" column="2">
@@ -128,6 +131,9 @@
           <width>16777215</width>
           <height>100</height>
          </size>
+        </property>
+        <property name="placeholderText">
+         <string>Please enter the cultural consideration and a brief description separated by a dash i.e. cultural consideration - description. Each entry should be in a new line.</string>
         </property>
        </widget>
       </item>
@@ -182,6 +188,9 @@
           <width>16777215</width>
           <height>100</height>
          </size>
+        </property>
+        <property name="placeholderText">
+         <string>Please enter the cultural policy and a brief description separated by a dash i.e. cultural policy - description. Each entry should be in a new line.</string>
         </property>
        </widget>
       </item>
