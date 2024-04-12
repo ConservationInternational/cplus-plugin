@@ -5,6 +5,8 @@
 import os
 import typing
 
+import qgis.core
+
 from qgis.gui import QgsFileWidget, QgsMessageBar, QgsOptionsPageWidget
 from qgis.gui import QgsOptionsWidgetFactory
 from qgis.PyQt import uic
@@ -24,6 +26,7 @@ from ...conf import (
 from ...definitions.constants import CPLUS_OPTIONS_KEY, REPORTS_OPTIONS_KEY
 from ...definitions.defaults import (
     DEFAULT_LOGO_PATH,
+    OPTIONS_TITLE,
     REPORT_OPTIONS_TITLE,
     REPORT_SETTINGS_ICON_PATH,
 )
@@ -251,8 +254,13 @@ class ReportOptionsFactory(QgsOptionsWidgetFactory):
     def __init__(self) -> None:
         super().__init__()
 
+        # Check version for API compatibility for managing items in
+        # options tree view.
+        version = qgis.core.Qgis.versionInt()
+        if version >= 33200:
+            self.setKey(REPORTS_OPTIONS_KEY)
+
         self.setTitle(tr(REPORT_OPTIONS_TITLE))
-        self.setKey(REPORTS_OPTIONS_KEY)
 
     def icon(self) -> QIcon:
         """Returns the icon which will be used for the report settings item.
@@ -272,6 +280,10 @@ class ReportOptionsFactory(QgsOptionsWidgetFactory):
         :returns: Path name of the main CPLUS settings.
         :rtype: list
         """
+        version = qgis.core.Qgis.versionInt()
+        if version < 33200:
+            return [OPTIONS_TITLE]
+
         return [CPLUS_OPTIONS_KEY]
 
     def createWidget(self, parent: QWidget) -> ReportSettingsWidget:

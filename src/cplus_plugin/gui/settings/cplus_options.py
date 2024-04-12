@@ -33,11 +33,11 @@ from ...conf import (
 )
 from ...definitions.constants import CPLUS_OPTIONS_KEY
 from ...definitions.defaults import (
-    OPTIONS_TITLE,
+    GENERAL_OPTIONS_TITLE,
     ICON_PATH,
-    DEFAULT_LOGO_PATH,
+    OPTIONS_TITLE,
 )
-from ...utils import FileUtils, tr
+from ...utils import FileUtils, log, tr
 
 
 Ui_DlgSettings, _ = uic.loadUiType(
@@ -301,7 +301,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 class CplusOptionsFactory(QgsOptionsWidgetFactory):
     """Options factory initializes the CPLUS settings.
 
-    Class which creates the widget requied for the CPLUS settings.
+    Class which creates the widget required for the CPLUS settings.
     QgsOptionsWidgetFactory is used to accomplish this.
     """
 
@@ -309,8 +309,17 @@ class CplusOptionsFactory(QgsOptionsWidgetFactory):
         """QGIS CPLUS Plugin Settings factory."""
         super().__init__()
 
-        self.setTitle(OPTIONS_TITLE)
-        self.setKey(CPLUS_OPTIONS_KEY)
+        # Check version for API compatibility for managing items in
+        # options tree view.
+        version = qgis.core.Qgis.versionInt()
+        log(str(version))
+        if version < 33200:
+            log("Old version")
+            self.setTitle(GENERAL_OPTIONS_TITLE)
+        else:
+            log("New version")
+            self.setTitle(OPTIONS_TITLE)
+            self.setKey(CPLUS_OPTIONS_KEY)
 
     def icon(self) -> QIcon:
         """Returns the icon which will be used for the CPLUS options tab.
@@ -320,6 +329,22 @@ class CplusOptionsFactory(QgsOptionsWidgetFactory):
         """
 
         return QIcon(ICON_PATH)
+
+    def path(self) -> typing.List[str]:
+        """
+        Returns the path to place the widget page at.
+
+        This instructs the registry to place the log options tab under the
+        main CPLUS settings.
+
+        :returns: Path name of the main CPLUS settings.
+        :rtype: list
+        """
+        version = qgis.core.Qgis.versionInt()
+        if version < 33200:
+            return [OPTIONS_TITLE]
+
+        return list()
 
     def createWidget(self, parent: QWidget) -> CplusSettings:
         """Creates a widget for CPLUS settings.
