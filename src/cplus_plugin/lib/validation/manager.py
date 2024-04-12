@@ -90,9 +90,6 @@ class ValidationManager(QtCore.QObject):
                 ncs_validator.cancel()
                 del self._validation_tasks[task_id]
 
-                if task_id in self._validation_results:
-                    del self._validation_results[task_id]
-
     def on_validation_status_changed(self, task_id: int, status: QgsTask.TaskStatus):
         """Slot raised when the status of a validation task has changed.
 
