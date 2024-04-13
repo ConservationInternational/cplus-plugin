@@ -312,12 +312,9 @@ class CplusOptionsFactory(QgsOptionsWidgetFactory):
         # Check version for API compatibility for managing items in
         # options tree view.
         version = qgis.core.Qgis.versionInt()
-        log(str(version))
         if version < 33200:
-            log("Old version")
             self.setTitle(GENERAL_OPTIONS_TITLE)
         else:
-            log("New version")
             self.setTitle(OPTIONS_TITLE)
             self.setKey(CPLUS_OPTIONS_KEY)
 

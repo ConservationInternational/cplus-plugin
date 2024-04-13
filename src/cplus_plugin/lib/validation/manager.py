@@ -130,5 +130,4 @@ class ValidationManager(QtCore.QObject):
         pass
 
 
-
 validation_manager = ValidationManager()
