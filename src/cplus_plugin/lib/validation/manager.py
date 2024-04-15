@@ -16,7 +16,7 @@ from qgis.core import (
 
 from qgis.PyQt import QtCore, QtGui
 
-from ...models.base import NcsPathway
+from ...models.base import ModelComponentType, NcsPathway
 from ...models.validation import SubmitResult, ValidationResult
 from ...utils import FileUtils, log, tr
 from .validators import NcsDataValidator
@@ -74,6 +74,7 @@ class ValidationManager(QtCore.QObject):
             return SubmitResult("", False)
 
         self._validation_tasks[str(task_id)] = ncs_validator
+        self._ncs_validation_ids.append(task_id)
 
         return SubmitResult(str(task_id), True)
 
@@ -121,13 +122,68 @@ class ValidationManager(QtCore.QObject):
 
             self.validation_completed.emit(str(task_id))
 
-    def ncs_result(self) -> ValidationResult:
+    def cancel(self, result: SubmitResult) -> bool:
+        """Cancels a validation process matching the result of the submission.
+
+        :param result: Result of the validation submission.
+        :type result: SubmitResult
+
+        :returns: True if the validation task was successfully cancelled else False if the submit results status was not successful or if the validation task was not found.
+        :rtype: bool
+        """
+        if not result.success:
+            return False
+
+        if result.identifier not in self._validation_tasks:
+            return False
+
+        validator = self._validation_tasks[result.identifier]
+        validator.cancel()
+
+        return True
+
+    def results_by_component_type(
+        self, component_type: ModelComponentType
+    ) -> typing.List[ValidationResult]:
+        """Gets the validation results based on the model component
+        type of the validator.
+
+        :param component_type: Model component type e.g. NCS pathway.
+        :type component_type: ModelComponentType
+
+        :returns: A list containing the validation results for the given
+        model component type or an empty list if no results are found.
+        :rtype: list
+        """
+        if component_type == ModelComponentType.UNKNOWN:
+            return []
+
+        return [
+            result
+            for result in self._validation_results.values()
+            if result.component_type == component_type
+        ]
+
+    def ncs_results(self) -> typing.List[ValidationResult]:
+        """Gets the validation results for NCS pathways.
+
+        :returns: A list containing the validation results for NCS
+        pathways or an empty list if no results are found.
+        :rtype: list
+        """
+        return self.results_by_component_type(ModelComponentType.NCS_PATHWAY)
+
+    def last_ncs_result(self) -> typing.Union[ValidationResult, None]:
         """Gets the result of the last successful validation of NCS pathways.
 
         :returns: Result of the last successful NCS pathway validation.
         :rtype: ValidationResult
         """
-        pass
+        ncs_results = self.ncs_results()
+        if len(ncs_results) == 0:
+            return None
+
+        return ncs_results[len(ncs_results) - 1]
 
 
 validation_manager = ValidationManager()

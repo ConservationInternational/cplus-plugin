@@ -5,9 +5,8 @@
 import dataclasses
 from enum import IntEnum
 import typing
-from uuid import UUID
 
-from .base import LayerModelComponent
+from .base import ModelComponentType
 
 
 class RuleType(IntEnum):
@@ -83,6 +82,7 @@ class ValidationResult:
     """
 
     rule_results: typing.List[RuleResult] = dataclasses.field(default_factory=list)
+    component_type: ModelComponentType = ModelComponentType.UNKNOWN
 
     @property
     def errors(self) -> typing.List[RuleResult]:

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Aggregated and individual rule validators.
 """
@@ -15,7 +16,7 @@ from .configs import (
     raster_validation_config,
     resolution_validation_config,
 )
-from ...models.base import LayerModelComponent, NcsPathway
+from ...models.base import LayerModelComponent, ModelComponentType, NcsPathway
 from ...models.validation import (
     RuleConfiguration,
     RuleResult,
@@ -246,13 +247,15 @@ class CrsValidator(BaseRuleValidator):
 
 
 class DataValidator(QgsTask):
-    """Runner for checking a set of datasets against specific validation
-    rules.
+    """Abstract runner for checking a set of datasets against specific
+    validation rules.
 
-    Rule validators need to be added manually in this default implementation.
+    Rule validators need to be added manually in this default
+    implementation and set the model component type of the result.
     """
 
     NAME = "Default Data Validator"
+    MODEL_COMPONENT_TYPE = ModelComponentType.UNKNOWN
 
     rule_validation_finished = QtCore.pyqtSignal(RuleResult)
     validation_completed = QtCore.pyqtSignal()
@@ -273,14 +276,21 @@ class DataValidator(QgsTask):
         rule validators.
 
         :returns: True if the validation process succeeded
-        or False if it failed.
+        or False if it failed ro cancelled.
         :rtype: bool
         """
+        status = True
         for rule_validator in self._rule_validators:
+            if self.isCanceled():
+                status = False
+                break
+
             rule_validator.model_components = self.model_components
             rule_validator.run()
             if rule_validator.result is not None:
                 self.rule_validation_finished.emit(rule_validator.result)
+
+        return status
 
     def log(self, message: str, info: bool = True):
         """Convenience function that logs the given messages by appending
@@ -335,7 +345,7 @@ class DataValidator(QgsTask):
         status = True
 
         try:
-            self._validate()
+           status = self._validate()
         except Exception as ex:
             exc_info = "".join(traceback.TracebackException.from_exception(ex).format())
             self.log(exc_info, False)
@@ -413,7 +423,7 @@ class DataValidator(QgsTask):
             rule_results = [
                 rule_validator.result for rule_validator in self._rule_validators
             ]
-            self._result = ValidationResult(rule_results)
+            self._result = ValidationResult(rule_results, self.MODEL_COMPONENT_TYPE)
             self.validation_completed.emit()
 
 
@@ -421,6 +431,8 @@ class NcsDataValidator(DataValidator):
     """Validates both NCS pathway and carbon layer datasets. The resolution
     check for carbon layers is tagged as a warning rather than an error.
     """
+
+    MODEL_COMPONENT_TYPE = ModelComponentType.NCS_PATHWAY
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
