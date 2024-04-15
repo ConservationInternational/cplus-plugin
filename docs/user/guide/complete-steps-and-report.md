@@ -20,7 +20,7 @@ The following recording (**Figure 1**) shows an example of how to do steps 1, 2 
 
 *Figure 2: Processing dialog while the algorithm is running*
 
-- **Figure 3** will be the result of the processing if succeeds.
+- **Figure 3** will be the result of the processing if successful.
 
 - The user should take note that the **View Report** button is now available.
 
