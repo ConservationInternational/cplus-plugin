@@ -1,6 +1,6 @@
 # Preparing data
 
-Data preparation is an important step before performing data analysis. This is especially true for spatial data (rasters and vector layers), as there are a lot of factors that plays a role in the end result. Here are some factors which needs to be considered:
+Data preparation is an important step before performing data analysis. This is especially true for spatial data (rasters and vector layers), as many factors play a role in the result. Here are some factors that need to be considered:
 
 - The data should cover the same spatial extent or overlap each other.
 
@@ -14,9 +14,9 @@ for some layers, and projected coordinate systems for others, can have negative 
 - When working with rasters, be sure that the nodata value is set correctly, otherwise, the nodata value
 will be unknown during analysis and will be considered as a normal pixel value.
 
-- The plugin can only work with raster layers. If you have data in vector format, consider converting it to a raster.
+- The plugin can only work with raster layers. If you have data in vector format, convert it to raster.
 
-- Any outlier values needs to be removed from the spatial data before performing analysis.
+- Any outlier values need to be removed from the spatial data before performing analysis.
 
 Taking into account the above can greatly improve the analysis and the results produced from the analysis. This section will further deal with how to prepare your data using tools available in QGIS.
 
@@ -62,7 +62,7 @@ Follow these easy steps to remove nodata pixels from a raster:
 #### Fix layers with an undefined CRS
 
 Sometimes a spatial dataset might not have its coordinate system defined. This can cause issues and needs
-to be resolved prior to performing analysis. An unknown coordinate system can be identified as follows:
+to be resolved before performing analysis. An unknown coordinate system can be identified as follows:
 
 - Open the layer in QGIS.
 - QGIS will show a warning next to the layer.
