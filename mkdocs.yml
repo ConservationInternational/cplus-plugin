@@ -11,8 +11,21 @@ nav:
   - Users:
       - user/index.md
       - Quick Start: user/quickstart/index.md
-      - Guide: user/guide/index.md
-      - Manual: user/manual/index.md
+      - Guide:
+                - user/guide/index.md
+                - Complete Steps and Report: user/guide/complete-steps-and-report.md
+                - Preparing Data: user/guide/preparing-data.md
+                - Settings: user/guide/settings.md
+                - Step 1: user/guide/step-1.md
+                - Step 2: user/guide/step-2.md
+                - Step 3: user/guide/step-3.md
+      - Manual:
+                - user/manual/index.md
+                - Calculation and Formula: user/manual/calculation-and-formula.md
+                - Step 1: user/manual/step-1.md
+                - Step 2: user/manual/step-2.md
+                - Step 3: user/manual/step-3.md
+                - Settings: user/manual/settings.md
   - Administrators:
       - administrator/index.md
       - Guide: administrator/guide/index.md
