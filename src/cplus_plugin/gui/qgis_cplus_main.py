@@ -48,6 +48,7 @@ from qgis.core import (
 )
 
 from qgis.gui import (
+    QgsGui,
     QgsMessageBar,
     QgsRubberBand,
 )
@@ -117,6 +118,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     ):
         super().__init__(parent)
         self.setupUi(self)
+
+        QgsGui.enableAutoGeometryRestore(self)
+
         self.iface = iface
         self.progress_dialog = None
         self.task = None

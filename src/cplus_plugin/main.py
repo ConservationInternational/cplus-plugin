@@ -121,6 +121,9 @@ class QgisCplus:
         self.main_widget = QgisCplusMain(
             iface=self.iface, parent=self.iface.mainWindow()
         )
+        self.main_widget.visibilityChanged.connect(
+            self.on_dock_widget_visibility_changed
+        )
 
         self.options_factory = None
 
@@ -305,6 +308,20 @@ class QgisCplus:
         self.toolButton.setDefaultAction(self.cplus_action)
 
         self.actions.append(self.cplus_action)
+
+    def on_dock_widget_visibility_changed(self, visible: bool):
+        """Slot raised when the visibility of the main docket widget changes.
+
+        :param visible: True if the dock widget is visible, else False.
+        :type visible: bool
+        """
+        # Set default dock position on first time load.
+        if visible:
+            app_window = self.iface.mainWindow()
+            dock_area = app_window.dockWidgetArea(self.main_widget)
+            if dock_area == Qt.NoDockWidgetArea and not self.main_widget.isFloating():
+                self.iface.addDockWidget(Qt.RightDockWidgetArea, self.main_widget)
+                self.main_widget.show()
 
     def run_settings(self):
         """Options the CPLUS settings in the QGIS options dialog."""
