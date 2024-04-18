@@ -12,7 +12,7 @@ crs_validation_config = RuleConfiguration(
     ValidationCategory.ERROR,
     tr("Must have the same CRS"),
     "CRS Check",
-    tr("Use the warp tool to reproject the datasets"),
+    tr("Use the warp tool to reproject the datasets to the same CRS"),
 )
 
 
@@ -49,5 +49,5 @@ no_data_validation_config = RuleConfiguration(
     ValidationCategory.ERROR,
     tr("NoData value must be -9999"),
     "NoData Value Check",
-    tr("Use the 'Fill nodata' or 'Translate' tool to change the nodata value"),
+    tr("Use the 'Fill nodata' or 'Translate' tool to change the NoData value"),
 )

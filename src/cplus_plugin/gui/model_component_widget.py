@@ -26,10 +26,12 @@ from .component_item_model import (
 )
 from ..conf import settings_manager
 from .activity_editor_dialog import ActivityEditorDialog
+from ..lib.validation.manager import validation_manager
 from .model_description_editor import ModelDescriptionEditorDialog
 from .ncs_pathway_editor_dialog import NcsPathwayEditorDialog
 from .pixel_value_editor_dialog import PixelValueEditorDialog
 from ..models.base import Activity, NcsPathway
+from .validation.inspector_dialog import ValidationInspectorDialog
 from ..utils import FileUtils, log
 
 
@@ -348,6 +350,13 @@ class NcsComponentWidget(ModelComponentWidget):
         self.lst_model_items.setDragDropMode(QtWidgets.QAbstractItemView.DragOnly)
         self.lst_model_items.setAcceptDrops(False)
 
+        self._validation_manager = validation_manager
+        self._validation_submit_result = None
+
+        self.btn_validate_pathways = None
+
+        self.add_auxiliary_widgets()
+
     def add_ncs_pathway(self, ncs_pathway: NcsPathway) -> bool:
         """Adds an NCS pathway object to the view.
 
@@ -359,6 +368,15 @@ class NcsComponentWidget(ModelComponentWidget):
         :rtype: bool
         """
         return self.item_model.add_ncs_pathway(ncs_pathway)
+
+    def add_auxiliary_widgets(self):
+        """Adds additional action widgets for managing NCS pathways."""
+        self.btn_validate_pathways = QtWidgets.QToolButton(self)
+        style_icon = FileUtils.get_icon("mIconRaster_Success.svg")
+        self.btn_validate_pathways.setIcon(style_icon)
+        self.btn_validate_pathways.setToolTip(self.tr("Show validation inspector"))
+        self.btn_validate_pathways.clicked.connect(self.on_load_validation_inspector)
+        self.add_action_widget(self.btn_validate_pathways)
 
     def clear(self):
         """Removes all NCS pathway items in the view."""
@@ -378,6 +396,38 @@ class NcsComponentWidget(ModelComponentWidget):
         """
         return self.item_model.pathways(valid_only)
 
+    def is_valid(self) -> bool:
+        """Returns whether the NCS pathways are valid based on the validation against
+        a given set of rules defined for an NCSValidator.
+
+        The validation process is automatically triggered through the
+        validation manager object.
+
+        :returns: True if the NCS pathways are valid, else False. If the validation
+        result has warnings and no errors, the overall results will be True. However,
+        if there are errors, it will return False.
+        :rtype: bool
+        """
+        if self._validation_submit_result is None:
+            return False
+
+        if not self._validation_submit_result.success:
+            return False
+
+        if self._validation_manager.is_validation_complete(
+            self._validation_submit_result
+        ):
+            validation_result = self._validation_manager.validation_result(
+                self._validation_submit_result
+            )
+            if validation_result.success:
+                return True
+
+            if validation_result.warnings and not validation_result.errors:
+                return True
+
+        return False
+
     def ncs_items(self) -> typing.List[NcsPathwayItem]:
         """Returns a collection of all NcsPathwayItem objects in the
         list view.
@@ -387,6 +437,64 @@ class NcsComponentWidget(ModelComponentWidget):
         """
         return self.item_model.model_component_items()
 
+    def on_load_validation_inspector(self):
+        """Slot raised to show the validation inspector dialog.
+
+        If the validation process is not yet completed, a
+        progress dialog will be shown.
+        """
+        if self._validation_submit_result is None:
+            QtWidgets.QMessageBox.critical(
+                self,
+                self.tr("Load Validation Inspector"),
+                self.tr(
+                    "Unable to show the validation inspector window.\nNo request for validation has been submitted."
+                ),
+            )
+            log(message="Unable to load validation inspector", info=False)
+            return
+
+        if self._validation_manager.is_validation_complete(
+            self._validation_submit_result
+        ):
+            validation_result = self._validation_manager.validation_result(
+                self._validation_submit_result
+            )
+            if validation_result is None:
+                return
+
+            inspector_dialog = ValidationInspectorDialog(self, result=validation_result)
+            inspector_dialog.exec_()
+
+        else:
+            # Show progress dialog
+            pass
+
+    def validate_pathways(self):
+        """Validates NCS pathway model components against a given set of
+        rules using the ValidationManager.
+        """
+        self._validation_submit_result = None
+
+        ncs_pathways = self.pathways()
+        # No need for validating just one pathway since validation is
+        # relative to the given NCS pathways.
+        if len(ncs_pathways) < 2:
+            log(message="Cannot validate only one NCS pathway.", info=False)
+            return
+
+        self._validation_submit_result = validation_manager.validate_ncs_pathways(
+            ncs_pathways
+        )
+        if not self._validation_submit_result.success:
+            QtWidgets.QMessageBox.critical(
+                self,
+                self.tr("Validate NCS Pathways"),
+                self.tr("Unable to submit NCS pathways for validation"),
+            )
+            log(message="Unable to submit NCS pathways for validation", info=False)
+            return
+
     def _on_add_item(self):
         """Show NCS pathway editor."""
         ncs_editor = NcsPathwayEditorDialog(self, excluded_names=self.model_names())
@@ -395,6 +503,7 @@ class NcsComponentWidget(ModelComponentWidget):
             result = self.item_model.add_ncs_pathway(ncs_pathway)
             if result:
                 settings_manager.save_ncs_pathway(ncs_pathway)
+                self.validate_pathways()
 
     def _on_edit_item(self):
         """Edit selected NCS pathway object."""
@@ -427,6 +536,7 @@ class NcsComponentWidget(ModelComponentWidget):
             if result:
                 self._save_item(item)
                 self.ncs_pathway_updated.emit(ncs_pathway)
+                self.validate_pathways()
             self._update_ui_on_selection_changed()
 
     def _save_item(self, item: NcsPathwayItem):
@@ -462,6 +572,7 @@ class NcsComponentWidget(ModelComponentWidget):
             self.ncs_pathway_removed.emit(str(ncs.uuid))
             settings_manager.remove_ncs_pathway(str(ncs.uuid))
             self.clear_description()
+            self.validate_pathways()
 
     def load(self):
         """Load items from settings."""
@@ -480,6 +591,8 @@ class NcsComponentWidget(ModelComponentWidget):
             if progress_dialog.wasCanceled():
                 break
             self.add_ncs_pathway(ncs)
+
+        self.validate_pathways()
 
 
 class ActivityComponentWidget(ModelComponentWidget):

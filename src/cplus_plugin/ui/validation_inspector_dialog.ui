@@ -6,18 +6,21 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>481</width>
-    <height>300</height>
+    <width>651</width>
+    <height>341</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Validation Inspector</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0">
+   <item row="0" column="0" colspan="3">
     <widget class="QTreeWidget" name="tw_results">
      <property name="editTriggers">
       <set>QAbstractItemView::NoEditTriggers</set>
+     </property>
+     <property name="rootIsDecorated">
+      <bool>true</bool>
      </property>
      <attribute name="headerVisible">
       <bool>false</bool>
@@ -30,6 +33,26 @@
     </widget>
    </item>
    <item row="1" column="0">
+    <widget class="QPushButton" name="btn_expand">
+     <property name="toolTip">
+      <string>Expand all rule result items</string>
+     </property>
+     <property name="text">
+      <string>Expand all</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QPushButton" name="btn_collapse">
+     <property name="toolTip">
+      <string>Collapse all rule result items</string>
+     </property>
+     <property name="text">
+      <string>Collapse all</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="2">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>

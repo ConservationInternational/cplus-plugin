@@ -41,7 +41,7 @@ class ValidationManager(QtCore.QObject):
         self._validation_results = {}
 
         self.task_manager = QgsApplication.instance().taskManager()
-        self.task_manager.statusChanged.connect(self.on_task_status_changed)
+        self.task_manager.statusChanged.connect(self.on_validation_status_changed)
 
     def validate_ncs_pathways(
         self, pathways: typing.List[NcsPathway], cancel_running=True
@@ -68,13 +68,12 @@ class ValidationManager(QtCore.QObject):
 
         ncs_validator = NcsDataValidator()
         ncs_validator.model_components = pathways
-        task_id = self.task_manager.addTask(NcsDataValidator)
+        task_id = self.task_manager.addTask(ncs_validator)
 
         if task_id == 0:
             return SubmitResult("", False)
 
         self._validation_tasks[str(task_id)] = ncs_validator
-        self._ncs_validation_ids.append(task_id)
 
         return SubmitResult(str(task_id), True)
 
@@ -121,6 +120,45 @@ class ValidationManager(QtCore.QObject):
                 del self._validation_tasks[str(task_id)]
 
             self.validation_completed.emit(str(task_id))
+
+    def is_validation_complete(self, result: SubmitResult) -> bool:
+        """Checks whether the validation process, based on the given
+        submission result, is complete.
+
+        :param result: Result of the request for validation.
+        :type result: SubmitResult
+
+        :returns: True if the validation process is complete, else
+        False if it is still in progress or has failed.
+        :rtype: bool
+        """
+        if not result.success:
+            return False
+
+        if result.identifier in self._validation_results:
+            return True
+
+        return False
+
+    def validation_result(
+        self, result: SubmitResult
+    ) -> typing.Union[None, ValidationResult]:
+        """Gets the validation result based on the given submission result.
+
+        :param result: Result of the request for validation.
+        :type result: SubmitResult
+
+        :returns: Validation result if the process was complete else None
+        if the submission or actual validation process failed.
+        :rtype: ValidationResult
+        """
+        if not result.success:
+            return None
+
+        if result.identifier not in self._validation_results:
+            return None
+
+        return self._validation_results[result.identifier]
 
     def cancel(self, result: SubmitResult) -> bool:
         """Cancels a validation process matching the result of the submission.

@@ -10,6 +10,8 @@ from qgis.PyQt import QtCore
 
 from qgis.core import QgsRasterLayer, QgsTask
 
+from ...definitions.constants import NO_DATA_VALUE
+
 from .configs import (
     crs_validation_config,
     no_data_validation_config,
@@ -26,7 +28,7 @@ from ...models.validation import (
 from ...utils import log, tr
 
 
-class BaseRuleValidator:
+class BaseRuleValidator(QtCore.QObject):
     """Validator for an individual rule.
 
     This is an abstract class that needs to be subclassed with the
@@ -34,10 +36,17 @@ class BaseRuleValidator:
     protected function.
     """
 
-    def __init__(self, configuration: RuleConfiguration):
+    validation_started = QtCore.pyqtSignal()
+    validation_progress_changed = QtCore.pyqtSignal(float)
+    validation_completed = QtCore.pyqtSignal()
+
+    def __init__(self, configuration: RuleConfiguration, parent=None):
+        super().__init__(parent)
+
         self._config = configuration
         self._result: RuleResult = None
         self.model_components: typing.List[LayerModelComponent] = list()
+        self._progress = 0.0
 
     @property
     def rule_configuration(self) -> RuleConfiguration:
@@ -66,6 +75,15 @@ class BaseRuleValidator:
         """
         raise NotImplementedError
 
+    @property
+    def progress(self) -> float:
+        """Returns the validator's progress.
+
+        :returns: Progress of the validator between 0.0 and 100.0.
+        :rtype: float
+        """
+        return self._progress
+
     def _validate(self) -> bool:
         """Initiates the validation process.
 
@@ -93,6 +111,21 @@ class BaseRuleValidator:
         msg = f"{self._config.rule_name} - {message}"
         log(message=msg, info=info)
 
+    def _set_progress(self, progress: float):
+        """Set the current progress of the validator.
+
+        The 'validation_progress_changed' signal will be emitted.
+
+        :param progress: Progress of validation as a percentage
+        value i.e. between 0.0 and 100.0.
+        :type progress: float
+        """
+        if progress < 0.0 or progress > 100.0:
+            return
+
+        self._progress = progress
+        self.validation_progress_changed.emit(progress)
+
     def run(self) -> bool:
         """Initiates the rule validation process and returns
         a result indicating whether the process succeeded or
@@ -111,7 +144,11 @@ class BaseRuleValidator:
 
             return False
 
-        return self._validate()
+        self.validation_started.emit()
+        status = self._validate()
+        self.validation_completed.emit()
+
+        return status
 
 
 BaseRuleValidatorType = typing.TypeVar("BaseRuleValidatorType", bound=BaseRuleValidator)
@@ -133,6 +170,9 @@ class RasterValidator(BaseRuleValidator):
         status = True
         non_raster_model_components = []
 
+        progress = 0.0
+        progress_increment = 100.0 / len(self.model_components)
+
         for model_component in self.model_components:
             is_valid = model_component.is_valid()
             if not is_valid:
@@ -143,6 +183,9 @@ class RasterValidator(BaseRuleValidator):
                 layer = model_component.to_map_layer()
                 if not isinstance(layer, QgsRasterLayer):
                     non_raster_model_components.append(model_component.name)
+
+            progress += progress_increment
+            self._set_progress(progress)
 
         summary = ""
         validate_info = []
@@ -156,6 +199,8 @@ class RasterValidator(BaseRuleValidator):
         self._result = RuleResult(
             self._config, self._config.recommendation, summary, validate_info
         )
+
+        self._set_progress(100.0)
 
         return status
 
@@ -183,7 +228,11 @@ class CrsValidator(BaseRuleValidator):
         # key: CRS name or 'undefined', value: list of model/layer names
         crs_definitions = {}
         undefined_msg = tr("Undefined")
+        invalid_msg = tr("Invalid datasets")
         has_undefined = False
+
+        progress = 0.0
+        progress_increment = 100.0 / len(self.model_components)
 
         for model_component in self.model_components:
             is_valid = model_component.is_valid()
@@ -191,8 +240,12 @@ class CrsValidator(BaseRuleValidator):
                 if status:
                     status = False
 
-                tr_msg = tr("is not a valid data source.")
-                self.log(f"{model_component.name} {tr_msg}")
+                # Add invalid datasets to the validation messages to make it explicit
+                if invalid_msg in crs_definitions:
+                    layers = crs_definitions.get(invalid_msg)
+                    layers.append(model_component.name)
+                else:
+                    crs_definitions[invalid_msg] = [model_component.name]
 
             else:
                 layer = model_component.to_map_layer()
@@ -218,6 +271,9 @@ class CrsValidator(BaseRuleValidator):
                     else:
                         crs_definitions[crs_id] = [model_component.name]
 
+            progress += progress_increment
+            self._set_progress(progress)
+
         if len(crs_definitions) > 1 and status:
             status = False
 
@@ -235,6 +291,8 @@ class CrsValidator(BaseRuleValidator):
             self._config, self._config.recommendation, summary, validate_info
         )
 
+        self._set_progress(100.0)
+
         return status
 
     def rule_type(self) -> RuleType:
@@ -244,6 +302,94 @@ class CrsValidator(BaseRuleValidator):
         :rtype: RuleType
         """
         return RuleType.CRS
+
+
+class NoDataValueValidator(BaseRuleValidator):
+    """Checks if applicable input datasets have the same no data value."""
+
+    # Default band in raster layer.
+    BAND_NUMBER = 0
+
+    def _validate(self) -> bool:
+        """Checks whether applicable input datasets have the same no data value.
+
+        :returns: True if the validation process succeeded
+        or False if it failed.
+        :rtype: bool
+        """
+        status = True
+
+        no_data_definitions = {}
+        invalid_msg = tr("Invalid datasets")
+        has_undefined = False
+
+        progress = 0.0
+        progress_increment = 100.0 / len(self.model_components)
+
+        for model_component in self.model_components:
+            is_valid = model_component.is_valid()
+            if not is_valid:
+                if status:
+                    status = False
+
+                # Add invalid datasets to the validation messages to
+                # make it explicit
+                if invalid_msg in no_data_definitions:
+                    layers = no_data_definitions.get(invalid_msg)
+                    layers.append(model_component.name)
+                else:
+                    no_data_definitions[invalid_msg] = [model_component.name]
+
+            else:
+                layer = model_component.to_map_layer()
+                if not isinstance(layer, QgsRasterLayer):
+                    continue
+
+                # If band does not have NoData value then exclude from validation
+                raster_provider = layer.dataProvider()
+                if not raster_provider.sourceHasNoDataValue(self.BAND_NUMBER):
+                    continue
+
+                no_data_value = raster_provider.sourceNoDataValue(self.BAND_NUMBER)
+                if no_data_value != NO_DATA_VALUE:
+                    if no_data_value in no_data_definitions:
+                        layers = no_data_definitions.get(no_data_value)
+                        layers.append(model_component.name)
+                    else:
+                        no_data_definitions[no_data_value] = [model_component.name]
+
+            progress += progress_increment
+            self._set_progress(progress)
+
+        if len(no_data_definitions) > 1 and status:
+            status = False
+
+        summary = ""
+        validate_info = []
+        if not status:
+            summary_tr = tr("Datasets have a NoData value different from")
+            summary = f"{summary_tr} {str(NO_DATA_VALUE)}"
+            for no_data, layers in no_data_definitions.items():
+                validate_info.append((str(no_data), ", ".join(layers)))
+        else:
+            summary_tr = tr("Datasets have the same NoData value")
+            summary = f"{summary_tr} - {str(NO_DATA_VALUE)}"
+
+        self._result = RuleResult(
+            self._config, self._config.recommendation, summary, validate_info
+        )
+
+        self._set_progress(100.0)
+
+        return status
+
+    def rule_type(self) -> RuleType:
+        """Returns the no data value rule validator.
+
+        :returns: No data value rule validator.
+        :rtype: RuleType
+        """
+        return RuleType.NO_DATA_VALUE
 
 
 class DataValidator(QgsTask):
@@ -257,7 +403,8 @@ class DataValidator(QgsTask):
     NAME = "Default Data Validator"
     MODEL_COMPONENT_TYPE = ModelComponentType.UNKNOWN
 
-    rule_validation_finished = QtCore.pyqtSignal(RuleResult)
+    rule_validation_started = QtCore.pyqtSignal(RuleType)
+    rule_validation_finished = QtCore.pyqtSignal(RuleType, RuleResult)
     validation_completed = QtCore.pyqtSignal()
 
     def __init__(self, model_components=None):
@@ -288,7 +435,9 @@ class DataValidator(QgsTask):
             rule_validator.model_components = self.model_components
             rule_validator.run()
             if rule_validator.result is not None:
-                self.rule_validation_finished.emit(rule_validator.result)
+                self.rule_validation_finished.emit(
+                    rule_validator.rule_type(), rule_validator.result
+                )
 
         return status
 
@@ -345,7 +494,7 @@ class DataValidator(QgsTask):
         status = True
 
         try:
-           status = self._validate()
+            status = self._validate()
         except Exception as ex:
             exc_info = "".join(traceback.TracebackException.from_exception(ex).format())
             self.log(exc_info, False)
@@ -365,7 +514,11 @@ class DataValidator(QgsTask):
         by their corresponding rule types.
         :rtype: dict
         """
-        return {RuleType.DATA_TYPE: RasterValidator}
+        return {
+            RuleType.DATA_TYPE: RasterValidator,
+            RuleType.CRS: CrsValidator,
+            RuleType.NO_DATA_VALUE: NoDataValueValidator,
+        }
 
     @staticmethod
     def validator_cls_by_type(rule_type: RuleType) -> typing.Type[BaseRuleValidator]:
@@ -425,6 +578,7 @@ class DataValidator(QgsTask):
             ]
             self._result = ValidationResult(rule_results, self.MODEL_COMPONENT_TYPE)
             self.validation_completed.emit()
+            self.log("Validation complete.")
 
 
 class NcsDataValidator(DataValidator):
@@ -433,6 +587,7 @@ class NcsDataValidator(DataValidator):
     """
 
     MODEL_COMPONENT_TYPE = ModelComponentType.NCS_PATHWAY
+    NAME = "NCS Data Validator"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -452,3 +607,9 @@ class NcsDataValidator(DataValidator):
             RuleType.CRS, crs_validation_config
         )
         self.add_rule_validator(self._crs_validator)
+
+        # NoData value validator
+        self._no_data_validator = DataValidator.create_rule_validator(
+            RuleType.NO_DATA_VALUE, no_data_validation_config
+        )
+        self.add_rule_validator(self._no_data_validator)
