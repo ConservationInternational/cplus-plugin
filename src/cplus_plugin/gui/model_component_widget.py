@@ -372,7 +372,7 @@ class NcsComponentWidget(ModelComponentWidget):
     def add_auxiliary_widgets(self):
         """Adds additional action widgets for managing NCS pathways."""
         self.btn_validate_pathways = QtWidgets.QToolButton(self)
-        style_icon = FileUtils.get_icon("mIconRaster_Success.svg")
+        style_icon = FileUtils.get_icon("mIconRaster_Success_v3.svg")
         self.btn_validate_pathways.setIcon(style_icon)
         self.btn_validate_pathways.setToolTip(self.tr("Show validation inspector"))
         self.btn_validate_pathways.clicked.connect(self.on_load_validation_inspector)

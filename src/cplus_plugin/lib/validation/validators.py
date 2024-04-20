@@ -18,6 +18,7 @@ from .configs import (
     raster_validation_config,
     resolution_validation_config,
 )
+from .feedback import ValidationFeedback
 from ...models.base import LayerModelComponent, ModelComponentType, NcsPathway
 from ...models.validation import (
     RuleConfiguration,
@@ -28,7 +29,7 @@ from ...models.validation import (
 from ...utils import log, tr
 
 
-class BaseRuleValidator(QtCore.QObject):
+class BaseRuleValidator:
     """Validator for an individual rule.
 
     This is an abstract class that needs to be subclassed with the
@@ -36,17 +37,16 @@ class BaseRuleValidator(QtCore.QObject):
     protected function.
     """
 
-    validation_started = QtCore.pyqtSignal()
-    validation_progress_changed = QtCore.pyqtSignal(float)
-    validation_completed = QtCore.pyqtSignal()
-
-    def __init__(self, configuration: RuleConfiguration, parent=None):
-        super().__init__(parent)
-
+    def __init__(
+        self,
+        configuration: RuleConfiguration,
+        feedback: ValidationFeedback,
+        parent=None,
+    ):
         self._config = configuration
+        self._feedback = feedback
         self._result: RuleResult = None
         self.model_components: typing.List[LayerModelComponent] = list()
-        self._progress = 0.0
 
     @property
     def rule_configuration(self) -> RuleConfiguration:
@@ -76,13 +76,15 @@ class BaseRuleValidator(QtCore.QObject):
         raise NotImplementedError
 
     @property
-    def progress(self) -> float:
-        """Returns the validator's progress.
+    def feedback(self) -> ValidationFeedback:
+        """Returns the feedback object used in the validator
+        for providing feedback on the validation process.
 
-        :returns: Progress of the validator between 0.0 and 100.0.
-        :rtype: float
+        :returns: Feedback object used in the validator
+        for providing feedback on the validation process.
+        :rtype: ValidationFeedback
         """
-        return self._progress
+        return self._feedback
 
     def _validate(self) -> bool:
         """Initiates the validation process.
@@ -120,11 +122,7 @@ class BaseRuleValidator(QtCore.QObject):
         value i.e. between 0.0 and 100.0.
         :type progress: float
         """
-        if progress < 0.0 or progress > 100.0:
-            return
-
-        self._progress = progress
-        self.validation_progress_changed.emit(progress)
+        self._feedback.rule_progress = progress
 
     def run(self) -> bool:
         """Initiates the rule validation process and returns
@@ -144,11 +142,7 @@ class BaseRuleValidator(QtCore.QObject):
 
             return False
 
-        self.validation_started.emit()
-        status = self._validate()
-        self.validation_completed.emit()
-
-        return status
+        return self._validate()
 
 
 BaseRuleValidatorType = typing.TypeVar("BaseRuleValidatorType", bound=BaseRuleValidator)
@@ -172,15 +166,19 @@ class RasterValidator(BaseRuleValidator):
 
         progress = 0.0
         progress_increment = 100.0 / len(self.model_components)
+        self._set_progress(progress)
 
         for model_component in self.model_components:
+            if self.feedback.isCanceled():
+                return False
+
             is_valid = model_component.is_valid()
             if not is_valid:
                 if status:
                     status = False
                 non_raster_model_components.append(model_component.name)
             else:
-                layer = model_component.to_map_layer()
+                layer = model_component.to_map_layer().clone()
                 if not isinstance(layer, QgsRasterLayer):
                     non_raster_model_components.append(model_component.name)
 
@@ -233,8 +231,12 @@ class CrsValidator(BaseRuleValidator):
 
         progress = 0.0
         progress_increment = 100.0 / len(self.model_components)
+        self._set_progress(progress)
 
         for model_component in self.model_components:
+            if self.feedback.isCanceled():
+                return False
+
             is_valid = model_component.is_valid()
             if not is_valid:
                 if status:
@@ -248,7 +250,7 @@ class CrsValidator(BaseRuleValidator):
                     crs_definitions[invalid_msg] = [model_component.name]
 
             else:
-                layer = model_component.to_map_layer()
+                layer = model_component.to_map_layer().clone()
                 crs = layer.crs()
                 if crs is None:
                     # Flag that there is at least one dataset with an undefined CRS
@@ -325,8 +327,12 @@ class NoDataValueValidator(BaseRuleValidator):
 
         progress = 0.0
         progress_increment = 100.0 / len(self.model_components)
+        self._set_progress(progress)
 
         for model_component in self.model_components:
+            if self.feedback.isCanceled():
+                return False
+
             is_valid = model_component.is_valid()
             if not is_valid:
                 if status:
@@ -341,7 +347,7 @@ class NoDataValueValidator(BaseRuleValidator):
                     no_data_definitions[invalid_msg] = [model_component.name]
 
             else:
-                layer = model_component.to_map_layer()
+                layer = model_component.to_map_layer().clone()
                 if not isinstance(layer, QgsRasterLayer):
                     continue
 
@@ -373,7 +379,7 @@ class NoDataValueValidator(BaseRuleValidator):
                 validate_info.append((str(no_data), ", ".join(layers)))
         else:
             summary_tr = tr("Datasets have the same NoData value")
-            summary = f"{summary_tr} - {str(NO_DATA_VALUE)}"
+            summary = f"{summary_tr} {str(NO_DATA_VALUE)}"
 
         self._result = RuleResult(
             self._config, self._config.recommendation, summary, validate_info
@@ -417,6 +423,26 @@ class DataValidator(QgsTask):
         self._result: ValidationResult = None
         self._rule_validators = []
         self._rule_results = []
+        self._feedback = ValidationFeedback()
+        self._feedback.rule_progress_changed.connect(self._on_rule_progress_changed)
+        self._feedback.rule_validation_completed.connect(
+            self._on_rule_validation_completed
+        )
+
+        # Used to calculate the overall progress
+        self._current_validator_idx = 0
+        self._rule_reference_progress = 0
+
+    @property
+    def feedback(self) -> ValidationFeedback:
+        """Returns the feedback object used in the validator
+        for providing feedback on the validation process.
+
+        :returns: Feedback object used in the validator
+        for providing feedback on the validation process.
+        :rtype: ValidationFeedback
+        """
+        return self._feedback
 
     def _validate(self) -> bool:
         """Initiates the validation process based on the specified
@@ -427,12 +453,14 @@ class DataValidator(QgsTask):
         :rtype: bool
         """
         status = True
-        for rule_validator in self._rule_validators:
+
+        for i, rule_validator in enumerate(self._rule_validators):
             if self.isCanceled():
                 status = False
                 break
 
             rule_validator.model_components = self.model_components
+            self.feedback.current_rule = rule_validator.rule_type()
             rule_validator.run()
             if rule_validator.result is not None:
                 self.rule_validation_finished.emit(
@@ -440,6 +468,33 @@ class DataValidator(QgsTask):
                 )
 
         return status
+
+    def _on_rule_progress_changed(self, rule_type: RuleType, rule_progress: float):
+        """Slot raised when the rule validation progress changes.
+
+        This calculates the overall progress of the validation process.
+
+        :param rule_type: Rule type currently being executed.
+        :type rule_type: RuleType
+
+        :param rule_progress: Progress of the rule validation.
+        :type rule_progress: float
+        """
+        if len(self._rule_validators) == 0:
+            return
+
+        progress_increment = rule_progress / len(self._rule_validators)
+        total_progress = self._rule_reference_progress + progress_increment
+        self._feedback.setProgress(total_progress)
+        self.setProgress(total_progress)
+
+    def _on_rule_validation_completed(self, rule_type: RuleType):
+        """Slot raised when rule validation has completed.
+
+        param rule_type: Rule type whose execution has ended.
+        :type rule_type: RuleType
+        """
+        self._rule_reference_progress += 100 / len(self._rule_validators)
 
     def log(self, message: str, info: bool = True):
         """Convenience function that logs the given messages by appending
@@ -467,6 +522,8 @@ class DataValidator(QgsTask):
     def cancel(self):
         """Cancel the validation process."""
         self.log(tr("Validation process has been cancelled."))
+
+        self._feedback.cancel()
 
         super().cancel()
 
@@ -535,7 +592,7 @@ class DataValidator(QgsTask):
 
     @staticmethod
     def create_rule_validator(
-        rule_type: RuleType, config: RuleConfiguration
+        rule_type: RuleType, config: RuleConfiguration, feedback: ValidationFeedback
     ) -> BaseRuleValidator:
         """Factory method for creating a rule validator object.
 
@@ -546,12 +603,15 @@ class DataValidator(QgsTask):
         the rule validator.
         :type rule_type: RuleConfiguration
 
+        :param feedback: Feedback object for reporting progress.
+        :type feedback: ValidationFeedback
+
         :returns: An instance of the specific rule validator.
         :rtype: BaseRuleValidator
         """
         validator_cls = DataValidator.validator_cls_by_type(rule_type)
 
-        return validator_cls(config)
+        return validator_cls(config, feedback)
 
     def add_rule_validator(self, rule_validator: BaseRuleValidator):
         """Add a rule validator for validating the input model components.
@@ -598,18 +658,18 @@ class NcsDataValidator(DataValidator):
         """Add rule validators."""
         # Raster data type validator
         self._raster_type_validator = DataValidator.create_rule_validator(
-            RuleType.DATA_TYPE, raster_validation_config
+            RuleType.DATA_TYPE, raster_validation_config, self.feedback
         )
         self.add_rule_validator(self._raster_type_validator)
 
         # CRS validator
         self._crs_validator = DataValidator.create_rule_validator(
-            RuleType.CRS, crs_validation_config
+            RuleType.CRS, crs_validation_config, self.feedback
         )
         self.add_rule_validator(self._crs_validator)
 
         # NoData value validator
         self._no_data_validator = DataValidator.create_rule_validator(
-            RuleType.NO_DATA_VALUE, no_data_validation_config
+            RuleType.NO_DATA_VALUE, no_data_validation_config, self.feedback
         )
         self.add_rule_validator(self._no_data_validator)

@@ -43,6 +43,7 @@ class SubmitResult:
 
     identifier: str
     success: bool
+    feedback: "ValidationFeedback" = None
 
 
 @dataclasses.dataclass

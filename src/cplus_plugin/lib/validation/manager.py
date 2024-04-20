@@ -75,7 +75,7 @@ class ValidationManager(QtCore.QObject):
 
         self._validation_tasks[str(task_id)] = ncs_validator
 
-        return SubmitResult(str(task_id), True)
+        return SubmitResult(str(task_id), True, ncs_validator.feedback)
 
     def cancel_ncs_validation(self):
         """Cancel all validation processes of NCS pathway datasets."""
@@ -166,7 +166,9 @@ class ValidationManager(QtCore.QObject):
         :param result: Result of the validation submission.
         :type result: SubmitResult
 
-        :returns: True if the validation task was successfully cancelled else False if the submit results status was not successful or if the validation task was not found.
+        :returns: True if the validation task was successfully cancelled
+        else False if the submit results status was not successful or if
+        the validation task was not found.
         :rtype: bool
         """
         if not result.success:
