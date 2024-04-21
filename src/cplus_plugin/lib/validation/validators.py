@@ -8,7 +8,7 @@ import typing
 
 from qgis.PyQt import QtCore
 
-from qgis.core import QgsRasterLayer, QgsTask
+from qgis.core import QgsRasterLayer, QgsTask, QgsUnitTypes
 
 from ...definitions.constants import NO_DATA_VALUE
 
@@ -399,6 +399,128 @@ class NoDataValueValidator(BaseRuleValidator):
         return RuleType.NO_DATA_VALUE
 
 
+class ResolutionValidator(BaseRuleValidator):
+    """Checks if datasets have the same spatial resolution."""
+
+    def _validate(self) -> bool:
+        """Checks whether input datasets have the same
+        spatial resolution.
+
+        :returns: True if the validation process succeeded
+        or False if it failed.
+        :rtype: bool
+        """
+        status = True
+
+        spatial_resolution_definitions = {}
+        invalid_msg = tr("Invalid datasets")
+
+        progress = 0.0
+        progress_increment = 100.0 / len(self.model_components)
+        self._set_progress(progress)
+
+        for model_component in self.model_components:
+            if self.feedback.isCanceled():
+                return False
+
+            is_valid = model_component.is_valid()
+            if not is_valid:
+                if status:
+                    status = False
+
+                # Add invalid datasets to the validation messages to
+                # make it explicit
+                if invalid_msg in spatial_resolution_definitions:
+                    layers = spatial_resolution_definitions.get(invalid_msg)
+                    layers.append(model_component.name)
+                else:
+                    spatial_resolution_definitions[invalid_msg] = [model_component.name]
+
+            else:
+                layer = model_component.to_map_layer().clone()
+                if not isinstance(layer, QgsRasterLayer):
+                    continue
+
+                crs = layer.crs()
+                if crs is None:
+                    crs_unit_str = tr("unknown")
+                else:
+                    crs_unit_str = QgsUnitTypes.toAbbreviatedString(crs.mapUnits())
+
+                # Tuple containing x, y and units
+                resolution_definition = (
+                    layer.rasterUnitsPerPixelX(),
+                    layer.rasterUnitsPerPixelY(),
+                    crs_unit_str,
+                )
+                if resolution_definition in spatial_resolution_definitions:
+                    layers = spatial_resolution_definitions.get(resolution_definition)
+                    layers.append(model_component.name)
+                else:
+                    spatial_resolution_definitions[resolution_definition] = [
+                        model_component.name
+                    ]
+
+            progress += progress_increment
+            self._set_progress(progress)
+
+        if len(spatial_resolution_definitions) > 1 and status:
+            status = False
+
+        summary = ""
+        validate_info = []
+        if not status:
+            summary = tr("Datasets have different spatial resolutions")
+            for res_definition, layers in spatial_resolution_definitions.items():
+                validate_info.append(
+                    (
+                        self.resolution_definition_to_str(res_definition),
+                        ", ".join(layers),
+                    )
+                )
+        else:
+            summary_tr = tr("Datasets have the same spatial resolution")
+            summary = f"{summary_tr} {self.resolution_definition_to_str(list(spatial_resolution_definitions.keys())[0])}"
+
+        self._result = RuleResult(
+            self._config, self._config.recommendation, summary, validate_info
+        )
+
+        self._set_progress(100.0)
+
+        return status
+
+    @classmethod
+    def resolution_definition_to_str(cls, resolution_definition: tuple) -> str:
+        """Formats the resolution definition to a friendly-display string.
+
+        :param resolution_definition: Tuple containing x and y resolutions as
+        well as the units.
+        :type resolution_definition: tuple
+
+        :returns: Friendly display string.
+        :rtype: str
+        """
+        if len(resolution_definition) < 3:
+            return ""
+
+        unit_str = (
+            tr("unknown units")
+            if not resolution_definition[2]
+            else resolution_definition[2]
+        )
+
+        return f"X: {resolution_definition[0]!s} {unit_str}, Y: {resolution_definition[1]!s} {unit_str}"
+
+    def rule_type(self) -> RuleType:
+        """Returns the no data value rule validator.
+
+        :returns: No data value rule validator.
+        :rtype: RuleType
+        """
+        return RuleType.NO_DATA_VALUE
+
+
 class DataValidator(QgsTask):
     """Abstract runner for checking a set of datasets against specific
     validation rules.
@@ -571,6 +693,7 @@ class DataValidator(QgsTask):
             RuleType.DATA_TYPE: RasterValidator,
             RuleType.CRS: CrsValidator,
             RuleType.NO_DATA_VALUE: NoDataValueValidator,
+            RuleType.RESOLUTION: ResolutionValidator,
         }
 
     @staticmethod
@@ -669,3 +792,9 @@ class NcsDataValidator(DataValidator):
             RuleType.NO_DATA_VALUE, no_data_validation_config, self.feedback
         )
         self.add_rule_validator(self._no_data_validator)
+
+        # Spatial resolution
+        self._spatial_resolution_validator = DataValidator.create_rule_validator(
+            RuleType.RESOLUTION, resolution_validation_config, self.feedback
+        )
+        self.add_rule_validator(self._spatial_resolution_validator)

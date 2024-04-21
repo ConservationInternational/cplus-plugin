@@ -70,7 +70,7 @@ class ValidationManager(QtCore.QObject):
         task_id = self.task_manager.addTask(ncs_validator)
 
         if task_id == 0:
-            return SubmitResult("", False)
+            return SubmitResult("", False, None)
 
         self._validation_tasks[str(task_id)] = ncs_validator
 
