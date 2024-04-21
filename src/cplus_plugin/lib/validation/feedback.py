@@ -21,6 +21,7 @@ class ValidationFeedback(QgsFeedback):
     rule_validation_started = QtCore.pyqtSignal(RuleType)
     rule_progress_changed = QtCore.pyqtSignal(RuleType, float)
     rule_validation_completed = QtCore.pyqtSignal(RuleType)
+    validation_completed = QtCore.pyqtSignal()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

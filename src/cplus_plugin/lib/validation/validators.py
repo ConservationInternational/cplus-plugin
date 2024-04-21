@@ -409,10 +409,6 @@ class DataValidator(QgsTask):
     NAME = "Default Data Validator"
     MODEL_COMPONENT_TYPE = ModelComponentType.UNKNOWN
 
-    rule_validation_started = QtCore.pyqtSignal(RuleType)
-    rule_validation_finished = QtCore.pyqtSignal(RuleType, RuleResult)
-    validation_completed = QtCore.pyqtSignal()
-
     def __init__(self, model_components=None):
         super().__init__(tr(self.NAME))
 
@@ -462,10 +458,6 @@ class DataValidator(QgsTask):
             rule_validator.model_components = self.model_components
             self.feedback.current_rule = rule_validator.rule_type()
             rule_validator.run()
-            if rule_validator.result is not None:
-                self.rule_validation_finished.emit(
-                    rule_validator.rule_type(), rule_validator.result
-                )
 
         return status
 
@@ -637,7 +629,7 @@ class DataValidator(QgsTask):
                 rule_validator.result for rule_validator in self._rule_validators
             ]
             self._result = ValidationResult(rule_results, self.MODEL_COMPONENT_TYPE)
-            self.validation_completed.emit()
+            self._feedback.validation_completed.emit()
             self.log("Validation complete.")
 
 

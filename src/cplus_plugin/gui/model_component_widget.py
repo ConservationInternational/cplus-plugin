@@ -32,6 +32,7 @@ from .ncs_pathway_editor_dialog import NcsPathwayEditorDialog
 from .pixel_value_editor_dialog import PixelValueEditorDialog
 from ..models.base import Activity, NcsPathway
 from .validation.inspector_dialog import ValidationInspectorDialog
+from .validation.progress_dialog import ValidationProgressDialog
 from ..utils import FileUtils, log
 
 
@@ -372,7 +373,7 @@ class NcsComponentWidget(ModelComponentWidget):
     def add_auxiliary_widgets(self):
         """Adds additional action widgets for managing NCS pathways."""
         self.btn_validate_pathways = QtWidgets.QToolButton(self)
-        style_icon = FileUtils.get_icon("mIconRaster_Success_v3.svg")
+        style_icon = FileUtils.get_icon("mIconRasterValidate.svg")
         self.btn_validate_pathways.setIcon(style_icon)
         self.btn_validate_pathways.setToolTip(self.tr("Show validation inspector"))
         self.btn_validate_pathways.clicked.connect(self.on_load_validation_inspector)
@@ -468,7 +469,10 @@ class NcsComponentWidget(ModelComponentWidget):
 
         else:
             # Show progress dialog
-            pass
+            progress_dialog = ValidationProgressDialog(
+                self._validation_submit_result, self
+            )
+            progress_dialog.exec_()
 
     def validate_pathways(self):
         """Validates NCS pathway model components against a given set of

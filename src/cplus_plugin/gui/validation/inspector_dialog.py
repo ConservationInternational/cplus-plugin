@@ -13,7 +13,7 @@ from qgis.PyQt import QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
-from ...models.validation import RuleResult, ValidationResult
+from ...models.validation import ValidationResult
 from .result_items import RuleResultItem
 from ...utils import FileUtils
 

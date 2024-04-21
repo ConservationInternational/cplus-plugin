@@ -18,7 +18,6 @@ from qgis.PyQt import QtCore, QtGui
 
 from ...models.base import ModelComponentType, NcsPathway
 from ...models.validation import SubmitResult, ValidationResult
-from ...utils import FileUtils, log, tr
 from .validators import NcsDataValidator
 
 
