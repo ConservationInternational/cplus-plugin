@@ -16,6 +16,7 @@ class RuleType(IntEnum):
     DATA_TYPE = 1
     NO_DATA_VALUE = 2
     RESOLUTION = 3
+    CARBON_RESOLUTION = 4
 
 
 class ValidationCategory(IntEnum):
@@ -146,5 +147,5 @@ class ValidationResult:
         return len(self.rule_results)
 
     def __iter__(self):
-        """Returns qn iterable object containing the individual rule results."""
+        """Returns an iterable object containing the individual rule results."""
         return iter(self.rule_results)

@@ -3,23 +3,23 @@
 Aggregated and individual rule validators.
 """
 
+from pathlib import Path
 import traceback
 import typing
-
-from qgis.PyQt import QtCore
 
 from qgis.core import QgsRasterLayer, QgsTask, QgsUnitTypes
 
 from ...definitions.constants import NO_DATA_VALUE
 
 from .configs import (
+    carbon_resolution_validation_config,
     crs_validation_config,
     no_data_validation_config,
     raster_validation_config,
     resolution_validation_config,
 )
 from .feedback import ValidationFeedback
-from ...models.base import LayerModelComponent, ModelComponentType
+from ...models.base import LayerModelComponent, ModelComponentType, NcsPathway
 from ...models.validation import (
     RuleConfiguration,
     RuleInfo,
@@ -441,18 +441,7 @@ class ResolutionValidator(BaseRuleValidator):
                 if not isinstance(layer, QgsRasterLayer):
                     continue
 
-                crs = layer.crs()
-                if crs is None:
-                    crs_unit_str = tr("unknown")
-                else:
-                    crs_unit_str = QgsUnitTypes.toAbbreviatedString(crs.mapUnits())
-
-                # Tuple containing x, y and units
-                resolution_definition = (
-                    layer.rasterUnitsPerPixelX(),
-                    layer.rasterUnitsPerPixelY(),
-                    crs_unit_str,
-                )
+                resolution_definition = self.create_resolution_definition(layer)
                 if resolution_definition in spatial_resolution_definitions:
                     layers = spatial_resolution_definitions.get(resolution_definition)
                     layers.append(model_component.name)
@@ -491,6 +480,31 @@ class ResolutionValidator(BaseRuleValidator):
         return status
 
     @classmethod
+    def create_resolution_definition(cls, layer: QgsRasterLayer):
+        """Creates a resolution definition tuple from a layer.
+
+        :param layer: Input layer.
+        :type layer: QgsRasterLayer
+
+        :returns: Tuple containing x and y resolutions as well
+        as the units.
+        :rtype: tuple
+        """
+        crs = layer.crs()
+        if crs is None:
+            crs_unit_str = tr("unknown")
+        else:
+            crs_unit_str = QgsUnitTypes.toAbbreviatedString(crs.mapUnits())
+
+        # Tuple containing x, y and units
+        resolution_definition = (
+            layer.rasterUnitsPerPixelX(),
+            layer.rasterUnitsPerPixelY(),
+            crs_unit_str,
+        )
+        return resolution_definition
+
+    @classmethod
     def resolution_definition_to_str(cls, resolution_definition: tuple) -> str:
         """Formats the resolution definition to a friendly-display string.
 
@@ -521,11 +535,135 @@ class ResolutionValidator(BaseRuleValidator):
         return RuleType.NO_DATA_VALUE
 
 
+class CarbonLayerResolutionValidator(ResolutionValidator):
+    """Checks if the resolution of the carbon layers matches
+    that of the corresponding NCS pathways.
+    """
+
+    def _validate(self) -> bool:
+        """Checks if the resolution of the carbon layers matches
+        that of the corresponding NCS pathways.
+
+        :returns: True if the validation process succeeded
+        or False if it failed.
+        :rtype: bool
+        """
+        status = True
+
+        carbon_resolution_definitions = {}
+        invalid_msg = tr("Invalid datasets")
+        invalid_carbon_msg = tr("Invalid carbon layer")
+
+        progress = 0.0
+        progress_increment = 100.0 / len(self.model_components)
+        self._set_progress(progress)
+
+        for model_component in self.model_components:
+            if self.feedback.isCanceled():
+                return False
+
+            is_valid = model_component.is_valid()
+            if not is_valid:
+                if status:
+                    status = False
+
+                # Add invalid datasets to the validation messages to
+                # make it explicit
+                if invalid_msg in carbon_resolution_definitions:
+                    layers = carbon_resolution_definitions.get(invalid_msg)
+                    layers.append(model_component.name)
+                else:
+                    carbon_resolution_definitions[invalid_msg] = [model_component.name]
+
+            else:
+                ncs_layer = model_component.to_map_layer().clone()
+                if not isinstance(ncs_layer, QgsRasterLayer):
+                    continue
+
+                # Check if the model component is an NcsPathway
+                if not isinstance(model_component, NcsPathway):
+                    continue
+
+                ncs_resolution_definition = self.create_resolution_definition(ncs_layer)
+
+                # Loop through the spatial resolution of each carbon layer
+                for layer in model_component.carbon_layers():
+                    if not layer.isValid():
+                        if model_component.name in carbon_resolution_definitions:
+                            carbon_definitions = carbon_resolution_definitions.get(
+                                model_component.name
+                            )
+                            carbon_definitions.append(invalid_carbon_msg)
+                        else:
+                            carbon_resolution_definitions[model_component.name] = [
+                                invalid_carbon_msg
+                            ]
+                        continue
+
+                    carbon_layer = layer.clone()
+                    carbon_resolution_definition = self.create_resolution_definition(
+                        carbon_layer
+                    )
+
+                    # We will use the file name to represent the layer name
+                    layer_name = Path(carbon_layer.source()).stem
+                    if ncs_resolution_definition != carbon_resolution_definition:
+                        if model_component.name in carbon_resolution_definitions:
+                            carbon_definitions = carbon_resolution_definitions.get(
+                                model_component.name
+                            )
+                            carbon_definitions.append(layer_name)
+                        else:
+                            carbon_resolution_definitions[model_component.name] = [
+                                layer_name
+                            ]
+
+            progress += progress_increment
+            self._set_progress(progress)
+
+        if len(carbon_resolution_definitions) > 1 and status:
+            status = False
+
+        summary = ""
+        validate_info = []
+        if not status:
+            summary = tr(
+                "NCS pathways and corresponding carbon layers have different spatial resolutions"
+            )
+            for ncs_name, carbon_layers in carbon_resolution_definitions.items():
+                validate_info.append(
+                    (
+                        ncs_name,
+                        ", ".join(carbon_layers),
+                    )
+                )
+        else:
+            summary = tr(
+                "NCS pathways and corresponding carbon layers have the same spatial resolution"
+            )
+
+        self._result = RuleResult(
+            self._config, self._config.recommendation, summary, validate_info
+        )
+
+        self._set_progress(100.0)
+
+        return status
+
+    def rule_type(self) -> RuleType:
+        """Returns the no data value rule validator.
+
+        :returns: No data value rule validator.
+        :rtype: RuleType
+        """
+        return RuleType.CARBON_RESOLUTION
+
+
 class DataValidator(QgsTask):
     """Abstract runner for checking a set of datasets against specific
     validation rules.
 
-    Rule validators need to be added manually in this default
+    Rule validators need to be added manually in the sub-class
     implementation and set the model component type of the result.
     """
 
@@ -541,7 +679,6 @@ class DataValidator(QgsTask):
 
         self._result: ValidationResult = None
         self._rule_validators = []
-        self._rule_results = []
         self._feedback = ValidationFeedback()
         self._feedback.rule_progress_changed.connect(self._on_rule_progress_changed)
         self._feedback.rule_validation_completed.connect(
@@ -549,7 +686,6 @@ class DataValidator(QgsTask):
         )
 
         # Used to calculate the overall progress
-        self._current_validator_idx = 0
         self._rule_reference_progress = 0
 
     @property
@@ -694,6 +830,7 @@ class DataValidator(QgsTask):
             RuleType.CRS: CrsValidator,
             RuleType.NO_DATA_VALUE: NoDataValueValidator,
             RuleType.RESOLUTION: ResolutionValidator,
+            RuleType.CARBON_RESOLUTION: CarbonLayerResolutionValidator,
         }
 
     @staticmethod
@@ -798,3 +935,11 @@ class NcsDataValidator(DataValidator):
             RuleType.RESOLUTION, resolution_validation_config, self.feedback
         )
         self.add_rule_validator(self._spatial_resolution_validator)
+
+        # Carbon resolution
+        self._carbon_resolution_validator = DataValidator.create_rule_validator(
+            RuleType.CARBON_RESOLUTION,
+            carbon_resolution_validation_config,
+            self.feedback,
+        )
+        self.add_rule_validator(self._carbon_resolution_validator)

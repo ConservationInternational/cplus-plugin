@@ -38,7 +38,7 @@ resolution_validation_config = RuleConfiguration(
 # which is less strict and hence, is tagged as a warning
 carbon_resolution_validation_config = RuleConfiguration(
     ValidationCategory.WARNING,
-    tr("Should have the same spatial resolution"),
+    tr("NCS and respective carbon layers should have the same spatial resolution"),
     "Carbon Resolution Check",
     tr("Use the warp tool to resize the raster cells"),
 )
