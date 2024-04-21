@@ -10,7 +10,7 @@ from qgis.PyQt import QtCore
 
 from qgis.core import QgsFeedback
 
-from ...models.validation import RuleType
+from ...models.validation import RuleInfo
 
 
 class ValidationFeedback(QgsFeedback):
@@ -18,26 +18,26 @@ class ValidationFeedback(QgsFeedback):
     rule validation process.
     """
 
-    rule_validation_started = QtCore.pyqtSignal(RuleType)
-    rule_progress_changed = QtCore.pyqtSignal(RuleType, float)
-    rule_validation_completed = QtCore.pyqtSignal(RuleType)
+    rule_validation_started = QtCore.pyqtSignal(RuleInfo)
+    rule_progress_changed = QtCore.pyqtSignal(RuleInfo, float)
+    rule_validation_completed = QtCore.pyqtSignal(RuleInfo)
     validation_completed = QtCore.pyqtSignal()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._rule_type = None
+        self._rule_info = None
         self._rule_progress = -1.0
 
     @property
-    def current_rule(self) -> RuleType:
-        """Gets the current rule type being executed.
+    def current_rule(self) -> RuleInfo:
+        """Gets the current rule info being executed.
 
         :returns: Returns the current rule being executed or None if the
         feedback object has not been activated.
-        :rtype: RuleType
+        :rtype: RuleInfo
         """
-        return self._rule_type
+        return self._rule_info
 
     @property
     def rule_progress(self) -> float:
@@ -51,19 +51,19 @@ class ValidationFeedback(QgsFeedback):
         return self._rule_progress
 
     @current_rule.setter
-    def current_rule(self, rule: RuleType):
-        """Sets the current rule type being executed.
+    def current_rule(self, rule: RuleInfo):
+        """Sets the current rule info being executed.
 
         Resets the rule progress to -1.0 indicating
-        the rule progress has onot run yet.
+        the rule progress has not yet been executed.
 
-        :param rule: Current rule type being executed.
-        :type rule: RuleType
+        :param rule: Current rule info being executed.
+        :type rule: RuleInfo
         """
-        if self._rule_type == rule:
+        if self._rule_info == rule:
             return
 
-        self._rule_type = rule
+        self._rule_info = rule
         self._rule_progress = -1.0
 
     @rule_progress.setter
@@ -89,9 +89,9 @@ class ValidationFeedback(QgsFeedback):
         self._rule_progress = progress
 
         if self._rule_progress == 0.0:
-            self.rule_validation_started.emit(self._rule_type)
+            self.rule_validation_started.emit(self._rule_info)
 
-        self.rule_progress_changed.emit(self._rule_type, self._rule_progress)
+        self.rule_progress_changed.emit(self._rule_info, self._rule_progress)
 
         if self._rule_progress == 100.0:
-            self.rule_validation_completed.emit(self._rule_type)
+            self.rule_validation_completed.emit(self._rule_info)

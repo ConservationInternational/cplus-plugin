@@ -47,6 +47,17 @@ class SubmitResult:
 
 
 @dataclasses.dataclass
+class RuleInfo:
+    """Contains summary information on the rule type and corresponding
+    friendly rule name (which is synced with the one in the
+    RuleConfiguration object).
+    """
+
+    type: RuleType
+    name: str
+
+
+@dataclasses.dataclass
 class RuleResult:
     """Contains information on the result of validating a single rule."""
 

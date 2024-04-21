@@ -15,8 +15,8 @@ from qgis.PyQt.uic import loadUiType
 
 from .inspector_dialog import ValidationInspectorDialog
 from ...lib.validation.manager import validation_manager
-from ...models.validation import RuleType, SubmitResult
-from ...utils import FileUtils, tr, log
+from ...models.validation import RuleInfo, SubmitResult
+from ...utils import tr
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../../ui/validation_progress.ui")
@@ -54,15 +54,28 @@ class ValidationProgressDialog(QtWidgets.QDialog, WidgetUi):
         self.btn_show_details.clicked.connect(self._on_show_validation_results)
 
         self.pg_bar.setValue(int(self._feedback.progress()))
+        self._update_current_rule(self._feedback.current_rule)
 
-    def _on_rule_validation_started(self, rule_type: RuleType):
+    def _on_rule_validation_started(self, rule_info: RuleInfo):
         """Slot raised when rule validation has started.
 
-        param rule_type: Rule type whose execution has started.
-        :type rule_type: RuleType
+        param rule_info: Information about the rule whose execution has started.
+        :type rule_info: RuleInfo
         """
-        # Update label
-        pass
+        self._update_current_rule(rule_info)
+
+    def _update_current_rule(self, rule_info: RuleInfo):
+        """
+        Update the label with the name of the rule being executed.
+
+        param rule_info: Information about the rule currently being executed..
+        :type rule_info: RuleInfo
+        """
+        if rule_info is None:
+            return
+
+        prefix_tr = tr("Validating Rule")
+        self.lbl_rule.setText(f"{prefix_tr}: {rule_info.name}...")
 
     def _on_progress_changed(self, progress: float):
         """Slot raised when overall progress of the validation has changed.
@@ -75,6 +88,7 @@ class ValidationProgressDialog(QtWidgets.QDialog, WidgetUi):
     def _on_validation_completed(self):
         """Slot raised when overall validation has completed."""
         self.pg_bar.setValue(100)
+        self.lbl_rule.setText(tr("Validation complete"))
         self.btn_show_details.setEnabled(True)
 
     def _on_show_validation_results(self, checked: bool):

@@ -19,9 +19,10 @@ from .configs import (
     resolution_validation_config,
 )
 from .feedback import ValidationFeedback
-from ...models.base import LayerModelComponent, ModelComponentType, NcsPathway
+from ...models.base import LayerModelComponent, ModelComponentType
 from ...models.validation import (
     RuleConfiguration,
+    RuleInfo,
     RuleResult,
     RuleType,
     ValidationResult,
@@ -456,7 +457,10 @@ class DataValidator(QgsTask):
                 break
 
             rule_validator.model_components = self.model_components
-            self.feedback.current_rule = rule_validator.rule_type()
+            rule_info = RuleInfo(
+                rule_validator.rule_type(), rule_validator.rule_configuration.rule_name
+            )
+            self.feedback.current_rule = rule_info
             rule_validator.run()
 
         return status
@@ -480,11 +484,11 @@ class DataValidator(QgsTask):
         self._feedback.setProgress(total_progress)
         self.setProgress(total_progress)
 
-    def _on_rule_validation_completed(self, rule_type: RuleType):
+    def _on_rule_validation_completed(self, rule_info: RuleInfo):
         """Slot raised when rule validation has completed.
 
-        param rule_type: Rule type whose execution has ended.
-        :type rule_type: RuleType
+        param rule_info: Rule whose execution has ended.
+        :type rule_info: RuleInfo
         """
         self._rule_reference_progress += 100 / len(self._rule_validators)
 
