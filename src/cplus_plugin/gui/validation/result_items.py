@@ -46,7 +46,7 @@ class RuleResultItem(QtWidgets.QTreeWidgetItem):
         self._update()
 
     def _update(self):
-        """Set the details of the result."""
+        """Set the details of the rule result."""
         config = self._result.config
         rule_title = f"Rule: {config.description}"
         self.setText(0, rule_title)
