@@ -305,17 +305,7 @@
            </widget>
           </item>
           <item row="1" column="0" colspan="4">
-           <widget class="QListView" name="lst_mask_layers">
-            <property name="editTriggers">
-             <set>QAbstractItemView::NoEditTriggers</set>
-            </property>
-            <property name="selectionMode">
-             <enum>QAbstractItemView::ExtendedSelection</enum>
-            </property>
-            <property name="selectionBehavior">
-             <enum>QAbstractItemView::SelectRows</enum>
-            </property>
-           </widget>
+           <widget class="QListWidget" name="lst_mask_layers"/>
           </item>
          </layout>
         </widget>
