@@ -14,7 +14,7 @@ from ...models.validation import RuleInfo
 
 
 class ValidationFeedback(QgsFeedback):
-    """Feedback object that provides the ability to update on the
+    """Feedback object that provides the ability to update the
     rule validation process.
     """
 
