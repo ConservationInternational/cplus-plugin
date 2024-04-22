@@ -150,6 +150,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.analysis_finished.connect(self.post_analysis)
 
+        # Log
+        QgsApplication.messageLog().messageReceived.connect(
+            self.on_log_message_received
+        )
+
+    def on_log_message_received(self, message, tag, level):
+        if tag == "qgis_cplus":
+            message = f"{self.log_text_box.toPlainText()}{message}"
+            self.log_text_box.setPlainText(f"{message} \n")
+
     def prepare_input(self):
         """Initializes plugin input widgets"""
         self.prepare_extent_box()
