@@ -26,7 +26,7 @@ class TestInit(unittest.TestCase):
     Passoti available here:
 
     http://github.com/qgis/qgis-django/blob/master/qgis-app/
-             plugins/validators.py
+             plugins/validator.py
 
     """
 
@@ -35,7 +35,7 @@ class TestInit(unittest.TestCase):
 
         # You should update this list according to the latest in
         # https://github.com/qgis/qgis-django/blob/master/qgis-app/
-        #        plugins/validators.py
+        #        plugins/validator.py
 
         required_metadata = [
             "name",

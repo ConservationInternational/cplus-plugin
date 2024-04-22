@@ -3,6 +3,7 @@
 Aggregated and individual rule validators.
 """
 
+from abc import abstractmethod
 from pathlib import Path
 import traceback
 import typing
@@ -68,6 +69,7 @@ class BaseRuleValidator:
         return self._result
 
     @property
+    @abstractmethod
     def rule_type(self) -> RuleType:
         """Returns the type identified of the rule validator.
 
@@ -87,6 +89,7 @@ class BaseRuleValidator:
         """
         return self._feedback
 
+    @abstractmethod
     def _validate(self) -> bool:
         """Initiates the validation process.
 
@@ -203,6 +206,7 @@ class RasterValidator(BaseRuleValidator):
 
         return status
 
+    @property
     def rule_type(self) -> RuleType:
         """Returns the raster type rule validator.
 
@@ -298,6 +302,7 @@ class CrsValidator(BaseRuleValidator):
 
         return status
 
+    @property
     def rule_type(self) -> RuleType:
         """Returns the CRS rule validator.
 
@@ -390,6 +395,7 @@ class NoDataValueValidator(BaseRuleValidator):
 
         return status
 
+    @property
     def rule_type(self) -> RuleType:
         """Returns the no data value rule validator.
 
@@ -526,6 +532,7 @@ class ResolutionValidator(BaseRuleValidator):
 
         return f"X: {resolution_definition[0]!s} {unit_str}, Y: {resolution_definition[1]!s} {unit_str}"
 
+    @property
     def rule_type(self) -> RuleType:
         """Returns the no data value rule validator.
 
@@ -650,6 +657,7 @@ class CarbonLayerResolutionValidator(ResolutionValidator):
 
         return status
 
+    @property
     def rule_type(self) -> RuleType:
         """Returns the no data value rule validator.
 
@@ -716,7 +724,7 @@ class DataValidator(QgsTask):
 
             rule_validator.model_components = self.model_components
             rule_info = RuleInfo(
-                rule_validator.rule_type(), rule_validator.rule_configuration.rule_name
+                rule_validator.rule_type, rule_validator.rule_configuration.rule_name
             )
             self.feedback.current_rule = rule_info
             rule_validator.run()

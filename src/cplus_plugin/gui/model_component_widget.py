@@ -559,7 +559,7 @@ class NcsComponentWidget(ModelComponentWidget):
 
         msg = self.tr(
             f"Do you want to remove '{ncs.name}'? The corresponding "
-            f"NCS pathways used in the activitys will "
+            f"NCS pathways used in the activities will "
             f"also be removed.\nClick Yes to proceed or No to cancel."
         )
 
