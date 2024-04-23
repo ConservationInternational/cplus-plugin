@@ -12,6 +12,7 @@ from ...utils import FileUtils
 
 
 RULE_RESULT_TYPE = QtWidgets.QTreeWidgetItem.UserType + 2
+DETAILED_RESULT_TYPE = QtWidgets.QTreeWidgetItem.UserType + 3
 
 
 class RuleResultItem(QtWidgets.QTreeWidgetItem):
@@ -76,7 +77,7 @@ class RuleResultItem(QtWidgets.QTreeWidgetItem):
             # Error/warning details
             for error_info in self._result.validate_info:
                 err_description = f"{error_info[0]}: {error_info[1]}"
-                error_info_item = QtWidgets.QTreeWidgetItem()
+                error_info_item = QtWidgets.QTreeWidgetItem(DETAILED_RESULT_TYPE)
                 error_info_item.setText(0, err_description)
                 error_info_item.setToolTip(0, error_info[1])
                 icon = FileUtils.get_icon("dash.svg")

@@ -6,16 +6,16 @@ Dialog for viewing NCS validation results.
 import os
 import typing
 
-from qgis.core import Qgis
+from qgis.core import Qgis, QgsApplication
 from qgis.gui import QgsGui
 
-from qgis.PyQt import QtGui, QtWidgets
+from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
 from ...models.validation import ValidationResult
-from .result_items import RuleResultItem
-from ...utils import FileUtils
+from .result_items import DETAILED_RESULT_TYPE, RuleResultItem
+from ...utils import FileUtils, tr
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../../ui/validation_inspector_dialog.ui")
@@ -40,6 +40,10 @@ class ValidationInspectorDialog(QtWidgets.QDialog, WidgetUi):
         self.btn_collapse.clicked.connect(self.on_collapse_all_result_items)
 
         self.tw_results.setColumnCount(1)
+        self.tw_results.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.tw_results.customContextMenuRequested.connect(
+            self.on_custom_menu_requested
+        )
 
         self._validation_result = result
         if self._validation_result is not None:
@@ -101,3 +105,35 @@ class ValidationInspectorDialog(QtWidgets.QDialog, WidgetUi):
 
             # Also expand result description node
             item.expand_description(expand)
+
+    def on_custom_menu_requested(self, point: QtCore.QPoint):
+        """Slot raised when a custom menu has been requested.
+
+        :param point: Position of the context menu event.
+        :type point: QtCore.QPoint
+        """
+        item = self.tw_results.itemAt(point)
+        if item.type() != DETAILED_RESULT_TYPE:
+            return
+
+        # Action for copying detailed result item
+        copy_action = QtWidgets.QAction()
+        copy_action.setText(tr("Copy"))
+        copy_action.setIcon(FileUtils.get_icon("mActionEditCopy.svg"))
+        copy_action.triggered.connect(
+            lambda: self.on_copy_detailed_results(item.text(0))
+        )
+
+        menu = QtWidgets.QMenu(self)
+        menu.addAction(copy_action)
+
+        menu.exec_(self.tw_results.mapToGlobal(point))
+
+    def on_copy_detailed_results(self, copy_text: str):
+        """Slot raised to copy detailed error/warning text.
+
+        :param copy_text: Text to be copied to the clipboard.
+        :type copy_text: str
+        """
+        # Copy details to the clipboard
+        QgsApplication.instance().clipboard().setText(copy_text)
