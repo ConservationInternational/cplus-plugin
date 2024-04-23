@@ -39,8 +39,8 @@ class TestDataValidation(TestCase):
         )
         raster_validator.model_components = ncs_pathways
 
-        result = raster_validator.run()
-        self.assertTrue(result)
+        _ = raster_validator.run()
+        self.assertTrue(raster_validator.result.success)
 
     def test_crs_validator(self):
         """Test if the input NCS datasets have the same CRS."""
@@ -53,5 +53,5 @@ class TestDataValidation(TestCase):
         )
         crs_validator.model_components = ncs_pathways
 
-        result = crs_validator.run()
-        self.assertTrue(result)
+        _ = crs_validator.run()
+        self.assertTrue(crs_validator.result.success)
