@@ -6,6 +6,7 @@ Unit tests for data validation module.
 from unittest import TestCase
 
 from cplus_plugin.lib.validation.configs import (
+    carbon_resolution_validation_config,
     crs_validation_config,
     no_data_validation_config,
     raster_validation_config,
@@ -81,3 +82,21 @@ class TestDataValidation(TestCase):
 
         _ = resolution_validator.run()
         self.assertTrue(resolution_validator.result.success)
+
+    def test_carbon_resolution_validator(self):
+        """Test if the input NCS datasets and corresponding carbon layers
+        have the same spatial resolution.
+        """
+        ncs_pathways = get_ncs_pathways()
+        rule_info = RuleInfo(
+            RuleType.CARBON_RESOLUTION, carbon_resolution_validation_config.rule_name
+        )
+        feedback = ValidationFeedback()
+        feedback.current_rule = rule_info
+        carbon_resolution_validator = DataValidator.create_rule_validator(
+            RuleType.CARBON_RESOLUTION, carbon_resolution_validation_config, feedback
+        )
+        carbon_resolution_validator.model_components = ncs_pathways
+
+        _ = carbon_resolution_validator.run()
+        self.assertTrue(carbon_resolution_validator.result.success)
