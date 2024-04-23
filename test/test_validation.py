@@ -7,6 +7,7 @@ from unittest import TestCase
 
 from cplus_plugin.lib.validation.configs import (
     crs_validation_config,
+    no_data_validation_config,
     raster_validation_config,
 )
 from cplus_plugin.lib.validation.feedback import ValidationFeedback
@@ -14,15 +15,7 @@ from cplus_plugin.lib.validation.manager import ValidationManager
 from cplus_plugin.lib.validation.validators import DataValidator, RasterValidator
 from cplus_plugin.models.validation import RuleInfo, RuleType
 
-from model_data_for_testing import (
-    get_activity,
-    get_invalid_ncs_pathway,
-    get_ncs_pathway_with_invalid_carbon,
-    get_ncs_pathway_with_valid_carbon,
-    get_ncs_pathways,
-    get_valid_ncs_pathway,
-    VALID_NCS_UUID_STR,
-)
+from model_data_for_testing import get_ncs_pathways
 
 
 class TestDataValidation(TestCase):
@@ -49,9 +42,23 @@ class TestDataValidation(TestCase):
         feedback = ValidationFeedback()
         feedback.current_rule = rule_info
         crs_validator = DataValidator.create_rule_validator(
-            RuleType.DATA_TYPE, crs_validation_config, feedback
+            RuleType.CRS, crs_validation_config, feedback
         )
         crs_validator.model_components = ncs_pathways
 
         _ = crs_validator.run()
         self.assertTrue(crs_validator.result.success)
+
+    def test_no_data_validator(self):
+        """Test if the input NCS datasets have the NoData value as -9999."""
+        ncs_pathways = get_ncs_pathways()
+        rule_info = RuleInfo(RuleType.CRS, no_data_validation_config.rule_name)
+        feedback = ValidationFeedback()
+        feedback.current_rule = rule_info
+        no_data_validator = DataValidator.create_rule_validator(
+            RuleType.NO_DATA_VALUE, no_data_validation_config, feedback
+        )
+        no_data_validator.model_components = ncs_pathways
+
+        _ = no_data_validator.run()
+        self.assertTrue(no_data_validator.result.success)
