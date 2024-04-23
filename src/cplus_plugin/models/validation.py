@@ -17,6 +17,7 @@ class RuleType(IntEnum):
     NO_DATA_VALUE = 2
     RESOLUTION = 3
     CARBON_RESOLUTION = 4
+    PROJECTED_CRS = 5
 
 
 class ValidationCategory(IntEnum):
