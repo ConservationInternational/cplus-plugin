@@ -5,7 +5,10 @@ Unit tests for data validation module.
 
 from unittest import TestCase
 
-from cplus_plugin.lib.validation.configs import raster_validation_config
+from cplus_plugin.lib.validation.configs import (
+    crs_validation_config,
+    raster_validation_config,
+)
 from cplus_plugin.lib.validation.feedback import ValidationFeedback
 from cplus_plugin.lib.validation.manager import ValidationManager
 from cplus_plugin.lib.validation.validators import DataValidator, RasterValidator
@@ -37,4 +40,18 @@ class TestDataValidation(TestCase):
         raster_validator.model_components = ncs_pathways
 
         result = raster_validator.run()
+        self.assertTrue(result)
+
+    def test_crs_validator(self):
+        """Test if the input NCS datasets have the same CRS."""
+        ncs_pathways = get_ncs_pathways()
+        rule_info = RuleInfo(RuleType.CRS, crs_validation_config.rule_name)
+        feedback = ValidationFeedback()
+        feedback.current_rule = rule_info
+        crs_validator = DataValidator.create_rule_validator(
+            RuleType.DATA_TYPE, crs_validation_config, feedback
+        )
+        crs_validator.model_components = ncs_pathways
+
+        result = crs_validator.run()
         self.assertTrue(result)
