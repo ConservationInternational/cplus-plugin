@@ -120,8 +120,8 @@ class ScenarioAnalysisTask(QgsTask):
     def get_priority_layer(self, identifier):
         return settings_manager.get_priority_layer(identifier)
 
-    def get_activity(self, implementation_model_uuid):
-        return settings_manager.get_activity(implementation_model_uuid)
+    def get_activity(self, activity_uuid):
+        return settings_manager.get_activity(activity_uuid)
 
     def get_priority_layers(self):
         return settings_manager.get_priority_layers()
