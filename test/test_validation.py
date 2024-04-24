@@ -5,6 +5,7 @@ Unit tests for data validation module.
 
 from unittest import TestCase
 
+from qgis.PyQt.QtCore import QCoreApplication
 from qgis.PyQt.QtTest import QSignalSpy
 
 from cplus_plugin.lib.validation.configs import (
@@ -126,13 +127,22 @@ class TestDataValidation(TestCase):
         result = validation_manager.validate_ncs_pathways(one_pathway)
         self.assertFalse(result.success)
 
-    def test_manager_validation_started(self):
-        """Test if the validation_started signal is raised by the
-        validation manager."""
+    def test_manager_validation_result(self):
+        """Test the validation result through the validation manager."""
+        validation_result = None
         validation_manager = ValidationManager()
+
+        def validation_completed(sender, task_id):
+            nonlocal validation_result
+            nonlocal validation_manager
+
+            validation_result = validation_manager.ncs_results()[0]
+
+        validation_manager.validation_completed.connect(validation_completed)
         ncs_pathways = get_ncs_pathways()
+        submit_result = validation_manager.validate_ncs_pathways(ncs_pathways)
 
-        validation_started_spy = QSignalSpy(validation_manager.validation_started)
-        _ = validation_manager.validate_ncs_pathways(ncs_pathways)
+        while not validation_manager.is_validation_complete(submit_result):
+            QCoreApplication.processEvents()
 
-        self.assertEqual(len(validation_started_spy), 1)
+        self.assertIsNotNone(validation_result)
