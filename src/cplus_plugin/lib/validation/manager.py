@@ -60,7 +60,7 @@ class ValidationManager(QtCore.QObject):
         :rtype: SubmitResult
         """
         if len(pathways) < 2:
-            return SubmitResult("", False)
+            return SubmitResult("", False, None)
 
         if cancel_running:
             self.cancel_ncs_validation()
