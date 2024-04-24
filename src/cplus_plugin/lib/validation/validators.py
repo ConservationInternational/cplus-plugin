@@ -39,12 +39,7 @@ class BaseRuleValidator:
     protected function.
     """
 
-    def __init__(
-        self,
-        configuration: RuleConfiguration,
-        feedback: ValidationFeedback,
-        parent=None,
-    ):
+    def __init__(self, configuration: RuleConfiguration, feedback: ValidationFeedback):
         self._config = configuration
         self._feedback = feedback
         self._result: RuleResult = None
@@ -71,9 +66,9 @@ class BaseRuleValidator:
     @property
     @abstractmethod
     def rule_type(self) -> RuleType:
-        """Returns the type identified of the rule validator.
+        """Returns the type identifier of the rule validator.
 
-        :returns: Type identified of the rule validator.
+        :returns: Type identifier of the rule validator.
         :rtype: RuleType
         """
         raise NotImplementedError

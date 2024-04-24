@@ -18,6 +18,10 @@ from cplus_plugin.lib.validation.validators import DataValidator, RasterValidato
 from cplus_plugin.models.validation import RuleInfo, RuleType
 
 from model_data_for_testing import get_ncs_pathways
+from utilities_for_testing import get_qgis_app
+
+
+QGIS_APP, CANVAS, IFACE, PARENT = get_qgis_app()
 
 
 class TestDataValidation(TestCase):
@@ -100,3 +104,12 @@ class TestDataValidation(TestCase):
 
         _ = carbon_resolution_validator.run()
         self.assertTrue(carbon_resolution_validator.result.success)
+
+    def test_manager_submit_result(self):
+        """Test if a request for validating NCS pathways through the
+        validation manager was successful.
+        """
+        validation_manager = ValidationManager()
+        ncs_pathways = get_ncs_pathways()
+        result = validation_manager.validate_ncs_pathways(ncs_pathways)
+        self.assertTrue(result.success)
