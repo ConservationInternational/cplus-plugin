@@ -403,6 +403,8 @@ class NoDataValueValidator(BaseRuleValidator):
 class ResolutionValidator(BaseRuleValidator):
     """Checks if datasets have the same spatial resolution."""
 
+    DECIMAL_PLACES = 6
+
     def _validate(self) -> bool:
         """Checks whether input datasets have the same
         spatial resolution.
@@ -497,10 +499,10 @@ class ResolutionValidator(BaseRuleValidator):
         else:
             crs_unit_str = QgsUnitTypes.toAbbreviatedString(crs.mapUnits())
 
-        # Tuple containing x, y and units
+        # Tuple containing x, y (truncated to given decimal places) and units
         resolution_definition = (
-            layer.rasterUnitsPerPixelX(),
-            layer.rasterUnitsPerPixelY(),
+            round(layer.rasterUnitsPerPixelX(), cls.DECIMAL_PLACES),
+            round(layer.rasterUnitsPerPixelY(), cls.DECIMAL_PLACES),
             crs_unit_str,
         )
         return resolution_definition
