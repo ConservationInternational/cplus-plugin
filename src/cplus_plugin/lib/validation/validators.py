@@ -320,12 +320,10 @@ class ProjectedCrsValidator(BaseRuleValidator):
         """
         status = True
 
-        # key: Projected/Geographic or 'undefined', value: list of model/layer names
-        projected_crs_definitions = {}
+        # key: Geographic CRS ID or 'undefined', value: list of model/layer names
+        geographic_crs_definitions = {}
         undefined_msg = tr("Undefined")
         invalid_msg = tr("Invalid datasets")
-        projected_msg = tr("Projected")
-        geographic_msg = tr("Geographic")
         has_undefined = False
 
         progress = 0.0
@@ -344,11 +342,11 @@ class ProjectedCrsValidator(BaseRuleValidator):
                     status = False
 
                 # Add invalid datasets to the validation messages to make it explicit
-                if invalid_msg in projected_crs_definitions:
-                    layers = projected_crs_definitions.get(invalid_msg)
+                if invalid_msg in geographic_crs_definitions:
+                    layers = geographic_crs_definitions.get(invalid_msg)
                     layers.append(model_component.name)
                 else:
-                    projected_crs_definitions[invalid_msg] = [model_component.name]
+                    geographic_crs_definitions[invalid_msg] = [model_component.name]
 
             else:
                 layer = model_component.to_map_layer().clone()
@@ -361,11 +359,11 @@ class ProjectedCrsValidator(BaseRuleValidator):
                     if status:
                         status = False
 
-                    if undefined_msg in projected_crs_definitions:
-                        layers = projected_crs_definitions.get(undefined_msg)
+                    if undefined_msg in geographic_crs_definitions:
+                        layers = geographic_crs_definitions.get(undefined_msg)
                         layers.append(model_component.name)
                     else:
-                        projected_crs_definitions[undefined_msg] = [
+                        geographic_crs_definitions[undefined_msg] = [
                             model_component.name
                         ]
                 else:
@@ -374,27 +372,29 @@ class ProjectedCrsValidator(BaseRuleValidator):
                     if not crs_type_id:
                         crs_type_id = crs.authid()
 
-                    crs_type = geographic_msg if crs.isGeographic() else projected_msg
-                    if crs_type in projected_crs_definitions:
-                        layers = projected_crs_definitions.get(crs_type)
-                        layers.append(model_component.name)
-                    else:
-                        projected_crs_definitions[crs_type] = [model_component.name]
+                    if crs.isGeographic():
+                        if crs.authid() in geographic_crs_definitions:
+                            layers = geographic_crs_definitions.get(crs.authid())
+                            layers.append(model_component.name)
+                        else:
+                            geographic_crs_definitions[crs.authid()] = [
+                                model_component.name
+                            ]
 
             progress += progress_increment
             self._set_progress(progress)
 
-        if len(projected_crs_definitions) > 1 and status:
+        if len(geographic_crs_definitions) > 0 and status:
             status = False
 
         summary = ""
         validate_info = []
         if not status:
-            summary = tr("Datasets have different CRS types")
-            for crs_type_str, layers in projected_crs_definitions.items():
+            summary = tr("Some datasets have a geographic CRS")
+            for crs_type_str, layers in geographic_crs_definitions.items():
                 validate_info.append((crs_type_str, ", ".join(layers)))
         else:
-            summary_tr = tr("All datasets have a projected CRS type")
+            summary_tr = tr("All datasets have a projected CRS")
             summary = f"{summary_tr} - {crs_type_id}"
 
         self._result = RuleResult(

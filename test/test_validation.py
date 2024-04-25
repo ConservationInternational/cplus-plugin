@@ -12,6 +12,7 @@ from cplus_plugin.lib.validation.configs import (
     carbon_resolution_validation_config,
     crs_validation_config,
     no_data_validation_config,
+    projected_crs_validation_config,
     raster_validation_config,
     resolution_validation_config,
 )
@@ -107,6 +108,22 @@ class TestDataValidation(TestCase):
 
         _ = carbon_resolution_validator.run()
         self.assertTrue(carbon_resolution_validator.result.success)
+
+    def test_projected_crs_validator(self):
+        """Test if the input NCS datasets have a projected CRS."""
+        ncs_pathways = get_ncs_pathways()
+        rule_info = RuleInfo(
+            RuleType.PROJECTED_CRS, projected_crs_validation_config.rule_name
+        )
+        feedback = ValidationFeedback()
+        feedback.current_rule = rule_info
+        projected_crs_validator = DataValidator.create_rule_validator(
+            RuleType.PROJECTED_CRS, projected_crs_validation_config, feedback
+        )
+        projected_crs_validator.model_components = ncs_pathways
+
+        _ = projected_crs_validator.run()
+        self.assertTrue(projected_crs_validator.result.success)
 
     def test_manager_submit_result_with_multiple_pathways(self):
         """Test if a request for validating two or more NCS pathways through
