@@ -155,7 +155,7 @@ class TestDataValidation(TestCase):
             validation_result_id = task_id
 
         validation_manager.validation_completed.connect(validation_completed)
-        ncs_pathways = get_ncs_pathways(True)
+        ncs_pathways = get_ncs_pathways(use_projected=True)
         submit_result = validation_manager.validate_ncs_pathways(ncs_pathways)
 
         while not validation_manager.is_validation_complete(submit_result):

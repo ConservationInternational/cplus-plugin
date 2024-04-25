@@ -115,8 +115,9 @@ def get_ncs_pathways(use_projected=False) -> typing.List[NcsPathway]:
     for i in range(1, 4):
         base_name = "test_pathway"
         if use_projected:
-            base_name = f"{base_name}_{i!s}"
-        filenames.append(f"{base_name}.tif")
+            base_name = f"{base_name}_projected"
+
+        filenames.append(f"{base_name}_{i!s}.tif")
 
     pathway_layer_path1 = os.path.join(pathway_layer_directory, filenames[0])
     pathway_layer_path2 = os.path.join(pathway_layer_directory, filenames[1])
