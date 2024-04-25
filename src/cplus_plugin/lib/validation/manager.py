@@ -17,6 +17,7 @@ from qgis.core import (
 from qgis.PyQt import QtCore, QtGui
 
 from ...models.base import ModelComponentType, NcsPathway
+from ...models.helpers import clone_ncs_pathway
 from ...models.validation import SubmitResult, ValidationResult
 from .validators import NcsDataValidator
 
@@ -67,8 +68,13 @@ class ValidationManager(QtCore.QObject):
         if cancel_running:
             self.cancel_ncs_validation()
 
+        # Clone the pathways
+        cloned_pathways = list(map(clone_ncs_pathway, pathways))
+
+        log(message=str(len(cloned_pathways)))
+
         ncs_validator = NcsDataValidator()
-        ncs_validator.model_components = pathways
+        ncs_validator.model_components = cloned_pathways
         task_id = self.task_manager.addTask(ncs_validator)
 
         if task_id == 0:
