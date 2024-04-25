@@ -34,11 +34,17 @@ nav:
                 - Layout items: developer/api/core/api_reports_layout_items.md
                 - Manager: developer/api/core/api_reports_manager.md
                 - Variables: developer/api/core/api_reports_variables.md
+            - Validation:
+                - Configurations: developer/api/core/api_validation_configs.md
+                - Feedback: developer/api/core/api_validation_feedback.md
+                - Manager: developer/api/core/api_validation_manager.md
+                - Validators: developer/api/core/api_validation_validators.md
             - Extents: developer/api/core/api_pilot_extent.md
           - Models:
             - Model base: developer/api/models/api_base.md
             - Helpers: developer/api/models/api_helpers.md
             - Report: developer/api/models/api_report.md
+            - Validation: developer/api/models/api_validation.md
           - GUI:
             - GUI main: developer/api/gui/api_gui_main.md
             - Carbon item model: developer/api/gui/api_carbon_layer_model.md
@@ -53,6 +59,10 @@ nav:
             - Priority layer dialog: developer/api/gui/api_priority_layer.md
             - Priority group: developer/api/gui/api_priority_group.md
             - Progress dialog: developer/api/gui/api_progress_dialog.md
+            - Validation:
+                - Inspector dialog: developer/api/gui/api_validation_inspector_dialog.md
+                - Progress dialog: developer/api/gui/api_validation_progress_dialog.md
+                - Tree items: developer/api/gui/api_validation_result_items.md
   - About:
       - Conservation International: about/ci.md
       - Kartoza: about/kartoza.md
