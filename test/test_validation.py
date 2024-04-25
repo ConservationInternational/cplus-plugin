@@ -111,7 +111,7 @@ class TestDataValidation(TestCase):
 
     def test_projected_crs_validator(self):
         """Test if the input NCS datasets have a projected CRS."""
-        ncs_pathways = get_ncs_pathways()
+        ncs_pathways = get_ncs_pathways(use_projected=True)
         rule_info = RuleInfo(
             RuleType.PROJECTED_CRS, projected_crs_validation_config.rule_name
         )
@@ -155,7 +155,7 @@ class TestDataValidation(TestCase):
             validation_result_id = task_id
 
         validation_manager.validation_completed.connect(validation_completed)
-        ncs_pathways = get_ncs_pathways(use_projected=True)
+        ncs_pathways = get_ncs_pathways()
         submit_result = validation_manager.validate_ncs_pathways(ncs_pathways)
 
         while not validation_manager.is_validation_complete(submit_result):

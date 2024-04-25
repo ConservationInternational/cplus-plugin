@@ -115,7 +115,7 @@ def get_ncs_pathways(use_projected=False) -> typing.List[NcsPathway]:
     for i in range(1, 4):
         base_name = "test_pathway"
         if use_projected:
-            base_name = f"{base_name}_projected_"
+            base_name = f"{base_name}_projected"
 
         filenames.append(f"{base_name}_{i!s}.tif")
 
