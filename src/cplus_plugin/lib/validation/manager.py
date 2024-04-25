@@ -20,6 +20,8 @@ from ...models.base import ModelComponentType, NcsPathway
 from ...models.validation import SubmitResult, ValidationResult
 from .validators import NcsDataValidator
 
+from ...utils import log
+
 
 class ValidationManager(QtCore.QObject):
     """Manages the validation process including starting, cancelling

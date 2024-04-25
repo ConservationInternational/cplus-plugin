@@ -132,7 +132,7 @@ class TestDataValidation(TestCase):
         validation_result = None
         validation_manager = ValidationManager()
 
-        def validation_completed(sender, task_id):
+        def validation_completed(task_id):
             nonlocal validation_result
             nonlocal validation_manager
 
