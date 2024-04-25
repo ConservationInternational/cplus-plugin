@@ -7,12 +7,21 @@ from ...models.validation import RuleConfiguration, ValidationCategory
 from ...utils import tr
 
 
-# CRS validation
+# Same CRS validation
 crs_validation_config = RuleConfiguration(
     ValidationCategory.ERROR,
     tr("Must have the same CRS"),
-    "CRS Check",
+    "Same CRS Check",
     tr("Use the warp tool to reproject the datasets to the same CRS"),
+)
+
+
+# CRS type validation
+projected_crs_validation_config = RuleConfiguration(
+    ValidationCategory.ERROR,
+    tr("Must have a projected CRS type"),
+    "CRS Type Check",
+    tr("Use the warp tool to reproject the datasets to a projected CRS"),
 )
 
 

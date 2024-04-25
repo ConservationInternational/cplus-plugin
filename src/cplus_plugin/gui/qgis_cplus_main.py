@@ -1511,7 +1511,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             if not ncs_valid:
                 msg = self.tr(
                     "NCS pathways are not valid or there is an ongoing validation process. "
-                    "Use the validation inspector to check details."
+                    "Use the validation inspector to see more details."
                 )
                 tab_valid = False
 

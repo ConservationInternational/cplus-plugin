@@ -16,6 +16,7 @@ from .configs import (
     carbon_resolution_validation_config,
     crs_validation_config,
     no_data_validation_config,
+    projected_crs_validation_config,
     raster_validation_config,
     resolution_validation_config,
 )
@@ -305,6 +306,113 @@ class CrsValidator(BaseRuleValidator):
         :rtype: RuleType
         """
         return RuleType.CRS
+
+
+class ProjectedCrsValidator(BaseRuleValidator):
+    """Checks if the input datasets have a projected CRS."""
+
+    def _validate(self) -> bool:
+        """Checks whether all input datasets have a projected CRS.
+
+        :returns: True if the validation process succeeded
+        or False if it failed.
+        :rtype: bool
+        """
+        status = True
+
+        # key: Projected/Geographic or 'undefined', value: list of model/layer names
+        projected_crs_definitions = {}
+        undefined_msg = tr("Undefined")
+        invalid_msg = tr("Invalid datasets")
+        projected_msg = tr("Projected")
+        geographic_msg = tr("Geographic")
+        has_undefined = False
+
+        progress = 0.0
+        progress_increment = 100.0 / len(self.model_components)
+        self._set_progress(progress)
+
+        crs_type_id = ""
+
+        for model_component in self.model_components:
+            if self.feedback.isCanceled():
+                return False
+
+            is_valid = model_component.is_valid()
+            if not is_valid:
+                if status:
+                    status = False
+
+                # Add invalid datasets to the validation messages to make it explicit
+                if invalid_msg in projected_crs_definitions:
+                    layers = projected_crs_definitions.get(invalid_msg)
+                    layers.append(model_component.name)
+                else:
+                    projected_crs_definitions[invalid_msg] = [model_component.name]
+
+            else:
+                layer = model_component.to_map_layer().clone()
+                crs = layer.crs()
+                if crs is None:
+                    # Flag that there is at least one dataset with an undefined CRS
+                    if not has_undefined:
+                        has_undefined = True
+
+                    if status:
+                        status = False
+
+                    if undefined_msg in projected_crs_definitions:
+                        layers = projected_crs_definitions.get(undefined_msg)
+                        layers.append(model_component.name)
+                    else:
+                        projected_crs_definitions[undefined_msg] = [
+                            model_component.name
+                        ]
+                else:
+                    # Use this to capture the CRS auth ID incase all datasets have
+                    # the same CRS type.
+                    if not crs_type_id:
+                        crs_type_id = crs.authid()
+
+                    crs_type = geographic_msg if crs.isGeographic() else projected_msg
+                    if crs_type in projected_crs_definitions:
+                        layers = projected_crs_definitions.get(crs_type)
+                        layers.append(model_component.name)
+                    else:
+                        projected_crs_definitions[crs_type] = [model_component.name]
+
+            progress += progress_increment
+            self._set_progress(progress)
+
+        if len(projected_crs_definitions) > 1 and status:
+            status = False
+
+        summary = ""
+        validate_info = []
+        if not status:
+            summary = tr("Datasets have different CRS types")
+            for crs_type_str, layers in projected_crs_definitions.items():
+                validate_info.append((crs_type_str, ", ".join(layers)))
+        else:
+            summary_tr = tr("All datasets have a projected CRS type")
+            summary = f"{summary_tr} - {crs_type_id}"
+
+        self._result = RuleResult(
+            self._config, self._config.recommendation, summary, validate_info
+        )
+
+        self._set_progress(100.0)
+
+        return status
+
+    @property
+    def rule_type(self) -> RuleType:
+        """Returns the projected CRS rule validator.
+
+        :returns: Projected CRS rule validator.
+        :rtype: RuleType
+        """
+        return RuleType.PROJECTED_CRS
 
 
 class NoDataValueValidator(BaseRuleValidator):
@@ -836,6 +944,7 @@ class DataValidator(QgsTask):
             RuleType.NO_DATA_VALUE: NoDataValueValidator,
             RuleType.RESOLUTION: ResolutionValidator,
             RuleType.CARBON_RESOLUTION: CarbonLayerResolutionValidator,
+            RuleType.PROJECTED_CRS: ProjectedCrsValidator,
         }
 
     @staticmethod
@@ -923,11 +1032,17 @@ class NcsDataValidator(DataValidator):
         )
         self.add_rule_validator(self._raster_type_validator)
 
-        # CRS validator
+        # Same CRS validator
         self._crs_validator = DataValidator.create_rule_validator(
             RuleType.CRS, crs_validation_config, self.feedback
         )
         self.add_rule_validator(self._crs_validator)
+
+        # Projected CRS validator
+        self._projected_crs_validator = DataValidator.create_rule_validator(
+            RuleType.PROJECTED_CRS, projected_crs_validation_config, self.feedback
+        )
+        self.add_rule_validator(self._projected_crs_validator)
 
         # NoData value validator
         self._no_data_validator = DataValidator.create_rule_validator(
