@@ -71,8 +71,6 @@ class ValidationManager(QtCore.QObject):
         # Clone the pathways
         cloned_pathways = list(map(clone_ncs_pathway, pathways))
 
-        log(message=str(len(cloned_pathways)))
-
         ncs_validator = NcsDataValidator()
         ncs_validator.model_components = cloned_pathways
         task_id = self.task_manager.addTask(ncs_validator)
