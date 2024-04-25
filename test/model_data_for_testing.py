@@ -90,8 +90,16 @@ def get_ncs_pathway_with_invalid_carbon() -> NcsPathway:
     )
 
 
-def get_ncs_pathways() -> typing.List[NcsPathway]:
-    """Returns a list of NCS pathways with some containing carbon layers."""
+def get_ncs_pathways(use_projected=False) -> typing.List[NcsPathway]:
+    """Returns a list of NCS pathways with some containing carbon layers.
+
+    :param use_projected: True to return projected NCS layers else the
+    geographic ones.
+    :type use_projected: bool
+
+    :returns: List of NCS pathways.
+    :rtype: list
+    """
     pathway_layer_directory = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "data", "pathways", "layers"
     )
@@ -102,9 +110,17 @@ def get_ncs_pathways() -> typing.List[NcsPathway]:
 
     carbon_layer_path = os.path.join(carbon_directory, "carbon_layer_1.tif")
 
-    pathway_layer_path1 = os.path.join(pathway_layer_directory, "test_pathway_1.tif")
-    pathway_layer_path2 = os.path.join(pathway_layer_directory, "test_pathway_2.tif")
-    pathway_layer_path3 = os.path.join(pathway_layer_directory, "test_pathway_3.tif")
+    filenames = []
+
+    for i in range(1, 4):
+        base_name = "test_pathway"
+        if use_projected:
+            base_name = f"{base_name}_{i!s}"
+        filenames.append(f"{base_name}.tif")
+
+    pathway_layer_path1 = os.path.join(pathway_layer_directory, filenames[0])
+    pathway_layer_path2 = os.path.join(pathway_layer_directory, filenames[1])
+    pathway_layer_path3 = os.path.join(pathway_layer_directory, filenames[2])
 
     ncs_pathway1 = NcsPathway(
         UUID(NCS_UUID_STR_1),
