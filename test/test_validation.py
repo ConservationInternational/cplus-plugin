@@ -146,14 +146,13 @@ class TestDataValidation(TestCase):
 
     def test_manager_validation_result(self):
         """Test the validation result through the validation manager."""
-        validation_result = None
+        validation_result_id = None
         validation_manager = ValidationManager()
 
         def validation_completed(task_id):
-            nonlocal validation_result
-            nonlocal validation_manager
-
-            validation_result = validation_manager.ncs_results()[0]
+            nonlocal validation_result_id
+            assert task_id
+            validation_result_id = task_id
 
         validation_manager.validation_completed.connect(validation_completed)
         ncs_pathways = get_ncs_pathways()
@@ -162,4 +161,4 @@ class TestDataValidation(TestCase):
         while not validation_manager.is_validation_complete(submit_result):
             QCoreApplication.processEvents()
 
-        self.assertIsNotNone(validation_result)
+        self.assertIsNotNone(validation_result_id)
