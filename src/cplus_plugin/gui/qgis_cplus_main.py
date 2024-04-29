@@ -1598,7 +1598,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :returns reporting_feedback: Feedback instance to be used in storing
         processing status details.
         :rtype reporting_feedback: QgsFeedback
-
         """
 
         progress_changed = partial(self.on_reporting_progress_changed, progress_dialog)

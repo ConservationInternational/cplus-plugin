@@ -230,7 +230,7 @@ class ReportGenerator:
         self._context = context
         self._feedback = context.feedback or feedback
         self._error_messages: typing.List[str] = []
-        self._error_occured = False
+        self._error_occurred = False
         self._layout = None
         self._project = None
         self._variable_register = LayoutVariableRegister()
@@ -247,9 +247,6 @@ class ReportGenerator:
 
         if self._feedback:
             self._feedback.canceled.connect(self._on_feedback_cancelled)
-
-        self._area_calculation_progress_reference = 0
-        self._area_calculation_step_increment = 0
 
     @property
     def context(self) -> ReportContext:
@@ -308,34 +305,17 @@ class ReportGenerator:
         """
         return self._repeat_page
 
-    def _reset_area_processing_feedback(self):
-        """Creates a new instance of processing feedback."""
-        if self._area_processing_feedback is not None:
-            self._area_processing_feedback.progressChanged.disconnect()
-
-        self._area_processing_feedback = QgsProcessingFeedback()
-        self._area_processing_feedback.progressChanged.connect(
-            self._area_progress_changed
-        )
-
-    def _area_progress_changed(self, progress: float):
-        """Slot raised when progress for area calculation."""
-        # Check cancel or update progress
-        total_progress = self._area_calculation_progress_reference + (
-            self._area_calculation_step_increment / 100 * progress
-        )
-        self._process_check_cancelled_or_set_progress(total_progress)
-
     def _process_check_cancelled_or_set_progress(self, value: float) -> bool:
         """Check if there is a request to cancel the process
         if a feedback object had been specified.
         """
-        if (self._feedback and self._feedback.isCanceled()) or self._error_occured:
+        if (self._feedback and self._feedback.isCanceled()) or self._error_occurred:
             tr_msg = tr("Report generation cancelled.")
             self._error_messages.append(tr_msg)
+
             return True
 
-            self._feedback.setProgress(value)
+        self._feedback.setProgress(value)
 
         return False
 
@@ -1046,43 +1026,6 @@ class ReportGenerator:
 
         return table_frame.multiFrame()
 
-    def _calculate_activities_areas(self):
-        """Calculate the area of individual weighted activity layers.
-
-        The values are rounded off to two decimal places.
-        """
-        progress_range = 30
-
-        # Update the feedback object based on the status of calculating the
-        # area for each activity.
-        self._area_calculation_progress_reference = 20
-        self._area_calculation_step_increment = progress_range / len(
-            self._context.scenario.weighted_activities
-        )
-
-        for activity in self._context.scenario.weighted_activities:
-            activity_layer = self._get_activity_layer_in_project(
-                str(activity.uuid), True
-            )
-            if activity_layer is None:
-                tr_msg = tr("Could not find raster layer for")
-                self._error_messages.append(
-                    f"{tr_msg} {activity.name} weighted activity."
-                )
-                continue
-
-            self._reset_area_processing_feedback()
-            activity_area_info = calculate_raster_value_area(
-                activity_layer, feedback=self._area_processing_feedback
-            )
-            self._area_calculation_progress_reference += (
-                self._area_calculation_step_increment
-            )
-            activity_area = sum(list(activity_area_info.values()))
-            self._activities_area[str(activity.uuid)] = round(
-                activity_area, self.AREA_DECIMAL_PLACES
-            )
-
     def _populate_activity_area_table(self):
         """Populate the table(s) for activities and
         corresponding areas.
@@ -1107,14 +1050,12 @@ class ReportGenerator:
             self._error_messages.append(tr_msg)
             return
 
-        self._reset_area_processing_feedback()
-
         # Calculate pixel area
         pixel_area_info = self._pixel_area_info
 
         if len(pixel_area_info) == 0:
             tr_msg = tr("No activity areas from the calculation.")
-            self._error_occured = True
+            self._error_occurred = True
             self._error_messages.append(tr_msg)
             return
 
@@ -1215,7 +1156,7 @@ class ReportGenerator:
         if not self._load_template() or not self.output_dir:
             return self._get_failed_result()
 
-        if self._process_check_cancelled_or_set_progress(10):
+        if self._process_check_cancelled_or_set_progress(12):
             return self._get_failed_result()
 
         # Update variable values
@@ -1227,18 +1168,16 @@ class ReportGenerator:
         # Set repeat page
         self._set_repeat_page()
 
-        if self._process_check_cancelled_or_set_progress(20):
+        if self._process_check_cancelled_or_set_progress(24):
             return self._get_failed_result()
 
-        self._calculate_activities_areas()
-
-        if self._process_check_cancelled_or_set_progress(50):
+        if self._process_check_cancelled_or_set_progress(42):
             return self._get_failed_result()
 
         # Render repeat items i.e. activities
         self._render_repeat_items()
 
-        if self._process_check_cancelled_or_set_progress(60):
+        if self._process_check_cancelled_or_set_progress(65):
             return self._get_failed_result()
 
         # Populate activity area table
