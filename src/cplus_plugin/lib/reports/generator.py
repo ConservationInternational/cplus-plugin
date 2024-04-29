@@ -537,7 +537,7 @@ class ReportGenerator:
             self._error_messages.append(tr_msg)
             return
 
-        progress_percent_per_im = 10 / num_activities
+        progress_percent_per_activity = 25 / num_activities
 
         # Calculate number of pages required
         num_pages, req_pages = divmod(num_activities, int(max_items_page))
@@ -581,7 +581,9 @@ class ReportGenerator:
 
                     # Check cancel or update progress
                     if self._feedback:
-                        progress = self._feedback.progress() + progress_percent_per_im
+                        progress = (
+                            self._feedback.progress() + progress_percent_per_activity
+                        )
                         if self._process_check_cancelled_or_set_progress(progress):
                             break
 
@@ -1168,16 +1170,16 @@ class ReportGenerator:
         # Set repeat page
         self._set_repeat_page()
 
-        if self._process_check_cancelled_or_set_progress(24):
+        if self._process_check_cancelled_or_set_progress(20):
             return self._get_failed_result()
 
-        if self._process_check_cancelled_or_set_progress(42):
+        if self._process_check_cancelled_or_set_progress(45):
             return self._get_failed_result()
 
         # Render repeat items i.e. activities
         self._render_repeat_items()
 
-        if self._process_check_cancelled_or_set_progress(65):
+        if self._process_check_cancelled_or_set_progress(70):
             return self._get_failed_result()
 
         # Populate activity area table
