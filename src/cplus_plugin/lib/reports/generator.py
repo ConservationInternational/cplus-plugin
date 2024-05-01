@@ -652,7 +652,6 @@ class ReportGenerator:
         im_shape.setSymbol(symbol)
 
         # Area details
-
         area_shape_item = QgsLayoutItemShape(self._layout)
         self._layout.addLayoutItem(area_shape_item)
         area_shape_item.setShapeType(QgsLayoutItemShape.Shape.Ellipse)
