@@ -135,6 +135,10 @@ MINIMUM_ITEM_HEIGHT = 100
 # Report font
 REPORT_FONT_NAME = "Ubuntu"
 
+# Activity character limits
+MAX_ACTIVITY_NAME_LENGTH = 50
+MAX_ACTIVITY_DESCRIPTION_LENGTH = 225
+
 # IDs for the given tables in the report template
 ACTIVITY_AREA_TABLE_ID = "activity_area_table"
 PRIORITY_GROUP_WEIGHT_TABLE_ID = "assigned_weights_table"

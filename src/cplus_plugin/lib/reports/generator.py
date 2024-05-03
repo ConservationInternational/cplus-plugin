@@ -40,7 +40,6 @@ from qgis.core import (
     QgsTextFormat,
     QgsUnitTypes,
 )
-from qgis.utils import iface
 
 from qgis.PyQt import QtCore, QtGui, QtXml
 
@@ -51,6 +50,8 @@ from ...definitions.constants import (
 )
 from ...definitions.defaults import (
     ACTIVITY_AREA_TABLE_ID,
+    MAX_ACTIVITY_DESCRIPTION_LENGTH,
+    MAX_ACTIVITY_NAME_LENGTH,
     MINIMUM_ITEM_HEIGHT,
     MINIMUM_ITEM_WIDTH,
     PRIORITY_GROUP_WEIGHT_TABLE_ID,
@@ -676,7 +677,6 @@ class ReportGenerator:
         area_shape_item.setSymbol(symbol)
 
         # Area title name label
-
         area_name_lbl = QgsLayoutItemLabel(self._layout)
         self._layout.addLayoutItem(area_name_lbl)
         area_name_lbl.setText("Area")
@@ -693,7 +693,6 @@ class ReportGenerator:
         )
 
         # Area size label
-
         area_size_lbl = QgsLayoutItemLabel(self._layout)
         self._layout.addLayoutItem(area_size_lbl)
 
@@ -788,35 +787,45 @@ class ReportGenerator:
         title_font_size = 10
         description_font_size = 6.5
 
-        # IM name label
+        # Activity name label
         margin = 0.01 * width
         label_width = (width - (2 * margin)) / 2
-        name_label_height = 0.15 * shape_height
-        im_name_lbl = QgsLayoutItemLabel(self._layout)
-        self._layout.addLayoutItem(im_name_lbl)
-        im_name_lbl.setText(activity.name)
-        self.set_label_font(im_name_lbl, title_font_size)
+        name_label_height = 0.33 * shape_height
+        activity_name_lbl = QgsLayoutItemLabel(self._layout)
+        self._layout.addLayoutItem(activity_name_lbl)
+        # Chop name to set limit in order to fit in the label
+        activity_name = activity.name
+        if len(activity_name) > MAX_ACTIVITY_NAME_LENGTH:
+            activity_name = f"{activity.name[:MAX_ACTIVITY_NAME_LENGTH]}..."
+        activity_name_lbl.setText(activity_name)
+        self.set_label_font(activity_name_lbl, title_font_size)
         name_lbl_ref_point = QgsLayoutPoint(
             pos_x + margin, pos_y + map_height + margin, self._layout.units()
         )
-        im_name_lbl.attemptMove(name_lbl_ref_point, True, False, page)
-        im_name_lbl.attemptResize(
+        activity_name_lbl.attemptMove(name_lbl_ref_point, True, False, page)
+        activity_name_lbl.attemptResize(
             QgsLayoutSize(label_width, name_label_height, self._layout.units())
         )
 
-        # IM description label
-        desc_label_height = 0.85 * shape_height - (margin * 2)
-        im_desc_lbl = QgsLayoutItemLabel(self._layout)
-        self._layout.addLayoutItem(im_desc_lbl)
-        im_desc_lbl.setText(activity.description)
-        self.set_label_font(im_desc_lbl, description_font_size)
+        # Activity description label
+        desc_label_height = 0.67 * shape_height - (margin * 2)
+        activity_desc_lbl = QgsLayoutItemLabel(self._layout)
+        self._layout.addLayoutItem(activity_desc_lbl)
+        # Chop description to set limit in order to fit in the label
+        activity_description = activity.description
+        if len(activity_description) > MAX_ACTIVITY_DESCRIPTION_LENGTH:
+            activity_description = (
+                f"{activity.description[:MAX_ACTIVITY_DESCRIPTION_LENGTH]}..."
+            )
+        activity_desc_lbl.setText(activity_description)
+        self.set_label_font(activity_desc_lbl, description_font_size)
         desc_lbl_ref_point = QgsLayoutPoint(
             pos_x + margin,
             pos_y + map_height + name_label_height + margin * 2,
             self._layout.units(),
         )
-        im_desc_lbl.attemptMove(desc_lbl_ref_point, True, False, page)
-        im_desc_lbl.attemptResize(
+        activity_desc_lbl.attemptMove(desc_lbl_ref_point, True, False, page)
+        activity_desc_lbl.attemptResize(
             QgsLayoutSize(label_width, desc_label_height, self._layout.units())
         )
 
