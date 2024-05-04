@@ -57,6 +57,7 @@ from qgis.utils import iface
 from .activity_widget import ActivityContainerWidget
 from .priority_group_widget import PriorityGroupWidget
 
+from .financial_pwl_dialog import FinancialPwlDialog
 from .priority_layer_dialog import PriorityLayerDialog
 from .priority_group_dialog import PriorityGroupDialog
 
@@ -197,10 +198,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.remove_group_btn.clicked.connect(self.remove_priority_group)
 
         # Priority layers buttons
+        self.new_financial_pwl_btn.setIcon(FileUtils.get_icon("mActionNewMap.svg"))
         self.add_pwl_btn.setIcon(FileUtils.get_icon("symbologyAdd.svg"))
         self.edit_pwl_btn.setIcon(FileUtils.get_icon("mActionToggleEditing.svg"))
         self.remove_pwl_btn.setIcon(FileUtils.get_icon("symbologyRemove.svg"))
 
+        self.new_financial_pwl_btn.clicked.connect(self.on_new_financial_pwl)
         self.add_pwl_btn.clicked.connect(self.add_priority_layer)
         self.edit_pwl_btn.clicked.connect(self.edit_priority_layer)
         self.remove_pwl_btn.clicked.connect(self.remove_priority_layer)
@@ -645,6 +648,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def open_help(self):
         """Opens the user documentation for the plugin in a browser"""
         open_documentation(USER_DOCUMENTATION_SITE)
+
+    def on_new_financial_pwl(self):
+        """Slot raised to show dialog for defining inputs of a new
+        financial PWL.
+        """
+        financial_dialog = FinancialPwlDialog()
+        if financial_dialog.exec_() == QtWidgets.QDialog.Accepted:
+            pass
 
     def add_priority_group(self):
         """Adds a new priority group into the plugin, then updates

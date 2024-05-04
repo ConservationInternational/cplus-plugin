@@ -38,3 +38,10 @@ ACTIVITY_IDENTIFIER_PROPERTY = "activity_identifier"
 CPLUS_OPTIONS_KEY = "cplus_main"
 LOG_OPTIONS_KEY = "cplus_log"
 REPORTS_OPTIONS_KEY = "cplus_report"
+
+# Headers for financial NPV computation
+YEAR_HEADER = "Year"
+TOTAL_PROJECTED_COSTS_HEADER = "Projected Total Costs/ha (US$)"
+TOTAL_PROJECTED_REVENUES_HEADER = "Projected Total Revenues/ha (US$)"
+DISCOUNTED_VALUE_HEADER = "Discounted Value"
+MAX_YEARS = 99
