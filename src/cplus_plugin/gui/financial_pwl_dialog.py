@@ -7,14 +7,7 @@ import os
 import typing
 import uuid
 
-from qgis.core import (
-    Qgis,
-    QgsColorRamp,
-    QgsFillSymbol,
-    QgsFillSymbolLayer,
-    QgsMapLayerProxyModel,
-    QgsRasterLayer,
-)
+from qgis.core import Qgis, QgsBasicNumericFormat, QgsNumericFormatContext
 from qgis.gui import QgsGui, QgsMessageBar
 
 from qgis.PyQt import QtCore, QtGui, QtWidgets
@@ -85,6 +78,27 @@ class FinancialValueItemDelegate(QtWidgets.QStyledItemDelegate):
             widget.setText("")
         else:
             widget.setText(str(value))
+
+    def displayText(self, value: float, locale: QtCore.QLocale) -> str:
+        """Format the value to incorporate thousand comma separator.
+
+        :param value: Value of the display role provided by the model.
+        :type value: float
+
+        :param locale: Locale for the value in the display role.
+        :type locale: QtCore.QLocale
+
+        :returns: Formatted value of the display role data.
+        :rtype: str
+        """
+        if value is None:
+            return ""
+
+        formatter = QgsBasicNumericFormat()
+        formatter.setShowThousandsSeparator(True)
+        formatter.setNumberDecimalPlaces(2)
+
+        return formatter.formatDouble(float(value), QgsNumericFormatContext())
 
     def setModelData(
         self,
