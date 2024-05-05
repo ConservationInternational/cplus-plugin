@@ -189,6 +189,8 @@ class FinancialPwlDialog(QtWidgets.QDialog, WidgetUi):
         ok_button = self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
         ok_button.setText(tr("Create"))
 
+        self._npv = 0.0
+
         icon_pixmap = QtGui.QPixmap(ICON_PATH)
         self.icon_la.setPixmap(icon_pixmap)
         self.btn_help.clicked.connect(self.open_help)
@@ -205,6 +207,7 @@ class FinancialPwlDialog(QtWidgets.QDialog, WidgetUi):
             3, self._discounted_value_delegate
         )
         self._npv_model.itemChanged.connect(self.on_item_changed)
+        self._npv_model.rowsRemoved.connect(self.on_years_removed)
 
         self.sb_num_years.valueChanged.connect(self.on_number_years_changed)
         self.sb_discount.valueChanged.connect(self.on_discount_rate_changed)
@@ -276,6 +279,8 @@ class FinancialPwlDialog(QtWidgets.QDialog, WidgetUi):
             discounted_value_index, discounted_value, QtCore.Qt.EditRole
         )
 
+        self.compute_npv()
+
     def update_all_discounted_values(self):
         """Updates al discounted values that had already been
         computed using the revised discount rate.
@@ -296,3 +301,40 @@ class FinancialPwlDialog(QtWidgets.QDialog, WidgetUi):
         """
         # Recompute discounted values
         self.update_all_discounted_values()
+
+    def compute_npv(self):
+        """Computes the NPV based on the total of the discounted value and
+        sets it in the corresponding text control.
+        """
+        npv = 0.0
+        for row in range(self._npv_model.rowCount()):
+            discount_value = self._npv_model.data(
+                self._npv_model.index(row, 3), QtCore.Qt.EditRole
+            )
+            if discount_value is None:
+                continue
+            npv += discount_value
+
+        self._npv = npv
+
+        # Format display
+        formatter = QgsBasicNumericFormat()
+        formatter.setShowThousandsSeparator(True)
+        formatter.setNumberDecimalPlaces(2)
+
+        self.txt_npv.setText(formatter.formatDouble(npv, QgsNumericFormatContext()))
+
+    def on_years_removed(self, index: QtCore.QModelIndex, start: int, end: int):
+        """Slot raised when the year rows have been removed.
+
+        :param index: Reference item at the given location.
+        :type index: QtCore.QModelIndex
+
+        :param start: Start location of the items that have been removed.
+        :type start: int
+
+        :param end: End location of the items that have been removed.
+        :type end: int
+        """
+        # Recalculate the NPV
+        self.compute_npv()
