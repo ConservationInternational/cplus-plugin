@@ -14,14 +14,9 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
-from ..definitions.constants import (
-    COLOR_RAMP_PROPERTIES_ATTRIBUTE,
-    COLOR_RAMP_TYPE_ATTRIBUTE,
-    ACTIVITY_LAYER_STYLE_ATTRIBUTE,
-    ACTIVITY_SCENARIO_STYLE_ATTRIBUTE,
-)
 from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
 from .financial_npv_model import FinancialNpvModel
+from ..lib.financials import compute_discount_value
 from ..utils import FileUtils, open_documentation, tr
 
 WidgetUi, _ = loadUiType(
@@ -147,6 +142,34 @@ class FinancialValueItemDelegate(QtWidgets.QStyledItemDelegate):
         widget.setGeometry(option.rect)
 
 
+class ValueFormatterItemDelegate(QtWidgets.QStyledItemDelegate):
+    """
+    Delegate for formatting numeric values using thousand comma separator,
+    number of decimal places etc.
+    """
+
+    def displayText(self, value: float, locale: QtCore.QLocale) -> str:
+        """Format the value to incorporate thousand comma separator.
+
+        :param value: Value of the display role provided by the model.
+        :type value: float
+
+        :param locale: Locale for the value in the display role.
+        :type locale: QtCore.QLocale
+
+        :returns: Formatted value of the display role data.
+        :rtype: str
+        """
+        if value is None:
+            return ""
+
+        formatter = QgsBasicNumericFormat()
+        formatter.setShowThousandsSeparator(True)
+        formatter.setNumberDecimalPlaces(2)
+
+        return formatter.formatDouble(float(value), QgsNumericFormatContext())
+
+
 class FinancialPwlDialog(QtWidgets.QDialog, WidgetUi):
     """Dialog for creating a new financial PWL."""
 
@@ -175,10 +198,16 @@ class FinancialPwlDialog(QtWidgets.QDialog, WidgetUi):
         self.tv_revenue_costs.setModel(self._npv_model)
         self._revenue_delegate = FinancialValueItemDelegate()
         self._costs_delegate = FinancialValueItemDelegate()
+        self._discounted_value_delegate = ValueFormatterItemDelegate()
         self.tv_revenue_costs.setItemDelegateForColumn(1, self._revenue_delegate)
         self.tv_revenue_costs.setItemDelegateForColumn(2, self._costs_delegate)
+        self.tv_revenue_costs.setItemDelegateForColumn(
+            3, self._discounted_value_delegate
+        )
+        self._npv_model.itemChanged.connect(self.on_item_changed)
 
         self.sb_num_years.valueChanged.connect(self.on_number_years_changed)
+        self.sb_discount.valueChanged.connect(self.on_discount_rate_changed)
 
         # Set default values
         self.sb_num_years.setValue(5)
@@ -206,3 +235,64 @@ class FinancialPwlDialog(QtWidgets.QDialog, WidgetUi):
         :type years: int
         """
         self._npv_model.set_number_of_years(years)
+
+    def on_item_changed(self, item: QtGui.QStandardItem):
+        """Slot raised when the data of an item has changed.
+
+        Use this to compute discounted value as well as the NPV.
+
+        :param item: Item whose value has changed.
+        :type item: QtGui.QStandardItem
+        """
+        # Update discounted value only if revenue or cost
+        # have changed.
+        column = item.column()
+        if column == 1 or column == 2:
+            self.update_discounted_value(item.row())
+
+    def update_discounted_value(self, row: int):
+        """Updated the discounted value for the given row number.
+
+        :param row: Row number to compute the discounted value.
+        :type row: int
+        """
+        # For computation purposes, any None value will be
+        # translated to zero.
+        revenue = self._npv_model.data(
+            self._npv_model.index(row, 1), QtCore.Qt.EditRole
+        )
+        if revenue is None:
+            revenue = 0.0
+
+        cost = self._npv_model.data(self._npv_model.index(row, 2), QtCore.Qt.EditRole)
+        if cost is None:
+            cost = 0.0
+
+        discounted_value = compute_discount_value(
+            revenue, cost, row + 1, self.sb_discount.value()
+        )
+        discounted_value_index = self._npv_model.index(row, 3)
+        self._npv_model.setData(
+            discounted_value_index, discounted_value, QtCore.Qt.EditRole
+        )
+
+    def update_all_discounted_values(self):
+        """Updates al discounted values that had already been
+        computed using the revised discount rate.
+        """
+        for row in range(self._npv_model.rowCount()):
+            discount_value = self._npv_model.data(
+                self._npv_model.index(row, 3), QtCore.Qt.EditRole
+            )
+            if discount_value is None:
+                continue
+            self.update_discounted_value(row)
+
+    def on_discount_rate_changed(self, discount_rate: float):
+        """Slot raised when discount rate has changed.
+
+        :param discount_rate: New discount rate.
+        :type discount_rate: float
+        """
+        # Recompute discounted values
+        self.update_all_discounted_values()
