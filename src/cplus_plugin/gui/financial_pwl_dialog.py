@@ -4,10 +4,13 @@ Dialog for creating a new financial PWL.
 """
 
 import os
-import typing
-import uuid
 
-from qgis.core import Qgis, QgsBasicNumericFormat, QgsNumericFormatContext
+from qgis.core import (
+    Qgis,
+    QgsApplication,
+    QgsBasicNumericFormat,
+    QgsNumericFormatContext,
+)
 from qgis.gui import QgsGui, QgsMessageBar
 
 from qgis.PyQt import QtCore, QtGui, QtWidgets
@@ -179,15 +182,20 @@ class FinancialPwlDialog(QtWidgets.QDialog, WidgetUi):
 
         QgsGui.enableAutoGeometryRestore(self)
 
+        self._message_bar = QgsMessageBar()
+        self.vl_notification.addWidget(self._message_bar)
+
         # Initialize UI
         help_icon = FileUtils.get_icon("mActionHelpContents_green.svg")
         self.btn_help.setIcon(help_icon)
 
-        # copy_icon = FileUtils.get_icon("mActionHelpContents_green.svg")
-        # self.btn_help.setIcon(help_icon)
+        copy_icon = FileUtils.get_icon("mActionEditCopy.svg")
+        self.tb_copy_npv.setIcon(copy_icon)
+        self.tb_copy_npv.clicked.connect(self.copy_npv)
 
         ok_button = self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
         ok_button.setText(tr("Create"))
+        self.buttonBox.accepted.connect(self._on_accepted)
 
         self._npv = 0.0
 
@@ -247,6 +255,8 @@ class FinancialPwlDialog(QtWidgets.QDialog, WidgetUi):
         :param item: Item whose value has changed.
         :type item: QtGui.QStandardItem
         """
+        self._message_bar.clearWidgets()
+
         # Update discounted value only if revenue or cost
         # have changed.
         column = item.column()
@@ -338,3 +348,78 @@ class FinancialPwlDialog(QtWidgets.QDialog, WidgetUi):
         """
         # Recalculate the NPV
         self.compute_npv()
+
+    def copy_npv(self):
+        """Copy NPV to the clipboard."""
+        QgsApplication.instance().clipboard().setText(self.txt_npv.text())
+
+    def is_valid(self) -> bool:
+        """Verifies if the input data is valid.
+
+        :returns: True if the user input is invalid, else False.
+        :rtype: bool
+        """
+        status = True
+
+        self._message_bar.clearWidgets()
+
+        for row in range(self._npv_model.rowCount()):
+            is_valid = self._validate_row(row)
+            if not is_valid and status:
+                status = False
+
+        return status
+
+    def _validate_row(self, row: int) -> bool:
+        """Validates the input in the given row.
+
+        An invalid error message will be shown in the dialog.
+
+        :param row: Input in the given row to validate.
+        :type row: int
+
+        :returns: True if the row is valid, else False.
+        :rtype: bool
+        """
+        status = True
+
+        year_tr = tr("Year")
+        not_defined_tr = tr("not defined")
+
+        revenue = self._npv_model.data(
+            self._npv_model.index(row, 1), QtCore.Qt.EditRole
+        )
+        cost = self._npv_model.data(self._npv_model.index(row, 2), QtCore.Qt.EditRole)
+        base_err_msg = ""
+        if not revenue and cost:
+            base_err_msg = tr("Revenue")
+            status = False
+        elif revenue and not cost:
+            base_err_msg = tr("Cost")
+            if status:
+                status = False
+        elif not revenue and not cost:
+            base_err_msg = tr("Revenue and cost")
+            if status:
+                status = False
+
+        if not status:
+            err_msg = f"{year_tr} {str(row + 1)}: {base_err_msg} {not_defined_tr}"
+            self._show_warning_message(err_msg)
+
+        return status
+
+    def _show_warning_message(self, message: str):
+        """Shows a warning message in the message bar.
+
+        :param message: Message to show in the message bar.
+        :type message: str
+        """
+        self._message_bar.pushMessage(message, Qgis.MessageLevel.Warning)
+
+    def _on_accepted(self):
+        """Validates user input before closing."""
+        if not self.is_valid():
+            return
+
+        self.accept()

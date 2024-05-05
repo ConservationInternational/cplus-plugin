@@ -168,6 +168,9 @@
    </item>
    <item row="5" column="4">
     <widget class="QToolButton" name="tb_copy_npv">
+     <property name="toolTip">
+      <string>Copy NPV</string>
+     </property>
      <property name="text">
       <string>...</string>
      </property>
