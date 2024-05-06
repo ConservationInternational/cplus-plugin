@@ -17,25 +17,26 @@ from qgis.PyQt import QtCore, QtGui
 from qgis.core import (
     Qgis,
     QgsApplication,
+    QgsColorRampShader,
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransform,
     QgsFeedback,
     QgsGeometry,
+    QgsPalettedRasterRenderer,
     QgsProject,
     QgsProcessing,
     QgsProcessingAlgRunnerTask,
     QgsProcessingContext,
     QgsProcessingFeedback,
     QgsRasterLayer,
-    QgsRectangle,
-    QgsTask,
-    QgsWkbTypes,
-    QgsColorRampShader,
-    QgsSingleBandPseudoColorRenderer,
-    QgsRasterShader,
-    QgsPalettedRasterRenderer,
-    QgsStyle,
     QgsRasterMinMaxOrigin,
+    QgsRasterShader,
+    QgsRectangle,
+    QgsSingleBandPseudoColorRenderer,
+    QgsStyle,
+    QgsTask,
+    QgsVectorLayer,
+    QgsWkbTypes,
 )
 
 from qgis import processing
@@ -202,10 +203,26 @@ class ScenarioAnalysisTask(QgsTask):
             extent_string,
         )
 
+        # Run masking of the activities layers
+
+        masking_layers_paths = settings_manager.get_value(
+            Settings.MASK_LAYERS_PATHS, default=None
+        )
+        masking_layers = masking_layers_paths.split(",") if masking_layers_paths else []
+
+        masking_layers.remove("") if "" in masking_layers else None
+
+        if masking_layers:
+            self.run_activities_masking(
+                self.analysis_activities,
+                masking_layers,
+                extent_string,
+            )
+
         # Run sieve function on the created models if user has enabled it
 
         sieve_enabled = settings_manager.get_value(
-            Settings.SIEVE_ENABLED, default=False
+            Settings.SIEVE_ENABLED, default=False, setting_type=bool
         )
 
         if sieve_enabled:
@@ -406,7 +423,7 @@ class ScenarioAnalysisTask(QgsTask):
         :type priority_layers_groups: dict
 
         :param extent: The selected extent from user
-        :type extent: SpatialExtent
+        :type extent: str
 
         :param temporary_output: Whether to save the processing outputs as temporary
         files
@@ -996,7 +1013,7 @@ class ScenarioAnalysisTask(QgsTask):
         :type priority_layers_groups: dict
 
         :param extent: selected extent from user
-        :type extent: SpatialExtent
+        :type extent: str
 
         :param temporary_output: Whether to save the processing outputs as temporary
         files
@@ -1084,6 +1101,132 @@ class ScenarioAnalysisTask(QgsTask):
 
         except Exception as e:
             log(f"Problem creating activity layers, {e}")
+            self.error = e
+            self.cancel()
+            return False
+
+        return True
+
+    def run_activities_masking(
+        self, activities, masking_layers, extent, temporary_output=False
+    ):
+        """Applies the mask layers into the passed activities
+
+        :param activities: List of the selected activities
+        :type activities: typing.List[Activity]
+
+        :param masking_layers: Paths to the mask layers to be used
+        :type masking_layers: dict
+
+        :param extent: selected extent from user
+        :type extent: str
+
+        :param temporary_output: Whether to save the processing outputs as temporary
+        files
+        :type temporary_output: bool
+        """
+        if self.processing_cancelled:
+            # Will not proceed if processing has been cancelled by the user
+            return False
+
+        self.set_status_message(tr("Masking activities using the saved masked layers"))
+
+        try:
+            for mask_layer_path in masking_layers:
+                mask_layer = QgsVectorLayer(mask_layer_path, "mask", "ogr")
+
+                if not mask_layer.isValid():
+                    log(
+                        f"Skipping activities masking "
+                        f"using layer {mask_layer_path}, not a valid layer."
+                    )
+                    continue
+
+                if Qgis.versionInt() < 33000:
+                    layer_check = mask_layer.geometryType() == QgsWkbTypes.Polygon
+                else:
+                    layer_check = mask_layer.geometryType() == Qgis.GeometryType.Polygon
+
+                if not layer_check:
+                    log(
+                        f"Skipping activities masking "
+                        f"using layer {mask_layer_path}, not a polygon layer."
+                    )
+                    continue
+
+                for activity in activities:
+                    if activity.path is None or activity.path is "":
+                        if not self.processing_cancelled:
+                            self.set_info_message(
+                                tr(
+                                    f"Problem when masking activities, "
+                                    f"there is no map layer for the activity {activity.name}"
+                                ),
+                                level=Qgis.Critical,
+                            )
+                            log(
+                                f"Problem when masking activities, "
+                                f"there is no map layer for the activity {activity.name}"
+                            )
+                        else:
+                            # If the user cancelled the processing
+                            self.set_info_message(
+                                tr(f"Processing has been cancelled by the user."),
+                                level=Qgis.Critical,
+                            )
+                            log(f"Processing has been cancelled by the user.")
+
+                        return False
+
+                    masked_activities_directory = os.path.join(
+                        self.scenario_directory, "masked_activities"
+                    )
+                    FileUtils.create_new_dir(masked_activities_directory)
+                    file_name = clean_filename(activity.name.replace(" ", "_"))
+
+                    output_file = os.path.join(
+                        masked_activities_directory,
+                        f"{file_name}_{str(uuid.uuid4())[:4]}.tif",
+                    )
+
+                    output = (
+                        QgsProcessing.TEMPORARY_OUTPUT
+                        if temporary_output
+                        else output_file
+                    )
+
+                    activity_layer = QgsRasterLayer(activity.path, "activity_layer")
+
+                    # Actual processing calculation
+                    alg_params = {
+                        "INPUT": activity.path,
+                        "MASK": mask_layer,
+                        "SOURCE_CRS": activity_layer.crs(),
+                        "DESTINATION_CRS": activity_layer.crs(),
+                        "TARGET_EXTENT": extent,
+                        "OUTPUT": output,
+                        "NO_DATA": -9999,
+                    }
+
+                    log(f"Used parameters for masking the activities: {alg_params} \n")
+
+                    feedback = QgsProcessingFeedback()
+
+                    feedback.progressChanged.connect(self.update_progress)
+
+                    if self.processing_cancelled:
+                        return False
+
+                    results = processing.run(
+                        "gdal:cliprasterbymasklayer",
+                        alg_params,
+                        context=self.processing_context,
+                        feedback=self.feedback,
+                    )
+                    activity.path = results["OUTPUT"]
+
+        except Exception as e:
+            log(f"Problem masking activities layers, {e} \n")
             self.error = e
             self.cancel()
             return False
