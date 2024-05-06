@@ -278,7 +278,7 @@
             </property>
             <property name="icon">
              <iconset>
-              <normaloff>../../../../../../../resources/cplus_right_arrow.svg</normaloff>../../../../../../../resources/cplus_right_arrow.svg</iconset>
+              <normaloff>../../../../../../../../../../../resources/cplus_right_arrow.svg</normaloff>../../../../../../../../../../../resources/cplus_right_arrow.svg</iconset>
             </property>
            </widget>
           </item>
@@ -292,7 +292,7 @@
             </property>
             <property name="icon">
              <iconset>
-              <normaloff>../../../../../../../resources/cplus_left_arrow.svg</normaloff>../../../../../../../resources/cplus_left_arrow.svg</iconset>
+              <normaloff>../../../../../../../../../../../resources/cplus_left_arrow.svg</normaloff>../../../../../../../../../../../resources/cplus_left_arrow.svg</iconset>
             </property>
            </widget>
           </item>
@@ -448,6 +448,27 @@
              <string>Run Scenario</string>
             </property>
            </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="log">
+       <attribute name="title">
+        <string>Log</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_3">
+        <item row="0" column="0">
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>Processing Log</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QPlainTextEdit" name="log_text_box"/>
           </item>
          </layout>
         </item>

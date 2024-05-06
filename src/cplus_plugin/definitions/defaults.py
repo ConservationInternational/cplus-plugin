@@ -13,6 +13,17 @@ PILOT_AREA_EXTENT = {
     "coordinates": [30.743498637, 32.069186664, -25.201606226, -23.960197335],
 }
 
+PLUGIN_MESSAGE_LOG_TAB = "qgis_cplus"
+SCENARIO_LOG_FILE_NAME = "processing.log"
+
+QGIS_MESSAGE_LEVEL_DICT = {
+    0: "INFO",
+    1: "WARNING",
+    2: "CRITICAL",
+    3: "SUCCESS",
+    4: "NOLEVEL",
+}
+
 DEFAULT_CRS_ID = 4326
 
 DOCUMENTATION_SITE = "https://conservationinternational.github.io/cplus-plugin"
