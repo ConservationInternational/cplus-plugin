@@ -180,10 +180,15 @@ class ScenarioAnalysisTask(QgsTask):
         # their carbon layers before creating
         # their respective activities.
 
+        save_output = settings_manager.get_value(
+            Settings.NCS_WITH_CARBON, default=True, setting_type=bool
+        )
+
         self.run_pathways_analysis(
             self.analysis_activities,
             self.analysis_priority_layers_groups,
             extent_string,
+            temporary_output=not save_output,
         )
 
         # Normalizing all the activities pathways using the carbon coefficient and
@@ -197,10 +202,15 @@ class ScenarioAnalysisTask(QgsTask):
 
         # Creating activities from the normalized pathways
 
+        save_output = settings_manager.get_value(
+            Settings.LANDUSE_PROJECT, default=True, setting_type=bool
+        )
+
         self.run_activities_analysis(
             self.analysis_activities,
             self.analysis_priority_layers_groups,
             extent_string,
+            temporary_output=not save_output,
         )
 
         # Run masking of the activities layers
@@ -235,27 +245,41 @@ class ScenarioAnalysisTask(QgsTask):
         # After creating activities, we normalize them using the same coefficients
         # used in normalizing their respective pathways.
 
+        save_output = settings_manager.get_value(
+            Settings.LANDUSE_NORMALIZED, default=True, setting_type=bool
+        )
+
         self.run_activities_normalization(
             self.analysis_activities,
             self.analysis_priority_layers_groups,
             extent_string,
+            temporary_output=not save_output,
         )
 
         # Weighting the activities with their corresponding priority weighting layers
+        save_output = settings_manager.get_value(
+            Settings.LANDUSE_WEIGHTED, default=True, setting_type=bool
+        )
         weighted_activities, result = self.run_activities_weighting(
             self.analysis_activities,
             self.analysis_priority_layers_groups,
             extent_string,
+            temporary_output=not save_output,
         )
 
         self.analysis_weighted_activities = weighted_activities
         self.scenario.weighted_activities = weighted_activities
 
         # Post weighting analysis
-        self.run_activities_cleaning(weighted_activities, extent_string)
+        self.run_activities_cleaning(
+            weighted_activities, extent_string, temporary_output=not save_output
+        )
 
         # The highest position tool analysis
-        self.run_highest_position_analysis()
+        save_output = settings_manager.get_value(
+            Settings.HIGHEST_POSITION, default=True, setting_type=bool
+        )
+        self.run_highest_position_analysis(temporary_output=not save_output)
 
         return True
 
@@ -1553,7 +1577,9 @@ class ScenarioAnalysisTask(QgsTask):
                         f"There are no defined priority layers in groups,"
                         f" skipping activities weighting step."
                     )
-                    self.run_activities_cleaning(extent)
+                    self.run_activities_cleaning(
+                        extent, temporary_output=temporary_output
+                    )
                     return
 
                 if activity.priority_layers is None or activity.priority_layers is []:
@@ -1666,7 +1692,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         return weighted_activities, True
 
-    def run_activities_cleaning(self, activities, extent=None):
+    def run_activities_cleaning(self, activities, extent=None, temporary_output=False):
         """Cleans the weighted activities replacing
         zero values with no-data as they are not statistical meaningful for the
         scenario analysis.
@@ -1712,6 +1738,10 @@ class ScenarioAnalysisTask(QgsTask):
                 # The aim is to convert pixels values to no data, that is why we are
                 # using the sum operation with only one layer.
 
+                output = (
+                    QgsProcessing.TEMPORARY_OUTPUT if temporary_output else output_file
+                )
+
                 alg_params = {
                     "IGNORE_NODATA": True,
                     "INPUT": layers,
@@ -1719,7 +1749,7 @@ class ScenarioAnalysisTask(QgsTask):
                     "OUTPUT_NODATA_VALUE": 0,
                     "REFERENCE_LAYER": layers[0] if len(layers) > 0 else None,
                     "STATISTIC": 0,  # Sum
-                    "OUTPUT": output_file,
+                    "OUTPUT": output,
                 }
 
                 log(
@@ -1750,7 +1780,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         return True
 
-    def run_highest_position_analysis(self):
+    def run_highest_position_analysis(self, temporary_output=False):
         """Runs the highest position analysis which is last step
         in scenario analysis. Uses the activities set by the current ongoing
         analysis.
@@ -1822,6 +1852,10 @@ class ScenarioAnalysisTask(QgsTask):
                     sources.append(layers[activity_name].source())
 
             log(f"Layers sources {[Path(source).stem for source in sources]}")
+
+            output_file = (
+                QgsProcessing.TEMPORARY_OUTPUT if temporary_output else output_file
+            )
 
             alg_params = {
                 "IGNORE_NODATA": True,
