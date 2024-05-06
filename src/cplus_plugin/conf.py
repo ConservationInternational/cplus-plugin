@@ -163,6 +163,9 @@ class Settings(enum.Enum):
     SIEVE_THRESHOLD = "sieve_threshold"
     SIEVE_MASK_PATH = "mask_path"
 
+    # Mask layer
+    MASK_LAYERS_PATHS = "mask_layers_paths"
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""
