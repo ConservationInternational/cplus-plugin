@@ -78,6 +78,7 @@ from ..utils import (
     tr,
     log,
     FileUtils,
+    write_to_file,
 )
 
 from ..definitions.defaults import (
@@ -85,9 +86,12 @@ from ..definitions.defaults import (
     PILOT_AREA_EXTENT,
     OPTIONS_TITLE,
     ICON_PATH,
+    PLUGIN_MESSAGE_LOG_TAB,
     QGIS_GDAL_PROVIDER,
+    QGIS_MESSAGE_LEVEL_DICT,
     REMOVE_LAYER_ICON_PATH,
     SCENARIO_OUTPUT_LAYER_NAME,
+    SCENARIO_LOG_FILE_NAME,
     USER_DOCUMENTATION_SITE,
 )
 from ..definitions.constants import (
@@ -121,6 +125,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.progress_dialog = None
         self.task = None
         self.processing_cancelled = False
+        self.current_analysis_task = None
 
         # Set icons for buttons
         help_icon = FileUtils.get_icon("mActionHelpContents_green.svg")
@@ -150,15 +155,36 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.analysis_finished.connect(self.post_analysis)
 
-        # Log
+        # Log updates
         QgsApplication.messageLog().messageReceived.connect(
             self.on_log_message_received
         )
 
     def on_log_message_received(self, message, tag, level):
-        if tag == "qgis_cplus":
-            message = f"{self.log_text_box.toPlainText()}{message}"
+        """Slot to handle log tab updates and processing logs
+
+        param message: The received message from QGIS message log
+        :type message: str
+
+        :param tag: Message log tag
+        :type tag: str
+
+        :param level: Message level enum value
+        :type level: Qgis.MessageLevel
+        """
+        if tag == PLUGIN_MESSAGE_LOG_TAB:
+            message_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            message = (
+                f"{self.log_text_box.toPlainText()} "
+                f"{message_time} {QGIS_MESSAGE_LEVEL_DICT[level]} "
+                f"{message}"
+            )
             self.log_text_box.setPlainText(f"{message} \n")
+
+            processing_log_file = os.path.join(
+                self.current_analysis_task.scenario_directory, SCENARIO_LOG_FILE_NAME
+            )
+            write_to_file(message, processing_log_file)
 
     def prepare_input(self):
         """Initializes plugin input widgets"""
@@ -1004,6 +1030,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             analysis_task.status_message_changed.connect(status_message_changed)
 
             analysis_task.info_message_changed.connect(self.show_message)
+
+            self.current_analysis_task = analysis_task
 
             progress_dialog.analysis_task = analysis_task
             progress_dialog.scenario_id = str(scenario.uuid)
