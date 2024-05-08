@@ -222,8 +222,6 @@ class ReportManager(QtCore.QObject):
         also contains feedback object for report updating and cancellation.
         :rtype: ReportSubmitStatus
         """
-        scenario = scenario_result.scenario
-
         if not scenario_result.output_layer_name:
             log("Layer name for output scenario is empty. Cannot generate reports.")
             return ReportSubmitStatus(False, None)
@@ -374,7 +372,11 @@ class ReportManager(QtCore.QObject):
         if layout is None:
             return False
 
-        iface.openLayoutDesigner(layout)
+        designer_iface = iface.openLayoutDesigner(layout)
+        if designer_iface:
+            view = designer_iface.view()
+            # Zoom to full page width when report is opened
+            view.zoomWidth()
 
         return True
 

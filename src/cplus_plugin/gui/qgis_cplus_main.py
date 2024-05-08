@@ -48,6 +48,7 @@ from qgis.core import (
 )
 
 from qgis.gui import (
+    QgsGui,
     QgsMessageBar,
     QgsRubberBand,
 )
@@ -78,6 +79,7 @@ from ..utils import (
     tr,
     log,
     FileUtils,
+    write_to_file,
 )
 
 from ..definitions.defaults import (
@@ -85,9 +87,12 @@ from ..definitions.defaults import (
     PILOT_AREA_EXTENT,
     OPTIONS_TITLE,
     ICON_PATH,
+    PLUGIN_MESSAGE_LOG_TAB,
     QGIS_GDAL_PROVIDER,
+    QGIS_MESSAGE_LEVEL_DICT,
     REMOVE_LAYER_ICON_PATH,
     SCENARIO_OUTPUT_LAYER_NAME,
+    SCENARIO_LOG_FILE_NAME,
     USER_DOCUMENTATION_SITE,
 )
 from ..definitions.constants import (
@@ -117,10 +122,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     ):
         super().__init__(parent)
         self.setupUi(self)
+
+        QgsGui.enableAutoGeometryRestore(self)
+
         self.iface = iface
         self.progress_dialog = None
         self.task = None
         self.processing_cancelled = False
+        self.current_analysis_task = None
 
         # Set icons for buttons
         help_icon = FileUtils.get_icon("mActionHelpContents_green.svg")
@@ -141,6 +150,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.priority_groups_widgets = {}
         self.pwl_item_flags = None
 
+        # Step 4
+        self.ncs_with_carbon.toggled.connect(self.outputs_options_changed)
+        self.landuse_project.toggled.connect(self.outputs_options_changed)
+        self.landuse_normalized.toggled.connect(self.outputs_options_changed)
+        self.landuse_weighted.toggled.connect(self.outputs_options_changed)
+        self.highest_position.toggled.connect(self.outputs_options_changed)
+
+        self.load_layer_options()
+
         self.initialize_priority_layers()
 
         self.position_feedback = QgsProcessingFeedback()
@@ -149,6 +167,92 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.scenario_result = None
 
         self.analysis_finished.connect(self.post_analysis)
+
+        # Log updates
+        QgsApplication.messageLog().messageReceived.connect(
+            self.on_log_message_received
+        )
+
+    def outputs_options_changed(self):
+        """
+        Handles selected outputs changes
+        """
+
+        settings_manager.set_value(
+            Settings.NCS_WITH_CARBON, self.ncs_with_carbon.isChecked()
+        )
+        settings_manager.set_value(
+            Settings.LANDUSE_PROJECT, self.landuse_project.isChecked()
+        )
+        settings_manager.set_value(
+            Settings.LANDUSE_NORMALIZED, self.landuse_normalized.isChecked()
+        )
+        settings_manager.set_value(
+            Settings.LANDUSE_WEIGHTED, self.landuse_weighted.isChecked()
+        )
+        settings_manager.set_value(
+            Settings.HIGHEST_POSITION, self.highest_position.isChecked()
+        )
+
+    def load_layer_options(self):
+        """
+        Retrieve outputs scenarion layers selection from settings and
+        update the releated ui components
+        """
+
+        self.ncs_with_carbon.setChecked(
+            settings_manager.get_value(
+                Settings.NCS_WITH_CARBON, default=False, setting_type=bool
+            )
+        )
+        self.landuse_project.setChecked(
+            settings_manager.get_value(
+                Settings.LANDUSE_PROJECT, default=False, setting_type=bool
+            )
+        )
+        self.landuse_normalized.setChecked(
+            settings_manager.get_value(
+                Settings.LANDUSE_NORMALIZED, default=False, setting_type=bool
+            )
+        )
+
+        self.landuse_weighted.setChecked(
+            settings_manager.get_value(
+                Settings.LANDUSE_WEIGHTED, default=False, setting_type=bool
+            )
+        )
+
+        self.highest_position.setChecked(
+            settings_manager.get_value(
+                Settings.HIGHEST_POSITION, default=False, setting_type=bool
+            )
+        )
+
+    def on_log_message_received(self, message, tag, level):
+        """Slot to handle log tab updates and processing logs
+
+        :param message: The received message from QGIS message log
+        :type message: str
+
+        :param tag: Message log tag
+        :type tag: str
+
+        :param level: Message level enum value
+        :type level: Qgis.MessageLevel
+        """
+        if tag == PLUGIN_MESSAGE_LOG_TAB:
+            message_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            message = (
+                f"{self.log_text_box.toPlainText()} "
+                f"{message_time} {QGIS_MESSAGE_LEVEL_DICT[level]} "
+                f"{message}"
+            )
+            self.log_text_box.setPlainText(f"{message} \n")
+
+            processing_log_file = os.path.join(
+                self.current_analysis_task.scenario_directory, SCENARIO_LOG_FILE_NAME
+            )
+            write_to_file(message, processing_log_file)
 
     def prepare_input(self):
         """Initializes plugin input widgets"""
@@ -995,6 +1099,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             analysis_task.info_message_changed.connect(self.show_message)
 
+            self.current_analysis_task = analysis_task
+
             progress_dialog.analysis_task = analysis_task
             progress_dialog.scenario_id = str(scenario.uuid)
 
@@ -1134,7 +1240,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             layer = instance_root.findLayer(layer.id())
             layer_clone = layer.clone()
             parent = layer.parent()
-            group.insertChildNode(0, layer_clone)  # Add to top of group
+            group.insertChildNode(
+                0, layer_clone
+            ) if group is not None else None  # Add to top of group
             parent.removeChildNode(layer)
 
     def post_analysis(self, scenario_result, task, report_manager, progress_dialog):
@@ -1161,6 +1269,25 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 os.path.dirname(raster), "weighted_activities"
             )
 
+            # Layer options
+            load_ncs = settings_manager.get_value(
+                Settings.NCS_WITH_CARBON, default=True, setting_type=bool
+            )
+            load_landuse = settings_manager.get_value(
+                Settings.LANDUSE_PROJECT, default=True, setting_type=bool
+            )
+            load_landuse_normalized = settings_manager.get_value(
+                Settings.LANDUSE_NORMALIZED, default=True, setting_type=bool
+            )
+
+            load_landuse_weighted = settings_manager.get_value(
+                Settings.LANDUSE_WEIGHTED, default=False, setting_type=bool
+            )
+
+            load_highest_position = settings_manager.get_value(
+                Settings.HIGHEST_POSITION, default=False, setting_type=bool
+            )
+
             scenario_name = scenario_result.scenario.name
             qgis_instance = QgsProject.instance()
             instance_root = qgis_instance.layerTreeRoot()
@@ -1180,22 +1307,30 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 counter += 1
 
             # Groups
+            activity_group = None
+            activity_weighted_group = None
+
             scenario_group = instance_root.insertGroup(0, group_name)
-            activity_group = scenario_group.addGroup(tr(ACTIVITY_GROUP_LAYER_NAME))
-            activity_weighted_group = (
-                scenario_group.addGroup(tr(ACTIVITY_WEIGHTED_GROUP_NAME))
-                if os.path.exists(im_weighted_dir)
-                else None
-            )
-            pathways_group = scenario_group.addGroup(tr(NCS_PATHWAYS_GROUP_LAYER_NAME))
+            if load_landuse:
+                activity_group = scenario_group.addGroup(tr(ACTIVITY_GROUP_LAYER_NAME))
+            if load_landuse_weighted:
+                activity_weighted_group = (
+                    scenario_group.addGroup(tr(ACTIVITY_WEIGHTED_GROUP_NAME))
+                    if os.path.exists(im_weighted_dir)
+                    else None
+                )
+            if load_ncs:
+                pathways_group = scenario_group.addGroup(
+                    tr(NCS_PATHWAYS_GROUP_LAYER_NAME)
+                )
+                pathways_group.setExpanded(False)
+                pathways_group.setItemVisibilityCheckedRecursive(False)
 
             # Group settings
-            activity_group.setExpanded(False)
+            activity_group.setExpanded(False) if activity_group else None
             activity_weighted_group.setExpanded(
                 False
             ) if activity_weighted_group else None
-            pathways_group.setExpanded(False)
-            pathways_group.setItemVisibilityCheckedRecursive(False)
 
             # Add scenario result layer to the canvas with styling
             layer_file = scenario_result.analysis_output.get("OUTPUT")
@@ -1223,98 +1358,110 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             # Add activities and pathways
             activity_index = 0
-            for activity in list_activities:
-                activity_name = activity.name
-                activity_layer = QgsRasterLayer(activity.path, activity.name)
-                activity_layer.setCustomProperty(
-                    ACTIVITY_IDENTIFIER_PROPERTY, str(activity.uuid)
-                )
-                list_pathways = activity.pathways
-
-                # Add activity layer with styling, if available
-                if activity_layer:
-                    renderer = self.style_activity_layer(activity_layer, activity)
-
-                    added_activity_layer = qgis_instance.addMapLayer(activity_layer)
-                    self.move_layer_to_group(added_activity_layer, activity_group)
-
-                    activity_layer.setRenderer(renderer)
-                    activity_layer.triggerRepaint()
-
-                # Add activity pathways
-                if len(list_pathways) > 0:
-                    # im_pathway_group = pathways_group.addGroup(im_name)
-                    activity_pathway_group = pathways_group.insertGroup(
-                        activity_index, activity_name
+            if load_landuse:
+                for activity in list_activities:
+                    activity_name = activity.name
+                    activity_layer = QgsRasterLayer(activity.path, activity.name)
+                    activity_layer.setCustomProperty(
+                        ACTIVITY_IDENTIFIER_PROPERTY, str(activity.uuid)
                     )
-                    activity_pathway_group.setExpanded(False)
+                    list_pathways = activity.pathways
 
-                    pw_index = 0
-                    for pathway in list_pathways:
-                        try:
-                            # pathway_name = pathway.name
-                            pathway_layer = pathway.to_map_layer()
+                    # Add activity layer with styling, if available
+                    if activity_layer:
+                        renderer = self.style_activity_layer(activity_layer, activity)
 
-                            added_pw_layer = qgis_instance.addMapLayer(pathway_layer)
-                            self.move_layer_to_group(
-                                added_pw_layer, activity_pathway_group
+                        added_activity_layer = qgis_instance.addMapLayer(activity_layer)
+                        self.move_layer_to_group(added_activity_layer, activity_group)
+
+                        activity_layer.setRenderer(renderer)
+                        activity_layer.triggerRepaint()
+                    # Add activity pathways
+                    if load_ncs:
+                        if len(list_pathways) > 0:
+                            # im_pathway_group = pathways_group.addGroup(im_name)
+                            activity_pathway_group = pathways_group.insertGroup(
+                                activity_index, activity_name
                             )
+                            activity_pathway_group.setExpanded(False)
 
-                            pathway_layer.triggerRepaint()
+                            pw_index = 0
+                            for pathway in list_pathways:
+                                try:
+                                    # pathway_name = pathway.name
+                                    pathway_layer = pathway.to_map_layer()
 
-                            pw_index = pw_index + 1
-                        except Exception as err:
-                            self.show_message(
-                                tr(
-                                    "An error occurred loading a pathway, "
-                                    "check logs for more information"
-                                ),
-                                level=Qgis.Info,
-                            )
-                            log(
-                                tr(
-                                    "An error occurred loading a pathway, "
-                                    'scenario analysis, error message "{}"'.format(err)
-                                )
-                            )
+                                    added_pw_layer = qgis_instance.addMapLayer(
+                                        pathway_layer
+                                    )
+                                    self.move_layer_to_group(
+                                        added_pw_layer, activity_pathway_group
+                                    )
 
-                activity_index = activity_index + 1
+                                    pathway_layer.triggerRepaint()
+
+                                    pw_index = pw_index + 1
+                                except Exception as err:
+                                    self.show_message(
+                                        tr(
+                                            "An error occurred loading a pathway, "
+                                            "check logs for more information"
+                                        ),
+                                        level=Qgis.Info,
+                                    )
+                                    log(
+                                        tr(
+                                            "An error occurred loading a pathway, "
+                                            'scenario analysis, error message "{}"'.format(
+                                                err
+                                            )
+                                        )
+                                    )
+
+                    activity_index = activity_index + 1
 
             weighted_activities = (
                 task.analysis_weighted_activities if task is not None else []
             )
 
-            for weighted_activity in weighted_activities:
-                weighted_activity_path = weighted_activity.path
-                weighted_activity_name = Path(weighted_activity_path).stem
+            if load_landuse_weighted:
+                for weighted_activity in weighted_activities:
+                    weighted_activity_path = weighted_activity.path
+                    weighted_activity_name = Path(weighted_activity_path).stem
 
-                if not weighted_activity_path.endswith(".tif"):
-                    continue
+                    if not weighted_activity_path.endswith(".tif"):
+                        continue
 
-                activity_weighted_layer = QgsRasterLayer(
-                    weighted_activity_path, weighted_activity_name, QGIS_GDAL_PROVIDER
-                )
+                    activity_weighted_layer = QgsRasterLayer(
+                        weighted_activity_path,
+                        weighted_activity_name,
+                        QGIS_GDAL_PROVIDER,
+                    )
 
-                # Set UUID for easier retrieval
-                activity_weighted_layer.setCustomProperty(
-                    ACTIVITY_IDENTIFIER_PROPERTY, str(weighted_activity.uuid)
-                )
+                    # Set UUID for easier retrieval
+                    activity_weighted_layer.setCustomProperty(
+                        ACTIVITY_IDENTIFIER_PROPERTY, str(weighted_activity.uuid)
+                    )
 
-                renderer = self.style_activity_layer(
-                    activity_weighted_layer, weighted_activity
-                )
-                activity_weighted_layer.setRenderer(renderer)
-                activity_weighted_layer.triggerRepaint()
+                    renderer = self.style_activity_layer(
+                        activity_weighted_layer, weighted_activity
+                    )
+                    activity_weighted_layer.setRenderer(renderer)
+                    activity_weighted_layer.triggerRepaint()
 
-                added_im_weighted_layer = qgis_instance.addMapLayer(
-                    activity_weighted_layer
-                )
-                self.move_layer_to_group(
-                    added_im_weighted_layer, activity_weighted_group
-                )
+                    added_im_weighted_layer = qgis_instance.addMapLayer(
+                        activity_weighted_layer
+                    )
+                    self.move_layer_to_group(
+                        added_im_weighted_layer, activity_weighted_group
+                    )
 
             # Initiate report generation
-            self.run_report(progress_dialog, report_manager)
+            if load_landuse_weighted and load_highest_position:
+                self.run_report(progress_dialog, report_manager)
+            else:
+                progress_dialog.processing_finished()
+
         else:
             # Re-initializes variables if processing were cancelled by the user
             # Not doing this breaks the processing if a user tries to run
@@ -1598,7 +1745,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :returns reporting_feedback: Feedback instance to be used in storing
         processing status details.
         :rtype reporting_feedback: QgsFeedback
-
         """
 
         progress_changed = partial(self.on_reporting_progress_changed, progress_dialog)

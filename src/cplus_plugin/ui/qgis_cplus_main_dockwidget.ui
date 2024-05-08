@@ -278,7 +278,7 @@
             </property>
             <property name="icon">
              <iconset>
-              <normaloff>../../../../../../../resources/cplus_right_arrow.svg</normaloff>../../../../../../../resources/cplus_right_arrow.svg</iconset>
+              <normaloff>../../../../../../../../../../../resources/cplus_right_arrow.svg</normaloff>../../../../../../../../../../../resources/cplus_right_arrow.svg</iconset>
             </property>
            </widget>
           </item>
@@ -292,7 +292,7 @@
             </property>
             <property name="icon">
              <iconset>
-              <normaloff>../../../../../../../resources/cplus_left_arrow.svg</normaloff>../../../../../../../resources/cplus_left_arrow.svg</iconset>
+              <normaloff>../../../../../../../../../../../resources/cplus_left_arrow.svg</normaloff>../../../../../../../../../../../resources/cplus_left_arrow.svg</iconset>
             </property>
            </widget>
           </item>
@@ -448,6 +448,140 @@
              <string>Run Scenario</string>
             </property>
            </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="step_4_tab">
+       <attribute name="title">
+        <string>Step 4</string>
+       </attribute>
+       <widget class="QgsCollapsibleGroupBox" name="options_group">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>10</y>
+          <width>761</width>
+          <height>201</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select outputs that will be saved into the file system, unselected options will be stored as memory layers.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="title">
+         <string>Select outputs</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_4">
+         <item row="0" column="0">
+          <widget class="QCheckBox" name="ncs_with_carbon">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Whether to produce the NCS pathways outputs.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string>NCS with Carbon</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QCheckBox" name="landuse_project">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Whether to produce the landuse project layers outputs.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string>Landuse Project</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QCheckBox" name="landuse_normalized">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Whether to produce the landuse project normalized outputs.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string>Landuse Project Normalized</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QCheckBox" name="landuse_weighted">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Whether to produce landuse weighted outputs, unselecting this option will disable report generation this is because weighted output is a required output for report generation.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string>Landuse Project Weighted with PWL</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QCheckBox" name="highest_position">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Whether to produce the final highest position analysis outputs, unselecting this option will disable report generation this is because the highest position output is a required output for report generation.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string>Scenario Highest Position analysis</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QgsCollapsibleGroupBox" name="processing_options_group">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>220</y>
+          <width>761</width>
+          <height>101</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Processing options</string>
+        </property>
+        <property name="title">
+         <string>Processing options</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_5">
+         <item row="0" column="0">
+          <widget class="QCheckBox" name="processing_type">
+           <property name="text">
+            <string>Process the scenario online</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="log">
+       <attribute name="title">
+        <string>Log</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_3">
+        <item row="0" column="0">
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>Processing Log</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QPlainTextEdit" name="log_text_box"/>
           </item>
          </layout>
         </item>

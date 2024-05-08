@@ -82,6 +82,11 @@ def log(
     )
 
 
+def write_to_file(message, file_path):
+    with open(file_path, "w+") as f:
+        f.write(message)
+
+
 def open_documentation(url=None):
     """Opens documentation website in the default browser
 

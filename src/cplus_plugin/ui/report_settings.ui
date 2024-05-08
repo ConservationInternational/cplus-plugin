@@ -120,7 +120,7 @@
          </size>
         </property>
         <property name="placeholderText">
-         <string>Please enter the stakeholder name and a brief description of the relationship separated by a dash i.e. stakeholder name - relstionship description. Each entry should be in a new line.</string>
+         <string>Please enter the stakeholder name and a brief description of the relationship separated by a dash i.e. stakeholder name - relationship description. Each entry should be in a new line.</string>
         </property>
        </widget>
       </item>
