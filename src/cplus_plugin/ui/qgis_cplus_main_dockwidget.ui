@@ -492,7 +492,7 @@
             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Whether to produce the landuse project layers outputs.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="text">
-            <string>Landuse Project</string>
+            <string>Landuse Activity</string>
            </property>
            <property name="checked">
             <bool>true</bool>
@@ -505,7 +505,7 @@
             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Whether to produce the landuse project normalized outputs.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="text">
-            <string>Landuse Project Normalized</string>
+            <string>Landuse Activity Normalized</string>
            </property>
            <property name="checked">
             <bool>true</bool>
@@ -518,7 +518,7 @@
             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Whether to produce landuse weighted outputs, unselecting this option will disable report generation this is because weighted output is a required output for report generation.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="text">
-            <string>Landuse Project Weighted with PWL</string>
+            <string>Landuse Activity Weighted with PWL</string>
            </property>
            <property name="checked">
             <bool>true</bool>

@@ -772,9 +772,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             0, QtCore.Qt.UserRole
         )
 
-        if group_identifier == "":
+        if (
+            group_identifier == ""
+            or group_identifier is None
+            or not isinstance(group_identifier, str)
+        ):
             self.show_message(
-                tr("Could not fetch the selected priority groups for editing."),
+                tr("Could not fetch the selected" " priority groups for editing."),
                 Qgis.Critical,
             )
             return

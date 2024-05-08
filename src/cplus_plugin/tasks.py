@@ -1156,98 +1156,102 @@ class ScenarioAnalysisTask(QgsTask):
         self.set_status_message(tr("Masking activities using the saved masked layers"))
 
         try:
-            for mask_layer_path in masking_layers:
+            if len(masking_layers) < 1:
+                return None
+
+            if len(masking_layers) > 1:
+                mask_layer = self.merge_vector_layers(masking_layers)
+            else:
+                mask_layer_path = masking_layers[0]
                 mask_layer = QgsVectorLayer(mask_layer_path, "mask", "ogr")
 
-                if not mask_layer.isValid():
-                    log(
-                        f"Skipping activities masking "
-                        f"using layer {mask_layer_path}, not a valid layer."
-                    )
-                    continue
+            if not mask_layer.isValid():
+                log(
+                    f"Skipping activities masking "
+                    f"using layer {mask_layer_path}, not a valid layer."
+                )
+                return False
 
-                if Qgis.versionInt() < 33000:
-                    layer_check = mask_layer.geometryType() == QgsWkbTypes.Polygon
-                else:
-                    layer_check = mask_layer.geometryType() == Qgis.GeometryType.Polygon
+            if Qgis.versionInt() < 33000:
+                layer_check = mask_layer.geometryType() == QgsWkbTypes.Polygon
+            else:
+                layer_check = mask_layer.geometryType() == Qgis.GeometryType.Polygon
 
-                if not layer_check:
-                    log(
-                        f"Skipping activities masking "
-                        f"using layer {mask_layer_path}, not a polygon layer."
-                    )
-                    continue
+            if not layer_check:
+                log(
+                    f"Skipping activities masking "
+                    f"using layer {mask_layer_path}, not a polygon layer."
+                )
+                return False
 
-                for activity in activities:
-                    if activity.path is None or activity.path is "":
-                        if not self.processing_cancelled:
-                            self.set_info_message(
-                                tr(
-                                    f"Problem when masking activities, "
-                                    f"there is no map layer for the activity {activity.name}"
-                                ),
-                                level=Qgis.Critical,
-                            )
-                            log(
+            for activity in activities:
+                if activity.path is None or activity.path is "":
+                    if not self.processing_cancelled:
+                        self.set_info_message(
+                            tr(
                                 f"Problem when masking activities, "
                                 f"there is no map layer for the activity {activity.name}"
-                            )
-                        else:
-                            # If the user cancelled the processing
-                            self.set_info_message(
-                                tr(f"Processing has been cancelled by the user."),
-                                level=Qgis.Critical,
-                            )
-                            log(f"Processing has been cancelled by the user.")
+                            ),
+                            level=Qgis.Critical,
+                        )
+                        log(
+                            f"Problem when masking activities, "
+                            f"there is no map layer for the activity {activity.name}"
+                        )
+                    else:
+                        # If the user cancelled the processing
+                        self.set_info_message(
+                            tr(f"Processing has been cancelled by the user."),
+                            level=Qgis.Critical,
+                        )
+                        log(f"Processing has been cancelled by the user.")
 
-                        return False
+                    return False
 
-                    masked_activities_directory = os.path.join(
-                        self.scenario_directory, "masked_activities"
-                    )
-                    FileUtils.create_new_dir(masked_activities_directory)
-                    file_name = clean_filename(activity.name.replace(" ", "_"))
+                masked_activities_directory = os.path.join(
+                    self.scenario_directory, "masked_activities"
+                )
+                FileUtils.create_new_dir(masked_activities_directory)
+                file_name = clean_filename(activity.name.replace(" ", "_"))
 
-                    output_file = os.path.join(
-                        masked_activities_directory,
-                        f"{file_name}_{str(uuid.uuid4())[:4]}.tif",
-                    )
+                output_file = os.path.join(
+                    masked_activities_directory,
+                    f"{file_name}_{str(uuid.uuid4())[:4]}.tif",
+                )
 
-                    output = (
-                        QgsProcessing.TEMPORARY_OUTPUT
-                        if temporary_output
-                        else output_file
-                    )
+                output = (
+                    QgsProcessing.TEMPORARY_OUTPUT if temporary_output else output_file
+                )
 
-                    activity_layer = QgsRasterLayer(activity.path, "activity_layer")
+                activity_layer = QgsRasterLayer(activity.path, "activity_layer")
 
-                    # Actual processing calculation
-                    alg_params = {
-                        "INPUT": activity.path,
-                        "MASK": mask_layer,
-                        "SOURCE_CRS": activity_layer.crs(),
-                        "DESTINATION_CRS": activity_layer.crs(),
-                        "TARGET_EXTENT": extent,
-                        "OUTPUT": output,
-                        "NO_DATA": -9999,
-                    }
+                # Actual processing calculation
+                alg_params = {
+                    "INPUT": activity.path,
+                    "MASK": mask_layer,
+                    "SOURCE_CRS": activity_layer.crs(),
+                    "DESTINATION_CRS": activity_layer.crs(),
+                    "TARGET_EXTENT": extent,
+                    "OUTPUT": output,
+                    "NO_DATA": -9999,
+                }
 
-                    log(f"Used parameters for masking the activities: {alg_params} \n")
+                log(f"Used parameters for masking the activities: {alg_params} \n")
 
-                    feedback = QgsProcessingFeedback()
+                feedback = QgsProcessingFeedback()
 
-                    feedback.progressChanged.connect(self.update_progress)
+                feedback.progressChanged.connect(self.update_progress)
 
-                    if self.processing_cancelled:
-                        return False
+                if self.processing_cancelled:
+                    return False
 
-                    results = processing.run(
-                        "gdal:cliprasterbymasklayer",
-                        alg_params,
-                        context=self.processing_context,
-                        feedback=self.feedback,
-                    )
-                    activity.path = results["OUTPUT"]
+                results = processing.run(
+                    "gdal:cliprasterbymasklayer",
+                    alg_params,
+                    context=self.processing_context,
+                    feedback=self.feedback,
+                )
+                activity.path = results["OUTPUT"]
 
         except Exception as e:
             log(f"Problem masking activities layers, {e} \n")
@@ -1256,6 +1260,49 @@ class ScenarioAnalysisTask(QgsTask):
             return False
 
         return True
+
+    def merge_vector_layers(self, layers):
+        """Merges the passed vector layers into a single layer
+
+        :param layers: List of the vector layers paths
+        :type layers: typing.List[str]
+
+        :return merged_layer: Merged vector layer
+        :rtype merged_layer: QgsMapLayer
+        """
+
+        input_map_layers = []
+
+        for layer_path in layers:
+            layer = QgsVectorLayer(layer_path, "mask", "ogr")
+            if layer.isValid():
+                input_map_layers.append(layer)
+            else:
+                log(f"Skipping invalid mask layer {layer_path} from masking.")
+        if len(input_map_layers) == 0:
+            return None
+        if len(input_map_layers) == 1:
+            return input_map_layers[0].source()
+
+        self.set_status_message(tr("Merging mask layers"))
+
+        # Actual processing calculation
+        alg_params = {
+            "LAYERS": input_map_layers,
+            "CRS": None,
+            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+        }
+
+        log(f"Used parameters for merging mask layers: {alg_params} \n")
+
+        results = processing.run(
+            "native:mergevectorlayers",
+            alg_params,
+            context=self.processing_context,
+            feedback=self.feedback,
+        )
+
+        return results["OUTPUT"]
 
     def run_activities_sieve(
         self, models, priority_layers_groups, extent, temporary_output=False
