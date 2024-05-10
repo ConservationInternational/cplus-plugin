@@ -927,7 +927,7 @@ class DataValidator(QgsTask):
         return status
 
     @staticmethod
-    def rule_validators() -> dict[RuleType, typing.Type[BaseRuleValidator]]:
+    def rule_validators() -> typing.Dict[RuleType, typing.Type[BaseRuleValidator]]:
         """Returns all the rule validator classes, any new validator
         type needs to be added here.
 
