@@ -524,8 +524,10 @@ def initialize_model_settings():
             continue
 
     for activity in settings_manager.get_all_activities():
+        if activity.user_defined:
+            continue
         if str(activity.uuid) not in new_activities_uuids:
-            settings_manager.activities(str(activity.uuid))
+            settings_manager.remove_activity(str(activity.uuid))
 
     settings_manager.set_value(activity_ncs_setting, True)
 
