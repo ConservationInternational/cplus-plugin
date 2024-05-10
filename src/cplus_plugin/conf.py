@@ -135,6 +135,7 @@ class Settings(enum.Enum):
 
     # Last selected data directory
     LAST_DATA_DIR = "last_data_dir"
+    LAST_MASK_DIR = "last_mask_dir"
 
     # Advanced settings
     BASE_DIR = "advanced/base_dir"
