@@ -163,6 +163,16 @@ class Settings(enum.Enum):
     SIEVE_THRESHOLD = "sieve_threshold"
     SIEVE_MASK_PATH = "mask_path"
 
+    # Mask layer
+    MASK_LAYERS_PATHS = "mask_layers_paths"
+
+    # Outputs options
+    NCS_WITH_CARBON = "ncs_with_carbon"
+    LANDUSE_PROJECT = "landuse_project"
+    LANDUSE_NORMALIZED = "landuse_normalized"
+    LANDUSE_WEIGHTED = "landuse_weighted"
+    HIGHEST_POSITION = "highest_position"
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""

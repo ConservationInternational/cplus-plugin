@@ -9,6 +9,7 @@ a button on the docking widget, and from the toolbar menu.
 
 import os
 import typing
+import uuid
 
 import qgis.core
 import qgis.gui
@@ -25,7 +26,8 @@ from qgis.PyQt.QtGui import (
 )
 from qgis.utils import iface
 
-from qgis.PyQt.QtWidgets import QWidget
+from qgis.PyQt.QtWidgets import QFileDialog, QListWidgetItem, QMessageBox, QWidget
+from qgis.PyQt import QtCore
 
 from ...conf import (
     settings_manager,
@@ -108,6 +110,21 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.resample_method_box.addItem(
             tr("Third Quartile (Q3)"), QgsAlignRaster.ResampleAlg.RA_Q3
         )
+
+        # Mask layers
+        add_icon = FileUtils.get_icon("symbologyAdd.svg")
+        self.btn_add_mask.setIcon(add_icon)
+        self.btn_add_mask.clicked.connect(self._on_add_mask_layer)
+
+        remove_icon = FileUtils.get_icon("symbologyRemove.svg")
+        self.btn_delete_mask.setIcon(remove_icon)
+        self.btn_delete_mask.setEnabled(False)
+        self.btn_delete_mask.clicked.connect(self._on_remove_mask_layer)
+
+        edit_icon = FileUtils.get_icon("mActionToggleEditing.svg")
+        self.btn_edit_mask.setIcon(edit_icon)
+        self.btn_edit_mask.setEnabled(False)
+        self.btn_edit_mask.clicked.connect(self._on_edit_mask_layer)
 
     def apply(self) -> None:
         """This is called on OK click in the QGIS options panel."""
@@ -219,6 +236,15 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             Settings.SIEVE_THRESHOLD, self.pixel_size_box.value()
         )
 
+        # Mask layers settings
+        mask_paths = ""
+        for row in range(0, self.lst_mask_layers.count()):
+            item = self.lst_mask_layers.item(row)
+            item_path = item.data(QtCore.Qt.DisplayRole)
+            mask_paths += f"{item_path},"
+
+        settings_manager.set_value(Settings.MASK_LAYERS_PATHS, mask_paths)
+
         # Checks if the provided base directory exists
         if not os.path.exists(base_dir_path):
             iface.messageBar().pushCritical(
@@ -277,6 +303,22 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             float(settings_manager.get_value(Settings.SIEVE_THRESHOLD, default=10.0))
         )
 
+        # Mask layers settings
+        mask_paths = settings_manager.get_value(
+            Settings.MASK_LAYERS_PATHS, default=None
+        )
+        mask_paths_list = mask_paths.split(",") if mask_paths else []
+
+        for mask_path in mask_paths_list:
+            if mask_path is "":
+                continue
+            item = QListWidgetItem()
+            item.setData(QtCore.Qt.DisplayRole, mask_path)
+            self.lst_mask_layers.addItem(item)
+
+        if len(mask_paths_list) > 0:
+            self.mask_layers_changed()
+
     def showEvent(self, event: QShowEvent) -> None:
         """Show event being called. This will display the plugin settings.
         The stored/saved settings will be loaded.
@@ -296,6 +338,97 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         """
 
         super().closeEvent(event)
+
+    def _on_add_mask_layer(self, activated: bool):
+        """Slot raised to add a mask layer."""
+        data_dir = settings_manager.get_value(Settings.LAST_DATA_DIR, "")
+        if not data_dir and self._layer:
+            data_path = self._layer.source()
+            if os.path.exists(data_path):
+                data_dir = os.path.dirname(data_path)
+
+        if not data_dir:
+            data_dir = "/home"
+
+        mask_path = self._show_mask_path_selector(data_dir)
+        if not mask_path:
+            return
+
+        item = QListWidgetItem()
+        item.setData(QtCore.Qt.DisplayRole, mask_path)
+
+        if self.lst_mask_layers.findItems(mask_path, QtCore.Qt.MatchExactly):
+            error_tr = tr("The selected mask layer already exists.")
+            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            return
+
+        self.lst_mask_layers.addItem(item)
+        self.mask_layers_changed()
+
+    def _on_edit_mask_layer(self, activated: bool):
+        """Slot raised to edit a mask layer."""
+
+        item = self.lst_mask_layers.currentItem()
+        if not item:
+            error_tr = tr("Select a mask layer first.")
+            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            return
+        mask_path = self._show_mask_path_selector(item.data(QtCore.Qt.DisplayRole))
+        if not mask_path:
+            return
+
+        if self.lst_mask_layers.findItems(mask_path, QtCore.Qt.MatchExactly):
+            error_tr = tr("The selected mask layer already exists.")
+            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            return
+
+        item.setData(QtCore.Qt.DisplayRole, mask_path)
+
+    def _on_remove_mask_layer(self, activated: bool):
+        """Slot raised to remove one or more selected mask layers."""
+        item = self.lst_mask_layers.currentItem()
+        if not item:
+            error_tr = tr("Select the target mask layer first, before removing it.")
+            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            return
+
+        reply = QMessageBox.warning(
+            self,
+            tr("QGIS CPLUS PLUGIN | Settings"),
+            tr('Remove the mask layer from "{}"?').format(
+                item.data(QtCore.Qt.DisplayRole)
+            ),
+            QMessageBox.Yes,
+            QMessageBox.No,
+        )
+
+        if reply == QMessageBox.Yes:
+            item_row = self.lst_mask_layers.row(item)
+            self.lst_mask_layers.takeItem(item_row)
+
+            self.mask_layers_changed()
+
+    def _show_mask_path_selector(self, layer_dir: str) -> str:
+        """Show file selector dialog for selecting a mask layer."""
+        filter_tr = tr("All files")
+
+        layer_path, _ = QFileDialog.getOpenFileName(
+            self,
+            self.tr("Select mask Layer"),
+            layer_dir,
+            f"{filter_tr} (*.*)",
+            options=QFileDialog.DontResolveSymlinks,
+        )
+        if not layer_path:
+            return ""
+
+        return layer_path
+
+    def mask_layers_changed(self):
+        contains_items = self.lst_mask_layers.count() > 0
+
+        self.btn_edit_mask.setEnabled(contains_items)
+        self.btn_delete_mask.setEnabled(contains_items)
 
 
 class CplusOptionsFactory(QgsOptionsWidgetFactory):
