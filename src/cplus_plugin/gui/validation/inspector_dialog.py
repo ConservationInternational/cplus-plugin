@@ -13,9 +13,10 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
+from ...definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
 from ...models.validation import ValidationResult
 from .result_items import DETAILED_RESULT_TYPE, RuleResultItem
-from ...utils import FileUtils, tr
+from ...utils import FileUtils, open_documentation, tr
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../../ui/validation_inspector_dialog.ui")
@@ -30,6 +31,13 @@ class ValidationInspectorDialog(QtWidgets.QDialog, WidgetUi):
         self.setupUi(self)
 
         QgsGui.enableAutoGeometryRestore(self)
+
+        icon_pixmap = QtGui.QPixmap(ICON_PATH)
+        self.icon_la.setPixmap(icon_pixmap)
+
+        help_icon = FileUtils.get_icon("mActionHelpContents_green.svg")
+        self.btn_help.setIcon(help_icon)
+        self.btn_help.clicked.connect(self.open_help)
 
         expand_icon = FileUtils.get_icon("mActionExpandTree.svg")
         self.btn_expand.setIcon(expand_icon)
@@ -68,6 +76,10 @@ class ValidationInspectorDialog(QtWidgets.QDialog, WidgetUi):
         """
         self._validation_result = validation_result
         self._update()
+
+    def open_help(self, activated: bool):
+        """Opens the user documentation for the plugin in a browser."""
+        open_documentation(USER_DOCUMENTATION_SITE)
 
     def _update(self):
         """Set result details."""
