@@ -51,6 +51,7 @@ class RuleResultItem(QtWidgets.QTreeWidgetItem):
         config = self._result.config
         rule_title = f"Rule: {config.description}"
         self.setText(0, rule_title)
+        self.setToolTip(0, rule_title)
         font = self.font(0)
         font.setBold(True)
         self.setFont(0, font)

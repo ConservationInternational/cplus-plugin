@@ -26,8 +26,30 @@ class ValidationFeedback(QgsFeedback):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.progressChanged.connect(self._on_total_progress_changed)
+
         self._rule_info = None
         self._rule_progress = -1.0
+        self._validation_complete = False
+
+    @property
+    def is_validation_complete(self) -> bool:
+        """Indicates whether the full validation (i.e. NOT rule validation)
+        is complete.
+
+        :returns: True if the full validation is complete, else False.
+        :rtype: bool
+        """
+        return self._validation_complete
+
+    def _on_total_progress_changed(self, progress: float):
+        """Slot raised when the progress has changed.
+
+        :param progress: Current progress of the full validation.
+        :type progress: float
+        """
+        if progress >= 100:
+            self._validation_complete = True
 
     @property
     def current_rule(self) -> RuleInfo:

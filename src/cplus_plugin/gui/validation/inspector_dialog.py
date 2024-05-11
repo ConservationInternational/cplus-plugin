@@ -13,10 +13,13 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
+from ...conf import settings_manager
 from ...definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
+from ...lib.validation.manager import validation_manager
 from ...models.validation import ValidationResult
 from .result_items import DETAILED_RESULT_TYPE, RuleResultItem
-from ...utils import FileUtils, open_documentation, tr
+from .progress_dialog import ValidationProgressDialog
+from ...utils import FileUtils, log, open_documentation, tr
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../../ui/validation_inspector_dialog.ui")
@@ -47,11 +50,17 @@ class ValidationInspectorDialog(QtWidgets.QDialog, WidgetUi):
         self.btn_collapse.setIcon(collapse_icon)
         self.btn_collapse.clicked.connect(self.on_collapse_all_result_items)
 
+        revalidate_icon = FileUtils.get_icon("reload_one_direction.svg")
+        self.btn_revalidate.setIcon(revalidate_icon)
+        self.btn_revalidate.clicked.connect(self.on_revalidate_datasets)
+
         self.tw_results.setColumnCount(1)
         self.tw_results.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.tw_results.customContextMenuRequested.connect(
             self.on_custom_menu_requested
         )
+
+        self._revalidation_submit_result = None
 
         self._validation_result = result
         if self._validation_result is not None:
@@ -149,3 +158,67 @@ class ValidationInspectorDialog(QtWidgets.QDialog, WidgetUi):
         """
         # Copy details to the clipboard
         QgsApplication.instance().clipboard().setText(copy_text)
+
+    def on_revalidate_datasets(self):
+        """Revalidate the datasets."""
+        ncs_pathways = settings_manager.get_all_ncs_pathways()
+        # No need for validating just one pathway since validation is
+        # relative to the given NCS pathways.
+        if len(ncs_pathways) < 2:
+            log(message="Cannot validate only one NCS pathway.", info=False)
+
+            return
+
+        self._revalidation_submit_result = validation_manager.validate_ncs_pathways(
+            ncs_pathways
+        )
+        if not self._revalidation_submit_result.success:
+            QtWidgets.QMessageBox.critical(
+                self,
+                self.tr("Revalidate NCS Pathways"),
+                self.tr("Unable to re-submit NCS pathways for validation"),
+            )
+            log(message="Unable to re-submit NCS pathways for validation", info=False)
+
+            self.reject()
+
+        self.btn_collapse.setEnabled(False)
+        self.btn_expand.setEnabled(False)
+        self.btn_revalidate.setEnabled(False)
+
+        self.tw_results.clear()
+        status_item = QtWidgets.QTreeWidgetItem()
+        status_item.setText(0, tr("Revalidating NCS pathways..."))
+        loading_icon = FileUtils.get_icon("loading.svg")
+        status_item.setIcon(0, loading_icon)
+        self.tw_results.addTopLevelItem(status_item)
+
+        progress_dialog = ValidationProgressDialog(
+            self._revalidation_submit_result,
+            self,
+            hide_details_button=True,
+            close_on_completion=True,
+        )
+
+        # If the user cancels and the validation is not complete
+        progress_dialog.exec_()
+        if not progress_dialog.feedback.is_validation_complete:
+            status_item.setText(0, tr("Validation canceled!"))
+            cancel_icon = FileUtils.get_icon("mTaskCancel.svg")
+            status_item.setIcon(0, cancel_icon)
+        else:
+            validation_result = validation_manager.validation_result(
+                self._revalidation_submit_result
+            )
+            if validation_result is None:
+                status_item.setText(0, tr("Error occurred in the validation process!"))
+                cancel_icon = FileUtils.get_icon("mIconDelete.svg")
+                status_item.setIcon(0, cancel_icon)
+            else:
+                self.tw_results.clear()
+                self._validation_result = validation_result
+                self._update()
+                self.btn_collapse.setEnabled(True)
+                self.btn_expand.setEnabled(True)
+
+        self.btn_revalidate.setEnabled(True)

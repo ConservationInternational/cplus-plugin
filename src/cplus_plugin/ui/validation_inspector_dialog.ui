@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>575</width>
+    <width>550</width>
     <height>388</height>
    </rect>
   </property>
@@ -14,7 +14,7 @@
    <string>Validation Inspector</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0" colspan="4">
+   <item row="0" column="0" colspan="5">
     <widget class="QFrame" name="frame">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
@@ -79,13 +79,16 @@
      </layout>
     </widget>
    </item>
-   <item row="1" column="0" colspan="4">
+   <item row="1" column="0" colspan="5">
     <widget class="QTreeWidget" name="tw_results">
      <property name="editTriggers">
       <set>QAbstractItemView::NoEditTriggers</set>
      </property>
      <property name="rootIsDecorated">
       <bool>true</bool>
+     </property>
+     <property name="wordWrap">
+      <bool>false</bool>
      </property>
      <attribute name="headerVisible">
       <bool>false</bool>
@@ -117,40 +120,50 @@
      </property>
     </widget>
    </item>
-   <item row="2" column="2" colspan="2">
+   <item row="2" column="2">
+    <widget class="QPushButton" name="btn_revalidate">
+     <property name="toolTip">
+      <string>Rerun the validation of datasets</string>
+     </property>
+     <property name="text">
+      <string>Revalidate</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="3" colspan="2">
     <spacer name="horizontalSpacer_2">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>
-       <width>392</width>
+       <width>286</width>
        <height>20</height>
       </size>
      </property>
     </spacer>
    </item>
-   <item row="3" column="0" rowspan="2">
+   <item row="3" column="0">
     <widget class="QPushButton" name="btn_help">
      <property name="text">
       <string>Help</string>
      </property>
     </widget>
    </item>
-   <item row="3" column="1" rowspan="2" colspan="3">
+   <item row="3" column="1" colspan="3">
     <spacer name="horizontalSpacer">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>
-       <width>473</width>
+       <width>221</width>
        <height>20</height>
       </size>
      </property>
     </spacer>
    </item>
-   <item row="4" column="3">
+   <item row="3" column="4">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>

@@ -13,7 +13,7 @@ from qgis.PyQt import QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
-from .inspector_dialog import ValidationInspectorDialog
+from ...lib.validation.feedback import ValidationFeedback
 from ...lib.validation.manager import validation_manager
 from ...models.validation import RuleInfo, SubmitResult
 from ...utils import tr
@@ -26,7 +26,13 @@ WidgetUi, _ = loadUiType(
 class ValidationProgressDialog(QtWidgets.QDialog, WidgetUi):
     """Dialog for showing the progress of the validation process."""
 
-    def __init__(self, submit_result: SubmitResult, parent=None):
+    def __init__(
+        self,
+        submit_result: SubmitResult,
+        parent=None,
+        hide_details_button=False,
+        close_on_completion=False,
+    ):
         super().__init__(parent)
         self.setupUi(self)
 
@@ -38,7 +44,11 @@ class ValidationProgressDialog(QtWidgets.QDialog, WidgetUi):
         self._feedback.progressChanged.connect(self._on_progress_changed)
         self._feedback.validation_completed.connect(self._on_validation_completed)
 
+        self._close_on_completion = close_on_completion
+
         self.btn_show_details = self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
+        if hide_details_button:
+            self.btn_show_details.setVisible(False)
 
         self._initialize_ui()
 
@@ -90,6 +100,8 @@ class ValidationProgressDialog(QtWidgets.QDialog, WidgetUi):
         self.pg_bar.setValue(100)
         self.lbl_rule.setText(tr("Validation complete"))
         self.btn_show_details.setEnabled(True)
+        if self._close_on_completion:
+            self.close()
 
     def _on_show_validation_results(self, checked: bool):
         """Slot raised to show the validation inspector.
@@ -100,6 +112,9 @@ class ValidationProgressDialog(QtWidgets.QDialog, WidgetUi):
         :param checked: True if the button is checked else False.
         :type checked: bool
         """
+        # Not ideal but the two dialogs are tightly coupled
+        from .inspector_dialog import ValidationInspectorDialog
+
         if validation_manager.is_validation_complete(self._submit_result):
             validation_result = validation_manager.validation_result(
                 self._submit_result
@@ -109,3 +124,27 @@ class ValidationProgressDialog(QtWidgets.QDialog, WidgetUi):
 
             inspector_dialog = ValidationInspectorDialog(self, result=validation_result)
             inspector_dialog.exec_()
+
+    def hide_results_button(self, hide: bool):
+        """Hides or shows the button for showing the validation inspector.
+
+        By default, the button is visible.
+
+        :param hide: True to hide the 'Show Results' button else False
+        to make it visible again.
+        :type hide: bool
+        """
+        if hide and self.btn_show_details.isVisible():
+            self.btn_show_details.setVisible(False)
+
+        elif not hide and not self.btn_show_details.isVisible():
+            self.btn_show_details.setVisible(True)
+
+    @property
+    def feedback(self) -> ValidationFeedback:
+        """Gets the feedback object used in the progress dialog.
+
+        :returns: Feedback objects used in the progress dialog.
+        :rtype: ValidationFeedback
+        """
+        return self._feedback
