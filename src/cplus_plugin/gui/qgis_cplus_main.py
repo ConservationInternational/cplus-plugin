@@ -173,6 +173,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.on_log_message_received
         )
 
+        # Scenario list
+
+        self.update_scenario_list()
+
     def outputs_options_changed(self):
         """
         Handles selected outputs changes
@@ -348,6 +352,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.analysis_activities = None
         self.analysis_weighted_ims = []
         self.analysis_priority_layers_groups = []
+
+        # Saved scenarios actions
+        self.add_scenario_btn.setIcon(FileUtils.get_icon("symbologyAdd.svg"))
+        self.edit_scenario_btn.setIcon(FileUtils.get_icon("mActionToggleEditing.svg"))
+        self.remove_scenario_btn.setIcon(FileUtils.get_icon("symbologyRemove.svg"))
+
+        self.add_scenario_btn.clicked.connect(self.add_scenario)
+        self.edit_scenario_btn.clicked.connect(self.load_scenario)
+        self.remove_scenario_btn.clicked.connect(self.remove_scenario)
 
     def priority_groups_update(self, target_item, selected_items):
         """Updates the priority groups list item with the passed
@@ -904,7 +917,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
         if current_text == "":
             self.show_message(
-                tr("Could not fetch the selected priority layer for editing."),
+                tr("Could not fetch the selected priority layer for deleting"),
                 Qgis.Critical,
             )
             return
@@ -919,6 +932,104 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if reply == QtWidgets.QMessageBox.Yes:
             settings_manager.delete_priority_layer(layer.get("uuid"))
             self.update_priority_layers(update_groups=False)
+
+    def update_scenario_list(self):
+        """Fetches scenarios from plugin settings and updates the
+        scenario history list
+        """
+        scenarios = settings_manager.get_scenarios()
+
+        log(f"Found {len(scenarios)} scenario, list {scenarios}")
+
+        if len(scenarios) > 0:
+            self.scenario_list.clear()
+
+        for scenario in scenarios:
+            item = QtWidgets.QListWidgetItem()
+            item.setData(QtCore.Qt.DisplayRole, scenario.name)
+            item.setData(QtCore.Qt.UserRole, str(scenario.uuid))
+            self.scenario_list.addItem(item)
+
+    def add_scenario(self):
+        """Adds a new scenario into the scenario list."""
+        scenario_name = self.scenario_name.text()
+        scenario_description = self.scenario_description.text()
+        extent = self.extent_box.outputExtent()
+
+        extent_box = [
+            extent.xMinimum(),
+            extent.xMaximum(),
+            extent.yMinimum(),
+            extent.yMaximum(),
+        ]
+
+        extent = SpatialExtent(bbox=extent_box)
+        scenario_id = uuid.uuid4()
+
+        scenario = Scenario(
+            uuid=scenario_id,
+            name=scenario_name,
+            description=scenario_description,
+            extent=extent,
+            activities=[],
+            weighted_activities=[],
+            priority_layer_groups=[],
+        )
+        settings_manager.save_scenario(scenario)
+
+        log(f"Added scenario scenario {scenario}")
+
+        self.update_scenario_list()
+
+    def load_scenario(self):
+        """Edits the current selected scenario
+        and updates the layer box list."""
+        if self.scenario_list.currentItem() is None:
+            self.show_message(
+                tr("Select first the scenario from the scenario list."),
+                Qgis.Critical,
+            )
+            return
+
+        scenario_identifier = self.scenario_list.currentItem().data(QtCore.Qt.UserRole)
+
+        if scenario_identifier == "":
+            self.show_message(
+                tr("Could not fetch the selected priority layer for editing."),
+                Qgis.Critical,
+            )
+            return
+
+        scenario = settings_manager.get_scenario(scenario_identifier)
+
+        log(f" Found scenario {scenario.get('name')}")
+
+    def remove_scenario(self):
+        """Removes the current active scenario."""
+        if self.scenario_list.currentItem() is None:
+            self.show_message(
+                tr("Select first a scenario from the scenario list."),
+                Qgis.Critical,
+            )
+            return
+        current_text = self.scenario_list.currentItem().data(QtCore.Qt.DisplayRole)
+        scenario_id = self.scenario_list.currentItem().data(QtCore.Qt.UserRole)
+        if current_text == "":
+            self.show_message(
+                tr("Could not fetch the selected scenario."),
+                Qgis.Critical,
+            )
+            return
+        reply = QtWidgets.QMessageBox.warning(
+            self,
+            tr("QGIS CPLUS PLUGIN"),
+            tr('Remove the scenario "{}"?').format(current_text),
+            QtWidgets.QMessageBox.Yes,
+            QtWidgets.QMessageBox.No,
+        )
+        if reply == QtWidgets.QMessageBox.Yes:
+            settings_manager.delete_scenario(scenario_id)
+            self.update_scenario_list()
 
     def prepare_message_bar(self):
         """Initializes the widget message bar settings"""

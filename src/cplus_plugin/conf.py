@@ -89,6 +89,10 @@ class ScenarioSettings(Scenario):
             uuid=uuid.UUID(identifier),
             name=settings.value("name", None),
             description=settings.value("description", None),
+            extent=[],
+            activities=[],
+            weighted_activities=[],
+            priority_layer_groups=[],
         )
 
     @classmethod
@@ -102,7 +106,7 @@ class ScenarioSettings(Scenario):
         """
         spatial_key = "extent/spatial"
 
-        with qgis_settings(spatial_key, cls) as settings:
+        with qgis_settings(spatial_key) as settings:
             bbox = settings.value("bbox", None)
             spatial_extent = SpatialExtent(bbox=bbox)
 
@@ -302,7 +306,7 @@ class SettingsManager(QtCore.QObject):
             extent (SpatialExtent): Scenario extent
             key (str): QgsSettings group key
         """
-        spatial_extent = extent.spatial.bbox
+        spatial_extent = extent.bbox
 
         spatial_key = f"{key}/extent/spatial/"
         with qgis_settings(spatial_key) as settings:
@@ -365,11 +369,24 @@ class SettingsManager(QtCore.QObject):
                     scenario = ScenarioSettings.from_qgs_settings(
                         uuid, scenario_settings
                     )
-                    scenario.extent = self.get_scenario_
+                    scenario.extent = scenario.get_scenario_extent()
                     result.append(
                         ScenarioSettings.from_qgs_settings(uuid, scenario_settings)
                     )
         return result
+
+    def delete_scenario(self, scenario_id):
+        """Delete the scenario with the passed uuid.
+        :param scenario_id: Scenario identifier
+        :type scenario_id: str
+        """
+
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/" f"{self.SCENARIO_GROUP_NAME}"
+        ) as settings:
+            for scenario_identifier in settings.childGroups():
+                if str(scenario_identifier) == str(scenario_id):
+                    settings.remove(scenario_identifier)
 
     def delete_all_scenarios(self):
         """Deletes all the plugin scenarios settings."""
