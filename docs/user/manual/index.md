@@ -10,4 +10,6 @@ Welcome to the Cplus-plugins user manual. This section of the documentation desc
 
 * **[Step 3:](step-3.md)** Step 3 is explained in detail in this documentation, outlining the weighting priorities and configuration options.
 
+* **[Step 4:](step-4.md)** Step 4 is explained in detail in this documentation, outlining the adding outputs to the report.
+
 * **[Settings:](./settings.md)** Users can access this section to manage the plugin settings.
