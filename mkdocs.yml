@@ -26,6 +26,7 @@ nav:
                 - Step 2: user/manual/step-2.md
                 - Step 3: user/manual/step-3.md
                 - Step 4: user/manual/step-4.md
+                - Logs: user/manual/logs.md
                 - Settings: user/manual/settings.md
   - Administrators:
       - administrator/index.md
