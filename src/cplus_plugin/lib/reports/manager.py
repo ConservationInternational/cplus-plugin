@@ -24,7 +24,7 @@ from ...conf import settings_manager, Settings
 from ...definitions.constants import OUTPUTS_SEGMENT
 from ...models.base import Scenario, ScenarioResult
 from ...models.report import ReportContext, ReportResult, ReportSubmitStatus
-from ...utils import FileUtils, log, tr
+from ...utils import clean_filename, FileUtils, log, tr
 
 from .generator import ReportGeneratorTask
 from .variables import LayoutVariableRegister
@@ -302,8 +302,9 @@ class ReportManager(QtCore.QObject):
         scenario_report_dir = os.path.normpath(f"{output_dir}/reports")
         FileUtils.create_new_dir(scenario_report_dir)
 
+        cleaned_scenario_name = clean_filename(scenario_result.scenario.name)
         project_file_path = os.path.join(
-            scenario_report_dir, f"{scenario_result.scenario.name}.qgz"
+            scenario_report_dir, f"{cleaned_scenario_name}.qgz"
         )
         if os.path.exists(project_file_path):
             counter = 1
