@@ -12,19 +12,19 @@ from qgis.core import (
     Qgis,
     QgsApplication,
     QgsFeedback,
+    QgsMasterLayoutInterface,
     QgsProject,
     QgsPrintLayout,
     QgsTask,
 )
+from qgis.gui import QgsLayoutDesignerInterface
 from qgis.utils import iface
 
 from qgis.PyQt import QtCore, QtGui
 
-from ...conf import settings_manager, Settings
-from ...definitions.constants import OUTPUTS_SEGMENT
 from ...models.base import Scenario, ScenarioResult
 from ...models.report import ReportContext, ReportResult, ReportSubmitStatus
-from ...utils import FileUtils, log, tr
+from ...utils import clean_filename, FileUtils, log, tr
 
 from .generator import ReportGeneratorTask
 from .variables import LayoutVariableRegister
@@ -41,6 +41,8 @@ class ReportManager(QtCore.QObject):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+
+        self.iface = iface
         self._variable_register = LayoutVariableRegister()
         self.report_name = tr("Scenario Analysis Report")
 
@@ -52,6 +54,9 @@ class ReportManager(QtCore.QObject):
 
         self.task_manager = QgsApplication.instance().taskManager()
         self.task_manager.statusChanged.connect(self.on_task_status_changed)
+
+        # Set default zoom when a report is opened
+        self.iface.layoutDesignerOpened.connect(self.on_layout_designer_opened)
 
         self.root_output_dir = ""
 
@@ -302,8 +307,9 @@ class ReportManager(QtCore.QObject):
         scenario_report_dir = os.path.normpath(f"{output_dir}/reports")
         FileUtils.create_new_dir(scenario_report_dir)
 
+        cleaned_scenario_name = clean_filename(scenario_result.scenario.name)
         project_file_path = os.path.join(
-            scenario_report_dir, f"{scenario_result.scenario.name}.qgz"
+            scenario_report_dir, f"{cleaned_scenario_name}.qgz"
         )
         if os.path.exists(project_file_path):
             counter = 1
@@ -351,8 +357,7 @@ class ReportManager(QtCore.QObject):
             scenario_result.output_layer_name,
         )
 
-    @classmethod
-    def open_layout_designer(cls, result: ReportResult) -> bool:
+    def open_layout_designer(self, result: ReportResult) -> bool:
         """Opens the analysis report in the layout designer. The
         layout needs to exist in the currently loaded project.
 
@@ -372,13 +377,21 @@ class ReportManager(QtCore.QObject):
         if layout is None:
             return False
 
-        designer_iface = iface.openLayoutDesigner(layout)
-        if designer_iface:
-            view = designer_iface.view()
-            # Zoom to full page width when report is opened
-            view.zoomWidth()
+        _ = self.iface.openLayoutDesigner(layout)
 
         return True
+
+    def on_layout_designer_opened(self, designer: QgsLayoutDesignerInterface):
+        """Sets a default zoom level for the report when opened for
+        the first time.
+        """
+        layout_type = designer.masterLayout().layoutType()
+        if layout_type == QgsMasterLayoutInterface.PrintLayout:
+            layout = designer.layout()
+            if self._variable_register.is_analysis_report(layout):
+                view = designer.view()
+                view.zoomActual()
+                view.emitZoomLevelChanged()
 
     @classmethod
     def view_pdf(cls, result: ReportResult) -> bool:
