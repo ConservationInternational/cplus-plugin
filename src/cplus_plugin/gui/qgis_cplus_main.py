@@ -917,7 +917,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
         if current_text == "":
             self.show_message(
-                tr("Could not fetch the selected priority layer for deleting"),
+                tr("Could not fetch and remove the selected priority layer."),
                 Qgis.Critical,
             )
             return
@@ -938,8 +938,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         scenario history list
         """
         scenarios = settings_manager.get_scenarios()
-
-        log(f"Found {len(scenarios)} scenario, list {scenarios}")
 
         if len(scenarios) > 0:
             self.scenario_list.clear()

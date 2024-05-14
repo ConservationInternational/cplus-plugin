@@ -376,7 +376,8 @@ class SettingsManager(QtCore.QObject):
         return result
 
     def delete_scenario(self, scenario_id):
-        """Delete the scenario with the passed uuid.
+        """Delete the scenario with the passed scenarion id.
+
         :param scenario_id: Scenario identifier
         :type scenario_id: str
         """
