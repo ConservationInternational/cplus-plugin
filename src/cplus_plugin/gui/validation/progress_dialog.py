@@ -9,7 +9,7 @@ import typing
 from qgis.core import Qgis
 from qgis.gui import QgsGui
 
-from qgis.PyQt import QtGui, QtWidgets
+from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
@@ -26,12 +26,15 @@ WidgetUi, _ = loadUiType(
 class ValidationProgressDialog(QtWidgets.QDialog, WidgetUi):
     """Dialog for showing the progress of the validation process."""
 
+    dialog_closed = QtCore.pyqtSignal()
+
     def __init__(
         self,
         submit_result: SubmitResult,
         parent=None,
         hide_details_button=False,
         close_on_completion=False,
+        cancel_mode=False,
     ):
         super().__init__(parent)
         self.setupUi(self)
@@ -50,6 +53,10 @@ class ValidationProgressDialog(QtWidgets.QDialog, WidgetUi):
         if hide_details_button:
             self.btn_show_details.setVisible(False)
 
+        self.btn_close = self.buttonBox.button(QtWidgets.QDialogButtonBox.Close)
+        if cancel_mode:
+            self.btn_close.setText(tr("Cancel"))
+
         self._initialize_ui()
 
     def _initialize_ui(self):
@@ -62,6 +69,7 @@ class ValidationProgressDialog(QtWidgets.QDialog, WidgetUi):
             self.btn_show_details.setEnabled(False)
 
         self.btn_show_details.clicked.connect(self._on_show_validation_results)
+        self.btn_close.clicked.connect(self.on_closed)
 
         self.pg_bar.setValue(int(self._feedback.progress()))
         self._update_current_rule(self._feedback.current_rule)
@@ -148,3 +156,7 @@ class ValidationProgressDialog(QtWidgets.QDialog, WidgetUi):
         :rtype: ValidationFeedback
         """
         return self._feedback
+
+    def on_closed(self):
+        """Slot raised when the Close button has been clicked."""
+        self.dialog_closed.emit()

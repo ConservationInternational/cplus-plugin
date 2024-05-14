@@ -464,8 +464,9 @@ class NcsComponentWidget(ModelComponentWidget):
             if validation_result is None:
                 return
 
-            inspector_dialog = ValidationInspectorDialog(self, result=validation_result)
-            inspector_dialog.exec_()
+            self.inspector_dialog = ValidationInspectorDialog(result=validation_result)
+            self.inspector_dialog.setModal(False)
+            self.inspector_dialog.show()
 
         else:
             # Show progress dialog

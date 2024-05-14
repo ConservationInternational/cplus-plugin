@@ -1007,7 +1007,7 @@ class DataValidator(QgsTask):
                 rule_validator.result for rule_validator in self._rule_validators
             ]
             self._result = ValidationResult(rule_results, self.MODEL_COMPONENT_TYPE)
-            self._feedback.validation_completed.emit()
+            self._feedback.validation_completed.emit(self._result)
             self.log("Validation complete.")
 
 

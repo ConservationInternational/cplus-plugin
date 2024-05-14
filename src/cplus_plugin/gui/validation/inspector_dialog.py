@@ -33,6 +33,9 @@ class ValidationInspectorDialog(QtWidgets.QDialog, WidgetUi):
         super().__init__(parent)
         self.setupUi(self)
 
+        flags = self.windowFlags() | QtCore.Qt.WindowMinimizeButtonHint
+        self.setWindowFlags(flags)
+
         QgsGui.enableAutoGeometryRestore(self)
 
         icon_pixmap = QtGui.QPixmap(ICON_PATH)
@@ -193,32 +196,53 @@ class ValidationInspectorDialog(QtWidgets.QDialog, WidgetUi):
         status_item.setIcon(0, loading_icon)
         self.tw_results.addTopLevelItem(status_item)
 
-        progress_dialog = ValidationProgressDialog(
+        self.progress_dialog = ValidationProgressDialog(
             self._revalidation_submit_result,
             self,
             hide_details_button=True,
             close_on_completion=True,
+            cancel_mode=True,
         )
+        self.progress_dialog.feedback.validation_completed.connect(
+            self.on_validation_complete
+        )
+        self.progress_dialog.dialog_closed.connect(self.on_revalidation_dialog_closed)
+        self.progress_dialog.setModal(False)
+        self.progress_dialog.show()
 
-        # If the user cancels and the validation is not complete
-        progress_dialog.exec_()
-        if not progress_dialog.feedback.is_validation_complete:
+    def on_revalidation_dialog_closed(self):
+        """Cancel the revalidation process."""
+        if not validation_manager.is_validation_complete(
+            self._revalidation_submit_result
+        ):
+            validation_manager.cancel(self._revalidation_submit_result)
+            self.tw_results.clear()
+            status_item = QtWidgets.QTreeWidgetItem()
             status_item.setText(0, tr("Validation canceled!"))
             cancel_icon = FileUtils.get_icon("mTaskCancel.svg")
             status_item.setIcon(0, cancel_icon)
+            self.tw_results.addTopLevelItem(status_item)
+
+        self.btn_revalidate.setEnabled(True)
+
+    def on_validation_complete(self, validation_result: ValidationResult):
+        """Slot raised when validation has completed.
+
+        :param validation_result: Result of the validation process.
+        :type validation_result: ValidationResult
+        """
+        self.tw_results.clear()
+
+        if validation_result is None:
+            status_item = QtWidgets.QTreeWidgetItem()
+            status_item.setText(0, tr("Error occurred in the validation process!"))
+            error_icon = FileUtils.get_icon("mIconDelete.svg")
+            status_item.setIcon(0, error_icon)
+            self.tw_results.addTopLevelItem(status_item)
         else:
-            validation_result = validation_manager.validation_result(
-                self._revalidation_submit_result
-            )
-            if validation_result is None:
-                status_item.setText(0, tr("Error occurred in the validation process!"))
-                cancel_icon = FileUtils.get_icon("mIconDelete.svg")
-                status_item.setIcon(0, cancel_icon)
-            else:
-                self.tw_results.clear()
-                self._validation_result = validation_result
-                self._update()
-                self.btn_collapse.setEnabled(True)
-                self.btn_expand.setEnabled(True)
+            self._validation_result = validation_result
+            self._update()
+            self.btn_collapse.setEnabled(True)
+            self.btn_expand.setEnabled(True)
 
         self.btn_revalidate.setEnabled(True)

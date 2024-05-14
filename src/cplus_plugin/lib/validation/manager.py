@@ -185,6 +185,8 @@ class ValidationManager(QtCore.QObject):
         validator = self._validation_tasks[result.identifier]
         validator.cancel()
 
+        del self._validation_tasks[result.identifier]
+
         return True
 
     def results_by_component_type(

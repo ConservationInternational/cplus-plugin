@@ -10,7 +10,7 @@ from qgis.PyQt import QtCore
 
 from qgis.core import QgsFeedback
 
-from ...models.validation import RuleInfo
+from ...models.validation import RuleInfo, ValidationResult
 
 
 class ValidationFeedback(QgsFeedback):
@@ -21,7 +21,7 @@ class ValidationFeedback(QgsFeedback):
     rule_validation_started = QtCore.pyqtSignal(RuleInfo)
     rule_progress_changed = QtCore.pyqtSignal(RuleInfo, float)
     rule_validation_completed = QtCore.pyqtSignal(RuleInfo)
-    validation_completed = QtCore.pyqtSignal()
+    validation_completed = QtCore.pyqtSignal(ValidationResult)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
