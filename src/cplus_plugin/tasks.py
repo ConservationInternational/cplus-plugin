@@ -3,66 +3,42 @@
  Plugin tasks related to the scenario analysis
 
 """
-
+import datetime
+import json
 import math
 import os
 import uuid
-
-import datetime
-
 from pathlib import Path
 
-from qgis.PyQt import QtCore, QtGui
-
+from qgis import processing
+from qgis.PyQt import QtCore
 from qgis.core import (
     Qgis,
-    QgsApplication,
-    QgsColorRampShader,
     QgsCoordinateReferenceSystem,
-    QgsCoordinateTransform,
-    QgsFeedback,
-    QgsGeometry,
-    QgsPalettedRasterRenderer,
-    QgsProject,
     QgsProcessing,
-    QgsProcessingAlgRunnerTask,
     QgsProcessingContext,
     QgsProcessingFeedback,
     QgsRasterLayer,
-    QgsRasterMinMaxOrigin,
-    QgsRasterShader,
     QgsRectangle,
-    QgsSingleBandPseudoColorRenderer,
-    QgsStyle,
-    QgsTask,
     QgsVectorLayer,
     QgsWkbTypes,
 )
-
-from qgis import processing
+from qgis.core import QgsTask
 
 from .conf import settings_manager, Settings
-
-from .resources import *
-
-from .models.helpers import clone_activity
-
-from .models.base import ScenarioResult, SpatialExtent
-
-from .utils import (
-    align_rasters,
-    clean_filename,
-    open_documentation,
-    tr,
-    log,
-    FileUtils,
-)
-
 from .definitions.defaults import (
     SCENARIO_OUTPUT_FILE_NAME,
 )
-
-from qgis.core import QgsTask
+from .models.base import ScenarioResult, SpatialExtent
+from .models.helpers import clone_activity
+from .resources import *
+from .utils import (
+    align_rasters,
+    clean_filename,
+    tr,
+    log,
+    FileUtils
+)
 
 
 class ScenarioAnalysisTask(QgsTask):
@@ -126,6 +102,15 @@ class ScenarioAnalysisTask(QgsTask):
 
     def get_priority_layers(self):
         return settings_manager.get_priority_layers()
+
+    def get_masking_layers(self):
+        masking_layers_paths = settings_manager.get_value(
+            Settings.MASK_LAYERS_PATHS, default=None
+        )
+        masking_layers = masking_layers_paths.split(",") if masking_layers_paths else []
+
+        masking_layers.remove("") if "" in masking_layers else None
+        return masking_layers
 
     def cancel_task(self, exception=None):
         self.cancel()
@@ -244,13 +229,7 @@ class ScenarioAnalysisTask(QgsTask):
         )
 
         # Run masking of the activities layers
-
-        masking_layers_paths = settings_manager.get_value(
-            Settings.MASK_LAYERS_PATHS, default=None
-        )
-        masking_layers = masking_layers_paths.split(",") if masking_layers_paths else []
-
-        masking_layers.remove("") if "" in masking_layers else None
+        masking_layers = self.get_masking_layers()
 
         if masking_layers:
             self.run_activities_masking(

@@ -3,7 +3,7 @@
 """
  The plugin main window class.
 """
-
+import json
 import os
 import typing
 import uuid
@@ -80,7 +80,10 @@ from ..utils import (
     log,
     FileUtils,
     write_to_file,
+    todict,
+    CustomJsonEncoder
 )
+from ..api.scenario_task_api_client import ScenarioAnalysisTaskApiClient
 
 from ..definitions.defaults import (
     ADD_LAYER_ICON_PATH,
@@ -116,9 +119,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     analysis_finished = QtCore.pyqtSignal(ScenarioResult)
 
     def __init__(
-        self,
-        iface,
-        parent=None,
+            self,
+            iface,
+            parent=None,
     ):
         super().__init__(parent)
         self.setupUi(self)
@@ -156,6 +159,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.landuse_normalized.toggled.connect(self.outputs_options_changed)
         self.landuse_weighted.toggled.connect(self.outputs_options_changed)
         self.highest_position.toggled.connect(self.outputs_options_changed)
+        self.processing_type.toggled.connect(self.processing_options_changed)
 
         self.load_layer_options()
 
@@ -194,6 +198,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             Settings.HIGHEST_POSITION, self.highest_position.isChecked()
         )
 
+    def processing_options_changed(self):
+        """
+        Handles selected processing changes
+        """
+
+        settings_manager.set_value(
+            Settings.PROCESSING_TYPE, self.processing_type.isChecked()
+        )
+
     def load_layer_options(self):
         """
         Retrieve outputs scenarion layers selection from settings and
@@ -225,6 +238,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.highest_position.setChecked(
             settings_manager.get_value(
                 Settings.HIGHEST_POSITION, default=False, setting_type=bool
+            )
+        )
+
+        self.processing_type.setChecked(
+            settings_manager.get_value(
+                Settings.PROCESSING_TYPE, default=False, setting_type=bool
             )
         )
 
@@ -659,7 +678,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type priority_layer: dict
         """
         selected_priority_layers = (
-            priority_layer or self.priority_layers_list.selectedItems()
+                priority_layer or self.priority_layers_list.selectedItems()
         )
         selected_priority_layers = (
             [selected_priority_layers]
@@ -671,7 +690,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         for selected_priority_layer in selected_priority_layers:
             if (
-                selected_group is not None and selected_group.parent() is None
+                    selected_group is not None and selected_group.parent() is None
             ) and selected_priority_layer is not None:
                 children = selected_group.takeChildren()
                 item_found = False
@@ -959,8 +978,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             return
         if (
-            self.analysis_scenario_description == ""
-            or self.analysis_scenario_description is None
+                self.analysis_scenario_description == ""
+                or self.analysis_scenario_description is None
         ):
             self.show_message(
                 tr(f"Scenario description cannot be blank."),
@@ -995,7 +1014,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     f"Plugin base data directory is not set! "
                     f"Go to plugin settings in order to set it."
                 ),
-                level=Qgis.Critial,
+                level=Qgis.Critical,
             )
             return
         self.analysis_extent = SpatialExtent(
@@ -1079,14 +1098,24 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 transformed_extent.yMaximum(),
             ]
 
-            analysis_task = ScenarioAnalysisTask(
-                self.analysis_scenario_name,
-                self.analysis_scenario_description,
-                self.analysis_activities,
-                self.analysis_priority_layers_groups,
-                self.analysis_extent,
-                scenario,
-            )
+            if self.processing_type.isChecked():
+                analysis_task = ScenarioAnalysisTaskApiClient(
+                    self.analysis_scenario_name,
+                    self.analysis_scenario_description,
+                    self.analysis_activities,
+                    self.analysis_priority_layers_groups,
+                    self.analysis_extent,
+                    scenario
+                )
+            else:
+                analysis_task = ScenarioAnalysisTask(
+                    self.analysis_scenario_name,
+                    self.analysis_scenario_description,
+                    self.analysis_activities,
+                    self.analysis_priority_layers_groups,
+                    self.analysis_extent,
+                    scenario
+                )
 
             progress_changed = partial(self.update_progress_bar, progress_dialog)
             analysis_task.custom_progress_changed.connect(progress_changed)
@@ -1172,6 +1201,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type dest_crs: QgsCoordinateReferenceSystem
         """
 
+        log(json.dumps(todict(source_crs), cls=CustomJsonEncoder))
+        log(json.dumps(todict(dest_crs), cls=CustomJsonEncoder))
+        log(json.dumps(todict(extent), cls=CustomJsonEncoder))
         transform = QgsCoordinateTransform(source_crs, dest_crs, QgsProject.instance())
         transformed_extent = transform.transformBoundingBox(extent)
 
@@ -1213,6 +1245,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param report_manager: Report manager used to generate analysis reports
         :type report_manager: ReportManager
         """
+        self.update_progress_bar(progress_dialog, 100)
+        self.scenario_result.analysis_output = task.output
+        self.scenario_result.state = ScenarioState.FINISHED
         if task.output is not None:
             self.update_progress_bar(progress_dialog, 100)
             self.scenario_result.analysis_output = task.output
@@ -1529,9 +1564,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         return renderer
 
     def update_progress_dialog(
-        self,
-        progress_dialog,
-        message=None,
+            self,
+            progress_dialog,
+            message=None,
     ):
         """Run report generation. This should be called after the
          analysis is complete.

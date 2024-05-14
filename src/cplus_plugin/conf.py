@@ -16,6 +16,7 @@ from qgis.PyQt import QtCore
 from qgis.core import QgsRectangle, QgsSettings
 
 from .definitions.defaults import PRIORITY_LAYERS
+from .utils import md5, todict, CustomJsonEncoder
 
 from .definitions.constants import (
     STYLE_ATTRIBUTE,
@@ -173,6 +174,11 @@ class Settings(enum.Enum):
     LANDUSE_WEIGHTED = "landuse_weighted"
     HIGHEST_POSITION = "highest_position"
 
+    # Processing option
+    PROCESSING_TYPE = "processing_type"
+
+#
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""
@@ -182,6 +188,7 @@ class SettingsManager(QtCore.QObject):
     PRIORITY_GROUP_NAME: str = "priority_groups"
     PRIORITY_LAYERS_GROUP_NAME: str = "priority_layers"
     NCS_PATHWAY_BASE: str = "ncs_pathways"
+    LAYER_MAPPING_BASE: str = "layer_mapping"
 
     ACTIVITY_BASE: str = "activities"
 
@@ -711,6 +718,52 @@ class SettingsManager(QtCore.QObject):
         ) as settings:
             for priority_group in settings.childGroups():
                 settings.remove(priority_group)
+
+    def _get_layer_mappings_settings_base(self) -> str:
+        """Returns the path for Layer Mapping settings.
+
+        :returns: Base path to Layer Mapping group.
+        :rtype: str
+        """
+        return (
+            f"{self.BASE_GROUP_NAME}/{self.LAYER_MAPPING_BASE}"
+        )
+
+    def get_layer_mapping(self, identifier) -> typing.Dict:
+        """Retrieves the layer mapping that matches the passed identifier.
+
+        :param identifier: Layer mapping identifier
+        :type identifier: str path
+
+        :returns: Layer mapping
+        :rtype: typing.Dict
+        """
+
+        layer_mapping = {}
+
+        layer_mapping_root = self._get_layer_mappings_settings_base()
+
+        with qgis_settings(layer_mapping_root) as settings:
+            ncs_model = settings.value(identifier, dict())
+            if len(ncs_model) > 0:
+                try:
+                    layer_mapping = json.loads(ncs_model)
+                except json.JSONDecodeError:
+                    log("Layer Mapping JSON is invalid")
+        return layer_mapping
+
+    def save_layer_mapping(self, input_layer):
+        """Save the layer mapping into the plugin settings
+
+        :param layer_mapping: Layer mapping
+        :type layer_mapping: str
+        """
+
+        identifier = md5(input_layer['path'])
+        settings_key = self._get_layer_mappings_settings_base()
+
+        with qgis_settings(settings_key) as settings:
+            settings.setValue(identifier, json.dumps(input_layer))
 
     def _get_ncs_pathway_settings_base(self) -> str:
         """Returns the path for NCS pathway settings.
