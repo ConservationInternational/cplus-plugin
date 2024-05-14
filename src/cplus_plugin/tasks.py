@@ -47,12 +47,11 @@ from .resources import *
 
 from .models.helpers import clone_activity
 
-from .models.base import ScenarioResult, SpatialExtent
+from .models.base import ScenarioResult
 
 from .utils import (
     align_rasters,
     clean_filename,
-    open_documentation,
     tr,
     log,
     FileUtils,
@@ -172,7 +171,6 @@ class ScenarioAnalysisTask(QgsTask):
         ):
             self.snap_analysis_data(
                 self.analysis_activities,
-                self.analysis_priority_layers_groups,
                 extent_string,
             )
 
@@ -186,7 +184,6 @@ class ScenarioAnalysisTask(QgsTask):
 
         self.run_pathways_analysis(
             self.analysis_activities,
-            self.analysis_priority_layers_groups,
             extent_string,
             temporary_output=not save_output,
         )
@@ -196,7 +193,6 @@ class ScenarioAnalysisTask(QgsTask):
 
         self.run_pathways_normalization(
             self.analysis_activities,
-            self.analysis_priority_layers_groups,
             extent_string,
         )
 
@@ -208,7 +204,6 @@ class ScenarioAnalysisTask(QgsTask):
 
         self.run_activities_analysis(
             self.analysis_activities,
-            self.analysis_priority_layers_groups,
             extent_string,
             temporary_output=not save_output,
         )
@@ -238,8 +233,6 @@ class ScenarioAnalysisTask(QgsTask):
         if sieve_enabled:
             self.run_activities_sieve(
                 self.analysis_activities,
-                self.analysis_priority_layers_groups,
-                extent_string,
             )
 
         # After creating activities, we normalize them using the same coefficients
@@ -251,7 +244,6 @@ class ScenarioAnalysisTask(QgsTask):
 
         self.run_activities_normalization(
             self.analysis_activities,
-            self.analysis_priority_layers_groups,
             extent_string,
             temporary_output=not save_output,
         )
@@ -429,9 +421,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         return outputs is not None
 
-    def run_pathways_analysis(
-        self, activities, priority_layers_groups, extent, temporary_output=False
-    ):
+    def run_pathways_analysis(self, activities, extent, temporary_output=False):
         """Runs the required activity pathways analysis on the passed
          activities. The analysis involves adding the pathways
          carbon layers into the pathway layer.
@@ -442,9 +432,6 @@ class ScenarioAnalysisTask(QgsTask):
 
         :param activities: List of the selected activities
         :type activities: typing.List[Activity]
-
-        :param priority_layers_groups: Used priority layers groups and their values
-        :type priority_layers_groups: dict
 
         :param extent: The selected extent from user
         :type extent: str
@@ -487,9 +474,7 @@ class ScenarioAnalysisTask(QgsTask):
                     activities_paths.append(activity.path)
 
             if not pathways and len(activities_paths) > 0:
-                self.run_pathways_normalization(
-                    activities, priority_layers_groups, extent
-                )
+                self.run_pathways_normalization(activities, extent)
                 return
 
             suitability_index = float(
@@ -551,9 +536,7 @@ class ScenarioAnalysisTask(QgsTask):
                 expression = " + ".join(basenames)
 
                 if carbon_coefficient <= 0 and suitability_index <= 0:
-                    self.run_pathways_normalization(
-                        activities, priority_layers_groups, extent
-                    )
+                    self.run_pathways_normalization(activities, extent)
                     return
 
                 output = (
@@ -597,16 +580,13 @@ class ScenarioAnalysisTask(QgsTask):
 
         return True
 
-    def snap_analysis_data(self, activities, priority_layers_groups, extent):
+    def snap_analysis_data(self, activities, extent):
         """Snaps the passed activities pathways, carbon layers and priority layers
          to align with the reference layer set on the settings
         manager.
 
         :param activities: List of the selected activities
         :type activities: typing.List[Activity]
-
-        :param priority_layers_groups: Used priority layers groups and their values
-        :type priority_layers_groups: dict
 
         :param extent: The selected extent from user
         :type extent: list
@@ -850,9 +830,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         return output_path
 
-    def run_pathways_normalization(
-        self, activities, priority_layers_groups, extent, temporary_output=False
-    ):
+    def run_pathways_normalization(self, activities, extent, temporary_output=False):
         """Runs the normalization on the activities pathways layers,
         adjusting band values measured on different scale, the resulting scale
         is computed using the below formula
@@ -866,9 +844,6 @@ class ScenarioAnalysisTask(QgsTask):
 
         :param activities: List of the analyzed activities
         :type activities: typing.List[Activity]
-
-        :param priority_layers_groups: Used priority layers groups and their values
-        :type priority_layers_groups: dict
 
         :param extent: selected extent from user
         :type extent: str
@@ -913,7 +888,7 @@ class ScenarioAnalysisTask(QgsTask):
                     activities_paths.append(activity.path)
 
             if not pathways and len(activities_paths) > 0:
-                self.run_activities_analysis(activities, priority_layers_groups, extent)
+                self.run_activities_analysis(activities, extent)
 
                 return
 
@@ -1023,18 +998,12 @@ class ScenarioAnalysisTask(QgsTask):
 
         return True
 
-    def run_activities_analysis(
-        self, activities, priority_layers_groups, extent, temporary_output=False
-    ):
+    def run_activities_analysis(self, activities, extent, temporary_output=False):
         """Runs the required activity analysis on the passed
         activities.
 
         :param activities: List of the selected activities
         :type activities: typing.List[Activity]
-
-        :param priority_layers_groups: Used priority layers
-        groups and their values
-        :type priority_layers_groups: dict
 
         :param extent: selected extent from user
         :type extent: str
@@ -1304,9 +1273,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         return results["OUTPUT"]
 
-    def run_activities_sieve(
-        self, models, priority_layers_groups, extent, temporary_output=False
-    ):
+    def run_activities_sieve(self, models, temporary_output=False):
         """Runs the sieve functionality analysis on the passed models layers,
         removing the models layer polygons that are smaller than the provided
         threshold size (in pixels) and replaces them with the pixel value of
@@ -1314,12 +1281,6 @@ class ScenarioAnalysisTask(QgsTask):
 
         :param models: List of the analyzed implementation models
         :type models: typing.List[ImplementationModel]
-
-        :param priority_layers_groups: Used priority layers groups and their values
-        :type priority_layers_groups: dict
-
-        :param extent: Selected area of interest extent
-        :type extent: str
 
         :param temporary_output: Whether to save the processing outputs as temporary
         files
@@ -1415,9 +1376,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         return True
 
-    def run_activities_normalization(
-        self, activities, priority_layers_groups, extent, temporary_output=False
-    ):
+    def run_activities_normalization(self, activities, extent, temporary_output=False):
         """Runs the normalization analysis on the activities' layers,
         adjusting band values measured on different scale, the resulting scale
         is computed using the below formula
@@ -1431,9 +1390,6 @@ class ScenarioAnalysisTask(QgsTask):
 
         :param activities: List of the analyzed activities
         :type activities: typing.List[Activity]
-
-        :param priority_layers_groups: Used priority layers groups and their values
-        :type priority_layers_groups: dict
 
         :param extent: Selected area of interest extent
         :type extent: str
