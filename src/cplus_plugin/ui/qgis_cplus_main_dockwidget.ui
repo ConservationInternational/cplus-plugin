@@ -184,49 +184,6 @@
         <string>Step 3</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout">
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_78">
-          <property name="font">
-           <font>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string> Weighting priorities</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0" colspan="3">
-         <widget class="QLabel" name="label_77">
-          <property name="text">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Assign priority weights using the sliders. Add the priority weighting layers unique to each activity by clicking and dragging the layer under a group title.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-          </property>
-          <property name="wordWrap">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0" colspan="3">
-         <widget class="Line" name="line_4">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0">
-         <widget class="QLabel" name="label_121">
-          <property name="font">
-           <font>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string>Priority groups</string>
-          </property>
-         </widget>
-        </item>
         <item row="3" column="2">
          <widget class="QLabel" name="label_122">
           <property name="font">
@@ -237,19 +194,6 @@
           </property>
           <property name="text">
            <string>Priority Weighting Layers</string>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="0">
-         <widget class="QFrame" name="priority_groups_frame">
-          <property name="frameShape">
-           <enum>QFrame::NoFrame</enum>
-          </property>
-          <property name="frameShadow">
-           <enum>QFrame::Raised</enum>
-          </property>
-          <property name="lineWidth">
-           <number>0</number>
           </property>
          </widget>
         </item>
@@ -311,19 +255,23 @@
           </item>
          </layout>
         </item>
-        <item row="4" column="2">
-         <widget class="QListWidget" name="priority_layers_list">
-          <property name="dragEnabled">
-           <bool>true</bool>
+        <item row="2" column="0" colspan="3">
+         <widget class="Line" name="line_4">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
           </property>
-          <property name="dragDropMode">
-           <enum>QAbstractItemView::DragOnly</enum>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QFrame" name="priority_groups_frame">
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
           </property>
-          <property name="selectionMode">
-           <enum>QAbstractItemView::ExtendedSelection</enum>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
           </property>
-          <property name="sortingEnabled">
-           <bool>true</bool>
+          <property name="lineWidth">
+           <number>0</number>
           </property>
          </widget>
         </item>
@@ -374,6 +322,19 @@
           </item>
          </layout>
         </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_78">
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string> Weighting priorities</string>
+          </property>
+         </widget>
+        </item>
         <item row="5" column="2">
          <layout class="QHBoxLayout" name="horizontalLayout_4">
           <item>
@@ -421,35 +382,44 @@
           </item>
          </layout>
         </item>
-        <item row="6" column="2">
-         <layout class="QHBoxLayout" name="horizontalLayout_3">
-          <item>
-           <spacer name="horizontalSpacer_2">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QPushButton" name="run_scenario_btn">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-              <horstretch>10</horstretch>
-              <verstretch>3</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>Run Scenario</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
+        <item row="1" column="0" colspan="3">
+         <widget class="QLabel" name="label_77">
+          <property name="text">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Assign priority weights using the sliders. Add the priority weighting layers unique to each activity by clicking and dragging the layer under a group title.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_121">
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>Priority groups</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="2">
+         <widget class="QListWidget" name="priority_layers_list">
+          <property name="dragEnabled">
+           <bool>true</bool>
+          </property>
+          <property name="dragDropMode">
+           <enum>QAbstractItemView::DragOnly</enum>
+          </property>
+          <property name="selectionMode">
+           <enum>QAbstractItemView::ExtendedSelection</enum>
+          </property>
+          <property name="sortingEnabled">
+           <bool>true</bool>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -560,6 +530,44 @@
           <widget class="QCheckBox" name="processing_type">
            <property name="text">
             <string>Process the scenario online</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="layoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>410</x>
+          <y>390</y>
+          <width>361</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <item>
+          <spacer name="horizontalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QPushButton" name="run_scenario_btn">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+             <horstretch>10</horstretch>
+             <verstretch>3</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Run Scenario</string>
            </property>
           </widget>
          </item>
