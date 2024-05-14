@@ -106,7 +106,6 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         results = analysis_task.run_pathways_analysis(
             [test_activity],
-            [],
             extent_string,
             temporary_output=True,
         )
@@ -202,7 +201,6 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         results = analysis_task.run_pathways_normalization(
             [test_activity],
-            [],
             extent_string,
             temporary_output=True,
         )
@@ -315,7 +313,6 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         results = analysis_task.run_activities_analysis(
             [test_activity],
-            [],
             extent_string,
             temporary_output=True,
         )
@@ -400,8 +397,6 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         results = analysis_task.run_activities_sieve(
             [test_activity],
-            [],
-            extent_string,
             temporary_output=True,
         )
 
@@ -485,7 +480,6 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         results = analysis_task.run_activities_normalization(
             [test_activity],
-            [],
             extent_string,
             temporary_output=True,
         )
