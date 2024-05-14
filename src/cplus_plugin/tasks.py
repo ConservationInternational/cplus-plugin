@@ -371,7 +371,7 @@ class ScenarioAnalysisTask(QgsTask):
         :param nodata_value: Nodata value to be used
         :type output_path: int
 
-        :returns: If the process was successful
+        :returns: Whether the task operations was successful
         :rtype: bool
 
         """
@@ -424,9 +424,9 @@ class ScenarioAnalysisTask(QgsTask):
     def run_pathways_analysis(self, activities, extent, temporary_output=False):
         """Runs the required activity pathways analysis on the passed
          activities. The analysis involves adding the pathways
-         carbon layers into the pathway layer.
+         carbon layers into their respective pathway layers.
 
-         If the pathway layer has more than one carbon layer, the resulting
+         If a pathway layer has more than one carbon layer, the resulting
          weighted pathway will contain the sum of the pathway layer values
          with the average of the pathway carbon layers values.
 
@@ -439,6 +439,9 @@ class ScenarioAnalysisTask(QgsTask):
         :param temporary_output: Whether to save the processing outputs as temporary
         files
         :type temporary_output: bool
+
+        :returns: Whether the task operations was successful
+        :rtype: bool
         """
         if self.processing_cancelled:
             return False
@@ -851,6 +854,9 @@ class ScenarioAnalysisTask(QgsTask):
         :param temporary_output: Whether to save the processing outputs as temporary
         files
         :type temporary_output: bool
+
+        :returns: Whether the task operations was successful
+        :rtype: bool
         """
         if self.processing_cancelled:
             # Will not proceed if processing has been cancelled by the user
@@ -1000,7 +1006,8 @@ class ScenarioAnalysisTask(QgsTask):
 
     def run_activities_analysis(self, activities, extent, temporary_output=False):
         """Runs the required activity analysis on the passed
-        activities.
+        activities pathways. The analysis is responsible for creating activities
+        layers from their respective pathways layers.
 
         :param activities: List of the selected activities
         :type activities: typing.List[Activity]
@@ -1011,6 +1018,9 @@ class ScenarioAnalysisTask(QgsTask):
         :param temporary_output: Whether to save the processing outputs as temporary
         files
         :type temporary_output: bool
+
+        :returns: Whether the task operations was successful
+        :rtype: bool
         """
         if self.processing_cancelled:
             # Will not proceed if processing has been cancelled by the user
@@ -1117,6 +1127,9 @@ class ScenarioAnalysisTask(QgsTask):
         :param temporary_output: Whether to save the processing outputs as temporary
         files
         :type temporary_output: bool
+
+        :returns: Whether the task operations was successful
+        :rtype: bool
         """
         if self.processing_cancelled:
             # Will not proceed if processing has been cancelled by the user
@@ -1126,7 +1139,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         try:
             if len(masking_layers) < 1:
-                return None
+                return False
 
             if len(masking_layers) > 1:
                 mask_layer = self.merge_vector_layers(masking_layers)
@@ -1236,8 +1249,8 @@ class ScenarioAnalysisTask(QgsTask):
         :param layers: List of the vector layers paths
         :type layers: typing.List[str]
 
-        :return merged_layer: Merged vector layer
-        :rtype merged_layer: QgsMapLayer
+        :return: Merged vector layer
+        :rtype: QgsMapLayer
         """
 
         input_map_layers = []
@@ -1285,6 +1298,9 @@ class ScenarioAnalysisTask(QgsTask):
         :param temporary_output: Whether to save the processing outputs as temporary
         files
         :type temporary_output: bool
+
+        :returns: Whether the task operations was successful
+        :rtype: bool
         """
         if self.processing_cancelled:
             # Will not proceed if processing has been cancelled by the user
@@ -1397,6 +1413,9 @@ class ScenarioAnalysisTask(QgsTask):
         :param temporary_output: Whether to save the processing outputs as temporary
         files
         :type temporary_output: bool
+
+        :returns: Whether the task operations was successful
+        :rtype: bool
         """
         if self.processing_cancelled:
             # Will not proceed if processing has been cancelled by the user
@@ -1527,7 +1546,7 @@ class ScenarioAnalysisTask(QgsTask):
         self, activities, priority_layers_groups, extent, temporary_output=False
     ):
         """Runs weighting analysis on the passed activities using
-        the corresponding activities weighting analysis.
+        the corresponding activities weight layers.
 
         :param activities: List of the selected activities
         :type activities: typing.List[Activity]
@@ -1541,6 +1560,10 @@ class ScenarioAnalysisTask(QgsTask):
         :param temporary_output: Whether to save the processing outputs as temporary
         files
         :type temporary_output: bool
+
+        :returns: A tuple with the weighted activities outputs and
+        a value of whether the task operations was successful
+        :rtype: typing.Tuple[typing.List, bool]
         """
 
         if self.processing_cancelled:
@@ -1702,6 +1725,13 @@ class ScenarioAnalysisTask(QgsTask):
 
         :param extent: Selected extent from user
         :type extent: str
+
+        :param temporary_output: Whether to save the processing outputs as temporary
+        files
+        :type temporary_output: bool
+
+        :returns: Whether the task operations was successful
+        :rtype: bool
         """
 
         if self.processing_cancelled:
@@ -1788,10 +1818,17 @@ class ScenarioAnalysisTask(QgsTask):
         in scenario analysis. Uses the activities set by the current ongoing
         analysis.
 
+        :param temporary_output: Whether to save the processing outputs as temporary
+        files
+        :type temporary_output: bool
+
+        :returns: Whether the task operations was successful
+        :rtype: bool
+
         """
         if self.processing_cancelled:
             # Will not proceed if processing has been cancelled by the user
-            return
+            return False
 
         passed_extent_box = self.analysis_extent.bbox
         passed_extent = QgsRectangle(
