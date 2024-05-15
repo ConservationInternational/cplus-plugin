@@ -40,7 +40,15 @@ This step is crucial for tailoring the report to include only the necessary info
 
     1. **Progress Bar:** Upon clicking this button, a pop-up window will appear, displaying a progress bar indicating the report generation status. 
 
-    2. **View Report:** Once the report is generated, the user can click on the `View Report` button, to view the generated report.
+    2. **View Report Dropdown:** Once the report is generated, the user can click on the `View Report` dropdown, to view the options.
+
+        The following options are available there.
+
+        - **Layout designer:** Opens the report in the QGIS layout designer.
+
+        - **Open PDF:** Opens the created PDF.
+
+        - **Help:** Takes the user to the User's documentation site.
 
     3. **Cancel:** Click on the `Cancel` button to terminate the report generation process. Upon clicking this button, it will transform into the `Close` button. Click on the `Close` button to dismiss the pop-up window.
 
