@@ -4,49 +4,33 @@
 
 """
 import datetime
-import json
 import math
 import os
 import uuid
-
 from pathlib import Path
 
 from qgis import processing
-from qgis.PyQt import QtCore, QtGui
-
+from qgis.PyQt import QtCore
 from qgis.core import (
     Qgis,
-    QgsApplication,
-    QgsColorRampShader,
     QgsCoordinateReferenceSystem,
-    QgsCoordinateTransform,
-    QgsFeedback,
-    QgsGeometry,
-    QgsPalettedRasterRenderer,
-    QgsProject,
     QgsProcessing,
-    QgsProcessingAlgRunnerTask,
     QgsProcessingContext,
     QgsProcessingFeedback,
     QgsRasterLayer,
-    QgsRasterMinMaxOrigin,
-    QgsRasterShader,
     QgsRectangle,
-    QgsSingleBandPseudoColorRenderer,
-    QgsStyle,
-    QgsTask,
     QgsVectorLayer,
     QgsWkbTypes,
 )
+from qgis.core import QgsTask
 
 from .conf import settings_manager, Settings
-
-from .resources import *
-
-from .models.helpers import clone_activity
-
+from .definitions.defaults import (
+    SCENARIO_OUTPUT_FILE_NAME,
+)
 from .models.base import ScenarioResult, SpatialExtent
-
+from .models.helpers import clone_activity
+from .resources import *
 from .utils import (
     align_rasters,
     clean_filename,
@@ -54,12 +38,6 @@ from .utils import (
     log,
     FileUtils
 )
-
-from .definitions.defaults import (
-    SCENARIO_OUTPUT_FILE_NAME,
-)
-
-from qgis.core import QgsTask
 
 
 class ScenarioAnalysisTask(QgsTask):
@@ -483,7 +461,7 @@ class ScenarioAnalysisTask(QgsTask):
         try:
             for activity in activities:
                 if not activity.pathways and (
-                    activity.path is None or activity.path is ""
+                    activity.path is None or activity.path == ""
                 ):
                     self.set_info_message(
                         tr(
@@ -502,7 +480,7 @@ class ScenarioAnalysisTask(QgsTask):
                     if not (pathway in pathways):
                         pathways.append(pathway)
 
-                if activity.path is not None and activity.path is not "":
+                if activity.path is not None and activity.path != "":
                     activities_paths.append(activity.path)
 
             if not pathways and len(activities_paths) > 0:
@@ -637,7 +615,7 @@ class ScenarioAnalysisTask(QgsTask):
         try:
             for activity in activities:
                 if not activity.pathways and (
-                    activity.path is None or activity.path is ""
+                    activity.path is None or activity.path == ""
                 ):
                     self.set_info_message(
                         tr(
@@ -897,7 +875,7 @@ class ScenarioAnalysisTask(QgsTask):
         try:
             for activity in activities:
                 if not activity.pathways and (
-                    activity.path is None or activity.path is ""
+                    activity.path is None or activity.path == ""
                 ):
                     self.set_info_message(
                         tr(
@@ -917,7 +895,7 @@ class ScenarioAnalysisTask(QgsTask):
                     if not (pathway in pathways):
                         pathways.append(pathway)
 
-                if activity.path is not None and activity.path is not "":
+                if activity.path is not None and activity.path != "":
                     activities_paths.append(activity.path)
 
             if not pathways and len(activities_paths) > 0:
@@ -1063,7 +1041,7 @@ class ScenarioAnalysisTask(QgsTask):
 
                 layers = []
                 if not activity.pathways and (
-                    activity.path is None and activity.path is ""
+                    activity.path is None and activity.path == ""
                 ):
                     self.set_info_message(
                         tr(
@@ -1088,7 +1066,7 @@ class ScenarioAnalysisTask(QgsTask):
                 # the activity either contain a path or
                 # pathways
 
-                if activity.path is not None and activity.path is not "":
+                if activity.path is not None and activity.path != "":
                     layers = [activity.path]
 
                 for pathway in activity.pathways:
@@ -1192,7 +1170,7 @@ class ScenarioAnalysisTask(QgsTask):
                 return False
 
             for activity in activities:
-                if activity.path is None or activity.path is "":
+                if activity.path is None or activity.path == "":
                     if not self.processing_cancelled:
                         self.set_info_message(
                             tr(
@@ -1340,7 +1318,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         try:
             for model in models:
-                if model.path is None or model.path is "":
+                if model.path is None or model.path == "":
                     if not self.processing_cancelled:
                         self.set_info_message(
                             tr(
@@ -1453,7 +1431,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         try:
             for activity in activities:
-                if activity.path is None or activity.path is "":
+                if activity.path is None or activity.path == "":
                     if not self.processing_cancelled:
                         self.set_info_message(
                             tr(
@@ -1605,7 +1583,7 @@ class ScenarioAnalysisTask(QgsTask):
             for original_activity in activities:
                 activity = clone_activity(original_activity)
 
-                if activity.path is None or activity.path is "":
+                if activity.path is None or activity.path == "":
                     self.set_info_message(
                         tr(
                             f"Problem when running activities weighting, "
@@ -1767,7 +1745,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         try:
             for activity in activities:
-                if activity.path is None or activity.path is "":
+                if activity.path is None or activity.path == "":
                     self.set_info_message(
                         tr(
                             f"Problem when running activity updates, "
@@ -1874,7 +1852,7 @@ class ScenarioAnalysisTask(QgsTask):
             self.set_status_message(tr("Calculating the highest position"))
 
             for activity in self.analysis_weighted_activities:
-                if activity.path is not None and activity.path is not "":
+                if activity.path is not None and activity.path != "":
                     raster_layer = QgsRasterLayer(activity.path, activity.name)
                     layers[activity.name] = (
                         raster_layer if raster_layer is not None else None
