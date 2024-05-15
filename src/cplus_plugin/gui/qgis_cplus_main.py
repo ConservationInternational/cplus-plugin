@@ -260,6 +260,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type level: Qgis.MessageLevel
         """
         if tag == PLUGIN_MESSAGE_LOG_TAB:
+            # If there is no current running analysis
+            # task don't save the log message.
+            if not self.current_analysis_task:
+                return
+
             message_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
             message = (
                 f"{self.log_text_box.toPlainText()} "
@@ -791,9 +796,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             0, QtCore.Qt.UserRole
         )
 
-        if group_identifier == "":
+        if (
+            group_identifier == ""
+            or group_identifier is None
+            or not isinstance(group_identifier, str)
+        ):
             self.show_message(
-                tr("Could not fetch the selected priority groups for editing."),
+                tr("Could not fetch the selected" " priority groups for editing."),
                 Qgis.Critical,
             )
             return

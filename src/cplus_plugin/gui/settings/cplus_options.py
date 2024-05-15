@@ -341,14 +341,10 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
     def _on_add_mask_layer(self, activated: bool):
         """Slot raised to add a mask layer."""
-        data_dir = settings_manager.get_value(Settings.LAST_DATA_DIR, "")
-        if not data_dir and self._layer:
-            data_path = self._layer.source()
-            if os.path.exists(data_path):
-                data_dir = os.path.dirname(data_path)
+        data_dir = settings_manager.get_value(Settings.LAST_MASK_DIR, default=None)
 
         if not data_dir:
-            data_dir = "/home"
+            data_dir = os.path.expanduser("~")
 
         mask_path = self._show_mask_path_selector(data_dir)
         if not mask_path:
@@ -363,6 +359,8 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             return
 
         self.lst_mask_layers.addItem(item)
+        settings_manager.set_value(Settings.LAST_MASK_DIR, os.path.dirname(mask_path))
+
         self.mask_layers_changed()
 
     def _on_edit_mask_layer(self, activated: bool):

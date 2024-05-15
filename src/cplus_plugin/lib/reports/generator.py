@@ -62,6 +62,7 @@ from ...models.helpers import extent_to_project_crs_extent
 from ...models.report import ReportContext, ReportResult
 from ...utils import (
     calculate_raster_value_area,
+    clean_filename,
     get_report_font,
     log,
     tr,
@@ -172,7 +173,7 @@ class ReportGeneratorTask(QgsTask):
         project.setMetadata(metadata)
 
         exporter = QgsLayoutExporter(layout)
-        pdf_path = f"{self._generator.output_dir}/{layout_name}.pdf"
+        pdf_path = f"{self._generator.output_dir}/{self._result.base_file_name}.pdf"
         result = exporter.exportToPdf(pdf_path, QgsLayoutExporter.PdfExportSettings())
         if result != QgsLayoutExporter.ExportResult.Success:
             log(f"Could not export {layout_name} layout to PDF.", info=False)
@@ -1221,6 +1222,7 @@ class ReportGenerator:
             self.output_dir,
             tuple(self._error_messages),
             self._context.name,
+            clean_filename(self._context.name),
         )
 
     def _save_layout_to_file(self) -> bool:
