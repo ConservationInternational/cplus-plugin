@@ -8,20 +8,40 @@ This step is crucial for tailoring the report to include only the necessary info
 
 ![Step 4](./img/step-4.png)
 
-## Select Outputs
+2. **Select Outputs**
 
-There are 5 options available in the select outputs. 
+    There are 5 options available in the select outputs. 
 
-![Step 4](./img/step-4-1.png)
+    ![Select options](./img/step-4-1.png)
 
-1. **NCS With Carbon:** This output is initially unchecked by default. When selected, it triggers the generation of the NCS pathways output, providing insights into the pathways associated with NCS (Natural climate solution) and carbon sequestration.
+    1. **NCS With Carbon:** This output is initially unchecked by default. When selected, it triggers the generation of the NCS pathways output, providing insights into the pathways associated with NCS (Natural climate solution) and carbon sequestration.
 
-2. **Landuse Activity:** Initially, this output is checked by default. It generates landuse project layer outputs, providing valuable insights into various landuse activities. Users have the option to uncheck it if they do not wish to include landuse data in the report.
+    2. **Landuse Activity:** Initially, this output is checked by default. It generates landuse project layer outputs, providing valuable insights into various landuse activities. Users have the option to uncheck it if they do not wish to include landuse data in the report.
 
-3. **Landuse Activity Normalised:** By default, this output is checked. It generates landuse project normalised outputs, providing a normalised view of landuse activities for enhanced analysis. Users have the option to uncheck it if they do not wish to include landuse normalised data in the report.
+    3. **Landuse Activity Normalised:** By default, this output is checked. It generates landuse project normalised outputs, providing a normalised view of landuse activities for enhanced analysis. Users have the option to uncheck it if they do not wish to include landuse normalised data in the report.
 
-4. **Landuse Activity Weighted with PWL (Priority weighted layers):** By default, this output is checked. It generates landuse projects weighted outputs. Unselecting this option will disable report generation this is because the weighted output is the required output for report generation.
+    4. **Landuse Activity Weighted with PWL (Priority weighted layers):** By default, this output is checked. It generates landuse projects weighted outputs. Unselecting this option will disable report generation this is because the weighted output is the required output for report generation.
 
-5. **Scenario Highest Position analysis:** By default, this output is checked. It generates the final highest position analysis outputs. Unselecting this option will disable report generation this is because the highest position analysis output is the required output for report generation.
+    5. **Scenario Highest Position analysis:** By default, this output is checked. It generates the final highest position analysis outputs. Unselecting this option will disable report generation this is because the highest position analysis output is the required output for report generation.
 
-## Processing Options
+3. **Processing Options**
+
+    The user can also choose the processing option, deciding whether they want to process online or offline.
+
+    ![Processing option](./img/step-4-2.png)
+
+    1. **Process the scenario online:** By default, this option is unchecked. When the user selects this option, the scenario is processed online using the API. This means that the system sends the scenario data to a remote server or service via the Internet. The remote server performs the necessary computations or analysis based on the provided scenario data. Processing online allows for real-time analysis and can leverage the computing power and resources available on the remote server. This option might be preferred when the user requires quicker results or when the scenario data is too large or complex to be processed efficiently on the user's local device. However, processing online may require a stable internet connection.
+
+4. **Run Scenario:** 
+
+    After checking or unchecking the checkbox, click on the `Run Scenario` button to execute the scenario and generate the report. 
+
+    ![Processing option](./img/step-4-3.png)
+
+    1. **Progress Bar:** Upon clicking this button, a pop-up window will appear, displaying a progress bar indicating the report generation status. 
+
+    2. **View Report:** Once the report is generated, the user can click on the `View Report` button, to view the generated report.
+
+    3. **Cancel:** Click on the `Cancel` button to terminate the report generation process. Upon clicking this button, it will transform into the `Close` button. Click on the `Close` button to dismiss the pop-up window.
+
+    ![Close action](./img/step-4-4.png)
