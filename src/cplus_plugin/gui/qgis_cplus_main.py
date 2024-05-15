@@ -1227,7 +1227,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def cancel_processing_task(self):
         """Cancels the current processing task."""
+        try:
+            if self.current_analysis_task:
+                self.current_analysis_task.cancel_task()
+        except Exception as e:
+            self.on_progress_dialog_cancelled()
+            log(f"Problem cancelling task, {e}")
         self.processing_cancelled = True
+
 
         # # Analysis processing tasks
         # try:
