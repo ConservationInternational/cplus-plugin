@@ -436,6 +436,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             item.setData(QtCore.Qt.DisplayRole, layer.get("name"))
             item.setData(QtCore.Qt.UserRole, layer.get("uuid"))
 
+            if not os.path.exists(layer.get("path")):
+                item.setIcon(FileUtils.get_icon("mIndicatorLayerError.svg"))
+                item.setToolTip(
+                    tr(
+                        "Contains invalid priority layer path, "
+                        "the provided layer path does not exist!"
+                    )
+                )
+
             if self.pwl_item_flags is None:
                 self.pwl_item_flags = item.flags()
 
@@ -628,6 +637,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             item.setData(QtCore.Qt.DisplayRole, layer.get("name"))
             item.setData(QtCore.Qt.UserRole, layer.get("uuid"))
 
+            if os.path.exists(layer.get("path")):
+                item.setIcon(QtGui.QIcon())
+            else:
+                item.setIcon(FileUtils.get_icon("mIndicatorLayerError.svg"))
+                item.setToolTip(
+                    tr(
+                        "Contains invalid priority layer path, "
+                        "the provided layer path does not exist!"
+                    )
+                )
             self.priority_layers_list.addItem(item)
             if update_groups:
                 for index in range(self.priority_groups_list.topLevelItemCount()):
@@ -856,6 +875,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             return
 
         self._show_priority_layer_editor(layer_identifier)
+        self.update_priority_layers(update_groups=False)
 
     def _on_double_click_priority_layer(self, list_item: QtWidgets.QListWidgetItem):
         """Slot raised when a priority list item has been double clicked."""
