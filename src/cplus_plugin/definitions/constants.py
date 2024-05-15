@@ -38,3 +38,5 @@ ACTIVITY_IDENTIFIER_PROPERTY = "activity_identifier"
 CPLUS_OPTIONS_KEY = "cplus_main"
 LOG_OPTIONS_KEY = "cplus_log"
 REPORTS_OPTIONS_KEY = "cplus_report"
+
+NO_DATA_VALUE = -9999

@@ -1659,10 +1659,25 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.activity_widget.load()
 
         elif index == 2:
+            tab_valid = True
+            msg = ""
+
+            # Check if NCS pathways are valid
+            ncs_valid = self.activity_widget.is_ncs_valid()
+            if not ncs_valid:
+                msg = self.tr(
+                    "NCS pathways are not valid or there is an ongoing validation process. "
+                    "Use the validation inspector to see more details."
+                )
+                tab_valid = False
+
             # Validate activity selection
             selected_activities = self.activity_widget.selected_activity_items()
             if len(selected_activities) == 0:
                 msg = self.tr("Please select at least one activity.")
+                tab_valid = False
+
+            if not tab_valid:
                 self.show_message(msg)
                 self.tab_widget.setCurrentIndex(1)
 
