@@ -9,7 +9,6 @@ a button on the docking widget, and from the toolbar menu.
 
 import os
 import typing
-import uuid
 
 import qgis.core
 import qgis.gui
@@ -18,11 +17,10 @@ from qgis.analysis import QgsAlignRaster
 
 from qgis.gui import QgsFileWidget, QgsOptionsPageWidget
 from qgis.gui import QgsOptionsWidgetFactory
-from qgis.PyQt import uic
+from qgis.PyQt import uic, QtWidgets
 from qgis.PyQt.QtGui import (
     QIcon,
     QShowEvent,
-    QPixmap,
 )
 from qgis.utils import iface
 
@@ -39,12 +37,121 @@ from ...definitions.defaults import (
     ICON_PATH,
     OPTIONS_TITLE,
 )
+from ...trends_earth.constants import API_URL, TIMEOUT
 from ...utils import FileUtils, log, tr
-
+from ...trends_earth import auth, api
 
 Ui_DlgSettings, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "../../ui/cplus_settings.ui")
 )
+Ui_DlgSettingsLogin, _ = uic.loadUiType(
+    os.path.join(os.path.dirname(__file__), "../../ui/DlgSettingsLogin.ui")
+)
+
+settings = QtCore.QSettings()
+
+class tr_settings(QtCore.QObject):
+    def tr(txt):
+        return QtCore.QCoreApplication.translate(self.__class__.__name__, txt)
+
+
+# Function to indicate if child is a folder within parent
+def is_subdir(child, parent):
+    parent = os.path.normpath(os.path.realpath(parent))
+    child = os.path.normpath(os.path.realpath(child))
+
+    if not os.path.isdir(parent) or not os.path.isdir(child):
+        return False
+    elif child == parent:
+        return True
+    head, tail = os.path.split(child)
+
+    if head == parent:
+        return True
+    elif tail == "":
+        return False
+    else:
+        return is_subdir(head, parent)
+
+
+def _get_user_email(auth_setup, warn=True):
+    """get user email for a particular service from authConfig"""
+    authConfig = auth.get_auth_config(auth_setup, warn=warn)
+    if not authConfig:
+        return None
+
+    email = authConfig.config("username")
+    log(email)
+    log(authConfig.config("password"))
+    if warn and email is None:
+        QtWidgets.QMessageBox.critical(
+            None,
+            tr_settings.tr("Error"),
+            tr_settings.tr(
+                "Please setup access to {auth_setup.name} before "
+                "using this function."
+            ),
+        )
+        return None
+    else:
+        return email
+
+
+class DlgSettingsLogin(QtWidgets.QDialog, Ui_DlgSettingsLogin):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setupUi(self)
+
+        self.buttonBox.accepted.connect(self.login)
+        self.buttonBox.rejected.connect(self.close)
+
+        self.ok = False
+        self.api_client = api.APIClient(API_URL, TIMEOUT)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+
+        email = _get_user_email(auth.TE_API_AUTH_SETUP, warn=False)
+
+        if email:
+            self.email.setText(email)
+
+    def login(self):
+        if not self.email.text():
+            QtWidgets.QMessageBox.critical(
+                None, self.tr("Error"), self.tr("Enter your email address.")
+            )
+
+            return
+        elif not self.password.text():
+            QtWidgets.QMessageBox.critical(
+                None, self.tr("Error"), self.tr("Enter your password.")
+            )
+
+            return
+
+        if self.api_client.login_test(self.email.text(), self.password.text()):
+            QtWidgets.QMessageBox.information(
+                None,
+                self.tr("Success"),
+                self.tr(
+                    "Logged in to the Trends.Earth server as "
+                    f"{self.email.text()}.<html><p>Welcome to "
+                    'Trends.Earth!<p/><p><a href= "'
+                    'https://groups.google.com/forum/#!forum/trends_earth_users/join">Join '
+                    "the Trends.Earth Users email group<a/></p><p> Make sure "
+                    "to join the Trends.Earth users email group to keep up "
+                    "with updates and Q&A about the tool, methods, and "
+                    "datasets in support of Sustainable Development Goals "
+                    "monitoring."
+                ),
+            )
+            auth.init_auth_config(
+                auth.TE_API_AUTH_SETUP, self.email.text(), self.password.text()
+            )
+            self.ok = True
+            self.close()
 
 
 class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
@@ -125,6 +232,22 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.btn_edit_mask.setIcon(edit_icon)
         self.btn_edit_mask.setEnabled(False)
         self.btn_edit_mask.clicked.connect(self._on_edit_mask_layer)
+
+        # Trends.Earth settings
+        # self.dlg_settings_register = DlgSettingsRegister()
+        self.dlg_settings_login = DlgSettingsLogin()
+
+        self.pushButton_login.clicked.connect(self.login)
+
+        # Load gui default value from settings
+        auth_id = settings.value("cplusplugin/auth")
+        if auth_id is not None:
+            self.authcfg_acs.setConfigId(auth_id)
+        else:
+            log("Authentication configuration id was not found")
+
+        # load gui default value from settings
+        self.reloadAuthConfigurations()
 
     def apply(self) -> None:
         """This is called on OK click in the QGIS options panel."""
@@ -427,6 +550,24 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         self.btn_edit_mask.setEnabled(contains_items)
         self.btn_delete_mask.setEnabled(contains_items)
+
+    def login(self):
+        self.dlg_settings_login.exec_()
+
+    def reloadAuthConfigurations(self):
+        authConfigId = settings.value(
+            f"{settings_manager.BASE_GROUP_NAME}/{auth.TE_API_AUTH_SETUP.key}", None
+        )
+        if not authConfigId:
+            self.message_bar.pushCritical(
+                "Trends.Earth", self.tr("Please register in order to use Trends.Earth")
+            )
+            return
+        configs = qgis.core.QgsApplication.authManager().availableAuthMethodConfigs()
+        if authConfigId not in configs.keys():
+            QtCore.QSettings().setValue(
+                f"{settings_manager.BASE_GROUP_NAME}/{auth.TE_API_AUTH_SETUP.key}", None
+            )
 
 
 class CplusOptionsFactory(QgsOptionsWidgetFactory):

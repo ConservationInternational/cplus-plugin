@@ -1,10 +1,3 @@
-import time
-import os
-import math
-import json
-import requests
-
-from ..utils import log
 import json
 import math
 import os
@@ -13,6 +6,10 @@ import time
 import requests
 
 from ..utils import log
+from ..conf import settings_manager, Settings
+from ..trends_earth import auth
+from ..trends_earth.constants import API_URL as TRENDS_EARTH_API_URL
+from ..definitions.defaults import BASE_API_URL
 
 JOB_COMPLETED_STATUS = "Completed"
 JOB_CANCELLED_STATUS = "Cancelled"
@@ -99,7 +96,7 @@ class TrendsApiUrl:
     """Trends API Urls."""
 
     def __init__(self) -> None:
-        self.base_url = "https://api2.trends.earth"
+        self.base_url = TRENDS_EARTH_API_URL
 
     @property
     def auth(self):
@@ -110,17 +107,37 @@ class CplusApiUrl:
     """Cplus API Urls."""
 
     def __init__(self):
-        self._api_token = None
-        # TODO: retrieve base_url from QgisSettings
-        self.base_url = "https://stage.cplus.earth/api/v1"
+        self.base_url = self.get_base_api_url()
         self.trends_urls = TrendsApiUrl()
+        self._api_token = self.api_token
+
+    def get_base_api_url(self):
+        """Returns the base API URL.
+        """
+
+        dev_mode = settings_manager.get_value(Settings.DEV_MODE, False)
+        if dev_mode:
+            return settings_manager.get_value(Settings.BASE_API_URL)
+        else:
+            return BASE_API_URL
 
     @property
     def api_token(self):
         # fetch token from Trends Earth API
-        # TODO: retrieve username+pw from secured QgisSettings
-        username = os.getenv("CPLUS_USERNAME", "")
-        pw = os.getenv("CPLUS_PASSWORD", "")
+        auth_config = auth.get_auth_config(
+            auth.TE_API_AUTH_SETUP, warn=None
+        )
+
+        if (
+            not auth_config
+            or not auth_config.config("username")
+            or not auth_config.config("password")
+        ):
+            log("API unable to login - setup auth configuration before using")
+            return
+
+        username = auth_config.config("username")
+        pw = auth_config.config("password")
 
         response = requests.post(
             self.trends_urls.auth, json={"email": username, "password": pw}
@@ -142,7 +159,7 @@ class CplusApiUrl:
     @property
     def headers(self):
         return {
-            "Authorization": f"Bearer {self.api_token}",
+            "Authorization": f"Bearer {self._api_token}",
         }
 
     def layer_detail(self, layer_uuid):

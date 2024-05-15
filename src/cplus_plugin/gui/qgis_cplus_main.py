@@ -3,26 +3,18 @@
 """
  The plugin main window class.
 """
-import json
-import os
-import typing
-import uuid
-
 import datetime
-
+import os
+import uuid
 from functools import partial
-
 from pathlib import Path
 
 from qgis.PyQt import (
     QtCore,
     QtGui,
     QtWidgets,
-    QtNetwork,
 )
-
 from qgis.PyQt.uic import loadUiType
-
 from qgis.core import (
     Qgis,
     QgsApplication,
@@ -31,60 +23,37 @@ from qgis.core import (
     QgsFeedback,
     QgsGeometry,
     QgsProject,
-    QgsProcessing,
-    QgsProcessingAlgRunnerTask,
     QgsProcessingContext,
     QgsProcessingFeedback,
     QgsRasterLayer,
     QgsRectangle,
-    QgsTask,
     QgsWkbTypes,
     QgsColorRampShader,
     QgsSingleBandPseudoColorRenderer,
-    QgsRasterShader,
     QgsPalettedRasterRenderer,
-    QgsStyle,
-    QgsRasterMinMaxOrigin,
 )
-
 from qgis.gui import (
     QgsGui,
     QgsMessageBar,
     QgsRubberBand,
 )
-
 from qgis.utils import iface
 
 from .activity_widget import ActivityContainerWidget
-from .priority_group_widget import PriorityGroupWidget
-
-from .priority_layer_dialog import PriorityLayerDialog
-from .priority_group_dialog import PriorityGroupDialog
-
-from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
-from ..conf import settings_manager, Settings
-
-from ..lib.extent_check import extent_within_pilot
-from ..lib.reports.manager import report_manager, ReportManager
-from ..models.helpers import clone_activity
-
-from ..tasks import ScenarioAnalysisTask
-
 from .components.custom_tree_widget import CustomTreeWidget
-
-from ..resources import *
-
-from ..utils import (
-    open_documentation,
-    tr,
-    log,
-    FileUtils,
-    write_to_file,
-    todict,
-    CustomJsonEncoder
-)
+from .priority_group_dialog import PriorityGroupDialog
+from .priority_group_widget import PriorityGroupWidget
+from .priority_layer_dialog import PriorityLayerDialog
+from .progress_dialog import ProgressDialog
 from ..api.scenario_task_api_client import ScenarioAnalysisTaskApiClient
-
+from ..conf import settings_manager, Settings
+from ..definitions.constants import (
+    ACTIVITY_GROUP_LAYER_NAME,
+    ACTIVITY_IDENTIFIER_PROPERTY,
+    ACTIVITY_WEIGHTED_GROUP_NAME,
+    NCS_PATHWAYS_GROUP_LAYER_NAME,
+    USER_DEFINED_ATTRIBUTE,
+)
 from ..definitions.defaults import (
     ADD_LAYER_ICON_PATH,
     PILOT_AREA_EXTENT,
@@ -98,15 +67,18 @@ from ..definitions.defaults import (
     SCENARIO_LOG_FILE_NAME,
     USER_DOCUMENTATION_SITE,
 )
-from ..definitions.constants import (
-    ACTIVITY_GROUP_LAYER_NAME,
-    ACTIVITY_IDENTIFIER_PROPERTY,
-    ACTIVITY_WEIGHTED_GROUP_NAME,
-    NCS_PATHWAYS_GROUP_LAYER_NAME,
-    USER_DEFINED_ATTRIBUTE,
+from ..lib.extent_check import extent_within_pilot
+from ..lib.reports.manager import report_manager, ReportManager
+from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
+from ..resources import *
+from ..tasks import ScenarioAnalysisTask
+from ..utils import (
+    open_documentation,
+    tr,
+    log,
+    FileUtils,
+    write_to_file
 )
-
-from .progress_dialog import ProgressDialog
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/qgis_cplus_main_dockwidget.ui")
@@ -272,11 +244,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 f"{message}"
             )
             self.log_text_box.setPlainText(f"{message} \n")
-
-            processing_log_file = os.path.join(
-                self.current_analysis_task.scenario_directory, SCENARIO_LOG_FILE_NAME
-            )
-            write_to_file(message, processing_log_file)
+            try:
+                processing_log_file = os.path.join(
+                    self.current_analysis_task.scenario_directory, SCENARIO_LOG_FILE_NAME
+                )
+                write_to_file(message, processing_log_file)
+            except TypeError:
+                pass
 
     def prepare_input(self):
         """Initializes plugin input widgets"""
@@ -1209,10 +1183,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param dest_crs: Destination CRS
         :type dest_crs: QgsCoordinateReferenceSystem
         """
-
-        log(json.dumps(todict(source_crs), cls=CustomJsonEncoder))
-        log(json.dumps(todict(dest_crs), cls=CustomJsonEncoder))
-        log(json.dumps(todict(extent), cls=CustomJsonEncoder))
         transform = QgsCoordinateTransform(source_crs, dest_crs, QgsProject.instance())
         transformed_extent = transform.transformBoundingBox(extent)
 

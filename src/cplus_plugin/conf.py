@@ -8,15 +8,12 @@ import dataclasses
 import enum
 import json
 import os.path
-from pathlib import Path
 import typing
 import uuid
+from pathlib import Path
 
 from qgis.PyQt import QtCore
-from qgis.core import QgsRectangle, QgsSettings
-
-from .definitions.defaults import PRIORITY_LAYERS
-from .utils import md5, todict, CustomJsonEncoder
+from qgis.core import QgsSettings
 
 from .definitions.constants import (
     STYLE_ATTRIBUTE,
@@ -26,9 +23,9 @@ from .definitions.constants import (
     PATHWAYS_ATTRIBUTE,
     PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
-    UUID_ATTRIBUTE,
+    UUID_ATTRIBUTE
 )
-
+from .definitions.defaults import PRIORITY_LAYERS
 from .models.base import (
     Activity,
     NcsPathway,
@@ -41,8 +38,8 @@ from .models.helpers import (
     layer_component_to_dict,
     ncs_pathway_to_dict,
 )
-
 from .utils import log
+from .utils import md5
 
 
 @contextlib.contextmanager
@@ -178,7 +175,10 @@ class Settings(enum.Enum):
     # Processing option
     PROCESSING_TYPE = "processing_type"
 
-#
+    # DEBUG
+    DEBUG = "debug"
+    DEV_MODE = "dev_mode"
+    BASE_API_URL = "base_api_url"
 
 
 class SettingsManager(QtCore.QObject):

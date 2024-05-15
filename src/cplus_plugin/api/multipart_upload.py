@@ -1,4 +1,3 @@
-import json
 import time
 
 import requests
@@ -7,7 +6,6 @@ from ..utils import (
     log
 )
 
-BASE_URL = 'https://stage.cplus.earth/api/v1'
 # chunk_size must be greater than 5MB, for now use 100MB
 CHUNK_SIZE = 100 * 1024 * 1024
 

@@ -35,9 +35,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>0</y>
-        <width>572</width>
-        <height>697</height>
+        <y>-193</y>
+        <width>557</width>
+        <height>896</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -311,6 +311,44 @@
         </widget>
        </item>
        <item>
+        <widget class="QgsCollapsibleGroupBox" name="groupBox">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="title">
+          <string>Trends.Earth login information</string>
+         </property>
+         <property name="collapsed">
+          <bool>false</bool>
+         </property>
+         <property name="saveCollapsedState">
+          <bool>false</bool>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_5">
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_7">
+            <item>
+             <widget class="QPushButton" name="pushButton_login">
+              <property name="text">
+               <string>Enter username and password</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_8"/>
+          </item>
+          <item>
+           <widget class="QgsAuthConfigSelect" name="authcfg_acs_2"/>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
         <spacer name="scroll_area_vspacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -330,6 +368,11 @@
   </layout>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>QgsAuthConfigSelect</class>
+   <extends>QWidget</extends>
+   <header>qgsauthconfigselect.h</header>
+  </customwidget>
   <customwidget>
    <class>QgsCollapsibleGroupBox</class>
    <extends>QGroupBox</extends>
