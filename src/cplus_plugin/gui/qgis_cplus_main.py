@@ -1678,7 +1678,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.activity_widget.can_show_error_messages = True
             self.activity_widget.load()
 
-        elif index == 2:
+        elif index == 2 or index == 3:
             tab_valid = True
             msg = ""
 
