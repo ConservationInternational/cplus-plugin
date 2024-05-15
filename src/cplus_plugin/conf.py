@@ -312,22 +312,22 @@ class SettingsManager(QtCore.QObject):
         with qgis_settings(spatial_key) as settings:
             settings.setValue("bbox", spatial_extent)
 
-    def get_scenario(self, identifier):
-        """Retrieves the scenario that matches the passed identifier.
-
-        :param identifier: Scenario identifier
-        :type identifier: str
-
-        :returns: Scenario settings instance
-        :rtype: ScenarioSettings
-        """
-
-        settings_key = self._get_scenario_settings_base(identifier)
-        with qgis_settings(settings_key) as settings:
-            scenario_settings = ScenarioSettings.from_qgs_settings(
-                str(identifier), settings
-            )
-        return scenario_settings
+    # def get_scenario(self, identifier):
+    #     """Retrieves the scenario that matches the passed identifier.
+    #
+    #     :param identifier: Scenario identifier
+    #     :type identifier: str
+    #
+    #     :returns: Scenario settings instance
+    #     :rtype: ScenarioSettings
+    #     """
+    #
+    #     settings_key = self._get_scenario_settings_base(identifier)
+    #     with qgis_settings(settings_key) as settings:
+    #         scenario_settings = ScenarioSettings.from_qgs_settings(
+    #             str(identifier), settings
+    #         )
+    #     return scenario_settings
 
     def get_scenario(self, scenario_id):
         """Retrieves the first scenario that matched the passed scenario id.
@@ -349,7 +349,7 @@ class SettingsManager(QtCore.QObject):
                     scenario = ScenarioSettings.from_qgs_settings(
                         uuid, scenario_settings
                     )
-                    if scenario.id == scenario_id:
+                    if scenario.uuid == scenario_id:
                         return scenario
         return None
 
