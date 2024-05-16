@@ -2,7 +2,7 @@
 
 Welcome to the Cplus-plugins user manual. This section of the documentation describes every step in the plugin and what the various steps of that plugin do. You may prefer to work through our [user guide](../guide/index.md). Here is a brief overview of the content provided here:
 
-* **[Calculation and Formula:](calculation-and-formula.md)** This section provides details about the calculations and formulas used within the platform.
+* **[Calculations and Formulas:](calculation-and-formula.md)** This section provides details about the calculations and formulas used within the platform.
 
 * **[Step 1:](step-1.md)** This page guides users through Step 1 of a process or workflow, detailing the necessary actions and inputs required.
 
