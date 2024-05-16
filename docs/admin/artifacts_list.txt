@@ -149,3 +149,4 @@ cplus_plugin_main_0f45 - https://github.com/ConservationInternational/cplus-plug
 cplus_plugin_main_f310 - https://github.com/ConservationInternational/cplus-plugin/suites/23797458685/artifacts/1504015107
 cplus_plugin_main_d0b4 - https://github.com/ConservationInternational/cplus-plugin/suites/23805869441/artifacts/1504744949
 cplus_plugin_main_cb9d - https://github.com/ConservationInternational/cplus-plugin/suites/23819825639/artifacts/1505998415
+cplus_plugin_main_418d - https://github.com/ConservationInternational/cplus-plugin/suites/23847532363/artifacts/1508730047
