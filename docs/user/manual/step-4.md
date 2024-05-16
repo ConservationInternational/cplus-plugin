@@ -4,7 +4,7 @@
 
 When the user selects an output, it signifies that the user wants it to be saved onto their file system, making it accessible beyond the current session. Conversely, leaving an option unselected means that the data will be stored as a memory layer, useful for temporary use within the current session.
 
-This step is crucial for tailoring the report to include only the necessary information, thereby optimising memory usage. By choosing specific outputs to be saved, the user can generate a concise report that utilises system resources efficiently.
+This step is crucial for tailoring the outputs to include only the necessary information, thereby optimising memory usage. By choosing specific outputs to be saved, the user can generate fewer output layers wich utilises system resources more efficiently.
 
 ![Step 4](./img/step-4.png)
 
@@ -16,7 +16,7 @@ This step is crucial for tailoring the report to include only the necessary info
 
     1. **NCS With Carbon:** This output is initially unchecked by default. When selected, it triggers the generation of the NCS pathways output, providing insights into the pathways associated with NCS (Natural climate solution) and carbon sequestration.
 
-    2. **Landuse Activity:** Initially, this output is checked by default. It generates landuse project layer outputs, providing valuable insights into various landuse activities. Users have the option to uncheck it if they do not wish to include landuse data in the report.
+    2. **Landuse Activity:** Initially, this output is checked by default. It generates landuse activity layer outputs, providing valuable insights into various landuse activities. Users have the option to uncheck it if they do not wish to include landuse data in the report.
 
     3. **Landuse Activity Normalised:** By default, this output is checked. It generates landuse project normalised outputs, providing a normalised view of landuse activities for enhanced analysis. Users have the option to uncheck it if they do not wish to include landuse normalised data in the report.
 
