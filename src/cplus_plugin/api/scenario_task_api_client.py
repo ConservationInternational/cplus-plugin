@@ -352,6 +352,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                         res["path"] = file_path
                         new_uploaded_layer[file_path] = res
                         break
+            self.__update_scenario_status(
+                {"progress_text": "All layers have been uploaded", "progress": 100}
+            )
 
         for uploaded_layer in new_uploaded_layer.values():
             identifier = md5(uploaded_layer["path"])
@@ -608,6 +611,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         Set scenario output object based on scenario UUID
         to be used in generating report
         """
+        self.__update_scenario_status(
+            {"progress_text": "Downloading output files", "progress": 0}
+        )
         output_list = self.request.fetch_scenario_output_list(scenario_uuid)
         urls_to_download = []
         download_paths = []
@@ -640,3 +646,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         )
 
         self.analysis_priority_layers_groups
+        self.__update_scenario_status(
+            {"progress_text": "Finished downloading output files", "progress": 100}
+        )
