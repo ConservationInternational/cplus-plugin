@@ -60,7 +60,7 @@ from .definitions.defaults import (
     OPTIONS_TITLE,
     PRIORITY_GROUPS,
     PRIORITY_LAYERS,
-    BASE_API_URL
+    BASE_API_URL,
 )
 from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
 from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata

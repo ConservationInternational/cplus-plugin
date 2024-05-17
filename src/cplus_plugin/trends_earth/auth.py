@@ -92,7 +92,9 @@ def init_auth_config(
 
 
 def remove_current_auth_config(auth_setup):
-    authConfigId = QtCore.QSettings().value(f"{settings_manager.BASE_GROUP_NAME}/{auth_setup.key}", None)
+    authConfigId = QtCore.QSettings().value(
+        f"{settings_manager.BASE_GROUP_NAME}/{auth_setup.key}", None
+    )
     if not authConfigId:
         iface.messageBar().pushCritical(
             "Trends.Earth",
@@ -114,14 +116,18 @@ def remove_current_auth_config(auth_setup):
         )
         return False
 
-    QtCore.QSettings().setValue("{settings_manager.BASE_GROUP_NAME}/{auth_setup.key}", None)
+    QtCore.QSettings().setValue(
+        "{settings_manager.BASE_GROUP_NAME}/{auth_setup.key}", None
+    )
     return True
 
 
 def get_auth_config(auth_setup, authConfigId=None, warn=True):
     if not authConfigId:
         # not set then retrieve from config if set
-        authConfigId = QtCore.QSettings().value(f"{settings_manager.BASE_GROUP_NAME}/{auth_setup.key}", None)
+        authConfigId = QtCore.QSettings().value(
+            f"{settings_manager.BASE_GROUP_NAME}/{auth_setup.key}", None
+        )
         if not authConfigId:
             if warn:
                 iface.messageBar().pushCritical(
