@@ -132,10 +132,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 if not chunk:
                     break
                 url_item = upload_urls[idx]
-                self.log_message(f"starting upload part {url_item['part_number']}")
                 part_item = upload_part(url_item["url"], chunk, url_item["part_number"])
                 items.append(part_item)
-                self.log_message(f"finished upload part {url_item['part_number']}")
                 self.uploaded_chunks += 1
                 self.__update_scenario_status(
                     {
@@ -146,8 +144,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                     }
                 )
                 idx += 1
-        self.log_message(f"***Total upload_urls: {len(upload_urls)}")
-        self.log_message(f"***Total chunks: {idx}")
         # finish upload
 
         if upload_id:

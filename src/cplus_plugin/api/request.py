@@ -18,6 +18,8 @@ CHUNK_SIZE = 100 * 1024 * 1024
 
 
 def log_response(response, request_name):
+    if not settings_manager.get_value(Settings.DEBUG):
+        return
     log(f"****Response - {request_name} *****")
     if isinstance(response, dict):
         log(json.dumps(response))
@@ -112,8 +114,7 @@ class CplusApiUrl:
         self._api_token = self.api_token
 
     def get_base_api_url(self):
-        """Returns the base API URL.
-        """
+        """Returns the base API URL."""
 
         dev_mode = settings_manager.get_value(Settings.DEV_MODE, False)
         if dev_mode:
@@ -124,9 +125,7 @@ class CplusApiUrl:
     @property
     def api_token(self):
         # fetch token from Trends Earth API
-        auth_config = auth.get_auth_config(
-            auth.TE_API_AUTH_SETUP, warn=None
-        )
+        auth_config = auth.get_auth_config(auth.TE_API_AUTH_SETUP, warn=None)
 
         if (
             not auth_config
@@ -210,7 +209,6 @@ class CplusApiRequest:
         """GET requests."""
         return requests.post(url, json=data, headers=self.urls.headers)
 
-
     def get_layer_detail(self, layer_uuid):
         response = self.get(self.urls.layer_detail(layer_uuid))
         result = response.json()
@@ -224,7 +222,7 @@ class CplusApiRequest:
             "privacy_type": "private",
             "name": os.path.basename(file_path),
             "size": file_size,
-            "number_of_parts": math.ceil(file_size / CHUNK_SIZE)
+            "number_of_parts": math.ceil(file_size / CHUNK_SIZE),
         }
         response = self.post(self.urls.layer_upload_start(), payload)
         result = response.json()
@@ -232,11 +230,8 @@ class CplusApiRequest:
             raise CplusApiRequestError(result.get("detail", ""))
         return result
 
-    def finish_upload_layer(self, layer_uuid,  upload_id, items):
-        payload = {
-            "multipart_upload_id": upload_id,
-            "items": items
-        }
+    def finish_upload_layer(self, layer_uuid, upload_id, items):
+        payload = {"multipart_upload_id": upload_id, "items": items}
         response = self.post(self.urls.layer_upload_finish(layer_uuid), payload)
         result = response.json()
         return result
