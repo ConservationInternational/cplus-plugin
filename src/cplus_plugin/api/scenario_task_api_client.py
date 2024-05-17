@@ -74,14 +74,22 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.uploaded_chunks = 0
         self.checksum_to_uuid_mapping = {}
         self.path_to_checksum_mapping = {}
+        self.scenario.uuid = None
+        self.status_pooling = None
 
     def cancel_task(self, exception=None):
         """
         Cancel QGIS task and cancel scenario processing on API.
         """
-
         self.log_message("CANCELLED")
+        if self.status_pooling:
+            self.status_pooling.cancelled = True
+        super().cancel_task(exception)
+
+    def on_terminated(self):
+        """Called when the task is terminated."""
         # check if there is ongoing upload
+        # TODO: we may need to check for ongoing upload in current scenario only
         layer_mapping = settings_manager.get_all_layer_mapping()
         for identifier, layer in layer_mapping.items():
             if "upload_id" not in layer:
@@ -92,9 +100,10 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 settings_manager.remove_layer_mapping(identifier)
             except Exception as ex:
                 self.log_message(f"Problem aborting upload layer: {ex}")
+        self.log_message(f"Cancel scenario {self.scenario.uuid}")
         if self.scenario.uuid:
             self.request.cancel_scenario(self.scenario.uuid)
-        super().cancel_task(exception)
+        super().on_terminated()
 
     def run(self) -> bool:
         """Run scenario analysis using API."""
@@ -125,7 +134,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             self.error = ex
             self.cancel_task()
             return False
-        return True
+        return not self.processing_cancelled
 
     def run_upload(self, file_path, component_type) -> typing.Dict:
         """
@@ -507,10 +516,16 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         # execute scenario detail
         self.request.execute_scenario(scenario_uuid)
 
+        if self.processing_cancelled:
+            return
+
         # fetch status by interval
-        status_pooling = self.request.fetch_scenario_status(scenario_uuid)
-        status_pooling.on_response_fetched = self.__update_scenario_status
-        status_response = status_pooling.results()
+        self.status_pooling = self.request.fetch_scenario_status(scenario_uuid)
+        self.status_pooling.on_response_fetched = self.__update_scenario_status
+        status_response = self.status_pooling.results()
+
+        if self.processing_cancelled:
+            return
 
         # if success, fetch output list
         scenario_status = status_response.get("status", "")

@@ -1151,7 +1151,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             analysis_task.taskCompleted.connect(analysis_complete)
 
-            analysis_task.taskTerminated.connect(self.task_terminated)
+            analysis_terminated = partial(self.task_terminated, analysis_task)
+            analysis_task.taskTerminated.connect(analysis_terminated)
 
             QgsApplication.taskManager().addTask(analysis_task)
 
@@ -1167,10 +1168,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 )
             )
 
-    def task_terminated(self):
+    def task_terminated(self, task):
         """Handles logging of the scenario analysis task status
         after it has been terminated.
         """
+        task.on_terminated()
         log(f"Main task terminated")
 
     def analysis_complete(self, task, report_manager, progress_dialog):

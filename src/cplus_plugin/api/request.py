@@ -65,6 +65,7 @@ class CplusApiPooling:
         self.limit = max_limit or self.DEFAULT_LIMIT
         self.interval = interval or self.DEFAULT_INTERVAL
         self.on_response_fetched = on_response_fetched
+        self.cancelled = False
 
     def __call_api(self):
         if self.method == "GET":
@@ -73,6 +74,8 @@ class CplusApiPooling:
 
     def results(self):
         """Return results of data."""
+        if self.cancelled:
+            return {"status": JOB_CANCELLED_STATUS}
         self.current_repeat += 1
         if self.limit != -1 and self.current_repeat >= self.limit:
             raise requests.exceptions.Timeout()

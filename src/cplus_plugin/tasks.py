@@ -76,7 +76,6 @@ class ScenarioAnalysisTask(QgsTask):
         self.processing_context = QgsProcessingContext()
 
         self.scenario = scenario
-        self.scenario.uuid = None
 
     def get_settings_value(self, name: str, default=None, setting_type=None):
         return settings_manager.get_value(name, default, setting_type)
@@ -117,6 +116,11 @@ class ScenarioAnalysisTask(QgsTask):
         notify: bool = True,
     ):
         log(message, name=name, info=info, notify=notify)
+
+    def on_terminated(self):
+        """Called when the task is terminated."""
+        self.set_status_message(tr(f"Processing has been cancelled by the user."))
+        self.log_message(f"Processing has been cancelled by the user.")
 
     def run(self):
         """Runs the main scenario analysis task operations"""
