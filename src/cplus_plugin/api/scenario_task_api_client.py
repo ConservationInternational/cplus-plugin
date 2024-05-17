@@ -81,8 +81,20 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         """
 
         self.log_message("CANCELLED")
+        # check if there is ongoing upload
+        layer_mapping = settings_manager.get_all_layer_mapping()
+        for identifier, layer in layer_mapping.items():
+            if "upload_id" not in layer:
+                continue
+            self.log_message(f"Cancelling upload file: {layer['path']} ")
+            try:
+                self.request.abort_upload_layer(layer["uuid"], layer["upload_id"])
+                settings_manager.remove_layer_mapping(identifier)
+            except Exception as ex:
+                self.log_message(f"Problem aborting upload layer: {ex}")
+        if self.scenario.uuid:
+            self.request.cancel_scenario(self.scenario.uuid)
         super().cancel_task(exception)
-        self.request.cancel_scenario(self.scenario.uuid)
 
     def run(self) -> bool:
         """Run scenario analysis using API."""
@@ -94,9 +106,15 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             self.upload_layers()
         except Exception as e:
             self.log_message(str(e))
-
+            err = f"Problem uploading layer to the server: {ex}\n"
+            self.log_message(err, info=False)
+            self.set_info_message(err, level=Qgis.Critical)
+            self.error = ex
+            self.cancel_task()
+            return False
+        if self.processing_cancelled:
+            return False
         self.build_scenario_detail_json()
-
         try:
             self.__execute_scenario_analysis()
         except Exception as ex:
@@ -123,11 +141,24 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         upload_id = upload_params["multipart_upload_id"]
         layer_uuid = upload_params["uuid"]
         upload_urls = upload_params["upload_urls"]
+        if self.processing_cancelled:
+            return False
+        # store temporary layer
+        temp_layer = {
+            "uuid": layer_uuid,
+            "size": os.stat(file_path).st_size,
+            "name": os.path.basename(file_path),
+            "upload_id": upload_id,
+            "path": file_path,
+        }
+        settings_manager.save_layer_mapping(temp_layer)
         # do upload by chunks
         items = []
         idx = 0
         with open(file_path, "rb") as f:
             while True:
+                if self.processing_cancelled:
+                    break
                 chunk = f.read(CHUNK_SIZE)
                 if not chunk:
                     break
@@ -145,7 +176,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 )
                 idx += 1
         # finish upload
-
+        result = {"uuid": None}
+        if self.processing_cancelled:
+            return result
         if upload_id:
             result = self.request.finish_upload_layer(layer_uuid, upload_id, items)
         else:
@@ -281,9 +314,15 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 }
             )
 
+        if self.processing_cancelled:
+            return False
+
         self.total_file_upload_size = sum(os.stat(fp).st_size for fp in files_to_upload)
         self.total_file_upload_chunks = self.total_file_upload_size / CHUNK_SIZE
         final_results = self.run_parallel_upload(files_to_upload)
+
+        if self.processing_cancelled:
+            return False
 
         new_uploaded_layer = {}
 
@@ -297,6 +336,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                     os.path.basename(file_path).split(".")[0:-1]
                 )
                 for res in final_results:
+                    if res["uuid"] is None:
+                        continue
                     if res["name"].startswith(filename_without_ext):
                         res["path"] = file_path
                         new_uploaded_layer[file_path] = res
@@ -317,6 +358,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         identifier = md5(layer_path)
         uploaded_layer_dict = settings_manager.get_layer_mapping(identifier)
         if uploaded_layer_dict:
+            if "upload_id" in uploaded_layer_dict:
+                # if upload_id exists, then upload is not finished
+                return False
             if layer_path == uploaded_layer_dict["path"]:
                 is_uploaded = "uuid" in self.request.get_layer_detail(
                     uploaded_layer_dict["uuid"]

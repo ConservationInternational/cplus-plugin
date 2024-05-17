@@ -76,6 +76,7 @@ class ScenarioAnalysisTask(QgsTask):
         self.processing_context = QgsProcessingContext()
 
         self.scenario = scenario
+        self.scenario.uuid = None
 
     def get_settings_value(self, name: str, default=None, setting_type=None):
         return settings_manager.get_value(name, default, setting_type)

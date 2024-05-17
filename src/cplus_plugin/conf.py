@@ -23,7 +23,7 @@ from .definitions.constants import (
     PATHWAYS_ATTRIBUTE,
     PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
-    UUID_ATTRIBUTE
+    UUID_ATTRIBUTE,
 )
 from .definitions.defaults import PRIORITY_LAYERS
 from .models.base import (
@@ -726,9 +726,24 @@ class SettingsManager(QtCore.QObject):
         :returns: Base path to Layer Mapping group.
         :rtype: str
         """
-        return (
-            f"{self.BASE_GROUP_NAME}/{self.LAYER_MAPPING_BASE}"
-        )
+        return f"{self.BASE_GROUP_NAME}/{self.LAYER_MAPPING_BASE}"
+
+    def get_all_layer_mapping(self) -> typing.Dict:
+        """Return all layer mapping."""
+        layer_mapping = {}
+
+        layer_mapping_root = self._get_layer_mappings_settings_base()
+        with qgis_settings(layer_mapping_root) as settings:
+            keys = settings.childKeys()
+            for k in keys:
+                layer_raw = settings.value(k, dict())
+                if len(layer_raw) > 0:
+                    try:
+                        layer = json.loads(layer_raw)
+                        layer_mapping[k] = layer
+                    except json.JSONDecodeError:
+                        log("Layer Mapping JSON is invalid")
+        return layer_mapping
 
     def get_layer_mapping(self, identifier) -> typing.Dict:
         """Retrieves the layer mapping that matches the passed identifier.
@@ -745,10 +760,10 @@ class SettingsManager(QtCore.QObject):
         layer_mapping_root = self._get_layer_mappings_settings_base()
 
         with qgis_settings(layer_mapping_root) as settings:
-            ncs_model = settings.value(identifier, dict())
-            if len(ncs_model) > 0:
+            layer = settings.value(identifier, dict())
+            if len(layer) > 0:
                 try:
-                    layer_mapping = json.loads(ncs_model)
+                    layer_mapping = json.loads(layer)
                 except json.JSONDecodeError:
                     log("Layer Mapping JSON is invalid")
         return layer_mapping
@@ -763,11 +778,15 @@ class SettingsManager(QtCore.QObject):
         """
 
         if not identifier:
-            identifier = md5(input_layer['path'])
+            identifier = md5(input_layer["path"])
         settings_key = self._get_layer_mappings_settings_base()
 
         with qgis_settings(settings_key) as settings:
             settings.setValue(identifier, json.dumps(input_layer))
+
+    def remove_layer_mapping(self, identifier):
+        """Remove layer mapping from settings."""
+        self.remove(f"{self.LAYER_MAPPING_BASE}/{identifier}")
 
     def _get_ncs_pathway_settings_base(self) -> str:
         """Returns the path for NCS pathway settings.

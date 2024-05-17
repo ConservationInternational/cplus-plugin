@@ -170,6 +170,9 @@ class CplusApiUrl:
     def layer_upload_finish(self, layer_uuid):
         return f"{self.base_url}/layer/upload/{layer_uuid}/finish/"
 
+    def layer_upload_abort(self, layer_uuid):
+        return f"{self.base_url}/layer/upload/{layer_uuid}/abort/"
+
     def scenario_submit(self, plugin_version=None):
         url = f"{self.base_url}/scenario/submit/"
         if plugin_version:
@@ -202,7 +205,6 @@ class CplusApiRequest:
 
     def get(self, url):
         """GET requests."""
-        log_response(self.urls.headers, "headers")
         return requests.get(url, headers=self.urls.headers)
 
     def post(self, url, data: json):
@@ -235,6 +237,14 @@ class CplusApiRequest:
         response = self.post(self.urls.layer_upload_finish(layer_uuid), payload)
         result = response.json()
         return result
+
+    def abort_upload_layer(self, layer_uuid, upload_id):
+        payload = {"multipart_upload_id": upload_id, "items": []}
+        response = self.post(self.urls.layer_upload_abort(layer_uuid), payload)
+        if response.status_code != 204:
+            result = response.json()
+            raise CplusApiRequestError(result.get("detail", ""))
+        return True
 
     def submit_scenario_detail(self, scenario_detail):
         response = self.post(self.urls.scenario_submit(), scenario_detail)
