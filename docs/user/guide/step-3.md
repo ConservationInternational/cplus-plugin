@@ -52,4 +52,4 @@ Select the target layer from the priority weighting layers list from its priorit
 
 ## Setting groups values
 
-Move the slider to adjust the weight of each group, values can also be set manually, by using the left input spin box. Once done selecting weights, click the **Run Scenario** button to run the analysis.
+Move the slider to adjust the weight of each group, values can also be set manually, by using the left input spin box.
