@@ -76,6 +76,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.path_to_checksum_mapping = {}
         self.scenario.uuid = None
         self.status_pooling = None
+        self.logs = set()
 
     def cancel_task(self, exception=None):
         """
@@ -543,6 +544,12 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         """
         self.set_status_message(response.get("progress_text", ""))
         self.update_progress(response.get("progress", 0))
+        if "logs" in response:
+            new_logs = set(response.get("logs"))
+            updated_logs = new_logs - self.logs
+            for log in updated_logs:
+                self.log_message(log)
+            self.logs = new_logs
 
     def __create_activity(self, activity: dict, download_dict: list):
         """

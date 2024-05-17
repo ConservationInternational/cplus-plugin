@@ -84,7 +84,6 @@ class CplusApiPooling:
             if response.status_code != 200:
                 raise CplusApiRequestError(f"{response.status_code} - {response.text}")
             result = response.json()
-            log_response(result, "CplusApiRequest - status")
             if self.on_response_fetched:
                 self.on_response_fetched(result)
             if result["status"] in self.FINAL_STATUS_LIST:
