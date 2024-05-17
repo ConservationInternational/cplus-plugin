@@ -53,3 +53,7 @@ Select the target layer from the priority weighting layers list from its priorit
 ## Setting groups values
 
 Move the slider to adjust the weight of each group, values can also be set manually, by using the left input spin box.
+
+Click [here](step-4.md) to explore the step 4 section.
+
+Click [here](logs.md) to explore the log section.

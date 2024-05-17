@@ -21,3 +21,5 @@ Processing Options
 **Run Scenario:** Click on the `Run Scenario` button to execute the scenario and generate the report.
 
 ![Run Scenario](./img/step4-4.png)
+
+Click [here](logs.md) to explore the log section.
