@@ -46,3 +46,47 @@ A user can order the stack using the **Style pixel value editor**.
 ![UI Step 2](img/style_pixel_value_editor.png)
 
 Overall, Step 2 provides users with comprehensive tools for defining and configuring NCS pathways and activities, enabling efficient and accurate analysis and visualisation of natural climate solutions.
+
+## Validations
+
+![Error model](./img/manual-step3-validation-1.png)
+
+1. **Error Model:** Whenever an error occurs the user will see the `Error Model` at the top. In this model, the user gets a basic idea about where to check for the detailed error logs. 
+
+    **Message:** NCS pathways are not valid or there is an ongoing validation process. Use the validation inspector to see more details.
+
+2. **Validation Inspector:** Click on the `Validation Inspect/Magnifying Glass` icon, to view the detailed error logs. Upon clicking the validation error window will pop up, where all the detailed logs are available.
+
+    ![Validation inspector](./img/manual-step3-validation-2.png)
+
+    1. **Arrows:** Click on the available `Arrow` button in front of the error to expand that error log.
+
+        ![Expand one](./img/manual-step3-validation-3.png)
+
+    2. **Expand All:** Click on the `Expand All` button, to expand all the error messages.
+
+        ![Expand all](./img/manual-step3-validation-4.png)
+
+        *Error Types*
+
+        - **Rule: Must be of raster data type**
+
+        - **Rule: Must have the same CRS**
+
+        - **Rule: Must have a projected CRS type**
+
+        - **Rule: NoData value must be -9999**
+
+        - **Rule: Must have the same spatial resolution**
+
+        - **Rule: NCS and respective carbon layers should have the same spatial resolution**
+
+    3. **Collapse All:** Click on the `Collapse All` button, to collapse all the error messages.
+
+    4. **Close:** Click on the `Close` button, to close the validation inspector window.
+
+The user can also check the validation inspector window to view the passed validations.
+
+![Success](./img/manual-step3-validation-5.png)
+
+![Expand all](./img/manual-step3-validation-6.png)

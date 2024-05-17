@@ -3,6 +3,7 @@
 Functions for providing model test data.
 """
 import os
+import typing
 from uuid import UUID
 
 from qgis.core import QgsRasterLayer
@@ -34,6 +35,10 @@ INVALID_NCS_UUID_STR = "4c6b31a1-3ff3-43b2-bfe2-45519a975955"
 ACTIVITY_UUID_STR = "01e3a612-118d-4d94-9a5a-09c4b9168288"
 TEST_RASTER_PATH = os.path.join(os.path.dirname(__file__), "tenbytenraster.tif")
 SCENARIO_UUID_STR = "6cf5b355-f605-4de5-98b1-64936d473f82"
+
+NCS_UUID_STR_1 = "51f561d1-32eb-4104-9408-d5b66ce6b651"
+NCS_UUID_STR_2 = "424e076e-61b7-4116-a5a9-d2a7b4c2574e"
+NCS_UUID_STR_3 = "5c42b644-3d21-4081-9206-28e872efca73"
 
 
 def get_valid_ncs_pathway() -> NcsPathway:
@@ -83,6 +88,71 @@ def get_ncs_pathway_with_invalid_carbon() -> NcsPathway:
         True,
         carbon_paths=["tenbytenraster"],
     )
+
+
+def get_ncs_pathways(use_projected=False) -> typing.List[NcsPathway]:
+    """Returns a list of NCS pathways with some containing carbon layers.
+
+    :param use_projected: True to return projected NCS layers else the
+    geographic ones.
+    :type use_projected: bool
+
+    :returns: List of NCS pathways.
+    :rtype: list
+    """
+    pathway_layer_directory = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "data", "pathways", "layers"
+    )
+
+    carbon_directory = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "data", "carbon", "layers"
+    )
+
+    carbon_layer_path = os.path.join(carbon_directory, "carbon_layer_1.tif")
+
+    filenames = []
+
+    for i in range(1, 4):
+        base_name = "test_pathway"
+        if use_projected:
+            base_name = f"{base_name}_projected"
+
+        filenames.append(f"{base_name}_{i!s}.tif")
+
+    pathway_layer_path1 = os.path.join(pathway_layer_directory, filenames[0])
+    pathway_layer_path2 = os.path.join(pathway_layer_directory, filenames[1])
+    pathway_layer_path3 = os.path.join(pathway_layer_directory, filenames[2])
+
+    ncs_pathway1 = NcsPathway(
+        UUID(NCS_UUID_STR_1),
+        "NCS One",
+        "Description for NCS one",
+        pathway_layer_path1,
+        LayerType.RASTER,
+        True,
+        carbon_paths=[carbon_layer_path],
+    )
+
+    ncs_pathway2 = NcsPathway(
+        UUID(NCS_UUID_STR_2),
+        "NCS Two",
+        "Description for NCS two",
+        pathway_layer_path2,
+        LayerType.RASTER,
+        True,
+    )
+
+    ncs_pathway3 = NcsPathway(
+        UUID(NCS_UUID_STR_2),
+        "NCS Three",
+        "Description for NCS three",
+        pathway_layer_path3,
+        LayerType.RASTER,
+        True,
+        carbon_paths=[carbon_layer_path],
+    )
+
+    return [ncs_pathway1, ncs_pathway2, ncs_pathway3]
 
 
 def get_activity() -> Activity:

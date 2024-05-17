@@ -31,13 +31,7 @@ from .definitions.defaults import (
 from .models.base import ScenarioResult, SpatialExtent
 from .models.helpers import clone_activity
 from .resources import *
-from .utils import (
-    align_rasters,
-    clean_filename,
-    tr,
-    log,
-    FileUtils
-)
+from .utils import align_rasters, clean_filename, tr, log, FileUtils
 
 
 class ScenarioAnalysisTask(QgsTask):
@@ -103,7 +97,7 @@ class ScenarioAnalysisTask(QgsTask):
         return settings_manager.get_priority_layers()
 
     def get_masking_layers(self):
-        masking_layers_paths = settings_manager.get_value(
+        masking_layers_paths = self.get_settings_value(
             Settings.MASK_LAYERS_PATHS, default=None
         )
         masking_layers = masking_layers_paths.split(",") if masking_layers_paths else []
@@ -659,7 +653,9 @@ class ScenarioAnalysisTask(QgsTask):
 
                     # carbon layer snapping
 
-                    self.log_message(f"Snapping carbon layers from {pathway.name} pathway")
+                    self.log_message(
+                        f"Snapping carbon layers from {pathway.name} pathway"
+                    )
 
                     if (
                         pathway.carbon_paths is not None
@@ -1088,7 +1084,9 @@ class ScenarioAnalysisTask(QgsTask):
                     "OUTPUT": output,
                 }
 
-                self.log_message(f"Used parameters for " f"activities generation: {alg_params} \n")
+                self.log_message(
+                    f"Used parameters for " f"activities generation: {alg_params} \n"
+                )
 
                 feedback = QgsProcessingFeedback()
 
@@ -1143,14 +1141,13 @@ class ScenarioAnalysisTask(QgsTask):
         try:
             if len(masking_layers) < 1:
                 return False
-
             if len(masking_layers) > 1:
-                mask_layer = self.merge_vector_layers(masking_layers)
+                initial_mask_layer = self.merge_vector_layers(masking_layers)
             else:
                 mask_layer_path = masking_layers[0]
-                mask_layer = QgsVectorLayer(mask_layer_path, "mask", "ogr")
+                initial_mask_layer = QgsVectorLayer(mask_layer_path, "mask", "ogr")
 
-            if not mask_layer.isValid():
+            if not initial_mask_layer.isValid():
                 self.log_message(
                     f"Skipping activities masking "
                     f"using layer {mask_layer_path}, not a valid layer."
@@ -1158,14 +1155,30 @@ class ScenarioAnalysisTask(QgsTask):
                 return False
 
             if Qgis.versionInt() < 33000:
-                layer_check = mask_layer.geometryType() == QgsWkbTypes.Polygon
+                layer_check = initial_mask_layer.geometryType() == QgsWkbTypes.Polygon
             else:
-                layer_check = mask_layer.geometryType() == Qgis.GeometryType.Polygon
+                layer_check = (
+                    initial_mask_layer.geometryType() == Qgis.GeometryType.Polygon
+                )
 
             if not layer_check:
                 self.log_message(
                     f"Skipping activities masking "
                     f"using layer {mask_layer_path}, not a polygon layer."
+                )
+                return False
+
+            extent_layer = self.layer_extent(extent)
+            mask_layer = self.mask_layer_difference(initial_mask_layer, extent_layer)
+
+            if isinstance(mask_layer, str):
+                mask_layer = QgsVectorLayer(mask_layer, "ogr")
+
+            if not mask_layer.isValid():
+                log(
+                    f"Skipping activities masking "
+                    f"the created difference mask layer {mask_layer.source()},"
+                    f" not a valid layer."
                 )
                 return False
 
@@ -1221,7 +1234,9 @@ class ScenarioAnalysisTask(QgsTask):
                     "NO_DATA": -9999,
                 }
 
-                self.log_message(f"Used parameters for masking the activities: {alg_params} \n")
+                self.log_message(
+                    f"Used parameters for masking the activities: {alg_params} \n"
+                )
 
                 feedback = QgsProcessingFeedback()
 
@@ -1282,6 +1297,63 @@ class ScenarioAnalysisTask(QgsTask):
 
         results = processing.run(
             "native:mergevectorlayers",
+            alg_params,
+            context=self.processing_context,
+            feedback=self.feedback,
+        )
+
+        return results["OUTPUT"]
+
+    def layer_extent(self, extent):
+        """Creates a new vector layer contains has a
+        feature with geometry matching an extent parameter.
+
+        :param extent: Extent parameter
+        :type extent: str
+
+        :returns: Vector layer
+        :rtype: QgsVectorLayer
+        """
+
+        alg_params = {
+            "INPUT": extent,
+            "CRS": None,
+            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+        }
+
+        results = processing.run(
+            "native:extenttolayer",
+            alg_params,
+            context=self.processing_context,
+            feedback=self.feedback,
+        )
+
+        return results["OUTPUT"]
+
+    def mask_layer_difference(self, input_layer, overlay_layer):
+        """Creates a new vector layer that contains
+         difference of features between the two passed layers.
+
+        :param input_layer: Input layer
+        :type input_layer: QgsVectorLayer
+
+        :param overlay_layer: Target overlay layer
+        :type overlay_layer: QgsVectorLayer
+
+        :returns: Vector layer
+        :rtype: QgsVectorLayer
+        """
+
+        alg_params = {
+            "INPUT": input_layer,
+            "OVERLAY": overlay_layer,
+            "OVERLAY_FIELDS_PREFIX": "",
+            "GRID_SIZE": None,
+            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+        }
+
+        results = processing.run(
+            "native:symmetricaldifference",
             alg_params,
             context=self.processing_context,
             feedback=self.feedback,
@@ -1895,7 +1967,9 @@ class ScenarioAnalysisTask(QgsTask):
                 if activity_name in activity_names:
                     sources.append(layers[activity_name].source())
 
-            self.log_message(f"Layers sources {[Path(source).stem for source in sources]}")
+            self.log_message(
+                f"Layers sources {[Path(source).stem for source in sources]}"
+            )
 
             output_file = (
                 QgsProcessing.TEMPORARY_OUTPUT if temporary_output else output_file
@@ -1912,7 +1986,9 @@ class ScenarioAnalysisTask(QgsTask):
                 "OUTPUT": output_file,
             }
 
-            self.log_message(f"Used parameters for highest position analysis {alg_params} \n")
+            self.log_message(
+                f"Used parameters for highest position analysis {alg_params} \n"
+            )
 
             self.feedback = QgsProcessingFeedback()
 

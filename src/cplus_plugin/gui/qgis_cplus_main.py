@@ -72,13 +72,7 @@ from ..lib.reports.manager import report_manager, ReportManager
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
 from ..resources import *
 from ..tasks import ScenarioAnalysisTask
-from ..utils import (
-    open_documentation,
-    tr,
-    log,
-    FileUtils,
-    write_to_file
-)
+from ..utils import open_documentation, tr, log, FileUtils, write_to_file
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/qgis_cplus_main_dockwidget.ui")
@@ -91,9 +85,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     analysis_finished = QtCore.pyqtSignal(ScenarioResult)
 
     def __init__(
-            self,
-            iface,
-            parent=None,
+        self,
+        iface,
+        parent=None,
     ):
         super().__init__(parent)
         self.setupUi(self)
@@ -246,7 +240,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.log_text_box.setPlainText(f"{message} \n")
             try:
                 processing_log_file = os.path.join(
-                    self.current_analysis_task.scenario_directory, SCENARIO_LOG_FILE_NAME
+                    self.current_analysis_task.scenario_directory,
+                    SCENARIO_LOG_FILE_NAME,
                 )
                 write_to_file(message, processing_log_file)
             except TypeError:
@@ -428,6 +423,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             item = QtWidgets.QListWidgetItem()
             item.setData(QtCore.Qt.DisplayRole, layer.get("name"))
             item.setData(QtCore.Qt.UserRole, layer.get("uuid"))
+
+            if not os.path.exists(layer.get("path")):
+                item.setIcon(FileUtils.get_icon("mIndicatorLayerError.svg"))
+                item.setToolTip(
+                    tr(
+                        "Contains invalid priority layer path, "
+                        "the provided layer path does not exist!"
+                    )
+                )
 
             if self.pwl_item_flags is None:
                 self.pwl_item_flags = item.flags()
@@ -621,6 +625,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             item.setData(QtCore.Qt.DisplayRole, layer.get("name"))
             item.setData(QtCore.Qt.UserRole, layer.get("uuid"))
 
+            if os.path.exists(layer.get("path")):
+                item.setIcon(QtGui.QIcon())
+            else:
+                item.setIcon(FileUtils.get_icon("mIndicatorLayerError.svg"))
+                item.setToolTip(
+                    tr(
+                        "Contains invalid priority layer path, "
+                        "the provided layer path does not exist!"
+                    )
+                )
             self.priority_layers_list.addItem(item)
             if update_groups:
                 for index in range(self.priority_groups_list.topLevelItemCount()):
@@ -657,7 +671,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type priority_layer: dict
         """
         selected_priority_layers = (
-                priority_layer or self.priority_layers_list.selectedItems()
+            priority_layer or self.priority_layers_list.selectedItems()
         )
         selected_priority_layers = (
             [selected_priority_layers]
@@ -669,7 +683,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         for selected_priority_layer in selected_priority_layers:
             if (
-                    selected_group is not None and selected_group.parent() is None
+                selected_group is not None and selected_group.parent() is None
             ) and selected_priority_layer is not None:
                 children = selected_group.takeChildren()
                 item_found = False
@@ -849,6 +863,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             return
 
         self._show_priority_layer_editor(layer_identifier)
+        self.update_priority_layers(update_groups=False)
 
     def _on_double_click_priority_layer(self, list_item: QtWidgets.QListWidgetItem):
         """Slot raised when a priority list item has been double clicked."""
@@ -961,8 +976,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             return
         if (
-                self.analysis_scenario_description == ""
-                or self.analysis_scenario_description is None
+            self.analysis_scenario_description == ""
+            or self.analysis_scenario_description is None
         ):
             self.show_message(
                 tr(f"Scenario description cannot be blank."),
@@ -1088,7 +1103,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     self.analysis_activities,
                     self.analysis_priority_layers_groups,
                     self.analysis_extent,
-                    scenario
+                    scenario,
                 )
             else:
                 analysis_task = ScenarioAnalysisTask(
@@ -1097,7 +1112,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     self.analysis_activities,
                     self.analysis_priority_layers_groups,
                     self.analysis_extent,
-                    scenario
+                    scenario,
                 )
 
             progress_changed = partial(self.update_progress_bar, progress_dialog)
@@ -1204,7 +1219,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.on_progress_dialog_cancelled()
             log(f"Problem cancelling task, {e}")
         self.processing_cancelled = True
-
 
         # # Analysis processing tasks
         # try:
@@ -1550,9 +1564,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         return renderer
 
     def update_progress_dialog(
-            self,
-            progress_dialog,
-            message=None,
+        self,
+        progress_dialog,
+        message=None,
     ):
         """Run report generation. This should be called after the
          analysis is complete.
@@ -1670,11 +1684,26 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.activity_widget.can_show_error_messages = True
             self.activity_widget.load()
 
-        elif index == 2:
+        elif index == 2 or index == 3:
+            tab_valid = True
+            msg = ""
+
+            # Check if NCS pathways are valid
+            ncs_valid = self.activity_widget.is_ncs_valid()
+            if not ncs_valid:
+                msg = self.tr(
+                    "NCS pathways are not valid or there is an ongoing validation process. "
+                    "Use the validation inspector to see more details."
+                )
+                tab_valid = False
+
             # Validate activity selection
             selected_activities = self.activity_widget.selected_activity_items()
             if len(selected_activities) == 0:
                 msg = self.tr("Please select at least one activity.")
+                tab_valid = False
+
+            if not tab_valid:
                 self.show_message(msg)
                 self.tab_widget.setCurrentIndex(1)
 

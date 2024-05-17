@@ -80,6 +80,36 @@ To go to the settings the user can click on the plugin toolbar icon to reveal th
     
     Click on `Cancel` will close the dialog without applying any changes.
 
+    ## Mask Layers
+
+    **Masking Layers:** Masking layers are used to specify areas that should be excluded from further analysis.
+
+    **Adding a Layer to the Mask:** When the user adds a layer to the mask, they specify that the areas covered by that layer should be excluded from the analysis or processing steps.
+
+    **Exclusion of Layer Area:** By adding a layer to the mask, the user is essentially creating a filter that excludes the areas represented by that layer.
+
+    **Impact on Analysis:** Any analysis or operations performed on the masked data will skip the areas covered by the added layer. This ensures that the analysis focuses only on the relevant geographic features while disregarding the specified layer.
+
+    **Relevance to GIS:** Masking layers play a crucial role in GIS analysis, allowing users to focus on specific areas of interest and filter out irrelevant or undesired features from consideration.
+
+    In summary, adding a layer to the mask in a context allows for the selective exclusion of specific geographic areas from analysis or visualisation, improving the accuracy and relevance of outputs.
+
+    1. **Arrow:** Click on the available `Arrow` button in front of the `Mask Layer` to see the options for adding or deleting the layers from the mask feature.
+
+        ![Mask layer](./img/setting-7.png)
+
+        Upon clicking the user will see the options.
+
+        ![Mask layer options](./img/setting-8.png)
+
+    2. **Plus Icon:** Click on the `Plus` icon, to add the layer to the mask layer from the system. Upon clicking the icon the system will show the available layer, and choose the desired layer to add to the mask layer.
+
+        ![Layers](./img/setting-9.png)
+
+    3. **Minus Icon:** Select the added layer and click on the `Minus` icon, to remove that layer.
+
+    4. **Ok:**  After adding the layer/layers to the mask layer, click on the `OK` button to save the layers in the mask layer and skip them from further analysis.
+
 3. **Reporting:** Click on the `Reporting` option for reports-related settings. Under the Reporting settings, users can configure the information to be included in the generated reports. These settings include:
 
 ![reporting settings](./img/setting-6.png)

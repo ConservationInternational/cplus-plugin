@@ -173,7 +173,15 @@ class ActivityContainerWidget(QtWidgets.QWidget, WidgetUi):
         if name == Settings.BASE_DIR.value:
             self.ncs_pathway_view.load()
 
-    def is_valid(self) -> bool:
+    def is_ncs_valid(self) -> bool:
+        """Checks whether the NCS pathways are valid against a given set of validation rules.
+
+        :returns: True if the NCS pathways are valid else False.
+        :rtype: bool
+        """
+        return self.ncs_pathway_view.is_valid()
+
+    def is_activity_valid(self) -> bool:
         """Check if the user input is valid.
 
         This checks if there is one activity defined with at
