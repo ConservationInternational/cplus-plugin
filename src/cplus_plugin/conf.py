@@ -753,14 +753,17 @@ class SettingsManager(QtCore.QObject):
                     log("Layer Mapping JSON is invalid")
         return layer_mapping
 
-    def save_layer_mapping(self, input_layer):
+    def save_layer_mapping(self, input_layer, identifier=None):
         """Save the layer mapping into the plugin settings
 
-        :param layer_mapping: Layer mapping
-        :type layer_mapping: str
+        :param input_layer: Layer mapping
+        :type input_layer: dict
+        :param identifier: MD5 checksum of the file
+        :type identifier: str
         """
 
-        identifier = md5(input_layer['path'])
+        if not identifier:
+            identifier = md5(input_layer['path'])
         settings_key = self._get_layer_mappings_settings_base()
 
         with qgis_settings(settings_key) as settings:

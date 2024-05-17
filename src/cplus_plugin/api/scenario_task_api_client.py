@@ -307,7 +307,10 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                         break
 
         for uploaded_layer in new_uploaded_layer.values():
-            settings_manager.save_layer_mapping(uploaded_layer)
+            identifier = md5(uploaded_layer['path'])
+            self.checksum_to_uuid_mapping[identifier] = uploaded_layer
+            self.path_to_checksum_mapping[uploaded_layer['path']] = identifier
+            settings_manager.save_layer_mapping(uploaded_layer, identifier)
 
     def __is_layer_uploaded(self, layer_path: str) -> bool:
         """
