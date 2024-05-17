@@ -53,3 +53,5 @@ This step is crucial for tailoring the outputs to include only the necessary inf
     3. **Cancel:** Click on the `Cancel` button to terminate the report generation process. Upon clicking this button, it will transform into the `Close` button. Click on the `Close` button to dismiss the pop-up window.
 
     ![Close action](./img/step-4-4.png)
+
+Click [here](logs.md) to explore the log section.

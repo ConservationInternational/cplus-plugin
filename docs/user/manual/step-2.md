@@ -90,3 +90,9 @@ The user can also check the validation inspector window to view the passed valid
 ![Success](./img/manual-step3-validation-5.png)
 
 ![Expand all](./img/manual-step3-validation-6.png)
+
+Click [here](step-3.md) to explore the step 3 section.
+
+Click [here](step-4.md) to explore the step 4 section.
+
+Click [here](logs.md) to explore the log section.
