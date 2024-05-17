@@ -187,7 +187,7 @@ class ScenarioAnalysisTask(QgsTask):
         # their carbon layers before creating
         # their respective activities.
 
-        save_output = settings_manager.get_value(
+        save_output = self.get_settings_value(
             Settings.NCS_WITH_CARBON, default=True, setting_type=bool
         )
 
@@ -207,7 +207,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         # Creating activities from the normalized pathways
 
-        save_output = settings_manager.get_value(
+        save_output = self.get_settings_value(
             Settings.LANDUSE_PROJECT, default=True, setting_type=bool
         )
 
@@ -239,7 +239,7 @@ class ScenarioAnalysisTask(QgsTask):
         # After creating activities, we normalize them using the same coefficients
         # used in normalizing their respective pathways.
 
-        save_output = settings_manager.get_value(
+        save_output = self.get_settings_value(
             Settings.LANDUSE_NORMALIZED, default=True, setting_type=bool
         )
 
@@ -250,7 +250,7 @@ class ScenarioAnalysisTask(QgsTask):
         )
 
         # Weighting the activities with their corresponding priority weighting layers
-        save_output = settings_manager.get_value(
+        save_output = self.get_settings_value(
             Settings.LANDUSE_WEIGHTED, default=True, setting_type=bool
         )
         weighted_activities, result = self.run_activities_weighting(
@@ -269,7 +269,7 @@ class ScenarioAnalysisTask(QgsTask):
         )
 
         # The highest position tool analysis
-        save_output = settings_manager.get_value(
+        save_output = self.get_settings_value(
             Settings.HIGHEST_POSITION, default=True, setting_type=bool
         )
         self.run_highest_position_analysis(temporary_output=not save_output)
@@ -731,7 +731,7 @@ class ScenarioAnalysisTask(QgsTask):
                         if priority_layer is None:
                             continue
 
-                        priority_layer_settings = settings_manager.get_priority_layer(
+                        priority_layer_settings = self.get_priority_layer(
                             priority_layer.get("uuid")
                         )
                         if priority_layer_settings is None:
@@ -1175,7 +1175,7 @@ class ScenarioAnalysisTask(QgsTask):
                 mask_layer = QgsVectorLayer(mask_layer, "ogr")
 
             if not mask_layer.isValid():
-                log(
+                self.log_message(
                     f"Skipping activities masking "
                     f"the created difference mask layer {mask_layer.source()},"
                     f" not a valid layer."
@@ -1254,7 +1254,7 @@ class ScenarioAnalysisTask(QgsTask):
                 activity.path = results["OUTPUT"]
 
         except Exception as e:
-            log(f"Problem masking activities layers, {e} \n")
+            self.log_message(f"Problem masking activities layers, {e} \n")
             self.error = e
             self.cancel()
             return False
@@ -1278,7 +1278,9 @@ class ScenarioAnalysisTask(QgsTask):
             if layer.isValid():
                 input_map_layers.append(layer)
             else:
-                log(f"Skipping invalid mask layer {layer_path} from masking.")
+                self.log_message(
+                    f"Skipping invalid mask layer {layer_path} from masking."
+                )
         if len(input_map_layers) == 0:
             return None
         if len(input_map_layers) == 1:
@@ -1293,7 +1295,7 @@ class ScenarioAnalysisTask(QgsTask):
             "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
         }
 
-        log(f"Used parameters for merging mask layers: {alg_params} \n")
+        self.log_message(f"Used parameters for merging mask layers: {alg_params} \n")
 
         results = processing.run(
             "native:mergevectorlayers",
@@ -1718,7 +1720,7 @@ class ScenarioAnalysisTask(QgsTask):
                     pwl_path = Path(pwl)
 
                     if not pwl_path.exists():
-                        log(missing_pwl_message)
+                        self.log_message(missing_pwl_message)
                         continue
 
                     path_basename = pwl_path.stem
