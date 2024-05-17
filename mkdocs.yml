@@ -20,6 +20,7 @@ nav:
                 - Step 2: user/guide/step-2.md
                 - Step 3: user/guide/step-3.md
                 - Step 4: user/guide/step-4.md
+                - Logs: user/guide/logs.md
       - Manual:
                 - user/manual/index.md
                 - Calculation and Formula: user/manual/calculation-and-formula.md
