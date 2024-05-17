@@ -355,11 +355,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         # Saved scenarios actions
         self.add_scenario_btn.setIcon(FileUtils.get_icon("symbologyAdd.svg"))
-        self.edit_scenario_btn.setIcon(FileUtils.get_icon("mActionToggleEditing.svg"))
+        self.info_scenario_btn.setIcon(FileUtils.get_icon("mActionIdentify.svg"))
+        self.load_scenario_btn.setIcon(FileUtils.get_icon("mActionReload.svg"))
         self.remove_scenario_btn.setIcon(FileUtils.get_icon("symbologyRemove.svg"))
 
         self.add_scenario_btn.clicked.connect(self.add_scenario)
-        self.edit_scenario_btn.clicked.connect(self.load_scenario)
+        self.load_scenario_btn.clicked.connect(self.load_scenario)
         self.remove_scenario_btn.clicked.connect(self.remove_scenario)
 
     def priority_groups_update(self, target_item, selected_items):
