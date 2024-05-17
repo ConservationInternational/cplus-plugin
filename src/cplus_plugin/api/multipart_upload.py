@@ -29,7 +29,6 @@ def upload_part(signed_url, file_data, file_part_number, max_retries=5):
             else:
                 response = requests.put(signed_url, data=file_data)
             return {"part_number": file_part_number, "etag": response.headers["ETag"]}
-            return response
         except requests.exceptions.RequestException as e:
             log(f"Request failed: {e}")
             retries += 1

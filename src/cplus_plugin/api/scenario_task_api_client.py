@@ -5,7 +5,7 @@ import traceback
 import typing
 
 import requests
-
+from qgis.core import Qgis
 from .multipart_upload import upload_part
 from .request import (
     CplusApiRequest,
@@ -307,9 +307,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                         break
 
         for uploaded_layer in new_uploaded_layer.values():
-            identifier = md5(uploaded_layer['path'])
+            identifier = md5(uploaded_layer["path"])
             self.checksum_to_uuid_mapping[identifier] = uploaded_layer
-            self.path_to_checksum_mapping[uploaded_layer['path']] = identifier
+            self.path_to_checksum_mapping[uploaded_layer["path"]] = identifier
             settings_manager.save_layer_mapping(uploaded_layer, identifier)
 
     def __is_layer_uploaded(self, layer_path: str) -> bool:
