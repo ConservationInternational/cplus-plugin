@@ -5,7 +5,6 @@
 """
 
 import os
-import typing
 import uuid
 
 import datetime
@@ -60,6 +59,8 @@ from .priority_group_widget import PriorityGroupWidget
 
 from .priority_layer_dialog import PriorityLayerDialog
 from .priority_group_dialog import PriorityGroupDialog
+
+from .scenario_dialog import ScenarioDialog
 
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
 from ..conf import settings_manager, Settings
@@ -361,6 +362,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.add_scenario_btn.clicked.connect(self.add_scenario)
         self.load_scenario_btn.clicked.connect(self.load_scenario)
+        self.info_scenario_btn.clicked.connect(self.show_scenario_info)
         self.remove_scenario_btn.clicked.connect(self.remove_scenario)
 
     def priority_groups_update(self, target_item, selected_items):
@@ -965,18 +967,27 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         extent = SpatialExtent(bbox=extent_box)
         scenario_id = uuid.uuid4()
 
+        activities = self.activity_widget.activities()
+        priority_layer_groups = self.analysis_priority_layers_groups
+        weighted_activities = []
+
+        if self.scenario_result:
+            weighted_activities = self.scenario_result.scenario.weighted_activities
+
         scenario = Scenario(
             uuid=scenario_id,
             name=scenario_name,
             description=scenario_description,
             extent=extent,
-            activities=[],
-            weighted_activities=[],
-            priority_layer_groups=[],
+            activities=activities,
+            weighted_activities=weighted_activities,
+            priority_layer_groups=priority_layer_groups,
         )
         settings_manager.save_scenario(scenario)
-
-        log(f"Added scenario scenario {scenario}")
+        if self.scenario_result:
+            settings_manager.save_scenario_result(
+                self.scenario_result, str(scenario_id)
+            )
 
         self.update_scenario_list()
 
@@ -1002,6 +1013,17 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         scenario = settings_manager.get_scenario(scenario_identifier)
 
         log(f" Found scenario {scenario.get('name')}")
+
+    def show_scenario_info(self):
+        """Loads dialog for showing scenario information."""
+        scenario_uuid = self.scenario_list.currentItem().data(QtCore.Qt.UserRole)
+        log(f"Found scenarion id {scenario_uuid}")
+        scenario = settings_manager.get_scenario(scenario_uuid)
+        scenario_result = settings_manager.get_scenario_result(scenario_uuid)
+
+        log(f"scenario {scenario}, scenario result {scenario_result}")
+        scenario_dialog = ScenarioDialog(scenario, scenario_result)
+        scenario_dialog.exec_()
 
     def remove_scenario(self):
         """Removes the current active scenario."""
