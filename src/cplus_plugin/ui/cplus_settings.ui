@@ -35,9 +35,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-193</y>
+        <y>-136</y>
         <width>557</width>
-        <height>896</height>
+        <height>839</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -342,9 +342,6 @@
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_8"/>
           </item>
-          <item>
-           <widget class="QgsAuthConfigSelect" name="authcfg_acs_2"/>
-          </item>
          </layout>
         </widget>
        </item>
@@ -368,11 +365,6 @@
   </layout>
  </widget>
  <customwidgets>
-  <customwidget>
-   <class>QgsAuthConfigSelect</class>
-   <extends>QWidget</extends>
-   <header>qgsauthconfigselect.h</header>
-  </customwidget>
   <customwidget>
    <class>QgsCollapsibleGroupBox</class>
    <extends>QGroupBox</extends>
