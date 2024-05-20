@@ -1012,16 +1012,39 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         scenario = settings_manager.get_scenario(scenario_identifier)
 
-        log(f" Found scenario {scenario.get('name')}")
+        if scenario is not None:
+            self.scenario_name.setText(scenario.name)
+            self.scenario_description.setText(scenario.description)
+
+            self.extent_box.setOutputCrs(QgsCoordinateReferenceSystem("EPSG:4326"))
+            map_canvas = iface.mapCanvas()
+            self.extent_box.setCurrentExtent(
+                map_canvas.mapSettings().destinationCrs().bounds(),
+                map_canvas.mapSettings().destinationCrs(),
+            )
+            self.extent_box.setOutputExtentFromCurrent()
+            self.extent_box.setMapCanvas(map_canvas)
+
+            extent_list = scenario.extent.bbox
+            if extent_list:
+                default_extent = QgsRectangle(
+                    float(extent_list[0]),
+                    float(extent_list[2]),
+                    float(extent_list[1]),
+                    float(extent_list[3]),
+                )
+
+                self.extent_box.setOutputExtentFromUser(
+                    default_extent,
+                    QgsCoordinateReferenceSystem("EPSG:4326"),
+                )
 
     def show_scenario_info(self):
         """Loads dialog for showing scenario information."""
         scenario_uuid = self.scenario_list.currentItem().data(QtCore.Qt.UserRole)
-        log(f"Found scenarion id {scenario_uuid}")
         scenario = settings_manager.get_scenario(scenario_uuid)
         scenario_result = settings_manager.get_scenario_result(scenario_uuid)
 
-        log(f"scenario {scenario}, scenario result {scenario_result}")
         scenario_dialog = ScenarioDialog(scenario, scenario_result)
         scenario_dialog.exec_()
 

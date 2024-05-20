@@ -64,14 +64,18 @@ class ScenarioDialog(QtWidgets.QDialog, DialogUi):
             self.extent_box.setMapCanvas(map_canvas)
 
             extent_list = self.scenario.extent.bbox
-            default_extent = QgsRectangle(
-                extent_list[0], extent_list[2], extent_list[1], extent_list[3]
-            )
+            if extent_list:
+                default_extent = QgsRectangle(
+                    float(extent_list[0]),
+                    float(extent_list[2]),
+                    float(extent_list[1]),
+                    float(extent_list[3]),
+                )
 
-            self.extent_box.setOutputExtentFromUser(
-                default_extent,
-                QgsCoordinateReferenceSystem("EPSG:4326"),
-            )
+                self.extent_box.setOutputExtentFromUser(
+                    default_extent,
+                    QgsCoordinateReferenceSystem("EPSG:4326"),
+                )
 
         if self.scenario_result:
             self.scenario_analysis_output.setPlainText(

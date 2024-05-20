@@ -98,7 +98,7 @@ class ScenarioSettings(Scenario):
         )
 
     @classmethod
-    def get_scenario_extent(cls):
+    def get_scenario_extent(cls, identifier):
         """Fetches Scenario extent from
          the passed scenario settings.
 
@@ -106,7 +106,9 @@ class ScenarioSettings(Scenario):
         :returns: Spatial extent instance extent
         :rtype: SpatialExtent
         """
-        spatial_key = "extent/spatial"
+        spatial_key = (
+            f"{settings_manager._get_scenario_settings_base(identifier)}/extent/spatial"
+        )
 
         with qgis_settings(spatial_key) as settings:
             bbox = settings.value("bbox", None)
@@ -357,17 +359,18 @@ class SettingsManager(QtCore.QObject):
         :rtype: ScenarioSettings
         """
 
-        result = []
         with qgis_settings(
             f"{self.BASE_GROUP_NAME}/" f"{self.SCENARIO_GROUP_NAME}"
         ) as settings:
-            for uuid in settings.childGroups():
-                scenario_settings_key = self._get_scenario_settings_base(uuid)
+            for scenario_uuid in settings.childGroups():
+                scenario_settings_key = self._get_scenario_settings_base(scenario_uuid)
                 with qgis_settings(scenario_settings_key) as scenario_settings:
-                    scenario = ScenarioSettings.from_qgs_settings(
-                        uuid, scenario_settings
-                    )
-                    if scenario.uuid == scenario_id:
+                    if scenario_uuid == scenario_id:
+                        scenario = ScenarioSettings.from_qgs_settings(
+                            scenario_uuid, scenario_settings
+                        )
+
+                        scenario.extent = scenario.get_scenario_extent(scenario_uuid)
                         return scenario
         return None
 
@@ -381,16 +384,14 @@ class SettingsManager(QtCore.QObject):
         with qgis_settings(
             f"{self.BASE_GROUP_NAME}/" f"{self.SCENARIO_GROUP_NAME}"
         ) as settings:
-            for uuid in settings.childGroups():
-                scenario_settings_key = self._get_scenario_settings_base(uuid)
+            for scenario_uuid in settings.childGroups():
+                scenario_settings_key = self._get_scenario_settings_base(scenario_uuid)
                 with qgis_settings(scenario_settings_key) as scenario_settings:
                     scenario = ScenarioSettings.from_qgs_settings(
-                        uuid, scenario_settings
+                        scenario_uuid, scenario_settings
                     )
-                    scenario.extent = scenario.get_scenario_extent()
-                    result.append(
-                        ScenarioSettings.from_qgs_settings(uuid, scenario_settings)
-                    )
+                    scenario.extent = scenario.get_scenario_extent(scenario_uuid)
+                    result.append(scenario)
         return result
 
     def delete_scenario(self, scenario_id):
@@ -444,15 +445,15 @@ class SettingsManager(QtCore.QObject):
         :returns: Scenario result
         :rtype: ScenarioSettings
         """
-
-        result = []
         with qgis_settings(
-            f"{self.BASE_GROUP_NAME}/" f"{self.SCENARIO_RESULTS_GROUP_NAME}"
+            f"{self.BASE_GROUP_NAME}/{self.SCENARIO_RESULTS_GROUP_NAME}"
         ) as settings:
-            for uuid in settings.childGroups():
-                if scenario_id != uuid:
+            for result_uuid in settings.childGroups():
+                if scenario_id != result_uuid:
                     continue
-                scenario_settings_key = self._get_scenario_results_settings_base(uuid)
+                scenario_settings_key = self._get_scenario_results_settings_base(
+                    result_uuid
+                )
                 with qgis_settings(scenario_settings_key) as scenario_settings:
                     created_date = scenario_settings.value("created_date")
                     analysis_output = scenario_settings.value("analysis_output")
@@ -476,6 +477,44 @@ class SettingsManager(QtCore.QObject):
                         scenario_directory=scenario_directory,
                     )
         return None
+
+    def get_scenarios_results(self):
+        """Gets all the saved scenarios results.
+
+        :returns: List of the scenario results
+        :rtype: list
+        """
+        result = []
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/{self.SCENARIO_RESULTS_GROUP_NAME}"
+        ) as settings:
+            for uuid in settings.childGroups():
+                scenario_settings_key = self._get_scenario_results_settings_base(uuid)
+                with qgis_settings(scenario_settings_key) as scenario_settings:
+                    created_date = scenario_settings.value("created_date")
+                    analysis_output = scenario_settings.value("analysis_output")
+                    output_layer_name = scenario_settings.value("output_layer_name")
+                    scenario_directory = scenario_settings.value("scenario_directory")
+
+                    try:
+                        created_date = datetime.datetime.strptime(
+                            created_date, "%Y_%m_%d_%H_%M_%S"
+                        )
+                        analysis_output = json.loads(analysis_output)
+                    except Exception as e:
+                        log(f"Problem fetching scenario result, {e}")
+                        return None
+
+                    result.append(
+                        ScenarioResult(
+                            scenario=None,
+                            created_date=created_date,
+                            analysis_output=analysis_output,
+                            output_layer_name=output_layer_name,
+                            scenario_directory=scenario_directory,
+                        )
+                    )
+        return result
 
     def delete_scenario_result(self, scenario_id):
         """Delete the scenario result that contains the scenario id.

@@ -81,7 +81,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Dialog for showing scenario details&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Showing the saved scenario information and analysis output details if available.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="scaledContents">
          <bool>false</bool>
@@ -159,6 +159,9 @@
    </item>
    <item>
     <widget class="QgsExtentGroupBox" name="extent_box">
+     <property name="toolTip">
+      <string>Shows the saved scenario extent</string>
+     </property>
      <property name="title">
       <string>Area of interest</string>
      </property>
@@ -169,19 +172,6 @@
       <bool>false</bool>
      </property>
     </widget>
-   </item>
-   <item>
-    <widget class="QLabel" name="label_11">
-     <property name="styleSheet">
-      <string notr="true">font-weight:bold;</string>
-     </property>
-     <property name="text">
-      <string>Scenario analysis output</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QPlainTextEdit" name="scenario_analysis_output"/>
    </item>
    <item>
     <spacer name="verticalSpacer">

@@ -87,7 +87,7 @@
     <item>
      <widget class="QTabWidget" name="tab_widget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="step_3">
        <attribute name="title">
@@ -632,8 +632,11 @@
             </item>
             <item>
              <widget class="QToolButton" name="load_scenario_btn">
+              <property name="enabled">
+               <bool>true</bool>
+              </property>
               <property name="toolTip">
-               <string>Load the selected scenario details </string>
+               <string>Load the selected scenario details into step 1 inputs.</string>
               </property>
               <property name="text">
                <string>...</string>
