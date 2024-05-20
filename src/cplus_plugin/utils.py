@@ -351,6 +351,56 @@ def align_rasters(
     return input_layer_output, None
 
 
+def contains_font_family(font_family: str) -> bool:
+    """Checks if the specified font family exists in the font database.
+
+    :param font_family: Name of the font family to check.
+    :type font_family: str
+
+    :returns: True if the font family exists, else False.
+    :rtype: bool
+    """
+    font_families = QtGui.QFontDatabase().families()
+    matching_fonts = [family for family in font_families if font_family in family]
+
+    return True if len(matching_fonts) > 0 else False
+
+
+def install_font(dir_name: str) -> bool:
+    """Installs the font families in the specified folder name under
+    the plugin's 'fonts' folder.
+
+    :param dir_name: Directory name, under the 'fonts' folder, which
+    contains the font families to be installed.
+    :type dir_name: str
+
+    :returns: True if the font(s) were successfully installed, else
+    False if the directory name does not exist or if the given font
+    families already exist in the application's font database.
+    :rtype: bool
+    """
+    font_family_dir = os.path.normpath(f"{FileUtils.get_fonts_dir()}/{dir_name}")
+    if not os.path.exists(font_family_dir):
+        tr_msg = tr("font directory does not exist.")
+        log(message=f"'{dir_name}' {tr_msg}", info=False)
+
+        return False
+
+    status = True
+    font_paths = Path(font_family_dir).glob("**/*")
+    font_extensions = [".otf", ".ttf"]
+    for font_path in font_paths:
+        if font_path.suffix not in font_extensions:
+            continue
+        font_id = QtGui.QFontDatabase.addApplicationFont(font_path.as_posix())
+        if font_id == -1 and status:
+            tr_msg = "font could not be installed."
+            log(message=f"'{font_path}' {tr_msg}", info=False)
+            status = False
+
+    return status
+
+
 class FileUtils:
     """
     Provides functionality for commonly used file-related operations.
@@ -364,6 +414,15 @@ class FileUtils:
         :rtype: str
         """
         return os.path.join(os.path.dirname(os.path.realpath(__file__)))
+
+    @staticmethod
+    def get_fonts_dir() -> str:
+        """Returns the fonts directory in the plugin.
+
+        :returns: Fonts directory.
+        :rtype: str
+        """
+        return f"{FileUtils.plugin_dir()}/data/fonts"
 
     @staticmethod
     def get_icon(file_name: str) -> QtGui.QIcon:
