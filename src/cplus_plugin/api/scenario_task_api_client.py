@@ -357,7 +357,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             )
 
         for uploaded_layer in new_uploaded_layer.values():
-            identifier = md5(uploaded_layer["path"])
+            identifier = uploaded_layer["path"].replace(os.sep, '--')
             self.checksum_to_uuid_mapping[identifier] = uploaded_layer
             self.path_to_checksum_mapping[uploaded_layer["path"]] = identifier
             settings_manager.save_layer_mapping(uploaded_layer, identifier)
@@ -368,7 +368,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         :param layer_path: Layer path of the file to be checked
         :return: True if the layer has been uploaded to CPLUS API, False otherwise
         """
-        identifier = md5(layer_path)
+        identifier = layer_path.replace(os.sep, '--')
         uploaded_layer_dict = settings_manager.get_layer_mapping(identifier)
         if uploaded_layer_dict:
             if "upload_id" in uploaded_layer_dict:
