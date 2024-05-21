@@ -72,8 +72,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.total_file_upload_size = 0
         self.total_file_upload_chunks = 0
         self.uploaded_chunks = 0
-        self.checksum_to_uuid_mapping = {}
-        self.path_to_checksum_mapping = {}
+        self.path_to_layer_mapping = {}
         self.scenario.uuid = None
         self.status_pooling = None
         self.logs = set()
@@ -116,14 +115,15 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             self.upload_layers()
         except Exception as e:
             self.log_message(str(e))
-            err = f"Problem uploading layer to the server: {ex}\n"
+            err = f"Problem uploading layer to the server: {e}\n"
             self.log_message(err, info=False)
             self.set_info_message(err, level=Qgis.Critical)
-            self.error = ex
+            self.error = e
             self.cancel_task()
             return False
         if self.processing_cancelled:
             return False
+
         self.build_scenario_detail_json()
         try:
             self.__execute_scenario_analysis()
@@ -237,34 +237,30 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         masking_layers = self.get_masking_layers()
 
         # 2 comes from sieve_mask_layer and snap layer
-        items_to_check = len(self.analysis_activities) + 2 + len(masking_layers)
+        check_counts = len(self.analysis_activities) + 2 + len(masking_layers)
+        items_to_check = {}
+
         for idx, activity in enumerate(self.analysis_activities):
             for pathway in activity.pathways:
                 if pathway:
                     if pathway.path and os.path.exists(pathway.path):
-                        is_uploaded = self.__is_layer_uploaded(pathway.path)
-                        if not is_uploaded:
-                            files_to_upload[pathway.path] = "ncs_pathway"
+                        items_to_check[pathway.path] = 'ncs_pathway'
 
                     for carbon_path in pathway.carbon_paths:
                         if os.path.exists(carbon_path):
-                            is_uploaded = self.__is_layer_uploaded(carbon_path)
-                            if not is_uploaded:
-                                files_to_upload[carbon_path] = "ncs_carbon"
+                            items_to_check[carbon_path] = 'ncs_carbon'
 
             for priority_layer in activity.priority_layers:
                 if priority_layer:
                     if priority_layer["path"] and os.path.exists(
                         priority_layer["path"]
                     ):
-                        is_uploaded = self.__is_layer_uploaded(priority_layer["path"])
-                        if not is_uploaded:
-                            files_to_upload[priority_layer["path"]] = "priority_layer"
+                        items_to_check[priority_layer["path"]] = "priority_layer"
 
             self.__update_scenario_status(
                 {
                     "progress_text": "Checking Activity layers to be uploaded",
-                    "progress": (idx + 1 / items_to_check) * 100,
+                    "progress": (idx + 1 / check_counts) * 100,
                 }
             )
 
@@ -278,13 +274,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             )
 
             if sieve_mask_layer:
-                is_uploaded = self.__is_layer_uploaded(sieve_mask_layer)
-                if not is_uploaded:
-                    files_to_upload[sieve_mask_layer] = "sieve_mask_layer"
+                items_to_check[sieve_mask_layer] = "sieve_mask_layer"
             self.__update_scenario_status(
                 {
                     "progress_text": "Checking layers to be uploaded",
-                    "progress": (3 / items_to_check) * 100,
+                    "progress": (3 / check_counts) * 100,
                 }
             )
 
@@ -296,33 +290,32 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                     Settings.SNAP_LAYER, default=""
                 )
                 if reference_layer:
-                    is_uploaded = self.__is_layer_uploaded(reference_layer)
-                    if not is_uploaded:
-                        files_to_upload[reference_layer] = "snap_layer"
+                    items_to_check[reference_layer] = "snap_layer"
             self.__update_scenario_status(
                 {
                     "progress_text": "Checking layers to be uploaded",
-                    "progress": (4 / items_to_check) * 100,
+                    "progress": (4 / check_counts) * 100,
                 }
             )
         else:
             self.__update_scenario_status(
                 {
                     "progress_text": "Checking layers to be uploaded",
-                    "progress": (4 / items_to_check) * 100,
+                    "progress": (4 / check_counts) * 100,
                 }
             )
 
         for idx, masking_layer in enumerate(masking_layers):
-            is_uploaded = self.__is_layer_uploaded(masking_layer)
-            if not is_uploaded:
-                files_to_upload[masking_layer] = "mask_layer"
+            items_to_check[masking_layer] = "mask_layer"
+
             self.__update_scenario_status(
                 {
                     "progress_text": "Checking layers to be uploaded",
-                    "progress": (idx + 5 / items_to_check) * 100,
+                    "progress": (idx + 5 / check_counts) * 100,
                 }
             )
+
+        files_to_upload.update(self.check_layer_uploaded(items_to_check))
 
         if self.processing_cancelled:
             return False
@@ -357,31 +350,35 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             )
 
         for uploaded_layer in new_uploaded_layer.values():
-            identifier = md5(uploaded_layer["path"])
-            self.checksum_to_uuid_mapping[identifier] = uploaded_layer
-            self.path_to_checksum_mapping[uploaded_layer["path"]] = identifier
+            identifier = uploaded_layer["path"].replace(os.sep, '--')
+            self.path_to_layer_mapping[uploaded_layer["path"]] = uploaded_layer
             settings_manager.save_layer_mapping(uploaded_layer, identifier)
 
-    def __is_layer_uploaded(self, layer_path: str) -> bool:
+    def check_layer_uploaded(self, items_to_check: dict) -> dict:
         """
         Check whether a layer has been uploaded to CPLUS API
-        :param layer_path: Layer path of the file to be checked
-        :return: True if the layer has been uploaded to CPLUS API, False otherwise
+        :param items_to_check: Dictionary with file path as key and group as value
         """
-        identifier = md5(layer_path)
-        uploaded_layer_dict = settings_manager.get_layer_mapping(identifier)
-        if uploaded_layer_dict:
-            if "upload_id" in uploaded_layer_dict:
-                # if upload_id exists, then upload is not finished
-                return False
-            if layer_path == uploaded_layer_dict["path"]:
-                is_uploaded = "uuid" in self.request.get_layer_detail(
-                    uploaded_layer_dict["uuid"]
-                )
-                self.checksum_to_uuid_mapping[identifier] = uploaded_layer_dict
-                self.path_to_checksum_mapping[layer_path] = identifier
-                return is_uploaded
-        return False
+        output = {}
+        uuid_to_path = {}
+
+        for layer_path, group in items_to_check.items():
+            identifier = layer_path.replace(os.sep, '--')
+            uploaded_layer_dict = settings_manager.get_layer_mapping(identifier)
+            if uploaded_layer_dict:
+                if "upload_id" in uploaded_layer_dict:
+                    # if upload_id exists, then upload is not finished
+                    output[layer_path] = False
+                if layer_path == uploaded_layer_dict["path"]:
+                    uuid_to_path[uploaded_layer_dict['uuid']] = layer_path
+                    self.path_to_layer_mapping[layer_path] = uploaded_layer_dict
+            else:
+                output[layer_path] = items_to_check[layer_path]
+        layer_check_result = self.request.check_layer(list(uuid_to_path))
+        for layer_uuid in layer_check_result['unavailable'] + layer_check_result['invalid']:
+            layer_path = uuid_to_path[layer_uuid]
+            output[layer_path] = items_to_check[layer_path]
+        return output
 
     def build_scenario_detail_json(self):
         """
@@ -391,10 +388,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         old_scenario_dict = json.loads(
             json.dumps(todict(self.scenario), cls=CustomJsonEncoder)
         )
-        uploaded_layer_dict = {
-            fp: self.checksum_to_uuid_mapping[checksum]
-            for fp, checksum in self.path_to_checksum_mapping.items()
-        }
         sieve_enabled = json.loads(
             self.get_settings_value(Settings.SIEVE_ENABLED, default=False)
         )
@@ -436,17 +429,17 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         masking_layers = self.get_masking_layers()
         mask_layer_uuids = [
             obj["uuid"]
-            for fp, obj in uploaded_layer_dict.items()
+            for fp, obj in self.path_to_layer_mapping.items()
             if fp in masking_layers
         ]
 
         sieve_mask_uuid = (
-            uploaded_layer_dict.get(sieve_mask_path, "")["uuid"]
+            self.path_to_layer_mapping.get(sieve_mask_path, "")["uuid"]
             if sieve_mask_path
             else ""
         )
         snap_layer_uuid = (
-            uploaded_layer_dict.get(snap_layer_path, "")["uuid"]
+            self.path_to_layer_mapping.get(snap_layer_path, "")["uuid"]
             if snap_layer_path
             else ""
         )
@@ -456,8 +449,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             for pathway in activity["pathways"]:
                 if pathway:
                     if pathway["path"] and os.path.exists(pathway["path"]):
-                        if uploaded_layer_dict.get(pathway["path"], None):
-                            pathway["uuid"] = uploaded_layer_dict.get(pathway["path"])[
+                        if self.path_to_layer_mapping.get(pathway["path"], None):
+                            pathway["uuid"] = self.path_to_layer_mapping.get(pathway["path"])[
                                 "uuid"
                             ]
                             pathway["layer_uuid"] = pathway["uuid"]
@@ -466,18 +459,17 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                     carbon_uuids = []
                     for carbon_path in pathway["carbon_paths"]:
                         if os.path.exists(carbon_path):
-                            if uploaded_layer_dict(carbon_path, None):
-                                carbon_uuids.append(uploaded_layer_dict(carbon_path))
+                            if self.path_to_layer_mapping(carbon_path, None):
+                                carbon_uuids.append(self.path_to_layer_mapping(carbon_path))
                     pathway["carbon_uuids"] = carbon_uuids
-
             new_priority_layers = []
             for priority_layer in activity["priority_layers"]:
                 if priority_layer:
                     if priority_layer["path"] and os.path.exists(
                         priority_layer["path"]
                     ):
-                        if uploaded_layer_dict.get(priority_layer["path"], None):
-                            priority_layer["uuid"] = uploaded_layer_dict.get(
+                        if self.path_to_layer_mapping.get(priority_layer["path"], None):
+                            priority_layer["uuid"] = self.path_to_layer_mapping.get(
                                 priority_layer["path"]
                             )["uuid"]
                             priority_layer["layer_uuid"] = priority_layer["uuid"]

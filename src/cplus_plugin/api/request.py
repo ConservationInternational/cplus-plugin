@@ -166,6 +166,9 @@ class CplusApiUrl:
     def layer_detail(self, layer_uuid):
         return f"{self.base_url}/layer/{layer_uuid}/"
 
+    def layer_check(self):
+        return f"{self.base_url}/layer/check/?id_type=layer_uuid"
+
     def layer_upload_start(self):
         return f"{self.base_url}/layer/upload/start/"
 
@@ -215,6 +218,11 @@ class CplusApiRequest:
 
     def get_layer_detail(self, layer_uuid):
         response = self.get(self.urls.layer_detail(layer_uuid))
+        result = response.json()
+        return result
+
+    def check_layer(self, payload):
+        response = self.post(self.urls.layer_check(), payload)
         result = response.json()
         return result
 

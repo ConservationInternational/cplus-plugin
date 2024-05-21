@@ -778,7 +778,7 @@ class SettingsManager(QtCore.QObject):
         """
 
         if not identifier:
-            identifier = md5(input_layer["path"])
+            identifier = input_layer["path"].replace(os.sep, '--')
         settings_key = self._get_layer_mappings_settings_base()
 
         with qgis_settings(settings_key) as settings:
