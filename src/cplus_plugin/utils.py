@@ -579,3 +579,16 @@ def md5(fname):
         for chunk in iter(lambda: f.read(4096), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
+
+
+def get_layer_type(file_path: str):
+    """
+    Get layer type code from file path
+    """
+    file_name, file_extension = os.path.splitext(file_path)
+    if file_extension.lower() in ['.tif', '.tiff']:
+        return 0
+    elif file_extension.lower() in ['.geojson', '.zip']:
+        return 1
+    else:
+        return -1
