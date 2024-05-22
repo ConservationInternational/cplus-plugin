@@ -101,8 +101,8 @@ class ScenarioAnalysisTask(QgsTask):
             Settings.MASK_LAYERS_PATHS, default=None
         )
         masking_layers = masking_layers_paths.split(",") if masking_layers_paths else []
-
         masking_layers.remove("") if "" in masking_layers else None
+        masking_layers = [ml.replace('.shp', '.zip') for ml in masking_layers]
         return masking_layers
 
     def cancel_task(self, exception=None):
