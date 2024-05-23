@@ -390,8 +390,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         old_scenario_dict = json.loads(
             json.dumps(todict(self.scenario), cls=CustomJsonEncoder)
         )
-        sieve_enabled = json.loads(
-            self.get_settings_value(Settings.SIEVE_ENABLED, default=False)
+        sieve_enabled = self.get_settings_value(
+            Settings.SIEVE_ENABLED, default=False, setting_type=bool
         )
         sieve_threshold = float(
             self.get_settings_value(Settings.SIEVE_THRESHOLD, default=10.0)
@@ -402,10 +402,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             else ""
         )
         snapping_enabled = (
-            json.loads(
-                self.get_settings_value(
-                    Settings.SNAPPING_ENABLED, default=False, setting_type=bool
-                )
+            self.get_settings_value(
+                Settings.SNAPPING_ENABLED, default=False, setting_type=bool
             )
             if sieve_enabled
             else False
@@ -476,9 +474,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                     carbon_uuids = []
                     for carbon_path in pathway["carbon_paths"]:
                         if os.path.exists(carbon_path):
-                            if self.path_to_layer_mapping(carbon_path, None):
+                            if self.path_to_layer_mapping.get(carbon_path, None):
                                 carbon_uuids.append(
-                                    self.path_to_layer_mapping(carbon_path)
+                                    self.path_to_layer_mapping.get(carbon_path)["uuid"]
                                 )
                     pathway["carbon_uuids"] = carbon_uuids
             new_priority_layers = []
