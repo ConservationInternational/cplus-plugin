@@ -20,18 +20,6 @@ from ..tasks import ScenarioAnalysisTask
 from ..utils import FileUtils, CustomJsonEncoder, todict
 
 
-def download_file(url, local_filename):
-    parent_dir = os.path.dirname(local_filename)
-    if not os.path.exists(parent_dir):
-        os.makedirs(parent_dir)
-    with requests.get(url, stream=True) as r:
-        r.raise_for_status()
-        with open(local_filename, "wb") as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                if chunk:
-                    f.write(chunk)
-
-
 def clean_filename(filename):
     """Creates a safe filename by removing operating system
     invalid filename characters.
@@ -76,6 +64,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.scenario.uuid = None
         self.status_pooling = None
         self.logs = set()
+        self.total_file_output = 0
+        self.downloaded_output = 0
 
     def cancel_task(self, exception=None):
         """
@@ -624,6 +614,25 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             "updated_detail"
         ]["priority_layer_groups"]
 
+    def download_file(self, url, local_filename):
+        parent_dir = os.path.dirname(local_filename)
+        if not os.path.exists(parent_dir):
+            os.makedirs(parent_dir)
+        with requests.get(url, stream=True) as r:
+            r.raise_for_status()
+            with open(local_filename, "wb") as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+        self.downloaded_output += 1
+        self.__update_scenario_status(
+            {
+                "progress_text": f"Downloading output files",
+                "progress": int((self.downloaded_output / self.total_file_output) * 90)
+                + 5,
+            }
+        )
+
     def __retrieve_scenario_outputs(self, scenario_uuid):
         """
         Set scenario output object based on scenario UUID
@@ -633,6 +642,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             {"progress_text": "Downloading output files", "progress": 0}
         )
         output_list = self.request.fetch_scenario_output_list(scenario_uuid)
+        self.__update_scenario_status(
+            {"progress_text": "Downloading output files", "progress": 5}
+        )
+        self.total_file_output = len(output_list["results"])
+        self.downloaded_output = 0
         urls_to_download = []
         download_paths = []
         for output in output_list["results"]:
@@ -653,7 +667,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=3 if os.cpu_count() > 3 else 1
         ) as executor:
-            executor.map(download_file, urls_to_download, download_paths)
+            executor.map(self.download_file, urls_to_download, download_paths)
 
         self.__set_scenario(output_list, download_paths)
 
