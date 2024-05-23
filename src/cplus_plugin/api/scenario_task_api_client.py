@@ -17,7 +17,7 @@ from ..conf import settings_manager, Settings
 from ..models.base import Activity, NcsPathway
 from ..models.base import ScenarioResult
 from ..tasks import ScenarioAnalysisTask
-from ..utils import FileUtils, CustomJsonEncoder, todict, md5
+from ..utils import FileUtils, CustomJsonEncoder, todict
 
 
 def download_file(url, local_filename):
