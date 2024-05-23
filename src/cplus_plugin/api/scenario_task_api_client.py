@@ -428,19 +428,19 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             Settings.RESAMPLING_METHOD, default=0
         )
         ncs_with_carbon = self.get_settings_value(
-            Settings.NCS_WITH_CARBON, default=False
+            Settings.NCS_WITH_CARBON, default=False, setting_type=bool
         )
         landuse_project = self.get_settings_value(
-            Settings.LANDUSE_PROJECT, default=True
+            Settings.LANDUSE_PROJECT, default=True, setting_type=bool
         )
         landuse_normalized = self.get_settings_value(
-            Settings.LANDUSE_NORMALIZED, default=True
+            Settings.LANDUSE_NORMALIZED, default=True, setting_type=bool
         )
         landuse_weighted = self.get_settings_value(
-            Settings.LANDUSE_WEIGHTED, default=True
+            Settings.LANDUSE_WEIGHTED, default=True, setting_type=bool
         )
         highest_position = self.get_settings_value(
-            Settings.HIGHEST_POSITION, default=True
+            Settings.HIGHEST_POSITION, default=True, setting_type=bool
         )
 
         masking_layers = self.get_masking_layers()
@@ -583,10 +583,14 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 del pathway["layer_uuid"]
             if "carbon_uuids" in pathway:
                 del pathway["carbon_uuids"]
-            pathway["path"] = download_dict[os.path.basename(pathway["path"])]
-            ncs_pathways.append(NcsPathway(**pathway))
+            pathway_filename = os.path.basename(pathway["path"])
+            if pathway_filename in download_dict:
+                pathway["path"] = download_dict[pathway_filename]
+                ncs_pathways.append(NcsPathway(**pathway))
         activity["pathways"] = ncs_pathways
-        activity["path"] = download_dict[os.path.basename(activity["path"])]
+        activity_filename = os.path.basename(activity["path"])
+        if activity_filename in download_dict:
+            activity["path"] = download_dict[activity_filename]
         activity_obj = Activity(**activity)
         return activity_obj
 
