@@ -244,11 +244,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             for pathway in activity.pathways:
                 if pathway:
                     if pathway.path and os.path.exists(pathway.path):
-                        items_to_check[pathway.path] = 'ncs_pathway'
+                        items_to_check[pathway.path] = "ncs_pathway"
 
                     for carbon_path in pathway.carbon_paths:
                         if os.path.exists(carbon_path):
-                            items_to_check[carbon_path] = 'ncs_carbon'
+                            items_to_check[carbon_path] = "ncs_carbon"
 
             for priority_layer in activity.priority_layers:
                 if priority_layer:
@@ -350,7 +350,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             )
 
         for uploaded_layer in new_uploaded_layer.values():
-            identifier = uploaded_layer["path"].replace(os.sep, '--')
+            identifier = uploaded_layer["path"].replace(os.sep, "--")
             self.path_to_layer_mapping[uploaded_layer["path"]] = uploaded_layer
             settings_manager.save_layer_mapping(uploaded_layer, identifier)
 
@@ -363,19 +363,21 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         uuid_to_path = {}
 
         for layer_path, group in items_to_check.items():
-            identifier = layer_path.replace(os.sep, '--')
+            identifier = layer_path.replace(os.sep, "--")
             uploaded_layer_dict = settings_manager.get_layer_mapping(identifier)
             if uploaded_layer_dict:
                 if "upload_id" in uploaded_layer_dict:
                     # if upload_id exists, then upload is not finished
                     output[layer_path] = False
                 if layer_path == uploaded_layer_dict["path"]:
-                    uuid_to_path[uploaded_layer_dict['uuid']] = layer_path
+                    uuid_to_path[uploaded_layer_dict["uuid"]] = layer_path
                     self.path_to_layer_mapping[layer_path] = uploaded_layer_dict
             else:
                 output[layer_path] = items_to_check[layer_path]
         layer_check_result = self.request.check_layer(list(uuid_to_path))
-        for layer_uuid in layer_check_result['unavailable'] + layer_check_result['invalid']:
+        for layer_uuid in (
+            layer_check_result["unavailable"] + layer_check_result["invalid"]
+        ):
             layer_path = uuid_to_path[layer_uuid]
             output[layer_path] = items_to_check[layer_path]
         return output
@@ -425,6 +427,21 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         resampling_method = self.get_settings_value(
             Settings.RESAMPLING_METHOD, default=0
         )
+        ncs_with_carbon = self.get_settings_value(
+            Settings.NCS_WITH_CARBON, default=False, setting_type=bool
+        )
+        landuse_project = self.get_settings_value(
+            Settings.LANDUSE_PROJECT, default=True, setting_type=bool
+        )
+        landuse_normalized = self.get_settings_value(
+            Settings.LANDUSE_NORMALIZED, default=True, setting_type=bool
+        )
+        landuse_weighted = self.get_settings_value(
+            Settings.LANDUSE_WEIGHTED, default=True, setting_type=bool
+        )
+        highest_position = self.get_settings_value(
+            Settings.HIGHEST_POSITION, default=True, setting_type=bool
+        )
 
         masking_layers = self.get_masking_layers()
         mask_layer_uuids = [
@@ -450,9 +467,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 if pathway:
                     if pathway["path"] and os.path.exists(pathway["path"]):
                         if self.path_to_layer_mapping.get(pathway["path"], None):
-                            pathway["uuid"] = self.path_to_layer_mapping.get(pathway["path"])[
-                                "uuid"
-                            ]
+                            pathway["uuid"] = self.path_to_layer_mapping.get(
+                                pathway["path"]
+                            )["uuid"]
                             pathway["layer_uuid"] = pathway["uuid"]
                             pathway["layer_type"] = 0
 
@@ -460,7 +477,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                     for carbon_path in pathway["carbon_paths"]:
                         if os.path.exists(carbon_path):
                             if self.path_to_layer_mapping(carbon_path, None):
-                                carbon_uuids.append(self.path_to_layer_mapping(carbon_path))
+                                carbon_uuids.append(
+                                    self.path_to_layer_mapping(carbon_path)
+                                )
                     pathway["carbon_uuids"] = carbon_uuids
             new_priority_layers = []
             for priority_layer in activity["priority_layers"]:
@@ -490,6 +509,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             "sieve_threshold": sieve_threshold,
             "sieve_mask_path": sieve_mask_path,
             "sieve_mask_uuid": sieve_mask_uuid,
+            "ncs_with_carbon": ncs_with_carbon,
+            "landuse_project": landuse_project,
+            "landuse_normalized": landuse_normalized,
+            "landuse_weighted": landuse_weighted,
+            "highest_position": highest_position,
             "mask_path": ", ".join(masking_layers),
             "mask_layer_uuids": mask_layer_uuids,
             "extent": old_scenario_dict["extent"]["bbox"],
@@ -559,10 +583,14 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 del pathway["layer_uuid"]
             if "carbon_uuids" in pathway:
                 del pathway["carbon_uuids"]
-            pathway["path"] = download_dict[os.path.basename(pathway["path"])]
-            ncs_pathways.append(NcsPathway(**pathway))
+            pathway_filename = os.path.basename(pathway["path"])
+            if pathway_filename in download_dict:
+                pathway["path"] = download_dict[pathway_filename]
+                ncs_pathways.append(NcsPathway(**pathway))
         activity["pathways"] = ncs_pathways
-        activity["path"] = download_dict[os.path.basename(activity["path"])]
+        activity_filename = os.path.basename(activity["path"])
+        if activity_filename in download_dict:
+            activity["path"] = download_dict[activity_filename]
         activity_obj = Activity(**activity)
         return activity_obj
 
