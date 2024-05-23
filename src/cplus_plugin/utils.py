@@ -588,7 +588,7 @@ def get_layer_type(file_path: str):
     file_name, file_extension = os.path.splitext(file_path)
     if file_extension.lower() in ['.tif', '.tiff']:
         return 0
-    elif file_extension.lower() in ['.geojson', '.zip']:
+    elif file_extension.lower() in ['.geojson', '.zip', '.shp']:
         return 1
     else:
         return -1
