@@ -45,6 +45,7 @@ class ReportResult:
     messages: typing.Tuple[str] = dataclasses.field(default_factory=tuple)
     # Layout name
     name: str = ""
+    base_file_name: str = ""
 
     @property
     def pdf_path(self) -> str:
@@ -58,7 +59,7 @@ class ReportResult:
         completed successfully else an empty string.
         :rtype: str
         """
-        if not self.output_dir or not self.name:
+        if not self.output_dir or not self.base_file_name:
             return ""
 
-        return f"{self.output_dir}/{self.name}.pdf"
+        return f"{self.output_dir}/{self.base_file_name}.pdf"

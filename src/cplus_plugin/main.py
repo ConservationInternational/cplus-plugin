@@ -51,7 +51,6 @@ from .definitions.defaults import (
     CI_LOGO_PATH,
     CPLUS_LOGO_PATH,
     DEFAULT_ACTIVITIES,
-    DEFAULT_LOGO_PATH,
     DEFAULT_NCS_PATHWAYS,
     DEFAULT_REPORT_DISCLAIMER,
     DEFAULT_REPORT_LICENSE,
@@ -60,6 +59,7 @@ from .definitions.defaults import (
     OPTIONS_TITLE,
     PRIORITY_GROUPS,
     PRIORITY_LAYERS,
+    REPORT_FONT_NAME,
 )
 from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
 from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
@@ -68,7 +68,14 @@ from .gui.settings.cplus_options import CplusOptionsFactory
 from .gui.settings.log_options import LogOptionsFactory
 from .gui.settings.report_options import ReportOptionsFactory
 
-from .utils import FileUtils, log, open_documentation, get_plugin_version
+from .utils import (
+    FileUtils,
+    contains_font_family,
+    install_font,
+    log,
+    open_documentation,
+    get_plugin_version,
+)
 
 
 class QgisCplus:
@@ -120,6 +127,9 @@ class QgisCplus:
 
         self.main_widget = QgisCplusMain(
             iface=self.iface, parent=self.iface.mainWindow()
+        )
+        self.main_widget.visibilityChanged.connect(
+            self.on_dock_widget_visibility_changed
         )
 
         self.options_factory = None
@@ -261,6 +271,9 @@ class QgisCplus:
         # Register custom report variables when a layout is opened
         self.iface.layoutDesignerOpened.connect(self.on_layout_designer_opened)
 
+        # Install report font
+        self.install_report_font()
+
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin widget is closed."""
         self.pluginIsActive = False
@@ -306,6 +319,20 @@ class QgisCplus:
 
         self.actions.append(self.cplus_action)
 
+    def on_dock_widget_visibility_changed(self, visible: bool):
+        """Slot raised when the visibility of the main docket widget changes.
+
+        :param visible: True if the dock widget is visible, else False.
+        :type visible: bool
+        """
+        # Set default dock position on first time load.
+        if visible:
+            app_window = self.iface.mainWindow()
+            dock_area = app_window.dockWidgetArea(self.main_widget)
+            if dock_area == Qt.NoDockWidgetArea and not self.main_widget.isFloating():
+                self.iface.addDockWidget(Qt.RightDockWidgetArea, self.main_widget)
+                self.main_widget.show()
+
     def run_settings(self):
         """Options the CPLUS settings in the QGIS options dialog."""
         self.iface.showOptionsDialog(currentPage=OPTIONS_TITLE)
@@ -336,6 +363,19 @@ class QgisCplus:
     def open_about(self):
         """Opens the about documentation for the plugin in a browser"""
         open_documentation(ABOUT_DOCUMENTATION_SITE)
+
+    def install_report_font(self):
+        """Checks if the report font exists and install it."""
+        font_exists = contains_font_family(REPORT_FONT_NAME)
+        if not font_exists:
+            log(message=self.tr("Installing report font..."))
+            status = install_font(REPORT_FONT_NAME.lower())
+            if status:
+                log(message=self.tr("Report font successfully installed."))
+            else:
+                log(message=self.tr("Report font could not be installed."), info=False)
+        else:
+            log(message="Report font exists.")
 
 
 def create_priority_layers():
@@ -507,8 +547,10 @@ def initialize_model_settings():
             continue
 
     for activity in settings_manager.get_all_activities():
+        if activity.user_defined:
+            continue
         if str(activity.uuid) not in new_activities_uuids:
-            settings_manager.activities(str(activity.uuid))
+            settings_manager.remove_activity(str(activity.uuid))
 
     settings_manager.set_value(activity_ncs_setting, True)
 

@@ -13,6 +13,17 @@ PILOT_AREA_EXTENT = {
     "coordinates": [30.743498637, 32.069186664, -25.201606226, -23.960197335],
 }
 
+PLUGIN_MESSAGE_LOG_TAB = "qgis_cplus"
+SCENARIO_LOG_FILE_NAME = "processing.log"
+
+QGIS_MESSAGE_LEVEL_DICT = {
+    0: "INFO",
+    1: "WARNING",
+    2: "CRITICAL",
+    3: "SUCCESS",
+    4: "NOLEVEL",
+}
+
 DEFAULT_CRS_ID = 4326
 
 DOCUMENTATION_SITE = "https://conservationinternational.github.io/cplus-plugin"
@@ -134,6 +145,10 @@ MINIMUM_ITEM_HEIGHT = 100
 
 # Report font
 REPORT_FONT_NAME = "Ubuntu"
+
+# Activity character limits
+MAX_ACTIVITY_NAME_LENGTH = 50
+MAX_ACTIVITY_DESCRIPTION_LENGTH = 225
 
 # IDs for the given tables in the report template
 ACTIVITY_AREA_TABLE_ID = "activity_area_table"

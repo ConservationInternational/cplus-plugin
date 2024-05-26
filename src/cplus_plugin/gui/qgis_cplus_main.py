@@ -5,7 +5,6 @@
 """
 
 import os
-import typing
 import uuid
 
 import datetime
@@ -48,6 +47,7 @@ from qgis.core import (
 )
 
 from qgis.gui import (
+    QgsGui,
     QgsMessageBar,
     QgsRubberBand,
 )
@@ -60,6 +60,8 @@ from .priority_group_widget import PriorityGroupWidget
 from .npv_manager_dialog import NpvPwlManagerDialog
 from .priority_layer_dialog import PriorityLayerDialog
 from .priority_group_dialog import PriorityGroupDialog
+
+from .scenario_dialog import ScenarioDialog
 
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
 from ..conf import settings_manager, Settings
@@ -79,6 +81,7 @@ from ..utils import (
     tr,
     log,
     FileUtils,
+    write_to_file,
 )
 
 from ..definitions.defaults import (
@@ -86,9 +89,12 @@ from ..definitions.defaults import (
     PILOT_AREA_EXTENT,
     OPTIONS_TITLE,
     ICON_PATH,
+    PLUGIN_MESSAGE_LOG_TAB,
     QGIS_GDAL_PROVIDER,
+    QGIS_MESSAGE_LEVEL_DICT,
     REMOVE_LAYER_ICON_PATH,
     SCENARIO_OUTPUT_LAYER_NAME,
+    SCENARIO_LOG_FILE_NAME,
     USER_DOCUMENTATION_SITE,
 )
 from ..definitions.constants import (
@@ -118,10 +124,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     ):
         super().__init__(parent)
         self.setupUi(self)
+
+        QgsGui.enableAutoGeometryRestore(self)
+
         self.iface = iface
         self.progress_dialog = None
         self.task = None
         self.processing_cancelled = False
+        self.current_analysis_task = None
 
         # Set icons for buttons
         help_icon = FileUtils.get_icon("mActionHelpContents_green.svg")
@@ -142,6 +152,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.priority_groups_widgets = {}
         self.pwl_item_flags = None
 
+        # Step 4
+        self.ncs_with_carbon.toggled.connect(self.outputs_options_changed)
+        self.landuse_project.toggled.connect(self.outputs_options_changed)
+        self.landuse_normalized.toggled.connect(self.outputs_options_changed)
+        self.landuse_weighted.toggled.connect(self.outputs_options_changed)
+        self.highest_position.toggled.connect(self.outputs_options_changed)
+
+        self.load_layer_options()
+
         self.initialize_priority_layers()
 
         self.position_feedback = QgsProcessingFeedback()
@@ -150,6 +169,101 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.scenario_result = None
 
         self.analysis_finished.connect(self.post_analysis)
+
+        # Log updates
+        QgsApplication.messageLog().messageReceived.connect(
+            self.on_log_message_received
+        )
+
+        # Scenario list
+
+        self.update_scenario_list()
+
+    def outputs_options_changed(self):
+        """
+        Handles selected outputs changes
+        """
+
+        settings_manager.set_value(
+            Settings.NCS_WITH_CARBON, self.ncs_with_carbon.isChecked()
+        )
+        settings_manager.set_value(
+            Settings.LANDUSE_PROJECT, self.landuse_project.isChecked()
+        )
+        settings_manager.set_value(
+            Settings.LANDUSE_NORMALIZED, self.landuse_normalized.isChecked()
+        )
+        settings_manager.set_value(
+            Settings.LANDUSE_WEIGHTED, self.landuse_weighted.isChecked()
+        )
+        settings_manager.set_value(
+            Settings.HIGHEST_POSITION, self.highest_position.isChecked()
+        )
+
+    def load_layer_options(self):
+        """
+        Retrieve outputs scenarion layers selection from settings and
+        update the releated ui components
+        """
+
+        self.ncs_with_carbon.setChecked(
+            settings_manager.get_value(
+                Settings.NCS_WITH_CARBON, default=False, setting_type=bool
+            )
+        )
+        self.landuse_project.setChecked(
+            settings_manager.get_value(
+                Settings.LANDUSE_PROJECT, default=False, setting_type=bool
+            )
+        )
+        self.landuse_normalized.setChecked(
+            settings_manager.get_value(
+                Settings.LANDUSE_NORMALIZED, default=False, setting_type=bool
+            )
+        )
+
+        self.landuse_weighted.setChecked(
+            settings_manager.get_value(
+                Settings.LANDUSE_WEIGHTED, default=False, setting_type=bool
+            )
+        )
+
+        self.highest_position.setChecked(
+            settings_manager.get_value(
+                Settings.HIGHEST_POSITION, default=False, setting_type=bool
+            )
+        )
+
+    def on_log_message_received(self, message, tag, level):
+        """Slot to handle log tab updates and processing logs
+
+        :param message: The received message from QGIS message log
+        :type message: str
+
+        :param tag: Message log tag
+        :type tag: str
+
+        :param level: Message level enum value
+        :type level: Qgis.MessageLevel
+        """
+        if tag == PLUGIN_MESSAGE_LOG_TAB:
+            # If there is no current running analysis
+            # task don't save the log message.
+            if not self.current_analysis_task:
+                return
+
+            message_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            message = (
+                f"{self.log_text_box.toPlainText()} "
+                f"{message_time} {QGIS_MESSAGE_LEVEL_DICT[level]} "
+                f"{message}"
+            )
+            self.log_text_box.setPlainText(f"{message} \n")
+
+            processing_log_file = os.path.join(
+                self.current_analysis_task.scenario_directory, SCENARIO_LOG_FILE_NAME
+            )
+            write_to_file(message, processing_log_file)
 
     def prepare_input(self):
         """Initializes plugin input widgets"""
@@ -243,6 +357,17 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.analysis_weighted_ims = []
         self.analysis_priority_layers_groups = []
 
+        # Saved scenarios actions
+        self.add_scenario_btn.setIcon(FileUtils.get_icon("symbologyAdd.svg"))
+        self.info_scenario_btn.setIcon(FileUtils.get_icon("mActionIdentify.svg"))
+        self.load_scenario_btn.setIcon(FileUtils.get_icon("mActionReload.svg"))
+        self.remove_scenario_btn.setIcon(FileUtils.get_icon("symbologyRemove.svg"))
+
+        self.add_scenario_btn.clicked.connect(self.add_scenario)
+        self.load_scenario_btn.clicked.connect(self.load_scenario)
+        self.info_scenario_btn.clicked.connect(self.show_scenario_info)
+        self.remove_scenario_btn.clicked.connect(self.remove_scenario)
+
     def priority_groups_update(self, target_item, selected_items):
         """Updates the priority groups list item with the passed
          selected layer items.
@@ -329,6 +454,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             item = QtWidgets.QListWidgetItem()
             item.setData(QtCore.Qt.DisplayRole, layer.get("name"))
             item.setData(QtCore.Qt.UserRole, layer.get("uuid"))
+
+            if not os.path.exists(layer.get("path")):
+                item.setIcon(FileUtils.get_icon("mIndicatorLayerError.svg"))
+                item.setToolTip(
+                    tr(
+                        "Contains invalid priority layer path, "
+                        "the provided layer path does not exist!"
+                    )
+                )
 
             if self.pwl_item_flags is None:
                 self.pwl_item_flags = item.flags()
@@ -522,6 +656,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             item.setData(QtCore.Qt.DisplayRole, layer.get("name"))
             item.setData(QtCore.Qt.UserRole, layer.get("uuid"))
 
+            if os.path.exists(layer.get("path")):
+                item.setIcon(QtGui.QIcon())
+            else:
+                item.setIcon(FileUtils.get_icon("mIndicatorLayerError.svg"))
+                item.setToolTip(
+                    tr(
+                        "Contains invalid priority layer path, "
+                        "the provided layer path does not exist!"
+                    )
+                )
             self.priority_layers_list.addItem(item)
             if update_groups:
                 for index in range(self.priority_groups_list.topLevelItemCount()):
@@ -679,9 +823,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             0, QtCore.Qt.UserRole
         )
 
-        if group_identifier == "":
+        if (
+            group_identifier == ""
+            or group_identifier is None
+            or not isinstance(group_identifier, str)
+        ):
             self.show_message(
-                tr("Could not fetch the selected priority groups for editing."),
+                tr("Could not fetch the selected" " priority groups for editing."),
                 Qgis.Critical,
             )
             return
@@ -754,6 +902,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             return
 
         self._show_priority_layer_editor(layer_identifier)
+        self.update_priority_layers(update_groups=False)
 
     def _on_double_click_priority_layer(self, list_item: QtWidgets.QListWidgetItem):
         """Slot raised when a priority list item has been double clicked."""
@@ -782,7 +931,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
         if current_text == "":
             self.show_message(
-                tr("Could not fetch the selected priority layer for editing."),
+                tr("Could not fetch and remove the selected priority layer."),
                 Qgis.Critical,
             )
             return
@@ -797,6 +946,145 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if reply == QtWidgets.QMessageBox.Yes:
             settings_manager.delete_priority_layer(layer.get("uuid"))
             self.update_priority_layers(update_groups=False)
+
+    def update_scenario_list(self):
+        """Fetches scenarios from plugin settings and updates the
+        scenario history list
+        """
+        scenarios = settings_manager.get_scenarios()
+
+        if len(scenarios) > 0:
+            self.scenario_list.clear()
+
+        for scenario in scenarios:
+            item = QtWidgets.QListWidgetItem()
+            item.setData(QtCore.Qt.DisplayRole, scenario.name)
+            item.setData(QtCore.Qt.UserRole, str(scenario.uuid))
+            self.scenario_list.addItem(item)
+
+    def add_scenario(self):
+        """Adds a new scenario into the scenario list."""
+        scenario_name = self.scenario_name.text()
+        scenario_description = self.scenario_description.text()
+        extent = self.extent_box.outputExtent()
+
+        extent_box = [
+            extent.xMinimum(),
+            extent.xMaximum(),
+            extent.yMinimum(),
+            extent.yMaximum(),
+        ]
+
+        extent = SpatialExtent(bbox=extent_box)
+        scenario_id = uuid.uuid4()
+
+        activities = self.activity_widget.activities()
+        priority_layer_groups = self.analysis_priority_layers_groups
+        weighted_activities = []
+
+        if self.scenario_result:
+            weighted_activities = self.scenario_result.scenario.weighted_activities
+
+        scenario = Scenario(
+            uuid=scenario_id,
+            name=scenario_name,
+            description=scenario_description,
+            extent=extent,
+            activities=activities,
+            weighted_activities=weighted_activities,
+            priority_layer_groups=priority_layer_groups,
+        )
+        settings_manager.save_scenario(scenario)
+        if self.scenario_result:
+            settings_manager.save_scenario_result(
+                self.scenario_result, str(scenario_id)
+            )
+
+        self.update_scenario_list()
+
+    def load_scenario(self):
+        """Edits the current selected scenario
+        and updates the layer box list."""
+        if self.scenario_list.currentItem() is None:
+            self.show_message(
+                tr("Select first the scenario from the scenario list."),
+                Qgis.Critical,
+            )
+            return
+
+        scenario_identifier = self.scenario_list.currentItem().data(QtCore.Qt.UserRole)
+
+        if scenario_identifier == "":
+            self.show_message(
+                tr("Could not fetch the selected priority layer for editing."),
+                Qgis.Critical,
+            )
+            return
+
+        scenario = settings_manager.get_scenario(scenario_identifier)
+
+        if scenario is not None:
+            self.scenario_name.setText(scenario.name)
+            self.scenario_description.setText(scenario.description)
+
+            self.extent_box.setOutputCrs(QgsCoordinateReferenceSystem("EPSG:4326"))
+            map_canvas = iface.mapCanvas()
+            self.extent_box.setCurrentExtent(
+                map_canvas.mapSettings().destinationCrs().bounds(),
+                map_canvas.mapSettings().destinationCrs(),
+            )
+            self.extent_box.setOutputExtentFromCurrent()
+            self.extent_box.setMapCanvas(map_canvas)
+
+            extent_list = scenario.extent.bbox
+            if extent_list:
+                default_extent = QgsRectangle(
+                    float(extent_list[0]),
+                    float(extent_list[2]),
+                    float(extent_list[1]),
+                    float(extent_list[3]),
+                )
+
+                self.extent_box.setOutputExtentFromUser(
+                    default_extent,
+                    QgsCoordinateReferenceSystem("EPSG:4326"),
+                )
+
+    def show_scenario_info(self):
+        """Loads dialog for showing scenario information."""
+        scenario_uuid = self.scenario_list.currentItem().data(QtCore.Qt.UserRole)
+        scenario = settings_manager.get_scenario(scenario_uuid)
+        scenario_result = settings_manager.get_scenario_result(scenario_uuid)
+
+        scenario_dialog = ScenarioDialog(scenario, scenario_result)
+        scenario_dialog.exec_()
+
+    def remove_scenario(self):
+        """Removes the current active scenario."""
+        if self.scenario_list.currentItem() is None:
+            self.show_message(
+                tr("Select first a scenario from the scenario list."),
+                Qgis.Critical,
+            )
+            return
+        current_text = self.scenario_list.currentItem().data(QtCore.Qt.DisplayRole)
+        scenario_id = self.scenario_list.currentItem().data(QtCore.Qt.UserRole)
+        if current_text == "":
+            self.show_message(
+                tr("Could not fetch the selected scenario."),
+                Qgis.Critical,
+            )
+            return
+        reply = QtWidgets.QMessageBox.warning(
+            self,
+            tr("QGIS CPLUS PLUGIN"),
+            tr('Remove the scenario "{}"?').format(current_text),
+            QtWidgets.QMessageBox.Yes,
+            QtWidgets.QMessageBox.No,
+        )
+        if reply == QtWidgets.QMessageBox.Yes:
+            settings_manager.delete_scenario(scenario_id)
+            self.update_scenario_list()
 
     def prepare_message_bar(self):
         """Initializes the widget message bar settings"""
@@ -1006,6 +1294,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             analysis_task.info_message_changed.connect(self.show_message)
 
+            self.current_analysis_task = analysis_task
+
             progress_dialog.analysis_task = analysis_task
             progress_dialog.scenario_id = str(scenario.uuid)
 
@@ -1145,7 +1435,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             layer = instance_root.findLayer(layer.id())
             layer_clone = layer.clone()
             parent = layer.parent()
-            group.insertChildNode(0, layer_clone)  # Add to top of group
+            group.insertChildNode(
+                0, layer_clone
+            ) if group is not None else None  # Add to top of group
             parent.removeChildNode(layer)
 
     def post_analysis(self, scenario_result, task, report_manager, progress_dialog):
@@ -1172,6 +1464,25 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 os.path.dirname(raster), "weighted_activities"
             )
 
+            # Layer options
+            load_ncs = settings_manager.get_value(
+                Settings.NCS_WITH_CARBON, default=True, setting_type=bool
+            )
+            load_landuse = settings_manager.get_value(
+                Settings.LANDUSE_PROJECT, default=True, setting_type=bool
+            )
+            load_landuse_normalized = settings_manager.get_value(
+                Settings.LANDUSE_NORMALIZED, default=True, setting_type=bool
+            )
+
+            load_landuse_weighted = settings_manager.get_value(
+                Settings.LANDUSE_WEIGHTED, default=False, setting_type=bool
+            )
+
+            load_highest_position = settings_manager.get_value(
+                Settings.HIGHEST_POSITION, default=False, setting_type=bool
+            )
+
             scenario_name = scenario_result.scenario.name
             qgis_instance = QgsProject.instance()
             instance_root = qgis_instance.layerTreeRoot()
@@ -1191,22 +1502,30 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 counter += 1
 
             # Groups
+            activity_group = None
+            activity_weighted_group = None
+
             scenario_group = instance_root.insertGroup(0, group_name)
-            activity_group = scenario_group.addGroup(tr(ACTIVITY_GROUP_LAYER_NAME))
-            activity_weighted_group = (
-                scenario_group.addGroup(tr(ACTIVITY_WEIGHTED_GROUP_NAME))
-                if os.path.exists(im_weighted_dir)
-                else None
-            )
-            pathways_group = scenario_group.addGroup(tr(NCS_PATHWAYS_GROUP_LAYER_NAME))
+            if load_landuse:
+                activity_group = scenario_group.addGroup(tr(ACTIVITY_GROUP_LAYER_NAME))
+            if load_landuse_weighted:
+                activity_weighted_group = (
+                    scenario_group.addGroup(tr(ACTIVITY_WEIGHTED_GROUP_NAME))
+                    if os.path.exists(im_weighted_dir)
+                    else None
+                )
+            if load_ncs:
+                pathways_group = scenario_group.addGroup(
+                    tr(NCS_PATHWAYS_GROUP_LAYER_NAME)
+                )
+                pathways_group.setExpanded(False)
+                pathways_group.setItemVisibilityCheckedRecursive(False)
 
             # Group settings
-            activity_group.setExpanded(False)
+            activity_group.setExpanded(False) if activity_group else None
             activity_weighted_group.setExpanded(
                 False
             ) if activity_weighted_group else None
-            pathways_group.setExpanded(False)
-            pathways_group.setItemVisibilityCheckedRecursive(False)
 
             # Add scenario result layer to the canvas with styling
             layer_file = scenario_result.analysis_output.get("OUTPUT")
@@ -1234,98 +1553,110 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             # Add activities and pathways
             activity_index = 0
-            for activity in list_activities:
-                activity_name = activity.name
-                activity_layer = QgsRasterLayer(activity.path, activity.name)
-                activity_layer.setCustomProperty(
-                    ACTIVITY_IDENTIFIER_PROPERTY, str(activity.uuid)
-                )
-                list_pathways = activity.pathways
-
-                # Add activity layer with styling, if available
-                if activity_layer:
-                    renderer = self.style_activity_layer(activity_layer, activity)
-
-                    added_activity_layer = qgis_instance.addMapLayer(activity_layer)
-                    self.move_layer_to_group(added_activity_layer, activity_group)
-
-                    activity_layer.setRenderer(renderer)
-                    activity_layer.triggerRepaint()
-
-                # Add activity pathways
-                if len(list_pathways) > 0:
-                    # im_pathway_group = pathways_group.addGroup(im_name)
-                    activity_pathway_group = pathways_group.insertGroup(
-                        activity_index, activity_name
+            if load_landuse:
+                for activity in list_activities:
+                    activity_name = activity.name
+                    activity_layer = QgsRasterLayer(activity.path, activity.name)
+                    activity_layer.setCustomProperty(
+                        ACTIVITY_IDENTIFIER_PROPERTY, str(activity.uuid)
                     )
-                    activity_pathway_group.setExpanded(False)
+                    list_pathways = activity.pathways
 
-                    pw_index = 0
-                    for pathway in list_pathways:
-                        try:
-                            # pathway_name = pathway.name
-                            pathway_layer = pathway.to_map_layer()
+                    # Add activity layer with styling, if available
+                    if activity_layer:
+                        renderer = self.style_activity_layer(activity_layer, activity)
 
-                            added_pw_layer = qgis_instance.addMapLayer(pathway_layer)
-                            self.move_layer_to_group(
-                                added_pw_layer, activity_pathway_group
+                        added_activity_layer = qgis_instance.addMapLayer(activity_layer)
+                        self.move_layer_to_group(added_activity_layer, activity_group)
+
+                        activity_layer.setRenderer(renderer)
+                        activity_layer.triggerRepaint()
+                    # Add activity pathways
+                    if load_ncs:
+                        if len(list_pathways) > 0:
+                            # im_pathway_group = pathways_group.addGroup(im_name)
+                            activity_pathway_group = pathways_group.insertGroup(
+                                activity_index, activity_name
                             )
+                            activity_pathway_group.setExpanded(False)
 
-                            pathway_layer.triggerRepaint()
+                            pw_index = 0
+                            for pathway in list_pathways:
+                                try:
+                                    # pathway_name = pathway.name
+                                    pathway_layer = pathway.to_map_layer()
 
-                            pw_index = pw_index + 1
-                        except Exception as err:
-                            self.show_message(
-                                tr(
-                                    "An error occurred loading a pathway, "
-                                    "check logs for more information"
-                                ),
-                                level=Qgis.Info,
-                            )
-                            log(
-                                tr(
-                                    "An error occurred loading a pathway, "
-                                    'scenario analysis, error message "{}"'.format(err)
-                                )
-                            )
+                                    added_pw_layer = qgis_instance.addMapLayer(
+                                        pathway_layer
+                                    )
+                                    self.move_layer_to_group(
+                                        added_pw_layer, activity_pathway_group
+                                    )
 
-                activity_index = activity_index + 1
+                                    pathway_layer.triggerRepaint()
+
+                                    pw_index = pw_index + 1
+                                except Exception as err:
+                                    self.show_message(
+                                        tr(
+                                            "An error occurred loading a pathway, "
+                                            "check logs for more information"
+                                        ),
+                                        level=Qgis.Info,
+                                    )
+                                    log(
+                                        tr(
+                                            "An error occurred loading a pathway, "
+                                            'scenario analysis, error message "{}"'.format(
+                                                err
+                                            )
+                                        )
+                                    )
+
+                    activity_index = activity_index + 1
 
             weighted_activities = (
                 task.analysis_weighted_activities if task is not None else []
             )
 
-            for weighted_activity in weighted_activities:
-                weighted_activity_path = weighted_activity.path
-                weighted_activity_name = Path(weighted_activity_path).stem
+            if load_landuse_weighted:
+                for weighted_activity in weighted_activities:
+                    weighted_activity_path = weighted_activity.path
+                    weighted_activity_name = Path(weighted_activity_path).stem
 
-                if not weighted_activity_path.endswith(".tif"):
-                    continue
+                    if not weighted_activity_path.endswith(".tif"):
+                        continue
 
-                activity_weighted_layer = QgsRasterLayer(
-                    weighted_activity_path, weighted_activity_name, QGIS_GDAL_PROVIDER
-                )
+                    activity_weighted_layer = QgsRasterLayer(
+                        weighted_activity_path,
+                        weighted_activity_name,
+                        QGIS_GDAL_PROVIDER,
+                    )
 
-                # Set UUID for easier retrieval
-                activity_weighted_layer.setCustomProperty(
-                    ACTIVITY_IDENTIFIER_PROPERTY, str(weighted_activity.uuid)
-                )
+                    # Set UUID for easier retrieval
+                    activity_weighted_layer.setCustomProperty(
+                        ACTIVITY_IDENTIFIER_PROPERTY, str(weighted_activity.uuid)
+                    )
 
-                renderer = self.style_activity_layer(
-                    activity_weighted_layer, weighted_activity
-                )
-                activity_weighted_layer.setRenderer(renderer)
-                activity_weighted_layer.triggerRepaint()
+                    renderer = self.style_activity_layer(
+                        activity_weighted_layer, weighted_activity
+                    )
+                    activity_weighted_layer.setRenderer(renderer)
+                    activity_weighted_layer.triggerRepaint()
 
-                added_im_weighted_layer = qgis_instance.addMapLayer(
-                    activity_weighted_layer
-                )
-                self.move_layer_to_group(
-                    added_im_weighted_layer, activity_weighted_group
-                )
+                    added_im_weighted_layer = qgis_instance.addMapLayer(
+                        activity_weighted_layer
+                    )
+                    self.move_layer_to_group(
+                        added_im_weighted_layer, activity_weighted_group
+                    )
 
             # Initiate report generation
-            self.run_report(progress_dialog, report_manager)
+            if load_landuse_weighted and load_highest_position:
+                self.run_report(progress_dialog, report_manager)
+            else:
+                progress_dialog.processing_finished()
+
         else:
             # Re-initializes variables if processing were cancelled by the user
             # Not doing this breaks the processing if a user tries to run
@@ -1513,11 +1844,26 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.activity_widget.can_show_error_messages = True
             self.activity_widget.load()
 
-        elif index == 2:
+        elif index == 2 or index == 3:
+            tab_valid = True
+            msg = ""
+
+            # Check if NCS pathways are valid
+            ncs_valid = self.activity_widget.is_ncs_valid()
+            if not ncs_valid:
+                msg = self.tr(
+                    "NCS pathways are not valid or there is an ongoing validation process. "
+                    "Use the validation inspector to see more details."
+                )
+                tab_valid = False
+
             # Validate activity selection
             selected_activities = self.activity_widget.selected_activity_items()
             if len(selected_activities) == 0:
                 msg = self.tr("Please select at least one activity.")
+                tab_valid = False
+
+            if not tab_valid:
                 self.show_message(msg)
                 self.tab_widget.setCurrentIndex(1)
 
@@ -1609,7 +1955,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :returns reporting_feedback: Feedback instance to be used in storing
         processing status details.
         :rtype reporting_feedback: QgsFeedback
-
         """
 
         progress_changed = partial(self.on_reporting_progress_changed, progress_dialog)

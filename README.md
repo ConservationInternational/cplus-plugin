@@ -20,9 +20,9 @@
 
 * Available and supported in all the QGIS 3.x versions
 
-| Plugin version(s)                                                                                                                                                                                                          | Minimum QGIS version | Maximum QGIS version |
-|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|------|
-| ![GitHub Epic 1 Release)](https://img.shields.io/github/v/release/ConservationInternational/cplus-plugin?logo=semanticrelease&label=latest-release)<br> ![](https://img.shields.io/badge/stable_version-v0.2.0dev-blue?logo=semanticrelease) | 3.22                 | 3.99 |
+| Plugin version(s)                                                                                                                                                                                                                         | Minimum QGIS version | Maximum QGIS version |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|------|
+| ![GitHub Epic 1 Release)](https://img.shields.io/github/v/release/ConservationInternational/cplus-plugin?logo=semanticrelease&label=latest-release)<br> ![](https://img.shields.io/badge/stable_version-v0.0.1-blue?logo=semanticrelease) | 3.22                 | 3.99 |
 
 
 ### ⚙️ Installation
