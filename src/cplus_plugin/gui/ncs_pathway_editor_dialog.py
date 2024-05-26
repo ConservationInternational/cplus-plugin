@@ -280,16 +280,23 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         if not data_dir:
             data_dir = "/home"
 
-        carbon_path = self._show_carbon_path_selector(data_dir)
-        if not carbon_path:
+        carbon_paths = self._show_carbon_path_selector(data_dir, select_multiple=True)
+        if len(carbon_paths) == 0:
             return
 
-        if self._carbon_model.contains_layer_path(carbon_path):
-            error_tr = tr("Selected carbon layer already exists.")
-            self._show_warning_message(f"{error_tr}")
-            return
+        existing_layers = []
+        for carbon_path in carbon_paths:
+            if self._carbon_model.contains_layer_path(carbon_path):
+                existing_layers.append(carbon_path)
+                continue
 
-        self._carbon_model.add_carbon_layer(carbon_path)
+            self._carbon_model.add_carbon_layer(carbon_path)
+
+        if len(existing_layers) > 0:
+            self._message_bar.clearWidgets()
+            for layer in existing_layers:
+                error_tr = tr("Carbon layer already exists")
+                self._show_warning_message(f"{error_tr}: {layer}")
 
     def _on_edit_carbon_layer(self, activated: bool):
         """Slot raised to edit a carbon layer."""
@@ -298,16 +305,16 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             return
 
         carbon_item = carbon_items[0]
-        carbon_path = self._show_carbon_path_selector(carbon_item.layer_path)
-        if not carbon_path:
+        carbon_paths = self._show_carbon_path_selector(carbon_item.layer_path)
+        if len(carbon_paths) == 0:
             return
 
-        if self._carbon_model.contains_layer_path(carbon_path):
+        if self._carbon_model.contains_layer_path(carbon_paths[0]):
             error_tr = tr("Selected carbon layer already exists.")
             self._show_warning_message(f"{error_tr}")
             return
 
-        carbon_item.update(carbon_path)
+        carbon_item.update(carbon_paths[0])
 
     def _on_remove_carbon_layer(self, activated: bool):
         """Slot raised to remove one or more selected carbon layers."""
@@ -321,21 +328,33 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
                 continue
             self._carbon_model.removeRows(index.row(), 1)
 
-    def _show_carbon_path_selector(self, layer_dir: str) -> str:
+    def _show_carbon_path_selector(
+        self, layer_dir: str, select_multiple: bool = False
+    ) -> typing.List[str]:
         """Show file selector dialog for selecting a carbon layer."""
         filter_tr = tr("All files")
 
-        layer_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+        if select_multiple:
+            open_file_func = QtWidgets.QFileDialog.getOpenFileNames
+            title = self.tr("Select Carbon Layers")
+        else:
+            open_file_func = QtWidgets.QFileDialog.getOpenFileName
+            title = self.tr("Select Carbon Layer")
+
+        layer_paths, _ = open_file_func(
             self,
-            self.tr("Select Carbon Layer"),
+            title,
             layer_dir,
             f"{filter_tr} (*.*)",
             options=QtWidgets.QFileDialog.DontResolveSymlinks,
         )
-        if not layer_path:
-            return ""
+        if not layer_paths or len(layer_paths) == 0:
+            return []
 
-        return layer_path
+        if not select_multiple:
+            return [layer_paths]
+
+        return layer_paths
 
     def open_help(self, activated: bool):
         """Opens the user documentation for the plugin in a browser."""
