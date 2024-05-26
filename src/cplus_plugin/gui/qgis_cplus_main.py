@@ -57,7 +57,7 @@ from qgis.utils import iface
 from .activity_widget import ActivityContainerWidget
 from .priority_group_widget import PriorityGroupWidget
 
-from .financial_pwl_dialog import FinancialPwlDialog
+from .npv_manager_dialog import NpvPwlManagerDialog
 from .priority_layer_dialog import PriorityLayerDialog
 from .priority_group_dialog import PriorityGroupDialog
 
@@ -653,7 +653,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Slot raised to show dialog for defining inputs of a new
         financial PWL.
         """
-        financial_dialog = FinancialPwlDialog()
+        financial_dialog = NpvPwlManagerDialog()
         if financial_dialog.exec_() == QtWidgets.QDialog.Accepted:
             pass
 

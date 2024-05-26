@@ -18,7 +18,7 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 from qgis.PyQt.uic import loadUiType
 
 from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
-from .financial_npv_model import FinancialNpvModel
+from .npv_financial_model import NpvFinancialModel
 from ..lib.financials import compute_discount_value
 from ..utils import FileUtils, open_documentation, tr
 
@@ -173,8 +173,8 @@ class ValueFormatterItemDelegate(QtWidgets.QStyledItemDelegate):
         return formatter.formatDouble(float(value), QgsNumericFormatContext())
 
 
-class FinancialPwlDialog(QtWidgets.QDialog, WidgetUi):
-    """Dialog for creating a new financial PWL."""
+class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
+    """Dialog for managing NPV priority weighting layers for activities."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -194,7 +194,7 @@ class FinancialPwlDialog(QtWidgets.QDialog, WidgetUi):
         self.tb_copy_npv.clicked.connect(self.copy_npv)
 
         ok_button = self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
-        ok_button.setText(tr("Create"))
+        ok_button.setText(tr("Update"))
         self.buttonBox.accepted.connect(self._on_accepted)
 
         self._npv = 0.0
@@ -204,7 +204,7 @@ class FinancialPwlDialog(QtWidgets.QDialog, WidgetUi):
         self.btn_help.clicked.connect(self.open_help)
 
         # Set view model
-        self._npv_model = FinancialNpvModel()
+        self._npv_model = NpvFinancialModel()
         self.tv_revenue_costs.setModel(self._npv_model)
         self._revenue_delegate = FinancialValueItemDelegate()
         self._costs_delegate = FinancialValueItemDelegate()

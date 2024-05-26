@@ -18,7 +18,7 @@ from ..definitions.constants import (
 from ..utils import FileUtils, tr
 
 
-class FinancialNpvModel(QtGui.QStandardItemModel):
+class NpvFinancialModel(QtGui.QStandardItemModel):
     """View model for costs and revenues used in NPV computation."""
 
     def __init__(self, parent=None):
