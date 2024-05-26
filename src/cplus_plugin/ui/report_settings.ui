@@ -20,57 +20,13 @@
       <string>Report Information</string>
      </property>
      <layout class="QGridLayout" name="gridLayout">
-      <item row="10" column="2">
-       <widget class="QPlainTextEdit" name="txt_disclaimer">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>100</height>
-         </size>
-        </property>
-        <property name="verticalScrollBarPolicy">
-         <enum>Qt::ScrollBarAlwaysOff</enum>
-        </property>
-       </widget>
+      <item row="1" column="2">
+       <widget class="QLineEdit" name="txt_email"/>
       </item>
       <item row="6" column="0">
        <widget class="QLabel" name="lbl_logo_preview">
         <property name="text">
          <string>Logo preview</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="lbl_email">
-        <property name="text">
-         <string>Contact email</string>
-        </property>
-       </widget>
-      </item>
-      <item row="12" column="0">
-       <widget class="QLabel" name="lbl_license">
-        <property name="text">
-         <string>License</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="2">
-       <widget class="QLineEdit" name="txt_website"/>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="lbl_org">
-        <property name="text">
-         <string>Organization</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="2">
-       <widget class="QLineEdit" name="txt_organization"/>
-      </item>
-      <item row="5" column="0">
-       <widget class="QCheckBox" name="cb_custom_logo">
-        <property name="text">
-         <string>Custom logo</string>
         </property>
        </widget>
       </item>
@@ -84,16 +40,33 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="2">
-       <widget class="QLineEdit" name="txt_email"/>
+      <item row="4" column="2">
+       <widget class="QLineEdit" name="txt_website"/>
       </item>
-      <item row="12" column="2">
-       <widget class="QLineEdit" name="txt_license"/>
+      <item row="14" column="2">
+       <widget class="QPlainTextEdit" name="txt_policies">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>100</height>
+         </size>
+        </property>
+        <property name="placeholderText">
+         <string>Please enter the cultural policy and a brief description separated by a dash i.e. cultural policy - description. Each entry should be in a new line.</string>
+        </property>
+       </widget>
       </item>
-      <item row="6" column="2">
-       <widget class="QLabel" name="lbl_logo_image">
+      <item row="12" column="0">
+       <widget class="QLabel" name="lbl_license">
         <property name="text">
-         <string/>
+         <string>License</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="0">
+       <widget class="QLabel" name="lbl_footer">
+        <property name="text">
+         <string>Footer</string>
         </property>
        </widget>
       </item>
@@ -104,10 +77,78 @@
         </property>
        </widget>
       </item>
-      <item row="8" column="0">
-       <widget class="QLabel" name="lbl_footer">
+      <item row="0" column="2">
+       <widget class="QLineEdit" name="txt_organization"/>
+      </item>
+      <item row="5" column="2">
+       <widget class="QgsFileWidget" name="logo_file">
+        <property name="storageMode">
+         <enum>QgsFileWidget::GetFile</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="10" column="2">
+       <widget class="QPlainTextEdit" name="txt_disclaimer">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>100</height>
+         </size>
+        </property>
+        <property name="verticalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="placeholderText">
+         <string>Please specify the disclaimer information of the report elements.</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="lbl_website">
         <property name="text">
-         <string>Footer</string>
+         <string>Website</string>
+        </property>
+       </widget>
+      </item>
+      <item row="12" column="2">
+       <widget class="QLineEdit" name="txt_license">
+        <property name="placeholderText">
+         <string>Please enter the licence information of the report.</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QCheckBox" name="cb_custom_logo">
+        <property name="text">
+         <string>Custom logo</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="lbl_org">
+        <property name="text">
+         <string>Organization</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="lbl_email">
+        <property name="text">
+         <string>Contact email</string>
+        </property>
+       </widget>
+      </item>
+      <item row="14" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Cultural policies</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="2">
+       <widget class="QLabel" name="lbl_logo_image">
+        <property name="text">
+         <string/>
         </property>
        </widget>
       </item>
@@ -124,26 +165,6 @@
         </property>
        </widget>
       </item>
-      <item row="14" column="2">
-       <widget class="QPlainTextEdit" name="txt_culture">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>100</height>
-         </size>
-        </property>
-        <property name="placeholderText">
-         <string>Please enter the cultural consideration and a brief description separated by a dash i.e. cultural consideration - description. Each entry should be in a new line.</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="0">
-       <widget class="QLabel" name="lbl_website">
-        <property name="text">
-         <string>Website</string>
-        </property>
-       </widget>
-      </item>
       <item row="8" column="2">
        <widget class="QPlainTextEdit" name="txt_footer">
         <property name="maximumSize">
@@ -155,42 +176,8 @@
         <property name="verticalScrollBarPolicy">
          <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
-       </widget>
-      </item>
-      <item row="5" column="2">
-       <widget class="QgsFileWidget" name="logo_file">
-        <property name="storageMode">
-         <enum>QgsFileWidget::GetFile</enum>
-        </property>
-       </widget>
-      </item>
-      <item row="14" column="0">
-       <widget class="QLabel" name="label_2">
-        <property name="text">
-         <string>Cultural considerations</string>
-        </property>
-        <property name="wordWrap">
-         <bool>false</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="15" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>Cultural policies</string>
-        </property>
-       </widget>
-      </item>
-      <item row="15" column="2">
-       <widget class="QPlainTextEdit" name="txt_policies">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>100</height>
-         </size>
-        </property>
         <property name="placeholderText">
-         <string>Please enter the cultural policy and a brief description separated by a dash i.e. cultural policy - description. Each entry should be in a new line.</string>
+         <string>Please specify footer information for the report. It will show depending on the report template used.</string>
         </property>
        </widget>
       </item>

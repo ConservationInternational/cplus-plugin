@@ -172,11 +172,6 @@ class ReportSettingsWidget(QgsOptionsPageWidget, Ui_ReportSettingsWidget):
         culture_policies = self.txt_policies.toPlainText()
         settings_manager.set_value(Settings.REPORT_CULTURE_POLICIES, culture_policies)
 
-        culture_considerations = self.txt_culture.toPlainText()
-        settings_manager.set_value(
-            Settings.REPORT_CULTURE_CONSIDERATIONS, culture_considerations
-        )
-
     def load_settings(self):
         """Loads the settings and displays it in the options UI."""
         organization = settings_manager.get_value(
@@ -223,11 +218,6 @@ class ReportSettingsWidget(QgsOptionsPageWidget, Ui_ReportSettingsWidget):
             Settings.REPORT_CULTURE_POLICIES, default=""
         )
         self.txt_policies.setPlainText(culture_policies)
-
-        culture_considerations = settings_manager.get_value(
-            Settings.REPORT_CULTURE_CONSIDERATIONS, default=""
-        )
-        self.txt_culture.setPlainText(culture_considerations)
 
     def showEvent(self, event: QShowEvent) -> None:
         """Show event being called. This will display the plugin settings.
