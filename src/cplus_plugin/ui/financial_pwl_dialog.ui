@@ -256,9 +256,12 @@
        <widget class="QDoubleSpinBox" name="sb_min_normalize">
         <property name="minimumSize">
          <size>
-          <width>100</width>
+          <width>150</width>
           <height>0</height>
          </size>
+        </property>
+        <property name="prefix">
+         <string>US$</string>
         </property>
         <property name="decimals">
          <number>1</number>
@@ -288,9 +291,15 @@
        <widget class="QDoubleSpinBox" name="sb_max_normalize">
         <property name="minimumSize">
          <size>
-          <width>100</width>
+          <width>150</width>
           <height>0</height>
          </size>
+        </property>
+        <property name="showGroupSeparator" stdset="0">
+         <bool>false</bool>
+        </property>
+        <property name="prefix">
+         <string>US$</string>
         </property>
         <property name="decimals">
          <number>1</number>
@@ -317,7 +326,7 @@
         </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>297</width>
+          <width>197</width>
           <height>20</height>
          </size>
         </property>

@@ -17,6 +17,8 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
+from .component_item_model import ActivityItemModel
+from ..conf import settings_manager
 from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
 from .npv_financial_model import NpvFinancialModel
 from ..lib.financials import compute_discount_value
@@ -203,6 +205,12 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         self.icon_la.setPixmap(icon_pixmap)
         self.btn_help.clicked.connect(self.open_help)
 
+        # Load activities
+        self._activity_model = ActivityItemModel(load_pathways=False)
+        self.lst_activities.setModel(self._activity_model)
+        for activity in settings_manager.get_all_activities():
+            self._activity_model.add_activity(activity, None)
+
         # Set view model
         self._npv_model = NpvFinancialModel()
         self.tv_revenue_costs.setModel(self._npv_model)
@@ -216,6 +224,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         )
         self._npv_model.itemChanged.connect(self.on_item_changed)
         self._npv_model.rowsRemoved.connect(self.on_years_removed)
+        self.tv_revenue_costs.installEventFilter(self)
 
         self.sb_num_years.valueChanged.connect(self.on_number_years_changed)
         self.sb_discount.valueChanged.connect(self.on_discount_rate_changed)
@@ -227,11 +236,25 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         """Opens the user documentation for the plugin in a browser."""
         open_documentation(USER_DOCUMENTATION_SITE)
 
-    def resizeEvent(self, event: QtGui.QResizeEvent):
-        """Use this event to trigger the resizing of the table columns.
+    def eventFilter(self, observed_object: QtCore.QObject, event: QtCore.QEvent):
+        """Captures events sent to specific widgets.
 
-        :param event: Contains the geometry information of the dialog.
-        :type event: QtGui.QResizeEvent
+        :param observed_object: Object receiving the event.
+        :type observed_object: QtCore.QObject
+
+        :param event: The specific event being received by the observed object.
+        :type event: QtCore.QEvent
+        """
+        # Resize table columns based on the size of the table view.
+        if observed_object == self.tv_revenue_costs:
+            if event.type() == QtCore.QEvent.Resize:
+                self.resize_column_widths()
+
+        return super().eventFilter(observed_object, event)
+
+    def resize_column_widths(self):
+        """Resize column widths of the NPV revenue and cost table based
+        on its current width.
         """
         table_width = self.tv_revenue_costs.width()
         self.tv_revenue_costs.setColumnWidth(0, table_width * 0.1)
