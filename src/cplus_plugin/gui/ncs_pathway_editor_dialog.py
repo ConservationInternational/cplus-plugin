@@ -50,7 +50,7 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         icon_pixmap = QtGui.QPixmap(ICON_PATH)
         self.icon_la.setPixmap(icon_pixmap)
 
-        help_icon = FileUtils.get_icon("mActionHelpContents.svg")
+        help_icon = FileUtils.get_icon("mActionHelpContents_green.svg")
         self.btn_help.setIcon(help_icon)
         self.btn_help.clicked.connect(self.open_help)
 
