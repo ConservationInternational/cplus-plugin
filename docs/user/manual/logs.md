@@ -12,9 +12,9 @@
 
     In the bottom right corner of the scenario history, you will find four buttons with the following functions:
 
-        - **Plus Icon:** This button allows you to add the scenario history to this section. Clicking on it enables you to include additional scenarios for review and analysis within the scenario history.
+        - **Plus Icon:** This button allows you to save the scenario to the scenario history section. Clicking on it enables you to include additional scenarios for review and analysis within the scenario history.
 
-        - **Refresh Button:** The refresh button enables you to update the scenario history section with the latest information. Clicking on it will refresh the displayed data, ensuring you have access to the most recent scenario records.
+        - **Refresh Button:** This button serves the function of loading the selected scenario details into Step 1 of the interface. Upon selecting a scenario from the list within the Scenario History section, users can click the Round Arrow button to load the details of that scenario into Step 1. This action facilitates a seamless transition from reviewing scenario history to initiating further analysis or action within the system.
 
         - **Information Icon:** By clicking on the information icon, users can access useful information related to the scenarios. This feature provides additional insights, explanations, or tips to enhance the understanding and interpretation of the scenario history data.
 

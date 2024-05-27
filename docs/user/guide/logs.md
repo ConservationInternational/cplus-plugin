@@ -12,15 +12,15 @@ This section displays a record of past scenarios executed within the system.
 
 ### Buttons Available
 
-**Plus Icon:** Click this button to add scenarios to the history section for review and analysis.
+**Plus Icon:** Click this button to save the scenario to the history section for review and analysis.
 
-**Refresh Button:** Use this button to update the scenario history with the latest information.
+**Refresh Button:** This button loads the selected scenario details into step 1.
 
-**Information Icon:** Click here to access helpful information and tips related to scenarios.
+**Information Icon:** Click here to access helpful information and tips related to the selected scenario.
 
 **Minus Icon:** Remove specific scenarios from the history section to streamline displayed records.
 
-![Scenarion history](./img/logs-2.png)
+![Scenario history](./img/logs-2.png)
 
 
 ## Processing Log
