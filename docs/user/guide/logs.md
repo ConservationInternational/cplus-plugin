@@ -1,13 +1,41 @@
 # Log
 
-Click on the 1️⃣ `Log` option to access detailed logs of the processing steps.
+Welcome to the `Log Tab!` This section provides comprehensive insights into scenario history and processing logs. Here is a quick guide to navigating this feature.
+
+Click on the 1️⃣ `Log` option to access the log tab.
 
 ![Logs](./img/logs-1.png)
 
-The log feature displays all functions and processes performed by the plugin during analysis. These logs are saved within the scenario file.
+## Scenario History
 
-Each log entry is designed to provide clear and concise information, aiding in the tracking and debugging of the validation process within the system.
+This section displays a record of past scenarios executed within the system.
 
-![Logs](./img/logs-2.png)
+### Buttons Available
 
-The log option serves as a valuable tool for understanding the sequence of actions taken by the plugin, assisting users in troubleshooting and ensuring the accuracy of the analysis.
+**Plus Icon:** Click this button to add scenarios to the history section for review and analysis.
+
+**Refresh Button:** Use this button to update the scenario history with the latest information.
+
+**Information Icon:** Click here to access helpful information and tips related to scenarios.
+
+**Minus Icon:** Remove specific scenarios from the history section to streamline displayed records.
+
+![Scenarion history](./img/logs-2.png)
+
+
+## Processing Log
+
+Here, you can view detailed logs of the current processing scenario.
+This log provides real-time insights into actions, events, and outcomes within the ongoing scenario.
+
+![Processing log](./img/logs-3.png)
+
+## Usage Tips
+
+- Use the scenario history to review past activities and performance trends.
+
+- Utilise the processing log to monitor the progress of current scenarios and diagnose any issues.
+
+- Take advantage of the available buttons to manage and customise your log viewing experience.
+
+- By leveraging the Log Tab effectively, you can gain valuable insights into system activities, optimise performance, and streamline workflow processes. If you have any questions or need assistance, don't hesitate to reach out to our support team.
