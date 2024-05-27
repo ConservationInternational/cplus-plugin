@@ -15,3 +15,5 @@ Welcome to the Cplus-plugins user manual. This section of the documentation desc
 * **[Step 4:](step-4.md)** Step 4 is explained in detail in this documentation, outlining the adding outputs to the report.
 
 * **[Logs:](logs.md)** Documentation for the log.
+
+* **[Scenario File](./scenario-file.md)** This explains the scenario file details.
