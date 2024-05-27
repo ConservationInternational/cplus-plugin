@@ -39,3 +39,10 @@ This log provides real-time insights into actions, events, and outcomes within t
 - Take advantage of the available buttons to manage and customise your log viewing experience.
 
 - By leveraging the Log Tab effectively, you can gain valuable insights into system activities, optimise performance, and streamline workflow processes. If you have any questions or need assistance, don't hesitate to reach out to our support team.
+
+## Where reports are will stores?
+
+You can locate the report in the base directory folder. Within this folder, you will find all the scenario folders. Simply access the desired scenario folder to view the reports associated with that specific scenario. This organised structure allows for easy access to scenario-specific reports, facilitating efficient analysis and decision-making.
+
+![Base directory](./img/logs-4.png)
+![Scenario folder](./img/logs-5.png)
