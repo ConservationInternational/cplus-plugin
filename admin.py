@@ -382,7 +382,7 @@ def generate_plugin_repo_xml(
         _log(f"Processing release {tag_name}...", context=context)
         fragment = fragment_template.format(
             name=metadata.get("name"),
-            version=tag_name.replace("v", ""),
+            version=tag_name.replace("vq", ""),
             description=metadata.get("description"),
             about=metadata.get("about"),
             qgis_minimum_version=metadata.get("qgisMinimumVersion"),
