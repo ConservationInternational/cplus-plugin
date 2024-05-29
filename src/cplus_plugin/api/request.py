@@ -243,7 +243,11 @@ class CplusApiRequest:
         return result
 
     def finish_upload_layer(self, layer_uuid, upload_id, items):
-        payload = {"multipart_upload_id": upload_id, "items": items}
+        payload = {}
+        if upload_id:
+            payload["multipart_upload_id"] = upload_id
+        if items:
+            payload["items"] = items
         response = self.post(self.urls.layer_upload_finish(layer_uuid), payload)
         result = response.json()
         return result

@@ -189,15 +189,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         result = {"uuid": None}
         if self.processing_cancelled:
             return result
-        if upload_id:
-            result = self.request.finish_upload_layer(layer_uuid, upload_id, items)
-        else:
-            layer_detail = self.request.get_layer_detail(layer_uuid)
-            result = {
-                "name": layer_detail["filename"],
-                "size": layer_detail["size"],
-                "uuid": layer_detail["uuid"],
-            }
+
+        result = self.request.finish_upload_layer(layer_uuid, upload_id, items)
         return result
 
     def run_parallel_upload(self, upload_dict) -> typing.List[typing.Dict]:
@@ -240,6 +233,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         check_counts = len(self.analysis_activities) + 2 + len(masking_layers)
         items_to_check = {}
 
+        activity_pwl_uuids = set()
         for idx, activity in enumerate(self.analysis_activities):
             for pathway in activity.pathways:
                 if pathway:
@@ -252,10 +246,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
 
             for priority_layer in activity.priority_layers:
                 if priority_layer:
-                    if priority_layer["path"] and os.path.exists(
-                        priority_layer["path"]
-                    ):
-                        items_to_check[priority_layer["path"]] = "priority_layer"
+                    activity_pwl_uuids.add(priority_layer['uuid'])
 
             self.__update_scenario_status(
                 {
@@ -267,6 +258,14 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         sieve_enabled = self.get_settings_value(
             Settings.SIEVE_ENABLED, default=False, setting_type=bool
         )
+
+        priority_layers = settings_manager.get_priority_layers()
+        for priority_layer in priority_layers:
+            if priority_layer['uuid'] in activity_pwl_uuids and os.path.exists(priority_layer['path']):
+                for group in priority_layer['groups']:
+                    if int(group['value']) > 0:
+                        items_to_check[priority_layer["path"]] = "priority_layer"
+                        break
 
         if sieve_enabled:
             sieve_mask_layer = self.get_settings_value(
@@ -459,22 +458,21 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                     carbon_uuids = []
                     for carbon_path in pathway["carbon_paths"]:
                         if os.path.exists(carbon_path):
-                            if self.path_to_layer_mapping(carbon_path, None):
-                                carbon_uuids.append(self.path_to_layer_mapping(carbon_path))
+                            if self.path_to_layer_mapping.get(carbon_path, None):
+                                carbon_uuids.append(self.path_to_layer_mapping.get(carbon_path)['uuid'])
                     pathway["carbon_uuids"] = carbon_uuids
             new_priority_layers = []
             for priority_layer in activity["priority_layers"]:
                 if priority_layer:
-                    if priority_layer["path"] and os.path.exists(
-                        priority_layer["path"]
-                    ):
-                        if self.path_to_layer_mapping.get(priority_layer["path"], None):
-                            priority_layer["uuid"] = self.path_to_layer_mapping.get(
-                                priority_layer["path"]
-                            )["uuid"]
-                            priority_layer["layer_uuid"] = priority_layer["uuid"]
-                            new_priority_layers.append(priority_layer)
+                    new_priority_layers.append(priority_layer)
             activity["priority_layers"] = new_priority_layers
+
+        priority_layers = settings_manager.get_priority_layers()
+        for priority_layer in priority_layers:
+            if priority_layer['path'] in self.path_to_layer_mapping:
+                priority_layer['layer_uuid'] = self.path_to_layer_mapping[priority_layer['path']]['uuid']
+            else:
+                priority_layer['layer_uuid'] = ''
 
         self.scenario_detail = {
             "scenario_name": old_scenario_dict["name"],
@@ -494,8 +492,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             "mask_layer_uuids": mask_layer_uuids,
             "extent": old_scenario_dict["extent"]["bbox"],
             "priority_layer_groups": old_scenario_dict.get("priority_layer_groups", []),
-            "priority_layers": old_scenario_dict["activities"][0]["priority_layers"],
-            "activities": old_scenario_dict["activities"],
+            "priority_layers": json.loads(json.dumps(priority_layers, cls=CustomJsonEncoder)),
+            "activities": json.loads(json.dumps(old_scenario_dict["activities"], cls=CustomJsonEncoder)),
         }
 
     def __execute_scenario_analysis(self):
