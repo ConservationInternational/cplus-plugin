@@ -1042,7 +1042,7 @@ class ScenarioAnalysisTask(QgsTask):
 
                 layers = []
                 if not activity.pathways and (
-                    activity.path is None and activity.path == ""
+                    activity.path is None or activity.path == ""
                 ):
                     self.set_info_message(
                         tr(
@@ -1671,7 +1671,7 @@ class ScenarioAnalysisTask(QgsTask):
                         level=Qgis.Critical,
                     )
                     self.log_message(
-                        f"Problem when running activities normalization, "
+                        f"Problem when running activities weighting, "
                         f"there is no map layer for the activity {activity.name}"
                     )
 

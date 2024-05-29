@@ -20,7 +20,7 @@ CHUNK_SIZE = 100 * 1024 * 1024
 def log_response(response, request_name):
     if not settings_manager.get_value(Settings.DEBUG):
         return
-    log(f"****Response - {request_name} *****")
+    log(f"****Request - {request_name} *****")
     if isinstance(response, dict):
         log(json.dumps(response))
     else:
@@ -261,6 +261,7 @@ class CplusApiRequest:
         return True
 
     def submit_scenario_detail(self, scenario_detail):
+        log_response(scenario_detail, "scenario_detail")
         response = self.post(self.urls.scenario_submit(), scenario_detail)
         result = response.json()
         if response.status_code != 201:

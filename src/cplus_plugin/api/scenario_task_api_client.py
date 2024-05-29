@@ -18,19 +18,7 @@ from ..conf import settings_manager, Settings
 from ..models.base import Activity, NcsPathway
 from ..models.base import ScenarioResult
 from ..tasks import ScenarioAnalysisTask
-from ..utils import FileUtils, CustomJsonEncoder, todict, md5
-
-
-def download_file(url, local_filename):
-    parent_dir = os.path.dirname(local_filename)
-    if not os.path.exists(parent_dir):
-        os.makedirs(parent_dir)
-    with requests.get(url, stream=True) as r:
-        r.raise_for_status()
-        with open(local_filename, "wb") as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                if chunk:
-                    f.write(chunk)
+from ..utils import FileUtils, CustomJsonEncoder, todict
 
 
 def clean_filename(filename):
@@ -77,6 +65,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.scenario.uuid = None
         self.status_pooling = None
         self.logs = set()
+        self.total_file_output = 0
+        self.downloaded_output = 0
 
     def cancel_task(self, exception=None):
         """
@@ -260,11 +250,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             for pathway in activity.pathways:
                 if pathway:
                     if pathway.path and os.path.exists(pathway.path):
-                        items_to_check[pathway.path] = 'ncs_pathway'
+                        items_to_check[pathway.path] = "ncs_pathway"
 
                     for carbon_path in pathway.carbon_paths:
                         if os.path.exists(carbon_path):
-                            items_to_check[carbon_path] = 'ncs_carbon'
+                            items_to_check[carbon_path] = "ncs_carbon"
 
             for priority_layer in activity.priority_layers:
                 if priority_layer:
@@ -335,7 +325,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.total_file_upload_size = sum(os.stat(fp).st_size for fp in files_to_upload)
         self.total_file_upload_chunks = self.total_file_upload_size / CHUNK_SIZE
         final_results = self.run_parallel_upload(files_to_upload)
-        self.log_message(json.dumps(final_results))
 
         if self.processing_cancelled:
             return False
@@ -363,7 +352,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             )
 
         for uploaded_layer in new_uploaded_layer.values():
-            identifier = uploaded_layer["path"].replace(os.sep, '--')
+            identifier = uploaded_layer["path"].replace(os.sep, "--")
             self.path_to_layer_mapping[uploaded_layer["path"]] = uploaded_layer
             settings_manager.save_layer_mapping(uploaded_layer, identifier)
 
@@ -376,19 +365,21 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         uuid_to_path = {}
 
         for layer_path, group in items_to_check.items():
-            identifier = layer_path.replace(os.sep, '--')
+            identifier = layer_path.replace(os.sep, "--")
             uploaded_layer_dict = settings_manager.get_layer_mapping(identifier)
             if uploaded_layer_dict:
                 if "upload_id" in uploaded_layer_dict:
                     # if upload_id exists, then upload is not finished
                     output[layer_path] = False
                 if layer_path == uploaded_layer_dict["path"]:
-                    uuid_to_path[uploaded_layer_dict['uuid']] = layer_path
+                    uuid_to_path[uploaded_layer_dict["uuid"]] = layer_path
                     self.path_to_layer_mapping[layer_path] = uploaded_layer_dict
             else:
                 output[layer_path] = items_to_check[layer_path]
         layer_check_result = self.request.check_layer(list(uuid_to_path))
-        for layer_uuid in layer_check_result['unavailable'] + layer_check_result['invalid']:
+        for layer_uuid in (
+            layer_check_result["unavailable"] + layer_check_result["invalid"]
+        ):
             layer_path = uuid_to_path[layer_uuid]
             output[layer_path] = items_to_check[layer_path]
         return output
@@ -401,7 +392,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         old_scenario_dict = json.loads(
             json.dumps(todict(self.scenario), cls=CustomJsonEncoder)
         )
-        sieve_enabled = self.get_settings_value(Settings.SIEVE_ENABLED, default=False, setting_type=bool)
+        sieve_enabled = self.get_settings_value(
+            Settings.SIEVE_ENABLED, default=False, setting_type=bool
+        )
         sieve_threshold = float(
             self.get_settings_value(Settings.SIEVE_THRESHOLD, default=10.0)
         )
@@ -430,6 +423,21 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         resampling_method = self.get_settings_value(
             Settings.RESAMPLING_METHOD, default=0
         )
+        ncs_with_carbon = self.get_settings_value(
+            Settings.NCS_WITH_CARBON, default=False, setting_type=bool
+        )
+        landuse_project = self.get_settings_value(
+            Settings.LANDUSE_PROJECT, default=True, setting_type=bool
+        )
+        landuse_normalized = self.get_settings_value(
+            Settings.LANDUSE_NORMALIZED, default=True, setting_type=bool
+        )
+        landuse_weighted = self.get_settings_value(
+            Settings.LANDUSE_WEIGHTED, default=True, setting_type=bool
+        )
+        highest_position = self.get_settings_value(
+            Settings.HIGHEST_POSITION, default=True, setting_type=bool
+        )
 
         masking_layers = self.get_masking_layers()
         mask_layer_uuids = [
@@ -455,9 +463,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 if pathway:
                     if pathway["path"] and os.path.exists(pathway["path"]):
                         if self.path_to_layer_mapping.get(pathway["path"], None):
-                            pathway["uuid"] = self.path_to_layer_mapping.get(pathway["path"])[
-                                "uuid"
-                            ]
+                            pathway["uuid"] = self.path_to_layer_mapping.get(
+                                pathway["path"]
+                            )["uuid"]
                             pathway["layer_uuid"] = pathway["uuid"]
                             pathway["layer_type"] = 0
 
@@ -465,7 +473,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                     for carbon_path in pathway["carbon_paths"]:
                         if os.path.exists(carbon_path):
                             if self.path_to_layer_mapping.get(carbon_path, None):
-                                carbon_uuids.append(self.path_to_layer_mapping.get(carbon_path)['uuid'])
+                                carbon_uuids.append(
+                                    self.path_to_layer_mapping.get(carbon_path)["uuid"]
+                                )
                     pathway["carbon_uuids"] = carbon_uuids
             new_priority_layers = []
             for priority_layer in activity["priority_layers"]:
@@ -495,6 +505,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             "sieve_threshold": sieve_threshold,
             "sieve_mask_path": sieve_mask_path,
             "sieve_mask_uuid": sieve_mask_uuid,
+            "ncs_with_carbon": ncs_with_carbon,
+            "landuse_project": landuse_project,
+            "landuse_normalized": landuse_normalized,
+            "landuse_weighted": landuse_weighted,
+            "highest_position": highest_position,
             "mask_path": ", ".join(masking_layers),
             "mask_layer_uuids": mask_layer_uuids,
             "extent": old_scenario_dict["extent"]["bbox"],
@@ -564,10 +579,14 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 del pathway["layer_uuid"]
             if "carbon_uuids" in pathway:
                 del pathway["carbon_uuids"]
-            pathway["path"] = download_dict[os.path.basename(pathway["path"])]
-            ncs_pathways.append(NcsPathway(**pathway))
+            pathway_filename = os.path.basename(pathway["path"])
+            if pathway_filename in download_dict:
+                pathway["path"] = download_dict[pathway_filename]
+                ncs_pathways.append(NcsPathway(**pathway))
         activity["pathways"] = ncs_pathways
-        activity["path"] = download_dict[os.path.basename(activity["path"])]
+        activity_filename = os.path.basename(activity["path"])
+        if activity_filename in download_dict:
+            activity["path"] = download_dict[activity_filename]
         activity_obj = Activity(**activity)
         return activity_obj
 
@@ -603,6 +622,25 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             "updated_detail"
         ]["priority_layer_groups"]
 
+    def download_file(self, url, local_filename):
+        parent_dir = os.path.dirname(local_filename)
+        if not os.path.exists(parent_dir):
+            os.makedirs(parent_dir)
+        with requests.get(url, stream=True) as r:
+            r.raise_for_status()
+            with open(local_filename, "wb") as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+        self.downloaded_output += 1
+        self.__update_scenario_status(
+            {
+                "progress_text": f"Downloading output files",
+                "progress": int((self.downloaded_output / self.total_file_output) * 90)
+                + 5,
+            }
+        )
+
     def __retrieve_scenario_outputs(self, scenario_uuid):
         """
         Set scenario output object based on scenario UUID
@@ -612,6 +650,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             {"progress_text": "Downloading output files", "progress": 0}
         )
         output_list = self.request.fetch_scenario_output_list(scenario_uuid)
+        self.__update_scenario_status(
+            {"progress_text": "Downloading output files", "progress": 5}
+        )
+        self.total_file_output = len(output_list["results"])
+        self.downloaded_output = 0
         urls_to_download = []
         download_paths = []
         for output in output_list["results"]:
@@ -632,7 +675,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=3 if os.cpu_count() > 3 else 1
         ) as executor:
-            executor.map(download_file, urls_to_download, download_paths)
+            executor.map(self.download_file, urls_to_download, download_paths)
 
         self.__set_scenario(output_list, download_paths)
 
