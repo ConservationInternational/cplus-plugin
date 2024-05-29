@@ -93,3 +93,9 @@ Add pathways to an existing activity:
 *Figure 5: Selected activities*
 
 <blockquote>Before proceeding to Step 3, a user needs to define at least one NCS pathway layer for an activity, otherwise a warning message will be displayed. </blockquote>
+
+Click [here](step-3.md) to explore the step 3 section.
+
+Click [here](step-4.md) to explore the step 4 section.
+
+Click [here](logs.md) to explore the log section.

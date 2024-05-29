@@ -21,3 +21,11 @@ Step 1 allows a user to set up the scenario details and parameters.
 ![Bushbuckridge pilot area](img/manual-bushbuckridge.png)
 
 Overall, Step 1 provides users with a comprehensive set of tools to define the scenario parameters, ensuring accuracy and relevance in subsequent analysis and reporting.
+
+Click [here](step-2.md) to explore the step 2 section.
+
+Click [here](step-3.md) to explore the step 3 section.
+
+Click [here](step-4.md) to explore the step 4 section.
+
+Click [here](logs.md) to explore the log section.

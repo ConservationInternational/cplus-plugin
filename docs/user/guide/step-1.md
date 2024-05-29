@@ -36,3 +36,7 @@ If a user is outside the Bushbuck Ridge region, they will need to create custom 
 Click [here](step-2.md) to explore the step 2 section.
 
 Click [here](step-3.md) to explore the step 3 section.
+
+Click [here](step-4.md) to explore the step 4 section.
+
+Click [here](logs.md) to explore the log section.
