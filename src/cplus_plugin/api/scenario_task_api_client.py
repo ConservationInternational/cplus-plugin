@@ -236,7 +236,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
 
             for priority_layer in activity.priority_layers:
                 if priority_layer:
-                    activity_pwl_uuids.add(priority_layer['uuid'])
+                    activity_pwl_uuids.add(priority_layer.get("uuid", ""))
 
             self.__update_scenario_status(
                 {
@@ -249,12 +249,12 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             Settings.SIEVE_ENABLED, default=False, setting_type=bool
         )
 
-        priority_layers = settings_manager.get_priority_layers()
+        priority_layers = self.get_priority_layers()
         for priority_layer in priority_layers:
-            if priority_layer['uuid'] in activity_pwl_uuids and os.path.exists(priority_layer['path']):
-                for group in priority_layer['groups']:
-                    if int(group['value']) > 0:
-                        items_to_check[priority_layer["path"]] = "priority_layer"
+            if priority_layer.get("uuid", "") in activity_pwl_uuids and os.path.exists(priority_layer.get("path", "")):
+                for group in priority_layer.get("groups", []):
+                    if int(group.get("value", 0)) > 0:
+                        items_to_check[priority_layer.get("path", "")] = "priority_layer"
                         break
 
         if sieve_enabled:
@@ -472,10 +472,10 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 p for p in activity["priority_layers"] if p
             ]
 
-        priority_layers = settings_manager.get_priority_layers()
+        priority_layers = self.get_priority_layers()
         for priority_layer in priority_layers:
-            if priority_layer['path'] in self.path_to_layer_mapping:
-                priority_layer['layer_uuid'] = self.path_to_layer_mapping[priority_layer['path']]['uuid']
+            if priority_layer.get("path", "") in self.path_to_layer_mapping:
+                priority_layer['layer_uuid'] = self.path_to_layer_mapping[priority_layer.get("path", "")]['uuid']
             else:
                 priority_layer['layer_uuid'] = ''
 
