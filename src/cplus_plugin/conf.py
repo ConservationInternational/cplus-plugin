@@ -932,12 +932,12 @@ class SettingsManager(QtCore.QObject):
 
         :param input_layer: Layer mapping
         :type input_layer: dict
-        :param identifier: MD5 checksum of the file
+        :param identifier: file identifier using path
         :type identifier: str
         """
 
         if not identifier:
-            identifier = input_layer["path"].replace(os.sep, '--')
+            identifier = input_layer["path"].replace(os.sep, "--")
         settings_key = self._get_layer_mappings_settings_base()
 
         with qgis_settings(settings_key) as settings:
