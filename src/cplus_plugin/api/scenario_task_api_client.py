@@ -77,6 +77,15 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             self.status_pooling.cancelled = True
         super().cancel_task(exception)
 
+    def get_masking_layers(self):
+        masking_layers_paths = self.get_settings_value(
+            Settings.MASK_LAYERS_PATHS, default=None
+        )
+        masking_layers = masking_layers_paths.split(",") if masking_layers_paths else []
+        masking_layers.remove("") if "" in masking_layers else None
+        masking_layers = [ml.replace('.shp', '.zip') for ml in masking_layers]
+        return masking_layers
+
     def on_terminated(self):
         """Called when the task is terminated."""
         # check if there is ongoing upload
