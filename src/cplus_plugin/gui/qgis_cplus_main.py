@@ -47,6 +47,7 @@ from .priority_group_dialog import PriorityGroupDialog
 from .priority_group_widget import PriorityGroupWidget
 from .priority_layer_dialog import PriorityLayerDialog
 from .progress_dialog import ProgressDialog
+from ..trends_earth import auth
 from ..api.scenario_task_api_client import ScenarioAnalysisTaskApiClient
 from ..conf import settings_manager, Settings
 from ..definitions.constants import (
@@ -1171,6 +1172,23 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 level=Qgis.Critical,
             )
             return
+
+        if self.processing_type.isChecked():
+            auth_config = auth.get_auth_config(auth.TE_API_AUTH_SETUP, warn=None)
+            if (
+                not auth_config
+                or not auth_config.config("username")
+                or not auth_config.config("password")
+            ):
+                self.show_message(
+                    tr(
+                        f"Trends.Earth account is not set! "
+                        f"Go to plugin settings in order to set it."
+                    ),
+                    level=Qgis.Critical,
+                )
+                return
+
         self.analysis_extent = SpatialExtent(
             bbox=[
                 passed_extent.xMinimum(),
