@@ -482,10 +482,12 @@ class NcsComponentWidget(ModelComponentWidget):
         self._validation_submit_result = None
 
         ncs_pathways = self.pathways()
-        # No need for validating just one pathway since validation is
-        # relative to the given NCS pathways.
-        if len(ncs_pathways) < 2:
-            log(message="Cannot validate only one NCS pathway.", info=False)
+        # No need for validating if there are no NCS pathways.
+        if len(ncs_pathways) == 0:
+            log(
+                message="At least one NCS pathway is required for the validation process to be initiated.",
+                info=False,
+            )
             return
 
         self._validation_submit_result = validation_manager.validate_ncs_pathways(

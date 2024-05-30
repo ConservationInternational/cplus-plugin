@@ -113,6 +113,18 @@ class BaseRuleValidator:
         msg = f"{self._config.rule_name} - {message}"
         log(message=msg, info=info)
 
+    def is_comparative(self) -> bool:
+        """Indicate whether the validation check is comparative i.e. relative to
+        the datasets or an absolute check. The former requires more than one
+        dataset to execute the validation whereas the latter can be executed
+        even for one dataset.
+
+        :returns: True if the validator is comparative else False. Default is
+        True.
+        :rtype: bool
+        """
+        return True
+
     def _set_progress(self, progress: float):
         """Set the current progress of the validator.
 
@@ -136,8 +148,8 @@ class BaseRuleValidator:
         or False if it failed.
         :rtype: bool
         """
-        if len(self.model_components) < 2:
-            msg = tr("At least two layers are required for the validation process.")
+        if len(self.model_components) == 0:
+            msg = tr("No datasets for validation.")
             self.log(msg, False)
 
             return False
@@ -210,6 +222,10 @@ class RasterValidator(BaseRuleValidator):
         :rtype: RuleType
         """
         return RuleType.DATA_TYPE
+
+    def is_comparative(self) -> bool:
+        """Validator can be used for even one dataset."""
+        return False
 
 
 class CrsValidator(BaseRuleValidator):
@@ -414,6 +430,10 @@ class ProjectedCrsValidator(BaseRuleValidator):
         """
         return RuleType.PROJECTED_CRS
 
+    def is_comparative(self) -> bool:
+        """Validator can be used for even one dataset."""
+        return False
+
 
 class NoDataValueValidator(BaseRuleValidator):
     """Checks if applicable input datasets have the same no data value."""
@@ -506,6 +526,10 @@ class NoDataValueValidator(BaseRuleValidator):
         :rtype: RuleType
         """
         return RuleType.NO_DATA_VALUE
+
+    def is_comparative(self) -> bool:
+        """Validator can be used for even one dataset."""
+        return False
 
 
 class ResolutionValidator(BaseRuleValidator):
@@ -733,7 +757,7 @@ class CarbonLayerResolutionValidator(ResolutionValidator):
             progress += progress_increment
             self._set_progress(progress)
 
-        if len(carbon_resolution_definitions) > 1 and status:
+        if len(carbon_resolution_definitions) > 0 and status:
             status = False
 
         summary = ""
@@ -771,6 +795,10 @@ class CarbonLayerResolutionValidator(ResolutionValidator):
         """
         return RuleType.CARBON_RESOLUTION
 
+    def is_comparative(self) -> bool:
+        """Validator can be used for even one dataset."""
+        return False
+
 
 class DataValidator(QgsTask):
     """Abstract runner for checking a set of datasets against specific
@@ -792,6 +820,7 @@ class DataValidator(QgsTask):
 
         self._result: ValidationResult = None
         self._rule_validators = []
+        self._applicable_rule_validators = []
         self._feedback = ValidationFeedback()
         self._feedback.rule_progress_changed.connect(self._on_rule_progress_changed)
         self._feedback.rule_validation_completed.connect(
@@ -822,7 +851,22 @@ class DataValidator(QgsTask):
         """
         status = True
 
-        for i, rule_validator in enumerate(self._rule_validators):
+        # Set validators to use based on the number of layers
+        if len(self.model_components) == 1:
+            self._applicable_rule_validators = [
+                validator
+                for validator in self._rule_validators
+                if not validator.is_comparative()
+            ]
+        else:
+            self._applicable_rule_validators = self._rule_validators
+
+        if len(self._applicable_rule_validators) == 0:
+            msg = tr("No rule validators available for the given model components.")
+            self.log(msg, False)
+            return False
+
+        for i, rule_validator in enumerate(self._applicable_rule_validators):
             if self.isCanceled():
                 status = False
                 break
@@ -909,8 +953,8 @@ class DataValidator(QgsTask):
 
             return False
 
-        if len(self.model_components) < 2:
-            msg = tr("At least two datasets are required for the validation process.")
+        if len(self.model_components) == 0:
+            msg = tr("At least one dataset is required for the validation process.")
             self.log(msg, False)
 
             return False
@@ -1004,7 +1048,8 @@ class DataValidator(QgsTask):
         """
         if result:
             rule_results = [
-                rule_validator.result for rule_validator in self._rule_validators
+                rule_validator.result
+                for rule_validator in self._applicable_rule_validators
             ]
             self._result = ValidationResult(rule_results, self.MODEL_COMPONENT_TYPE)
             self._feedback.validation_completed.emit(self._result)

@@ -165,10 +165,9 @@ class ValidationInspectorDialog(QtWidgets.QDialog, WidgetUi):
     def on_revalidate_datasets(self):
         """Revalidate the datasets."""
         ncs_pathways = settings_manager.get_all_ncs_pathways()
-        # No need for validating just one pathway since validation is
-        # relative to the given NCS pathways.
-        if len(ncs_pathways) < 2:
-            log(message="Cannot validate only one NCS pathway.", info=False)
+        # No need for validating if there are no NCS pathways.
+        if len(ncs_pathways) == 0:
+            log(message="No datasets for validation.", info=False)
 
             return
 
