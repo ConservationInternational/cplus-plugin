@@ -22,9 +22,8 @@ class NpvParameters:
 
 
 @dataclasses.dataclass
-class ActivityNpvMapping:
-    """Mapping of the NPV parameters to the corresponding Activity model.
-    """
+class ActivityNpv:
+    """Mapping of the NPV parameters to the corresponding Activity model."""
 
     params: NpvParameters
     enabled: bool
@@ -48,7 +47,76 @@ class ActivityNpvCollection:
     """Collection for all ActivityNpvMapping configurations that have been
     specified by the user.
     """
+
     minimum_value: float
     maximum_value: float
     use_computed: bool = False
-    mappings: typing.List[ActivityNpvMapping] = dataclasses.field(default_factory=list)
+    mappings: typing.List[ActivityNpv] = dataclasses.field(default_factory=list)
+
+    def activity_npv(self, activity_identifier: str) -> typing.Optional[ActivityNpv]:
+        """Gets the mapping of an activity's NPV mapping if defined.
+
+        :param activity_identifier: Unique identifier of an activity whose
+        NPV mapping is to be retrieved.
+        :type activity_identifier: str
+
+        :returns: The activity's NPV mapping else None if not found.
+        :rtype: ActivityNpv
+        """
+        matching_mapping = [
+            activity_npv
+            for activity_npv in self.mappings
+            if activity_npv.activity_id == activity_identifier
+        ]
+
+        return None if len(matching_mapping) == 0 else matching_mapping[0]
+
+    def update_computed_normalization_range(self) -> bool:
+        """Update the minimum and maximum normalization values
+        based on the absolute values of the existing ActivityNpv
+        objects.
+
+        :returns: True if the min/max values were updated else False if
+        there are no mappings or valid absolute NPV values defined.
+        """
+        if len(self.mappings) == 0:
+            return False
+
+        valid_npv_values = [
+            activity_npv.params.absolute_npv
+            for activity_npv in self.mappings
+            if activity_npv.params.absolute_npv
+        ]
+        if len(valid_npv_values) == 0:
+            return False
+
+        self.minimum_value = min(valid_npv_values)
+        self.maximum_value = max(valid_npv_values)
+
+        return True
+
+    def normalize_npvs(self):
+        """Normalize the NPV values of the activities using the specified
+        normalization range.
+
+        If the absolute NPV values are less than or greater than the
+        normalization range, then they will be truncated to 0.0 and 1.0
+        respectively. To avoid such a situation from occurring, it is recommended
+        to make sure that the ranges are synchronized using the latest absolute
+        NPV values.
+        """
+        norm_range = float(self.maximum_value - self.minimum_value)
+
+        for activity_npv in self.mappings:
+            absolute_npv = activity_npv.params.absolute_npv
+            if not absolute_npv:
+                continue
+
+            if absolute_npv <= self.minimum_value:
+                normalized_npv = 0.0
+            elif absolute_npv >= self.maximum_value:
+                normalized_npv = 1.0
+            else:
+                normalized_npv = (absolute_npv - self.minimum_value) / norm_range
+
+            activity_npv.params.normalized_npv = normalized_npv
