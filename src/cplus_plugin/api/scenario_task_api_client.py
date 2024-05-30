@@ -72,7 +72,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         """
         Cancel QGIS task and cancel scenario processing on API.
         """
-        self.log_message("CANCELLED")
         if self.status_pooling:
             self.status_pooling.cancelled = True
         super().cancel_task(exception)
@@ -80,7 +79,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
     def on_terminated(self):
         """Called when the task is terminated."""
         # check if there is ongoing upload
-        # TODO: we may need to check for ongoing upload in current scenario only
         layer_mapping = settings_manager.get_all_layer_mapping()
         for identifier, layer in layer_mapping.items():
             if "upload_id" not in layer:
@@ -109,8 +107,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             err = f"Problem uploading layer to the server: {e}\n"
             self.log_message(err, info=False)
             self.set_info_message(err, level=Qgis.Critical)
-            self.error = e
-            self.cancel_task()
+            self.cancel_task(e)
             return False
         if self.processing_cancelled:
             return False
@@ -122,8 +119,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             err = f"Problem building scenario JSON: {ex}\n"
             self.log_message(err, info=False)
             self.set_info_message(err, level=Qgis.Critical)
-            self.error = ex
-            self.cancel_task()
+            self.cancel_task(ex)
             return False
 
         try:
@@ -133,8 +129,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             err = f"Problem executing scenario analysis in the server side: {ex}\n"
             self.log_message(err, info=False)
             self.set_info_message(err, level=Qgis.Critical)
-            self.error = ex
-            self.cancel_task()
+            self.cancel_task(ex)
             return False
         return not self.processing_cancelled
 

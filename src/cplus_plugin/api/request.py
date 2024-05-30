@@ -34,6 +34,8 @@ class CplusApiRequestError(Exception):
         """init."""
         if isinstance(message, dict):
             message = json.dumps(message)
+        elif isinstance(message, list):
+            message = ", ".join(message)
         log(message, info=False)
         self.message = message
         super().__init__(self.message)
