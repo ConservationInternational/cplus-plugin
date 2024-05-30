@@ -51,7 +51,7 @@ class ValidationManager(QtCore.QObject):
         """Validates a set of NcsPathway datasets and returns the status
         of the submission.
 
-        :param pathways: A list of NcsPathway objects to be validated. More than one
+        :param pathways: A list of NcsPathway objects to be validated. At least one
         NcsPathway is required for the validation process to be executed.
         :type pathways: list
 
@@ -62,7 +62,7 @@ class ValidationManager(QtCore.QObject):
         :returns: Result object containing the task id and status of the submission.
         :rtype: SubmitResult
         """
-        if len(pathways) < 2:
+        if len(pathways) == 0:
             return SubmitResult("", False, None)
 
         if cancel_running:

@@ -72,3 +72,7 @@ These options will be available once the analysis has finished. The options will
 - **Help**: Takes the user to the User's documentation site.
 
 Overall, Step 3 provides users with tools to assign priorities and weights to different factors, guiding the analysis process and helping to identify key areas of focus in the scenario.
+
+Click [here](step-4.md) to explore the step 4 section.
+
+Click [here](logs.md) to explore the log section.

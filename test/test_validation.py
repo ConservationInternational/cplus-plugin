@@ -134,16 +134,6 @@ class TestDataValidation(TestCase):
         result = validation_manager.validate_ncs_pathways(ncs_pathways)
         self.assertTrue(result.success)
 
-    def test_manager_submit_result_with_one_pathway(self):
-        """Test if a request for validating one NCS pathway, through
-        the validation manager, failed.
-        """
-        validation_manager = ValidationManager()
-        ncs_pathways = get_ncs_pathways()
-        one_pathway = [ncs_pathways[0]]
-        result = validation_manager.validate_ncs_pathways(one_pathway)
-        self.assertFalse(result.success)
-
     def test_manager_validation_result(self):
         """Test the validation result through the validation manager."""
         validation_result_id = None

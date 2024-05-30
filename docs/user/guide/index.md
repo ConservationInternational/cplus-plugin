@@ -13,3 +13,7 @@ Welcome to the Cplus user guide. In this section of the documentation, we aim to
 * **[Step 2:](step-2.md)** Step 2 guides users through the process of defining NCS pathways and creating activities, including adding pathways to activities, editing activities, and configuring the ordering of pixel values for scenario output.
 
 * **[Step 3:](step-3.md)** In Step 3, users learn how to prioritise activities by assigning raster layers depicting weighting factors like biodiversity to the activities using groups that can be assigned in order of importance.
+
+* **[Step 4:](step-4.md)** Step 4 guides users in selecting outputs for saving into the file system to generate reports and choosing the processing option for processing the analysis.
+
+* **[Logs:](logs.md)** Access the comprehensive logs for the analysis in the `Log` option.

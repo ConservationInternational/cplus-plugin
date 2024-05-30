@@ -79,7 +79,7 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._layer = self._activity.to_map_layer()
             self._update_controls()
 
-        help_icon = FileUtils.get_icon("mActionHelpContents.svg")
+        help_icon = FileUtils.get_icon("mActionHelpContents_green.svg")
         self.btn_help.setIcon(help_icon)
 
         self.txt_description.textChanged.connect(self.description_changed)

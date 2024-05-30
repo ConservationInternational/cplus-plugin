@@ -1,4 +1,4 @@
-# Step 4 User Manual
+# Step4: Select outputs and precessing options
 
 1. **Step 4:** `Step 4` guides the user to select the outputs to be saved into the file system for report generation. By clicking on the `Step 4` option, the user will navigate to the section dedicated to producing outputs. Here, the user finds a list of available outputs, each representing data that can be included in the report.
 
@@ -53,3 +53,5 @@ This step is crucial for tailoring the outputs to include only the necessary inf
     3. **Cancel:** Click on the `Cancel` button to terminate the report generation process. Upon clicking this button, it will transform into the `Close` button. Click on the `Close` button to dismiss the pop-up window.
 
     ![Close action](./img/step-4-4.png)
+
+Click [here](logs.md) to explore the log section.

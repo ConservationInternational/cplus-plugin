@@ -19,6 +19,8 @@ nav:
                 - Step 1: user/guide/step-1.md
                 - Step 2: user/guide/step-2.md
                 - Step 3: user/guide/step-3.md
+                - Step 4: user/guide/step-4.md
+                - Logs: user/guide/logs.md
       - Manual:
                 - user/manual/index.md
                 - Calculation and Formula: user/manual/calculation-and-formula.md
@@ -28,6 +30,7 @@ nav:
                 - Step 4: user/manual/step-4.md
                 - Logs: user/manual/logs.md
                 - Settings: user/manual/settings.md
+                - Scenario File: user/manual/scenario-file.md
   - Administrators:
       - administrator/index.md
       - Guide: administrator/guide/index.md

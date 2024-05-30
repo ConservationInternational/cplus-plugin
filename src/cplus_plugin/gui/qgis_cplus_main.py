@@ -1227,7 +1227,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             progress_dialog.run_dialog()
 
             progress_dialog.change_status_message(
-                tr("Raster calculation for activities' pathways")
+                tr("Raster calculation for activities pathways")
             )
 
             selected_pathway = None
@@ -1248,6 +1248,19 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 float(self.analysis_extent.bbox[1]),
                 float(self.analysis_extent.bbox[3]),
             )
+
+            if not pathway_found:
+                self.show_message(
+                    tr(
+                        "NCS pathways were not found in the selected activities, "
+                        "Make sure to define pathways for the selected activities "
+                        "before running the scenario"
+                    )
+                )
+                self.processing_cancelled = True
+                self.run_scenario_btn.setEnabled(True)
+
+                return
 
             selected_pathway_layer = QgsRasterLayer(
                 selected_pathway.path, selected_pathway.name
@@ -1878,6 +1891,22 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             selected_activities = self.activity_widget.selected_activity_items()
             if len(selected_activities) == 0:
                 msg = self.tr("Please select at least one activity.")
+                tab_valid = False
+
+            # Verify that the selected activities have at least one NCS pathway
+            zero_pathway_activities = []
+            for activity_item in selected_activities:
+                if len(activity_item.ncs_pathways) == 0:
+                    zero_pathway_activities.append(activity_item.activity.name)
+
+            if len(zero_pathway_activities) > 0:
+                activity_tr = (
+                    self.tr("activity has")
+                    if len(zero_pathway_activities) == 1
+                    else self.tr("activities have")
+                )
+                tr_msg = self.tr("no NCS pathways defined.")
+                msg = f"{', '.join(zero_pathway_activities)} {activity_tr} {tr_msg}"
                 tab_valid = False
 
             if not tab_valid:

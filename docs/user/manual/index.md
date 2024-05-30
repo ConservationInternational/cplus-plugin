@@ -4,6 +4,8 @@ Welcome to the Cplus-plugins user manual. This section of the documentation desc
 
 * **[Calculations and Formulas:](calculation-and-formula.md)** This section provides details about the calculations and formulas used within the platform.
 
+* **[Settings:](./settings.md)** Users can access this section to manage the plugin settings.
+
 * **[Step 1:](step-1.md)** This page guides users through Step 1 of a process or workflow, detailing the necessary actions and inputs required.
 
 * **[Step 2:](step-2.md)** Users can refer to this section to understand Step 2 of the process, including the activities and pathways involved.
@@ -14,4 +16,4 @@ Welcome to the Cplus-plugins user manual. This section of the documentation desc
 
 * **[Logs:](logs.md)** Documentation for the log.
 
-* **[Settings:](./settings.md)** Users can access this section to manage the plugin settings.
+* **[Scenario File](./scenario-file.md)** This explains the scenario file details.
