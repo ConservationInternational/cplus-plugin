@@ -64,7 +64,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.path_to_layer_mapping = {}
         self.scenario.uuid = None
         self.status_pooling = None
-        self.logs = set()
+        self.logs = []
         self.total_file_output = 0
         self.downloaded_output = 0
 
@@ -217,13 +217,17 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         return list(final_result)
 
     def __zip_shapefiles(self, shapefile_path: str):
-        if shapefile_path.endswith('.shp'):
+        if shapefile_path.endswith(".shp"):
             output_dir = os.path.dirname(shapefile_path)
             filename_without_ext = os.path.splitext(os.path.basename(shapefile_path))[0]
-            zip_name = shapefile_path.replace('.shp', '.zip')
-            with ZipFile(zip_name, 'w') as zip:
+            zip_name = shapefile_path.replace(".shp", ".zip")
+            with ZipFile(zip_name, "w") as zip:
                 # writing each file one by one
-                for file in [f for f in os.listdir(output_dir) if filename_without_ext in f and not f.endswith('zip')]:
+                for file in [
+                    f
+                    for f in os.listdir(output_dir)
+                    if filename_without_ext in f and not f.endswith("zip")
+                ]:
                     zip.write(os.path.join(output_dir, file), file)
             return zip_name
         return shapefile_path
@@ -241,7 +245,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             {"progress_text": "Checking layers to be uploaded", "progress": 0}
         )
         masking_layers = self.get_masking_layers()
-        masking_layers = [ml.replace('.shp', '.zip') for ml in masking_layers]
+        masking_layers = [ml.replace(".shp", ".zip") for ml in masking_layers]
 
         # 2 comes from sieve_mask_layer and snap layer
         check_counts = len(self.analysis_activities) + 2 + len(masking_layers)
@@ -294,9 +298,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             Settings.SNAPPING_ENABLED, default=False, setting_type=bool
         )
         if snapping_enabled:
-            reference_layer = self.get_settings_value(
-                Settings.SNAP_LAYER, default=""
-            )
+            reference_layer = self.get_settings_value(Settings.SNAP_LAYER, default="")
             if reference_layer:
                 zip_path = self.__zip_shapefiles(reference_layer)
                 items_to_check[zip_path] = "snap_layer"
@@ -441,7 +443,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         )
 
         masking_layers = self.get_masking_layers()
-        masking_layers = [ml.replace('.shp', '.zip') for ml in masking_layers]
+        masking_layers = [ml.replace(".shp", ".zip") for ml in masking_layers]
         mask_layer_uuids = [
             obj["uuid"]
             for fp, obj in self.path_to_layer_mapping.items()
@@ -562,10 +564,10 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.set_status_message(response.get("progress_text", ""))
         self.update_progress(response.get("progress", 0))
         if "logs" in response:
-            new_logs = set(response.get("logs"))
-            updated_logs = new_logs - self.logs
-            for log in updated_logs:
-                self.log_message(log)
+            new_logs = response.get("logs")
+            for log in new_logs:
+                if log not in self.logs:
+                    self.log_message(log)
             self.logs = new_logs
 
     def __create_activity(self, activity: dict, download_dict: list):
