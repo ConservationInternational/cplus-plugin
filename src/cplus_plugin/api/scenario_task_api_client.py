@@ -67,6 +67,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.logs = []
         self.total_file_output = 0
         self.downloaded_output = 0
+        self.scenario_status = None
 
     def cancel_task(self, exception=None):
         """
@@ -90,7 +91,10 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             except Exception as ex:
                 self.log_message(f"Problem aborting upload layer: {ex}")
         self.log_message(f"Cancel scenario {self.scenario.uuid}")
-        if self.scenario.uuid:
+        if self.scenario.uuid and self.scenario_status not in [
+            JOB_COMPLETED_STATUS,
+            JOB_STOPPED_STATUS,
+        ]:
             self.request.cancel_scenario(self.scenario.uuid)
         super().on_terminated()
 
@@ -273,10 +277,14 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
 
         priority_layers = self.get_priority_layers()
         for priority_layer in priority_layers:
-            if priority_layer.get("uuid", "") in activity_pwl_uuids and os.path.exists(priority_layer.get("path", "")):
+            if priority_layer.get("uuid", "") in activity_pwl_uuids and os.path.exists(
+                priority_layer.get("path", "")
+            ):
                 for group in priority_layer.get("groups", []):
                     if int(group.get("value", 0)) > 0:
-                        items_to_check[priority_layer.get("path", "")] = "priority_layer"
+                        items_to_check[
+                            priority_layer.get("path", "")
+                        ] = "priority_layer"
                         break
 
         if sieve_enabled:
@@ -481,16 +489,16 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                                     self.path_to_layer_mapping.get(carbon_path)["uuid"]
                                 )
                     pathway["carbon_uuids"] = carbon_uuids
-            activity["priority_layers"] = [
-                p for p in activity["priority_layers"] if p
-            ]
+            activity["priority_layers"] = [p for p in activity["priority_layers"] if p]
 
         priority_layers = self.get_priority_layers()
         for priority_layer in priority_layers:
             if priority_layer.get("path", "") in self.path_to_layer_mapping:
-                priority_layer['layer_uuid'] = self.path_to_layer_mapping[priority_layer.get("path", "")]['uuid']
+                priority_layer["layer_uuid"] = self.path_to_layer_mapping[
+                    priority_layer.get("path", "")
+                ]["uuid"]
             else:
-                priority_layer['layer_uuid'] = ''
+                priority_layer["layer_uuid"] = ""
 
         self.scenario_detail = {
             "scenario_name": old_scenario_dict["name"],
@@ -515,8 +523,12 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             "mask_layer_uuids": mask_layer_uuids,
             "extent": old_scenario_dict["extent"]["bbox"],
             "priority_layer_groups": old_scenario_dict.get("priority_layer_groups", []),
-            "priority_layers": json.loads(json.dumps(priority_layers, cls=CustomJsonEncoder)),
-            "activities": json.loads(json.dumps(old_scenario_dict["activities"], cls=CustomJsonEncoder)),
+            "priority_layers": json.loads(
+                json.dumps(priority_layers, cls=CustomJsonEncoder)
+            ),
+            "activities": json.loads(
+                json.dumps(old_scenario_dict["activities"], cls=CustomJsonEncoder)
+            ),
         }
 
     def __execute_scenario_analysis(self):
@@ -545,12 +557,12 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             return
 
         # if success, fetch output list
-        scenario_status = status_response.get("status", "")
+        self.scenario_status = status_response.get("status", "")
         self.new_scenario_detail = self.request.fetch_scenario_detail(scenario_uuid)
 
-        if scenario_status == JOB_COMPLETED_STATUS:
+        if self.scenario_status == JOB_COMPLETED_STATUS:
             self.__retrieve_scenario_outputs(scenario_uuid)
-        elif scenario_status == JOB_STOPPED_STATUS:
+        elif self.scenario_status == JOB_STOPPED_STATUS:
             scenario_error = status_response.get("errors", "Unknown error")
             raise Exception(scenario_error)
 
@@ -629,10 +641,14 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             os.makedirs(parent_dir)
         with requests.get(url, stream=True) as r:
             r.raise_for_status()
+            if self.processing_cancelled:
+                return
             with open(local_filename, "wb") as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     if chunk:
                         f.write(chunk)
+                    if self.processing_cancelled:
+                        return
         self.downloaded_output += 1
         self.__update_scenario_status(
             {
@@ -677,6 +693,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             max_workers=3 if os.cpu_count() > 3 else 1
         ) as executor:
             executor.map(self.download_file, urls_to_download, download_paths)
+        if self.processing_cancelled:
+            return
 
         self.__set_scenario(output_list, download_paths)
 
