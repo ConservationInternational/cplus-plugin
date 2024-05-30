@@ -1852,6 +1852,22 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 msg = self.tr("Please select at least one activity.")
                 tab_valid = False
 
+            # Verify that the selected activities have at least one NCS pathway
+            zero_pathway_activities = []
+            for activity_item in selected_activities:
+                if len(activity_item.ncs_pathways) == 0:
+                    zero_pathway_activities.append(activity_item.activity.name)
+
+            if len(zero_pathway_activities) > 0:
+                activity_tr = (
+                    self.tr("activity has")
+                    if len(zero_pathway_activities) == 1
+                    else self.tr("activities have")
+                )
+                tr_msg = self.tr("no NCS pathways defined.")
+                msg = f"{', '.join(zero_pathway_activities)} {activity_tr} {tr_msg}"
+                tab_valid = False
+
             if not tab_valid:
                 self.show_message(msg)
                 self.tab_widget.setCurrentIndex(1)
