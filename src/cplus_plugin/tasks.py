@@ -101,7 +101,6 @@ class ScenarioAnalysisTask(QgsTask):
             Settings.MASK_LAYERS_PATHS, default=None
         )
         masking_layers = masking_layers_paths.split(",") if masking_layers_paths else []
-
         masking_layers.remove("") if "" in masking_layers else None
         return masking_layers
 
@@ -234,7 +233,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         # Run sieve function on the created models if user has enabled it
 
-        sieve_enabled = self.get_settings_value(Settings.SIEVE_ENABLED, default=False)
+        sieve_enabled = self.get_settings_value(Settings.SIEVE_ENABLED, default=False, setting_type=bool)
 
         if sieve_enabled:
             self.run_activities_sieve(
@@ -1042,7 +1041,7 @@ class ScenarioAnalysisTask(QgsTask):
 
                 layers = []
                 if not activity.pathways and (
-                    activity.path is None and activity.path == ""
+                    activity.path is None or activity.path == ""
                 ):
                     self.set_info_message(
                         tr(
@@ -1671,7 +1670,7 @@ class ScenarioAnalysisTask(QgsTask):
                         level=Qgis.Critical,
                     )
                     self.log_message(
-                        f"Problem when running activities normalization, "
+                        f"Problem when running activities weighting, "
                         f"there is no map layer for the activity {activity.name}"
                     )
 

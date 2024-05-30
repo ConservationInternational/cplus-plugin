@@ -5,7 +5,7 @@ import time
 
 import requests
 
-from ..utils import log
+from ..utils import log, get_layer_type
 from ..conf import settings_manager, Settings
 from ..trends_earth import auth
 from ..trends_earth.constants import API_URL as TRENDS_EARTH_API_URL
@@ -20,7 +20,7 @@ CHUNK_SIZE = 100 * 1024 * 1024
 def log_response(response, request_name):
     if not settings_manager.get_value(Settings.DEBUG):
         return
-    log(f"****Response - {request_name} *****")
+    log(f"****Request - {request_name} *****")
     if isinstance(response, dict):
         log(json.dumps(response))
     else:
@@ -229,7 +229,7 @@ class CplusApiRequest:
     def start_upload_layer(self, file_path, component_type):
         file_size = os.stat(file_path).st_size
         payload = {
-            "layer_type": 0,
+            "layer_type": get_layer_type(file_path),
             "component_type": component_type,
             "privacy_type": "private",
             "name": os.path.basename(file_path),
@@ -243,7 +243,11 @@ class CplusApiRequest:
         return result
 
     def finish_upload_layer(self, layer_uuid, upload_id, items):
-        payload = {"multipart_upload_id": upload_id, "items": items}
+        payload = {}
+        if upload_id:
+            payload["multipart_upload_id"] = upload_id
+        if items:
+            payload["items"] = items
         response = self.post(self.urls.layer_upload_finish(layer_uuid), payload)
         result = response.json()
         return result
@@ -257,6 +261,7 @@ class CplusApiRequest:
         return True
 
     def submit_scenario_detail(self, scenario_detail):
+        log_response(scenario_detail, "scenario_detail")
         response = self.post(self.urls.scenario_submit(), scenario_detail)
         result = response.json()
         if response.status_code != 201:

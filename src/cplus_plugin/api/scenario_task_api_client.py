@@ -3,6 +3,7 @@ import json
 import os
 import traceback
 import typing
+from zipfile import ZipFile
 
 import requests
 from qgis.core import Qgis
@@ -17,19 +18,7 @@ from ..conf import settings_manager, Settings
 from ..models.base import Activity, NcsPathway
 from ..models.base import ScenarioResult
 from ..tasks import ScenarioAnalysisTask
-from ..utils import FileUtils, CustomJsonEncoder, todict, md5
-
-
-def download_file(url, local_filename):
-    parent_dir = os.path.dirname(local_filename)
-    if not os.path.exists(parent_dir):
-        os.makedirs(parent_dir)
-    with requests.get(url, stream=True) as r:
-        r.raise_for_status()
-        with open(local_filename, "wb") as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                if chunk:
-                    f.write(chunk)
+from ..utils import FileUtils, CustomJsonEncoder, todict
 
 
 def clean_filename(filename):
@@ -75,7 +64,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.path_to_layer_mapping = {}
         self.scenario.uuid = None
         self.status_pooling = None
-        self.logs = set()
+        self.logs = []
+        self.total_file_output = 0
+        self.downloaded_output = 0
 
     def cancel_task(self, exception=None):
         """
@@ -124,7 +115,17 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         if self.processing_cancelled:
             return False
 
-        self.build_scenario_detail_json()
+        try:
+            self.build_scenario_detail_json()
+        except Exception as ex:
+            self.log_message(traceback.format_exc(), info=False)
+            err = f"Problem building scenario JSON: {ex}\n"
+            self.log_message(err, info=False)
+            self.set_info_message(err, level=Qgis.Critical)
+            self.error = ex
+            self.cancel_task()
+            return False
+
         try:
             self.__execute_scenario_analysis()
         except Exception as ex:
@@ -189,15 +190,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         result = {"uuid": None}
         if self.processing_cancelled:
             return result
-        if upload_id:
-            result = self.request.finish_upload_layer(layer_uuid, upload_id, items)
-        else:
-            layer_detail = self.request.get_layer_detail(layer_uuid)
-            result = {
-                "name": layer_detail["filename"],
-                "size": layer_detail["size"],
-                "uuid": layer_detail["uuid"],
-            }
+        result = self.request.finish_upload_layer(layer_uuid, upload_id, items)
         return result
 
     def run_parallel_upload(self, upload_dict) -> typing.List[typing.Dict]:
@@ -222,6 +215,22 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             )
         return list(final_result)
 
+    def __zip_shapefiles(self, shapefile_path: str):
+        if shapefile_path.endswith(".shp"):
+            output_dir = os.path.dirname(shapefile_path)
+            filename_without_ext = os.path.splitext(os.path.basename(shapefile_path))[0]
+            zip_name = shapefile_path.replace(".shp", ".zip")
+            with ZipFile(zip_name, "w") as zip:
+                # writing each file one by one
+                for file in [
+                    f
+                    for f in os.listdir(output_dir)
+                    if filename_without_ext in f and not f.endswith("zip")
+                ]:
+                    zip.write(os.path.join(output_dir, file), file)
+            return zip_name
+        return shapefile_path
+
     def upload_layers(self):
         """
         Check whether layer has been uploaded. If not, then upload it to S3.
@@ -235,27 +244,26 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             {"progress_text": "Checking layers to be uploaded", "progress": 0}
         )
         masking_layers = self.get_masking_layers()
+        masking_layers = [ml.replace(".shp", ".zip") for ml in masking_layers]
 
         # 2 comes from sieve_mask_layer and snap layer
         check_counts = len(self.analysis_activities) + 2 + len(masking_layers)
         items_to_check = {}
 
+        activity_pwl_uuids = set()
         for idx, activity in enumerate(self.analysis_activities):
             for pathway in activity.pathways:
                 if pathway:
                     if pathway.path and os.path.exists(pathway.path):
-                        items_to_check[pathway.path] = 'ncs_pathway'
+                        items_to_check[pathway.path] = "ncs_pathway"
 
                     for carbon_path in pathway.carbon_paths:
                         if os.path.exists(carbon_path):
-                            items_to_check[carbon_path] = 'ncs_carbon'
+                            items_to_check[carbon_path] = "ncs_carbon"
 
             for priority_layer in activity.priority_layers:
                 if priority_layer:
-                    if priority_layer["path"] and os.path.exists(
-                        priority_layer["path"]
-                    ):
-                        items_to_check[priority_layer["path"]] = "priority_layer"
+                    activity_pwl_uuids.add(priority_layer.get("uuid", ""))
 
             self.__update_scenario_status(
                 {
@@ -268,13 +276,22 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             Settings.SIEVE_ENABLED, default=False, setting_type=bool
         )
 
+        priority_layers = self.get_priority_layers()
+        for priority_layer in priority_layers:
+            if priority_layer.get("uuid", "") in activity_pwl_uuids and os.path.exists(priority_layer.get("path", "")):
+                for group in priority_layer.get("groups", []):
+                    if int(group.get("value", 0)) > 0:
+                        items_to_check[priority_layer.get("path", "")] = "priority_layer"
+                        break
+
         if sieve_enabled:
             sieve_mask_layer = self.get_settings_value(
                 Settings.SIEVE_MASK_PATH, default=""
             )
 
             if sieve_mask_layer:
-                items_to_check[sieve_mask_layer] = "sieve_mask_layer"
+                zip_path = self.__zip_shapefiles(sieve_mask_layer)
+                items_to_check[zip_path] = "sieve_mask_layer"
             self.__update_scenario_status(
                 {
                     "progress_text": "Checking layers to be uploaded",
@@ -282,31 +299,24 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 }
             )
 
-            snapping_enabled = self.get_settings_value(
-                Settings.SNAPPING_ENABLED, default=False, setting_type=bool
-            )
-            if snapping_enabled:
-                reference_layer = self.get_settings_value(
-                    Settings.SNAP_LAYER, default=""
-                )
-                if reference_layer:
-                    items_to_check[reference_layer] = "snap_layer"
-            self.__update_scenario_status(
-                {
-                    "progress_text": "Checking layers to be uploaded",
-                    "progress": (4 / check_counts) * 100,
-                }
-            )
-        else:
-            self.__update_scenario_status(
-                {
-                    "progress_text": "Checking layers to be uploaded",
-                    "progress": (4 / check_counts) * 100,
-                }
-            )
+        snapping_enabled = self.get_settings_value(
+            Settings.SNAPPING_ENABLED, default=False, setting_type=bool
+        )
+        if snapping_enabled:
+            reference_layer = self.get_settings_value(Settings.SNAP_LAYER, default="")
+            if reference_layer:
+                zip_path = self.__zip_shapefiles(reference_layer)
+                items_to_check[zip_path] = "snap_layer"
+        self.__update_scenario_status(
+            {
+                "progress_text": "Checking layers to be uploaded",
+                "progress": (4 / check_counts) * 100,
+            }
+        )
 
         for idx, masking_layer in enumerate(masking_layers):
-            items_to_check[masking_layer] = "mask_layer"
+            zip_path = self.__zip_shapefiles(masking_layer)
+            items_to_check[zip_path] = "mask_layer"
 
             self.__update_scenario_status(
                 {
@@ -350,7 +360,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             )
 
         for uploaded_layer in new_uploaded_layer.values():
-            identifier = uploaded_layer["path"].replace(os.sep, '--')
+            identifier = uploaded_layer["path"].replace(os.sep, "--")
             self.path_to_layer_mapping[uploaded_layer["path"]] = uploaded_layer
             settings_manager.save_layer_mapping(uploaded_layer, identifier)
 
@@ -363,19 +373,21 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         uuid_to_path = {}
 
         for layer_path, group in items_to_check.items():
-            identifier = layer_path.replace(os.sep, '--')
+            identifier = layer_path.replace(os.sep, "--")
             uploaded_layer_dict = settings_manager.get_layer_mapping(identifier)
             if uploaded_layer_dict:
                 if "upload_id" in uploaded_layer_dict:
                     # if upload_id exists, then upload is not finished
                     output[layer_path] = False
                 if layer_path == uploaded_layer_dict["path"]:
-                    uuid_to_path[uploaded_layer_dict['uuid']] = layer_path
+                    uuid_to_path[uploaded_layer_dict["uuid"]] = layer_path
                     self.path_to_layer_mapping[layer_path] = uploaded_layer_dict
             else:
                 output[layer_path] = items_to_check[layer_path]
         layer_check_result = self.request.check_layer(list(uuid_to_path))
-        for layer_uuid in layer_check_result['unavailable'] + layer_check_result['invalid']:
+        for layer_uuid in (
+            layer_check_result["unavailable"] + layer_check_result["invalid"]
+        ):
             layer_path = uuid_to_path[layer_uuid]
             output[layer_path] = items_to_check[layer_path]
         return output
@@ -388,8 +400,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         old_scenario_dict = json.loads(
             json.dumps(todict(self.scenario), cls=CustomJsonEncoder)
         )
-        sieve_enabled = json.loads(
-            self.get_settings_value(Settings.SIEVE_ENABLED, default=False)
+        sieve_enabled = self.get_settings_value(
+            Settings.SIEVE_ENABLED, default=False, setting_type=bool
         )
         sieve_threshold = float(
             self.get_settings_value(Settings.SIEVE_THRESHOLD, default=10.0)
@@ -399,14 +411,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             if sieve_enabled
             else ""
         )
-        snapping_enabled = (
-            json.loads(
-                self.get_settings_value(
-                    Settings.SNAPPING_ENABLED, default=False, setting_type=bool
-                )
-            )
-            if sieve_enabled
-            else False
+        snapping_enabled = self.get_settings_value(
+            Settings.SNAPPING_ENABLED, default=False, setting_type=bool
         )
         snap_layer_path = (
             self.get_settings_value(Settings.SNAP_LAYER, default="", setting_type=str)
@@ -425,8 +431,24 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         resampling_method = self.get_settings_value(
             Settings.RESAMPLING_METHOD, default=0
         )
+        ncs_with_carbon = self.get_settings_value(
+            Settings.NCS_WITH_CARBON, default=False, setting_type=bool
+        )
+        landuse_project = self.get_settings_value(
+            Settings.LANDUSE_PROJECT, default=True, setting_type=bool
+        )
+        landuse_normalized = self.get_settings_value(
+            Settings.LANDUSE_NORMALIZED, default=True, setting_type=bool
+        )
+        landuse_weighted = self.get_settings_value(
+            Settings.LANDUSE_WEIGHTED, default=True, setting_type=bool
+        )
+        highest_position = self.get_settings_value(
+            Settings.HIGHEST_POSITION, default=True, setting_type=bool
+        )
 
         masking_layers = self.get_masking_layers()
+        masking_layers = [ml.replace(".shp", ".zip") for ml in masking_layers]
         mask_layer_uuids = [
             obj["uuid"]
             for fp, obj in self.path_to_layer_mapping.items()
@@ -450,31 +472,30 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 if pathway:
                     if pathway["path"] and os.path.exists(pathway["path"]):
                         if self.path_to_layer_mapping.get(pathway["path"], None):
-                            pathway["uuid"] = self.path_to_layer_mapping.get(pathway["path"])[
-                                "uuid"
-                            ]
+                            pathway["uuid"] = self.path_to_layer_mapping.get(
+                                pathway["path"]
+                            )["uuid"]
                             pathway["layer_uuid"] = pathway["uuid"]
                             pathway["layer_type"] = 0
 
                     carbon_uuids = []
                     for carbon_path in pathway["carbon_paths"]:
                         if os.path.exists(carbon_path):
-                            if self.path_to_layer_mapping(carbon_path, None):
-                                carbon_uuids.append(self.path_to_layer_mapping(carbon_path))
+                            if self.path_to_layer_mapping.get(carbon_path, None):
+                                carbon_uuids.append(
+                                    self.path_to_layer_mapping.get(carbon_path)["uuid"]
+                                )
                     pathway["carbon_uuids"] = carbon_uuids
-            new_priority_layers = []
-            for priority_layer in activity["priority_layers"]:
-                if priority_layer:
-                    if priority_layer["path"] and os.path.exists(
-                        priority_layer["path"]
-                    ):
-                        if self.path_to_layer_mapping.get(priority_layer["path"], None):
-                            priority_layer["uuid"] = self.path_to_layer_mapping.get(
-                                priority_layer["path"]
-                            )["uuid"]
-                            priority_layer["layer_uuid"] = priority_layer["uuid"]
-                            new_priority_layers.append(priority_layer)
-            activity["priority_layers"] = new_priority_layers
+            activity["priority_layers"] = [
+                p for p in activity["priority_layers"] if p
+            ]
+
+        priority_layers = self.get_priority_layers()
+        for priority_layer in priority_layers:
+            if priority_layer.get("path", "") in self.path_to_layer_mapping:
+                priority_layer['layer_uuid'] = self.path_to_layer_mapping[priority_layer.get("path", "")]['uuid']
+            else:
+                priority_layer['layer_uuid'] = ''
 
         self.scenario_detail = {
             "scenario_name": old_scenario_dict["name"],
@@ -490,12 +511,17 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             "sieve_threshold": sieve_threshold,
             "sieve_mask_path": sieve_mask_path,
             "sieve_mask_uuid": sieve_mask_uuid,
+            "ncs_with_carbon": ncs_with_carbon,
+            "landuse_project": landuse_project,
+            "landuse_normalized": landuse_normalized,
+            "landuse_weighted": landuse_weighted,
+            "highest_position": highest_position,
             "mask_path": ", ".join(masking_layers),
             "mask_layer_uuids": mask_layer_uuids,
             "extent": old_scenario_dict["extent"]["bbox"],
             "priority_layer_groups": old_scenario_dict.get("priority_layer_groups", []),
-            "priority_layers": old_scenario_dict["activities"][0]["priority_layers"],
-            "activities": old_scenario_dict["activities"],
+            "priority_layers": json.loads(json.dumps(priority_layers, cls=CustomJsonEncoder)),
+            "activities": json.loads(json.dumps(old_scenario_dict["activities"], cls=CustomJsonEncoder)),
         }
 
     def __execute_scenario_analysis(self):
@@ -540,10 +566,10 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.set_status_message(response.get("progress_text", ""))
         self.update_progress(response.get("progress", 0))
         if "logs" in response:
-            new_logs = set(response.get("logs"))
-            updated_logs = new_logs - self.logs
-            for log in updated_logs:
-                self.log_message(log)
+            new_logs = response.get("logs")
+            for log in new_logs:
+                if log not in self.logs:
+                    self.log_message(log)
             self.logs = new_logs
 
     def __create_activity(self, activity: dict, download_dict: list):
@@ -559,10 +585,14 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 del pathway["layer_uuid"]
             if "carbon_uuids" in pathway:
                 del pathway["carbon_uuids"]
-            pathway["path"] = download_dict[os.path.basename(pathway["path"])]
-            ncs_pathways.append(NcsPathway(**pathway))
+            pathway_filename = os.path.basename(pathway["path"])
+            if pathway_filename in download_dict:
+                pathway["path"] = download_dict[pathway_filename]
+                ncs_pathways.append(NcsPathway(**pathway))
         activity["pathways"] = ncs_pathways
-        activity["path"] = download_dict[os.path.basename(activity["path"])]
+        activity_filename = os.path.basename(activity["path"])
+        if activity_filename in download_dict:
+            activity["path"] = download_dict[activity_filename]
         activity_obj = Activity(**activity)
         return activity_obj
 
@@ -598,6 +628,25 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             "updated_detail"
         ]["priority_layer_groups"]
 
+    def download_file(self, url, local_filename):
+        parent_dir = os.path.dirname(local_filename)
+        if not os.path.exists(parent_dir):
+            os.makedirs(parent_dir)
+        with requests.get(url, stream=True) as r:
+            r.raise_for_status()
+            with open(local_filename, "wb") as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+        self.downloaded_output += 1
+        self.__update_scenario_status(
+            {
+                "progress_text": f"Downloading output files",
+                "progress": int((self.downloaded_output / self.total_file_output) * 90)
+                + 5,
+            }
+        )
+
     def __retrieve_scenario_outputs(self, scenario_uuid):
         """
         Set scenario output object based on scenario UUID
@@ -607,6 +656,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             {"progress_text": "Downloading output files", "progress": 0}
         )
         output_list = self.request.fetch_scenario_output_list(scenario_uuid)
+        self.__update_scenario_status(
+            {"progress_text": "Downloading output files", "progress": 5}
+        )
+        self.total_file_output = len(output_list["results"])
+        self.downloaded_output = 0
         urls_to_download = []
         download_paths = []
         for output in output_list["results"]:
@@ -627,7 +681,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=3 if os.cpu_count() > 3 else 1
         ) as executor:
-            executor.map(download_file, urls_to_download, download_paths)
+            executor.map(self.download_file, urls_to_download, download_paths)
 
         self.__set_scenario(output_list, download_paths)
 
