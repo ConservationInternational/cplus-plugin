@@ -40,7 +40,7 @@ from .models.helpers import (
     layer_component_to_dict,
     ncs_pathway_to_dict,
 )
-from .utils import log
+from .utils import log, todict, CustomJsonEncoder
 
 
 @contextlib.contextmanager
@@ -1142,7 +1142,7 @@ class SettingsManager(QtCore.QObject):
                 if len(priority_layers) > 0:
                     activity[PRIORITY_LAYERS_SEGMENT] = priority_layers
 
-        activity_str = json.dumps(activity)
+        activity_str = json.dumps(todict(activity), cls=CustomJsonEncoder)
 
         activity_uuid = activity[UUID_ATTRIBUTE]
         activity_root = self._get_activity_settings_base()
