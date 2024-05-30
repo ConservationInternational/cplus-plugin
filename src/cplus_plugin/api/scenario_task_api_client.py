@@ -3,6 +3,7 @@ import json
 import os
 import traceback
 import typing
+from zipfile import ZipFile
 
 import requests
 from qgis.core import Qgis
@@ -114,7 +115,17 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         if self.processing_cancelled:
             return False
 
-        self.build_scenario_detail_json()
+        try:
+            self.build_scenario_detail_json()
+        except Exception as ex:
+            self.log_message(traceback.format_exc(), info=False)
+            err = f"Problem building scenario JSON: {ex}\n"
+            self.log_message(err, info=False)
+            self.set_info_message(err, level=Qgis.Critical)
+            self.error = ex
+            self.cancel_task()
+            return False
+
         try:
             self.__execute_scenario_analysis()
         except Exception as ex:
@@ -179,15 +190,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         result = {"uuid": None}
         if self.processing_cancelled:
             return result
-        if upload_id:
-            result = self.request.finish_upload_layer(layer_uuid, upload_id, items)
-        else:
-            layer_detail = self.request.get_layer_detail(layer_uuid)
-            result = {
-                "name": layer_detail["filename"],
-                "size": layer_detail["size"],
-                "uuid": layer_detail["uuid"],
-            }
+        result = self.request.finish_upload_layer(layer_uuid, upload_id, items)
+        self.log_message(json.dumps(result))
         return result
 
     def run_parallel_upload(self, upload_dict) -> typing.List[typing.Dict]:
@@ -212,6 +216,18 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             )
         return list(final_result)
 
+    def __zip_shapefiles(self, shapefile_path: str):
+        if shapefile_path.endswith('.shp'):
+            output_dir = os.path.dirname(shapefile_path)
+            filename_without_ext = os.path.splitext(os.path.basename(shapefile_path))[0]
+            zip_name = shapefile_path.replace('.shp', '.zip')
+            with ZipFile(zip_name, 'w') as zip:
+                # writing each file one by one
+                for file in [f for f in os.listdir(output_dir) if filename_without_ext in f and not f.endswith('zip')]:
+                    zip.write(os.path.join(output_dir, file), file)
+            return zip_name
+        return shapefile_path
+
     def upload_layers(self):
         """
         Check whether layer has been uploaded. If not, then upload it to S3.
@@ -225,6 +241,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             {"progress_text": "Checking layers to be uploaded", "progress": 0}
         )
         masking_layers = self.get_masking_layers()
+        masking_layers = [ml.replace('.shp', '.zip') for ml in masking_layers]
 
         # 2 comes from sieve_mask_layer and snap layer
         check_counts = len(self.analysis_activities) + 2 + len(masking_layers)
@@ -264,7 +281,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             )
 
             if sieve_mask_layer:
-                items_to_check[sieve_mask_layer] = "sieve_mask_layer"
+                zip_path = self.__zip_shapefiles(sieve_mask_layer)
+                items_to_check[zip_path] = "sieve_mask_layer"
             self.__update_scenario_status(
                 {
                     "progress_text": "Checking layers to be uploaded",
@@ -272,31 +290,26 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 }
             )
 
-            snapping_enabled = self.get_settings_value(
-                Settings.SNAPPING_ENABLED, default=False, setting_type=bool
+        snapping_enabled = self.get_settings_value(
+            Settings.SNAPPING_ENABLED, default=False, setting_type=bool
+        )
+        if snapping_enabled:
+            reference_layer = self.get_settings_value(
+                Settings.SNAP_LAYER, default=""
             )
-            if snapping_enabled:
-                reference_layer = self.get_settings_value(
-                    Settings.SNAP_LAYER, default=""
-                )
-                if reference_layer:
-                    items_to_check[reference_layer] = "snap_layer"
-            self.__update_scenario_status(
-                {
-                    "progress_text": "Checking layers to be uploaded",
-                    "progress": (4 / check_counts) * 100,
-                }
-            )
-        else:
-            self.__update_scenario_status(
-                {
-                    "progress_text": "Checking layers to be uploaded",
-                    "progress": (4 / check_counts) * 100,
-                }
-            )
+            if reference_layer:
+                zip_path = self.__zip_shapefiles(reference_layer)
+                items_to_check[zip_path] = "snap_layer"
+        self.__update_scenario_status(
+            {
+                "progress_text": "Checking layers to be uploaded",
+                "progress": (4 / check_counts) * 100,
+            }
+        )
 
         for idx, masking_layer in enumerate(masking_layers):
-            items_to_check[masking_layer] = "mask_layer"
+            zip_path = self.__zip_shapefiles(masking_layer)
+            items_to_check[zip_path] = "mask_layer"
 
             self.__update_scenario_status(
                 {
@@ -391,12 +404,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             if sieve_enabled
             else ""
         )
-        snapping_enabled = (
-            self.get_settings_value(
-                Settings.SNAPPING_ENABLED, default=False, setting_type=bool
-            )
-            if sieve_enabled
-            else False
+        snapping_enabled = self.get_settings_value(
+            Settings.SNAPPING_ENABLED, default=False, setting_type=bool
         )
         snap_layer_path = (
             self.get_settings_value(Settings.SNAP_LAYER, default="", setting_type=str)
@@ -432,6 +441,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         )
 
         masking_layers = self.get_masking_layers()
+        masking_layers = [ml.replace('.shp', '.zip') for ml in masking_layers]
         mask_layer_uuids = [
             obj["uuid"]
             for fp, obj in self.path_to_layer_mapping.items()

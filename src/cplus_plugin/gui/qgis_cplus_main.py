@@ -5,6 +5,7 @@
 """
 
 import datetime
+import json
 import os
 import uuid
 from functools import partial
@@ -1269,7 +1270,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 transformed_extent.yMinimum(),
                 transformed_extent.yMaximum(),
             ]
-
             if self.processing_type.isChecked():
                 analysis_task = ScenarioAnalysisTaskApiClient(
                     self.analysis_scenario_name,
