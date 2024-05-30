@@ -216,7 +216,9 @@ class DlgSettingsLogin(QtWidgets.QDialog, Ui_DlgSettingsLogin):
 
             return
 
-        if self.trends_earth_api_client.login_test(self.email.text(), self.password.text()):
+        if self.trends_earth_api_client.login_test(
+            self.email.text(), self.password.text()
+        ):
             QtWidgets.QMessageBox.information(
                 None,
                 self.tr("Success"),
