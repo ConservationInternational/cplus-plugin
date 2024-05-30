@@ -1859,8 +1859,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     zero_pathway_activities.append(activity_item.activity.name)
 
             if len(zero_pathway_activities) > 0:
-                tr_msg = self.tr("activities have no NCS pathways defined.")
-                msg = f"{', '.join(zero_pathway_activities)} {tr_msg}"
+                activity_tr = (
+                    self.tr("activity has")
+                    if len(zero_pathway_activities) == 1
+                    else self.tr("activities have")
+                )
+                tr_msg = self.tr("no NCS pathways defined.")
+                msg = f"{', '.join(zero_pathway_activities)} {activity_tr} {tr_msg}"
                 tab_valid = False
 
             if not tab_valid:
