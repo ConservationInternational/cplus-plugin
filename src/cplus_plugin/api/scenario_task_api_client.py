@@ -77,15 +77,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             self.status_pooling.cancelled = True
         super().cancel_task(exception)
 
-    def get_masking_layers(self):
-        masking_layers_paths = self.get_settings_value(
-            Settings.MASK_LAYERS_PATHS, default=None
-        )
-        masking_layers = masking_layers_paths.split(",") if masking_layers_paths else []
-        masking_layers.remove("") if "" in masking_layers else None
-        masking_layers = [ml.replace('.shp', '.zip') for ml in masking_layers]
-        return masking_layers
-
     def on_terminated(self):
         """Called when the task is terminated."""
         # check if there is ongoing upload
@@ -250,6 +241,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             {"progress_text": "Checking layers to be uploaded", "progress": 0}
         )
         masking_layers = self.get_masking_layers()
+        masking_layers = [ml.replace('.shp', '.zip') for ml in masking_layers]
 
         # 2 comes from sieve_mask_layer and snap layer
         check_counts = len(self.analysis_activities) + 2 + len(masking_layers)
@@ -449,6 +441,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         )
 
         masking_layers = self.get_masking_layers()
+        masking_layers = [ml.replace('.shp', '.zip') for ml in masking_layers]
         mask_layer_uuids = [
             obj["uuid"]
             for fp, obj in self.path_to_layer_mapping.items()
