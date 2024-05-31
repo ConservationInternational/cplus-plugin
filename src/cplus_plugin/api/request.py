@@ -120,7 +120,7 @@ class CplusApiUrl:
     def get_base_api_url(self):
         """Returns the base API URL."""
 
-        dev_mode = settings_manager.get_value(Settings.DEV_MODE, False)
+        dev_mode = settings_manager.get_value(Settings.DEV_MODE, False, bool)
         if dev_mode:
             return settings_manager.get_value(Settings.BASE_API_URL)
         else:

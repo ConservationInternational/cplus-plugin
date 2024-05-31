@@ -471,6 +471,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
 
         for activity in old_scenario_dict["activities"]:
             activity["layer_type"] = 0
+            activity["path"] = ""
             for pathway in activity["pathways"]:
                 if pathway:
                     if pathway["path"] and os.path.exists(pathway["path"]):
@@ -488,8 +489,15 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                                 carbon_uuids.append(
                                     self.path_to_layer_mapping.get(carbon_path)["uuid"]
                                 )
+                    pathway["carbon_paths"] = []
                     pathway["carbon_uuids"] = carbon_uuids
-            activity["priority_layers"] = [p for p in activity["priority_layers"] if p]
+                    pathway["path"] = ""
+            new_priority_layers = []
+            for priority_layer in activity["priority_layers"]:
+                if priority_layer:
+                    priority_layer["path"] = ""
+                    new_priority_layers.append(priority_layer)
+            activity["priority_layers"] = new_priority_layers
 
         priority_layers = self.get_priority_layers()
         for priority_layer in priority_layers:
@@ -499,6 +507,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 ]["uuid"]
             else:
                 priority_layer["layer_uuid"] = ""
+            priority_layer["path"] = ""
 
         self.scenario_detail = {
             "scenario_name": old_scenario_dict["name"],
