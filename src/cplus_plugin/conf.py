@@ -22,6 +22,7 @@ from .definitions.constants import (
     STYLE_ATTRIBUTE,
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
+    NPV_COLLECTION_PROPERTY,
     PATH_ATTRIBUTE,
     PATHWAYS_ATTRIBUTE,
     PIXEL_VALUE_ATTRIBUTE,
@@ -36,9 +37,11 @@ from .models.base import (
     ScenarioResult,
     SpatialExtent,
 )
+from .models.financial import ActivityNpvCollection
 from .models.helpers import (
     activity_npv_collection_to_dict,
     create_activity,
+    create_activity_npv_collection,
     create_ncs_pathway,
     layer_component_to_dict,
     ncs_pathway_to_dict,
@@ -182,9 +185,6 @@ class Settings(enum.Enum):
     LANDUSE_NORMALIZED = "landuse_normalized"
     LANDUSE_WEIGHTED = "landuse_weighted"
     HIGHEST_POSITION = "highest_position"
-
-    # NPV activity mapping collection
-    ACTIVITY_NPV_COLLECTION = "activity_npv_collection"
 
 
 class SettingsManager(QtCore.QObject):
@@ -1200,6 +1200,35 @@ class SettingsManager(QtCore.QObject):
         """
         if self.get_activity(activity_uuid) is not None:
             self.remove(f"{self.ACTIVITY_BASE}/{activity_uuid}")
+
+    def get_npv_collection(self) -> typing.Optional[ActivityNpvCollection]:
+        """Gets the collection of NPV mappings of activities.
+
+        :returns: The collection of activity NPV mappings or None
+        if not defined.
+        :rtype: ActivityNpvCollection
+        """
+        npv_collection_str = self.get_value(NPV_COLLECTION_PROPERTY, None)
+        if not npv_collection_str:
+            return None
+
+        npv_collection_dict = {}
+        try:
+            npv_collection_dict = json.loads(npv_collection_str)
+        except json.JSONDecodeError:
+            log("ActivityNPVCollection JSON is invalid.")
+
+        return create_activity_npv_collection(npv_collection_dict, self.get_all_activities())
+
+    def save_npv_collection(self, npv_collection: ActivityNpvCollection):
+        """Saves the activity NPV collection serialized to a JSON string.
+
+        :param npv_collection: Activity NPV collection serialized to a JSON string.
+        :type npv_collection: ActivityNpvCollection
+        """
+        npv_collection_dict = activity_npv_collection_to_dict(npv_collection)
+        npv_collection_str = json.dumps(npv_collection_dict)
+        self.set_value(NPV_COLLECTION_PROPERTY, npv_collection_str)
 
 
 settings_manager = SettingsManager()

@@ -37,12 +37,14 @@ ABSOLUTE_NPV_ATTRIBUTE = "absolute_npv"
 NORMALIZED_NPV_ATTRIBUTE = "normalized_npv"
 YEARLY_RATES_ATTRIBUTE = "yearly_rates"
 ENABLED_ATTRIBUTE = "enabled"
-MIN_VALUE_ATTRIBUTE = "min_value"
-MAX_VALUE_ATTRIBUTE = "max_value"
-COMPUTED_ATTRIBUTE = "computed"
+MIN_VALUE_ATTRIBUTE = "minimum_value"
+MAX_VALUE_ATTRIBUTE = "maximum_value"
+COMPUTED_ATTRIBUTE = "use_computed"
 NPV_MAPPINGS_ATTRIBUTE = "mappings"
+REMOVE_EXISTING_ATTRIBUTE = "remove_existing"
 
 ACTIVITY_IDENTIFIER_PROPERTY = "activity_identifier"
+NPV_COLLECTION_PROPERTY = "npv_collection"
 
 # Option / settings keys
 CPLUS_OPTIONS_KEY = "cplus_main"

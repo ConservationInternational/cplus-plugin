@@ -27,7 +27,7 @@ class ActivityNpv:
 
     params: NpvParameters
     enabled: bool
-    activity: Activity
+    activity: typing.Optional[Activity]
 
     @property
     def activity_id(self) -> str:
@@ -51,6 +51,7 @@ class ActivityNpvCollection:
     minimum_value: float
     maximum_value: float
     use_computed: bool = False
+    remove_existing: bool = False
     mappings: typing.List[ActivityNpv] = dataclasses.field(default_factory=list)
 
     def activity_npv(self, activity_identifier: str) -> typing.Optional[ActivityNpv]:
@@ -95,7 +96,7 @@ class ActivityNpvCollection:
 
         return True
 
-    def normalize_npvs(self):
+    def normalize_npvs(self) -> bool:
         """Normalize the NPV values of the activities using the specified
         normalization range.
 
@@ -104,8 +105,18 @@ class ActivityNpvCollection:
         respectively. To avoid such a situation from occurring, it is recommended
         to make sure that the ranges are synchronized using the latest absolute
         NPV values.
+
+        :returns: True if the NPVs were successfully normalized else False due
+        to various reasons such as if the minimum value is greater than the
+        maximum value or if the min/max values are the same.
         """
+        if self.minimum_value > self.maximum_value:
+            return False
+
         norm_range = float(self.maximum_value - self.minimum_value)
+
+        if norm_range == 0.0:
+            return False
 
         for activity_npv in self.mappings:
             absolute_npv = activity_npv.params.absolute_npv
@@ -120,3 +131,5 @@ class ActivityNpvCollection:
                 normalized_npv = (absolute_npv - self.minimum_value) / norm_range
 
             activity_npv.params.normalized_npv = normalized_npv
+
+        return True
