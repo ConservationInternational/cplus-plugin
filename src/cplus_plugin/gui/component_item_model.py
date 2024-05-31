@@ -569,6 +569,7 @@ class ActivityItem(LayerComponentItem):
         activity = clone_activity(
             self.activity,
         )
+
         # Use NCS pathways with original UUIDs
         activity.pathways = self.original_ncs_pathways
 

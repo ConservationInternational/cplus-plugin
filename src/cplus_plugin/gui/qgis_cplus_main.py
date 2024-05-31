@@ -1868,7 +1868,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             # Verify that the selected activities have at least one NCS pathway
             zero_pathway_activities = []
             for activity_item in selected_activities:
-                if len(activity_item.ncs_pathways) == 0:
+                if len(activity_item.activity.pathways) == 0:
                     zero_pathway_activities.append(activity_item.activity.name)
 
             if len(zero_pathway_activities) > 0:
