@@ -17,18 +17,30 @@ from .base import (
     SpatialExtent,
 )
 from ..definitions.constants import (
+    ACTIVITY_IDENTIFIER_PROPERTY,
+    ABSOLUTE_NPV_ATTRIBUTE,
     CARBON_PATHS_ATTRIBUTE,
+    COMPUTED_ATTRIBUTE,
+    DISCOUNT_ATTRIBUTE,
+    ENABLED_ATTRIBUTE,
     STYLE_ATTRIBUTE,
     NAME_ATTRIBUTE,
     DESCRIPTION_ATTRIBUTE,
     LAYER_TYPE_ATTRIBUTE,
+    NPV_MAPPINGS_ATTRIBUTE,
+    MAX_VALUE_ATTRIBUTE,
+    MIN_VALUE_ATTRIBUTE,
+    NORMALIZED_NPV_ATTRIBUTE,
     PATH_ATTRIBUTE,
     PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
     USER_DEFINED_ATTRIBUTE,
     UUID_ATTRIBUTE,
+    YEARS_ATTRIBUTE,
+    YEARLY_RATES_ATTRIBUTE,
 )
 from ..definitions.defaults import DEFAULT_CRS_ID
+from .financial import ActivityNpv, ActivityNpvCollection
 
 from ..utils import log
 
@@ -425,3 +437,40 @@ def extent_to_project_crs_extent(
         log(f"{e}, using the default input extent.")
 
     return input_rect
+
+
+def activity_npv_to_dict(activity_npv: ActivityNpv) -> dict:
+    """Converts an ActivityNpv object to a dictionary representation.
+
+    :returns: A dictionary containing attribute name-value pairs.
+    :rtype: dict
+    """
+    return {
+        YEARS_ATTRIBUTE: activity_npv.params.years,
+        DISCOUNT_ATTRIBUTE: activity_npv.params.discount,
+        ABSOLUTE_NPV_ATTRIBUTE: activity_npv.params.absolute_npv,
+        NORMALIZED_NPV_ATTRIBUTE: activity_npv.params.normalized_npv,
+        YEARLY_RATES_ATTRIBUTE: activity_npv.params.yearly_rates,
+        ENABLED_ATTRIBUTE: activity_npv.enabled,
+        ACTIVITY_IDENTIFIER_PROPERTY: activity_npv.activity_id
+    }
+
+
+def activity_npv_collection_to_dict(activity_collection: ActivityNpvCollection) -> dict:
+    """Converts the activity NPV collection object to the
+    dictionary representation.
+
+    :returns: A dictionary containing the attribute name-value pairs
+    of an activity NPV collection object
+    :rtype: dict
+    """
+    npv_collection_dict = {
+        MIN_VALUE_ATTRIBUTE: activity_collection.minimum_value,
+        MAX_VALUE_ATTRIBUTE: activity_collection.maximum_value,
+        COMPUTED_ATTRIBUTE: activity_collection.use_computed,
+    }
+
+    mapping_dict = list(map(activity_npv_to_dict, activity_collection.mappings))
+    npv_collection_dict[NPV_MAPPINGS_ATTRIBUTE] = mapping_dict
+
+    return npv_collection_dict

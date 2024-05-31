@@ -37,6 +37,7 @@ from .models.base import (
     SpatialExtent,
 )
 from .models.helpers import (
+    activity_npv_collection_to_dict,
     create_activity,
     create_ncs_pathway,
     layer_component_to_dict,
@@ -181,6 +182,9 @@ class Settings(enum.Enum):
     LANDUSE_NORMALIZED = "landuse_normalized"
     LANDUSE_WEIGHTED = "landuse_weighted"
     HIGHEST_POSITION = "highest_position"
+
+    # NPV activity mapping collection
+    ACTIVITY_NPV_COLLECTION = "activity_npv_collection"
 
 
 class SettingsManager(QtCore.QObject):
