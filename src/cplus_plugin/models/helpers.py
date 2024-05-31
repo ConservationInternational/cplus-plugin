@@ -453,7 +453,7 @@ def activity_npv_to_dict(activity_npv: ActivityNpv) -> dict:
         NORMALIZED_NPV_ATTRIBUTE: activity_npv.params.normalized_npv,
         YEARLY_RATES_ATTRIBUTE: activity_npv.params.yearly_rates,
         ENABLED_ATTRIBUTE: activity_npv.enabled,
-        ACTIVITY_IDENTIFIER_PROPERTY: activity_npv.activity_id
+        ACTIVITY_IDENTIFIER_PROPERTY: activity_npv.activity_id,
     }
 
 
@@ -514,7 +514,7 @@ def activity_npv_collection_to_dict(activity_collection: ActivityNpvCollection) 
         MIN_VALUE_ATTRIBUTE: activity_collection.minimum_value,
         MAX_VALUE_ATTRIBUTE: activity_collection.maximum_value,
         COMPUTED_ATTRIBUTE: activity_collection.use_computed,
-        REMOVE_EXISTING_ATTRIBUTE: activity_collection.remove_existing
+        REMOVE_EXISTING_ATTRIBUTE: activity_collection.remove_existing,
     }
 
     mapping_dict = list(map(activity_npv_to_dict, activity_collection.mappings))
@@ -524,28 +524,29 @@ def activity_npv_collection_to_dict(activity_collection: ActivityNpvCollection) 
 
 
 def create_activity_npv_collection(
-        activity_collection_dict: dict,
-        reference_activities: typing.List[Activity]=None
+    activity_collection_dict: dict, reference_activities: typing.List[Activity] = None
 ) -> typing.Optional[ActivityNpvCollection]:
-    """Creates an activity NPV collection object from the corresponding 
+    """Creates an activity NPV collection object from the corresponding
     dictionary representation.
-    
-    :param activity_collection_dict: Dictionary representation containing 
+
+    :param activity_collection_dict: Dictionary representation containing
     information of an activity NPV collection object.
     :type activity_collection_dict: dict
 
     :param reference_activities: Optional list of activities that will be
     used to lookup  when deserializing the ActivityNpv objects.
     :type reference_activities: list
-    
-    :returns: Activity NPV collection object from the dictionary representation 
+
+    :returns: Activity NPV collection object from the dictionary representation
     or None if the source dictionary is invalid.
     :rtype: ActivityNpvCollection
     """
     if len(activity_collection_dict) == 0:
         return None
 
-    ref_activities_by_uuid = {str(activity.uuid): activity for activity in reference_activities}
+    ref_activities_by_uuid = {
+        str(activity.uuid): activity for activity in reference_activities
+    }
 
     args = []
 
@@ -587,5 +588,7 @@ def create_activity_npv_collection(
                     ref_activity = ref_activities_by_uuid[activity_id]
                     activity_npv.activity = ref_activity
                     npv_mappings.append(activity_npv)
+
+        activity_npv_collection.mappings = npv_mappings
 
     return activity_npv_collection

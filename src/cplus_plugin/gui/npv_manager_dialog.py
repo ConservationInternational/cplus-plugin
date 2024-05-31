@@ -4,6 +4,7 @@ Dialog for creating a new financial PWL.
 """
 
 import os
+import typing
 
 from qgis.core import (
     Qgis,
@@ -20,6 +21,8 @@ from qgis.PyQt.uic import loadUiType
 from .component_item_model import ActivityItemModel
 from ..conf import settings_manager
 from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
+from ..models.base import Activity
+from ..models.financial import ActivityNpv, ActivityNpvCollection, NpvParameters
 from .npv_financial_model import NpvFinancialModel
 from ..lib.financials import compute_discount_value
 from ..utils import FileUtils, open_documentation, tr
@@ -178,6 +181,10 @@ class ValueFormatterItemDelegate(QtWidgets.QStyledItemDelegate):
 class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
     """Dialog for managing NPV priority weighting layers for activities."""
 
+    DEFAULT_YEARS = 5
+    DEFAULT_DISCOUNT_RATE = 0.0
+    NUM_DECIMAL_PLACES = 2
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setupUi(self)
@@ -201,6 +208,9 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
         self._npv = 0.0
 
+        # Current selected activity identifier
+        self._current_activity_identifier: str = None
+
         icon_pixmap = QtGui.QPixmap(ICON_PATH)
         self.icon_la.setPixmap(icon_pixmap)
         self.btn_help.clicked.connect(self.open_help)
@@ -210,6 +220,10 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         self.lst_activities.setModel(self._activity_model)
         for activity in settings_manager.get_all_activities():
             self._activity_model.add_activity(activity, None)
+
+        self.lst_activities.selectionModel().selectionChanged.connect(
+            self.on_activity_selection_changed
+        )
 
         # Set view model
         self._npv_model = NpvFinancialModel()
@@ -222,7 +236,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         self.tv_revenue_costs.setItemDelegateForColumn(
             3, self._discounted_value_delegate
         )
-        self._npv_model.itemChanged.connect(self.on_item_changed)
+        self._npv_model.itemChanged.connect(self.on_npv_computation_item_changed)
         self._npv_model.rowsRemoved.connect(self.on_years_removed)
         self.tv_revenue_costs.installEventFilter(self)
 
@@ -230,7 +244,29 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         self.sb_discount.valueChanged.connect(self.on_discount_rate_changed)
 
         # Set default values
-        self.sb_num_years.setValue(5)
+        self.reset_npv_values()
+
+        self.cb_computed_npv.toggled.connect(self.on_use_computed_npvs_toggled)
+
+        self._npv_collection = settings_manager.get_npv_collection()
+        print(str(self._npv_collection))
+        if self._npv_collection is None:
+            self._npv_collection = ActivityNpvCollection(0.0, 0.0)
+
+        self.sb_min_normalize.setValue(self._npv_collection.minimum_value)
+        self.sb_max_normalize.setValue(self._npv_collection.maximum_value)
+        self.cb_computed_npv.setChecked(self._npv_collection.use_computed)
+        self.cb_remove_disabled.setChecked(self._npv_collection.remove_existing)
+
+        # Select first activity
+        if self._activity_model.rowCount() > 0:
+            activity_idx = self._activity_model.index(0, 0)
+            if activity_idx.isValid():
+                self.lst_activities.selectionModel().select(
+                    activity_idx, QtCore.QItemSelectionModel.ClearAndSelect
+                )
+
+        self.gp_npv_pwl.toggled.connect(self._on_activity_npv_groupbox_toggled)
 
     def open_help(self, activated: bool):
         """Opens the user documentation for the plugin in a browser."""
@@ -257,10 +293,10 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         on its current width.
         """
         table_width = self.tv_revenue_costs.width()
-        self.tv_revenue_costs.setColumnWidth(0, table_width * 0.1)
-        self.tv_revenue_costs.setColumnWidth(1, table_width * 0.35)
-        self.tv_revenue_costs.setColumnWidth(2, table_width * 0.35)
-        self.tv_revenue_costs.setColumnWidth(3, table_width * 0.2)
+        self.tv_revenue_costs.setColumnWidth(0, int(table_width * 0.1))
+        self.tv_revenue_costs.setColumnWidth(1, int(table_width * 0.34))
+        self.tv_revenue_costs.setColumnWidth(2, int(table_width * 0.34))
+        self.tv_revenue_costs.setColumnWidth(3, int(table_width * 0.2))
 
     def on_number_years_changed(self, years: int):
         """Slot raised when the number of years change.
@@ -269,8 +305,9 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         :type years: int
         """
         self._npv_model.set_number_of_years(years)
+        self._update_current_activity_npv()
 
-    def on_item_changed(self, item: QtGui.QStandardItem):
+    def on_npv_computation_item_changed(self, item: QtGui.QStandardItem):
         """Slot raised when the data of an item has changed.
 
         Use this to compute discounted value as well as the NPV.
@@ -285,6 +322,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         column = item.column()
         if column == 1 or column == 2:
             self.update_discounted_value(item.row())
+            self._update_current_activity_npv()
 
     def update_discounted_value(self, row: int):
         """Updated the discounted value for the given row number.
@@ -297,25 +335,32 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         revenue = self._npv_model.data(
             self._npv_model.index(row, 1), QtCore.Qt.EditRole
         )
+
+        cost = self._npv_model.data(self._npv_model.index(row, 2), QtCore.Qt.EditRole)
+
+        # No need to compute if both revenue and cost have not been defined
+        if revenue is None and cost is None:
+            return
+
         if revenue is None:
             revenue = 0.0
 
-        cost = self._npv_model.data(self._npv_model.index(row, 2), QtCore.Qt.EditRole)
         if cost is None:
             cost = 0.0
 
         discounted_value = compute_discount_value(
             revenue, cost, row + 1, self.sb_discount.value()
         )
+        rounded_discounted_value = round(discounted_value, self.NUM_DECIMAL_PLACES)
         discounted_value_index = self._npv_model.index(row, 3)
         self._npv_model.setData(
-            discounted_value_index, discounted_value, QtCore.Qt.EditRole
+            discounted_value_index, rounded_discounted_value, QtCore.Qt.EditRole
         )
 
         self.compute_npv()
 
     def update_all_discounted_values(self):
-        """Updates al discounted values that had already been
+        """Updates all discounted values that had already been
         computed using the revised discount rate.
         """
         for row in range(self._npv_model.rowCount()):
@@ -334,6 +379,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         """
         # Recompute discounted values
         self.update_all_discounted_values()
+        self._update_current_activity_npv()
 
     def compute_npv(self):
         """Computes the NPV based on the total of the discounted value and
@@ -440,9 +486,185 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         """
         self._message_bar.pushMessage(message, Qgis.MessageLevel.Warning)
 
+    def on_use_computed_npvs_toggled(self, checked: bool):
+        """Slot raised when the checkbox for using computed min/max NPVs is toggled.
+
+        :param checked: True to use computed NPVs else False for the
+        user to manually define the min/max values.
+        :type checked: bool
+        """
+        if checked:
+            self.sb_min_normalize.setEnabled(False)
+            self.sb_max_normalize.setEnabled(False)
+            if self._npv_collection.update_computed_normalization_range():
+                self.sb_min_normalize.setValue(self._npv_collection.minimum_value)
+                self.sb_max_normalize.setValue(self._npv_collection.maximum_value)
+            else:
+                self._show_warning_message(
+                    tr("Normalization values could not be computed.")
+                )
+
+        else:
+            self.sb_min_normalize.setEnabled(True)
+            self.sb_max_normalize.setEnabled(True)
+
+    def _update_base_npv_collection(self):
+        """Update the NPV collection general values based on the UI values."""
+        self._npv_collection.minimum_value = self.sb_min_normalize.value()
+        self._npv_collection.maximum_value = self.sb_max_normalize.value()
+        self._npv_collection.use_computed = self.cb_computed_npv.isChecked()
+        self._npv_collection.remove_existing = self.cb_remove_disabled.isChecked()
+
     def _on_accepted(self):
         """Validates user input before closing."""
         if not self.is_valid():
             return
 
+        self._update_base_npv_collection()
+
+        # Save NPV collection to settings
+        settings_manager.save_npv_collection(self._npv_collection)
+
         self.accept()
+
+    def reset_npv_values(self):
+        """Resets the values for computing the NPV."""
+        # Set default values
+        # We are resetting to zero to remove all previous user-defined values
+        self._npv_model.set_number_of_years(0)
+        self._npv_model.set_number_of_years(self.DEFAULT_YEARS)
+        self.sb_num_years.setValue(self.DEFAULT_YEARS)
+        self.sb_discount.setValue(self.DEFAULT_DISCOUNT_RATE)
+        self.txt_npv.setText("")
+        self.gp_npv_pwl.setChecked(False)
+
+    def on_activity_selection_changed(
+        self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection
+    ):
+        """Slot raised when the selection of activities changes.
+
+        :param selected: Selected items.
+        :type selected: QtCore.QItemSelection
+
+        :param deselected: Deselected items.
+        :type deselected: QtCore.QItemSelection
+        """
+        self._current_activity_identifier = None
+        self.reset_npv_values()
+        selected_indexes = selected.indexes()
+        if len(selected_indexes) == 0:
+            return
+
+        if not selected_indexes[0].isValid():
+            return
+
+        activity_item = self._activity_model.itemFromIndex(selected_indexes[0])
+        activity_npv = self._npv_collection.activity_npv(activity_item.uuid)
+        if activity_npv is None:
+            return
+
+        self.load_activity_npv(activity_npv)
+
+    def load_activity_npv(self, activity_npv: ActivityNpv):
+        """Loads NPV parameters for an activity.
+
+        :param activity_npv: Object containing the NPV parameters for an activity.
+        :type activity_npv: ActivityNpv
+        """
+        self._current_activity_identifier = activity_npv.activity_id
+        npv_params = activity_npv.params
+
+        self.gp_npv_pwl.setChecked(activity_npv.enabled)
+
+        self.sb_num_years.blockSignals(True)
+        self.sb_num_years.setValue(npv_params.years)
+        self.sb_num_years.blockSignals(False)
+
+        self.sb_discount.blockSignals(True)
+        self.sb_discount.setValue(npv_params.discount)
+        self.sb_discount.blockSignals(False)
+
+        self._npv_model.set_number_of_years(npv_params.years)
+
+        for i, year_info in enumerate(npv_params.yearly_rates):
+            if len(year_info) < 3:
+                continue
+
+            revenue_index = self._npv_model.index(i, 1)
+            self._npv_model.setData(revenue_index, year_info[0], QtCore.Qt.EditRole)
+            cost_index = self._npv_model.index(i, 2)
+            self._npv_model.setData(cost_index, year_info[1], QtCore.Qt.EditRole)
+
+        self.update_all_discounted_values()
+
+    def _update_current_activity_npv(self):
+        """Update NPV parameters changes made in the UI to the underlying
+        activity NPV.
+        """
+        if self._current_activity_identifier is None:
+            return
+
+        activity_npv = self._npv_collection.activity_npv(
+            self._current_activity_identifier
+        )
+
+        activity_npv.params.years = self.sb_num_years.value()
+        activity_npv.params.discount = self.sb_discount.value()
+        activity_npv.enabled = self.gp_npv_pwl.isChecked()
+
+        yearly_rates = []
+        for row in range(self._npv_model.rowCount()):
+            revenue_value = self._npv_model.data(
+                self._npv_model.index(row, 1), QtCore.Qt.EditRole
+            )
+            cost_value = self._npv_model.data(
+                self._npv_model.index(row, 2), QtCore.Qt.EditRole
+            )
+            discount_value = self._npv_model.data(
+                self._npv_model.index(row, 3), QtCore.Qt.EditRole
+            )
+            yearly_rates.append((revenue_value, cost_value, discount_value))
+
+        activity_npv.params.yearly_rates = yearly_rates
+
+        try:
+            activity_npv.params.absolute_npv = float(self.txt_npv.text())
+        except ValueError:
+            pass
+
+    def selected_activity(self) -> typing.Optional[Activity]:
+        """Gets the current selected activity.
+
+        :returns: Current selected activity or None if there is
+        no selection.
+        :rtype: Activity
+        """
+        selected_indexes = self.lst_activities.selectedIndexes()
+        if len(selected_indexes) == 0:
+            return None
+
+        if not selected_indexes[0].isValid():
+            return
+
+        activity_item = self._activity_model.itemFromIndex(selected_indexes[0])
+
+        return activity_item.activity
+
+    def _on_activity_npv_groupbox_toggled(self, checked: bool):
+        """Slot raised when the NPV PWL groupbox has been enabled or disabled.
+
+        :param checked: True if the groupbox is enabled else False.
+        :type checked: bool
+        """
+        if checked and self._current_activity_identifier is None:
+            selected_activity = self.selected_activity()
+            if selected_activity is not None:
+                npv_params = NpvParameters(
+                    self.DEFAULT_YEARS, self.DEFAULT_DISCOUNT_RATE
+                )
+                activity_npv = ActivityNpv(npv_params, True, selected_activity)
+                self._npv_collection.mappings.append(activity_npv)
+                self._current_activity_identifier = str(selected_activity.uuid)
+
+        elif not checked and self._current_activity_identifier is not None:
+            self._update_current_activity_npv()

@@ -1218,10 +1218,13 @@ class SettingsManager(QtCore.QObject):
         except json.JSONDecodeError:
             log("ActivityNPVCollection JSON is invalid.")
 
-        return create_activity_npv_collection(npv_collection_dict, self.get_all_activities())
+        return create_activity_npv_collection(
+            npv_collection_dict, self.get_all_activities()
+        )
 
     def save_npv_collection(self, npv_collection: ActivityNpvCollection):
-        """Saves the activity NPV collection serialized to a JSON string.
+        """Saves the activity NPV collection in the settings as a serialized
+        JSON string.
 
         :param npv_collection: Activity NPV collection serialized to a JSON string.
         :type npv_collection: ActivityNpvCollection

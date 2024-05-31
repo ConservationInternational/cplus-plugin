@@ -15,8 +15,8 @@ class NpvParameters:
 
     years: int
     discount: float
-    absolute_npv: float
-    normalized_npv: float
+    absolute_npv: float = 0.0
+    normalized_npv: float = 0.0
     # Each tuple contains 3 elements i.e. revenue, costs and discount rates
     yearly_rates: typing.List[tuple] = dataclasses.field(default_factory=list)
 
@@ -50,7 +50,7 @@ class ActivityNpvCollection:
 
     minimum_value: float
     maximum_value: float
-    use_computed: bool = False
+    use_computed: bool = True
     remove_existing: bool = False
     mappings: typing.List[ActivityNpv] = dataclasses.field(default_factory=list)
 
