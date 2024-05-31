@@ -240,14 +240,6 @@ class LayoutVariableRegister:
         )
         self._var_infos[cultural_policies_var_info.name] = cultural_policies_var_info
 
-        # Setting - report cultural considerations
-        culture_considerations_var_info = NoneValueSettingsVariableInfo(
-            "cultural_considerations", Settings.REPORT_CULTURE_CONSIDERATIONS
-        )
-        self._var_infos[
-            culture_considerations_var_info.name
-        ] = culture_considerations_var_info
-
     def _create_activities_var_infos(self):
         """Add variable info objects for activities."""
         activities = settings_manager.get_all_activities()
