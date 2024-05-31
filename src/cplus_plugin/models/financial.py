@@ -86,8 +86,9 @@ class ActivityNpvCollection:
         valid_npv_values = [
             activity_npv.params.absolute_npv
             for activity_npv in self.mappings
-            if activity_npv.params.absolute_npv
+            if activity_npv.params.absolute_npv is not None
         ]
+
         if len(valid_npv_values) == 0:
             return False
 

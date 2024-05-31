@@ -206,7 +206,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         ok_button.setText(tr("Update"))
         self.buttonBox.accepted.connect(self._on_accepted)
 
-        self._npv = 0.0
+        self._npv = None
 
         # Current selected activity identifier
         self._current_activity_identifier: str = None
@@ -249,7 +249,6 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         self.cb_computed_npv.toggled.connect(self.on_use_computed_npvs_toggled)
 
         self._npv_collection = settings_manager.get_npv_collection()
-        print(str(self._npv_collection))
         if self._npv_collection is None:
             self._npv_collection = ActivityNpvCollection(0.0, 0.0)
 
@@ -386,6 +385,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         sets it in the corresponding text control.
         """
         npv = 0.0
+        self._npv = None
         for row in range(self._npv_model.rowCount()):
             discount_value = self._npv_model.data(
                 self._npv_model.index(row, 3), QtCore.Qt.EditRole
@@ -501,7 +501,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
                 self.sb_max_normalize.setValue(self._npv_collection.maximum_value)
             else:
                 self._show_warning_message(
-                    tr("Normalization values could not be computed.")
+                    tr("Min/max normalization values could not be computed.")
                 )
 
         else:
@@ -627,10 +627,8 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
         activity_npv.params.yearly_rates = yearly_rates
 
-        try:
-            activity_npv.params.absolute_npv = float(self.txt_npv.text())
-        except ValueError:
-            pass
+        if self._npv is not None:
+            activity_npv.params.absolute_npv = self._npv
 
     def selected_activity(self) -> typing.Optional[Activity]:
         """Gets the current selected activity.
