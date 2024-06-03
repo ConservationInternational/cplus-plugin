@@ -17,7 +17,6 @@ from qgis.PyQt import (
     QtCore,
     QtGui,
     QtWidgets,
-    QtNetwork,
 )
 
 from qgis.PyQt.uic import loadUiType
@@ -30,22 +29,16 @@ from qgis.core import (
     QgsFeedback,
     QgsGeometry,
     QgsProject,
-    QgsProcessing,
     QgsProcessingAlgorithm,
-    QgsProcessingAlgRunnerTask,
     QgsProcessingContext,
     QgsProcessingFeedback,
     QgsProcessingMultiStepFeedback,
     QgsRasterLayer,
     QgsRectangle,
-    QgsTask,
     QgsWkbTypes,
     QgsColorRampShader,
     QgsSingleBandPseudoColorRenderer,
-    QgsRasterShader,
     QgsPalettedRasterRenderer,
-    QgsStyle,
-    QgsRasterMinMaxOrigin,
 )
 
 from qgis.gui import (
@@ -59,8 +52,8 @@ from qgis.utils import iface
 from .activity_widget import ActivityContainerWidget
 from .priority_group_widget import PriorityGroupWidget
 
-from .npv_manager_dialog import NpvPwlManagerDialog
-from .npv_progress_dialog import NpvPwlProgressDialog
+from .financials.npv_manager_dialog import NpvPwlManagerDialog
+from .financials.npv_progress_dialog import NpvPwlProgressDialog
 from .priority_layer_dialog import PriorityLayerDialog
 from .priority_group_dialog import PriorityGroupDialog
 
@@ -804,12 +797,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         open_documentation(USER_DOCUMENTATION_SITE)
 
     def on_manage_npv_pwls(self):
-        """Slot raised to show dialog for managing NPV PWLs."""
+        """Slot raised to show the dialog for managing NPV PWLs."""
         financial_dialog = NpvPwlManagerDialog()
         if financial_dialog.exec_() == QtWidgets.QDialog.Accepted:
             npv_collection = financial_dialog.npv_collection
             self.npv_processing_context = QgsProcessingContext()
-            self.npv_feedback = QgsProcessingFeedback()
+            self.npv_feedback = QgsProcessingFeedback(False)
             self.npv_multi_step_feedback = QgsProcessingMultiStepFeedback(
                 len(npv_collection.mappings), self.npv_feedback
             )
@@ -882,7 +875,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 reference_pixel_size,
                 reference_extent_str,
                 self.on_npv_pwl_created,
+                self.on_npv_pwl_removed,
             )
+
+    def on_npv_pwl_removed(self, pwl_identifier: str):
+        """Callback that is executed when an NPV PWL has
+        been removed because it was disabled by the user."""
+        # We use this to refresh the view to reflect the removed NPV PWL.
+        self.update_priority_layers(update_groups=False)
 
     def on_npv_pwl_created(
         self,
@@ -892,17 +892,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         context: QgsProcessingContext,
         feedback: QgsProcessingFeedback,
     ):
-        """Creates an PWL model when the corresponding raster layer
-        has been created.
+        """Callback that creates an PWL item when the corresponding
+        raster layer has been created.
 
         :param activity_npv: NPV mapping for an activity:
         :type activity_npv: ActivityNpv
 
         :param npv_pwl_path: Absolute file path of the created NPV PWL.
         :type npv_pwl_path: str
-
-        :param remove_existing: Removes existing NPV PWL if applicable.
-        :type remove_existing: bool
 
         :param algorithm: Processing algorithm that created the NPV PWL.
         :type algorithm: QgsProcessingAlgorithm
@@ -941,8 +938,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             else:
                 msg_tr = tr("activity not found to attach the NPV PWL.")
                 log(f"{activity_npv.activity.name} {msg_tr}", info=False)
+        else:
+            # Just update the path
+            updated_pwl["path"] = npv_pwl_path
+            settings_manager.save_priority_layer(updated_pwl)
 
-        # Refresh view incase there are PWL entries that have been removed
         self.update_priority_layers(update_groups=False)
 
     def add_priority_group(self):

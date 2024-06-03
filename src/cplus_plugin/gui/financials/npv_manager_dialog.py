@@ -18,17 +18,17 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
-from .component_item_model import ActivityItemModel
-from ..conf import settings_manager
-from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
-from ..models.base import Activity
-from ..models.financial import ActivityNpv, ActivityNpvCollection, NpvParameters
+from ..component_item_model import ActivityItemModel
+from ...conf import settings_manager
+from ...definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
+from ...models.base import Activity
+from ...models.financial import ActivityNpv, ActivityNpvCollection, NpvParameters
 from .npv_financial_model import NpvFinancialModel
-from ..lib.financials import compute_discount_value
-from ..utils import FileUtils, open_documentation, tr
+from ...lib.financials import compute_discount_value
+from ...utils import FileUtils, open_documentation, tr
 
 WidgetUi, _ = loadUiType(
-    os.path.join(os.path.dirname(__file__), "../ui/financial_pwl_dialog.ui")
+    os.path.join(os.path.dirname(__file__), "../../ui/financial_pwl_dialog.ui")
 )
 
 

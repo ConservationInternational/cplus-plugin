@@ -3,6 +3,7 @@
 Contains functions for financial computations.
 """
 
+import datetime
 from functools import partial
 import pathlib
 import typing
@@ -55,6 +56,7 @@ def create_npv_pwls(
     target_pixel_size: float,
     target_extent: str,
     on_finish_func: typing.Callable = None,
+    on_removed_func: typing.Callable = None,
 ):
     """Creates constant raster layers based on the normalized NPV values for
     the specified activities.
@@ -83,6 +85,10 @@ def create_npv_pwls(
 
     :param on_finish_func: Function to be executed when a constant raster
     has been created.
+    :type on_finish_func: Callable
+
+    :param on_removed_func: Function to be executed when a disabled NPV PWL has
+    been removed.
     :type on_finish_func: Callable
     """
     base_dir = settings_manager.get_value(Settings.BASE_DIR)
@@ -120,37 +126,45 @@ def create_npv_pwls(
             activity_npv.base_name.replace(" ", "_").lower()
         )
 
+        # Delete existing NPV PWLs. Relevant layers will be re-created
+        # where applicable.
+        for del_npv_path in pathlib.Path(npv_base_dir).glob(f"*{base_layer_name}*"):
+            try:
+                log(f"{tr('Deleting')} - NPV PWL {del_npv_path}")
+                pathlib.Path(del_npv_path).unlink()
+            except OSError as os_ex:
+                base_msg_tr = tr("Unable to delete NPV PWL")
+                conclusion_msg_tr = tr(
+                    "File will be deleted in subsequent processes if not locked"
+                )
+                log(
+                    f"{base_msg_tr}: {os_ex.strerror}. {conclusion_msg_tr}.", info=False
+                )
+
         # Delete if PWL previously existed and is now disabled
         if not activity_npv.enabled:
             if npv_collection.remove_existing:
-                for del_npv_path in pathlib.Path(npv_base_dir).glob(
-                    f"*{base_layer_name}*"
-                ):
-                    try:
-                        log(f"{tr('Deleting')} NPV PWL {del_npv_path}")
-                        pathlib.Path(del_npv_path).unlink()
-                    except OSError as os_ex:
-                        base_msg_tr = tr("Unable to delete NPV PWL")
-                        log(f"{base_msg_tr}: {os_ex.strerror}")
-
                 # Delete corresponding PWL entry in the settings
                 del_pwl = settings_manager.find_layer_by_name(activity_npv.base_name)
                 if del_pwl is not None:
                     pwl_id = del_pwl.get("uuid", None)
                     if pwl_id is not None:
                         settings_manager.delete_priority_layer(pwl_id)
+                        if on_removed_func is not None:
+                            on_removed_func(str(del_pwl["uuid"]))
 
-            current_step += 1
-            multi_step_feedback.setCurrentStep(current_step)
-
-            continue
+                current_step += 1
+                multi_step_feedback.setCurrentStep(current_step)
+                continue
 
         # Output layer name
-        npv_pwl_path = f"{npv_base_dir}/{base_layer_name}.tif"
+        npv_pwl_path = f"{npv_base_dir}/{base_layer_name}_{datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.tif"
 
-        output_post_processing_func = partial(
-            on_finish_func, activity_npv, npv_pwl_path
-        )
+        output_post_processing_func = None
+        if on_finish_func is not None:
+            output_post_processing_func = partial(
+                on_finish_func, activity_npv, npv_pwl_path
+            )
 
         try:
             alg_params = {

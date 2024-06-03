@@ -7,7 +7,7 @@ import typing
 
 from qgis.PyQt import QtCore, QtGui
 
-from ..definitions.constants import (
+from ...definitions.constants import (
     DISCOUNTED_VALUE_HEADER,
     MAX_YEARS,
     TOTAL_PROJECTED_COSTS_HEADER,
@@ -15,7 +15,7 @@ from ..definitions.constants import (
     YEAR_HEADER,
 )
 
-from ..utils import FileUtils, tr
+from ...utils import FileUtils, tr
 
 
 class NpvFinancialModel(QtGui.QStandardItemModel):

@@ -7,7 +7,7 @@ from qgis.core import (
 )
 from qgis.PyQt import QtCore, QtGui, QtWidgets
 
-from ..utils import tr
+from ...utils import tr
 
 
 class NpvPwlProgressDialog(QtWidgets.QProgressDialog):
