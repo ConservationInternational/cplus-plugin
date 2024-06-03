@@ -41,6 +41,21 @@ class ActivityNpv:
 
         return str(self.activity.uuid)
 
+    @property
+    def base_name(self) -> str:
+        """Returns a proposed name for the activity NPV.
+
+        An empty string will be return id the `activity` attribute
+        is not set.
+
+        :returns: Proposed base name for the activity NPV.
+        :rtype: str
+        """
+        if self.activity is None:
+            return ""
+
+        return f"{self.activity.name} NPV Norm"
+
 
 @dataclasses.dataclass
 class ActivityNpvCollection:
@@ -77,6 +92,9 @@ class ActivityNpvCollection:
         based on the absolute values of the existing ActivityNpv
         objects.
 
+        Values for disabled activity NPVs will be excluded from
+        the computation.
+
         :returns: True if the min/max values were updated else False if
         there are no mappings or valid absolute NPV values defined.
         """
@@ -86,7 +104,7 @@ class ActivityNpvCollection:
         valid_npv_values = [
             activity_npv.params.absolute_npv
             for activity_npv in self.mappings
-            if activity_npv.params.absolute_npv is not None
+            if activity_npv.params.absolute_npv is not None and activity_npv.enabled
         ]
 
         if len(valid_npv_values) == 0:
@@ -134,3 +152,15 @@ class ActivityNpvCollection:
             activity_npv.params.normalized_npv = normalized_npv
 
         return True
+
+
+@dataclasses.dataclass
+class ActivityNpvPwl:
+    """Convenience class that contains parameters for creating
+    a PWL raster layer.
+    """
+
+    npv: ActivityNpv
+    extent: typing.List[float]
+    crs: str
+    pixel_size: float

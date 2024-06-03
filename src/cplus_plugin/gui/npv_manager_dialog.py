@@ -271,6 +271,16 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         """Opens the user documentation for the plugin in a browser."""
         open_documentation(USER_DOCUMENTATION_SITE)
 
+    @property
+    def npv_collection(self) -> ActivityNpvCollection:
+        """Gets the Activity NPV collection as defined by the user.
+
+        :returns: The Activity NPV collection containing the NPV
+        parameters for activities.
+        :rtype: ActivityNpvCollection
+        """
+        return self._npv_collection
+
     def eventFilter(self, observed_object: QtCore.QObject, event: QtCore.QEvent):
         """Captures events sent to specific widgets.
 
@@ -292,10 +302,10 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         on its current width.
         """
         table_width = self.tv_revenue_costs.width()
-        self.tv_revenue_costs.setColumnWidth(0, int(table_width * 0.1))
-        self.tv_revenue_costs.setColumnWidth(1, int(table_width * 0.34))
-        self.tv_revenue_costs.setColumnWidth(2, int(table_width * 0.34))
-        self.tv_revenue_costs.setColumnWidth(3, int(table_width * 0.2))
+        self.tv_revenue_costs.setColumnWidth(0, int(table_width * 0.09))
+        self.tv_revenue_costs.setColumnWidth(1, int(table_width * 0.33))
+        self.tv_revenue_costs.setColumnWidth(2, int(table_width * 0.33))
+        self.tv_revenue_costs.setColumnWidth(3, int(table_width * 0.24))
 
     def on_number_years_changed(self, years: int):
         """Slot raised when the number of years change.
@@ -432,49 +442,32 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
         self._message_bar.clearWidgets()
 
-        for row in range(self._npv_model.rowCount()):
-            is_valid = self._validate_row(row)
-            if not is_valid and status:
-                status = False
-
-        return status
-
-    def _validate_row(self, row: int) -> bool:
-        """Validates the input in the given row.
-
-        An invalid error message will be shown in the dialog.
-
-        :param row: Input in the given row to validate.
-        :type row: int
-
-        :returns: True if the row is valid, else False.
-        :rtype: bool
-        """
-        status = True
-
-        year_tr = tr("Year")
-        not_defined_tr = tr("not defined")
-
-        revenue = self._npv_model.data(
-            self._npv_model.index(row, 1), QtCore.Qt.EditRole
-        )
-        cost = self._npv_model.data(self._npv_model.index(row, 2), QtCore.Qt.EditRole)
-        base_err_msg = ""
-        if not revenue and cost:
-            base_err_msg = tr("Revenue")
+        if self.sb_min_normalize.value() > self.sb_max_normalize.value():
+            msg = tr(
+                "Minimum normalization value cannot be greater than the maximum normalization value."
+            )
+            self._show_warning_message(msg)
             status = False
-        elif revenue and not cost:
-            base_err_msg = tr("Cost")
-            if status:
-                status = False
-        elif not revenue and not cost:
-            base_err_msg = tr("Revenue and cost")
-            if status:
-                status = False
 
-        if not status:
-            err_msg = f"{year_tr} {str(row + 1)}: {base_err_msg} {not_defined_tr}"
-            self._show_warning_message(err_msg)
+        missing_msg_tr = tr("Missing values in Year")
+        for activity_mapping in self._npv_collection.mappings:
+            # Only validate enabled activity mappings
+            if not activity_mapping.enabled:
+                continue
+
+            activity_name = activity_mapping.activity.name
+            missing_value_rows = []
+            for i, rates_info in enumerate(activity_mapping.params.yearly_rates):
+                if len(rates_info) < 3 or None in rates_info:
+                    missing_value_rows.append(str(i + 1))
+
+            if len(missing_value_rows) > 0:
+                msg = (
+                    f"{activity_name}: {missing_msg_tr} {', '.join(missing_value_rows)}"
+                )
+                self._show_warning_message(msg)
+                if status:
+                    status = False
 
         return status
 
@@ -496,17 +489,24 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         if checked:
             self.sb_min_normalize.setEnabled(False)
             self.sb_max_normalize.setEnabled(False)
-            if self._npv_collection.update_computed_normalization_range():
-                self.sb_min_normalize.setValue(self._npv_collection.minimum_value)
-                self.sb_max_normalize.setValue(self._npv_collection.maximum_value)
-            else:
-                self._show_warning_message(
-                    tr("Min/max normalization values could not be computed.")
-                )
-
+            self._compute_min_max_range()
         else:
             self.sb_min_normalize.setEnabled(True)
             self.sb_max_normalize.setEnabled(True)
+
+    def _compute_min_max_range(self):
+        """Computes the minimum and maximum NPV normalization range and sets
+        the values in the corresponding UI controls.
+        Otherwise, shows an error if the normalization range could not be
+        computed.
+        """
+        if self._npv_collection.update_computed_normalization_range():
+            self.sb_min_normalize.setValue(self._npv_collection.minimum_value)
+            self.sb_max_normalize.setValue(self._npv_collection.maximum_value)
+        else:
+            self._show_warning_message(
+                tr("Min/max normalization values could not be computed.")
+            )
 
     def _update_base_npv_collection(self):
         """Update the NPV collection general values based on the UI values."""
@@ -517,10 +517,17 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
     def _on_accepted(self):
         """Validates user input before closing."""
+        self._update_base_npv_collection()
+
         if not self.is_valid():
             return
 
-        self._update_base_npv_collection()
+        # Normalize NPVs
+        status = self._npv_collection.normalize_npvs()
+        if not status:
+            msg = tr("Unable to normalize NPVs. Check the normalization ranges.")
+            self._show_warning_message(msg)
+            return
 
         # Save NPV collection to settings
         settings_manager.save_npv_collection(self._npv_collection)
@@ -551,6 +558,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         """
         self._current_activity_identifier = None
         self.reset_npv_values()
+
         selected_indexes = selected.indexes()
         if len(selected_indexes) == 0:
             return
@@ -630,6 +638,10 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         if self._npv is not None:
             activity_npv.params.absolute_npv = self._npv
 
+        # Update NPV normalization range
+        if self.cb_computed_npv.isChecked():
+            self._compute_min_max_range()
+
     def selected_activity(self) -> typing.Optional[Activity]:
         """Gets the current selected activity.
 
@@ -664,5 +676,15 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
                 self._npv_collection.mappings.append(activity_npv)
                 self._current_activity_identifier = str(selected_activity.uuid)
 
-        elif not checked and self._current_activity_identifier is not None:
-            self._update_current_activity_npv()
+        elif self._current_activity_identifier is not None:
+            if not checked:
+                self._update_current_activity_npv()
+            else:
+                activity_npv = self._npv_collection.activity_npv(
+                    self._current_activity_identifier
+                )
+                activity_npv.enabled = self.gp_npv_pwl.isChecked()
+
+                # Update NPV normalization range
+                if self.cb_computed_npv.isChecked():
+                    self._compute_min_max_range()

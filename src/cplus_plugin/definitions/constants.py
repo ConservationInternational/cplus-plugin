@@ -7,6 +7,7 @@ Definitions for application constants.
 NCS_PATHWAY_SEGMENT = "ncs_pathways"
 NCS_CARBON_SEGMENT = "ncs_carbon"
 PRIORITY_LAYERS_SEGMENT = "priority_layers"
+NPV_PRIORITY_LAYERS_SEGMENT = "npv"
 
 # Naming for outputs sub-folder relative to base directory
 OUTPUTS_SEGMENT = "outputs"
@@ -55,7 +56,7 @@ REPORTS_OPTIONS_KEY = "cplus_report"
 YEAR_HEADER = "Year"
 TOTAL_PROJECTED_COSTS_HEADER = "Projected Total Costs/ha (US$)"
 TOTAL_PROJECTED_REVENUES_HEADER = "Projected Total Revenues/ha (US$)"
-DISCOUNTED_VALUE_HEADER = "Discounted Value"
+DISCOUNTED_VALUE_HEADER = "Discounted Value (US$)"
 MAX_YEARS = 99
 
 NO_DATA_VALUE = -9999

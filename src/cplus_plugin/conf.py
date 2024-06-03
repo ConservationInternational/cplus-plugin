@@ -33,6 +33,7 @@ from .definitions.constants import (
 from .models.base import (
     Activity,
     NcsPathway,
+    PriorityLayerType,
     Scenario,
     ScenarioResult,
     SpatialExtent,
@@ -595,6 +596,7 @@ class SettingsManager(QtCore.QObject):
             priority_layer["user_defined"] = settings.value(
                 "user_defined", defaultValue=True, type=bool
             )
+            priority_layer["type"] = settings.value("type", defaultValue=0, type=int)
             priority_layer["groups"] = groups
         return priority_layer
 
@@ -631,6 +633,9 @@ class SettingsManager(QtCore.QObject):
                         "selected": priority_settings.value("selected", type=bool),
                         "user_defined": priority_settings.value(
                             "user_defined", defaultValue=True, type=bool
+                        ),
+                        "type": priority_settings.value(
+                            "type", defaultValue=0, type=int
                         ),
                         "groups": groups,
                     }
@@ -708,6 +713,7 @@ class SettingsManager(QtCore.QObject):
             settings.setValue("path", priority_layer["path"])
             settings.setValue("selected", priority_layer.get("selected", False))
             settings.setValue("user_defined", priority_layer.get("user_defined", True))
+            settings.setValue("type", priority_layer.get("type", 0))
             groups_key = f"{settings_key}/groups"
             with qgis_settings(groups_key) as groups_settings:
                 for group_id in groups_settings.childGroups():
