@@ -8,6 +8,7 @@ import pathlib
 import typing
 
 from qgis.core import (
+    QgsFeedback,
     QgsProcessingContext,
     QgsProcessingException,
     QgsProcessingFeedback,
@@ -48,11 +49,12 @@ def compute_discount_value(
 def create_npv_pwls(
     npv_collection: ActivityNpvCollection,
     context: QgsProcessingContext,
-    feedback: QgsProcessingMultiStepFeedback,
+    multi_step_feedback: QgsProcessingMultiStepFeedback,
+    feedback: QgsProcessingFeedback,
     target_crs_id: str,
     target_pixel_size: float,
     target_extent: str,
-    on_finish_func: typing.Callable,
+    on_finish_func: typing.Callable = None,
 ):
     """Creates constant raster layers based on the normalized NPV values for
     the specified activities.
@@ -64,8 +66,11 @@ def create_npv_pwls(
     :param context: Context information for performing the processing.
     :type context: QgsProcessingContext
 
-    :param feedback: Feedback for updating the status of processing.
-    :type feedback: QgsProcessingMultiStepFeedback
+    :param multi_step_feedback: Feedback for updating the status of processing.
+    :type multi_step_feedback: QgsProcessingMultiStepFeedback
+
+    :param feedback: Underlying feedback object for communicating to the caller.
+    :type feedback: QgsProcessingFeedback
 
     :param target_crs_id: CRS identifier of the target layers.
     :type target_crs_id: str
@@ -91,8 +96,12 @@ def create_npv_pwls(
     # NPV PWL root directory
     npv_base_dir = f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/{NPV_PRIORITY_LAYERS_SEGMENT}"
 
+    current_step = 0
+    multi_step_feedback.setCurrentStep(current_step)
+
     for i, activity_npv in enumerate(npv_collection.mappings):
-        current_step = i + 1
+        if feedback.isCanceled():
+            break
 
         if activity_npv.activity is None or activity_npv.params is None:
             log(
@@ -101,6 +110,10 @@ def create_npv_pwls(
                 ),
                 info=False,
             )
+
+            current_step += 1
+            multi_step_feedback.setCurrentStep(current_step)
+
             continue
 
         base_layer_name = clean_filename(
@@ -127,6 +140,9 @@ def create_npv_pwls(
                     if pwl_id is not None:
                         settings_manager.delete_priority_layer(pwl_id)
 
+            current_step += 1
+            multi_step_feedback.setCurrentStep(current_step)
+
             continue
 
         # Output layer name
@@ -148,9 +164,12 @@ def create_npv_pwls(
                 "native:createconstantrasterlayer",
                 alg_params,
                 context=context,
-                feedback=feedback,
+                feedback=multi_step_feedback,
                 onFinish=output_post_processing_func,
             )
         except QgsProcessingException as ex:
             err_tr = tr("Error creating NPV PWL")
             log(f"{err_tr} {npv_pwl_path}")
+
+        current_step += 1
+        multi_step_feedback.setCurrentStep(current_step)

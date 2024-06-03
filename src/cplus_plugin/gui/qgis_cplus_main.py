@@ -60,6 +60,7 @@ from .activity_widget import ActivityContainerWidget
 from .priority_group_widget import PriorityGroupWidget
 
 from .npv_manager_dialog import NpvPwlManagerDialog
+from .npv_progress_dialog import NpvPwlProgressDialog
 from .priority_layer_dialog import PriorityLayerDialog
 from .priority_group_dialog import PriorityGroupDialog
 
@@ -869,10 +870,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 f"{reference_extent.yMaximum()!s}"
             )
 
+            self.npv_progress_dialog = NpvPwlProgressDialog(self, self.npv_feedback)
+            self.npv_progress_dialog.show()
+
             create_npv_pwls(
                 npv_collection,
                 self.npv_processing_context,
                 self.npv_multi_step_feedback,
+                self.npv_feedback,
                 reference_crs.authid(),
                 reference_pixel_size,
                 reference_extent_str,
