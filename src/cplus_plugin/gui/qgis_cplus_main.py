@@ -259,6 +259,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             self.log_text_box.setPlainText(f"{message} \n")
 
+            log_text_cursor = self.log_text_box.textCursor()
+            log_text_cursor.movePosition(QtGui.QTextCursor.End)
+            self.log_text_box.setTextCursor(log_text_cursor)
+
             processing_log_file = os.path.join(
                 self.current_analysis_task.scenario_directory, SCENARIO_LOG_FILE_NAME
             )

@@ -224,16 +224,18 @@ class ScenarioAnalysisTask(QgsTask):
                 extent_string,
             )
 
+        # TODO enable the sieve functionality
+
         # Run sieve function on the created models if user has enabled it
 
-        sieve_enabled = settings_manager.get_value(
-            Settings.SIEVE_ENABLED, default=False, setting_type=bool
-        )
-
-        if sieve_enabled:
-            self.run_activities_sieve(
-                self.analysis_activities,
-            )
+        # sieve_enabled = settings_manager.get_value(
+        #     Settings.SIEVE_ENABLED, default=False, setting_type=bool
+        # )
+        #
+        # if sieve_enabled:
+        #     self.run_activities_sieve(
+        #         self.analysis_activities,
+        #     )
 
         # After creating activities, we normalize them using the same coefficients
         # used in normalizing their respective pathways.
