@@ -197,6 +197,9 @@
        </item>
        <item>
         <widget class="QgsCollapsibleGroupBox" name="sieve_group_box">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="title">
           <string>Sieve </string>
          </property>
