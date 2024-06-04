@@ -123,7 +123,8 @@ class ActivityNpvCollection:
         normalization range, then they will be truncated to 0.0 and 1.0
         respectively. To avoid such a situation from occurring, it is recommended
         to make sure that the ranges are synchronized using the latest absolute
-        NPV values.
+        NPV values hence call `update_computed_normalization_range` before
+        normalizing the NPVs.
 
         :returns: True if the NPVs were successfully normalized else False due
         to various reasons such as if the minimum value is greater than the

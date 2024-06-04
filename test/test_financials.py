@@ -41,6 +41,7 @@ class TestFinancialNpv(TestCase):
     def test_npv_normalization_status(self):
         """Test the status of NPV normalization."""
         npv_collection = get_activity_npv_collection()
+        npv_collection.update_computed_normalization_range()
         normalization_status = npv_collection.normalize_npvs()
 
         self.assertTrue(normalization_status)
@@ -48,6 +49,7 @@ class TestFinancialNpv(TestCase):
     def test_npv_normalization_value(self):
         """Test the status of NPV normalization."""
         npv_collection = get_activity_npv_collection()
+        npv_collection.update_computed_normalization_range()
         _ = npv_collection.normalize_npvs()
 
         activity_npv_1 = npv_collection.activity_npv(ACTIVITY_UUID_STR)
