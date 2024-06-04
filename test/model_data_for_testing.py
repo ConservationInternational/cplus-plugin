@@ -28,11 +28,18 @@ from cplus_plugin.models.base import (
     ScenarioResult,
     SpatialExtent,
 )
+from cplus_plugin.models.financial import (
+    ActivityNpv,
+    ActivityNpvCollection,
+    NpvParameters,
+)
 
 
 VALID_NCS_UUID_STR = "b5338edf-f3cc-4040-867d-be9651a28b63"
 INVALID_NCS_UUID_STR = "4c6b31a1-3ff3-43b2-bfe2-45519a975955"
 ACTIVITY_UUID_STR = "01e3a612-118d-4d94-9a5a-09c4b9168288"
+ACTIVITY_2_UUID_STR = "1fbfb272-0b8d-409e-8cf6-db9f1f63fce2"
+ACTIVITY_3_UUID_STR = "7b5c2ae0-aeea-4006-a3f8-42ee7cd81bcf"
 TEST_RASTER_PATH = os.path.join(os.path.dirname(__file__), "tenbytenraster.tif")
 SCENARIO_UUID_STR = "6cf5b355-f605-4de5-98b1-64936d473f82"
 
@@ -198,6 +205,63 @@ def get_test_scenario() -> Scenario:
 def get_test_scenario_result() -> ScenarioResult:
     """Returns a test scenario result object."""
     return ScenarioResult(get_test_scenario())
+
+
+def get_activity_npvs() -> typing.List[ActivityNpv]:
+    """Returns a collection of activity NPV mappings."""
+    npv_params_1 = NpvParameters(3, 2.0)
+    npv_params_1.absolute_npv = 40410.23
+    npv_params_1.yearly_rates = [
+        (25000.0, 18000.0, 7000.0),
+        (28000.0, 15000.0, 12745.1),
+        (35000.0, 13500.0, 20665.13),
+    ]
+    activity_npv_1 = ActivityNpv(npv_params_1, True, get_activity())
+
+    npv_params_2 = NpvParameters(2, 4.0)
+    npv_params_2.absolute_npv = 102307.69
+    npv_params_2.yearly_rates = [
+        (100000.0, 65000.0, 35000.0),
+        (120000.0, 50000.0, 67307.69),
+    ]
+    activity_2 = Activity(
+        UUID(ACTIVITY_2_UUID_STR),
+        "Test Activity 2",
+        "Description for test activity 2",
+        TEST_RASTER_PATH,
+        LayerType.RASTER,
+        True,
+    )
+    activity_npv_2 = ActivityNpv(npv_params_2, True, activity_2)
+
+    npv_params_3 = NpvParameters(3, 7.0)
+    npv_params_3.absolute_npv = 38767.05
+    npv_params_3.yearly_rates = [
+        (64000.0, 58000.0, 6000.0),
+        (67500.0, 53000.0, 13551.4),
+        (70000.0, 48000.0, 19215.65),
+    ]
+    activity_3 = Activity(
+        UUID(ACTIVITY_3_UUID_STR),
+        "Test Activity 3",
+        "Description for test activity 3",
+        TEST_RASTER_PATH,
+        LayerType.RASTER,
+        True,
+    )
+    activity_npv_3 = ActivityNpv(npv_params_3, True, activity_3)
+
+    return [activity_npv_1, activity_npv_2, activity_npv_3]
+
+
+def get_activity_npv_collection() -> ActivityNpvCollection:
+    """Returns an activity NPV collection for testing."""
+    npv_collection = ActivityNpvCollection()
+
+    mappings = get_activity_npvs()
+    npv_collection.mappings = mappings
+
+    return npv_collection
 
 
 NCS_PATHWAY_DICT = {
