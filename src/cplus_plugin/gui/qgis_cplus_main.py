@@ -798,7 +798,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def on_manage_npv_pwls(self):
         """Slot raised to show the dialog for managing NPV PWLs."""
-        financial_dialog = NpvPwlManagerDialog()
+        financial_dialog = NpvPwlManagerDialog(self)
         if financial_dialog.exec_() == QtWidgets.QDialog.Accepted:
             npv_collection = financial_dialog.npv_collection
             self.npv_processing_context = QgsProcessingContext()
