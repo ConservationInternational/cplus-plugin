@@ -256,7 +256,7 @@ def get_activity_npvs() -> typing.List[ActivityNpv]:
 
 def get_activity_npv_collection() -> ActivityNpvCollection:
     """Returns an activity NPV collection for testing."""
-    npv_collection = ActivityNpvCollection()
+    npv_collection = ActivityNpvCollection(0.0, 0.0)
 
     mappings = get_activity_npvs()
     npv_collection.mappings = mappings
