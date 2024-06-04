@@ -555,29 +555,40 @@ class NcsComponentWidget(ModelComponentWidget):
     def _on_remove_item(self):
         """Delete NcsPathway object."""
         selected_items = self.selected_items()
-        if len(selected_items) == 0 or len(selected_items) > 1:
+        if len(selected_items) == 0:
             return
 
-        ncs = selected_items[0].ncs_pathway
+        ncs_models = []
+        for item in selected_items:
+            ncs_models.append(item.ncs_pathway)
 
-        msg = self.tr(
-            f"Do you want to remove '{ncs.name}'? The corresponding "
-            f"NCS pathways used in the activities will "
-            f"also be removed.\nClick Yes to proceed or No to cancel."
-        )
+        if len(ncs_models) == 1:
+            msg = self.tr(
+                f"Do you want to remove '{ncs_models[0].name}'? The corresponding "
+                f"NCS pathways used in the activities will "
+                f"also be removed.\nClick Yes to proceed or No to cancel."
+            )
+        else:
+            msg = self.tr(
+                f"Do you want to remove the selected NCS pathways? The corresponding "
+                f"NCS pathways used in the activities will "
+                f"also be removed.\nClick Yes to proceed or No to cancel."
+            )
 
         if (
             QtWidgets.QMessageBox.question(
                 self,
-                self.tr("Remove NCS Pathway"),
+                self.tr("Remove NCS Pathways"),
                 msg,
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
             )
             == QtWidgets.QMessageBox.Yes
         ):
-            self.item_model.remove_ncs_pathway(str(ncs.uuid))
-            self.ncs_pathway_removed.emit(str(ncs.uuid))
-            settings_manager.remove_ncs_pathway(str(ncs.uuid))
+            for ncs in ncs_models:
+                self.item_model.remove_ncs_pathway(str(ncs.uuid))
+                self.ncs_pathway_removed.emit(str(ncs.uuid))
+                settings_manager.remove_ncs_pathway(str(ncs.uuid))
+
             self.clear_description()
             self.validate_pathways()
 
@@ -600,6 +611,18 @@ class NcsComponentWidget(ModelComponentWidget):
             self.add_ncs_pathway(ncs)
 
         self.validate_pathways()
+
+    def _update_ui_on_selection_changed(self):
+        """Enable button for deleting pathways even when multiple
+        pathways have been selected.
+        """
+        super()._update_ui_on_selection_changed()
+
+        selected_items = self.selected_items()
+        if len(selected_items) == 0:
+            return
+
+        self.btn_remove.setEnabled(True)
 
 
 class ActivityComponentWidget(ModelComponentWidget):
