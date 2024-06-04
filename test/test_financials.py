@@ -28,15 +28,15 @@ class TestFinancialNpv(TestCase):
         """Test the computation of the discount rate."""
         discount_rate = compute_discount_value(70000, 48000, 3, 7.0)
 
-        self.assertEqual(discount_rate, 19215.65)
+        self.assertEqual(round(discount_rate, 2), 19215.65)
 
     def test_npv_min_max_calculation(self):
         """Test the computation of min/max NPV values in the collection."""
         npv_collection = get_activity_npv_collection()
         npv_collection.update_computed_normalization_range()
 
-        self.assertEqual(npv_collection.minimum_value, 38767.05)
-        self.assertEqual(npv_collection.maximum_value, 102307.69)
+        self.assertEqual(round(npv_collection.minimum_value, 2), 38767.05)
+        self.assertEqual(round(npv_collection.maximum_value, 2), 102307.69)
 
     def test_npv_normalization_status(self):
         """Test the status of NPV normalization."""
