@@ -186,6 +186,8 @@ class Settings(enum.Enum):
     DEV_MODE = "dev_mode"
     BASE_API_URL = "base_api_url"
 
+    ACTIVE_ONLINE_TASK = "active_online_task"
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""
@@ -197,6 +199,7 @@ class SettingsManager(QtCore.QObject):
     PRIORITY_LAYERS_GROUP_NAME: str = "priority_layers"
     NCS_PATHWAY_BASE: str = "ncs_pathways"
     LAYER_MAPPING_BASE: str = "layer_mapping"
+    ONLINE_TASK_BASE: str = "online_task"
 
     ACTIVITY_BASE: str = "activities"
 
@@ -1269,6 +1272,56 @@ class SettingsManager(QtCore.QObject):
         """
         if self.get_activity(activity_uuid) is not None:
             self.remove(f"{self.ACTIVITY_BASE}/{activity_uuid}")
+
+    def save_online_task(self, task_detail):
+        """Save the passed scenario settings into the plugin settings
+
+        :param scenario_settings: Scenario settings
+        :type scenario_settings: ScenarioSettings
+        """
+        settings_key = self._get_online_tasks_settings_base()
+        with qgis_settings(settings_key) as settings:
+            settings.setValue(self.ONLINE_TASK_BASE, json.dumps(task_detail))
+
+    def _get_online_tasks_settings_base(self) -> str:
+        """Returns the path for Online Task settings.
+
+        :returns: Base path to Online Task group.
+        :rtype: str
+        """
+        return f"{self.BASE_GROUP_NAME}"
+
+    def get_online_task(self) -> typing.Dict:
+        """Retrieves the layer mapping that matches the passed identifier.
+
+        :param identifier: Layer mapping identifier
+        :type identifier: str path
+
+        :returns: Layer mapping
+        :rtype: typing.Dict
+        """
+
+        online_task = {}
+
+        online_task_root = self._get_online_tasks_settings_base()
+
+        with qgis_settings(online_task_root) as settings:
+            layer = settings.value(self.ONLINE_TASK_BASE, dict())
+            if len(layer) > 0:
+                try:
+                    online_task = json.loads(layer)
+                except json.JSONDecodeError:
+                    log("Layer Mapping JSON is invalid")
+        return online_task
+
+    def delete_online_task(self):
+        """Delete the online task with the passed scenarion id.
+
+        :param scenario_id: Scenario identifier
+        :type scenario_id: str
+        """
+        with qgis_settings(self.BASE_GROUP_NAME) as settings:
+            settings.remove(self.ONLINE_TASK_BASE)
 
 
 settings_manager = SettingsManager()

@@ -325,6 +325,15 @@ class Activity(LayerModelComponent):
     layer_styles: dict = dataclasses.field(default_factory=dict)
     style_pixel_value: int = -1
 
+    @classmethod
+    def from_dict(cls, activity_dict: typing.Dict):
+        """Create an Activity object from Activity dict.
+        """
+        activity_dict["pathways"] = [
+            NcsPathway(**pathway) for pathway in activity_dict["pathways"]
+        ]
+        return Activity(**activity_dict)
+
     def __post_init__(self):
         """Pre-checks on initialization."""
         super().__post_init__()

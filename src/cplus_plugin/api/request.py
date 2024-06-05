@@ -201,6 +201,9 @@ class CplusApiUrl:
     def scenario_output_list(self, scenario_uuid):
         return f"{self.base_url}/scenario_output/{scenario_uuid}/list/?download_all=true&page=1&page_size=100"
 
+    def scenario_log_list(self, scenario_uuid):
+        return f"{self.base_url}/scenario/{scenario_uuid}/logs/"
+
 
 class CplusApiRequest:
     """Request to Cplus API."""
@@ -297,6 +300,13 @@ class CplusApiRequest:
 
     def fetch_scenario_detail(self, scenario_uuid):
         response = self.get(self.urls.scenario_detail(scenario_uuid))
+        result = response.json()
+        if response.status_code != 200:
+            raise CplusApiRequestError(result.get("detail", ""))
+        return result
+
+    def fetch_scenario_logs(self, scenario_uuid):
+        response = self.get(self.urls.scenario_log_list(scenario_uuid))
         result = response.json()
         if response.status_code != 200:
             raise CplusApiRequestError(result.get("detail", ""))

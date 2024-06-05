@@ -11,7 +11,7 @@
  *                                                                         *
  ***************************************************************************/
 """
-
+import json
 import os.path
 
 from qgis.core import (
@@ -118,8 +118,6 @@ class QgisCplus:
         self.cplus_options_factory = CplusOptionsFactory()
         self.reports_options_factory = ReportOptionsFactory()
         self.log_options_factory = LogOptionsFactory()
-
-        create_priority_layers()
 
         initialize_model_settings()
 
@@ -332,6 +330,7 @@ class QgisCplus:
         if visible:
             app_window = self.iface.mainWindow()
             dock_area = app_window.dockWidgetArea(self.main_widget)
+            self.main_widget.fetch_online_task_status()
             if dock_area == Qt.NoDockWidgetArea and not self.main_widget.isFloating():
                 self.iface.addDockWidget(Qt.RightDockWidgetArea, self.main_widget)
                 self.main_widget.show()

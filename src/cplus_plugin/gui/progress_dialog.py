@@ -24,6 +24,10 @@ Ui_DlgProgress, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/analysis_progress_dialog.ui")
 )
 
+Ui_DlgOnlineProgress, _ = uic.loadUiType(
+    os.path.join(os.path.dirname(__file__), "../ui/online_analysis_progress_dialog.ui")
+)
+
 
 class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
     """Progress dialog class"""
@@ -276,3 +280,46 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         self.btn_view_report.setEnabled(True)
         icon = self.style().standardIcon(QStyle.SP_DialogCloseButton)
         self.btn_cancel.setIcon(icon)
+
+
+class OnlineProgressDialog(Ui_DlgOnlineProgress, ProgressDialog):
+
+    def __init__(
+        self,
+        message=None,
+        minimum=0,
+        maximum=100,
+        main_widget=None,
+        parent=None,
+        scenario_id=None,
+        scenario_name=None,
+    ):
+        super().__init__(message, minimum, maximum, main_widget, parent, scenario_id, scenario_name)
+        # Connections
+        self.btn_hide.clicked.connect(self.hide_clicked)
+
+    def hide_clicked(self) -> None:
+        """User clicked hide.
+
+        QGIS processing will be stopped, but online processing will be continued.
+        """
+        self.analysis_cancelled.emit()
+
+        self.cancel_reporting()
+
+        if self.analysis_running:
+            self.analysis_task.hide_task = True
+            # If cancelled is clicked
+            self.stop_processing()
+            try:
+                if self.analysis_task:
+                    self.analysis_task.processing_cancelled = True
+                    self.analysis_task.cancel()
+            except RuntimeError as e:
+                # The analysis task should have been removed after
+                # scenario analyis is done, this is the only way to find
+                # out if the analysis has been completed.
+                pass
+        else:
+            # If close has been clicked. In this case processing were already stopped
+            super().close()

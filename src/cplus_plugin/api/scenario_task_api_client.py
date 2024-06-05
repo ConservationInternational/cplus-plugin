@@ -1,4 +1,5 @@
 import concurrent.futures
+import datetime
 import json
 import os
 import traceback
@@ -68,6 +69,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.total_file_output = 0
         self.downloaded_output = 0
         self.scenario_status = None
+        self.hide_task = False
 
     def cancel_task(self, exception=None):
         """
@@ -79,23 +81,27 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
 
     def on_terminated(self):
         """Called when the task is terminated."""
-        # check if there is ongoing upload
-        layer_mapping = settings_manager.get_all_layer_mapping()
-        for identifier, layer in layer_mapping.items():
-            if "upload_id" not in layer:
-                continue
-            self.log_message(f"Cancelling upload file: {layer['path']} ")
-            try:
-                self.request.abort_upload_layer(layer["uuid"], layer["upload_id"])
-                settings_manager.remove_layer_mapping(identifier)
-            except Exception as ex:
-                self.log_message(f"Problem aborting upload layer: {ex}")
-        self.log_message(f"Cancel scenario {self.scenario.uuid}")
-        if self.scenario.uuid and self.scenario_status not in [
-            JOB_COMPLETED_STATUS,
-            JOB_STOPPED_STATUS,
-        ]:
-            self.request.cancel_scenario(self.scenario.uuid)
+
+        if not self.hide_task:
+            # check if there is ongoing upload
+            layer_mapping = settings_manager.get_all_layer_mapping()
+            for identifier, layer in layer_mapping.items():
+                if "upload_id" not in layer:
+                    continue
+                self.log_message(f"Cancelling upload file: {layer['path']} ")
+                try:
+                    self.request.abort_upload_layer(layer["uuid"], layer["upload_id"])
+                    settings_manager.remove_layer_mapping(identifier)
+                except Exception as ex:
+                    self.log_message(f"Problem aborting upload layer: {ex}")
+            self.log_message(f"Cancel scenario {self.scenario.uuid}")
+            if self.scenario.uuid and self.scenario_status not in [
+                JOB_COMPLETED_STATUS,
+                JOB_STOPPED_STATUS,
+            ]:
+                self.request.cancel_scenario(self.scenario.uuid)
+        else:
+            settings_manager.delete_online_task(self.scenario.uuid)
         super().on_terminated()
 
     def run(self) -> bool:
@@ -540,6 +546,17 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             ),
         }
 
+    def __save_online_task(self):
+        payload = {
+            "uuid": self.scenario.uuid,
+            "name": self.scenario.name,
+            "directory": self.scenario_directory,
+            "created_at": datetime.datetime.now().isoformat(),
+            "task": todict(self)
+        }
+        self.log_message(json.dumps(payload, cls=CustomJsonEncoder))
+        settings_manager.save_online_task(json.loads(json.dumps(payload, cls=CustomJsonEncoder)))
+
     def __execute_scenario_analysis(self):
         """
         Execute scenario analysis
@@ -550,6 +567,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         )
         scenario_uuid = self.request.submit_scenario_detail(self.scenario_detail)
         self.scenario.uuid = scenario_uuid
+        self.__save_online_task()
 
         # execute scenario detail
         self.request.execute_scenario(scenario_uuid)
@@ -570,7 +588,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.new_scenario_detail = self.request.fetch_scenario_detail(scenario_uuid)
 
         if self.scenario_status == JOB_COMPLETED_STATUS:
-            self.__retrieve_scenario_outputs(scenario_uuid)
+            self._retrieve_scenario_outputs(scenario_uuid)
+            settings_manager.delete_online_task(self.scenario.uuid)
         elif self.scenario_status == JOB_STOPPED_STATUS:
             scenario_error = status_response.get("errors", "Unknown error")
             raise Exception(scenario_error)
@@ -667,7 +686,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             }
         )
 
-    def __retrieve_scenario_outputs(self, scenario_uuid):
+    def _retrieve_scenario_outputs(self, scenario_uuid):
         """
         Set scenario output object based on scenario UUID
         to be used in generating report
