@@ -351,6 +351,16 @@
            </spacer>
           </item>
           <item>
+           <widget class="QToolButton" name="new_financial_pwl_btn">
+            <property name="toolTip">
+             <string>Create new financial priority weighting layer</string>
+            </property>
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QToolButton" name="add_pwl_btn">
             <property name="toolTip">
              <string>Add new priority weighting layer.</string>

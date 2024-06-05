@@ -32,6 +32,7 @@ from .definitions.defaults import DOCUMENTATION_SITE, REPORT_FONT_NAME, TEMPLATE
 from .definitions.constants import (
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
+    NPV_PRIORITY_LAYERS_SEGMENT,
     PRIORITY_LAYERS_SEGMENT,
 )
 
@@ -474,6 +475,21 @@ class FileUtils:
             "Missing parent directory when creating NCS pathways subdirectory."
         )
         FileUtils.create_new_dir(ncs_pathway_dir, message)
+
+    @staticmethod
+    def create_npv_pwls_dir(base_dir: str):
+        """Creates an NPV PWL subdirectory under PWL child directory in the
+        base directory. Skips creation of the subdirectory if it already
+        exists.
+        """
+        if not Path(base_dir).is_dir():
+            return
+
+        npv_pwl_dir = (
+            f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/{NPV_PRIORITY_LAYERS_SEGMENT}"
+        )
+        message = tr("Missing parent directory when creating NPV PWLs subdirectory.")
+        FileUtils.create_new_dir(npv_pwl_dir, message)
 
     @staticmethod
     def create_ncs_carbon_dir(base_dir: str):

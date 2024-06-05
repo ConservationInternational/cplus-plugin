@@ -22,6 +22,7 @@ from .definitions.constants import (
     STYLE_ATTRIBUTE,
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
+    NPV_COLLECTION_PROPERTY,
     PATH_ATTRIBUTE,
     PATHWAYS_ATTRIBUTE,
     PIXEL_VALUE_ATTRIBUTE,
@@ -32,12 +33,16 @@ from .definitions.constants import (
 from .models.base import (
     Activity,
     NcsPathway,
+    PriorityLayerType,
     Scenario,
     ScenarioResult,
     SpatialExtent,
 )
+from .models.financial import ActivityNpvCollection
 from .models.helpers import (
+    activity_npv_collection_to_dict,
     create_activity,
+    create_activity_npv_collection,
     create_ncs_pathway,
     layer_component_to_dict,
     ncs_pathway_to_dict,
@@ -590,6 +595,7 @@ class SettingsManager(QtCore.QObject):
             priority_layer["user_defined"] = settings.value(
                 "user_defined", defaultValue=True, type=bool
             )
+            priority_layer["type"] = settings.value("type", defaultValue=0, type=int)
             priority_layer["groups"] = groups
         return priority_layer
 
@@ -626,6 +632,9 @@ class SettingsManager(QtCore.QObject):
                         "selected": priority_settings.value("selected", type=bool),
                         "user_defined": priority_settings.value(
                             "user_defined", defaultValue=True, type=bool
+                        ),
+                        "type": priority_settings.value(
+                            "type", defaultValue=0, type=int
                         ),
                         "groups": groups,
                     }
@@ -703,6 +712,7 @@ class SettingsManager(QtCore.QObject):
             settings.setValue("path", priority_layer["path"])
             settings.setValue("selected", priority_layer.get("selected", False))
             settings.setValue("user_defined", priority_layer.get("user_defined", True))
+            settings.setValue("type", priority_layer.get("type", 0))
             groups_key = f"{settings_key}/groups"
             with qgis_settings(groups_key) as groups_settings:
                 for group_id in groups_settings.childGroups():
@@ -1195,6 +1205,38 @@ class SettingsManager(QtCore.QObject):
         """
         if self.get_activity(activity_uuid) is not None:
             self.remove(f"{self.ACTIVITY_BASE}/{activity_uuid}")
+
+    def get_npv_collection(self) -> typing.Optional[ActivityNpvCollection]:
+        """Gets the collection of NPV mappings of activities.
+
+        :returns: The collection of activity NPV mappings or None
+        if not defined.
+        :rtype: ActivityNpvCollection
+        """
+        npv_collection_str = self.get_value(NPV_COLLECTION_PROPERTY, None)
+        if not npv_collection_str:
+            return None
+
+        npv_collection_dict = {}
+        try:
+            npv_collection_dict = json.loads(npv_collection_str)
+        except json.JSONDecodeError:
+            log("ActivityNPVCollection JSON is invalid.")
+
+        return create_activity_npv_collection(
+            npv_collection_dict, self.get_all_activities()
+        )
+
+    def save_npv_collection(self, npv_collection: ActivityNpvCollection):
+        """Saves the activity NPV collection in the settings as a serialized
+        JSON string.
+
+        :param npv_collection: Activity NPV collection serialized to a JSON string.
+        :type npv_collection: ActivityNpvCollection
+        """
+        npv_collection_dict = activity_npv_collection_to_dict(npv_collection)
+        npv_collection_str = json.dumps(npv_collection_dict)
+        self.set_value(NPV_COLLECTION_PROPERTY, npv_collection_str)
 
 
 settings_manager = SettingsManager()

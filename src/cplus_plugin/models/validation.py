@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-""" Data models for validation of input datasets for generating scenarios.."""
+""" Data models for validation of input datasets for generating scenarios."""
 
 import dataclasses
 from enum import IntEnum
