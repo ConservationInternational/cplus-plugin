@@ -129,6 +129,7 @@ dmypy.json
 
 # Development
 .idea/
+.vscode/
 build/
 cplus_scenario_output.*
 [Skip output]
