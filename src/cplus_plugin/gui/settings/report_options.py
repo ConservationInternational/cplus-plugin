@@ -222,7 +222,7 @@ class ReportSettingsWidget(QgsOptionsPageWidget, Ui_ReportSettingsWidget):
         culture_considerations = settings_manager.get_value(
             Settings.REPORT_CULTURE_CONSIDERATIONS, default=""
         )
-        self.txt_stakeholders.setPlainText(culture_considerations)
+        self.txt_cultural_considerations.setPlainText(culture_considerations)
 
         culture_policies = settings_manager.get_value(
             Settings.REPORT_CULTURE_POLICIES, default=""
