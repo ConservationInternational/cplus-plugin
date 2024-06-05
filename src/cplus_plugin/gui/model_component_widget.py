@@ -701,8 +701,8 @@ class ActivityComponentWidget(ModelComponentWidget):
         """Load activities from settings."""
         self.clear()
 
-        for imp_model in settings_manager.get_all_activities():
-            self.add_activity(imp_model)
+        for activity in settings_manager.get_all_activities():
+            self.add_activity(activity)
 
     def _on_add_item(self):
         """Show activity editor."""

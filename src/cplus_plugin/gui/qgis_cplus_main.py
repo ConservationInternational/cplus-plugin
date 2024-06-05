@@ -24,14 +24,15 @@ from qgis.core import (
     QgsFeedback,
     QgsGeometry,
     QgsProject,
+    QgsProcessingAlgorithm,
     QgsProcessingContext,
     QgsProcessingFeedback,
+    QgsProcessingMultiStepFeedback,
     QgsRasterLayer,
     QgsRectangle,
     QgsWkbTypes,
     QgsColorRampShader,
     QgsSingleBandPseudoColorRenderer,
-    QgsRasterShader,
     QgsPalettedRasterRenderer,
 )
 from qgis.gui import (
@@ -57,6 +58,41 @@ from ..definitions.constants import (
     ACTIVITY_WEIGHTED_GROUP_NAME,
     NCS_PATHWAYS_GROUP_LAYER_NAME,
     USER_DEFINED_ATTRIBUTE,
+)
+
+from .financials.npv_manager_dialog import NpvPwlManagerDialog
+from .financials.npv_progress_dialog import NpvPwlProgressDialog
+from .priority_layer_dialog import PriorityLayerDialog
+from .priority_group_dialog import PriorityGroupDialog
+
+from .scenario_dialog import ScenarioDialog
+
+from ..models.base import (
+    PriorityLayerType,
+    Scenario,
+    ScenarioResult,
+    ScenarioState,
+    SpatialExtent,
+)
+from ..models.financial import ActivityNpv
+from ..conf import settings_manager, Settings
+
+from ..lib.extent_check import extent_within_pilot
+from ..lib.financials import create_npv_pwls
+from ..lib.reports.manager import report_manager, ReportManager
+
+from ..tasks import ScenarioAnalysisTask
+
+from .components.custom_tree_widget import CustomTreeWidget
+
+from ..resources import *
+
+from ..utils import (
+    open_documentation,
+    tr,
+    log,
+    FileUtils,
+    write_to_file,
 )
 from ..definitions.defaults import (
     ADD_LAYER_ICON_PATH,
@@ -305,10 +341,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.remove_group_btn.clicked.connect(self.remove_priority_group)
 
         # Priority layers buttons
+        self.new_financial_pwl_btn.setIcon(FileUtils.get_icon("mActionNewMap.svg"))
         self.add_pwl_btn.setIcon(FileUtils.get_icon("symbologyAdd.svg"))
         self.edit_pwl_btn.setIcon(FileUtils.get_icon("mActionToggleEditing.svg"))
         self.remove_pwl_btn.setIcon(FileUtils.get_icon("symbologyRemove.svg"))
 
+        self.new_financial_pwl_btn.clicked.connect(self.on_manage_npv_pwls)
         self.add_pwl_btn.clicked.connect(self.add_priority_layer)
         self.edit_pwl_btn.clicked.connect(self.edit_priority_layer)
         self.remove_pwl_btn.clicked.connect(self.remove_priority_layer)
@@ -783,6 +821,155 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def open_help(self):
         """Opens the user documentation for the plugin in a browser"""
         open_documentation(USER_DOCUMENTATION_SITE)
+
+    def on_manage_npv_pwls(self):
+        """Slot raised to show the dialog for managing NPV PWLs."""
+        financial_dialog = NpvPwlManagerDialog(self)
+        if financial_dialog.exec_() == QtWidgets.QDialog.Accepted:
+            npv_collection = financial_dialog.npv_collection
+            self.npv_processing_context = QgsProcessingContext()
+            self.npv_feedback = QgsProcessingFeedback(False)
+            self.npv_multi_step_feedback = QgsProcessingMultiStepFeedback(
+                len(npv_collection.mappings), self.npv_feedback
+            )
+
+            # Get CRS and pixel size from at least one of the selected
+            # NCS pathways.
+            selected_activities = [
+                item.activity
+                for item in self.activity_widget.selected_activity_items()
+                if item.isEnabled()
+            ]
+            if len(selected_activities) == 0:
+                log(
+                    message=tr(
+                        "No selected activity to extract the CRS and pixel size."
+                    ),
+                    info=False,
+                )
+                return
+
+            activity = selected_activities[0]
+            if len(activity.pathways) == 0:
+                log(
+                    message=tr("No NCS pathway to extract the CRS and pixel size."),
+                    info=False,
+                )
+                return
+
+            reference_ncs_pathway = None
+            for ncs_pathway in activity.pathways:
+                if ncs_pathway.is_valid():
+                    reference_ncs_pathway = ncs_pathway
+                    break
+
+            if reference_ncs_pathway is None:
+                log(
+                    message=tr(
+                        "There are no valid NCS pathways to extract the CRS and pixel size."
+                    ),
+                    info=False,
+                )
+                return
+
+            reference_layer = reference_ncs_pathway.to_map_layer()
+            reference_crs = reference_layer.crs()
+            reference_pixel_size = reference_layer.rasterUnitsPerPixelX()
+
+            # Get the reference extent
+            source_extent = self.extent_box.outputExtent()
+            source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
+            reference_extent = self.transform_extent(
+                source_extent, source_crs, reference_crs
+            )
+            reference_extent_str = (
+                f"{reference_extent.xMinimum()!s},"
+                f"{reference_extent.xMaximum()!s},"
+                f"{reference_extent.yMinimum()!s},"
+                f"{reference_extent.yMaximum()!s}"
+            )
+
+            self.npv_progress_dialog = NpvPwlProgressDialog(self, self.npv_feedback)
+            self.npv_progress_dialog.show()
+
+            create_npv_pwls(
+                npv_collection,
+                self.npv_processing_context,
+                self.npv_multi_step_feedback,
+                self.npv_feedback,
+                reference_crs.authid(),
+                reference_pixel_size,
+                reference_extent_str,
+                self.on_npv_pwl_created,
+                self.on_npv_pwl_removed,
+            )
+
+    def on_npv_pwl_removed(self, pwl_identifier: str):
+        """Callback that is executed when an NPV PWL has
+        been removed because it was disabled by the user."""
+        # We use this to refresh the view to reflect the removed NPV PWL.
+        self.update_priority_layers(update_groups=False)
+
+    def on_npv_pwl_created(
+        self,
+        activity_npv: ActivityNpv,
+        npv_pwl_path: str,
+        algorithm: QgsProcessingAlgorithm,
+        context: QgsProcessingContext,
+        feedback: QgsProcessingFeedback,
+    ):
+        """Callback that creates an PWL item when the corresponding
+        raster layer has been created.
+
+        :param activity_npv: NPV mapping for an activity:
+        :type activity_npv: ActivityNpv
+
+        :param npv_pwl_path: Absolute file path of the created NPV PWL.
+        :type npv_pwl_path: str
+
+        :param algorithm: Processing algorithm that created the NPV PWL.
+        :type algorithm: QgsProcessingAlgorithm
+
+        :param context: Contextual information that was used to create
+        the NPV PWL in processing.
+        :type context: QgsProcessingContext
+
+        :param feedback: Feedback to update on the processing progress.
+        :type feedback: QgsProcessingFeedback
+        """
+        # Check if the PWL entry already exists in the settings. If it
+        # exists then no further updates required as the filename of the
+        # PWL layer is still the same.
+        updated_pwl = settings_manager.find_layer_by_name(activity_npv.base_name)
+        if updated_pwl is None:
+            # Create NPV PWL
+            desc_tr = tr("Normalized NPV for")
+            pwl_desc = f"{desc_tr} {activity_npv.activity.name}."
+            npv_layer_info = {
+                "uuid": str(uuid.uuid4()),
+                "name": activity_npv.base_name,
+                "description": pwl_desc,
+                "groups": [],
+                "path": npv_pwl_path,
+                "type": PriorityLayerType.NPV.value,
+                USER_DEFINED_ATTRIBUTE: True,
+            }
+            settings_manager.save_priority_layer(npv_layer_info)
+
+            # Updated the PWL for the activity
+            activity = settings_manager.get_activity(activity_npv.activity_id)
+            if activity is not None:
+                activity.priority_layers.append(npv_layer_info)
+                settings_manager.update_activity(activity)
+            else:
+                msg_tr = tr("activity not found to attach the NPV PWL.")
+                log(f"{activity_npv.activity.name} {msg_tr}", info=False)
+        else:
+            # Just update the path
+            updated_pwl["path"] = npv_pwl_path
+            settings_manager.save_priority_layer(updated_pwl)
+
+        self.update_priority_layers(update_groups=False)
 
     def add_priority_group(self):
         """Adds a new priority group into the plugin, then updates

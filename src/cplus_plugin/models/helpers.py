@@ -17,18 +17,31 @@ from .base import (
     SpatialExtent,
 )
 from ..definitions.constants import (
+    ACTIVITY_IDENTIFIER_PROPERTY,
+    ABSOLUTE_NPV_ATTRIBUTE,
     CARBON_PATHS_ATTRIBUTE,
+    COMPUTED_ATTRIBUTE,
+    DISCOUNT_ATTRIBUTE,
+    ENABLED_ATTRIBUTE,
     STYLE_ATTRIBUTE,
     NAME_ATTRIBUTE,
     DESCRIPTION_ATTRIBUTE,
     LAYER_TYPE_ATTRIBUTE,
+    NPV_MAPPINGS_ATTRIBUTE,
+    MAX_VALUE_ATTRIBUTE,
+    MIN_VALUE_ATTRIBUTE,
+    NORMALIZED_NPV_ATTRIBUTE,
     PATH_ATTRIBUTE,
     PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
+    REMOVE_EXISTING_ATTRIBUTE,
     USER_DEFINED_ATTRIBUTE,
     UUID_ATTRIBUTE,
+    YEARS_ATTRIBUTE,
+    YEARLY_RATES_ATTRIBUTE,
 )
 from ..definitions.defaults import DEFAULT_CRS_ID
+from .financial import ActivityNpv, ActivityNpvCollection, NpvParameters
 
 from ..utils import log
 
@@ -425,3 +438,157 @@ def extent_to_project_crs_extent(
         log(f"{e}, using the default input extent.")
 
     return input_rect
+
+
+def activity_npv_to_dict(activity_npv: ActivityNpv) -> dict:
+    """Converts an ActivityNpv object to a dictionary representation.
+
+    :returns: A dictionary containing attribute name-value pairs.
+    :rtype: dict
+    """
+    return {
+        YEARS_ATTRIBUTE: activity_npv.params.years,
+        DISCOUNT_ATTRIBUTE: activity_npv.params.discount,
+        ABSOLUTE_NPV_ATTRIBUTE: activity_npv.params.absolute_npv,
+        NORMALIZED_NPV_ATTRIBUTE: activity_npv.params.normalized_npv,
+        YEARLY_RATES_ATTRIBUTE: activity_npv.params.yearly_rates,
+        ENABLED_ATTRIBUTE: activity_npv.enabled,
+        ACTIVITY_IDENTIFIER_PROPERTY: activity_npv.activity_id,
+    }
+
+
+def create_activity_npv(activity_npv_dict: dict) -> typing.Optional[ActivityNpv]:
+    """Creates an ActivityNpv object from the equivalent dictionary
+    representation.
+
+    Please note that the `activity` attribute of the `ActivityNpv` object will be
+    `None` hence, will have to be set manually by extracting the corresponding `Activity`
+    from the activity UUID.
+
+    :param activity_npv_dict: Dictionary containing information for deserializing
+    to the ActivityNpv object.
+    :type activity_npv_dict: dict
+
+    :returns: ActivityNpv deserialized from the dictionary representation.
+    :rtype: ActivityNpv
+    """
+    args = []
+    if YEARS_ATTRIBUTE in activity_npv_dict:
+        args.append(activity_npv_dict[YEARS_ATTRIBUTE])
+
+    if DISCOUNT_ATTRIBUTE in activity_npv_dict:
+        args.append(activity_npv_dict[DISCOUNT_ATTRIBUTE])
+
+    if ABSOLUTE_NPV_ATTRIBUTE in activity_npv_dict:
+        args.append(activity_npv_dict[ABSOLUTE_NPV_ATTRIBUTE])
+
+    if NORMALIZED_NPV_ATTRIBUTE in activity_npv_dict:
+        args.append(activity_npv_dict[NORMALIZED_NPV_ATTRIBUTE])
+
+    if len(args) < 4:
+        return None
+
+    yearly_rates = []
+    if YEARLY_RATES_ATTRIBUTE in activity_npv_dict:
+        yearly_rates = activity_npv_dict[YEARLY_RATES_ATTRIBUTE]
+
+    npv_params = NpvParameters(*args)
+    npv_params.yearly_rates = yearly_rates
+
+    npv_enabled = False
+    if ENABLED_ATTRIBUTE in activity_npv_dict:
+        npv_enabled = activity_npv_dict[ENABLED_ATTRIBUTE]
+
+    return ActivityNpv(npv_params, npv_enabled, None)
+
+
+def activity_npv_collection_to_dict(activity_collection: ActivityNpvCollection) -> dict:
+    """Converts the activity NPV collection object to the
+    dictionary representation.
+
+    :returns: A dictionary containing the attribute name-value pairs
+    of an activity NPV collection object
+    :rtype: dict
+    """
+    npv_collection_dict = {
+        MIN_VALUE_ATTRIBUTE: activity_collection.minimum_value,
+        MAX_VALUE_ATTRIBUTE: activity_collection.maximum_value,
+        COMPUTED_ATTRIBUTE: activity_collection.use_computed,
+        REMOVE_EXISTING_ATTRIBUTE: activity_collection.remove_existing,
+    }
+
+    mapping_dict = list(map(activity_npv_to_dict, activity_collection.mappings))
+    npv_collection_dict[NPV_MAPPINGS_ATTRIBUTE] = mapping_dict
+
+    return npv_collection_dict
+
+
+def create_activity_npv_collection(
+    activity_collection_dict: dict, reference_activities: typing.List[Activity] = None
+) -> typing.Optional[ActivityNpvCollection]:
+    """Creates an activity NPV collection object from the corresponding
+    dictionary representation.
+
+    :param activity_collection_dict: Dictionary representation containing
+    information of an activity NPV collection object.
+    :type activity_collection_dict: dict
+
+    :param reference_activities: Optional list of activities that will be
+    used to lookup  when deserializing the ActivityNpv objects.
+    :type reference_activities: list
+
+    :returns: Activity NPV collection object from the dictionary representation
+    or None if the source dictionary is invalid.
+    :rtype: ActivityNpvCollection
+    """
+    if len(activity_collection_dict) == 0:
+        return None
+
+    ref_activities_by_uuid = {
+        str(activity.uuid): activity for activity in reference_activities
+    }
+
+    args = []
+
+    # Minimum value
+    if MIN_VALUE_ATTRIBUTE in activity_collection_dict:
+        args.append(activity_collection_dict[MIN_VALUE_ATTRIBUTE])
+
+    # Maximum value
+    if MAX_VALUE_ATTRIBUTE in activity_collection_dict:
+        args.append(activity_collection_dict[MAX_VALUE_ATTRIBUTE])
+
+    if len(args) < 2:
+        return None
+
+    activity_npv_collection = ActivityNpvCollection(*args)
+
+    # Use computed
+    if COMPUTED_ATTRIBUTE in activity_collection_dict:
+        use_computed = activity_collection_dict[COMPUTED_ATTRIBUTE]
+        activity_npv_collection.use_computed = use_computed
+
+    # Remove existing
+    if REMOVE_EXISTING_ATTRIBUTE in activity_collection_dict:
+        remove_existing = activity_collection_dict[REMOVE_EXISTING_ATTRIBUTE]
+        activity_npv_collection.remove_existing = remove_existing
+
+    if NPV_MAPPINGS_ATTRIBUTE in activity_collection_dict:
+        mappings_dict = activity_collection_dict[NPV_MAPPINGS_ATTRIBUTE]
+        npv_mappings = []
+        for md in mappings_dict:
+            activity_npv = create_activity_npv(md)
+            if activity_npv is None:
+                continue
+
+            # Get the corresponding activity from the unique identifier
+            if ACTIVITY_IDENTIFIER_PROPERTY in md:
+                activity_id = md[ACTIVITY_IDENTIFIER_PROPERTY]
+                if activity_id in ref_activities_by_uuid:
+                    ref_activity = ref_activities_by_uuid[activity_id]
+                    activity_npv.activity = ref_activity
+                    npv_mappings.append(activity_npv)
+
+        activity_npv_collection.mappings = npv_mappings
+
+    return activity_npv_collection

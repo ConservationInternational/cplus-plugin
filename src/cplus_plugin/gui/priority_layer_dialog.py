@@ -18,6 +18,7 @@ from qgis.gui import QgsFileWidget
 
 from ..conf import settings_manager, Settings
 from ..utils import FileUtils, open_documentation
+from ..models.base import PriorityLayerType
 from ..definitions.defaults import ICON_PATH, PRIORITY_LAYERS, USER_DOCUMENTATION_SITE
 from ..definitions.constants import PRIORITY_LAYERS_SEGMENT, USER_DEFINED_ATTRIBUTE
 
@@ -89,10 +90,18 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         )
         self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(enabled_state)
 
+    def _disable_input_controls(self):
+        """Disable key controls for PWL properties."""
+        self.layer_name.setEnabled(False)
+        self.map_layer_file_widget.setEnabled(False)
+        self.map_layer_box.setEnabled(False)
+        self.selected_models_le.setEnabled(False)
+        self.select_models_btn.setEnabled(False)
+
     def initialize_ui(self):
         """Populate UI inputs when loading the dialog"""
 
-        self.btn_help.setIcon(FileUtils.get_icon("mActionHelpContents.svg"))
+        self.btn_help.setIcon(FileUtils.get_icon("mActionHelpContents_green.svg"))
         self.btn_help.clicked.connect(self.open_help)
 
         self.map_layer_file_widget.setStorageMode(QgsFileWidget.StorageMode.GetFile)
@@ -100,6 +109,12 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         self.select_models_btn.clicked.connect(self.open_layer_select_dialog)
 
         if self.layer is not None:
+            # If its an NPV PWL, then disable controls as the information is managed
+            # through the NPV manager. Only the description can be updated.
+            pwl_type = self.layer.get("type", PriorityLayerType.DEFAULT.value)
+            if pwl_type == PriorityLayerType.NPV:
+                self._disable_input_controls()
+
             layer_path = self.layer.get("path")
 
             layer_uuids = [layer.get("uuid") for layer in PRIORITY_LAYERS]
@@ -207,6 +222,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         layer["groups"] = layer_groups
 
         layer["path"] = self.map_layer_file_widget.filePath()
+        layer["type"] = self.layer.get("type", PriorityLayerType.DEFAULT.value)
         layer[USER_DEFINED_ATTRIBUTE] = self._user_defined
 
         settings_manager.save_priority_layer(layer)
