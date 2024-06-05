@@ -4,9 +4,13 @@
 """
 
 
+import hashlib
+import json
 import os
 import uuid
+import datetime
 from pathlib import Path
+from uuid import UUID
 
 from qgis.PyQt import QtCore, QtGui
 from qgis.core import (
@@ -536,3 +540,71 @@ class FileUtils:
                 p.touch(exist_ok=True)
             except FileNotFoundError:
                 log(log_message)
+
+
+class CustomJsonEncoder(json.JSONEncoder):
+    """
+    Custom JSON encoder which handles UUID and datetime
+    """
+
+    def default(self, obj):
+        if isinstance(obj, UUID):
+            # if the obj is uuid, we simply return the value of uuid
+            return obj.hex
+        if isinstance(obj, datetime.datetime):
+            # if the obj is uuid, we simply return the value of uuid
+            return obj.isoformat()
+        return json.JSONEncoder.default(self, obj)
+
+
+def todict(obj, classkey=None):
+    """
+    Convert any object to dictionary
+    """
+
+    if isinstance(obj, dict):
+        data = {}
+        for k, v in obj.items():
+            data[k] = todict(v, classkey)
+        return data
+    elif hasattr(obj, "_ast"):
+        return todict(obj._ast())
+    elif hasattr(obj, "__iter__") and not isinstance(obj, str):
+        return [todict(v, classkey) for v in obj]
+    elif hasattr(obj, "__dict__"):
+        data = dict(
+            [
+                (key, todict(value, classkey))
+                for key, value in obj.__dict__.items()
+                if not callable(value) and not key.startswith("_")
+            ]
+        )
+        if classkey is not None and hasattr(obj, "__class__"):
+            data[classkey] = obj.__class__.__name__
+        return data
+    else:
+        return obj
+
+
+def md5(fname):
+    """
+    Get md5 checksum off a file
+    """
+    hash_md5 = hashlib.md5()
+    with open(fname, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
+
+def get_layer_type(file_path: str):
+    """
+    Get layer type code from file path
+    """
+    file_name, file_extension = os.path.splitext(file_path)
+    if file_extension.lower() in [".tif", ".tiff"]:
+        return 0
+    elif file_extension.lower() in [".geojson", ".zip", ".shp"]:
+        return 1
+    else:
+        return -1

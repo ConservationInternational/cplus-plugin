@@ -245,3 +245,4 @@ DEFAULT_REPORT_DISCLAIMER = (
 DEFAULT_REPORT_LICENSE = (
     "Creative Commons Attribution 4.0 International " "License (CC BY 4.0)"
 )
+BASE_API_URL = "https://stage.cplus.earth/api/v1"

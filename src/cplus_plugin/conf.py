@@ -9,14 +9,12 @@ import datetime
 import enum
 import json
 import os.path
-from pathlib import Path
 import typing
 import uuid
+from pathlib import Path
 
 from qgis.PyQt import QtCore
-from qgis.core import QgsRectangle, QgsSettings
-
-from .definitions.defaults import PRIORITY_LAYERS
+from qgis.core import QgsSettings
 
 from .definitions.constants import (
     STYLE_ATTRIBUTE,
@@ -29,7 +27,7 @@ from .definitions.constants import (
     PRIORITY_LAYERS_SEGMENT,
     UUID_ATTRIBUTE,
 )
-
+from .definitions.defaults import PRIORITY_LAYERS
 from .models.base import (
     Activity,
     NcsPathway,
@@ -47,8 +45,7 @@ from .models.helpers import (
     layer_component_to_dict,
     ncs_pathway_to_dict,
 )
-
-from .utils import log
+from .utils import log, todict, CustomJsonEncoder
 
 
 @contextlib.contextmanager
@@ -186,6 +183,14 @@ class Settings(enum.Enum):
     LANDUSE_WEIGHTED = "landuse_weighted"
     HIGHEST_POSITION = "highest_position"
 
+    # Processing option
+    PROCESSING_TYPE = "processing_type"
+
+    # DEBUG
+    DEBUG = "debug"
+    DEV_MODE = "dev_mode"
+    BASE_API_URL = "base_api_url"
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""
@@ -196,6 +201,7 @@ class SettingsManager(QtCore.QObject):
     PRIORITY_GROUP_NAME: str = "priority_groups"
     PRIORITY_LAYERS_GROUP_NAME: str = "priority_layers"
     NCS_PATHWAY_BASE: str = "ncs_pathways"
+    LAYER_MAPPING_BASE: str = "layer_mapping"
 
     ACTIVITY_BASE: str = "activities"
 
@@ -882,6 +888,74 @@ class SettingsManager(QtCore.QObject):
             for priority_group in settings.childGroups():
                 settings.remove(priority_group)
 
+    def _get_layer_mappings_settings_base(self) -> str:
+        """Returns the path for Layer Mapping settings.
+
+        :returns: Base path to Layer Mapping group.
+        :rtype: str
+        """
+        return f"{self.BASE_GROUP_NAME}/{self.LAYER_MAPPING_BASE}"
+
+    def get_all_layer_mapping(self) -> typing.Dict:
+        """Return all layer mapping."""
+        layer_mapping = {}
+
+        layer_mapping_root = self._get_layer_mappings_settings_base()
+        with qgis_settings(layer_mapping_root) as settings:
+            keys = settings.childKeys()
+            for k in keys:
+                layer_raw = settings.value(k, dict())
+                if len(layer_raw) > 0:
+                    try:
+                        layer = json.loads(layer_raw)
+                        layer_mapping[k] = layer
+                    except json.JSONDecodeError:
+                        log("Layer Mapping JSON is invalid")
+        return layer_mapping
+
+    def get_layer_mapping(self, identifier) -> typing.Dict:
+        """Retrieves the layer mapping that matches the passed identifier.
+
+        :param identifier: Layer mapping identifier
+        :type identifier: str path
+
+        :returns: Layer mapping
+        :rtype: typing.Dict
+        """
+
+        layer_mapping = {}
+
+        layer_mapping_root = self._get_layer_mappings_settings_base()
+
+        with qgis_settings(layer_mapping_root) as settings:
+            layer = settings.value(identifier, dict())
+            if len(layer) > 0:
+                try:
+                    layer_mapping = json.loads(layer)
+                except json.JSONDecodeError:
+                    log("Layer Mapping JSON is invalid")
+        return layer_mapping
+
+    def save_layer_mapping(self, input_layer, identifier=None):
+        """Save the layer mapping into the plugin settings
+
+        :param input_layer: Layer mapping
+        :type input_layer: dict
+        :param identifier: file identifier using path
+        :type identifier: str
+        """
+
+        if not identifier:
+            identifier = input_layer["path"].replace(os.sep, "--")
+        settings_key = self._get_layer_mappings_settings_base()
+
+        with qgis_settings(settings_key) as settings:
+            settings.setValue(identifier, json.dumps(input_layer))
+
+    def remove_layer_mapping(self, identifier):
+        """Remove layer mapping from settings."""
+        self.remove(f"{self.LAYER_MAPPING_BASE}/{identifier}")
+
     def _get_ncs_pathway_settings_base(self) -> str:
         """Returns the path for NCS pathway settings.
 
@@ -1077,7 +1151,7 @@ class SettingsManager(QtCore.QObject):
                 if len(priority_layers) > 0:
                     activity[PRIORITY_LAYERS_SEGMENT] = priority_layers
 
-        activity_str = json.dumps(activity)
+        activity_str = json.dumps(todict(activity), cls=CustomJsonEncoder)
 
         activity_uuid = activity[UUID_ATTRIBUTE]
         activity_root = self._get_activity_settings_base()

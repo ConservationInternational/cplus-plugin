@@ -4,23 +4,18 @@
  The plugin main window class.
 """
 
+import datetime
+import json
 import os
 import uuid
-
-import datetime
-
 from functools import partial
-
 from pathlib import Path
-
 from qgis.PyQt import (
     QtCore,
     QtGui,
     QtWidgets,
 )
-
 from qgis.PyQt.uic import loadUiType
-
 from qgis.core import (
     Qgis,
     QgsApplication,
@@ -40,7 +35,6 @@ from qgis.core import (
     QgsSingleBandPseudoColorRenderer,
     QgsPalettedRasterRenderer,
 )
-
 from qgis.gui import (
     QgsGui,
     QgsMessageBar,
@@ -50,7 +44,21 @@ from qgis.gui import (
 from qgis.utils import iface
 
 from .activity_widget import ActivityContainerWidget
+from .components.custom_tree_widget import CustomTreeWidget
+from .priority_group_dialog import PriorityGroupDialog
 from .priority_group_widget import PriorityGroupWidget
+from .priority_layer_dialog import PriorityLayerDialog
+from .progress_dialog import ProgressDialog
+from ..trends_earth import auth
+from ..api.scenario_task_api_client import ScenarioAnalysisTaskApiClient
+from ..conf import settings_manager, Settings
+from ..definitions.constants import (
+    ACTIVITY_GROUP_LAYER_NAME,
+    ACTIVITY_IDENTIFIER_PROPERTY,
+    ACTIVITY_WEIGHTED_GROUP_NAME,
+    NCS_PATHWAYS_GROUP_LAYER_NAME,
+    USER_DEFINED_ATTRIBUTE,
+)
 
 from .financials.npv_manager_dialog import NpvPwlManagerDialog
 from .financials.npv_progress_dialog import NpvPwlProgressDialog
@@ -86,7 +94,6 @@ from ..utils import (
     FileUtils,
     write_to_file,
 )
-
 from ..definitions.defaults import (
     ADD_LAYER_ICON_PATH,
     PILOT_AREA_EXTENT,
@@ -100,15 +107,12 @@ from ..definitions.defaults import (
     SCENARIO_LOG_FILE_NAME,
     USER_DOCUMENTATION_SITE,
 )
-from ..definitions.constants import (
-    ACTIVITY_GROUP_LAYER_NAME,
-    ACTIVITY_IDENTIFIER_PROPERTY,
-    ACTIVITY_WEIGHTED_GROUP_NAME,
-    NCS_PATHWAYS_GROUP_LAYER_NAME,
-    USER_DEFINED_ATTRIBUTE,
-)
-
-from .progress_dialog import ProgressDialog
+from ..lib.extent_check import extent_within_pilot
+from ..lib.reports.manager import report_manager, ReportManager
+from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
+from ..resources import *
+from ..tasks import ScenarioAnalysisTask
+from ..utils import open_documentation, tr, log, FileUtils, write_to_file
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/qgis_cplus_main_dockwidget.ui")
@@ -161,6 +165,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.landuse_normalized.toggled.connect(self.outputs_options_changed)
         self.landuse_weighted.toggled.connect(self.outputs_options_changed)
         self.highest_position.toggled.connect(self.outputs_options_changed)
+        self.processing_type.toggled.connect(self.processing_options_changed)
 
         self.load_layer_options()
 
@@ -203,6 +208,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             Settings.HIGHEST_POSITION, self.highest_position.isChecked()
         )
 
+    def processing_options_changed(self):
+        """
+        Handles selected processing changes
+        """
+
+        settings_manager.set_value(
+            Settings.PROCESSING_TYPE, self.processing_type.isChecked()
+        )
+
     def load_layer_options(self):
         """
         Retrieve outputs scenarion layers selection from settings and
@@ -237,6 +251,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
         )
 
+        self.processing_type.setChecked(
+            settings_manager.get_value(
+                Settings.PROCESSING_TYPE, default=False, setting_type=bool
+            )
+        )
+
     def on_log_message_received(self, message, tag, level):
         """Slot to handle log tab updates and processing logs
 
@@ -262,15 +282,17 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 f"{message}"
             )
             self.log_text_box.setPlainText(f"{message} \n")
-
             log_text_cursor = self.log_text_box.textCursor()
             log_text_cursor.movePosition(QtGui.QTextCursor.End)
             self.log_text_box.setTextCursor(log_text_cursor)
-
-            processing_log_file = os.path.join(
-                self.current_analysis_task.scenario_directory, SCENARIO_LOG_FILE_NAME
-            )
-            write_to_file(message, processing_log_file)
+            try:
+                processing_log_file = os.path.join(
+                    self.current_analysis_task.scenario_directory,
+                    SCENARIO_LOG_FILE_NAME,
+                )
+                write_to_file(message, processing_log_file)
+            except TypeError:
+                pass
 
     def prepare_input(self):
         """Initializes plugin input widgets"""
@@ -1338,9 +1360,26 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     f"Plugin base data directory is not set! "
                     f"Go to plugin settings in order to set it."
                 ),
-                level=Qgis.Critial,
+                level=Qgis.Critical,
             )
             return
+
+        if self.processing_type.isChecked():
+            auth_config = auth.get_auth_config(auth.TE_API_AUTH_SETUP, warn=None)
+            if (
+                not auth_config
+                or not auth_config.config("username")
+                or not auth_config.config("password")
+            ):
+                self.show_message(
+                    tr(
+                        f"Trends.Earth account is not set! "
+                        f"Go to plugin settings in order to set it."
+                    ),
+                    level=Qgis.Critical,
+                )
+                return
+
         self.analysis_extent = SpatialExtent(
             bbox=[
                 passed_extent.xMinimum(),
@@ -1434,15 +1473,24 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 transformed_extent.yMinimum(),
                 transformed_extent.yMaximum(),
             ]
-
-            analysis_task = ScenarioAnalysisTask(
-                self.analysis_scenario_name,
-                self.analysis_scenario_description,
-                self.analysis_activities,
-                self.analysis_priority_layers_groups,
-                self.analysis_extent,
-                scenario,
-            )
+            if self.processing_type.isChecked():
+                analysis_task = ScenarioAnalysisTaskApiClient(
+                    self.analysis_scenario_name,
+                    self.analysis_scenario_description,
+                    self.analysis_activities,
+                    self.analysis_priority_layers_groups,
+                    self.analysis_extent,
+                    scenario,
+                )
+            else:
+                analysis_task = ScenarioAnalysisTask(
+                    self.analysis_scenario_name,
+                    self.analysis_scenario_description,
+                    self.analysis_activities,
+                    self.analysis_priority_layers_groups,
+                    self.analysis_extent,
+                    scenario,
+                )
 
             progress_changed = partial(self.update_progress_bar, progress_dialog)
             analysis_task.custom_progress_changed.connect(progress_changed)
@@ -1480,7 +1528,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             analysis_task.taskCompleted.connect(analysis_complete)
 
-            analysis_task.taskTerminated.connect(self.task_terminated)
+            analysis_terminated = partial(self.task_terminated, analysis_task)
+            analysis_task.taskTerminated.connect(analysis_terminated)
 
             QgsApplication.taskManager().addTask(analysis_task)
 
@@ -1496,10 +1545,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 )
             )
 
-    def task_terminated(self):
+    def task_terminated(self, task):
         """Handles logging of the scenario analysis task status
         after it has been terminated.
         """
+        task.on_terminated()
         log(f"Main task terminated")
 
     def analysis_complete(self, task, report_manager, progress_dialog):
@@ -1542,6 +1592,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def cancel_processing_task(self):
         """Cancels the current processing task."""
+        try:
+            if self.current_analysis_task:
+                self.current_analysis_task.cancel_task()
+        except Exception as e:
+            self.on_progress_dialog_cancelled()
+            log(f"Problem cancelling task, {e}")
         self.processing_cancelled = True
 
         # # Analysis processing tasks
@@ -1569,6 +1625,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param report_manager: Report manager used to generate analysis reports
         :type report_manager: ReportManager
         """
+        self.update_progress_bar(progress_dialog, 100)
+        self.scenario_result.analysis_output = task.output
+        self.scenario_result.state = ScenarioState.FINISHED
         if task.output is not None:
             self.update_progress_bar(progress_dialog, 100)
             self.scenario_result.analysis_output = task.output

@@ -59,6 +59,7 @@ from .definitions.defaults import (
     OPTIONS_TITLE,
     PRIORITY_GROUPS,
     PRIORITY_LAYERS,
+    BASE_API_URL,
     REPORT_FONT_NAME,
 )
 from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
@@ -124,6 +125,8 @@ class QgisCplus:
 
         # Initialize default report settings
         initialize_report_settings()
+
+        initialize_api_url()
 
         self.main_widget = QgisCplusMain(
             iface=self.iface, parent=self.iface.mainWindow()
@@ -553,6 +556,18 @@ def initialize_model_settings():
             settings_manager.remove_activity(str(activity.uuid))
 
     settings_manager.set_value(activity_ncs_setting, True)
+
+
+def initialize_api_url():
+    """
+    Sets the default api url for the plugin
+    """
+    if not settings_manager.get_value(Settings.DEBUG, False, bool):
+        settings_manager.set_value(Settings.DEBUG, False)
+    if not settings_manager.get_value(Settings.DEV_MODE, False, bool):
+        settings_manager.set_value(Settings.DEV_MODE, False)
+    if not settings_manager.get_value(Settings.BASE_API_URL, None, str):
+        settings_manager.set_value(Settings.BASE_API_URL, BASE_API_URL)
 
 
 def initialize_report_settings():

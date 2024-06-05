@@ -9,7 +9,6 @@ a button on the docking widget, and from the toolbar menu.
 
 import os
 import typing
-import uuid
 
 import qgis.core
 import qgis.gui
@@ -18,11 +17,10 @@ from qgis.analysis import QgsAlignRaster
 
 from qgis.gui import QgsFileWidget, QgsOptionsPageWidget
 from qgis.gui import QgsOptionsWidgetFactory
-from qgis.PyQt import uic
+from qgis.PyQt import uic, QtWidgets
 from qgis.PyQt.QtGui import (
     QIcon,
     QShowEvent,
-    QPixmap,
 )
 from qgis.utils import iface
 
@@ -39,12 +37,340 @@ from ...definitions.defaults import (
     ICON_PATH,
     OPTIONS_TITLE,
 )
+from ...trends_earth.constants import API_URL, TIMEOUT
 from ...utils import FileUtils, log, tr
-
+from ...trends_earth import auth, api, download
 
 Ui_DlgSettings, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "../../ui/cplus_settings.ui")
 )
+Ui_DlgSettingsLogin, _ = uic.loadUiType(
+    os.path.join(os.path.dirname(__file__), "../../ui/DlgSettingsLogin.ui")
+)
+Ui_DlgSettingsEditForgotPassword, _ = uic.loadUiType(
+    os.path.join(os.path.dirname(__file__), "../../ui/DlgSettingsEditForgotPassword.ui")
+)
+Ui_DlgSettingsRegister, _ = uic.loadUiType(
+    os.path.join(os.path.dirname(__file__), "../../ui/DlgSettingsRegister.ui")
+)
+Ui_DlgSettingsEditUpdate, _ = uic.loadUiType(
+    os.path.join(os.path.dirname(__file__), "../../ui/DlgSettingsEditUpdate.ui")
+)
+
+
+settings = QtCore.QSettings()
+
+
+class tr_settings(QtCore.QObject):
+    def tr(txt):
+        return QtCore.QCoreApplication.translate(self.__class__.__name__, txt)
+
+
+# Function to indicate if child is a folder within parent
+def is_subdir(child, parent):
+    parent = os.path.normpath(os.path.realpath(parent))
+    child = os.path.normpath(os.path.realpath(child))
+
+    if not os.path.isdir(parent) or not os.path.isdir(child):
+        return False
+    elif child == parent:
+        return True
+    head, tail = os.path.split(child)
+
+    if head == parent:
+        return True
+    elif tail == "":
+        return False
+    else:
+        return is_subdir(head, parent)
+
+
+def _get_user_email(auth_setup, warn=True):
+    """get user email for a particular service from authConfig"""
+    authConfig = auth.get_auth_config(auth_setup, warn=warn)
+    if not authConfig:
+        return None
+
+    email = authConfig.config("username")
+    log(email)
+    log(authConfig.config("password"))
+    if warn and email is None:
+        QtWidgets.QMessageBox.critical(
+            None,
+            tr_settings.tr("Error"),
+            tr_settings.tr(
+                "Please setup access to {auth_setup.name} before "
+                "using this function."
+            ),
+        )
+        return None
+    else:
+        return email
+
+
+class DlgSettingsRegister(QtWidgets.QDialog, Ui_DlgSettingsRegister):
+    authConfigInitialised = QtCore.pyqtSignal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setupUi(self)
+
+        self.admin_bounds_key = download.get_admin_bounds()
+        self.country.addItems(sorted(self.admin_bounds_key.keys()))
+
+        self.buttonBox.accepted.connect(self.register)
+        self.buttonBox.rejected.connect(self.close)
+
+        self.trends_earth_api_client = api.APIClient(API_URL, TIMEOUT)
+
+    def register(self):
+        if not self.email.text():
+            QtWidgets.QMessageBox.critical(
+                None, self.tr("Error"), self.tr("Enter your email address.")
+            )
+
+            return
+        elif not self.name.text():
+            QtWidgets.QMessageBox.critical(
+                None, self.tr("Error"), self.tr("Enter your name.")
+            )
+
+            return
+        elif not self.organization.text():
+            QtWidgets.QMessageBox.critical(
+                None, self.tr("Error"), self.tr("Enter your organization.")
+            )
+
+            return
+        elif not self.country.currentText():
+            QtWidgets.QMessageBox.critical(
+                None, self.tr("Error"), self.tr("Enter your country.")
+            )
+
+            return
+
+        resp = self.trends_earth_api_client.register(
+            self.email.text(),
+            self.name.text(),
+            self.organization.text(),
+            self.country.currentText(),
+        )
+
+        if resp:
+            self.close()
+            QtWidgets.QMessageBox.information(
+                None,
+                self.tr("Success"),
+                self.tr(
+                    "User registered. Your password "
+                    f"has been emailed to {self.email.text()}. "
+                    "Enter that password in Trends.Earth settings "
+                    "to finish setting up the plugin."
+                ),
+            )
+
+            # add a new auth conf that have to be completed with pwd
+            authConfigId = auth.init_auth_config(
+                auth.TE_API_AUTH_SETUP, email=self.email.text()
+            )
+
+            if authConfigId:
+                self.authConfigInitialised.emit(authConfigId)
+                return authConfigId
+        else:
+            return None
+
+
+class DlgSettingsLogin(QtWidgets.QDialog, Ui_DlgSettingsLogin):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setupUi(self)
+
+        self.buttonBox.accepted.connect(self.login)
+        self.buttonBox.rejected.connect(self.close)
+
+        self.ok = False
+        self.trends_earth_api_client = api.APIClient(API_URL, TIMEOUT)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+
+        email = _get_user_email(auth.TE_API_AUTH_SETUP, warn=False)
+
+        if email:
+            self.email.setText(email)
+
+    def login(self):
+        if not self.email.text():
+            QtWidgets.QMessageBox.critical(
+                None, self.tr("Error"), self.tr("Enter your email address.")
+            )
+
+            return
+        elif not self.password.text():
+            QtWidgets.QMessageBox.critical(
+                None, self.tr("Error"), self.tr("Enter your password.")
+            )
+
+            return
+
+        if self.trends_earth_api_client.login_test(
+            self.email.text(), self.password.text()
+        ):
+            QtWidgets.QMessageBox.information(
+                None,
+                self.tr("Success"),
+                self.tr(
+                    "Logged in to the Trends.Earth server as "
+                    f"{self.email.text()}.<html><p>Welcome to "
+                    'Trends.Earth!<p/><p><a href= "'
+                    'https://groups.google.com/forum/#!forum/trends_earth_users/join">Join '
+                    "the Trends.Earth Users email group<a/></p><p> Make sure "
+                    "to join the Trends.Earth users email group to keep up "
+                    "with updates and Q&A about the tool, methods, and "
+                    "datasets in support of Sustainable Development Goals "
+                    "monitoring."
+                ),
+            )
+            auth.init_auth_config(
+                auth.TE_API_AUTH_SETUP, self.email.text(), self.password.text()
+            )
+            self.ok = True
+            self.close()
+
+
+class DlgSettingsEditUpdate(QtWidgets.QDialog, Ui_DlgSettingsEditUpdate):
+    def __init__(self, user, parent=None):
+        super().__init__(parent)
+
+        self.setupUi(self)
+
+        self.user = user
+
+        self.admin_bounds_key = download.get_admin_bounds()
+
+        self.email.setText(user["email"])
+        self.name.setText(user["name"])
+        self.organization.setText(user["institution"])
+
+        # Add countries, and set index to currently chosen country
+        self.country.addItems(sorted(self.admin_bounds_key.keys()))
+        index = self.country.findText(user["country"])
+
+        if index != -1:
+            self.country.setCurrentIndex(index)
+
+        self.buttonBox.accepted.connect(self.update_profile)
+        self.buttonBox.rejected.connect(self.close)
+
+        self.ok = False
+        self.trends_earth_api_client = api.APIClient(API_URL, TIMEOUT)
+
+    def update_profile(self):
+        if not self.email.text():
+            QtWidgets.QMessageBox.critical(
+                None, self.tr("Error"), self.tr("Enter your email address.")
+            )
+
+            return
+        elif not self.name.text():
+            QtWidgets.QMessageBox.critical(
+                None, self.tr("Error"), self.tr("Enter your name.")
+            )
+
+            return
+        elif not self.organization.text():
+            QtWidgets.QMessageBox.critical(
+                None, self.tr("Error"), self.tr("Enter your organization.")
+            )
+
+            return
+        elif not self.country.currentText():
+            QtWidgets.QMessageBox.critical(
+                None, self.tr("Error"), self.tr("Enter your country.")
+            )
+
+            return
+
+        resp = self.trends_earth_api_client.update_user(
+            self.email.text(),
+            self.name.text(),
+            self.organization.text(),
+            self.country.currentText(),
+        )
+
+        if resp:
+            QtWidgets.QMessageBox.information(
+                None,
+                self.tr("Saved"),
+                self.tr("Updated information for {}.").format(self.email.text()),
+            )
+            self.close()
+            self.ok = True
+
+
+class DlgSettingsEditForgotPassword(
+    QtWidgets.QDialog, Ui_DlgSettingsEditForgotPassword
+):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setupUi(self)
+
+        self.buttonBox.accepted.connect(self.reset_password)
+        self.buttonBox.rejected.connect(self.close)
+
+        self.ok = False
+
+        self.trends_earth_api_client = api.APIClient(API_URL, TIMEOUT)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+
+        email = _get_user_email(auth.TE_API_AUTH_SETUP, warn=False)
+
+        if email:
+            self.email.setText(email)
+
+    def reset_password(self):
+        if not self.email.text():
+            QtWidgets.QMessageBox.critical(
+                None,
+                self.tr("Error"),
+                self.tr("Enter your email address to reset your password."),
+            )
+
+            return
+
+        reply = QtWidgets.QMessageBox.question(
+            None,
+            self.tr("Reset password?"),
+            self.tr(
+                "Are you sure you want to reset the password for "
+                f"{self.email.text()}? Your new password will be emailed "
+                "to you."
+            ),
+            QtWidgets.QMessageBox.Yes,
+            QtWidgets.QMessageBox.No,
+        )
+
+        if reply == QtWidgets.QMessageBox.Yes:
+            resp = self.trends_earth_api_client.recover_pwd(self.email.text())
+
+            if resp:
+                self.close()
+                QtWidgets.QMessageBox.information(
+                    None,
+                    self.tr("Success"),
+                    self.tr(
+                        f"The password has been reset for {self.email.text()}. "
+                        "Check your email for the new password, and then "
+                        "return to Trends.Earth to enter it."
+                    ),
+                )
+                self.ok = True
 
 
 class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
@@ -125,6 +451,28 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.btn_edit_mask.setIcon(edit_icon)
         self.btn_edit_mask.setEnabled(False)
         self.btn_edit_mask.clicked.connect(self._on_edit_mask_layer)
+
+        # Trends.Earth settings
+        self.dlg_settings_register = DlgSettingsRegister()
+        self.dlg_settings_login = DlgSettingsLogin()
+
+        self.pushButton_register.clicked.connect(self.register)
+        self.pushButton_login.clicked.connect(self.login)
+        self.pushButton_update_profile.clicked.connect(self.update_profile)
+        self.pushButton_forgot_pwd.clicked.connect(self.forgot_pwd)
+        self.pushButton_delete_user.clicked.connect(self.delete)
+
+        # Load gui default value from settings
+        auth_id = settings.value("cplusplugin/auth")
+        if auth_id is not None:
+            self.authcfg_acs.setConfigId(auth_id)
+        else:
+            log("Authentication configuration id was not found")
+
+        # load gui default value from settings
+        # self.reloadAuthConfigurations()
+
+        self.trends_earth_api_client = api.APIClient(API_URL, TIMEOUT)
 
     def apply(self) -> None:
         """This is called on OK click in the QGIS options panel."""
@@ -310,7 +658,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         mask_paths_list = mask_paths.split(",") if mask_paths else []
 
         for mask_path in mask_paths_list:
-            if mask_path is "":
+            if mask_path == "":
                 continue
             item = QListWidgetItem()
             item.setData(QtCore.Qt.DisplayRole, mask_path)
@@ -427,6 +775,72 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         self.btn_edit_mask.setEnabled(contains_items)
         self.btn_delete_mask.setEnabled(contains_items)
+
+    def register(self):
+        self.dlg_settings_register.exec_()
+
+    def login(self):
+        self.dlg_settings_login.exec_()
+
+    def forgot_pwd(self):
+        dlg_settings_edit_forgot_password = DlgSettingsEditForgotPassword()
+        dlg_settings_edit_forgot_password.exec_()
+
+    def update_profile(self):
+        user = self.trends_earth_api_client.get_user()
+
+        if not user:
+            return
+        dlg_settings_edit_update = DlgSettingsEditUpdate(user)
+        dlg_settings_edit_update.exec_()
+
+    def delete(self):
+        email = _get_user_email(auth.TE_API_AUTH_SETUP)
+
+        if not email:
+            return
+
+        reply = QtWidgets.QMessageBox.question(
+            None,
+            self.tr("Delete user?"),
+            self.tr(
+                "Are you sure you want to delete the user {}? All of your tasks will "
+                "be lost and you will no longer be able to process data online "
+                "using Trends.Earth.".format(email)
+            ),
+            QtWidgets.QMessageBox.Yes,
+            QtWidgets.QMessageBox.No,
+        )
+
+        if reply == QtWidgets.QMessageBox.Yes:
+            resp = self.trends_earth_api_client.delete_user(email)
+
+            if resp:
+                QtWidgets.QMessageBox.information(
+                    None,
+                    self.tr("Success"),
+                    self.tr(f"Trends.Earth user {email} deleted."),
+                )
+                # remove currently used config (as set in QSettings) and
+                # trigger GUI
+                auth.remove_current_auth_config(auth.TE_API_AUTH_SETUP)
+                # self.reloadAuthConfigurations()
+                # self.authConfigUpdated.emit()
+
+    def reloadAuthConfigurations(self):
+        authConfigId = settings.value(
+            f"{settings_manager.BASE_GROUP_NAME}/{auth.TE_API_AUTH_SETUP.key}", None
+        )
+        if not authConfigId:
+            self.message_bar.pushCritical(
+                "Trends.Earth", self.tr("Please register in order to use Trends.Earth")
+            )
+            return
+        configs = qgis.core.QgsApplication.authManager().availableAuthMethodConfigs()
+        if authConfigId not in configs.keys():
+            QtCore.QSettings().setValue(
+                f"{settings_manager.BASE_GROUP_NAME}/{auth.TE_API_AUTH_SETUP.key}", None
+            )
 
 
 class CplusOptionsFactory(QgsOptionsWidgetFactory):
