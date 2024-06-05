@@ -808,6 +808,14 @@ class ComponentItemModel(QtGui.QStandardItemModel):
             if not item.user_defined:
                 item.setEnabled(state)
 
+    def disabled_items(self) -> typing.List[LayerComponentItem]:
+        """Gets the list of disabled items in the model.
+
+        :returns: Disabled items in the model.
+        :rtype: list
+        """
+        return [item for item in self.model_component_items() if not item.isEnabled()]
+
 
 ComponentItemModelType = typing.TypeVar(
     "ComponentItemModelType", bound=ComponentItemModel
