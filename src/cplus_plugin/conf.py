@@ -87,13 +87,25 @@ class ScenarioSettings(Scenario):
         :rtype: ScenarioSettings
         """
 
+        activities_list = settings.value("activities", [])
+        weighted_activities_list = settings.value("activities", [])
+
+        activities = [
+            settings_manager.get_activity(activity_uuid)
+            for activity_uuid in activities_list
+        ]
+        weighted_activities = [
+            settings_manager.get_activity(activity_uuid)
+            for activity_uuid in weighted_activities_list
+        ]
+
         return cls(
             uuid=uuid.UUID(identifier),
             name=settings.value("name", None),
             description=settings.value("description", None),
             extent=[],
-            activities=[],
-            weighted_activities=[],
+            activities=activities,
+            weighted_activities=weighted_activities,
             priority_layer_groups=[],
         )
 
@@ -292,7 +304,7 @@ class SettingsManager(QtCore.QObject):
         """
         return (
             f"{self.BASE_GROUP_NAME}/"
-            f"{self.SCENARIO_RESULTS_GROUP_NAME}"
+            f"{self.SCENARIO_RESULTS_GROUP_NAME}/"
             f"{str(identifier)}"
         )
 
@@ -306,10 +318,19 @@ class SettingsManager(QtCore.QObject):
 
         self.save_scenario_extent(settings_key, scenario_settings.extent)
 
+        scenario_activities_ids = [
+            str(activity.uuid) for activity in scenario_settings.activities
+        ]
+        weighted_activities_ids = [
+            str(activity.uuid) for activity in scenario_settings.weighted_activities
+        ]
+
         with qgis_settings(settings_key) as settings:
+            settings.setValue("uuid", scenario_settings.uuid)
             settings.setValue("name", scenario_settings.name)
             settings.setValue("description", scenario_settings.description)
-            settings.setValue("uuid", scenario_settings.uuid)
+            settings.setValue("activities", scenario_activities_ids)
+            settings.setValue("weighted_activities", weighted_activities_ids)
 
     def save_scenario_extent(self, key, extent):
         """Saves the scenario extent into plugin settings
@@ -444,37 +465,30 @@ class SettingsManager(QtCore.QObject):
         :returns: Scenario result
         :rtype: ScenarioSettings
         """
-        with qgis_settings(
-            f"{self.BASE_GROUP_NAME}/{self.SCENARIO_RESULTS_GROUP_NAME}"
-        ) as settings:
-            for result_uuid in settings.childGroups():
-                if scenario_id != result_uuid:
-                    continue
-                scenario_settings_key = self._get_scenario_results_settings_base(
-                    result_uuid
+
+        scenario_settings_key = self._get_scenario_results_settings_base(scenario_id)
+        with qgis_settings(scenario_settings_key) as scenario_settings:
+            created_date = scenario_settings.value("created_date")
+            analysis_output = scenario_settings.value("analysis_output")
+            output_layer_name = scenario_settings.value("output_layer_name")
+            scenario_directory = scenario_settings.value("scenario_directory")
+
+            try:
+                created_date = datetime.datetime.strptime(
+                    created_date, "%Y_%m_%d_%H_%M_%S"
                 )
-                with qgis_settings(scenario_settings_key) as scenario_settings:
-                    created_date = scenario_settings.value("created_date")
-                    analysis_output = scenario_settings.value("analysis_output")
-                    output_layer_name = scenario_settings.value("output_layer_name")
-                    scenario_directory = scenario_settings.value("scenario_directory")
+                analysis_output = json.loads(analysis_output)
+            except Exception as e:
+                log(f"Problem fetching scenario result, {e}")
+                return None
 
-                    try:
-                        created_date = datetime.datetime.strptime(
-                            created_date, "%Y_%m_%d_%H_%M_%S"
-                        )
-                        analysis_output = json.loads(analysis_output)
-                    except Exception as e:
-                        log(f"Problem fetching scenario result, {e}")
-                        return None
-
-                    return ScenarioResult(
-                        scenario=None,
-                        created_date=created_date,
-                        analysis_output=analysis_output,
-                        output_layer_name=output_layer_name,
-                        scenario_directory=scenario_directory,
-                    )
+            return ScenarioResult(
+                scenario=None,
+                created_date=created_date,
+                analysis_output=analysis_output,
+                output_layer_name=output_layer_name,
+                scenario_directory=scenario_directory,
+            )
         return None
 
     def get_scenarios_results(self):
