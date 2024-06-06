@@ -188,6 +188,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.update_scenario_list()
 
+        from ..api.request import CplusApiUrl, CplusApiRequest
+        a = CplusApiUrl()
+        log(f'TOKEN: {a.api_token}')
+
+
     def outputs_options_changed(self):
         """
         Handles selected outputs changes

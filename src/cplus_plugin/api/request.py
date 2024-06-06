@@ -5,6 +5,14 @@ import time
 import typing
 
 import requests
+from qgis.PyQt import QtCore, QtWidgets, QtNetwork
+from qgis.core import (
+    QgsTask,
+    QgsNetworkAccessManager,
+    QgsApplication,
+    QgsSettings,
+    QgsNetworkReplyContent,
+)
 
 from ..utils import log, get_layer_type
 from ..conf import settings_manager, Settings
@@ -143,17 +151,17 @@ class TrendsApiUrl:
         return f"{self.base_url}/auth"
 
 
-class CplusApiUrl:
+class CplusApiUrl(QtCore.QObject):
     """Class for Cplus API Urls."""
 
     def __init__(self):
+        super().__init__()
         self.base_url = self.get_base_api_url()
         self.trends_urls = TrendsApiUrl()
         self._api_token = self.api_token
 
     def get_base_api_url(self) -> str:
         """Returns the base API URL.
-
 
         :return: Base API URL
         :rtype: str
@@ -164,6 +172,21 @@ class CplusApiUrl:
             return settings_manager.get_value(Settings.BASE_API_URL)
         else:
             return BASE_API_URL
+
+    def _make_request(self, description, **kwargs):
+        from qgis.core import QgsApplication
+        from ..trends_earth.api import RequestTask
+        api_task = RequestTask(description, **kwargs)
+        QgsApplication.taskManager().addTask(api_task)
+        result = api_task.waitForFinished((30 + 1) * 1000)
+
+        if not result:
+            log("Request timed out")
+
+        return api_task.resp
+
+    def send_request(self, description, **kwargs):
+
 
     @property
     def api_token(self) -> str:
@@ -187,16 +210,53 @@ class CplusApiUrl:
         username = auth_config.config("username")
         pw = auth_config.config("password")
 
-        response = requests.post(
-            self.trends_urls.auth, json={"email": username, "password": pw}
+        # response = requests.post(
+        #     self.trends_urls.auth, json={"email": username, "password": pw}
+        # )
+        # if response.status_code != 200:
+        #     raise CplusApiRequestError(
+        #         "Error authenticating to Trends Earth API: "
+        #         f"{response.status_code} - {response.text}"
+        #     )
+        resp = self._make_request(
+            'Authenticate Trends.Earth API',
+            url=self.trends_urls.auth,
+            method='post',
+            payload={"email": username, "password": pw},
+            headers={},
         )
-        if response.status_code != 200:
-            raise CplusApiRequestError(
-                "Error authenticating to Trends Earth API: "
-                f"{response.status_code} - {response.text}"
+
+        import io
+
+        if resp is not None:
+            status_code = resp.attribute(
+                QtNetwork.QNetworkRequest.HttpStatusCodeAttribute
             )
-        result = response.json()
-        access_token = result.get("access_token", None)
+
+            if status_code == 200:
+                if type(resp) is QtNetwork.QNetworkReply:
+                    ret = resp.readAll()
+                    ret = json.load(io.BytesIO(ret))
+                elif type(resp) is QgsNetworkReplyContent:
+                    ret = resp.content()
+                    ret = json.load(io.BytesIO(ret))
+                else:
+                    err_msg = "Unknown object type: {}.".format(str(resp))
+                    log(err_msg)
+            else:
+                desc, status = resp.error(), resp.errorString()
+                err_msg = "Error: {} (status {}).".format(desc, status)
+                log(err_msg)
+                """
+                iface.messageBar().pushCritical(
+                    "Trends.Earth", "Error: {} (status {}).".format(desc, status)
+                )
+                """
+                ret = None
+        access_token = ret.get("access_token", None)
+
+        # result = response.json()
+        # access_token = result.get("access_token", None)
         if access_token is None:
             raise CplusApiRequestError(
                 "Error authenticating to Trends Earth API: missing access_token!"
