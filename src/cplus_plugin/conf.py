@@ -727,7 +727,7 @@ class SettingsManager(QtCore.QObject):
             for group in groups:
                 group_key = f"{groups_key}/{group['name']}"
                 with qgis_settings(group_key) as group_settings:
-                    group_settings.setValue("uuid", group.get("uuid"))
+                    group_settings.setValue("uuid", str(group.get("uuid")))
                     group_settings.setValue("name", group["name"])
                     group_settings.setValue("value", group["value"])
 

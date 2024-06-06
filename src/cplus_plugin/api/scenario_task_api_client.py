@@ -202,6 +202,12 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         :rtype: List
         """
 
+        self.__update_scenario_status(
+            {
+                "progress_text": f"Uploading layers with concurrent request",
+                "progress": 0,
+            }
+        )
         file_paths = list(upload_dict.keys())
         component_types = list(upload_dict.values())
 
