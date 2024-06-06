@@ -151,7 +151,48 @@ class TrendsApiUrl:
         return f"{self.base_url}/auth"
 
 
-class CplusApiUrl(QtCore.QObject):
+class BaseApi(QtCore.QObject):
+    def _process_response(self, resp):
+        import io
+
+        if resp is not None:
+            status_code = resp.attribute(
+                QtNetwork.QNetworkRequest.HttpStatusCodeAttribute
+            )
+            log(str(status_code))
+
+            if status_code in [200, 201]:
+                if type(resp) is QtNetwork.QNetworkReply:
+                    ret = resp.readAll()
+                    ret = json.load(io.BytesIO(ret))
+                elif type(resp) is QgsNetworkReplyContent:
+                    ret = resp.content()
+                    ret = json.load(io.BytesIO(ret))
+                else:
+                    err_msg = "Unknown object type: {}.".format(str(resp))
+                    log(err_msg)
+                    ret = None
+            else:
+                desc, status = resp.error(), resp.errorString()
+                err_msg = "Error: {} (status {}).".format(desc, status)
+                log(err_msg)
+                ret = None
+            return ret, status_code
+        return None, 400
+
+    def _make_request(self, description, **kwargs):
+        from qgis.core import QgsApplication
+        from ..trends_earth.api import RequestTask
+        api_task = RequestTask(description, **kwargs)
+        QgsApplication.taskManager().addTask(api_task)
+        result = api_task.waitForFinished((30 + 1) * 1000)
+
+        if not result:
+            log("Request timed out")
+
+        return api_task.resp
+
+class CplusApiUrl(BaseApi):
     """Class for Cplus API Urls."""
 
     def __init__(self):
@@ -186,7 +227,7 @@ class CplusApiUrl(QtCore.QObject):
         return api_task.resp
 
     def send_request(self, description, **kwargs):
-
+        pass
 
     @property
     def api_token(self) -> str:
@@ -209,15 +250,6 @@ class CplusApiUrl(QtCore.QObject):
 
         username = auth_config.config("username")
         pw = auth_config.config("password")
-
-        # response = requests.post(
-        #     self.trends_urls.auth, json={"email": username, "password": pw}
-        # )
-        # if response.status_code != 200:
-        #     raise CplusApiRequestError(
-        #         "Error authenticating to Trends Earth API: "
-        #         f"{response.status_code} - {response.text}"
-        #     )
         resp = self._make_request(
             'Authenticate Trends.Earth API',
             url=self.trends_urls.auth,
@@ -226,33 +258,7 @@ class CplusApiUrl(QtCore.QObject):
             headers={},
         )
 
-        import io
-
-        if resp is not None:
-            status_code = resp.attribute(
-                QtNetwork.QNetworkRequest.HttpStatusCodeAttribute
-            )
-
-            if status_code == 200:
-                if type(resp) is QtNetwork.QNetworkReply:
-                    ret = resp.readAll()
-                    ret = json.load(io.BytesIO(ret))
-                elif type(resp) is QgsNetworkReplyContent:
-                    ret = resp.content()
-                    ret = json.load(io.BytesIO(ret))
-                else:
-                    err_msg = "Unknown object type: {}.".format(str(resp))
-                    log(err_msg)
-            else:
-                desc, status = resp.error(), resp.errorString()
-                err_msg = "Error: {} (status {}).".format(desc, status)
-                log(err_msg)
-                """
-                iface.messageBar().pushCritical(
-                    "Trends.Earth", "Error: {} (status {}).".format(desc, status)
-                )
-                """
-                ret = None
+        ret, _ = self.process_response(resp)
         access_token = ret.get("access_token", None)
 
         # result = response.json()
@@ -397,7 +403,7 @@ class CplusApiUrl(QtCore.QObject):
         return f"{self.base_url}/scenario_output/{scenario_uuid}/list/?download_all=true&page=1&page_size=100"
 
 
-class CplusApiRequest:
+class CplusApiRequest(BaseApi):
     """Class to send request to Cplus API."""
 
     page_size = 50
@@ -414,7 +420,18 @@ class CplusApiRequest:
         :return: Response from Cplus API
         :rtype: requests.Response
         """
-        return requests.get(url, headers=self.urls.headers)
+        # return requests.get(url, headers=self.urls.headers)
+        resp = self._make_request(
+            'Get request',
+            url=url,
+            method='get',
+            payload={},
+            headers=self.urls.headers,
+            timeout=30,
+        )
+        log(url)
+
+        return self._process_response(resp)
 
     def post(self, url: str, data: typing.Union[dict, list]) -> requests.Response:
         """POST requests.
@@ -427,7 +444,17 @@ class CplusApiRequest:
         :return: Response from Cplus API
         :rtype: requests.Response
         """
-        return requests.post(url, json=data, headers=self.urls.headers)
+        # return requests.post(url, json=data, headers=self.urls.headers)
+        resp = self._make_request(
+            'Post request',
+            url=url,
+            method='post',
+            payload=data,
+            headers=self.urls.headers,
+            timeout=30,
+        )
+        log(url)
+        return self._process_response(resp)
 
     def get_layer_detail(self, layer_uuid) -> dict:
         """Request for getting layer detail
@@ -438,8 +465,7 @@ class CplusApiRequest:
         :return: Layer detail
         :rtype: dict
         """
-        response = self.get(self.urls.layer_detail(layer_uuid))
-        result = response.json()
+        result, _ = self.get(self.urls.layer_detail(layer_uuid))
         return result
 
     def check_layer(self, payload) -> dict:
@@ -451,8 +477,9 @@ class CplusApiRequest:
         :return: dict consisting of which Layer UUIDs are available, unavailable, or invalid
         :rtype: dict
         """
-        response = self.post(self.urls.layer_check(), payload)
-        result = response.json()
+        log(self.urls.layer_check())
+        log(json.dumps(payload))
+        result, _ = self.post(self.urls.layer_check(), payload)
         return result
 
     def start_upload_layer(self, file_path: str, component_type: str) -> dict:
@@ -476,9 +503,8 @@ class CplusApiRequest:
             "size": file_size,
             "number_of_parts": math.ceil(file_size / CHUNK_SIZE),
         }
-        response = self.post(self.urls.layer_upload_start(), payload)
-        result = response.json()
-        if response.status_code != 201:
+        result, status_code = self.post(self.urls.layer_upload_start(), payload)
+        if status_code != 201:
             raise CplusApiRequestError(result.get("detail", ""))
         return result
 
@@ -502,8 +528,7 @@ class CplusApiRequest:
             payload["multipart_upload_id"] = upload_id
         if items:
             payload["items"] = items
-        response = self.post(self.urls.layer_upload_finish(layer_uuid), payload)
-        result = response.json()
+        result, _ = self.post(self.urls.layer_upload_finish(layer_uuid), payload)
         return result
 
     def abort_upload_layer(self, layer_uuid: str, upload_id: str) -> bool:
@@ -519,9 +544,8 @@ class CplusApiRequest:
         :rtype: bool
         """
         payload = {"multipart_upload_id": upload_id, "items": []}
-        response = self.post(self.urls.layer_upload_abort(layer_uuid), payload)
-        if response.status_code != 204:
-            result = response.json()
+        result, status_code = self.post(self.urls.layer_upload_abort(layer_uuid), payload)
+        if status_code != 204:
             raise CplusApiRequestError(result.get("detail", ""))
         return True
 
@@ -536,9 +560,8 @@ class CplusApiRequest:
         :rtype: bool
         """
         log_response(scenario_detail, "scenario_detail")
-        response = self.post(self.urls.scenario_submit(), scenario_detail)
-        result = response.json()
-        if response.status_code != 201:
+        result, status_code = self.post(self.urls.scenario_submit(), scenario_detail)
+        if status_code != 201:
             raise CplusApiRequestError(result.get("detail", ""))
         return result["uuid"]
 
@@ -552,9 +575,8 @@ class CplusApiRequest:
         :return: True if the scenario was successfully executed
         :rtype: bool
         """
-        response = self.get(self.urls.scenario_execute(scenario_uuid))
-        result = response.json()
-        if response.status_code != 201:
+        result, status_code = self.get(self.urls.scenario_execute(scenario_uuid))
+        if status_code != 201:
             raise CplusApiRequestError(result.get("detail", ""))
         return True
 
@@ -580,9 +602,8 @@ class CplusApiRequest:
         :return: True if the scenario was successfully cancelled
         :rtype: bool
         """
-        response = self.get(self.urls.scenario_cancel(scenario_uuid))
-        result = response.json()
-        if response.status_code != 200:
+        result, status_code = self.get(self.urls.scenario_cancel(scenario_uuid))
+        if status_code != 200:
             raise CplusApiRequestError(result.get("detail", ""))
         return True
 
@@ -596,9 +617,8 @@ class CplusApiRequest:
         :return: List of scenario output:
         :rtype: typing.List[dict]
         """
-        response = self.get(self.urls.scenario_output_list(scenario_uuid))
-        result = response.json()
-        if response.status_code != 200:
+        result, status_code = self.get(self.urls.scenario_output_list(scenario_uuid))
+        if status_code != 200:
             raise CplusApiRequestError(result.get("detail", ""))
         return result
 
@@ -612,8 +632,7 @@ class CplusApiRequest:
         :return: Scenario detail
         :rtype: dict
         """
-        response = self.get(self.urls.scenario_detail(scenario_uuid))
-        result = response.json()
-        if response.status_code != 200:
+        result, status_code = self.get(self.urls.scenario_detail(scenario_uuid))
+        if status_code != 200:
             raise CplusApiRequestError(result.get("detail", ""))
         return result
