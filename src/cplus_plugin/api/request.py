@@ -16,8 +16,8 @@ from qgis.core import (
 
 from ..utils import log, get_layer_type
 from ..conf import settings_manager, Settings
-from ..trends_earth import auth
-from ..trends_earth.constants import API_URL as TRENDS_EARTH_API_URL
+from ..trends_earth import auth, api
+from ..trends_earth.constants import API_URL as TRENDS_EARTH_API_URL, TIMEOUT
 from ..definitions.defaults import BASE_API_URL
 
 JOB_COMPLETED_STATUS = "Completed"
@@ -140,18 +140,26 @@ class CplusApiPooling:
             return self.results()
 
 
-class TrendsApiUrl:
-    """Trends API Urls."""
+# class TrendsApiUrl:
+#     """Trends API Urls."""
+#
+#     def __init__(self) -> None:
+#         self.base_url = TRENDS_EARTH_API_URL
+#
+#     @property
+#     def auth(self):
+#         return f"{self.base_url}/auth"
 
-    def __init__(self) -> None:
-        self.base_url = TRENDS_EARTH_API_URL
 
-    @property
-    def auth(self):
-        return f"{self.base_url}/auth"
+class BaseApi:
+    base_url: str
+    headers: typing.Dict[str, str]
 
+    def __init__(self, base_url=None, headers=None) -> None:
+        super().__init__()
+        self.base_url = base_url
+        self.headers = headers
 
-class BaseApi(QtCore.QObject):
     def _process_response(self, resp):
         import io
 
@@ -168,6 +176,8 @@ class BaseApi(QtCore.QObject):
                 elif type(resp) is QgsNetworkReplyContent:
                     ret = resp.content()
                     ret = json.load(io.BytesIO(ret))
+                    from ..utils import todict, CustomJsonEncoder
+                    log(json.dumps(todict(resp.rawHeaderList()), cls=CustomJsonEncoder))
                 else:
                     err_msg = "Unknown object type: {}.".format(str(resp))
                     log(err_msg)
@@ -192,13 +202,77 @@ class BaseApi(QtCore.QObject):
 
         return api_task.resp
 
-class CplusApiUrl(BaseApi):
+    def get(self, url) -> requests.Response:
+        """GET requests.
+
+        :param url: Cplus API URL
+        :type url: str
+
+        :return: Response from Cplus API
+        :rtype: requests.Response
+        """
+        # return requests.get(url, headers=self.urls.headers)
+        resp = self._make_request(
+            'Get request',
+            url=url,
+            method='get',
+            payload={},
+            headers=self.urls.headers,
+            timeout=30,
+        )
+        return resp
+
+    def post(self, url: str, data: typing.Union[dict, list]) -> requests.Response:
+        """POST requests.
+
+        :param url: Cplus API URL
+        :type url: typing.Union[dict, list]
+        :param data: Cplus API payload
+        :type data: dict
+
+        :return: Response from Cplus API
+        :rtype: requests.Response
+        """
+        # return requests.post(url, json=data, headers=self.urls.headers)
+        resp = self._make_request(
+            'Post request',
+            url=url,
+            method='post',
+            payload=data,
+            headers=self.headers,
+            timeout=30,
+        )
+        return resp
+
+    def put(self, url: str, data: typing.Union[dict, list, bytes]) -> requests.Response:
+        """PUT requests.
+
+        :param url: Cplus API URL
+        :type url: typing.Union[dict, list]
+        :param data: Cplus API payload
+        :type data: dict
+
+        :return: Response from Cplus API
+        :rtype: requests.Response
+        """
+        # return requests.post(url, json=data, headers=self.urls.headers)
+        resp = self._make_request(
+            'Post request',
+            url=url,
+            method='post',
+            payload=data,
+            headers=self.headers,
+            timeout=30,
+        )
+        return resp
+
+
+class CplusApiUrl:
     """Class for Cplus API Urls."""
 
     def __init__(self):
-        super().__init__()
         self.base_url = self.get_base_api_url()
-        self.trends_urls = TrendsApiUrl()
+        self.trends_earth_api_client = api.APIClient(TRENDS_EARTH_API_URL, TIMEOUT)
         self._api_token = self.api_token
 
     def get_base_api_url(self) -> str:
@@ -226,9 +300,6 @@ class CplusApiUrl(BaseApi):
 
         return api_task.resp
 
-    def send_request(self, description, **kwargs):
-        pass
-
     @property
     def api_token(self) -> str:
         """Fetch token from Trends.Earth API
@@ -238,28 +309,7 @@ class CplusApiUrl(BaseApi):
         :return: Trends.Earth Access Token
         :rtype: str
         """
-        auth_config = auth.get_auth_config(auth.TE_API_AUTH_SETUP, warn=None)
-
-        if (
-            not auth_config
-            or not auth_config.config("username")
-            or not auth_config.config("password")
-        ):
-            log("API unable to login - setup auth configuration before using")
-            return
-
-        username = auth_config.config("username")
-        pw = auth_config.config("password")
-        resp = self._make_request(
-            'Authenticate Trends.Earth API',
-            url=self.trends_urls.auth,
-            method='post',
-            payload={"email": username, "password": pw},
-            headers={},
-        )
-
-        ret, _ = self.process_response(resp)
-        access_token = ret.get("access_token", None)
+        access_token = self.trends_earth_api_client.login()
 
         # result = response.json()
         # access_token = result.get("access_token", None)
@@ -403,13 +453,15 @@ class CplusApiUrl(BaseApi):
         return f"{self.base_url}/scenario_output/{scenario_uuid}/list/?download_all=true&page=1&page_size=100"
 
 
-class CplusApiRequest(BaseApi):
+class CplusApiRequest(BaseApi, QtCore.QObject):
     """Class to send request to Cplus API."""
 
     page_size = 50
 
     def __init__(self) -> None:
+        super(CplusApiRequest, self).__init__()
         self.urls = CplusApiUrl()
+        self.headers = self.urls.headers
 
     def get(self, url) -> requests.Response:
         """GET requests.
@@ -421,16 +473,7 @@ class CplusApiRequest(BaseApi):
         :rtype: requests.Response
         """
         # return requests.get(url, headers=self.urls.headers)
-        resp = self._make_request(
-            'Get request',
-            url=url,
-            method='get',
-            payload={},
-            headers=self.urls.headers,
-            timeout=30,
-        )
-        log(url)
-
+        resp = super().get(url)
         return self._process_response(resp)
 
     def post(self, url: str, data: typing.Union[dict, list]) -> requests.Response:
@@ -445,15 +488,22 @@ class CplusApiRequest(BaseApi):
         :rtype: requests.Response
         """
         # return requests.post(url, json=data, headers=self.urls.headers)
-        resp = self._make_request(
-            'Post request',
-            url=url,
-            method='post',
-            payload=data,
-            headers=self.urls.headers,
-            timeout=30,
-        )
-        log(url)
+        resp = super().post(url, data)
+        return self._process_response(resp)
+
+    def put(self, url: str, data: typing.Union[dict, list]) -> requests.Response:
+        """PUT requests.
+
+        :param url: Cplus API URL
+        :type url: typing.Union[dict, list]
+        :param data: Cplus API payload
+        :type data: dict
+
+        :return: Response from Cplus API
+        :rtype: requests.Response
+        """
+        # return requests.post(url, json=data, headers=self.urls.headers)
+        resp = self.put(url, data)
         return self._process_response(resp)
 
     def get_layer_detail(self, layer_uuid) -> dict:

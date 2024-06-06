@@ -2,6 +2,7 @@ import time
 
 import requests
 
+from .request import BaseApi, CplusApiRequest
 from ..utils import log
 
 # chunk_size must be greater than 5MB, for now use 100MB
@@ -35,11 +36,14 @@ def upload_part(signed_url: str, file_data: bytes, file_part_number: int, max_re
             # ref: https://github.com/aws-samples/amazon-s3-multipart-upload-
             # transfer-acceleration/blob/main/frontendV2/src/utils/upload.js#L119
             if signed_url.startswith("http://"):
-                response = requests.put(
-                    signed_url, data=file_data, headers={"Host": "minio:9000"}
-                )
+                # response = requests.put(
+                #     signed_url, data=file_data, headers={"Host": "minio:9000"}
+                # )
+                response = BaseApi(headers={"Host": "minio:9000"}).put(signed_url, file_data)
+
             else:
-                response = requests.put(signed_url, data=file_data)
+                # response = requests.put(signed_url, data=file_data)
+                response = BaseApi().put(signed_url, file_data)
             return {"part_number": file_part_number, "etag": response.headers["ETag"]}
         except requests.exceptions.RequestException as e:
             log(f"Request failed: {e}")

@@ -378,6 +378,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
 
         self.total_file_upload_size = sum(os.stat(fp).st_size for fp in files_to_upload)
         self.total_file_upload_chunks = self.total_file_upload_size / CHUNK_SIZE
+
+        self.log_message(json.dumps(files_to_upload))
         final_results = self.run_parallel_upload(files_to_upload)
 
         if self.processing_cancelled:
@@ -434,6 +436,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                     self.path_to_layer_mapping[layer_path] = uploaded_layer_dict
             else:
                 output[layer_path] = items_to_check[layer_path]
+
+        self.log_message(f"Items: {items_to_check}")
+        self.log_message(f"UUID to path: {uuid_to_path}")
         layer_check_result = self.request.check_layer(list(uuid_to_path))
         for layer_uuid in (
             layer_check_result["unavailable"] + layer_check_result["invalid"]
