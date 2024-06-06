@@ -169,6 +169,11 @@ class ReportSettingsWidget(QgsOptionsPageWidget, Ui_ReportSettingsWidget):
         stakeholders = self.txt_stakeholders.toPlainText()
         settings_manager.set_value(Settings.REPORT_STAKEHOLDERS, stakeholders)
 
+        cultural_considerations = self.txt_cultural_considerations.toPlainText()
+        settings_manager.set_value(
+            Settings.REPORT_CULTURE_CONSIDERATIONS, cultural_considerations
+        )
+
         culture_policies = self.txt_policies.toPlainText()
         settings_manager.set_value(Settings.REPORT_CULTURE_POLICIES, culture_policies)
 
@@ -213,6 +218,11 @@ class ReportSettingsWidget(QgsOptionsPageWidget, Ui_ReportSettingsWidget):
             Settings.REPORT_STAKEHOLDERS, default=""
         )
         self.txt_stakeholders.setPlainText(stakeholders)
+
+        culture_considerations = settings_manager.get_value(
+            Settings.REPORT_CULTURE_CONSIDERATIONS, default=""
+        )
+        self.txt_cultural_considerations.setPlainText(culture_considerations)
 
         culture_policies = settings_manager.get_value(
             Settings.REPORT_CULTURE_POLICIES, default=""
