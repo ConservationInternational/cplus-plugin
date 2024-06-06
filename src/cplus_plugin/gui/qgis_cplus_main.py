@@ -1319,7 +1319,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.current_analysis_task = analysis_task
 
             progress_dialog.analysis_task = analysis_task
-            progress_dialog.scenario_id = str(scenario.uuid)
 
             report_running = partial(self.on_report_running, progress_dialog)
             report_error = partial(self.on_report_error, progress_dialog)
@@ -1375,6 +1374,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type report_manager: ReportManager
         """
 
+        progress_dialog.scenario_id = str(task.scenario.uuid)
         self.scenario_result = task.scenario_result
         self.scenario_results(task, report_manager, progress_dialog)
 
