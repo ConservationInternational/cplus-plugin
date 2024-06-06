@@ -7,6 +7,7 @@
 import hashlib
 import json
 import os
+import typing
 import uuid
 import datetime
 from pathlib import Path
@@ -546,8 +547,12 @@ class CustomJsonEncoder(json.JSONEncoder):
     """
     Custom JSON encoder which handles UUID and datetime
     """
+    def default(self, obj: object):
+        """Default function to call when serializing an object
 
-    def default(self, obj):
+        :param obj: Object to be serialized
+        :type obj: object
+        """
         if isinstance(obj, UUID):
             # if the obj is uuid, we simply return the value of uuid
             return obj.hex
@@ -557,9 +562,14 @@ class CustomJsonEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-def todict(obj, classkey=None):
+def todict(obj: object, classkey: typing.Union[typing.Type, None] = None) -> dict:
     """
     Convert any object to dictionary
+
+    :param obj: Object to be converted
+    :type obj: object
+    :param classkey: Class to be used key
+    :type classkey: typing.Union[typing.Type, None]
     """
 
     if isinstance(obj, dict):
@@ -586,9 +596,13 @@ def todict(obj, classkey=None):
         return obj
 
 
-def md5(fname):
-    """
-    Get md5 checksum off a file
+def md5(fname) -> str:
+    """Get md5 checksum off a file
+
+    :param fname: Path of the file to be checked
+    :type fname: str
+    :return: md5
+    :rtype str
     """
     hash_md5 = hashlib.md5()
     with open(fname, "rb") as f:
@@ -597,9 +611,14 @@ def md5(fname):
     return hash_md5.hexdigest()
 
 
-def get_layer_type(file_path: str):
-    """
-    Get layer type code from file path
+def get_layer_type(file_path: str) -> int:
+    """Get layer type code from file path
+
+    :param file_path: Path of the file to be checked
+    :type file_path: str
+
+    :return: layer type
+    :rtype int
     """
     file_name, file_extension = os.path.splitext(file_path)
     if file_extension.lower() in [".tif", ".tiff"]:

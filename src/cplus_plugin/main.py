@@ -559,13 +559,9 @@ def initialize_model_settings():
 
 
 def initialize_api_url():
-    """
-    Sets the default api url for the plugin
-    """
+    """Sets the default api url for the plugin"""
     if not settings_manager.get_value(Settings.DEBUG, False, bool):
         settings_manager.set_value(Settings.DEBUG, False)
-    if not settings_manager.get_value(Settings.DEV_MODE, False, bool):
-        settings_manager.set_value(Settings.DEV_MODE, False)
     if not settings_manager.get_value(Settings.BASE_API_URL, None, str):
         settings_manager.set_value(Settings.BASE_API_URL, BASE_API_URL)
 

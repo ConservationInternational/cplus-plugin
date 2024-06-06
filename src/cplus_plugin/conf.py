@@ -188,7 +188,6 @@ class Settings(enum.Enum):
 
     # DEBUG
     DEBUG = "debug"
-    DEV_MODE = "dev_mode"
     BASE_API_URL = "base_api_url"
 
 
@@ -891,13 +890,17 @@ class SettingsManager(QtCore.QObject):
     def _get_layer_mappings_settings_base(self) -> str:
         """Returns the path for Layer Mapping settings.
 
-        :returns: Base path to Layer Mapping group.
+        :return: Base path to Layer Mapping group.
         :rtype: str
         """
         return f"{self.BASE_GROUP_NAME}/{self.LAYER_MAPPING_BASE}"
 
     def get_all_layer_mapping(self) -> typing.Dict:
-        """Return all layer mapping."""
+        """Return all layer mapping.
+
+        :return: All layer mapping
+        :rtype: dict
+        """
         layer_mapping = {}
 
         layer_mapping_root = self._get_layer_mappings_settings_base()
@@ -913,13 +916,13 @@ class SettingsManager(QtCore.QObject):
                         log("Layer Mapping JSON is invalid")
         return layer_mapping
 
-    def get_layer_mapping(self, identifier) -> typing.Dict:
+    def get_layer_mapping(self, identifier: str) -> typing.Dict:
         """Retrieves the layer mapping that matches the passed identifier.
 
         :param identifier: Layer mapping identifier
         :type identifier: str path
 
-        :returns: Layer mapping
+        :return: Layer mapping
         :rtype: typing.Dict
         """
 
@@ -936,7 +939,7 @@ class SettingsManager(QtCore.QObject):
                     log("Layer Mapping JSON is invalid")
         return layer_mapping
 
-    def save_layer_mapping(self, input_layer, identifier=None):
+    def save_layer_mapping(self, input_layer: dict, identifier: str = None):
         """Save the layer mapping into the plugin settings
 
         :param input_layer: Layer mapping
@@ -952,7 +955,7 @@ class SettingsManager(QtCore.QObject):
         with qgis_settings(settings_key) as settings:
             settings.setValue(identifier, json.dumps(input_layer))
 
-    def remove_layer_mapping(self, identifier):
+    def remove_layer_mapping(self, identifier: str):
         """Remove layer mapping from settings."""
         self.remove(f"{self.LAYER_MAPPING_BASE}/{identifier}")
 

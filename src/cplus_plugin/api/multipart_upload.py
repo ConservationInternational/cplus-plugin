@@ -8,13 +8,25 @@ from ..utils import log
 CHUNK_SIZE = 100 * 1024 * 1024
 
 
-def upload_part(signed_url, file_data, file_part_number, max_retries=5):
-    """
-    Upload filepart to presigned S3 URL.
-    :param signed_url: presigned S3 URL
-    :param file_data: file chunk
-    :param file_part_number: the number/order of the file part
-    :param max_retries: maximum retry attempts
+def upload_part(signed_url: str, file_data: bytes, file_part_number: int, max_retries: int = 5) -> dict:
+    """Upload filepart to presigned S3 URL.
+    This function uses exponential backoff when retrying failed request, with maximum retries
+    defined in `max_retries`.
+
+    :param signed_url: Presigned S3 URL
+    :type signed_url: str
+    :param file_data: File like object, could be a chunk/part of large file, or whole file
+    :type file_data: bytes
+    :param file_part_number: The number/order of the file part, will be used when CPLUS API and S3
+        finally merge the file part.
+    :type file_part_number: int
+    :param max_retries: Maximum retry attempts, defaults to 5
+    :type max_retries: int
+    :raises requests.exceptions.RequestException: Raised when error still occurs after
+        retrying for `max_retries` times.
+
+    :return: Dictionary containing part number and S3 etag
+    :rtype: dict
     """
 
     retries = 0

@@ -15,21 +15,21 @@ from .request import (
     CHUNK_SIZE,
 )
 from ..conf import settings_manager, Settings
-from ..models.base import Activity, NcsPathway
+from ..models.base import Activity, NcsPathway, Scenario
 from ..models.base import ScenarioResult
 from ..tasks import ScenarioAnalysisTask
 from ..utils import FileUtils, CustomJsonEncoder, todict
 
 
-def clean_filename(filename):
+def clean_filename(filename: str) -> str:
     """Creates a safe filename by removing operating system
     invalid filename characters.
 
     :param filename: File name
     :type filename: str
 
-    :returns A clean file name
-    :rtype str
+    :return: A clean file name
+    :rtype: str
     """
     characters = " %:/,\[]<>*?"
 
@@ -41,14 +41,29 @@ def clean_filename(filename):
 
 
 class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
+    """Prepares and runs the scenario analysis in Cplus API
+
+    :param analysis_scenario_name: Scenario name
+    :type analysis_scenario_name: str
+    :param analysis_scenario_description: Scenario description
+    :type analysis_scenario_description: str
+    :param analysis_activities: List of activity to be processed
+    :type analysis_activities: typing.List[Activity]
+    :param analysis_priority_layers_groups: List of priority layer groups
+    :type analysis_priority_layers_groups: typing.List[dict]
+    :param analysis_extent: Extents of the Scenario
+    :type analysis_extent: typing.List[float]
+    :param scenario: Scenario object
+    :type scenario: Scenario
+    """
     def __init__(
         self,
-        analysis_scenario_name,
-        analysis_scenario_description,
-        analysis_activities,
-        analysis_priority_layers_groups,
-        analysis_extent,
-        scenario,
+        analysis_scenario_name: str,
+        analysis_scenario_description: str,
+        analysis_activities: typing.List[Activity],
+        analysis_priority_layers_groups: typing.List[dict],
+        analysis_extent: typing.List[float],
+        scenario: Scenario,
     ):
         super().__init__(
             analysis_scenario_name,
@@ -69,16 +84,19 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.downloaded_output = 0
         self.scenario_status = None
 
-    def cancel_task(self, exception=None):
+    def cancel_task(self, exception: Exception = None):
         """
         Cancel QGIS task and cancel scenario processing on API.
+
+        :param exception: Exception to be added to cancel log
+        :type exception: Exception
         """
         if self.status_pooling:
             self.status_pooling.cancelled = True
         super().cancel_task(exception)
 
     def on_terminated(self):
-        """Called when the task is terminated."""
+        """Function to call when the task is terminated."""
         # check if there is ongoing upload
         layer_mapping = settings_manager.get_all_layer_mapping()
         for identifier, layer in layer_mapping.items():
@@ -99,7 +117,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         super().on_terminated()
 
     def run(self) -> bool:
-        """Run scenario analysis using API."""
+        """Run scenario analysis using API.
+
+        :return: True if successful, False otherwise
+        :rtype: bool
+        """
         self.request = CplusApiRequest()
         self.scenario_directory = self.get_scenario_directory()
         FileUtils.create_new_dir(self.scenario_directory)
@@ -137,13 +159,16 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             return False
         return not self.processing_cancelled
 
-    def run_upload(self, file_path, component_type) -> typing.Dict:
-        """
-        Upload a file as component type to the S3.
+    def run_upload(self, file_path: str, component_type: str) -> dict:
+        """Upload a file as component type to the S3.
+
         :param file_path: Path of the file to be uploaded
+        :type file_path: str
         :param component_type: Input layer type of the upload file (ncs_pathway, ncs_carbon, etc.)
+        :type component_type: str
+
         :return: result, containing UUID of the uploaded file, size, and final filename
-        :rtype: typing.Dict
+        :rtype: dict
         """
 
         self.log_message(f"Uploading {file_path} as {component_type}")
@@ -162,6 +187,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             "path": file_path,
         }
         settings_manager.save_layer_mapping(temp_layer)
+
         # do upload by chunks
         items = []
         idx = 0
@@ -185,6 +211,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                     }
                 )
                 idx += 1
+
         # finish upload
         result = {"uuid": None}
         if self.processing_cancelled:
@@ -192,14 +219,16 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         result = self.request.finish_upload_layer(layer_uuid, upload_id, items)
         return result
 
-    def run_parallel_upload(self, upload_dict) -> typing.List[typing.Dict]:
-        """
-        Upload file concurrently using ThreadPoolExecutor
+    def run_parallel_upload(self, upload_dict: dict) -> typing.List[dict]:
+        """Upload file concurrently using ThreadPoolExecutor
+
         :param upload_dict: Dictionary with file path as key and component type
         (ncs_pathway, ncs_carbon, etc.) as value.
+        :type upload_dict: dict
+
         :return: final_result, a list of dictionary containing UUID of the uploaded
         file, size, and final filename
-        :rtype: List
+        :rtype: typing.List[dict]
         """
 
         file_paths = list(upload_dict.keys())
@@ -214,7 +243,19 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             )
         return list(final_result)
 
-    def __zip_shapefiles(self, shapefile_path: str):
+    def __zip_shapefiles(self, shapefile_path: str) -> str:
+        """Zip shapefiles to an object with same name.
+        For example, the .shp filename is `test_file.shp`, then the zip file
+        name would be `test_file.zip`
+
+        :param shapefile_path: Path of the shapefile
+        :type shapefile_path: str
+
+        :return: Zip file path if the specified `shapefile_path` ends with .shp, return
+            shapefile_path otherwise
+        :rtype: str
+        """
+
         if shapefile_path.endswith(".shp"):
             output_dir = os.path.dirname(shapefile_path)
             filename_without_ext = os.path.splitext(os.path.basename(shapefile_path))[0]
@@ -230,11 +271,13 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             return zip_name
         return shapefile_path
 
-    def upload_layers(self):
-        """
-        Check whether layer has been uploaded. If not, then upload it to S3.
+    def upload_layers(self) -> typing.Union[bool, None]:
+        """Check whether layer has been uploaded. If not, then upload it to S3.
         The mapping between local file path and remote layer will then be
         added to QGIS settings.
+
+        :return: None if upload was successful, False otherwise
+        :rtype: typing.Union[bool, None]
         """
 
         files_to_upload = {}
@@ -367,10 +410,14 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             self.path_to_layer_mapping[uploaded_layer["path"]] = uploaded_layer
             settings_manager.save_layer_mapping(uploaded_layer, identifier)
 
-    def check_layer_uploaded(self, items_to_check: dict) -> dict:
-        """
-        Check whether a layer has been uploaded to CPLUS API
+    def check_layer_uploaded(self, items_to_check: typing.List[dict]) -> dict:
+        """Check whether a layer has been uploaded to CPLUS API
+
         :param items_to_check: Dictionary with file path as key and group as value
+        :type items_to_check: typing.List[dict]
+
+        :return: Dictionary with file path as key and layer availability as value
+        :rtype: dict
         """
         output = {}
         uuid_to_path = {}
@@ -395,10 +442,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             output[layer_path] = items_to_check[layer_path]
         return output
 
-    def build_scenario_detail_json(self):
-        """
-        Build scenario detail JSON to be sent to CPLUS API
-        """
+    def build_scenario_detail_json(self) -> None:
+        """Build scenario detail JSON to be sent to CPLUS API"""
 
         old_scenario_dict = json.loads(
             json.dumps(todict(self.scenario), cls=CustomJsonEncoder)
@@ -540,10 +585,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             ),
         }
 
-    def __execute_scenario_analysis(self):
-        """
-        Execute scenario analysis
-        """
+    def __execute_scenario_analysis(self) -> None:
+        """Execute scenario analysis"""
         # submit scenario detail to the API
         self.__update_scenario_status(
             {"progress_text": "Submit and execute Scenario to CPLUS API", "progress": 0}
@@ -575,9 +618,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             scenario_error = status_response.get("errors", "Unknown error")
             raise Exception(scenario_error)
 
-    def __update_scenario_status(self, response):
-        """
-        Update processing status in QGIS modal.
+    def __update_scenario_status(self, response: dict) -> None:
+        """Update processing status in QGIS modal.
+
+        :param response: Response dictionary from Cplus API
+        :type response: dict
         """
         self.set_status_message(response.get("progress_text", ""))
         self.update_progress(response.get("progress", 0))
@@ -588,12 +633,17 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                     self.log_message(log)
             self.logs = new_logs
 
-    def __create_activity(self, activity: dict, download_dict: list):
-        """
-        Create activity object from activity dictionary and downloaded
+    def __create_activity(self, activity: dict, download_dict: dict) -> Activity:
+        """Create activity object from activity dictionary and downloaded
         file dictionary
-        :param activity: activity dictionary
-        :download_dict: downloaded file dictionary
+
+        :param activity: Activity dictionary
+        :type activity: dict
+        :download_dict: Downloaded file dictionary
+        :type download_dict: dict
+
+        :return: Activity object
+        :rtype: Activity
         """
         ncs_pathways = []
         for pathway in activity["pathways"]:
@@ -612,12 +662,14 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         activity_obj = Activity(**activity)
         return activity_obj
 
-    def __set_scenario(self, output_list, download_paths):
-        """
-        Set scenario object based on output list and downloaded file paths
+    def __set_scenario(self, output_list: typing.List[dict], download_paths: list) -> None:
+        """Set scenario object based on output list and downloaded file paths
         to be used in generating report
-        :param output_list: List of output from CPLUS API
+
+        :param output_list: List of Scenario output from Cplus API
+        :type output_list: typing.List[dict]
         :download_paths: List of downloaded file paths
+        :type download_paths: list
         """
         output_fnames = []
         for output in output_list["results"]:
@@ -644,7 +696,14 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             "updated_detail"
         ]["priority_layer_groups"]
 
-    def download_file(self, url, local_filename):
+    def download_file(self, url: str, local_filename: str) -> None:
+        """Download an output file from S3 to the local destination
+
+        :param url: URL of the file to download
+        :type url: str
+        :param local_filename: str
+        :type local_filename: str
+        """
         parent_dir = os.path.dirname(local_filename)
         if not os.path.exists(parent_dir):
             os.makedirs(parent_dir)
@@ -667,10 +726,12 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             }
         )
 
-    def __retrieve_scenario_outputs(self, scenario_uuid):
-        """
-        Set scenario output object based on scenario UUID
+    def __retrieve_scenario_outputs(self, scenario_uuid: str):
+        """Set scenario output object based on scenario UUID
         to be used in generating report
+
+        :param scenario_uuid: Scenario UUID
+        :type scenario_uuid: str
         """
         self.__update_scenario_status(
             {"progress_text": "Downloading output files", "progress": 0}
