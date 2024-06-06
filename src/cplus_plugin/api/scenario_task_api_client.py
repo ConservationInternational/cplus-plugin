@@ -90,7 +90,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 settings_manager.remove_layer_mapping(identifier)
             except Exception as ex:
                 self.log_message(f"Problem aborting upload layer: {ex}")
-        self.log_message(f"Cancel scenario {self.scenario.uuid}")
+        self.log_message(f"Cancel scenario {self.scenario_api_uuid}")
         if self.scenario_api_uuid and self.scenario_status not in [
             JOB_COMPLETED_STATUS,
             JOB_STOPPED_STATUS,
