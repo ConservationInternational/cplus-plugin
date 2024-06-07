@@ -422,6 +422,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             layer_uuid = layer.get("uuid")
             if client_id not in client_ids:
                 continue
+            self.log_message(f"Found layer in the server {client_id} - {layer_uuid}")
             file_path = client_ids[client_id]
             identifier = generate_layer_mapping_identifier(file_path)
             uploaded_layer_dict = {
