@@ -215,6 +215,41 @@ def read_json(f, verify=True):
     return json.loads(json_str)
 
 
+def download_file(url, out_path):
+    out_folder = os.path.dirname(out_path)
+    log("Downloading {} to {}".format(url, out_path))
+
+    worker = Download(url, out_path)
+    try:
+        worker.start()
+    except PermissionError:
+        log("Unable to write to {}.".format(out_folder))
+        QtWidgets.QMessageBox.critical(
+            None,
+            tr_download.tr("Error"),
+            tr_download.tr("Unable to write to {}.".format(out_folder)),
+        )
+        return None
+
+    resp = worker.get_resp()
+    if not resp:
+        log("Error accessing {}.".format(url))
+        QtWidgets.QMessageBox.critical(
+            None,
+            tr_download.tr("Error"),
+            tr_download.tr("Error accessing {}.".format(url)),
+        )
+        return None
+    if not check_hash_against_etag(url, out_path):
+        log("File verification failed for {}.".format(out_path))
+        QtWidgets.QMessageBox.critical(
+            None,
+            tr_download.tr("Error"),
+            tr_download.tr("File verification failed for {}.".format(out_path)),
+        )
+        return None
+    return out_path
+
 def download_files(urls, out_folder):
     if out_folder == "":
         QtWidgets.QMessageBox.critical(
@@ -236,39 +271,11 @@ def download_files(urls, out_folder):
     for url in urls:
         out_path = os.path.join(out_folder, os.path.basename(url))
         if not os.path.exists(out_path) or not check_hash_against_etag(url, out_path):
-            log("Downloading {} to {}".format(url, out_path))
-
-            worker = Download(url, out_path)
-            try:
-                worker.start()
-            except PermissionError:
-                log("Unable to write to {}.".format(out_folder))
-                QtWidgets.QMessageBox.critical(
-                    None,
-                    tr_download.tr("Error"),
-                    tr_download.tr("Unable to write to {}.".format(out_folder)),
-                )
+            out_path = download_file(url, out_path)
+            if out_path:
+                downloads.extend(out_path)
+            else:
                 return None
-
-            resp = worker.get_resp()
-            if not resp:
-                log("Error accessing {}.".format(url))
-                QtWidgets.QMessageBox.critical(
-                    None,
-                    tr_download.tr("Error"),
-                    tr_download.tr("Error accessing {}.".format(url)),
-                )
-                return None
-            if not check_hash_against_etag(url, out_path):
-                log("File verification failed for {}.".format(out_path))
-                QtWidgets.QMessageBox.critical(
-                    None,
-                    tr_download.tr("Error"),
-                    tr_download.tr("File verification failed for {}.".format(out_path)),
-                )
-                return None
-
-            downloads.extend(out_path)
 
     return downloads
 

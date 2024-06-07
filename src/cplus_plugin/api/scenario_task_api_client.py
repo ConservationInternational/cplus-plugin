@@ -29,6 +29,7 @@ from ..models.base import Activity, NcsPathway, Scenario
 from ..models.base import ScenarioResult
 from ..tasks import ScenarioAnalysisTask
 from ..utils import FileUtils, CustomJsonEncoder, todict
+from ..trends_earth.download import download_file, download_files
 
 
 def clean_filename(filename: str) -> str:
@@ -135,6 +136,17 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.request = CplusApiRequest()
         self.scenario_directory = self.get_scenario_directory()
         FileUtils.create_new_dir(self.scenario_directory)
+
+        # url = "http://0.0.0.0:9010/cplus/30/c0676283-6cdb-4131-94e9-e96c69a7c32a/weighted_activities/Alien_Plant_Removal_5b6b.tif?AWSAccessKeyId=miniocplus&Signature=qiT2qkacY5pmnSIrbaGhFyaLnc0%3D&Expires=1717757212"
+        # filename = '/home/zamuzakki/latest.tif'
+        # download_file(url, filename)
+        # return False
+        urls = ["http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/cplus_scenario_output_15fd.tif?AWSAccessKeyId=miniocplus&Signature=%2Fusda2FRhVolHQXtZcAdz3SngiM%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/weighted_activities/Alien_Plant_Removal_9ab9_cleaned.tif?AWSAccessKeyId=miniocplus&Signature=aI5e1u5HmqwA%2FRc2aS9fDkZxGYc%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/weighted_activities/Alien_Plant_Removal_bee5.tif?AWSAccessKeyId=miniocplus&Signature=iuzf888geVK5379mMw1fg7qj8VA%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/normalized_pathways/Alien_Plant_Removal_6df8.tif?AWSAccessKeyId=miniocplus&Signature=LBg%2F2bxJayZ8zxdLlx2zrm6s6c0%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/normalized_activities/Alien_Plant_Removal_0fc4.tif?AWSAccessKeyId=miniocplus&Signature=cUD6S5%2FG9fcRWw%2FmuAkLwSvWals%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/mask_zip/mask.shx?AWSAccessKeyId=miniocplus&Signature=st7LPHgie7yqmKgKO0wSn0EnS8c%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/mask_zip/mask.dbf?AWSAccessKeyId=miniocplus&Signature=42EwkEUXS8h%2FAG3Qy8vbI%2FeT7js%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/mask_zip/mask.shp?AWSAccessKeyId=miniocplus&Signature=i%2B03btCOFULu7%2Bkudv9Qa7rt4x0%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/mask_zip/mask.prj?AWSAccessKeyId=miniocplus&Signature=nwEWEQaWOV%2FO4hgr65fdjLMln3A%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/mask_zip/mask.cpg?AWSAccessKeyId=miniocplus&Signature=NAXbTZ%2FEWxGoZEOpYtTcqziOTL8%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/masked_activities/Alien_Plant_Removal_3de5.tif?AWSAccessKeyId=miniocplus&Signature=oY52A2T6E85AOV1DYfPbQvZ9h6o%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/activities/Alien_Plant_Removal_61e5.tif?AWSAccessKeyId=miniocplus&Signature=AQMUf4VgxzEuif1LEHJX%2BO2RA9k%3D&Expires=1717762755"]
+        try:
+            download_files(urls, self.scenario_directory)
+        except Exception as e:
+            self.log_message(str(e))
+        return False
 
         try:
             self.upload_layers()
@@ -725,40 +737,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         if not os.path.exists(parent_dir):
             os.makedirs(parent_dir)
 
-        network_manager = QgsNetworkAccessManager.instance()
-        request = QNetworkRequest(QUrl(url))
-
-        output_file = open(local_filename, 'wb')
-
-        # Function to handle the readyRead signal
-        def ready_read():
-            data = reply.readAll()
-            output_file.write(data)
-
-        # Function to handle the download finished event
-        def download_finished():
-            if reply.error() == reply.NoError:
-                print('Download finished successfully.')
-            else:
-                print('Error:', reply.errorString())
-            output_file.close()
-
-        # Create the network reply object
-        reply = network_manager.get(request)
-
-        # Connect the readyRead and finished signals to the appropriate handlers
-        reply.readyRead.connect(ready_read)
-        reply.finished.connect(download_finished)
-
-        # Start a QTimer to keep the application event loop running until the download finishes
-        QTimer.singleShot(0, lambda: None)
-
-        # with open(local_filename, "wb") as f:
-        #     for chunk in r.iter_content(chunk_size=8192):
-        #         if chunk:
-        #             f.write(chunk)
-        #         if self.processing_cancelled:
-        #             return
+        download_file(url, local_filename)
         self.downloaded_output += 1
         self.__update_scenario_status(
             {
@@ -801,12 +780,18 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 )
             download_paths.append(download_path)
 
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=3 if os.cpu_count() > 3 else 1
-        ) as executor:
-            executor.map(self.download_file, urls_to_download, download_paths)
-        if self.processing_cancelled:
-            return
+        # with concurrent.futures.ThreadPoolExecutor(
+        #     max_workers=3 if os.cpu_count() > 3 else 1
+        # ) as executor:
+        #     executor.map(self.download_file, urls_to_download, download_paths)
+        # if self.processing_cancelled:
+        #     return
+
+        self.log_message(json.dumps(urls_to_download))
+
+        download_files(urls_to_download, self.scenario_directory)
+        # for idx, url in enumerate(urls_to_download):
+        #     self.download_file(url, download_paths[idx])
 
         self.__set_scenario(output_list, download_paths)
 
