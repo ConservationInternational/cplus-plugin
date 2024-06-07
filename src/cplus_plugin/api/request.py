@@ -60,97 +60,6 @@ class CplusApiRequestError(Exception):
         super().__init__(self.message)
 
 
-class CplusApiPooling:
-    """Fetch/Post url with pooling.
-
-    :param url: URL to send request
-    :type url: str
-    :param headers: Headers to send request, optional, default to None
-    :type headers: dict
-    :param method: Method to send request, defaults to "GET"
-    :type method: str
-    :param data: Data to send request, optional, default to None
-    :type data: dict
-    :param max_limit: Number of maximum retry attempts, optional, defaults to 3600
-    :type max_limit: int
-    :param interval: Interval in seconds, optional, defaults to 1
-    :type interval: int
-    :param on_response_fetched: Callback function when response is fetched successfully
-    :type on_response_fetched: typing.Callable
-    """
-
-    DEFAULT_LIMIT = 3600  # Check result maximum 3600 times
-    DEFAULT_INTERVAL = 1  # Interval of check results
-    FINAL_STATUS_LIST = [JOB_COMPLETED_STATUS, JOB_CANCELLED_STATUS, JOB_STOPPED_STATUS]
-
-    def __init__(
-        self,
-        url: str,
-        headers: typing.Union[dict, None] = None,
-        method: str = "GET",
-        data: dict = None,
-        max_limit: int = None,
-        interval: int = None,
-        on_response_fetched: typing.Callable = None,
-    ):
-        """init."""
-        self.url = url
-        self.headers = headers or {}
-        self.current_repeat = 0
-        self.method = method
-        self.data = data
-        self.limit = max_limit or self.DEFAULT_LIMIT
-        self.interval = interval or self.DEFAULT_INTERVAL
-        self.on_response_fetched = on_response_fetched
-        self.cancelled = False
-
-    def __call_api(self):
-        """Call CPLUS API URL"""
-        if self.method == "GET":
-            return requests.get(self.url, headers=self.headers)
-        return requests.post(self.url, self.data, headers=self.headers)
-
-    def results(self):
-        """Return results of data.
-
-        :raises requests.exceptions.Timeout: Raised when getting request timeout
-
-        :return: CPLUS API response result
-        :rtype: dict
-        """
-        if self.cancelled:
-            return {"status": JOB_CANCELLED_STATUS}
-        self.current_repeat += 1
-        if self.limit != -1 and self.current_repeat >= self.limit:
-            raise requests.exceptions.Timeout()
-        try:
-            response = self.__call_api()
-            if response.status_code != 200:
-                raise CplusApiRequestError(f"{response.status_code} - {response.text}")
-            result = response.json()
-            if self.on_response_fetched:
-                self.on_response_fetched(result)
-            if result["status"] in self.FINAL_STATUS_LIST:
-                return result
-            else:
-                time.sleep(self.interval)
-                return self.results()
-        except requests.exceptions.Timeout:
-            time.sleep(self.interval)
-            return self.results()
-
-
-# class TrendsApiUrl:
-#     """Trends API Urls."""
-#
-#     def __init__(self) -> None:
-#         self.base_url = TRENDS_EARTH_API_URL
-#
-#     @property
-#     def auth(self):
-#         return f"{self.base_url}/auth"
-
-
 class BaseApi:
     base_url: str
     headers: typing.Dict[str, str]
@@ -217,7 +126,7 @@ class BaseApi:
             url=url,
             method='get',
             payload={},
-            headers=self.urls.headers,
+            headers=self.headers,
             timeout=30,
         )
         return resp
@@ -265,6 +174,90 @@ class BaseApi:
             timeout=30,
         )
         return resp
+
+
+class CplusApiPooling(BaseApi):
+    """Fetch/Post url with pooling.
+
+    :param url: URL to send request
+    :type url: str
+    :param headers: Headers to send request, optional, default to None
+    :type headers: dict
+    :param method: Method to send request, defaults to "GET"
+    :type method: str
+    :param data: Data to send request, optional, default to None
+    :type data: dict
+    :param max_limit: Number of maximum retry attempts, optional, defaults to 3600
+    :type max_limit: int
+    :param interval: Interval in seconds, optional, defaults to 1
+    :type interval: int
+    :param on_response_fetched: Callback function when response is fetched successfully
+    :type on_response_fetched: typing.Callable
+    """
+
+    DEFAULT_LIMIT = 3600  # Check result maximum 3600 times
+    DEFAULT_INTERVAL = 1  # Interval of check results
+    FINAL_STATUS_LIST = [JOB_COMPLETED_STATUS, JOB_CANCELLED_STATUS, JOB_STOPPED_STATUS]
+
+    def __init__(
+        self,
+        url: str,
+        headers: typing.Union[dict, None] = None,
+        method: str = "GET",
+        data: dict = None,
+        max_limit: int = None,
+        interval: int = None,
+        on_response_fetched: typing.Callable = None,
+    ):
+        """init."""
+        super().__init__(url, headers or {})
+        self.url = url
+        self.headers = headers or {}
+        self.current_repeat = 0
+        self.method = method
+        self.data = data
+        self.limit = max_limit or self.DEFAULT_LIMIT
+        self.interval = interval or self.DEFAULT_INTERVAL
+        self.on_response_fetched = on_response_fetched
+        self.cancelled = False
+
+    def __call_api(self):
+        """Call CPLUS API URL"""
+        if self.method == "GET":
+            # return requests.get(self.url, headers=self.headers)
+            resp = self.get(self.url)
+        # return requests.post(self.url, self.data, headers=self.headers)
+        else:
+            resp = self.post(self.url, self.data)
+        return self._process_response(resp)
+
+    def results(self):
+        """Return results of data.
+
+        :raises requests.exceptions.Timeout: Raised when getting request timeout
+
+        :return: CPLUS API response result
+        :rtype: dict
+        """
+        if self.cancelled:
+            return {"status": JOB_CANCELLED_STATUS}
+        self.current_repeat += 1
+        if self.limit != -1 and self.current_repeat >= self.limit:
+            raise requests.exceptions.Timeout()
+        try:
+            result, status_code = self.__call_api()
+            if status_code != 200:
+                raise CplusApiRequestError(f"{status_code} - {str(result)}")
+            if self.on_response_fetched:
+                self.on_response_fetched(result)
+            if result["status"] in self.FINAL_STATUS_LIST:
+                return result
+            else:
+                time.sleep(self.interval)
+                return self.results()
+        except requests.exceptions.Timeout:
+            time.sleep(self.interval)
+            return self.results()
 
 
 class CplusApiUrl:
