@@ -1219,6 +1219,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     default_extent,
                     QgsCoordinateReferenceSystem("EPSG:4326"),
                 )
+        scenario_result = settings_manager.get_scenario_result(scenario_identifier)
+
+        if scenario_result:
+            scenario_result.scenario = scenario
+
+        self.post_analysis(scenario_result, None, None, None)
 
     def show_scenario_info(self):
         """Loads dialog for showing scenario information."""
@@ -1677,8 +1683,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
 
         # If the processing were stopped, no file will be added
-        if not self.processing_cancelled:
+        if not self.processing_cancelled and scenario_result is not None:
             list_activities = scenario_result.scenario.activities
+            if task is not None:
+                weighted_activities = task.analysis_weighted_activities
+            elif scenario_result.scenario is not None:
+                weighted_activities = scenario_result.scenario.weighted_activities
+            else:
+                weighted_activities = []
             raster = scenario_result.analysis_output["OUTPUT"]
             im_weighted_dir = os.path.join(
                 os.path.dirname(raster), "weighted_activities"
@@ -1758,9 +1770,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             scenario_layer = qgis_instance.addMapLayer(layer)
 
             # Scenario result layer styling
-            renderer = self.style_activities_layer(
-                layer, task.analysis_weighted_activities
-            )
+            renderer = self.style_activities_layer(layer, weighted_activities)
             layer.setRenderer(renderer)
             layer.triggerRepaint()
 
@@ -1835,10 +1845,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                     activity_index = activity_index + 1
 
-            weighted_activities = (
-                task.analysis_weighted_activities if task is not None else []
-            )
-
             if load_landuse_weighted:
                 for weighted_activity in weighted_activities:
                     weighted_activity_path = weighted_activity.path
@@ -1873,9 +1879,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             # Initiate report generation
             if load_landuse_weighted and load_highest_position:
-                self.run_report(progress_dialog, report_manager)
+                self.run_report(progress_dialog, report_manager) if (
+                    progress_dialog is not None and report_manager is not None
+                ) else None
             else:
-                progress_dialog.processing_finished()
+                progress_dialog.processing_finished() if progress_dialog is not None else None
 
         else:
             # Re-initializes variables if processing were cancelled by the user

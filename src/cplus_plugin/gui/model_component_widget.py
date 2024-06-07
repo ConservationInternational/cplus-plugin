@@ -345,7 +345,29 @@ class NcsComponentWidget(ModelComponentWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        # Add option for deleting disabled items
+        self.btn_remove.clicked.disconnect(self._on_remove_item)
+        self._delete_menu = QtWidgets.QMenu()
+
+        self._remove_default_action = self._delete_menu.addAction(
+            FileUtils.get_icon("symbologyRemove.svg"), "Remove Selected"
+        )
+        self._remove_default_action.setEnabled(False)
+        self._remove_default_action.triggered.connect(self._on_remove_item)
+
+        self._remove_disabled_action = self._delete_menu.addAction(
+            FileUtils.get_icon("repositoryDisabled.svg"), "Remove Disabled"
+        )
+        self._remove_disabled_action.setEnabled(False)
+        self._remove_disabled_action.triggered.connect(self._on_remove_disabled)
+
+        self.btn_remove.setMenu(self._delete_menu)
+        self.btn_remove.setDefaultAction(self._remove_default_action)
+        self.btn_remove.setPopupMode(QtWidgets.QToolButton.MenuButtonPopup)
+        self.btn_remove.triggered.connect(self.on_delete_triggered)
+
         self.item_model = NcsPathwayItemModel(parent)
+        self.item_model.itemChanged.connect(self.on_item_changed)
 
         self.lst_model_items.setDragEnabled(True)
         self.lst_model_items.setDragDropMode(QtWidgets.QAbstractItemView.DragOnly)
@@ -357,6 +379,102 @@ class NcsComponentWidget(ModelComponentWidget):
         self.btn_validate_pathways = None
 
         self.add_auxiliary_widgets()
+
+    def on_delete_triggered(self, action: QtWidgets.QAction):
+        """Slot raised to select the default delete action.
+
+        :param action: Action that has been triggered.
+        :type action: QtWidgets.QAction
+        """
+        self.btn_remove.setDefaultAction(action)
+
+    def _on_remove_disabled(self):
+        """Slot raised to remove disabled items."""
+        disabled_items = self.item_model.disabled_items()
+        self._remove_ncs_items(disabled_items)
+
+    def _remove_ncs_items(self, ncs_items: typing.List[NcsPathwayItem]):
+        """Remove the specified NCS pathway items.
+
+        :param ncs_items: The NCS pathway items to be removed.
+        :type ncs_items: list
+        """
+        if len(ncs_items) == 0:
+            return
+
+        ncs_models = []
+        for item in ncs_items:
+            ncs_models.append(item.ncs_pathway)
+
+        if len(ncs_models) == 1:
+            msg = self.tr(
+                f"Do you want to remove '{ncs_models[0].name}'? The corresponding "
+                f"NCS pathways used in the activities will "
+                f"also be removed.\nClick Yes to proceed or No to cancel."
+            )
+        else:
+            msg = self.tr(
+                f"Do you want to remove the NCS pathways? The corresponding "
+                f"NCS pathways used in the activities will "
+                f"also be removed.\nClick Yes to proceed or No to cancel."
+            )
+
+        if (
+            QtWidgets.QMessageBox.question(
+                self,
+                self.tr("Remove NCS Pathways"),
+                msg,
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            )
+            == QtWidgets.QMessageBox.Yes
+        ):
+            for ncs in ncs_models:
+                self.item_model.remove_ncs_pathway(str(ncs.uuid))
+                self.ncs_pathway_removed.emit(str(ncs.uuid))
+                settings_manager.remove_ncs_pathway(str(ncs.uuid))
+
+            self.clear_description()
+            self.validate_pathways()
+
+    def on_item_changed(self, item: NcsPathwayItem):
+        """Slot raised when the data of an NCS pathway item changes.
+
+        :param item: NCS pathway item whose data has changed.
+        :type item: NcsPathwayItem
+        """
+        # Check if there are items disabled and enable or disable
+        # the option for deleting disabled items.
+        self._on_item_and_selection_changed()
+
+    def _on_item_and_selection_changed(self):
+        """Handles the enabling or disabling of NCS pathway delete controls
+        based on the item selection as well as disabled items.
+        """
+        self._remove_default_action.setEnabled(False)
+        self.btn_remove.setDefaultAction(self._remove_default_action)
+
+        self.btn_edit.setEnabled(False)
+
+        disabled_items = self.item_model.disabled_items()
+        selected_items = self.selected_items()
+
+        if len(selected_items) == 0 and len(disabled_items) == 0:
+            return
+
+        elif len(disabled_items) == 0 and len(selected_items) > 0:
+            if len(selected_items) == 1:
+                self.btn_edit.setEnabled(True)
+
+            self.btn_remove.setEnabled(True)
+            self._remove_default_action.setEnabled(True)
+            self._remove_disabled_action.setEnabled(False)
+            self.btn_remove.setDefaultAction(self._remove_default_action)
+
+        elif len(disabled_items) > 0:
+            self.btn_remove.setEnabled(True)
+            self._remove_disabled_action.setEnabled(True)
+            self._remove_default_action.setEnabled(False)
+            self.btn_remove.setDefaultAction(self._remove_disabled_action)
 
     def add_ncs_pathway(self, ncs_pathway: NcsPathway) -> bool:
         """Adds an NCS pathway object to the view.
@@ -555,31 +673,7 @@ class NcsComponentWidget(ModelComponentWidget):
     def _on_remove_item(self):
         """Delete NcsPathway object."""
         selected_items = self.selected_items()
-        if len(selected_items) == 0 or len(selected_items) > 1:
-            return
-
-        ncs = selected_items[0].ncs_pathway
-
-        msg = self.tr(
-            f"Do you want to remove '{ncs.name}'? The corresponding "
-            f"NCS pathways used in the activities will "
-            f"also be removed.\nClick Yes to proceed or No to cancel."
-        )
-
-        if (
-            QtWidgets.QMessageBox.question(
-                self,
-                self.tr("Remove NCS Pathway"),
-                msg,
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-            )
-            == QtWidgets.QMessageBox.Yes
-        ):
-            self.item_model.remove_ncs_pathway(str(ncs.uuid))
-            self.ncs_pathway_removed.emit(str(ncs.uuid))
-            settings_manager.remove_ncs_pathway(str(ncs.uuid))
-            self.clear_description()
-            self.validate_pathways()
+        self._remove_ncs_items(selected_items)
 
     def load(self):
         """Load items from settings."""
@@ -600,6 +694,13 @@ class NcsComponentWidget(ModelComponentWidget):
             self.add_ncs_pathway(ncs)
 
         self.validate_pathways()
+
+    def _update_ui_on_selection_changed(self):
+        """Enable button for deleting pathways even when multiple
+        pathways have been selected.
+        """
+        super()._update_ui_on_selection_changed()
+        self._on_item_and_selection_changed()
 
 
 class ActivityComponentWidget(ModelComponentWidget):

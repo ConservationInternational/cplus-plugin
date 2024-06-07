@@ -76,8 +76,3 @@ class ScenarioDialog(QtWidgets.QDialog, DialogUi):
                     default_extent,
                     QgsCoordinateReferenceSystem("EPSG:4326"),
                 )
-
-        if self.scenario_result:
-            self.scenario_analysis_output.setPlainText(
-                self.scenario_result.analysis_output
-            )
