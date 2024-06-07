@@ -224,12 +224,8 @@ class CplusApiPooling(BaseApi):
     def __call_api(self):
         """Call CPLUS API URL"""
         if self.method == "GET":
-            # return requests.get(self.url, headers=self.headers)
-            resp = self.get(self.url)
-        # return requests.post(self.url, self.data, headers=self.headers)
-        else:
-            resp = self.post(self.url, self.data)
-        return self._process_response(resp)
+            return requests.get(self.url, headers=self.headers)
+        return requests.post(self.url, self.data, headers=self.headers)
 
     def results(self):
         """Return results of data.
@@ -245,9 +241,10 @@ class CplusApiPooling(BaseApi):
         if self.limit != -1 and self.current_repeat >= self.limit:
             raise requests.exceptions.Timeout()
         try:
-            result, status_code = self.__call_api()
-            if status_code != 200:
-                raise CplusApiRequestError(f"{status_code} - {str(result)}")
+            response = self.__call_api()
+            if response.status_code != 200:
+                raise CplusApiRequestError(f"{response.status_code} - {response.text}")
+            result = response.json()
             if self.on_response_fetched:
                 self.on_response_fetched(result)
             if result["status"] in self.FINAL_STATUS_LIST:
