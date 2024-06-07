@@ -216,7 +216,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         result = {"uuid": None}
         if self.processing_cancelled:
             return result
-        self.log_message(f'Send upload finish: {layer_uuid}, {upload_id}, {items}')
         result = self.request.finish_upload_layer(layer_uuid, upload_id, items)
         return result
 
@@ -442,8 +441,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             else:
                 output[layer_path] = items_to_check[layer_path]
 
-        self.log_message(f"Items: {items_to_check}")
-        self.log_message(f"UUID to path: {uuid_to_path}")
         layer_check_result = self.request.check_layer(list(uuid_to_path))
         for layer_uuid in (
             layer_check_result["unavailable"] + layer_check_result["invalid"]
