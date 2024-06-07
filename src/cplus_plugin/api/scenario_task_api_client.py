@@ -23,6 +23,7 @@ from ..utils import (
     CustomJsonEncoder,
     todict,
     generate_layer_mapping_identifier,
+    log,
 )
 
 
@@ -46,7 +47,9 @@ def generate_client_id(layer_path: str, component_type: str, base_dir: str) -> s
     :return: client_id for a layer file
     :rtype: str
     """
-    if base_dir not in layer_path:
+    # fix issue on windows after selecting file, the path is using /
+    cleaned_layer_path = layer_path.replace("/", os.sep)
+    if base_dir not in cleaned_layer_path:
         return None
     if component_type not in [
         COMPONENT_TYPE_NCS_PATHWAY,
@@ -54,9 +57,11 @@ def generate_client_id(layer_path: str, component_type: str, base_dir: str) -> s
         COMPONENT_TYPE_PRIORITY_LAYER,
     ]:
         return None
-    cleaned_path = generate_layer_mapping_identifier(layer_path.replace(base_dir, ""))
-    layer_size = os.stat(layer_path).st_size
-    layer = QgsRasterLayer(layer_path, os.path.basename(layer_path))
+    cleaned_path = generate_layer_mapping_identifier(
+        cleaned_layer_path.replace(base_dir, "")
+    )
+    layer_size = os.stat(cleaned_layer_path).st_size
+    layer = QgsRasterLayer(cleaned_layer_path, os.path.basename(cleaned_layer_path))
     crs_srid = layer.crs().postgisSrid()
     return f"{cleaned_path}_{crs_srid}_{layer.width()}_{layer.height()}_{layer_size}"
 
