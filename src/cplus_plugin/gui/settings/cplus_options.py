@@ -223,15 +223,9 @@ class DlgSettingsLogin(QtWidgets.QDialog, Ui_DlgSettingsLogin):
                 None,
                 self.tr("Success"),
                 self.tr(
-                    "Logged in to the Trends.Earth server as "
+                    "Logged in to the CPLUS server as "
                     f"{self.email.text()}.<html><p>Welcome to "
-                    'Trends.Earth!<p/><p><a href= "'
-                    'https://groups.google.com/forum/#!forum/trends_earth_users/join">Join '
-                    "the Trends.Earth Users email group<a/></p><p> Make sure "
-                    "to join the Trends.Earth users email group to keep up "
-                    "with updates and Q&A about the tool, methods, and "
-                    "datasets in support of Sustainable Development Goals "
-                    "monitoring."
+                    "CPLUS!</p><p>You only need to login once.<p></html>"
                 ),
             )
             auth.init_auth_config(
