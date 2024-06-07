@@ -249,7 +249,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             {"progress_text": "Checking layers to be uploaded", "progress": 0}
         )
         masking_layers = self.get_masking_layers()
-        masking_layers = [ml.replace(".shp", ".zip") for ml in masking_layers]
 
         # 2 comes from sieve_mask_layer and snap layer
         check_counts = len(self.analysis_activities) + 2 + len(masking_layers)
