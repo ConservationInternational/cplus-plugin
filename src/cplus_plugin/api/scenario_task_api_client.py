@@ -7,6 +7,16 @@ from zipfile import ZipFile
 
 import requests
 from qgis.core import Qgis
+from qgis.core import (
+    QgsTask,
+    QgsNetworkAccessManager,
+    QgsApplication,
+    QgsSettings,
+    QgsNetworkReplyContent,
+)
+from PyQt5.QtNetwork import QNetworkRequest
+from PyQt5.QtCore import QUrl, QCoreApplication, QTimer
+
 from .multipart_upload import upload_part
 from .request import (
     CplusApiRequest,
@@ -714,16 +724,42 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         parent_dir = os.path.dirname(local_filename)
         if not os.path.exists(parent_dir):
             os.makedirs(parent_dir)
-        with requests.get(url, stream=True) as r:
-            r.raise_for_status()
-            if self.processing_cancelled:
-                return
-            with open(local_filename, "wb") as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-                    if self.processing_cancelled:
-                        return
+
+        network_manager = QgsNetworkAccessManager.instance()
+        request = QNetworkRequest(QUrl(url))
+
+        output_file = open(output_path, 'wb')
+
+        # Function to handle the readyRead signal
+        def ready_read():
+            data = reply.readAll()
+            output_file.write(data)
+
+        # Function to handle the download finished event
+        def download_finished():
+            if reply.error() == reply.NoError:
+                print('Download finished successfully.')
+            else:
+                print('Error:', reply.errorString())
+            output_file.close()
+            QCoreApplication.quit()
+
+        # Create the network reply object
+        reply = network_manager.get(request)
+
+        # Connect the readyRead and finished signals to the appropriate handlers
+        reply.readyRead.connect(ready_read)
+        reply.finished.connect(download_finished)
+
+        # Start a QTimer to keep the application event loop running until the download finishes
+        QTimer.singleShot(0, lambda: None)
+
+        # with open(local_filename, "wb") as f:
+        #     for chunk in r.iter_content(chunk_size=8192):
+        #         if chunk:
+        #             f.write(chunk)
+        #         if self.processing_cancelled:
+        #             return
         self.downloaded_output += 1
         self.__update_scenario_status(
             {

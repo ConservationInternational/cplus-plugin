@@ -111,7 +111,7 @@ class BaseApi:
 
         return api_task.resp
 
-    def get(self, url) -> requests.Response:
+    def get(self, url):
         """GET requests.
 
         :param url: Cplus API URL
@@ -131,7 +131,7 @@ class BaseApi:
         )
         return resp
 
-    def post(self, url: str, data: typing.Union[dict, list]) -> requests.Response:
+    def post(self, url: str, data: typing.Union[dict, list]):
         """POST requests.
 
         :param url: Cplus API URL
@@ -153,7 +153,7 @@ class BaseApi:
         )
         return resp
 
-    def put(self, url: str, data: typing.Union[dict, list, bytes]) -> requests.Response:
+    def put(self, url: str, data: typing.Union[dict, list, bytes]):
         """PUT requests.
 
         :param url: Cplus API URL
@@ -453,7 +453,7 @@ class CplusApiRequest(BaseApi, QtCore.QObject):
         self.urls = CplusApiUrl()
         self.headers = self.urls.headers
 
-    def get(self, url) -> requests.Response:
+    def get(self, url):
         """GET requests.
 
         :param url: Cplus API URL
@@ -466,7 +466,7 @@ class CplusApiRequest(BaseApi, QtCore.QObject):
         resp = super().get(url)
         return self._process_response(resp)
 
-    def post(self, url: str, data: typing.Union[dict, list]) -> requests.Response:
+    def post(self, url: str, data: typing.Union[dict, list]):
         """POST requests.
 
         :param url: Cplus API URL
@@ -481,7 +481,7 @@ class CplusApiRequest(BaseApi, QtCore.QObject):
         resp = super().post(url, data)
         return self._process_response(resp)
 
-    def put(self, url: str, data: typing.Union[dict, list]) -> requests.Response:
+    def put(self, url: str, data: typing.Union[dict, list]):
         """PUT requests.
 
         :param url: Cplus API URL
