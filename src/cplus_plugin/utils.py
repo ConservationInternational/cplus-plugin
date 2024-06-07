@@ -608,3 +608,14 @@ def get_layer_type(file_path: str):
         return 1
     else:
         return -1
+
+
+def generate_layer_mapping_identifier(layer_path: str) -> str:
+    """Generate identifier/key for layer mapping settings.
+
+    :param layer_path: path to layer file
+    :type layer_path: str
+    :return: cleaned path
+    :rtype: str
+    """
+    return layer_path.replace(os.sep, "--")

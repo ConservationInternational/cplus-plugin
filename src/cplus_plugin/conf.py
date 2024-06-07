@@ -45,7 +45,7 @@ from .models.helpers import (
     layer_component_to_dict,
     ncs_pathway_to_dict,
 )
-from .utils import log, todict, CustomJsonEncoder
+from .utils import log, todict, CustomJsonEncoder, generate_layer_mapping_identifier
 
 
 @contextlib.contextmanager
@@ -961,7 +961,7 @@ class SettingsManager(QtCore.QObject):
         """
 
         if not identifier:
-            identifier = input_layer["path"].replace(os.sep, "--")
+            identifier = generate_layer_mapping_identifier(input_layer["path"])
         settings_key = self._get_layer_mappings_settings_base()
 
         with qgis_settings(settings_key) as settings:

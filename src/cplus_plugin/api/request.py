@@ -171,6 +171,9 @@ class CplusApiUrl:
     def layer_check(self):
         return f"{self.base_url}/layer/check/?id_type=layer_uuid"
 
+    def layer_fetch_by_client_ids(self):
+        return f"{self.base_url}/layer/filter/client_id/"
+
     def layer_upload_start(self):
         return f"{self.base_url}/layer/upload/start/"
 
@@ -228,7 +231,12 @@ class CplusApiRequest:
         result = response.json()
         return result
 
-    def start_upload_layer(self, file_path, component_type):
+    def get_layer_by_client_ids(self, payload):
+        response = self.post(self.urls.layer_fetch_by_client_ids(), payload)
+        result = response.json()
+        return result
+
+    def start_upload_layer(self, file_path, component_type, client_id):
         file_size = os.stat(file_path).st_size
         payload = {
             "layer_type": get_layer_type(file_path),
@@ -237,6 +245,7 @@ class CplusApiRequest:
             "name": os.path.basename(file_path),
             "size": file_size,
             "number_of_parts": math.ceil(file_size / CHUNK_SIZE),
+            "client_id": client_id,
         }
         response = self.post(self.urls.layer_upload_start(), payload)
         result = response.json()
