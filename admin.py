@@ -214,6 +214,7 @@ def build(
     if clean and output_directory.exists():
         shutil.rmtree(str(output_directory), ignore_errors=True)
     output_directory.mkdir(parents=True, exist_ok=True)
+    plugin_setup(clean)
     copy_source_files(output_directory, tests=tests)
     icon_path = copy_icon(output_directory)
     if icon_path is None:
