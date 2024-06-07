@@ -3,6 +3,7 @@
 
 """
 
+
 import os
 
 import configparser
@@ -101,6 +102,7 @@ def install(context: typer.Context, build_src: bool = True):
     base_target_directory = root_directory / "python/plugins" / SRC_NAME
     _log(f"Copying built plugin to {base_target_directory}...", context=context)
     shutil.copytree(built_directory, base_target_directory)
+    print(f"Installed {str(built_directory)!r}" f" into {str(base_target_directory)!r}")
     _log(
         f"Installed {str(built_directory)!r}" f" into {str(base_target_directory)!r}",
         context=context,
@@ -549,6 +551,73 @@ def _get_latest_releases(
             else:
                 latest_stable = release
     return latest_stable, latest_experimental
+
+
+###############################################################################
+# Setup dependencies and install package
+###############################################################################
+
+
+def not_comments(lines, s, e):
+    return [line for line in lines[s:e] if line[0] != "#"]
+
+
+def read_requirements():
+    """Return a list of runtime and list of test requirements"""
+    with open("requirements.txt") as f:
+        lines = f.readlines()
+    lines = [line for line in [line.strip() for line in lines] if line]
+
+    return not_comments(lines, 0, len(lines)), []
+
+
+def _safe_remove_folder(rootdir):
+    """
+    Supports removing a folder that may have symlinks in it
+
+    Needed on windows to avoid removing the original files linked to within
+    each folder
+    """
+    rootdir = Path(rootdir)
+    if rootdir.is_symlink():
+        rootdir.rmdir()
+    else:
+        folders = [path for path in Path(rootdir).iterdir() if path.is_dir()]
+        for folder in folders:
+            if folder.is_symlink():
+                folder.rmdir()
+            else:
+                shutil.rmtree(folder)
+        files = [path for path in Path(rootdir).iterdir()]
+        for file in files:
+            file.unlink()
+        shutil.rmtree(rootdir)
+
+
+@app.command()
+def plugin_setup(clean=True, pip="pip"):
+    """install plugin dependencies.
+
+    :param clean: Clean out dependencies first.
+    :type clean: bool
+
+    :param pip: Path to pip, usually 'pip' or 'pip3'.
+    :type pip: str
+    """
+    ext_libs = os.path.join(LOCAL_ROOT_DIR, "src", "cplus_plugin", "ext-libs")
+
+    if clean and os.path.exists(ext_libs):
+        _safe_remove_folder(ext_libs)
+
+    os.makedirs(ext_libs, exist_ok=True)
+    runtime, test = read_requirements()
+
+    os.environ["PYTHONPATH"] = ext_libs
+
+    for req in runtime + test:
+        subprocess.check_call([pip, "install", "--upgrade", "-t", ext_libs, req])
+
+
 
 
 if __name__ == "__main__":
