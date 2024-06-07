@@ -165,7 +165,7 @@ class DlgSettingsRegister(QtWidgets.QDialog, Ui_DlgSettingsRegister):
                 self.tr(
                     "User registered. Your password "
                     f"has been emailed to {self.email.text()}. "
-                    "Enter that password in Trends.Earth settings "
+                    "Enter that password in CPLUS settings "
                     "to finish setting up the plugin."
                 ),
             )
