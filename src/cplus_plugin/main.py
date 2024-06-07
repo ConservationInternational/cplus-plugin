@@ -266,7 +266,6 @@ class QgisCplus:
         # Register plugin options factories
         self.iface.registerOptionsWidgetFactory(self.cplus_options_factory)
         self.iface.registerOptionsWidgetFactory(self.reports_options_factory)
-        self.iface.registerOptionsWidgetFactory(self.log_options_factory)
 
         # Register custom layout items
         self.register_layout_items()
