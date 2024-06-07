@@ -102,7 +102,6 @@ def install(context: typer.Context, build_src: bool = True):
     base_target_directory = root_directory / "python/plugins" / SRC_NAME
     _log(f"Copying built plugin to {base_target_directory}...", context=context)
     shutil.copytree(built_directory, base_target_directory)
-    print(f"Installed {str(built_directory)!r}" f" into {str(base_target_directory)!r}")
     _log(
         f"Installed {str(built_directory)!r}" f" into {str(base_target_directory)!r}",
         context=context,
