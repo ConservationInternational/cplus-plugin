@@ -31,29 +31,22 @@ class FetchOnlineTaskStatusTask(QgsTask):
 
         request = CplusApiRequest()
         online_task = settings_manager.get_online_task()
-        logs = request.fetch_scenario_logs(online_task["uuid"])
-        log_file = open(os.path.join(online_task["directory"], "processing.log"))
-        lines = log_file.readlines()
-        log_file.close()
+        if online_task:
+            logs = request.fetch_scenario_logs(online_task["uuid"])
+            log_file = open(os.path.join(online_task["directory"], "processing.log"))
+            lines = log_file.readlines()
+            log_file.close()
 
-        # with open(os.path.join(online_task["directory"], "processing.log"), 'a') as log_file:
-        #     start_write = False
-        #     for log_dict in logs:
-        #         # log(json.dumps(log_dict))
-        #         # if start_write:
-        #         #     log_file.write(
-        #         #         f"{log_dict['date_time']} "
-        #         #         f"{log_dict['severity']} "
-        #         #         f"{log_dict['log']}"
-        #         #     )
-        #         if not lines[-1].endswith(f"{log_dict['severity']}{log_dict['log']}"):
-        #             log_file.write(
-        #                 f"\n{log_dict['date_time']} "
-        #                 f"{log_dict['severity']} "
-        #                 f"{log_dict['log']}"
-        #             )
-        if logs[-1]["log"] == "Task has been completed.":
-            self.task_completed.emit()
+            with open(os.path.join(online_task["directory"], "processing.log"), 'a') as log_file:
+                for log_dict in logs:
+                    if not lines[-1].endswith(f"{log_dict['severity']}{log_dict['log']}"):
+                        log_file.write(
+                            f"\n{log_dict['date_time']} "
+                            f"{log_dict['severity']} "
+                            f"{log_dict['log']}"
+                        )
+            if logs[-1]["log"] == "Task has been completed.":
+                self.task_completed.emit()
 
         return True
 

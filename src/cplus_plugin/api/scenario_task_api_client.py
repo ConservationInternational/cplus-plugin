@@ -82,6 +82,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
     def on_terminated(self):
         """Called when the task is terminated."""
 
+        self.log_message(f"HIDE TASK: {self.hide_task}")
+
         if not self.hide_task:
             # check if there is ongoing upload
             layer_mapping = settings_manager.get_all_layer_mapping()
@@ -100,8 +102,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 JOB_STOPPED_STATUS,
             ]:
                 self.request.cancel_scenario(self.scenario.uuid)
-        else:
-            settings_manager.delete_online_task(self.scenario.uuid)
+                settings_manager.delete_online_task()
         super().on_terminated()
 
     def run(self) -> bool:
@@ -589,7 +590,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
 
         if self.scenario_status == JOB_COMPLETED_STATUS:
             self._retrieve_scenario_outputs(scenario_uuid)
-            settings_manager.delete_online_task(self.scenario.uuid)
+            self.log_message('JOB COMPLETED STATUS')
+            settings_manager.delete_online_task()
         elif self.scenario_status == JOB_STOPPED_STATUS:
             scenario_error = status_response.get("errors", "Unknown error")
             raise Exception(scenario_error)

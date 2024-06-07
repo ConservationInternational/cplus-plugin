@@ -152,9 +152,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         # Scenario list
         self.update_scenario_list()
 
-        self.task = FetchOnlineTaskStatusTask(self)
-        self.task.task_completed.connect(self.on_online_task_completed)
-
     def on_generate_report_button_clicked(self):
         from ..models.base import Activity
         log('DOWNLOAD AND GENERATE REPORT')
@@ -279,6 +276,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         # self.task = FetchOnlineTaskStatusTask(self)
         # self.task.task_completed.connect(self.on_online_task_completed)
         # QgsApplication.taskManager().addTask(self.task)
+
+        self.task = FetchOnlineTaskStatusTask(self)
+        self.task.task_completed.connect(self.on_online_task_completed)
         QgsApplication.taskManager().addTask(self.task)
 
     def outputs_options_changed(self):
