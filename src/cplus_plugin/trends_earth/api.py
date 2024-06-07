@@ -123,6 +123,15 @@ class RequestTask(QgsTask):
                 self.resp.finished.connect(loop.quit)
                 loop.exec_()
 
+            elif self.method == "put":
+                self.resp = network_manager.put(
+                    network_request, self.payload
+                )
+
+                loop = QtCore.QEventLoop()
+                self.resp.finished.connect(loop.quit)
+                loop.exec_()
+
             elif self.method == "delete":
                 empty_payload = {}
                 doc = QtCore.QJsonDocument(empty_payload)

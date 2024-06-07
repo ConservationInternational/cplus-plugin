@@ -216,6 +216,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         result = {"uuid": None}
         if self.processing_cancelled:
             return result
+        self.log_message(f'Send upload finish: {layer_uuid}, {upload_id}, {items}')
         result = self.request.finish_upload_layer(layer_uuid, upload_id, items)
         return result
 
@@ -293,6 +294,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         items_to_check = {}
 
         activity_pwl_uuids = set()
+        self.log_message(json.dumps(todict(self.analysis_activities), cls=CustomJsonEncoder))
         for idx, activity in enumerate(self.analysis_activities):
             for pathway in activity.pathways:
                 if pathway:
@@ -319,11 +321,14 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         )
 
         priority_layers = self.get_priority_layers()
+        self.log_message(json.dumps(list(activity_pwl_uuids), cls=CustomJsonEncoder))
+        self.log_message(json.dumps(todict(priority_layers), cls=CustomJsonEncoder))
         for priority_layer in priority_layers:
             if priority_layer.get("uuid", "") in activity_pwl_uuids and os.path.exists(
                 priority_layer.get("path", "")
             ):
                 for group in priority_layer.get("groups", []):
+                    self.log_message(json.dumps(todict(group), cls=CustomJsonEncoder))
                     if int(group.get("value", 0)) > 0:
                         items_to_check[
                             priority_layer.get("path", "")

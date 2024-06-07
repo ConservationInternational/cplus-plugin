@@ -1,9 +1,19 @@
 import time
-
+import json
+import io
 import requests
+from qgis.PyQt import QtCore, QtWidgets, QtNetwork
+from qgis.core import (
+    QgsTask,
+    QgsNetworkAccessManager,
+    QgsApplication,
+    QgsSettings,
+    QgsNetworkReplyContent,
+)
+
 
 from .request import BaseApi, CplusApiRequest
-from ..utils import log
+from ..utils import log, todict, CustomJsonEncoder
 
 # chunk_size must be greater than 5MB, for now use 100MB
 CHUNK_SIZE = 100 * 1024 * 1024
@@ -31,28 +41,49 @@ def upload_part(signed_url: str, file_data: bytes, file_part_number: int, max_re
     """
 
     retries = 0
-    while retries < max_retries:
-        try:
-            # ref: https://github.com/aws-samples/amazon-s3-multipart-upload-
-            # transfer-acceleration/blob/main/frontendV2/src/utils/upload.js#L119
-            if signed_url.startswith("http://"):
-                # response = requests.put(
-                #     signed_url, data=file_data, headers={"Host": "minio:9000"}
-                # )
-                response = BaseApi(headers={"Host": "minio:9000"}).put(signed_url, file_data)
+    # while retries < max_retries:
+    try:
+        # ref: https://github.com/aws-samples/amazon-s3-multipart-upload-
+        # transfer-acceleration/blob/main/frontendV2/src/utils/upload.js#L119
+        if signed_url.startswith("http://"):
+            # response = requests.put(
+            #     signed_url, data=file_data, headers={"Host": "minio:9000"}
+            # )
+            resp = BaseApi(headers={"Host": "minio:9000"}).put(signed_url, file_data)
 
+        else:
+            # response = requests.put(signed_url, data=file_data)
+            resp = BaseApi().put(signed_url, file_data)
+
+        if resp is not None:
+            status_code = resp.attribute(
+                QtNetwork.QNetworkRequest.HttpStatusCodeAttribute
+            )
+            log(f"Status code: {str(status_code)}")
+            log(f"headers: {str(json.dumps(todict(resp.rawHeaderList()), cls=CustomJsonEncoder))}")
+
+            if status_code in [200, 201]:
+                return {"part_number": file_part_number, "etag": resp.headers["ETag"]}
             else:
-                # response = requests.put(signed_url, data=file_data)
-                response = BaseApi().put(signed_url, file_data)
-            return {"part_number": file_part_number, "etag": response.headers["ETag"]}
-        except requests.exceptions.RequestException as e:
-            log(f"Request failed: {e}")
-            retries += 1
-            if retries < max_retries:
-                # Calculate the exponential backoff delay
-                delay = 2**retries
-                log(f"Retrying in {delay} seconds...")
-                time.sleep(delay)
-            else:
-                log("Max retries exceeded.")
-                raise
+                log(f"Request failed")
+                retries += 1
+                # if retries < max_retries:
+                #     # Calculate the exponential backoff delay
+                #     delay = 2 ** retries
+                #     log(f"Retrying in {delay} seconds...")
+                #     time.sleep(delay)
+                # else:
+                #     log("Max retries exceeded.")
+                #     raise
+            return ret, status_code
+    except requests.exceptions.RequestException as e:
+        log(f"Request failed: {e}")
+        retries += 1
+        if retries < max_retries:
+            # Calculate the exponential backoff delay
+            delay = 2**retries
+            log(f"Retrying in {delay} seconds...")
+            time.sleep(delay)
+        else:
+            log("Max retries exceeded.")
+            raise

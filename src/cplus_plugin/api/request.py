@@ -257,9 +257,9 @@ class BaseApi:
         """
         # return requests.post(url, json=data, headers=self.urls.headers)
         resp = self._make_request(
-            'Post request',
+            'Put request',
             url=url,
-            method='post',
+            method='put',
             payload=data,
             headers=self.headers,
             timeout=30,
