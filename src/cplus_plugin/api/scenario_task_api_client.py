@@ -21,23 +21,50 @@ from ..tasks import ScenarioAnalysisTask
 from ..utils import FileUtils, CustomJsonEncoder, todict
 
 
-def clean_filename(filename):
-    """Creates a safe filename by removing operating system
-    invalid filename characters.
+COMPONENT_TYPE_NCS_PATHWAY = "ncs_pathway"
+COMPONENT_TYPE_NCS_CARBON = "ncs_carbon"
+COMPONENT_TYPE_PRIORITY_LAYER = "priority_layer"
+COMPONENT_TYPE_SNAP_LAYER = "snap_layer"
+COMPONENT_TYPE_SIEVE_MASK_LAYER = "sieve_mask_layer"
+COMPONENT_TYPE_MASK_LAYER = "mask_layer"
 
-    :param filename: File name
-    :type filename: str
 
-    :returns A clean file name
-    :rtype str
+def generate_layer_mapping_identifier(layer_path: str) -> str:
+    """Generate identifier/key for layer mapping settings.
+
+    :param layer_path: path to layer file
+    :type layer_path: str
+    :return: cleaned path
+    :rtype: str
     """
-    characters = " %:/,\[]<>*?"
+    return layer_path.replace(os.sep, "--")
 
-    for character in characters:
-        if character in filename:
-            filename = filename.replace(character, "_")
 
-    return filename
+def generate_client_id(layer_path: str, component_type: str, base_dir: str) -> str:
+    """Generate client id for a layer file.
+
+    :param layer_path: path to layer file
+    :type layer_path: str
+    :param component_type: component type for a layer
+    :type component_type: str
+    :param base_dir: CPLUS plugin base directory
+    :type base_dir: str
+    :return: client_id for a layer file
+    :rtype: str
+    """
+    if base_dir not in layer_path:
+        return None
+    if component_type not in [
+        COMPONENT_TYPE_NCS_PATHWAY,
+        COMPONENT_TYPE_NCS_CARBON,
+        COMPONENT_TYPE_PRIORITY_LAYER,
+    ]:
+        return None
+    cleaned_path = generate_layer_mapping_identifier(layer_path.replace(base_dir, ""))
+    layer_size = os.stat(layer_path).st_size
+    crs = ""
+    size = [20, 20]
+    return f"{cleaned_path}_{crs}_{size[0]}_{size[1]}_{layer_size}"
 
 
 class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
@@ -260,11 +287,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             for pathway in activity.pathways:
                 if pathway:
                     if pathway.path and os.path.exists(pathway.path):
-                        items_to_check[pathway.path] = "ncs_pathway"
+                        items_to_check[pathway.path] = COMPONENT_TYPE_NCS_PATHWAY
 
                     for carbon_path in pathway.carbon_paths:
                         if os.path.exists(carbon_path):
-                            items_to_check[carbon_path] = "ncs_carbon"
+                            items_to_check[carbon_path] = COMPONENT_TYPE_NCS_CARBON
 
             for priority_layer in activity.priority_layers:
                 if priority_layer:
@@ -290,7 +317,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                     if int(group.get("value", 0)) > 0:
                         items_to_check[
                             priority_layer.get("path", "")
-                        ] = "priority_layer"
+                        ] = COMPONENT_TYPE_PRIORITY_LAYER
                         break
 
         if sieve_enabled:
@@ -300,7 +327,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
 
             if sieve_mask_layer:
                 zip_path = self.__zip_shapefiles(sieve_mask_layer)
-                items_to_check[zip_path] = "sieve_mask_layer"
+                items_to_check[zip_path] = COMPONENT_TYPE_SIEVE_MASK_LAYER
             self.__update_scenario_status(
                 {
                     "progress_text": "Checking layers to be uploaded",
@@ -315,7 +342,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             reference_layer = self.get_settings_value(Settings.SNAP_LAYER, default="")
             if reference_layer:
                 zip_path = self.__zip_shapefiles(reference_layer)
-                items_to_check[zip_path] = "snap_layer"
+                items_to_check[zip_path] = COMPONENT_TYPE_SNAP_LAYER
         self.__update_scenario_status(
             {
                 "progress_text": "Checking layers to be uploaded",
@@ -325,7 +352,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
 
         for idx, masking_layer in enumerate(masking_layers):
             zip_path = self.__zip_shapefiles(masking_layer)
-            items_to_check[zip_path] = "mask_layer"
+            items_to_check[zip_path] = COMPONENT_TYPE_MASK_LAYER
 
             self.__update_scenario_status(
                 {
@@ -369,7 +396,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             )
 
         for uploaded_layer in new_uploaded_layer.values():
-            identifier = uploaded_layer["path"].replace(os.sep, "--")
+            identifier = generate_layer_mapping_identifier(uploaded_layer["path"])
             self.path_to_layer_mapping[uploaded_layer["path"]] = uploaded_layer
             settings_manager.save_layer_mapping(uploaded_layer, identifier)
 
@@ -382,7 +409,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         uuid_to_path = {}
 
         for layer_path, group in items_to_check.items():
-            identifier = layer_path.replace(os.sep, "--")
+            identifier = generate_layer_mapping_identifier(layer_path)
             uploaded_layer_dict = settings_manager.get_layer_mapping(identifier)
             if uploaded_layer_dict:
                 if "upload_id" in uploaded_layer_dict:
