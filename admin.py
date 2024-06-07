@@ -619,7 +619,5 @@ def plugin_setup(clean=True, pip="pip"):
         subprocess.check_call([pip, "install", "--upgrade", "-t", ext_libs, req])
 
 
-
-
 if __name__ == "__main__":
     app()
