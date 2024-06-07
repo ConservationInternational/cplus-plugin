@@ -728,7 +728,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         network_manager = QgsNetworkAccessManager.instance()
         request = QNetworkRequest(QUrl(url))
 
-        output_file = open(output_path, 'wb')
+        output_file = open(local_filename, 'wb')
 
         # Function to handle the readyRead signal
         def ready_read():
@@ -742,7 +742,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             else:
                 print('Error:', reply.errorString())
             output_file.close()
-            QCoreApplication.quit()
 
         # Create the network reply object
         reply = network_manager.get(request)
