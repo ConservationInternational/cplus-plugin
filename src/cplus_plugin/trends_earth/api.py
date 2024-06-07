@@ -12,10 +12,6 @@
 """
 import io
 
-from future import standard_library
-
-standard_library.install_aliases()
-
 import json
 from urllib.parse import quote_plus
 
