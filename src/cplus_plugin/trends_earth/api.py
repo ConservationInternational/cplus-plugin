@@ -12,14 +12,8 @@
 """
 import io
 
-from future import standard_library
-
-standard_library.install_aliases()
-
 import json
 from urllib.parse import quote_plus
-
-import requests
 
 # import backoff
 
@@ -178,14 +172,10 @@ class RequestTask(QgsTask):
                         f"API {self.method} not successful - exception: {self.exception}"
                     )
                     raise self.exception
-                except requests.exceptions.ConnectionError:
+                except Exception as exception:
                     self.error_message = tr_api.tr(
                         "Unable to login to Trends.Earth server. Check your "
                         "internet connection."
-                    )
-                except requests.exceptions.Timeout:
-                    self.error_message = tr_api.tr(
-                        f"Unable to connect to Trends.Earth  server."
                     )
 
         if self.resp is not None:
