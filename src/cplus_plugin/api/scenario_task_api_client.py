@@ -402,13 +402,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             self.path_to_layer_mapping[uploaded_layer["path"]] = uploaded_layer
             settings_manager.save_layer_mapping(uploaded_layer, identifier)
 
-    def sync_input_layers(self, items_to_check: dict) -> dict:
+    def sync_input_layers(self, items_to_check: dict):
         """Sync input layers from local filesystem with server side.
 
         :param items_to_check: Dictionary with file path as key and group as value
         :type items_to_check: dict
-        :return: Filtered dict that does not exist in the server
-        :rtype: dict
         """
         client_ids = {}
         base_dir = self.get_settings_value(Settings.BASE_DIR)

@@ -187,8 +187,10 @@ def get_test_scenario() -> Scenario:
     )
     return Scenario(
         UUID(SCENARIO_UUID_STR),
-        "Test Scenario" "Test scenario description",
+        "Test Scenario",
+        "Test scenario description",
         sp_extent,
+        [get_activity()],
         [get_activity()],
         [
             [
