@@ -559,7 +559,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             "created_at": datetime.datetime.now().isoformat(),
             "task": todict(self)
         }
-        self.log_message(json.dumps(payload, cls=CustomJsonEncoder))
         settings_manager.save_online_task(json.loads(json.dumps(payload, cls=CustomJsonEncoder)))
 
     def __execute_scenario_analysis(self):

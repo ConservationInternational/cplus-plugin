@@ -306,7 +306,6 @@ class OnlineProgressDialog(Ui_DlgOnlineProgress, ProgressDialog):
         QGIS processing will be stopped, but online processing will be continued.
         """
 
-        log('HIDE CLICKED')
         self.analysis_task.hide_task = True
         self.analysis_cancelled.emit()
         self.main_widget.view_status_btn.setEnabled(True)

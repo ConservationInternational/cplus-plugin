@@ -70,7 +70,6 @@ class CplusApiPooling:
         self.cancelled = False
 
     def __call_api(self):
-        log('call API')
         if self.method == "GET":
             return requests.get(self.url, headers=self.headers)
         return requests.post(self.url, self.data, headers=self.headers)
@@ -84,12 +83,10 @@ class CplusApiPooling:
             raise requests.exceptions.Timeout()
         try:
             response = self.__call_api()
-            log(str(response.status_code))
             if response.status_code != 200:
                 raise CplusApiRequestError(f"{response.status_code} - {response.text}")
 
             result = response.json()
-            log(json.dumps(result, cls=CustomJsonEncoder))
             if self.on_response_fetched:
                 self.on_response_fetched(result)
             if result["status"] in self.FINAL_STATUS_LIST:

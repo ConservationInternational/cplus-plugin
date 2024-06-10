@@ -119,6 +119,7 @@ class QgisCplus:
         self.reports_options_factory = ReportOptionsFactory()
         self.log_options_factory = LogOptionsFactory()
 
+        create_priority_layers()
         initialize_model_settings()
 
         # Initialize default report settings

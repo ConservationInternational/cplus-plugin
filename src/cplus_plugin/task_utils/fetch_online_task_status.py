@@ -1,8 +1,10 @@
-import random
-from time import sleep
+import os
 
 from PyQt5.QtCore import pyqtSignal
-from qgis.core import (Qgis, QgsApplication, QgsMessageLog, QgsTask)
+from qgis.core import (QgsTask)
+
+from ..api.request import CplusApiRequest
+from ..conf import settings_manager
 
 MESSAGE_CATEGORY = 'My subclass tasks'
 
@@ -18,16 +20,7 @@ class FetchOnlineTaskStatusTask(QgsTask):
         self.exception = None
 
     def run(self):
-        """
-        """
-        import os
-        import json
-        from ..api.request import CplusApiRequest
-        from ..conf import settings_manager
-        from ..utils import log, tr
-        from qgis.core import Qgis
-        from qgis.gui import QgsMessageBar
-        from qgis.utils import iface
+        """Run fetch status using API."""
 
         request = CplusApiRequest()
         online_task = settings_manager.get_online_task()
