@@ -49,7 +49,6 @@ class ScenarioTaskOutputDownload(ScenarioAnalysisTaskApiClient):
         self.downloaded_output = 0
         self.scenario_status = None
         self.scenario_directory = scenario_directory
-        self.scenario.uuid = scenario_uuid
 
     def run(self) -> bool:
         """Run scenario analysis using API."""

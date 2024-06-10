@@ -94,12 +94,12 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                     settings_manager.remove_layer_mapping(identifier)
                 except Exception as ex:
                     self.log_message(f"Problem aborting upload layer: {ex}")
-            self.log_message(f"Cancel scenario {self.scenario.uuid}")
-            if self.scenario.uuid and self.scenario_status not in [
+            self.log_message(f"Cancel scenario {self.scenario_api_uuid}")
+            if self.scenario_api_uuid and self.scenario_status not in [
                 JOB_COMPLETED_STATUS,
                 JOB_STOPPED_STATUS,
             ]:
-                self.request.cancel_scenario(self.scenario.uuid)
+                self.request.cancel_scenario(self.scenario_api_uuid)
                 settings_manager.delete_online_task()
         super().on_terminated(hide=self.hide_task)
 
@@ -552,7 +552,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
 
     def __save_online_task(self):
         payload = {
-            "uuid": self.scenario.uuid,
+            "uuid": self.scenario_api_uuid,
             "name": self.scenario.name,
             "directory": self.scenario_directory,
             "created_at": datetime.datetime.now().isoformat(),
