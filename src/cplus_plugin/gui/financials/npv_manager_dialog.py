@@ -456,15 +456,24 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
                 continue
 
             activity_name = activity_mapping.activity.name
+
+            # First check if size of yearly rates matches the numbers of years
+            if activity_mapping.params.years != len(
+                activity_mapping.params.yearly_rates
+            ):
+                msg = "Size of yearly rates and number of years do not match."
+                self._show_warning_message(msg)
+                if status:
+                    status = False
+                continue
+
             missing_value_rows = []
             for i, rates_info in enumerate(activity_mapping.params.yearly_rates):
                 if len(rates_info) < 3 or None in rates_info:
                     missing_value_rows.append(str(i + 1))
 
             if len(missing_value_rows) > 0:
-                msg = (
-                    f"{activity_name}: {missing_msg_tr} {', '.join(missing_value_rows)}"
-                )
+                msg = f"{activity_name}: {missing_msg_tr} {', '.join(missing_value_rows)}."
                 self._show_warning_message(msg)
                 if status:
                     status = False
@@ -517,6 +526,13 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
     def _on_accepted(self):
         """Validates user input before closing."""
+        if len(self._npv_collection.mappings) == 0:
+            msg = tr(
+                "There are no NPV PWLs to create or update. Click Cancel to close the dialog."
+            )
+            self._show_warning_message(msg)
+            return
+
         self._update_base_npv_collection()
 
         if not self.is_valid():
