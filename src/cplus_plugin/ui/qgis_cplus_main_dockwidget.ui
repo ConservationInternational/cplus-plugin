@@ -573,7 +573,7 @@
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;View online task status&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
-              <string>View Status</string>
+              <string>View Online Task Status</string>
              </property>
             </widget>
            </item>

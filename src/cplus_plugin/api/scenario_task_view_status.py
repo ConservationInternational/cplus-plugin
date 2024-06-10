@@ -50,16 +50,16 @@ class ScenarioTaskViewStatus(ScenarioAnalysisTaskApiClient):
         self.scenario_status = None
         self.status_pooling = None
         self.scenario_directory = scenario_directory
-        self.scenario.uuid = scenario_uuid
+        self.scenario_api_uuid = scenario.uuid
         self.new_scenario_detail = {}
 
     def run(self) -> bool:
         """Run scenario analysis using API."""
         self.log_message('start run')
         self.request = CplusApiRequest()
-        self.log_message(str(self.scenario.uuid))
+        self.log_message(str(self.scenario_api_uuid))
         # fetch status by interval
-        self.status_pooling = self.request.fetch_scenario_status(self.scenario.uuid)
+        self.status_pooling = self.request.fetch_scenario_status(self.scenario_api_uuid)
         self.log_message('status pooling')
         self.status_pooling.on_response_fetched = self._update_scenario_status
         self.log_message('finish pool')
@@ -70,13 +70,14 @@ class ScenarioTaskViewStatus(ScenarioAnalysisTaskApiClient):
 
         # if success, fetch output list
         self.scenario_status = status_response.get("status", "")
-        self.new_scenario_detail = self.request.fetch_scenario_detail(self.scenario.uuid)
+        self.new_scenario_detail = self.request.fetch_scenario_detail(self.scenario_api_uuid)
 
         if self.scenario_status == JOB_COMPLETED_STATUS:
-            self._retrieve_scenario_outputs(self.scenario.uuid)
+            self._retrieve_scenario_outputs(self.scenario_api_uuid)
             self.log_message('JOB COMPLETED STATUS')
             settings_manager.delete_online_task()
         elif self.scenario_status == JOB_STOPPED_STATUS:
             scenario_error = status_response.get("errors", "Unknown error")
             raise Exception(scenario_error)
 
+        return not self.processing_cancelled

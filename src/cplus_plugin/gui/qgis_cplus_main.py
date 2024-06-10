@@ -10,6 +10,7 @@ import os
 import uuid
 from functools import partial
 from pathlib import Path
+
 from qgis.PyQt import (
     QtCore,
     QtGui,
@@ -40,16 +41,17 @@ from qgis.gui import (
     QgsMessageBar,
     QgsRubberBand,
 )
-
 from qgis.utils import iface
 
 from .activity_widget import ActivityContainerWidget
 from .components.custom_tree_widget import CustomTreeWidget
+from .financials.npv_manager_dialog import NpvPwlManagerDialog
+from .financials.npv_progress_dialog import NpvPwlProgressDialog
 from .priority_group_dialog import PriorityGroupDialog
 from .priority_group_widget import PriorityGroupWidget
 from .priority_layer_dialog import PriorityLayerDialog
 from .progress_dialog import ProgressDialog, OnlineProgressDialog
-from ..trends_earth import auth
+from .scenario_dialog import ScenarioDialog
 from ..api.scenario_task_api_client import ScenarioAnalysisTaskApiClient
 from ..api.scenario_task_output_download import ScenarioTaskOutputDownload
 from ..api.scenario_task_view_status import ScenarioTaskViewStatus
@@ -60,41 +62,6 @@ from ..definitions.constants import (
     ACTIVITY_WEIGHTED_GROUP_NAME,
     NCS_PATHWAYS_GROUP_LAYER_NAME,
     USER_DEFINED_ATTRIBUTE,
-)
-
-from .financials.npv_manager_dialog import NpvPwlManagerDialog
-from .financials.npv_progress_dialog import NpvPwlProgressDialog
-from .priority_layer_dialog import PriorityLayerDialog
-from .priority_group_dialog import PriorityGroupDialog
-
-from .scenario_dialog import ScenarioDialog
-
-from ..models.base import (
-    PriorityLayerType,
-    Scenario,
-    ScenarioResult,
-    ScenarioState,
-    SpatialExtent,
-)
-from ..models.financial import ActivityNpv
-from ..conf import settings_manager, Settings
-
-from ..lib.extent_check import extent_within_pilot
-from ..lib.financials import create_npv_pwls
-from ..lib.reports.manager import report_manager, ReportManager
-
-from ..tasks import ScenarioAnalysisTask
-
-from .components.custom_tree_widget import CustomTreeWidget
-
-from ..resources import *
-
-from ..utils import (
-    open_documentation,
-    tr,
-    log,
-    FileUtils,
-    write_to_file,
 )
 from ..definitions.defaults import (
     ADD_LAYER_ICON_PATH,
@@ -110,12 +77,19 @@ from ..definitions.defaults import (
     USER_DOCUMENTATION_SITE,
 )
 from ..lib.extent_check import extent_within_pilot
+from ..lib.financials import create_npv_pwls
 from ..lib.reports.manager import report_manager, ReportManager
+from ..models.base import (
+    PriorityLayerType,
+)
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
+from ..models.financial import ActivityNpv
 from ..resources import *
-from ..tasks import ScenarioAnalysisTask
+from ..resources import *
 from ..task_utils.fetch_online_task_status import FetchOnlineTaskStatusTask
-from ..utils import open_documentation, tr, log, FileUtils, write_to_file
+from ..tasks import ScenarioAnalysisTask
+from ..trends_earth import auth
+from ..utils import open_documentation, tr, log, FileUtils, write_to_file, CustomJsonEncoder, todict
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/qgis_cplus_main_dockwidget.ui")
@@ -197,7 +171,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if online_task:
             self.analysis_scenario_name = online_task["name"]
             self.analysis_scenario_description = online_task["task"]["scenario"]["name"]
-            self.analysis_extent = SpatialExtent(online_task["task"]["analysis_extent"])
+            self.analysis_extent = SpatialExtent(bbox=online_task["task"]["analysis_extent"]["bbox"])
             self.analysis_activities = [
                 Activity.from_dict(activity) for activity in online_task["task"]["analysis_activities"]
             ]
@@ -236,6 +210,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 scenario,
                 online_task["directory"]
             )
+            analysis_task.scenario_api_uuid = online_task["online_uuid"]
 
             self.run_cplus_main_task(progress_dialog, scenario, analysis_task)
 
@@ -247,7 +222,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if online_task:
             self.analysis_scenario_name = online_task["task"]["scenario"]["name"]
             self.analysis_scenario_description = online_task["task"]["scenario"]["description"]
-            self.analysis_extent = SpatialExtent(online_task["task"]["analysis_extent"])
+            self.analysis_extent = SpatialExtent(bbox=online_task["task"]["analysis_extent"]["bbox"])
             self.analysis_activities = [
                 Activity.from_dict(activity) for activity in online_task["task"]["analysis_activities"]
             ]
@@ -286,6 +261,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 scenario,
                 online_task["directory"]
             )
+            analysis_task.scenario_api_uuid = online_task["online_uuid"]
 
             self.run_cplus_main_task(progress_dialog, scenario, analysis_task)
 
@@ -2265,6 +2241,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 )
             else:
                 self.view_status_btn.setEnabled(False)
+                self.processing_type.setEnabled(True)
                 self.processing_type.setToolTip(
                     'Processing options'
                 )

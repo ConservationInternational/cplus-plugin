@@ -32,7 +32,7 @@ class FetchOnlineTaskStatusTask(QgsTask):
         request = CplusApiRequest()
         online_task = settings_manager.get_online_task()
         if online_task:
-            logs = request.fetch_scenario_logs(online_task["uuid"])
+            logs = request.fetch_scenario_logs(online_task["online_uuid"])
             log_file = open(os.path.join(online_task["directory"], "processing.log"))
             lines = log_file.readlines()
             log_file.close()

@@ -309,6 +309,11 @@ class OnlineProgressDialog(Ui_DlgOnlineProgress, ProgressDialog):
         log('HIDE CLICKED')
         self.analysis_task.hide_task = True
         self.analysis_cancelled.emit()
+        self.main_widget.view_status_btn.setEnabled(True)
+        self.main_widget.processing_type.setEnabled(False)
+        self.main_widget.processing_type.setToolTip(
+            'Cannot choose online processing due to user having active online processing'
+        )
 
         self.cancel_reporting()
 

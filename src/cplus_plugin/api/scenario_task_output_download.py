@@ -34,7 +34,6 @@ class ScenarioTaskOutputDownload(ScenarioAnalysisTaskApiClient):
         scenario,
         scenario_directory
     ):
-        scenario_uuid = scenario.uuid
         super().__init__(
             analysis_scenario_name,
             analysis_scenario_description,
@@ -49,14 +48,15 @@ class ScenarioTaskOutputDownload(ScenarioAnalysisTaskApiClient):
         self.downloaded_output = 0
         self.scenario_status = None
         self.scenario_directory = scenario_directory
+        self.scenario_api_uuid = scenario.uuid
 
     def run(self) -> bool:
         """Run scenario analysis using API."""
         self.request = CplusApiRequest()
         self.log_message('RETRIEVE')
         try:
-            self.new_scenario_detail = self.request.fetch_scenario_detail(self.scenario.uuid)
-            self._retrieve_scenario_outputs(self.scenario.uuid)
+            self.new_scenario_detail = self.request.fetch_scenario_detail(self.scenario_api_uuid)
+            self._retrieve_scenario_outputs(self.scenario_api_uuid)
             settings_manager.delete_online_task()
         except Exception as ex:
             self.log_message(traceback.format_exc(), info=False)

@@ -552,7 +552,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
 
     def __save_online_task(self):
         payload = {
-            "uuid": self.scenario_api_uuid,
+            "uuid": self.scenario.uuid,
+            "online_uuid": self.scenario_api_uuid,
             "name": self.scenario.name,
             "directory": self.scenario_directory,
             "created_at": datetime.datetime.now().isoformat(),
@@ -737,7 +738,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             analysis_output=self.output,
         )
 
-        self.analysis_priority_layers_groups
         self._update_scenario_status(
             {"progress_text": "Finished downloading output files", "progress": 100}
         )
