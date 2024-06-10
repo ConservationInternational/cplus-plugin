@@ -1123,7 +1123,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
         scenarios = settings_manager.get_scenarios()
 
-        if len(scenarios) > 0:
+        if len(scenarios) >= 0:
             self.scenario_list.clear()
 
         for scenario in scenarios:
@@ -1148,12 +1148,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         extent = SpatialExtent(bbox=extent_box)
         scenario_id = uuid.uuid4()
 
-        activities = self.activity_widget.activities()
-        priority_layer_groups = self.analysis_priority_layers_groups
+        activities = []
+        priority_layer_groups = []
         weighted_activities = []
 
         if self.scenario_result:
             weighted_activities = self.scenario_result.scenario.weighted_activities
+            activities = self.scenario_result.scenario.activities
+            priority_layer_groups = self.scenario_result.scenario.priority_layer_groups
 
         scenario = Scenario(
             uuid=scenario_id,
@@ -1224,6 +1226,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if scenario_result:
             scenario_result.scenario = scenario
 
+        log(f"Scenario -- {scenario} \n")
+        log(f"scenario result {scenario_result}")
+
         self.post_analysis(scenario_result, None, None, None)
 
     def show_scenario_info(self):
@@ -1243,23 +1248,27 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 Qgis.Critical,
             )
             return
-        current_text = self.scenario_list.currentItem().data(QtCore.Qt.DisplayRole)
-        scenario_id = self.scenario_list.currentItem().data(QtCore.Qt.UserRole)
-        if current_text == "":
-            self.show_message(
-                tr("Could not fetch the selected scenario."),
-                Qgis.Critical,
-            )
-            return
+
+        texts = []
+        for item in self.scenario_list.selectedItems():
+            current_text = item.data(QtCore.Qt.DisplayRole)
+            texts.append(current_text)
+
         reply = QtWidgets.QMessageBox.warning(
             self,
             tr("QGIS CPLUS PLUGIN"),
-            tr('Remove the scenario "{}"?').format(current_text),
+            tr('Remove the selected scenario(s) "{}"?').format(texts),
             QtWidgets.QMessageBox.Yes,
             QtWidgets.QMessageBox.No,
         )
         if reply == QtWidgets.QMessageBox.Yes:
-            settings_manager.delete_scenario(scenario_id)
+            for item in self.scenario_list.selectedItems():
+                scenario_id = item.data(QtCore.Qt.UserRole)
+
+                if scenario_id == "":
+                    continue
+                settings_manager.delete_scenario(scenario_id)
+
             self.update_scenario_list()
 
     def prepare_message_bar(self):
@@ -1765,7 +1774,19 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 f"{SCENARIO_OUTPUT_LAYER_NAME}_"
                 f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
             )
-            scenario_result.output_layer_name = layer_name
+
+            if (
+                scenario_result.output_layer_name is not None
+                and scenario_result.output_layer_name is not ""
+            ):
+                layer_name = scenario_result.output_layer_name
+
+            if (
+                scenario_result.output_layer_name is None
+                or scenario_result.output_layer_name is ""
+            ):
+                scenario_result.output_layer_name = layer_name
+
             layer = QgsRasterLayer(layer_file, layer_name, QGIS_GDAL_PROVIDER)
             scenario_layer = qgis_instance.addMapLayer(layer)
 
