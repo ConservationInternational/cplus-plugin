@@ -307,19 +307,28 @@ class NcsPathwayItem(LayerComponentItem):
 class ActivityItem(LayerComponentItem):
     """Standard item for an activity object."""
 
-    def __init__(self, activity: Activity):
+    def __init__(self, activity: Activity, bold_text: bool = True):
         super().__init__(activity)
         self._activity = activity
 
-        font = self.font()
-        font.setBold(True)
-        self.setFont(font)
+        self.set_bold_font(bold_text)
 
         self._ncs_items = []
 
         # Remap pathway uuids so that there are no duplicate
         # pathways under each activity.
         self._uuid_remap = {}
+
+    def set_bold_font(self, bold: bool):
+        """Set the text to bold or normal.
+
+        :param bold: True to set the text font to be
+        bold, else False to normal.
+        :type bold: bool
+        """
+        font = self.font()
+        font.setBold(bold)
+        self.setFont(font)
 
     @property
     def activity(self) -> Activity:
@@ -808,6 +817,14 @@ class ComponentItemModel(QtGui.QStandardItemModel):
             if not item.user_defined:
                 item.setEnabled(state)
 
+    def disabled_items(self) -> typing.List[LayerComponentItem]:
+        """Gets the list of disabled items in the model.
+
+        :returns: Disabled items in the model.
+        :rtype: list
+        """
+        return [item for item in self.model_component_items() if not item.isEnabled()]
+
 
 ComponentItemModelType = typing.TypeVar(
     "ComponentItemModelType", bound=ComponentItemModel
@@ -967,6 +984,10 @@ class ActivityItemModel(ComponentItemModel):
     # Signal raised when the pathways have been updated (added or removed)
     activity_pathways_updated = QtCore.pyqtSignal(ActivityItem)
 
+    def __init__(self, *args, **kwargs):
+        self._load_pathways = kwargs.pop("load_pathways", True)
+        super().__init__(*args, **kwargs)
+
     def add_activity(self, activity: Activity, layer: QgsMapLayer = None) -> bool:
         """Add an activity object to the model.
 
@@ -987,7 +1008,15 @@ class ActivityItemModel(ComponentItemModel):
                 layer = activity.to_map_layer()
 
         activity_item = ActivityItem.create(activity)
+        if not self._load_pathways:
+            activity_item.set_bold_font(False)
+
         result = self.add_component_item(activity_item)
+
+        # No need to load any additional information if not showing pathways
+        if not self._load_pathways:
+            return result
+
         if layer:
             status = self.set_model_layer(activity_item, layer)
             if not status:

@@ -47,6 +47,7 @@ nav:
             - Processing: developer/api/core/api_tasks.md
             - Settings: developer/api/core/api_settings.md
             - Utilities: developer/api/core/api_utils.md
+            - Financials: developer/api/core/api_financials.md
             - Reports:
                 - Generator: developer/api/core/api_reports_generator.md
                 - Layout items: developer/api/core/api_reports_layout_items.md
@@ -62,6 +63,7 @@ nav:
             - Model base: developer/api/models/api_base.md
             - Helpers: developer/api/models/api_helpers.md
             - Report: developer/api/models/api_report.md
+            - Financials: developer/api/models/api_financials.md
             - Validation: developer/api/models/api_validation.md
           - GUI:
             - GUI main: developer/api/gui/api_gui_main.md
@@ -77,6 +79,10 @@ nav:
             - Priority layer dialog: developer/api/gui/api_priority_layer.md
             - Priority group: developer/api/gui/api_priority_group.md
             - Progress dialog: developer/api/gui/api_progress_dialog.md
+            - Financials:
+                - NPV PWL manager: developer/api/gui/api_npv_manager_dialog.md
+                - NPV progress dialog: developer/api/gui/api_npv_progress_dialog.md
+                - NPV view model: developer/api/gui/api_npv_financial_model.md
             - Validation:
                 - Inspector dialog: developer/api/gui/api_validation_inspector_dialog.md
                 - Progress dialog: developer/api/gui/api_validation_progress_dialog.md

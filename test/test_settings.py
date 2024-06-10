@@ -112,6 +112,7 @@ class ReportSettingsTest(unittest.TestCase):
         save_report_license = "license"
         save_stakeholders = "academia, cso"
         save_culture_policies = "customary land laws"
+        save_culture_considerations = "pastoralist community"
 
         # Sets the values in the GUI
         report_settings_widget.txt_organization.setText(save_organization)
@@ -124,6 +125,9 @@ class ReportSettingsTest(unittest.TestCase):
         report_settings_widget.txt_license.setText(save_report_license)
         report_settings_widget.txt_stakeholders.setPlainText(save_stakeholders)
         report_settings_widget.txt_policies.setPlainText(save_culture_policies)
+        report_settings_widget.txt_cultural_considerations.setPlainText(
+            save_culture_considerations
+        )
 
         # Saves the settings set in the GUI
         report_settings_widget.save_settings()
@@ -156,6 +160,11 @@ class ReportSettingsTest(unittest.TestCase):
         stakeholders = settings_manager.get_value(Settings.REPORT_STAKEHOLDERS)
         self.assertEqual(save_stakeholders, stakeholders)
 
+        culture_considerations = settings_manager.get_value(
+            Settings.REPORT_CULTURE_CONSIDERATIONS
+        )
+        self.assertEqual(save_culture_considerations, culture_considerations)
+
         culture_policies = settings_manager.get_value(Settings.REPORT_CULTURE_POLICIES)
         self.assertEqual(save_culture_policies, culture_policies)
 
@@ -175,6 +184,7 @@ class ReportSettingsTest(unittest.TestCase):
         save_report_license = "license 2"
         save_stakeholders = "academia, cso 2"
         save_culture_policies = "customary land laws"
+        save_culture_considerations = "pastoralist community"
 
         # Set values for testing
         settings_manager.set_value(Settings.REPORT_ORGANIZATION, save_organization)
@@ -188,6 +198,9 @@ class ReportSettingsTest(unittest.TestCase):
         settings_manager.set_value(Settings.REPORT_DISCLAIMER, save_disclaimer)
         settings_manager.set_value(Settings.REPORT_LICENSE, save_report_license)
         settings_manager.set_value(Settings.REPORT_STAKEHOLDERS, save_stakeholders)
+        settings_manager.set_value(
+            Settings.REPORT_CULTURE_CONSIDERATIONS, save_culture_considerations
+        )
         settings_manager.set_value(
             Settings.REPORT_CULTURE_POLICIES, save_culture_policies
         )
@@ -222,6 +235,11 @@ class ReportSettingsTest(unittest.TestCase):
 
         stakeholders = report_settings_widget.txt_stakeholders.toPlainText()
         self.assertEqual(save_stakeholders, stakeholders)
+
+        culture_considerations = (
+            report_settings_widget.txt_cultural_considerations.toPlainText()
+        )
+        self.assertEqual(save_culture_considerations, culture_considerations)
 
         culture_policies = report_settings_widget.txt_policies.toPlainText()
         self.assertEqual(save_culture_policies, culture_policies)

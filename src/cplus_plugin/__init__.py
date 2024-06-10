@@ -22,10 +22,25 @@
 """
 import os
 import sys
+import site
+from pathlib import Path
 
 LIB_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "lib"))
 if LIB_DIR not in sys.path:
     sys.path.append(LIB_DIR)
+
+
+def _add_at_front_of_path(d):
+    """add a folder at front of path"""
+    sys.path, remainder = sys.path[:1], sys.path[1:]
+    site.addsitedir(d)
+    sys.path.extend(remainder)
+
+
+# init ext-libs directory
+plugin_dir = os.path.dirname(os.path.realpath(__file__))
+# Put ext-libs folder near the front of the path (important on Linux)
+_add_at_front_of_path(str(Path(plugin_dir) / "ext-libs"))
 
 
 # noinspection PyPep8Naming
