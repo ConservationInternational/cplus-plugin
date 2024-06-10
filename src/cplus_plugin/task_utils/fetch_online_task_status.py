@@ -37,7 +37,18 @@ class FetchOnlineTaskStatusTask(QgsTask):
             lines = log_file.readlines()
             log_file.close()
 
-            with open(os.path.join(online_task["directory"], "processing.log"), 'a') as log_file:
+            curr_logs = []
+            with open(os.path.join(online_task["directory"], "processing.log"), 'r') as log_file:
+                curr_logs = log_file.readlines()
+
+            for idx, curr_log in enumerate(curr_logs):
+                if curr_log.endswith('INFO Task is sent to worker.'):
+                    curr_logs = curr_logs[:idx]
+                    break
+
+            with open(os.path.join(online_task["directory"], "processing.log"), 'w') as log_file:
+                for curr_log in curr_logs:
+                    log_file.write(curr_log)
                 for log_dict in logs:
                     if not lines[-1].endswith(f"{log_dict['severity']}{log_dict['log']}"):
                         log_file.write(

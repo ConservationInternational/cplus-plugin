@@ -51,6 +51,7 @@ from .progress_dialog import ProgressDialog, OnlineProgressDialog
 from ..trends_earth import auth
 from ..api.scenario_task_api_client import ScenarioAnalysisTaskApiClient
 from ..api.scenario_task_output_download import ScenarioTaskOutputDownload
+from ..api.scenario_task_view_status import ScenarioTaskViewStatus
 from ..conf import settings_manager, Settings
 from ..definitions.constants import (
     ACTIVITY_GROUP_LAYER_NAME,
@@ -157,49 +158,150 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         log('DOWNLOAD AND GENERATE REPORT')
 
         online_task = settings_manager.get_online_task()
+        if online_task:
+            self.analysis_scenario_name = online_task["name"]
+            self.analysis_scenario_description = online_task["task"]["scenario"]["name"]
+            self.analysis_extent = SpatialExtent(online_task["task"]["analysis_extent"])
+            self.analysis_activities = [
+                Activity.from_dict(activity) for activity in online_task["task"]["analysis_activities"]
+            ]
+            self.analysis_priority_layers_groups = online_task["task"]["analysis_priority_layers_groups"]
 
-        self.analysis_scenario_name = online_task["name"]
-        self.analysis_scenario_description = online_task["task"]["scenario"]["name"]
-        self.analysis_extent = SpatialExtent(online_task["task"]["analysis_extent"])
-        self.analysis_activities = [
-            Activity.from_dict(activity) for activity in online_task["task"]["analysis_activities"]
-        ]
-        self.analysis_priority_layers_groups = online_task["task"]["analysis_priority_layers_groups"]
+            scenario = Scenario(
+                uuid=online_task["uuid"],
+                name=self.analysis_scenario_name,
+                description=self.analysis_scenario_description,
+                extent=self.analysis_extent,
+                activities=self.analysis_activities,
+                weighted_activities=[],
+                priority_layer_groups=self.analysis_priority_layers_groups,
+            )
 
-        scenario = Scenario(
-            uuid=online_task["uuid"],
-            name=self.analysis_scenario_name,
-            description=self.analysis_scenario_description,
-            extent=self.analysis_extent,
-            activities=self.analysis_activities,
-            weighted_activities=[],
-            priority_layer_groups=self.analysis_priority_layers_groups,
+            self.processing_cancelled = False
+
+            progress_dialog = OnlineProgressDialog(
+                minimum=0,
+                maximum=100,
+                main_widget=self,
+                scenario_id=str(scenario.uuid),
+                scenario_name=self.analysis_scenario_name,
+            )
+            progress_dialog.analysis_cancelled.connect(
+                self.on_progress_dialog_cancelled
+            )
+            progress_dialog.run_dialog()
+
+            analysis_task = ScenarioTaskOutputDownload(
+                self.analysis_scenario_name,
+                self.analysis_scenario_description,
+                self.analysis_activities,
+                self.analysis_priority_layers_groups,
+                self.analysis_extent,
+                scenario,
+                online_task["directory"]
+            )
+
+            self.run_cplus_main_task(progress_dialog, scenario, analysis_task)
+
+    def on_view_status_button_clicked(self):
+        from ..models.base import Activity
+        log('View status button')
+
+        online_task = settings_manager.get_online_task()
+        if online_task:
+            self.analysis_scenario_name = online_task["task"]["scenario"]["name"]
+            self.analysis_scenario_description = online_task["task"]["scenario"]["description"]
+            self.analysis_extent = SpatialExtent(online_task["task"]["analysis_extent"])
+            self.analysis_activities = [
+                Activity.from_dict(activity) for activity in online_task["task"]["analysis_activities"]
+            ]
+            self.analysis_priority_layers_groups = online_task["task"]["analysis_priority_layers_groups"]
+
+            scenario = Scenario(
+                uuid=online_task["uuid"],
+                name=self.analysis_scenario_name,
+                description=self.analysis_scenario_description,
+                extent=self.analysis_extent,
+                activities=self.analysis_activities,
+                weighted_activities=[],
+                priority_layer_groups=self.analysis_priority_layers_groups,
+            )
+
+            self.processing_cancelled = False
+
+            progress_dialog = OnlineProgressDialog(
+                minimum=0,
+                maximum=100,
+                main_widget=self,
+                scenario_id=str(scenario.uuid),
+                scenario_name=self.analysis_scenario_name,
+            )
+            progress_dialog.analysis_cancelled.connect(
+                self.on_progress_dialog_cancelled
+            )
+            progress_dialog.run_dialog()
+
+            analysis_task = ScenarioTaskViewStatus(
+                self.analysis_scenario_name,
+                self.analysis_scenario_description,
+                self.analysis_activities,
+                self.analysis_priority_layers_groups,
+                self.analysis_extent,
+                scenario,
+                online_task["directory"]
+            )
+
+            self.run_cplus_main_task(progress_dialog, scenario, analysis_task)
+
+    def on_online_task_completed(self):
+        online_task = settings_manager.get_online_task()
+        from qgis.PyQt.QtWidgets import QPushButton
+
+        widget = self.message_bar.createMessage(
+            tr(f"Task {online_task['name']} has completed successfully."),
+        )
+        button = QPushButton(widget)
+        button.setText("Generate Report")
+        button.pressed.connect(self.on_generate_report_button_clicked)
+        widget.layout().addWidget(button)
+        self.update_message_bar(widget)
+
+    def fetch_online_task_status(self):
+        self.task = FetchOnlineTaskStatusTask(self)
+        self.task.task_completed.connect(self.on_online_task_completed)
+        QgsApplication.taskManager().addTask(self.task)
+
+    def outputs_options_changed(self):
+        """
+        Handles selected outputs changes
+        """
+
+        settings_manager.set_value(
+            Settings.NCS_WITH_CARBON, self.ncs_with_carbon.isChecked()
+        )
+        settings_manager.set_value(
+            Settings.LANDUSE_PROJECT, self.landuse_project.isChecked()
+        )
+        settings_manager.set_value(
+            Settings.LANDUSE_NORMALIZED, self.landuse_normalized.isChecked()
+        )
+        settings_manager.set_value(
+            Settings.LANDUSE_WEIGHTED, self.landuse_weighted.isChecked()
+        )
+        settings_manager.set_value(
+            Settings.HIGHEST_POSITION, self.highest_position.isChecked()
         )
 
-        self.processing_cancelled = False
+    def processing_options_changed(self):
+        """
+        Handles selected processing changes
+        """
 
-        progress_dialog = OnlineProgressDialog(
-            minimum=0,
-            maximum=100,
-            main_widget=self,
-            scenario_id=str(scenario.uuid),
-            scenario_name=self.analysis_scenario_name,
-        )
-        progress_dialog.analysis_cancelled.connect(
-            self.on_progress_dialog_cancelled
-        )
-        progress_dialog.run_dialog()
-
-        analysis_task = ScenarioTaskOutputDownload(
-            self.analysis_scenario_name,
-            self.analysis_scenario_description,
-            self.analysis_activities,
-            self.analysis_priority_layers_groups,
-            self.analysis_extent,
-            scenario,
-            online_task["directory"]
+        settings_manager.set_value(
+            Settings.PROCESSING_TYPE, self.processing_type.isChecked()
         )
 
+    def run_cplus_main_task(self, progress_dialog, scenario, analysis_task):
         progress_changed = partial(self.update_progress_bar, progress_dialog)
         analysis_task.custom_progress_changed.connect(progress_changed)
 
@@ -240,76 +342,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         analysis_task.taskTerminated.connect(analysis_terminated)
 
         QgsApplication.taskManager().addTask(analysis_task)
-
-    def on_online_task_completed(self):
-        online_task = settings_manager.get_online_task()
-        from qgis.PyQt.QtWidgets import QPushButton
-
-        widget = self.message_bar.createMessage(
-            tr(f"Task {online_task['name']} has completed successfully."),
-        )
-        button = QPushButton(widget)
-        button.setText("Generate Report")
-        button.pressed.connect(self.on_generate_report_button_clicked)
-        widget.layout().addWidget(button)
-        # self.show_message(
-        #     tr(f"Task {online_task['name']} has been completed"),
-        #     Qgis.Info,
-        #     5
-        # )
-        # self.show_message(
-        #     tr(f"Downloading output for task {online_task['name']}"),
-        #     Qgis.Info,
-        #     0
-        # )
-        self.update_message_bar(widget)
-
-    def fetch_online_task_status(self):
-
-        # Issue:
-        # Showing message in message bar from FetchOnlineTaskStatusTask is causing
-        # the message layout to be broken.
-        # Showing message like this could work.
-        # The issue is, if I check the task status here, it could slow/delay
-        # Plugin load. That's why, I used FetchOnlineTaskStatusTask to do the task in backgrund.
-        # self.show_message(tr(f"Task Avoided Wetland Conversion has been completed"), Qgis.Info)
-        # self.task = FetchOnlineTaskStatusTask(self)
-        # self.task.task_completed.connect(self.on_online_task_completed)
-        # QgsApplication.taskManager().addTask(self.task)
-
-        self.task = FetchOnlineTaskStatusTask(self)
-        self.task.task_completed.connect(self.on_online_task_completed)
-        QgsApplication.taskManager().addTask(self.task)
-
-    def outputs_options_changed(self):
-        """
-        Handles selected outputs changes
-        """
-
-        settings_manager.set_value(
-            Settings.NCS_WITH_CARBON, self.ncs_with_carbon.isChecked()
-        )
-        settings_manager.set_value(
-            Settings.LANDUSE_PROJECT, self.landuse_project.isChecked()
-        )
-        settings_manager.set_value(
-            Settings.LANDUSE_NORMALIZED, self.landuse_normalized.isChecked()
-        )
-        settings_manager.set_value(
-            Settings.LANDUSE_WEIGHTED, self.landuse_weighted.isChecked()
-        )
-        settings_manager.set_value(
-            Settings.HIGHEST_POSITION, self.highest_position.isChecked()
-        )
-
-    def processing_options_changed(self):
-        """
-        Handles selected processing changes
-        """
-
-        settings_manager.set_value(
-            Settings.PROCESSING_TYPE, self.processing_type.isChecked()
-        )
 
     def load_layer_options(self):
         """
@@ -488,6 +520,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.load_scenario_btn.clicked.connect(self.load_scenario)
         self.info_scenario_btn.clicked.connect(self.show_scenario_info)
         self.remove_scenario_btn.clicked.connect(self.remove_scenario)
+
+        self.view_status_btn.clicked.connect(self.on_view_status_button_clicked)
 
     def priority_groups_update(self, target_item, selected_items):
         """Updates the priority groups list item with the passed
@@ -1444,46 +1478,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     scenario,
                 )
 
-            progress_changed = partial(self.update_progress_bar, progress_dialog)
-            analysis_task.custom_progress_changed.connect(progress_changed)
-
-            status_message_changed = partial(
-                self.update_progress_dialog, progress_dialog
-            )
-
-            analysis_task.status_message_changed.connect(status_message_changed)
-
-            analysis_task.info_message_changed.connect(self.show_message)
-
-            self.current_analysis_task = analysis_task
-
-            progress_dialog.analysis_task = analysis_task
-            progress_dialog.scenario_id = str(scenario.uuid)
-
-            report_running = partial(self.on_report_running, progress_dialog)
-            report_error = partial(self.on_report_error, progress_dialog)
-            report_finished = partial(self.on_report_finished, progress_dialog)
-
-            # Report manager
-            scenario_report_manager = report_manager
-
-            scenario_report_manager.generate_started.connect(report_running)
-            scenario_report_manager.generate_error.connect(report_error)
-            scenario_report_manager.generate_completed.connect(report_finished)
-
-            analysis_complete = partial(
-                self.analysis_complete,
-                analysis_task,
-                scenario_report_manager,
-                progress_dialog,
-            )
-
-            analysis_task.taskCompleted.connect(analysis_complete)
-
-            analysis_terminated = partial(self.task_terminated, analysis_task)
-            analysis_task.taskTerminated.connect(analysis_terminated)
-
-            QgsApplication.taskManager().addTask(analysis_task)
+            self.run_cplus_main_task(progress_dialog, scenario, analysis_task)
 
         except Exception as err:
             self.show_message(
@@ -2063,6 +2058,21 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             else:
                 self.message_bar.clearWidgets()
+
+        if index == 3:
+            online_task = settings_manager.get_online_task()
+            if online_task:
+                self.view_status_btn.setEnabled(True)
+                self.processing_type.setEnabled(False)
+                self.processing_type.setChecked(False)
+                self.processing_type.setToolTip(
+                    'Cannot choose online processing due to user having active online processing'
+                )
+            else:
+                self.view_status_btn.setEnabled(False)
+                self.processing_type.setToolTip(
+                    'Processing options'
+                )
 
     def open_settings(self):
         """Options the CPLUS settings in the QGIS options dialog."""

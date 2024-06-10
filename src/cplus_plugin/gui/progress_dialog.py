@@ -249,10 +249,12 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
 
         super().reject()
 
-    def stop_processing(self) -> None:
+    def stop_processing(self, hide=False) -> None:
         """The user cancelled the processing."""
-
-        self.change_status_message(tr("Processing has been cancelled by the user"))
+        if hide:
+            self.change_status_message(tr("Processing has been minimized by the user"))
+        else:
+            self.change_status_message(tr("Processing has been cancelled by the user"))
 
         # Stops the processing task
         if self.main_widget:
@@ -313,7 +315,7 @@ class OnlineProgressDialog(Ui_DlgOnlineProgress, ProgressDialog):
         if self.analysis_running:
             self.analysis_task.hide_task = True
             # If cancelled is clicked
-            self.stop_processing()
+            self.stop_processing(hide=True)
             try:
                 if self.analysis_task:
                     self.analysis_task.processing_cancelled = True
@@ -323,6 +325,4 @@ class OnlineProgressDialog(Ui_DlgOnlineProgress, ProgressDialog):
                 # scenario analyis is done, this is the only way to find
                 # out if the analysis has been completed.
                 pass
-        else:
-            # If close has been clicked. In this case processing were already stopped
-            super().close()
+        super().close()
