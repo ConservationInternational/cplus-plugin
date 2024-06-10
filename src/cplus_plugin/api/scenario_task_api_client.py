@@ -207,7 +207,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         :rtype: List
         """
 
-        self.__update_scenario_status(
+        self._update_scenario_status(
             {
                 "progress_text": f"Uploading layers with concurrent request",
                 "progress": 0,
