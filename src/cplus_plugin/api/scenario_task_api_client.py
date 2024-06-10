@@ -557,9 +557,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             "name": self.scenario.name,
             "directory": self.scenario_directory,
             "created_at": datetime.datetime.now().isoformat(),
-            "task": todict(self)
+            "task": todict(self),
         }
-        settings_manager.save_online_task(json.loads(json.dumps(payload, cls=CustomJsonEncoder)))
+        settings_manager.save_online_task(
+            json.loads(json.dumps(payload, cls=CustomJsonEncoder))
+        )
 
     def __execute_scenario_analysis(self):
         """
@@ -593,7 +595,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
 
         if self.scenario_status == JOB_COMPLETED_STATUS:
             self._retrieve_scenario_outputs(scenario_uuid)
-            self.log_message('JOB COMPLETED STATUS')
+            self.log_message("JOB COMPLETED STATUS")
             settings_manager.delete_online_task()
         elif self.scenario_status == JOB_STOPPED_STATUS:
             scenario_error = status_response.get("errors", "Unknown error")

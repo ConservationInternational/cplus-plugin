@@ -89,7 +89,15 @@ from ..resources import *
 from ..task_utils.fetch_online_task_status import FetchOnlineTaskStatusTask
 from ..tasks import ScenarioAnalysisTask
 from ..trends_earth import auth
-from ..utils import open_documentation, tr, log, FileUtils, write_to_file, CustomJsonEncoder, todict
+from ..utils import (
+    open_documentation,
+    tr,
+    log,
+    FileUtils,
+    write_to_file,
+    CustomJsonEncoder,
+    todict,
+)
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/qgis_cplus_main_dockwidget.ui")
@@ -165,17 +173,23 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def on_generate_report_button_clicked(self):
         from ..models.base import Activity
-        log('DOWNLOAD AND GENERATE REPORT')
+
+        log("DOWNLOAD AND GENERATE REPORT")
 
         online_task = settings_manager.get_online_task()
         if online_task:
             self.analysis_scenario_name = online_task["name"]
             self.analysis_scenario_description = online_task["task"]["scenario"]["name"]
-            self.analysis_extent = SpatialExtent(bbox=online_task["task"]["analysis_extent"]["bbox"])
+            self.analysis_extent = SpatialExtent(
+                bbox=online_task["task"]["analysis_extent"]["bbox"]
+            )
             self.analysis_activities = [
-                Activity.from_dict(activity) for activity in online_task["task"]["analysis_activities"]
+                Activity.from_dict(activity)
+                for activity in online_task["task"]["analysis_activities"]
             ]
-            self.analysis_priority_layers_groups = online_task["task"]["analysis_priority_layers_groups"]
+            self.analysis_priority_layers_groups = online_task["task"][
+                "analysis_priority_layers_groups"
+            ]
 
             scenario = Scenario(
                 uuid=online_task["uuid"],
@@ -208,7 +222,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.analysis_priority_layers_groups,
                 self.analysis_extent,
                 scenario,
-                online_task["directory"]
+                online_task["directory"],
             )
             analysis_task.scenario_api_uuid = online_task["online_uuid"]
 
@@ -216,17 +230,25 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def on_view_status_button_clicked(self):
         from ..models.base import Activity
-        log('View status button')
+
+        log("View status button")
 
         online_task = settings_manager.get_online_task()
         if online_task:
             self.analysis_scenario_name = online_task["task"]["scenario"]["name"]
-            self.analysis_scenario_description = online_task["task"]["scenario"]["description"]
-            self.analysis_extent = SpatialExtent(bbox=online_task["task"]["analysis_extent"]["bbox"])
-            self.analysis_activities = [
-                Activity.from_dict(activity) for activity in online_task["task"]["analysis_activities"]
+            self.analysis_scenario_description = online_task["task"]["scenario"][
+                "description"
             ]
-            self.analysis_priority_layers_groups = online_task["task"]["analysis_priority_layers_groups"]
+            self.analysis_extent = SpatialExtent(
+                bbox=online_task["task"]["analysis_extent"]["bbox"]
+            )
+            self.analysis_activities = [
+                Activity.from_dict(activity)
+                for activity in online_task["task"]["analysis_activities"]
+            ]
+            self.analysis_priority_layers_groups = online_task["task"][
+                "analysis_priority_layers_groups"
+            ]
 
             scenario = Scenario(
                 uuid=online_task["uuid"],
@@ -259,7 +281,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.analysis_priority_layers_groups,
                 self.analysis_extent,
                 scenario,
-                online_task["directory"]
+                online_task["directory"],
             )
             analysis_task.scenario_api_uuid = online_task["online_uuid"]
 
@@ -317,9 +339,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         progress_changed = partial(self.update_progress_bar, progress_dialog)
         analysis_task.custom_progress_changed.connect(progress_changed)
 
-        status_message_changed = partial(
-            self.update_progress_dialog, progress_dialog
-        )
+        status_message_changed = partial(self.update_progress_dialog, progress_dialog)
 
         analysis_task.status_message_changed.connect(status_message_changed)
 
@@ -2237,14 +2257,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.processing_type.setEnabled(False)
                 self.processing_type.setChecked(False)
                 self.processing_type.setToolTip(
-                    'Cannot choose online processing due to user having active online processing'
+                    "Cannot choose online processing due to user having active online processing"
                 )
             else:
                 self.view_status_btn.setEnabled(False)
                 self.processing_type.setEnabled(True)
-                self.processing_type.setToolTip(
-                    'Processing options'
-                )
+                self.processing_type.setToolTip("Processing options")
 
     def open_settings(self):
         """Options the CPLUS settings in the QGIS options dialog."""

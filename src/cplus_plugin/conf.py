@@ -1330,7 +1330,6 @@ class SettingsManager(QtCore.QObject):
         npv_collection_str = json.dumps(npv_collection_dict)
         self.set_value(NPV_COLLECTION_PROPERTY, npv_collection_str)
 
-
     def save_online_task(self, task_detail):
         """Save the passed scenario settings into the plugin settings
 

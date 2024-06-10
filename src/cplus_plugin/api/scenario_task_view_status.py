@@ -32,7 +32,7 @@ class ScenarioTaskViewStatus(ScenarioAnalysisTaskApiClient):
         analysis_priority_layers_groups,
         analysis_extent,
         scenario,
-        scenario_directory
+        scenario_directory,
     ):
         scenario_uuid = scenario.uuid
         super().__init__(
@@ -41,7 +41,7 @@ class ScenarioTaskViewStatus(ScenarioAnalysisTaskApiClient):
             analysis_activities,
             analysis_priority_layers_groups,
             analysis_extent,
-            scenario
+            scenario,
         )
         self.status_pooling = None
         self.logs = []
@@ -66,7 +66,9 @@ class ScenarioTaskViewStatus(ScenarioAnalysisTaskApiClient):
 
         # if success, fetch output list
         self.scenario_status = status_response.get("status", "")
-        self.new_scenario_detail = self.request.fetch_scenario_detail(self.scenario_api_uuid)
+        self.new_scenario_detail = self.request.fetch_scenario_detail(
+            self.scenario_api_uuid
+        )
 
         if self.scenario_status == JOB_COMPLETED_STATUS:
             self._retrieve_scenario_outputs(self.scenario_api_uuid)

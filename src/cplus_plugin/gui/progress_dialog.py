@@ -285,7 +285,6 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
 
 
 class OnlineProgressDialog(Ui_DlgOnlineProgress, ProgressDialog):
-
     def __init__(
         self,
         message=None,
@@ -296,7 +295,9 @@ class OnlineProgressDialog(Ui_DlgOnlineProgress, ProgressDialog):
         scenario_id=None,
         scenario_name=None,
     ):
-        super().__init__(message, minimum, maximum, main_widget, parent, scenario_id, scenario_name)
+        super().__init__(
+            message, minimum, maximum, main_widget, parent, scenario_id, scenario_name
+        )
         # Connections
         self.btn_hide.clicked.connect(self.hide_clicked)
 
@@ -311,7 +312,7 @@ class OnlineProgressDialog(Ui_DlgOnlineProgress, ProgressDialog):
         self.main_widget.view_status_btn.setEnabled(True)
         self.main_widget.processing_type.setEnabled(False)
         self.main_widget.processing_type.setToolTip(
-            'Cannot choose online processing due to user having active online processing'
+            "Cannot choose online processing due to user having active online processing"
         )
 
         self.cancel_reporting()

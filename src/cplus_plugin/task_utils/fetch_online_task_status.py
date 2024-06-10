@@ -1,12 +1,12 @@
 import os
 
 from PyQt5.QtCore import pyqtSignal
-from qgis.core import (QgsTask)
+from qgis.core import QgsTask
 
 from ..api.request import CplusApiRequest
 from ..conf import settings_manager
 
-MESSAGE_CATEGORY = 'My subclass tasks'
+MESSAGE_CATEGORY = "My subclass tasks"
 
 
 class FetchOnlineTaskStatusTask(QgsTask):
@@ -31,19 +31,25 @@ class FetchOnlineTaskStatusTask(QgsTask):
             log_file.close()
 
             curr_logs = []
-            with open(os.path.join(online_task["directory"], "processing.log"), 'r') as log_file:
+            with open(
+                os.path.join(online_task["directory"], "processing.log"), "r"
+            ) as log_file:
                 curr_logs = log_file.readlines()
 
             for idx, curr_log in enumerate(curr_logs):
-                if curr_log.endswith('INFO Task is sent to worker.'):
+                if curr_log.endswith("INFO Task is sent to worker."):
                     curr_logs = curr_logs[:idx]
                     break
 
-            with open(os.path.join(online_task["directory"], "processing.log"), 'w') as log_file:
+            with open(
+                os.path.join(online_task["directory"], "processing.log"), "w"
+            ) as log_file:
                 for curr_log in curr_logs:
                     log_file.write(curr_log)
                 for log_dict in logs:
-                    if not lines[-1].endswith(f"{log_dict['severity']}{log_dict['log']}"):
+                    if not lines[-1].endswith(
+                        f"{log_dict['severity']}{log_dict['log']}"
+                    ):
                         log_file.write(
                             f"\n{log_dict['date_time']} "
                             f"{log_dict['severity']} "

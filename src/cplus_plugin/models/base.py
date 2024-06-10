@@ -335,8 +335,7 @@ class Activity(LayerModelComponent):
 
     @classmethod
     def from_dict(cls, activity_dict: typing.Dict):
-        """Create an Activity object from Activity dict.
-        """
+        """Create an Activity object from Activity dict."""
         activity_dict["pathways"] = [
             NcsPathway(**pathway) for pathway in activity_dict["pathways"]
         ]
