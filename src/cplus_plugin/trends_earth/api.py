@@ -15,8 +15,6 @@ import io
 import json
 from urllib.parse import quote_plus
 
-# import backoff
-
 from qgis.core import (
     QgsTask,
     QgsNetworkAccessManager,
