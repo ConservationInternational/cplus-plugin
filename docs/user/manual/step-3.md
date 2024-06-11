@@ -75,6 +75,8 @@ The primary purpose of the NPV Tool is to help users prioritise activities by pr
 
 ![NPV directory](./img/step3-7.png)
 
+9. **Cancel Button:** Click on the cancel button to cancel the adding NPV.
+
 ## Priority Weighted Layers Editor dialog
 
 ![UI Priority layer dialog](img/manual-priority-layer-dialog.png)
