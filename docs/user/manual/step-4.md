@@ -1,4 +1,4 @@
-# Step4: Select outputs and precessing options
+# Step4: Select outputs and processing options
 
 1. **Step 4:** `Step 4` guides the user to select the outputs to be saved into the file system for report generation. By clicking on the `Step 4` option, the user will navigate to the section dedicated to producing outputs. Here, the user finds a list of available outputs, each representing data that can be included in the report.
 
