@@ -26,6 +26,8 @@ This step is crucial for tailoring the outputs to include only the necessary inf
 
 3. **Processing Options**
 
+    >NOTE: Users need to register and login with a Trends.Earth account to use the online API for processing with CPLUS.
+
     The user can also choose the processing option, deciding whether they want to process online or offline.
 
     ![Processing option](./img/step-4-2.png)
