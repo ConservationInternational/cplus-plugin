@@ -19,6 +19,7 @@ class NpvParameters:
     normalized_npv: float = 0.0
     # Each tuple contains 3 elements i.e. revenue, costs and discount rates
     yearly_rates: typing.List[tuple] = dataclasses.field(default_factory=list)
+    manual_npv: bool = False
 
     def __post_init__(self):
         """Set empty yearly rates for consistency."""

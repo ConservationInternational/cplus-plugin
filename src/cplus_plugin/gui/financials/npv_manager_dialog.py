@@ -19,6 +19,7 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 from qgis.PyQt.uic import loadUiType
 
 from ..component_item_model import ActivityItemModel
+from ..components.number_line_edit import NumberFormattableLineEdit
 from ...conf import settings_manager
 from ...definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
 from ...models.base import Activity
@@ -27,12 +28,44 @@ from .npv_financial_model import NpvFinancialModel
 from ...lib.financials import compute_discount_value
 from ...utils import FileUtils, open_documentation, tr
 
+
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../../ui/financial_pwl_dialog.ui")
 )
 
 
-class FinancialValueItemDelegate(QtWidgets.QStyledItemDelegate):
+DEFAULT_DECIMAL_PLACES = 2
+
+
+class DisplayValueFormatterItemDelegate(QtWidgets.QStyledItemDelegate):
+    """
+    Delegate for formatting numeric values using thousand comma separator,
+    number of decimal places etc.
+    """
+
+    def displayText(self, value: float, locale: QtCore.QLocale) -> str:
+        """Format the value to incorporate thousand comma separator.
+
+        :param value: Value of the display role provided by the model.
+        :type value: float
+
+        :param locale: Locale for the value in the display role.
+        :type locale: QtCore.QLocale
+
+        :returns: Formatted value of the display role data.
+        :rtype: str
+        """
+        if value is None:
+            return ""
+
+        formatter = QgsBasicNumericFormat()
+        formatter.setShowThousandsSeparator(True)
+        formatter.setNumberDecimalPlaces(DEFAULT_DECIMAL_PLACES)
+
+        return formatter.formatDouble(float(value), QgsNumericFormatContext())
+
+
+class FinancialValueItemDelegate(DisplayValueFormatterItemDelegate):
     """
     Delegate for ensuring only numbers are specified in financial value
     fields.
@@ -82,27 +115,6 @@ class FinancialValueItemDelegate(QtWidgets.QStyledItemDelegate):
         else:
             widget.setText(str(value))
 
-    def displayText(self, value: float, locale: QtCore.QLocale) -> str:
-        """Format the value to incorporate thousand comma separator.
-
-        :param value: Value of the display role provided by the model.
-        :type value: float
-
-        :param locale: Locale for the value in the display role.
-        :type locale: QtCore.QLocale
-
-        :returns: Formatted value of the display role data.
-        :rtype: str
-        """
-        if value is None:
-            return ""
-
-        formatter = QgsBasicNumericFormat()
-        formatter.setShowThousandsSeparator(True)
-        formatter.setNumberDecimalPlaces(2)
-
-        return formatter.formatDouble(float(value), QgsNumericFormatContext())
-
     def setModelData(
         self,
         widget: QtWidgets.QWidget,
@@ -150,40 +162,12 @@ class FinancialValueItemDelegate(QtWidgets.QStyledItemDelegate):
         widget.setGeometry(option.rect)
 
 
-class ValueFormatterItemDelegate(QtWidgets.QStyledItemDelegate):
-    """
-    Delegate for formatting numeric values using thousand comma separator,
-    number of decimal places etc.
-    """
-
-    def displayText(self, value: float, locale: QtCore.QLocale) -> str:
-        """Format the value to incorporate thousand comma separator.
-
-        :param value: Value of the display role provided by the model.
-        :type value: float
-
-        :param locale: Locale for the value in the display role.
-        :type locale: QtCore.QLocale
-
-        :returns: Formatted value of the display role data.
-        :rtype: str
-        """
-        if value is None:
-            return ""
-
-        formatter = QgsBasicNumericFormat()
-        formatter.setShowThousandsSeparator(True)
-        formatter.setNumberDecimalPlaces(2)
-
-        return formatter.formatDouble(float(value), QgsNumericFormatContext())
-
-
 class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
     """Dialog for managing NPV priority weighting layers for activities."""
 
     DEFAULT_YEARS = 5
     DEFAULT_DISCOUNT_RATE = 0.0
-    NUM_DECIMAL_PLACES = 2
+    NUM_DECIMAL_PLACES = DEFAULT_DECIMAL_PLACES
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -193,6 +177,10 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
         self._message_bar = QgsMessageBar()
         self.vl_notification.addWidget(self._message_bar)
+
+        self.txt_npv = NumberFormattableLineEdit()
+        self.txt_npv.setReadOnly(True)
+        self.npv_layout.addWidget(self.txt_npv)
 
         # Initialize UI
         help_icon = FileUtils.get_icon("mActionHelpContents_green.svg")
@@ -230,7 +218,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         self.tv_revenue_costs.setModel(self._npv_model)
         self._revenue_delegate = FinancialValueItemDelegate()
         self._costs_delegate = FinancialValueItemDelegate()
-        self._discounted_value_delegate = ValueFormatterItemDelegate()
+        self._discounted_value_delegate = DisplayValueFormatterItemDelegate()
         self.tv_revenue_costs.setItemDelegateForColumn(1, self._revenue_delegate)
         self.tv_revenue_costs.setItemDelegateForColumn(2, self._costs_delegate)
         self.tv_revenue_costs.setItemDelegateForColumn(
@@ -266,6 +254,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
                 )
 
         self.gp_npv_pwl.toggled.connect(self._on_activity_npv_groupbox_toggled)
+        self.cb_manual_npv.toggled.connect(self._on_manual_npv_toggled)
 
     def open_help(self, activated: bool):
         """Opens the user documentation for the plugin in a browser."""
@@ -409,9 +398,9 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         # Format display
         formatter = QgsBasicNumericFormat()
         formatter.setShowThousandsSeparator(True)
-        formatter.setNumberDecimalPlaces(2)
+        formatter.setNumberDecimalPlaces(self.NUM_DECIMAL_PLACES)
 
-        self.txt_npv.setText(formatter.formatDouble(npv, QgsNumericFormatContext()))
+        self.txt_npv.setText(str(npv))
 
     def on_years_removed(self, index: QtCore.QModelIndex, start: int, end: int):
         """Slot raised when the year rows have been removed.
@@ -430,7 +419,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
     def copy_npv(self):
         """Copy NPV to the clipboard."""
-        QgsApplication.instance().clipboard().setText(self.txt_npv.text())
+        QgsApplication.instance().clipboard().setText(self.txt_npv.value)
 
     def is_valid(self) -> bool:
         """Verifies if the input data is valid.
@@ -704,3 +693,28 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
                 # Update NPV normalization range
                 if self.cb_computed_npv.isChecked():
                     self._compute_min_max_range()
+
+    def _on_manual_npv_toggled(self, checked: bool):
+        """Slot raised to enable/disable manual NPV value.
+
+        :param checked: True if the manual NPV is enabled else False.
+        :type checked: bool
+        """
+        if checked:
+            self.txt_npv.setReadOnly(False)
+            self.txt_npv.setFocus()
+            self.enable_npv_parameters_widgets(False)
+        else:
+            self.txt_npv.setReadOnly(True)
+            self.enable_npv_parameters_widgets(True)
+            self.compute_npv()
+
+    def enable_npv_parameters_widgets(self, enable: bool):
+        """Enable or disable the UI widgets for specifying NPV parameters.
+
+        :param enable: True to enable the widgets, else False to disable.
+        :type enable: bool
+        """
+        self.sb_num_years.setEnabled(enable)
+        self.sb_discount.setEnabled(enable)
+        self.tv_revenue_costs.setEnabled(enable)
