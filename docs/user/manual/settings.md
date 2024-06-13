@@ -152,4 +152,3 @@ To go to the settings the user can click on the plugin toolbar icon to reveal th
     
 - Click on `Cancel` will close the dialog without applying any changes.
 
-4. **Logs:** The logs tab displays all messages that have been generated.
