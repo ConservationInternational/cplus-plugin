@@ -27,6 +27,7 @@ from ..definitions.constants import (
     NAME_ATTRIBUTE,
     DESCRIPTION_ATTRIBUTE,
     LAYER_TYPE_ATTRIBUTE,
+    MANUAL_NPV_ATTRIBUTE,
     NPV_MAPPINGS_ATTRIBUTE,
     MAX_VALUE_ATTRIBUTE,
     MIN_VALUE_ATTRIBUTE,
@@ -452,6 +453,7 @@ def activity_npv_to_dict(activity_npv: ActivityNpv) -> dict:
         ABSOLUTE_NPV_ATTRIBUTE: activity_npv.params.absolute_npv,
         NORMALIZED_NPV_ATTRIBUTE: activity_npv.params.normalized_npv,
         YEARLY_RATES_ATTRIBUTE: activity_npv.params.yearly_rates,
+        MANUAL_NPV_ATTRIBUTE: activity_npv.params.manual_npv,
         ENABLED_ATTRIBUTE: activity_npv.enabled,
         ACTIVITY_IDENTIFIER_PROPERTY: activity_npv.activity_id,
     }
@@ -484,6 +486,9 @@ def create_activity_npv(activity_npv_dict: dict) -> typing.Optional[ActivityNpv]
 
     if NORMALIZED_NPV_ATTRIBUTE in activity_npv_dict:
         args.append(activity_npv_dict[NORMALIZED_NPV_ATTRIBUTE])
+
+    if MANUAL_NPV_ATTRIBUTE in activity_npv_dict:
+        args.append(activity_npv_dict[MANUAL_NPV_ATTRIBUTE])
 
     if len(args) < 4:
         return None

@@ -17,6 +17,10 @@ class NumberFormattableLineEdit(QtWidgets.QLineEdit):
 
     DISPLAY_DECIMAL_PLACES = 2
 
+    # Signal emitted after value has been updated - contains None or
+    # a float value
+    value_updated = QtCore.pyqtSignal(object)
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -103,6 +107,8 @@ class NumberFormattableLineEdit(QtWidgets.QLineEdit):
             )
             super().setText(display_value)
 
+        self.value_updated.emit(self._value)
+
     def _on_editing_finished(self):
         """Slot raised when enter/return is pressed or control loses focus.
 
@@ -151,6 +157,9 @@ class NumberFormattableLineEdit(QtWidgets.QLineEdit):
         super().focusInEvent(event)
 
         if self.isReadOnly():
+            return
+
+        if self._value is None:
             return
 
         # Display the absolute value without formatting.

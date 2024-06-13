@@ -43,6 +43,7 @@ MAX_VALUE_ATTRIBUTE = "maximum_value"
 COMPUTED_ATTRIBUTE = "use_computed"
 NPV_MAPPINGS_ATTRIBUTE = "mappings"
 REMOVE_EXISTING_ATTRIBUTE = "remove_existing"
+MANUAL_NPV_ATTRIBUTE = "manual_npv"
 
 ACTIVITY_IDENTIFIER_PROPERTY = "activity_identifier"
 NPV_COLLECTION_PROPERTY = "npv_collection"
