@@ -192,7 +192,17 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
         ok_button = self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
         ok_button.setText(tr("Update"))
-        self.buttonBox.accepted.connect(self._on_accepted)
+        # Prevent button from being triggered when Enter is pressed
+        # and use dummy interceptor below
+        ok_button.setAutoDefault(False)
+        ok_button.setDefault(False)
+        ok_button.clicked.connect(self._on_accepted)
+
+        # Workaround for intercepting Enter triggers thus preventing the
+        # dialog from being accepted. Not ideal but Qt issue
+        self._enter_interceptor_btn.setAutoDefault(True)
+        self._enter_interceptor_btn.setDefault(True)
+        self._enter_interceptor_btn.setVisible(False)
 
         self._npv = None
 
