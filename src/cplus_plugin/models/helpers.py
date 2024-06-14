@@ -481,24 +481,24 @@ def create_activity_npv(activity_npv_dict: dict) -> typing.Optional[ActivityNpv]
     if DISCOUNT_ATTRIBUTE in activity_npv_dict:
         args.append(activity_npv_dict[DISCOUNT_ATTRIBUTE])
 
-    if ABSOLUTE_NPV_ATTRIBUTE in activity_npv_dict:
-        args.append(activity_npv_dict[ABSOLUTE_NPV_ATTRIBUTE])
-
-    if NORMALIZED_NPV_ATTRIBUTE in activity_npv_dict:
-        args.append(activity_npv_dict[NORMALIZED_NPV_ATTRIBUTE])
-
-    if MANUAL_NPV_ATTRIBUTE in activity_npv_dict:
-        args.append(activity_npv_dict[MANUAL_NPV_ATTRIBUTE])
-
-    if len(args) < 4:
+    if len(args) < 2:
         return None
 
-    yearly_rates = []
-    if YEARLY_RATES_ATTRIBUTE in activity_npv_dict:
-        yearly_rates = activity_npv_dict[YEARLY_RATES_ATTRIBUTE]
+    kwargs = {}
 
-    npv_params = NpvParameters(*args)
-    npv_params.yearly_rates = yearly_rates
+    if ABSOLUTE_NPV_ATTRIBUTE in activity_npv_dict:
+        kwargs[ABSOLUTE_NPV_ATTRIBUTE] = activity_npv_dict[ABSOLUTE_NPV_ATTRIBUTE]
+
+    if NORMALIZED_NPV_ATTRIBUTE in activity_npv_dict:
+        kwargs[NORMALIZED_NPV_ATTRIBUTE] = activity_npv_dict[NORMALIZED_NPV_ATTRIBUTE]
+
+    if YEARLY_RATES_ATTRIBUTE in activity_npv_dict:
+        kwargs[YEARLY_RATES_ATTRIBUTE] = activity_npv_dict[YEARLY_RATES_ATTRIBUTE]
+
+    if MANUAL_NPV_ATTRIBUTE in activity_npv_dict:
+        kwargs[MANUAL_NPV_ATTRIBUTE] = activity_npv_dict[MANUAL_NPV_ATTRIBUTE]
+
+    npv_params = NpvParameters(*args, **kwargs)
 
     npv_enabled = False
     if ENABLED_ATTRIBUTE in activity_npv_dict:

@@ -344,9 +344,13 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
             not self._current_activity_identifier is None
             and self.cb_manual_npv.isChecked()
         ):
-            # Update the total NPV value
-            self._npv = value
-            self._update_current_activity_npv()
+            activity_npv = self._get_current_activity_npv()
+            if activity_npv is not None:
+                activity_npv.params.absolute_npv = self.txt_npv.value
+
+                # Update NPV normalization range
+                if self.cb_computed_npv.isChecked():
+                    self._compute_min_max_range()
 
     def update_discounted_value(self, row: int):
         """Updated the discounted value for the given row number.
@@ -480,7 +484,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
                     activity_mapping.params.yearly_rates
                 ):
                     msg = tr("Size of yearly rates and number of years do not match.")
-                    self._show_warning_message(msg)
+                    self._show_warning_message(f"{activity_name}: {msg}")
                     if status:
                         status = False
                     continue
@@ -579,7 +583,6 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         self.cb_manual_npv.setChecked(False)
         self.txt_npv.setText("")
         self.gp_npv_pwl.setChecked(False)
-        print(str(self._npv))
 
     def on_activity_selection_changed(
         self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection
@@ -609,6 +612,18 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
         self.load_activity_npv(activity_npv)
 
+    def _get_current_activity_npv(self) -> typing.Optional[ActivityNpv]:
+        """Gets the current activity NPV model.
+
+        :returns: The current activity NPV model or None if the current
+        identifier is not set or if no model was found in the collection.
+        :rtype: ActivityNpv
+        """
+        if self._current_activity_identifier is None:
+            return None
+
+        return self._npv_collection.activity_npv(self._current_activity_identifier)
+
     def load_activity_npv(self, activity_npv: ActivityNpv):
         """Loads NPV parameters for an activity.
 
@@ -631,6 +646,8 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         self.sb_discount.blockSignals(False)
 
         self.cb_manual_npv.setChecked(npv_params.manual_npv)
+        if npv_params.manual_npv:
+            self._on_manual_npv_toggled(True)
 
         self._npv_model.set_number_of_years(npv_params.years)
 
@@ -647,9 +664,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         self.update_all_discounted_values()
 
         if npv_params.manual_npv:
-            self.txt_npv.blockSignals(True)
             self.txt_npv.value = saved_total_npv
-            self.txt_npv.blockSignals(False)
 
     def _update_current_activity_npv(self):
         """Update NPV parameters changes made in the UI to the underlying
@@ -684,8 +699,10 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
             activity_npv.params.yearly_rates = yearly_rates
 
-        if self._npv is not None:
+        if not self.cb_manual_npv.isChecked() and self._npv is not None:
             activity_npv.params.absolute_npv = self._npv
+        else:
+            activity_npv.params.absolute_npv = self.txt_npv.value
 
         # Update NPV normalization range
         if self.cb_computed_npv.isChecked():
@@ -729,10 +746,9 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
             if not checked:
                 self._update_current_activity_npv()
             else:
-                activity_npv = self._npv_collection.activity_npv(
-                    self._current_activity_identifier
-                )
-                activity_npv.enabled = self.gp_npv_pwl.isChecked()
+                activity_npv = self._get_current_activity_npv()
+                if activity_npv is not None:
+                    activity_npv.enabled = self.gp_npv_pwl.isChecked()
 
                 # Update NPV normalization range
                 if self.cb_computed_npv.isChecked():
@@ -748,7 +764,11 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
             self.txt_npv.setReadOnly(False)
             self.txt_npv.setFocus()
             self.enable_npv_parameters_widgets(False)
-            self._update_current_activity_npv()
+
+            activity_npv = self._get_current_activity_npv()
+            if activity_npv is not None:
+                activity_npv.params.manual_npv = self.cb_manual_npv.isChecked()
+
         else:
             self.txt_npv.setReadOnly(True)
             self.enable_npv_parameters_widgets(True)
