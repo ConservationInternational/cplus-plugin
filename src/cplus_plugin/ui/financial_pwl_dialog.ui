@@ -54,7 +54,7 @@
        <item row="4" column="5">
         <widget class="QCheckBox" name="cb_manual_npv">
          <property name="text">
-          <string>Manual NPV</string>
+          <string>User-defined NPV</string>
          </property>
         </widget>
        </item>
