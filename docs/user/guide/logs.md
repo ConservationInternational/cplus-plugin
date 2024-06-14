@@ -22,7 +22,6 @@ This section displays a record of past scenarios executed within the system.
 
 ![Scenario history](./img/logs-2.png)
 
-
 ## Processing Log
 
 Here, you can view detailed logs of the current processing scenario.
