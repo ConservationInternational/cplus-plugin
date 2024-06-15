@@ -547,6 +547,7 @@ class CustomJsonEncoder(json.JSONEncoder):
     """
     Custom JSON encoder which handles UUID and datetime
     """
+
     def default(self, obj: object):
         """Default function to call when serializing an object
 

@@ -116,9 +116,7 @@ class RequestTask(QgsTask):
                 loop.exec_()
 
             elif self.method == "put":
-                self.resp = network_manager.put(
-                    network_request, self.payload
-                )
+                self.resp = network_manager.put(network_request, self.payload)
 
                 loop = QtCore.QEventLoop()
                 self.resp.finished.connect(loop.quit)

@@ -1559,7 +1559,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 )
             )
 
-    def task_terminated(self, task: typing.Union[ScenarioAnalysisTask, ScenarioAnalysisTaskApiClient]):
+    def task_terminated(
+        self, task: typing.Union[ScenarioAnalysisTask, ScenarioAnalysisTaskApiClient]
+    ):
         """Handles logging of the scenario analysis task status
         after it has been terminated.
 

@@ -7,7 +7,7 @@ from qgis.core import (
     QgsTask,
     QgsMessageLog,
     Qgis,
-    QgsNetworkAccessManager
+    QgsNetworkAccessManager,
 )
 from qgis.PyQt import QtCore
 from qgis.PyQt.QtCore import QUrl, QCoreApplication, QTimer
@@ -15,7 +15,8 @@ from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkReply
 from qgis.PyQt.QtWidgets import QApplication
 from ..utils import log
 
-MESSAGE_CATEGORY = 'RandomIntegerSumTask'
+MESSAGE_CATEGORY = "RandomIntegerSumTask"
+
 
 class DownloadTask(QgsTask):
     def __init__(self, description, url, output_path):
@@ -25,12 +26,12 @@ class DownloadTask(QgsTask):
         self.network_manager = QgsNetworkAccessManager.instance()
 
     def run(self):
-        log('RUN')
+        log("RUN")
         self.request = QNetworkRequest(QUrl(self.url))
         self.reply = self.network_manager.get(self.request)
         self.reply.finished.connect(self.download_finished)
         self.reply.readyRead.connect(self.ready_read)
-        self.data = b''
+        self.data = b""
         self.completed = False
 
         # Run a loop until the download is finished
@@ -40,15 +41,19 @@ class DownloadTask(QgsTask):
         return not self.reply.error()
 
     def ready_read(self):
-        log('READY READ')
+        log("READY READ")
         self.data += self.reply.readAll()
 
     def download_finished(self):
-        log('FINISH')
+        log("FINISH")
         if self.reply.error() == QNetworkReply.NoError:
-            with open(self.output_path, 'wb') as f:
+            with open(self.output_path, "wb") as f:
                 f.write(self.data)
-            QgsMessageLog.logMessage('Download finished successfully.', 'DownloadTask', Qgis.Info)
+            QgsMessageLog.logMessage(
+                "Download finished successfully.", "DownloadTask", Qgis.Info
+            )
         else:
-            QgsMessageLog.logMessage(f'Error: {self.reply.errorString()}', 'DownloadTask', Qgis.Critical)
+            QgsMessageLog.logMessage(
+                f"Error: {self.reply.errorString()}", "DownloadTask", Qgis.Critical
+            )
         self.completed = True

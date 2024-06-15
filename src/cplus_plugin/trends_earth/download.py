@@ -247,6 +247,7 @@ def download_file(url, out_path):
         return None
     return out_path
 
+
 def download_files(urls, out_folder):
     if out_folder == "":
         QtWidgets.QMessageBox.critical(

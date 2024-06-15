@@ -20,25 +20,6 @@ from ..tasks import ScenarioAnalysisTask
 from ..utils import FileUtils, CustomJsonEncoder, todict
 
 
-def clean_filename(filename: str) -> str:
-    """Creates a safe filename by removing operating system
-    invalid filename characters.
-
-    :param filename: File name
-    :type filename: str
-
-    :return: A clean file name
-    :rtype: str
-    """
-    characters = " %:/,\[]<>*?"
-
-    for character in characters:
-        if character in filename:
-            filename = filename.replace(character, "_")
-
-    return filename
-
-
 class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
     """Prepares and runs the scenario analysis in Cplus API
 
@@ -709,7 +690,14 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             "updated_detail"
         ]["priority_layer_groups"]
 
-    def _on_download_file_progress(self, downloaded, total):
+    def _on_download_file_progress(self, downloaded: int, total: int):
+        """Callback to update download file progreses
+
+        :param downloaded: total bytes of downloaded file
+        :type downloaded: int
+        :param total: size of downloaded file
+        :type total: int
+        """
         part = (downloaded * 100 / total) if total > 0 else 0
         downloaded_output = self.downloaded_output + part
         self.__update_scenario_status(
