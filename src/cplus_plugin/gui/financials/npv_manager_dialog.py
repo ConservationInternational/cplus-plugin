@@ -19,7 +19,6 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 from qgis.PyQt.uic import loadUiType
 
 from ..component_item_model import ActivityItemModel
-from ..components.number_line_edit import NumberFormattableLineEdit
 from ...conf import settings_manager
 from ...definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
 from ...models.base import Activity
@@ -168,6 +167,8 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
     DEFAULT_YEARS = 5
     DEFAULT_DISCOUNT_RATE = 0.0
     NUM_DECIMAL_PLACES = DEFAULT_DECIMAL_PLACES
+    MINIMUM_NPV_VALUE = 0.0
+    MAXIMUM_NPV_VALUE = 1000000000.000000
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -178,9 +179,10 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         self._message_bar = QgsMessageBar()
         self.vl_notification.addWidget(self._message_bar)
 
-        self.txt_npv = NumberFormattableLineEdit()
-        self.txt_npv.setReadOnly(True)
-        self.npv_layout.addWidget(self.txt_npv)
+        self.sb_npv.setMaximum(self.MAXIMUM_NPV_VALUE)
+        self.sb_npv.setMinimum(self.MINIMUM_NPV_VALUE)
+        self.sb_npv.setDecimals(self.NUM_DECIMAL_PLACES)
+        self.sb_npv.setReadOnly(True)
 
         # Initialize UI
         help_icon = FileUtils.get_icon("mActionHelpContents_green.svg")
@@ -240,7 +242,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
         self.sb_num_years.valueChanged.connect(self.on_number_years_changed)
         self.sb_discount.valueChanged.connect(self.on_discount_rate_changed)
-        self.txt_npv.value_updated.connect(self.on_total_npv_value_changed)
+        self.sb_npv.valueChanged.connect(self.on_total_npv_value_changed)
 
         # Set default values
         self.reset_npv_values()
@@ -333,11 +335,11 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
             self.update_discounted_value(item.row())
             self._update_current_activity_npv()
 
-    def on_total_npv_value_changed(self, value: typing.Optional[float]):
+    def on_total_npv_value_changed(self, value: float):
         """Slot raised when the total NPV has changed either through
         automatic computation or manual input.
 
-        :param value: NPV value or None if the control is empty.
+        :param value: NPV value.
         :type value: float
         """
         if (
@@ -346,7 +348,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         ):
             activity_npv = self._get_current_activity_npv()
             if activity_npv is not None:
-                activity_npv.params.absolute_npv = self.txt_npv.value
+                activity_npv.params.absolute_npv = self.sb_npv.value()
 
                 # Update NPV normalization range
                 if self.cb_computed_npv.isChecked():
@@ -426,7 +428,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
         self._npv = npv
 
-        self.txt_npv.setText(str(npv))
+        self.sb_npv.setValue(npv)
 
     def on_years_removed(self, index: QtCore.QModelIndex, start: int, end: int):
         """Slot raised when the year rows have been removed.
@@ -445,7 +447,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
     def copy_npv(self):
         """Copy NPV to the clipboard."""
-        QgsApplication.instance().clipboard().setText(self.txt_npv.value)
+        QgsApplication.instance().clipboard().setText(str(self.sb_npv.value()))
 
     def is_valid(self) -> bool:
         """Verifies if the input data is valid.
@@ -581,7 +583,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         self.sb_num_years.setValue(self.DEFAULT_YEARS)
         self.sb_discount.setValue(self.DEFAULT_DISCOUNT_RATE)
         self.cb_manual_npv.setChecked(False)
-        self.txt_npv.setText("")
+        self.sb_npv.setValue(0.0)
         self.gp_npv_pwl.setChecked(False)
 
     def on_activity_selection_changed(
@@ -664,7 +666,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         self.update_all_discounted_values()
 
         if npv_params.manual_npv:
-            self.txt_npv.value = saved_total_npv
+            self.sb_npv.setValue(saved_total_npv)
 
     def _update_current_activity_npv(self):
         """Update NPV parameters changes made in the UI to the underlying
@@ -702,7 +704,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         if not self.cb_manual_npv.isChecked() and self._npv is not None:
             activity_npv.params.absolute_npv = self._npv
         else:
-            activity_npv.params.absolute_npv = self.txt_npv.value
+            activity_npv.params.absolute_npv = self.sb_npv.value()
 
         # Update NPV normalization range
         if self.cb_computed_npv.isChecked():
@@ -761,8 +763,8 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         :type checked: bool
         """
         if checked:
-            self.txt_npv.setReadOnly(False)
-            self.txt_npv.setFocus()
+            self.sb_npv.setReadOnly(False)
+            self.sb_npv.setFocus()
             self.enable_npv_parameters_widgets(False)
 
             activity_npv = self._get_current_activity_npv()
@@ -770,7 +772,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
                 activity_npv.params.manual_npv = self.cb_manual_npv.isChecked()
 
         else:
-            self.txt_npv.setReadOnly(True)
+            self.sb_npv.setReadOnly(True)
             self.enable_npv_parameters_widgets(True)
             self.compute_npv()
 
