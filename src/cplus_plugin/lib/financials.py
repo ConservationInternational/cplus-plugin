@@ -105,6 +105,8 @@ def create_npv_pwls(
     current_step = 0
     multi_step_feedback.setCurrentStep(current_step)
 
+    results = []
+
     for i, activity_npv in enumerate(npv_collection.mappings):
         if feedback.isCanceled():
             break
@@ -174,16 +176,19 @@ def create_npv_pwls(
                 "NUMBER": activity_npv.params.normalized_npv,
                 "OUTPUT": npv_pwl_path,
             }
-            processing.run(
+            res = processing.run(
                 "native:createconstantrasterlayer",
                 alg_params,
                 context=context,
                 feedback=multi_step_feedback,
                 onFinish=output_post_processing_func,
             )
+            results.append(res)
         except QgsProcessingException as ex:
             err_tr = tr("Error creating NPV PWL")
             log(f"{err_tr} {npv_pwl_path}")
 
         current_step += 1
         multi_step_feedback.setCurrentStep(current_step)
+
+    return results

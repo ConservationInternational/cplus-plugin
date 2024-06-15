@@ -109,7 +109,7 @@ class TestFinancialNpv(TestCase):
             assert pwl_path
             pwl_layer_path = pwl_path
 
-        create_npv_pwls(
+        results = create_npv_pwls(
             npv_collection,
             npv_processing_context,
             npv_multi_step_feedback,
@@ -120,4 +120,4 @@ class TestFinancialNpv(TestCase):
             on_pwl_layer_created,
         )
 
-        self.assertIsNotNone(pwl_layer_path)
+        self.assertGreater(len(results), 0)
