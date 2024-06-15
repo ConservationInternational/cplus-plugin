@@ -77,7 +77,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.total_file_upload_chunks = 0
         self.uploaded_chunks = 0
         self.path_to_layer_mapping = {}
-        self.scenario.uuid = None
+        self.scenario_api_uuid = None
         self.status_pooling = None
         self.logs = []
         self.total_file_output = 0
@@ -108,12 +108,12 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 settings_manager.remove_layer_mapping(identifier)
             except Exception as ex:
                 self.log_message(f"Problem aborting upload layer: {ex}")
-        self.log_message(f"Cancel scenario {self.scenario.uuid}")
-        if self.scenario.uuid and self.scenario_status not in [
+        self.log_message(f"Cancel scenario {self.scenario_api_uuid}")
+        if self.scenario_api_uuid and self.scenario_status not in [
             JOB_COMPLETED_STATUS,
             JOB_STOPPED_STATUS,
         ]:
-            self.request.cancel_scenario(self.scenario.uuid)
+            self.request.cancel_scenario(self.scenario_api_uuid)
         super().on_terminated()
 
     def run(self) -> bool:
@@ -238,6 +238,12 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         :rtype: typing.List[dict]
         """
 
+        self.__update_scenario_status(
+            {
+                "progress_text": f"Uploading layers with concurrent request",
+                "progress": 0,
+            }
+        )
         file_paths = list(upload_dict.keys())
         component_types = list(upload_dict.values())
 
@@ -293,7 +299,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             {"progress_text": "Checking layers to be uploaded", "progress": 0}
         )
         masking_layers = self.get_masking_layers()
-        masking_layers = [ml.replace(".shp", ".zip") for ml in masking_layers]
 
         # 2 comes from sieve_mask_layer and snap layer
         check_counts = len(self.analysis_activities) + 2 + len(masking_layers)
@@ -598,7 +603,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             {"progress_text": "Submit and execute Scenario to CPLUS API", "progress": 0}
         )
         scenario_uuid = self.request.submit_scenario_detail(self.scenario_detail)
-        self.scenario.uuid = scenario_uuid
+        self.scenario_api_uuid = scenario_uuid
 
         # execute scenario detail
         self.request.execute_scenario(scenario_uuid)

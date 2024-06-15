@@ -321,6 +321,9 @@
            <height>16777215</height>
           </size>
          </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Users need to register and login with a Trends.Earth account to use the online API for processing with CPLUS&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
          <property name="title">
           <string>Trends.Earth login information</string>
          </property>

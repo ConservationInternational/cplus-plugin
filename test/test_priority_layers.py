@@ -5,6 +5,7 @@
 """
 
 import unittest
+import uuid
 
 from cplus_plugin.conf import settings_manager
 
@@ -38,6 +39,31 @@ class PriorityLayersTest(unittest.TestCase):
             self.assertEqual(
                 len(settings_manager.get_priority_layers()), len(layers_list)
             )
+
+    def test_priority_layers_groups_with_uuid_obj(self):
+        """Test bug when saving groups in priority layer becomes invalid uuid"""
+        layer = {
+            "uuid": "1f894ea8-32b4-4cac-9b7a-d313db51f816",
+            "name": "Test layer",
+            "description": "Placeholder text for herding for health",
+            "selected": True,
+            "path": [],
+            "groups": [
+                {
+                    "uuid": uuid.UUID("02ce3cf4-7bab-44c2-a607-80c08f747b21"),
+                    "name": "Biodiversity",
+                    "value": "5",
+                }
+            ],
+        }
+        settings_manager.save_priority_layer(layer)
+        layer_settings = settings_manager.get_priority_layer(layer.get("uuid"))
+        self.assertEqual(layer_settings.get("uuid"), layer.get("uuid"))
+        self.assertEqual(layer_settings.get("name"), layer.get("name"))
+        groups = layer_settings.get("groups")
+        self.assertEqual(len(groups), 1)
+        self.assertTrue(isinstance(groups[0].get("uuid"), str))
+        self.assertEqual(groups[0].get("uuid"), str(layer["groups"][0].get("uuid")))
 
     def tearDown(self) -> None:
         settings_manager.delete_priority_layers()

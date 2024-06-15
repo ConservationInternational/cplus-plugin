@@ -89,13 +89,55 @@ class ScenarioSettings(Scenario):
         :rtype: ScenarioSettings
         """
 
+        activities_list = settings.value("activities", [])
+        weighted_activities_list = settings.value("activities", [])
+
+        activities = []
+
+        weighted_activities = []
+
+        try:
+            for activity in activities_list:
+                setting_activity = json.loads(activity)
+
+                saved_activity = settings_manager.get_activity(
+                    setting_activity.get("uuid")
+                )
+                saved_activity.path = setting_activity.get("path")
+
+                for pathways in setting_activity[PATHWAYS_ATTRIBUTE]:
+                    for path_uuid, path in pathways.items():
+                        pathway = settings_manager.get_ncs_pathway(path_uuid)
+                        pathway.path = path
+                        saved_activity.add_ncs_pathway(pathway)
+
+                activities.append(saved_activity)
+
+            for activity in weighted_activities_list:
+                setting_activity = json.loads(activity)
+
+                saved_activity = settings_manager.get_activity(
+                    setting_activity.get("uuid")
+                )
+                saved_activity.path = setting_activity.get("path")
+
+                for pathways in setting_activity[PATHWAYS_ATTRIBUTE]:
+                    for path_uuid, path in pathways.items():
+                        pathway = settings_manager.get_ncs_pathway(path_uuid)
+                        pathway.path = path
+                        saved_activity.add_ncs_pathway(pathway)
+
+                weighted_activities.append(saved_activity)
+        except Exception as e:
+            log(f"Problem fetching saved activities, {e}")
+
         return cls(
             uuid=uuid.UUID(identifier),
             name=settings.value("name", None),
             description=settings.value("description", None),
             extent=[],
-            activities=[],
-            weighted_activities=[],
+            activities=activities,
+            weighted_activities=weighted_activities,
             priority_layer_groups=[],
         )
 
@@ -141,6 +183,7 @@ class Settings(enum.Enum):
     REPORT_LICENSE = "report/license"
     REPORT_STAKEHOLDERS = "report/stakeholders"
     REPORT_CULTURE_POLICIES = "report/culture_policies"
+    REPORT_CULTURE_CONSIDERATIONS = "report/culture_considerations"
 
     # Last selected data directory
     LAST_DATA_DIR = "last_data_dir"
@@ -302,7 +345,7 @@ class SettingsManager(QtCore.QObject):
         """
         return (
             f"{self.BASE_GROUP_NAME}/"
-            f"{self.SCENARIO_RESULTS_GROUP_NAME}"
+            f"{self.SCENARIO_RESULTS_GROUP_NAME}/"
             f"{str(identifier)}"
         )
 
@@ -316,10 +359,51 @@ class SettingsManager(QtCore.QObject):
 
         self.save_scenario_extent(settings_key, scenario_settings.extent)
 
+        activities = []
+        weighted_activities = []
+
+        for activity in scenario_settings.activities:
+            if isinstance(activity, Activity):
+                priority_layers = activity.priority_layers
+                layer_styles = activity.layer_styles
+                style_pixel_value = activity.style_pixel_value
+
+                ncs_pathways = []
+                for ncs in activity.pathways:
+                    ncs_pathways.append({str(ncs.uuid): ncs.path})
+
+                activity = layer_component_to_dict(activity)
+                activity[PRIORITY_LAYERS_SEGMENT] = priority_layers
+                activity[PATHWAYS_ATTRIBUTE] = ncs_pathways
+                activity[STYLE_ATTRIBUTE] = layer_styles
+                activity[PIXEL_VALUE_ATTRIBUTE] = style_pixel_value
+
+                activities.append(json.dumps(activity))
+
+        for activity in scenario_settings.weighted_activities:
+            if isinstance(activity, Activity):
+                priority_layers = activity.priority_layers
+                layer_styles = activity.layer_styles
+                style_pixel_value = activity.style_pixel_value
+
+                ncs_pathways = []
+                for ncs in activity.pathways:
+                    ncs_pathways.append({str(ncs.uuid): ncs.path})
+
+                activity = layer_component_to_dict(activity)
+                activity[PRIORITY_LAYERS_SEGMENT] = priority_layers
+                activity[PATHWAYS_ATTRIBUTE] = ncs_pathways
+                activity[STYLE_ATTRIBUTE] = layer_styles
+                activity[PIXEL_VALUE_ATTRIBUTE] = style_pixel_value
+
+                weighted_activities.append(json.dumps(activity))
+
         with qgis_settings(settings_key) as settings:
+            settings.setValue("uuid", scenario_settings.uuid)
             settings.setValue("name", scenario_settings.name)
             settings.setValue("description", scenario_settings.description)
-            settings.setValue("uuid", scenario_settings.uuid)
+            settings.setValue("activities", activities)
+            settings.setValue("weighted_activities", weighted_activities)
 
     def save_scenario_extent(self, key, extent):
         """Saves the scenario extent into plugin settings
@@ -454,37 +538,30 @@ class SettingsManager(QtCore.QObject):
         :returns: Scenario result
         :rtype: ScenarioSettings
         """
-        with qgis_settings(
-            f"{self.BASE_GROUP_NAME}/{self.SCENARIO_RESULTS_GROUP_NAME}"
-        ) as settings:
-            for result_uuid in settings.childGroups():
-                if scenario_id != result_uuid:
-                    continue
-                scenario_settings_key = self._get_scenario_results_settings_base(
-                    result_uuid
+
+        scenario_settings_key = self._get_scenario_results_settings_base(scenario_id)
+        with qgis_settings(scenario_settings_key) as scenario_settings:
+            created_date = scenario_settings.value("created_date")
+            analysis_output = scenario_settings.value("analysis_output")
+            output_layer_name = scenario_settings.value("output_layer_name")
+            scenario_directory = scenario_settings.value("scenario_directory")
+
+            try:
+                created_date = datetime.datetime.strptime(
+                    created_date, "%Y_%m_%d_%H_%M_%S"
                 )
-                with qgis_settings(scenario_settings_key) as scenario_settings:
-                    created_date = scenario_settings.value("created_date")
-                    analysis_output = scenario_settings.value("analysis_output")
-                    output_layer_name = scenario_settings.value("output_layer_name")
-                    scenario_directory = scenario_settings.value("scenario_directory")
+                analysis_output = json.loads(analysis_output)
+            except Exception as e:
+                log(f"Problem fetching scenario result, {e}")
+                return None
 
-                    try:
-                        created_date = datetime.datetime.strptime(
-                            created_date, "%Y_%m_%d_%H_%M_%S"
-                        )
-                        analysis_output = json.loads(analysis_output)
-                    except Exception as e:
-                        log(f"Problem fetching scenario result, {e}")
-                        return None
-
-                    return ScenarioResult(
-                        scenario=None,
-                        created_date=created_date,
-                        analysis_output=analysis_output,
-                        output_layer_name=output_layer_name,
-                        scenario_directory=scenario_directory,
-                    )
+            return ScenarioResult(
+                scenario=None,
+                created_date=created_date,
+                analysis_output=analysis_output,
+                output_layer_name=output_layer_name,
+                scenario_directory=scenario_directory,
+            )
         return None
 
     def get_scenarios_results(self):
@@ -725,7 +802,7 @@ class SettingsManager(QtCore.QObject):
             for group in groups:
                 group_key = f"{groups_key}/{group['name']}"
                 with qgis_settings(group_key) as group_settings:
-                    group_settings.setValue("uuid", group.get("uuid"))
+                    group_settings.setValue("uuid", str(group.get("uuid")))
                     group_settings.setValue("name", group["name"])
                     group_settings.setValue("value", group["value"])
 
