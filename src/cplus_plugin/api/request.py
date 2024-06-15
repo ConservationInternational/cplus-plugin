@@ -7,9 +7,10 @@ import datetime
 
 from qgis.PyQt import QtCore
 from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkReply
-from qgis.core import QgsNetworkAccessManager
+from qgis.core import QgsNetworkAccessManager, QgsFileDownloader
 
-from ..utils import log, get_layer_type
+from functools import partial
+from ..utils import log, get_layer_type, CustomJsonEncoder
 from ..conf import settings_manager, Settings
 from ..trends_earth import auth
 from ..trends_earth.constants import API_URL as TRENDS_EARTH_API_URL
@@ -66,8 +67,8 @@ class CplusApiRequestError(Exception):
 class BaseApiClient:
     """Base class for API client."""
 
-    def __init__(self) -> None:
-        self.nam = QgsNetworkAccessManager.instance()
+    def _get_raw_header_value(self, value):
+        return QtCore.QByteArray(bytes(value, encoding="utf-8"))
 
     def _default_headers(self):
         return {"Content-Type": "application/json"}
@@ -78,10 +79,10 @@ class BaseApiClient:
         return request
 
     def _set_headers(self, request: QNetworkRequest, headers: dict = {}):
-        for key, value in headers:
+        for key, value in headers.items():
             request.setRawHeader(
-                QtCore.QByteArray(bytes(key, "utf-8")),
-                QtCore.QByteArray(bytes(value, encoding="utf-8")),
+                self._get_raw_header_value(key),
+                self._get_raw_header_value(value),
             )
 
     def _read_json_response(self, reply: QNetworkReply):
@@ -89,7 +90,7 @@ class BaseApiClient:
         try:
             ret = reply.readAll().data().decode("utf-8")
             debug_log(f"Response: {ret}")
-            response = json.load(ret)
+            response = json.loads(ret)
         except Exception as ex:
             log(f"Error parsing API response {ex}")
         return response
@@ -102,7 +103,10 @@ class BaseApiClient:
             # Check the HTTP status code
             http_status = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
             if http_status is not None and 200 <= http_status < 300:
-                json_response = self._read_json_response(reply)
+                if http_status == 204:
+                    json_response = {}
+                else:
+                    json_response = self._read_json_response(reply)
             else:
                 log(f"HTTP Error: {http_status} from request {url}")
                 json_response = self._read_json_response(reply)
@@ -126,7 +130,9 @@ class BaseApiClient:
         event_loop.exec_()
 
     def _get_request_payload(self, data: typing.Union[dict, list]):
-        return QtCore.QByteArray(json.dumps(data).encode("utf-8"))
+        return QtCore.QByteArray(
+            json.dumps(data, cls=CustomJsonEncoder).encode("utf-8")
+        )
 
     def get(self, url, headers: dict = {}):
         """GET requests.
@@ -137,9 +143,10 @@ class BaseApiClient:
         :return: Response from Cplus API
         :rtype: requests.Response
         """
+        nam = QgsNetworkAccessManager.instance()
         headers = headers or self._default_headers()
         request = self._generate_request(url, headers)
-        reply = self.nam.get(request)
+        reply = nam.get(request)
         self._make_request(reply)
         return self._handle_response(url, reply)
 
@@ -154,10 +161,11 @@ class BaseApiClient:
         :return: Response from Cplus API
         :rtype: requests.Response
         """
+        nam = QgsNetworkAccessManager.instance()
         headers = headers or self._default_headers()
         request = self._generate_request(url, headers)
         json_data = self._get_request_payload(data)
-        reply = self.nam.post(request, json_data)
+        reply = nam.post(request, json_data)
         self._make_request(reply)
         return self._handle_response(url, reply)
 
@@ -172,21 +180,49 @@ class BaseApiClient:
         :return: Response from Cplus API
         :rtype: requests.Response
         """
+        nam = QgsNetworkAccessManager.instance()
         headers = headers or self._default_headers()
         request = self._generate_request(url, headers)
         json_data = self._get_request_payload(data)
-        reply = self.nam.put(request, json_data)
+        reply = nam.put(request, json_data)
         self._make_request(reply)
         return self._handle_response(url, reply)
 
-    def download_file(self, url, file_path):
-        pass
+    def _on_download_error(self, filename, error):
+        log(f"Error while downloading file to {filename}: {error}")
+        raise CplusApiRequestError(f"Unable to start download of {filename}, {error}")
 
-    def _do_upload_file_part(self, url, chunk, file_part_number):
+    def _on_download_finished(self, filename):
+        log(f"Finished downloading file to {filename}")
+
+    def download_file(self, url, file_path, on_download_progress):
+        filename = os.path.basename(file_path)
+        event_loop = QtCore.QEventLoop()
+        downloader = QgsFileDownloader(QtCore.QUrl(url), file_path, delayStart=True)
+
+        download_finished = partial(self._on_download_finished, filename)
+        download_error = partial(self._on_download_error, filename)
+
+        downloader.downloadCompleted.connect(download_finished)
+        downloader.downloadExited.connect(event_loop.quit)
+        downloader.downloadCanceled.connect(event_loop.quit)
+        downloader.downloadError.connect(download_error)
+        downloader.downloadProgress.connect(on_download_progress)
+        downloader.startDownload()
+        event_loop.exec_()
+
+    def _do_upload_file_part(self, url, chunk, file_part_number) -> dict:
+        nam = QgsNetworkAccessManager.instance()
         request = QNetworkRequest(QtCore.QUrl(url))
         request.setHeader(QNetworkRequest.ContentTypeHeader, "application/octet-stream")
         request.setHeader(QNetworkRequest.ContentLengthHeader, len(chunk))
-        reply = self.nam.put(request, chunk)
+        if url.startswith("http://"):
+            # add header for minio host
+            request.setRawHeader(
+                self._get_raw_header_value("Host"),
+                self._get_raw_header_value("minio:9000"),
+            )
+        reply = nam.put(request, chunk)
         self._make_request(reply)
         response = {}
         if reply.error() == QNetworkReply.NoError:
@@ -201,11 +237,11 @@ class BaseApiClient:
         reply.deleteLater()
         return response
 
-    def upload_file_part(self, url, chunk, file_part_number, max_retries=5):
+    def upload_file_part(self, url, chunk, file_part_number, max_retries=5) -> dict:
         retries = 0
         while retries < max_retries:
             try:
-                self._do_upload_file_part(url, chunk, file_part_number)
+                return self._do_upload_file_part(url, chunk, file_part_number)
             except Exception as e:
                 log(f"Request failed: {e}")
                 retries += 1
@@ -217,6 +253,7 @@ class BaseApiClient:
                 else:
                     log("Max retries exceeded.")
                     raise
+        return None
 
 
 class CplusApiPooling:
@@ -530,8 +567,6 @@ class CplusApiRequest(BaseApiClient):
             unavailable, or invalid
         :rtype: dict
         """
-        log(self.urls.layer_check())
-        log(json.dumps(payload))
         result, _ = self.post(self.urls.layer_check(), payload)
         return result
 
@@ -650,7 +685,7 @@ class CplusApiRequest(BaseApiClient):
         :rtype: CplusApiPooling
         """
         url = self.urls.scenario_status(scenario_uuid)
-        return CplusApiPooling(self, url, self.urls.headers)
+        return CplusApiPooling(self, url)
 
     def cancel_scenario(self, scenario_uuid: str) -> bool:
         """Cancel scenario execution
