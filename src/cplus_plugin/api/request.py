@@ -3,21 +3,16 @@ import math
 import os
 import time
 import typing
+import datetime
 
-import requests
-from qgis.PyQt import QtCore, QtWidgets, QtNetwork
-from qgis.core import (
-    QgsTask,
-    QgsNetworkAccessManager,
-    QgsApplication,
-    QgsSettings,
-    QgsNetworkReplyContent,
-)
+from qgis.PyQt import QtCore
+from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkReply
+from qgis.core import QgsNetworkAccessManager
 
 from ..utils import log, get_layer_type
 from ..conf import settings_manager, Settings
-from ..trends_earth import auth, api
-from ..trends_earth.constants import API_URL as TRENDS_EARTH_API_URL, TIMEOUT
+from ..trends_earth import auth
+from ..trends_earth.constants import API_URL as TRENDS_EARTH_API_URL
 from ..definitions.defaults import BASE_API_URL
 
 JOB_COMPLETED_STATUS = "Completed"
@@ -43,6 +38,14 @@ def log_response(response: typing.Union[dict, str], request_name: str) -> None:
         log(response)
 
 
+def debug_log(message, data: dict = {}):
+    if not settings_manager.get_value(Settings.DEBUG):
+        return
+    log(message)
+    if data:
+        log(json.dumps(data))
+
+
 class CplusApiRequestError(Exception):
     """Error class for Cplus API Request.
     :param message: Error message
@@ -60,58 +63,72 @@ class CplusApiRequestError(Exception):
         super().__init__(self.message)
 
 
-class BaseApi:
-    base_url: str
-    headers: typing.Dict[str, str]
+class BaseApiClient:
+    """Base class for API client."""
 
-    def __init__(self, base_url=None, headers=None) -> None:
-        super().__init__()
-        self.base_url = base_url
-        self.headers = headers
+    def __init__(self) -> None:
+        self.nam = QgsNetworkAccessManager.instance()
 
-    def _process_response(self, resp):
-        import io
+    def _default_headers(self):
+        return {"Content-Type": "application/json"}
 
-        if resp is not None:
-            status_code = resp.attribute(
-                QtNetwork.QNetworkRequest.HttpStatusCodeAttribute
+    def _generate_request(self, url: str, headers: dict = {}):
+        request = QNetworkRequest(QtCore.QUrl(url))
+        self._set_headers(request, headers)
+        return request
+
+    def _set_headers(self, request: QNetworkRequest, headers: dict = {}):
+        for key, value in headers:
+            request.setRawHeader(
+                QtCore.QByteArray(bytes(key, "utf-8")),
+                QtCore.QByteArray(bytes(value, encoding="utf-8")),
             )
-            log(str(status_code))
 
-            if status_code in [200, 201]:
-                if type(resp) is QtNetwork.QNetworkReply:
-                    ret = resp.readAll()
-                    ret = json.load(io.BytesIO(ret))
-                elif type(resp) is QgsNetworkReplyContent:
-                    ret = resp.content()
-                    ret = json.load(io.BytesIO(ret))
-                    from ..utils import todict, CustomJsonEncoder
-                    log(json.dumps(todict(resp.rawHeaderList()), cls=CustomJsonEncoder))
-                else:
-                    err_msg = "Unknown object type: {}.".format(str(resp))
-                    log(err_msg)
-                    ret = None
+    def _read_json_response(self, reply: QNetworkReply):
+        response = {}
+        try:
+            ret = reply.readAll().data().decode("utf-8")
+            debug_log(f"Response: {ret}")
+            response = json.load(ret)
+        except Exception as ex:
+            log(f"Error parsing API response {ex}")
+        return response
+
+    def _handle_response(self, url: str, reply: QNetworkReply):
+        json_response = {}
+        http_status = None
+        # Check for network errors
+        if reply.error() == QNetworkReply.NoError:
+            # Check the HTTP status code
+            http_status = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+            if http_status is not None and 200 <= http_status < 300:
+                json_response = self._read_json_response(reply)
             else:
-                desc, status = resp.error(), resp.errorString()
-                err_msg = "Error: {} (status {}).".format(desc, status)
-                log(err_msg)
-                ret = None
-            return ret, status_code
-        return None, 400
+                log(f"HTTP Error: {http_status} from request {url}")
+                json_response = self._read_json_response(reply)
+            reply.deleteLater()
+        else:
+            # log the error string
+            log(f"Network Error: {reply.errorString()} from request {url}")
+            reply.deleteLater()
+            raise CplusApiRequestError(f"Network error: {reply.errorString()}")
+        http_status = http_status if http_status is not None else 500
+        debug_log(f"Status-Code: {http_status}")
+        return json_response, http_status
 
-    def _make_request(self, description, **kwargs):
-        from qgis.core import QgsApplication
-        from ..trends_earth.api import RequestTask
-        api_task = RequestTask(description, **kwargs)
-        QgsApplication.taskManager().addTask(api_task)
-        result = api_task.waitForFinished((30 + 1) * 1000)
+    def _make_request(self, reply: QNetworkReply):
+        debug_log(f"URL: {reply.request().url()}")
+        # Create an event loop
+        event_loop = QtCore.QEventLoop()
+        # Connect the reply's finished signal to the event loop's quit slot
+        reply.finished.connect(event_loop.quit)
+        # Start the event loop, waiting for the request to complete
+        event_loop.exec_()
 
-        if not result:
-            log("Request timed out")
+    def _get_request_payload(self, data: typing.Union[dict, list]):
+        return QtCore.QByteArray(json.dumps(data).encode("utf-8"))
 
-        return api_task.resp
-
-    def get(self, url):
+    def get(self, url, headers: dict = {}):
         """GET requests.
 
         :param url: Cplus API URL
@@ -120,18 +137,13 @@ class BaseApi:
         :return: Response from Cplus API
         :rtype: requests.Response
         """
-        # return requests.get(url, headers=self.urls.headers)
-        resp = self._make_request(
-            'Get request',
-            url=url,
-            method='get',
-            payload={},
-            headers=self.headers,
-            timeout=30,
-        )
-        return resp
+        headers = headers or self._default_headers()
+        request = self._generate_request(url, headers)
+        reply = self.nam.get(request)
+        self._make_request(reply)
+        return self._handle_response(url, reply)
 
-    def post(self, url: str, data: typing.Union[dict, list]):
+    def post(self, url: str, data: typing.Union[dict, list], headers: dict = {}):
         """POST requests.
 
         :param url: Cplus API URL
@@ -142,18 +154,14 @@ class BaseApi:
         :return: Response from Cplus API
         :rtype: requests.Response
         """
-        # return requests.post(url, json=data, headers=self.urls.headers)
-        resp = self._make_request(
-            'Post request',
-            url=url,
-            method='post',
-            payload=data,
-            headers=self.headers,
-            timeout=30,
-        )
-        return resp
+        headers = headers or self._default_headers()
+        request = self._generate_request(url, headers)
+        json_data = self._get_request_payload(data)
+        reply = self.nam.post(request, json_data)
+        self._make_request(reply)
+        return self._handle_response(url, reply)
 
-    def put(self, url: str, data: typing.Union[dict, list, bytes]):
+    def put(self, url: str, data: typing.Union[dict, list], headers: dict = {}):
         """PUT requests.
 
         :param url: Cplus API URL
@@ -164,36 +172,55 @@ class BaseApi:
         :return: Response from Cplus API
         :rtype: requests.Response
         """
-        # return requests.post(url, json=data, headers=self.urls.headers)
-        resp = self._make_request(
-            'Put request',
-            url=url,
-            method='put',
-            payload=data,
-            headers=self.headers,
-            timeout=30,
-        )
-        return resp
+        headers = headers or self._default_headers()
+        request = self._generate_request(url, headers)
+        json_data = self._get_request_payload(data)
+        reply = self.nam.put(request, json_data)
+        self._make_request(reply)
+        return self._handle_response(url, reply)
+
+    def download_file(self, url, file_path):
+        pass
+
+    def _do_upload_file_part(self, url, chunk, file_part_number):
+        request = QNetworkRequest(QtCore.QUrl(url))
+        request.setHeader(QNetworkRequest.ContentTypeHeader, "application/octet-stream")
+        request.setHeader(QNetworkRequest.ContentLengthHeader, len(chunk))
+        reply = self.nam.put(request, chunk)
+        self._make_request(reply)
+        response = {}
+        if reply.error() == QNetworkReply.NoError:
+            etag = reply.rawHeader(b"ETag")
+            response = {
+                "part_number": file_part_number,
+                "etag": etag.data().decode("utf-8"),
+            }
+            debug_log("Upload chunk finished:", response)
+        else:
+            raise Exception(f"Network Error: {reply.errorString()}")
+        reply.deleteLater()
+        return response
+
+    def upload_file_part(self, url, chunk, file_part_number, max_retries=5):
+        retries = 0
+        while retries < max_retries:
+            try:
+                self._do_upload_file_part(url, chunk, file_part_number)
+            except Exception as e:
+                log(f"Request failed: {e}")
+                retries += 1
+                if retries < max_retries:
+                    # Calculate the exponential backoff delay
+                    delay = 2**retries
+                    log(f"Retrying in {delay} seconds...")
+                    time.sleep(delay)
+                else:
+                    log("Max retries exceeded.")
+                    raise
 
 
-class CplusApiPooling(BaseApi):
-    """Fetch/Post url with pooling.
-
-    :param url: URL to send request
-    :type url: str
-    :param headers: Headers to send request, optional, default to None
-    :type headers: dict
-    :param method: Method to send request, defaults to "GET"
-    :type method: str
-    :param data: Data to send request, optional, default to None
-    :type data: dict
-    :param max_limit: Number of maximum retry attempts, optional, defaults to 3600
-    :type max_limit: int
-    :param interval: Interval in seconds, optional, defaults to 1
-    :type interval: int
-    :param on_response_fetched: Callback function when response is fetched successfully
-    :type on_response_fetched: typing.Callable
-    """
+class CplusApiPooling:
+    """Fetch/Post url with pooling."""
 
     DEFAULT_LIMIT = 3600  # Check result maximum 3600 times
     DEFAULT_INTERVAL = 1  # Interval of check results
@@ -201,18 +228,37 @@ class CplusApiPooling(BaseApi):
 
     def __init__(
         self,
-        url: str,
-        headers: typing.Union[dict, None] = None,
-        method: str = "GET",
-        data: dict = None,
-        max_limit: int = None,
-        interval: int = None,
-        on_response_fetched: typing.Callable = None,
+        context,
+        url,
+        headers={},
+        method="GET",
+        data=None,
+        max_limit=None,
+        interval=None,
+        on_response_fetched=None,
     ):
-        """init."""
-        super().__init__(url, headers or {})
+        """Create Cplus API Pooling for Fetching Status.
+
+        :param context: _description_
+        :type context: _type_
+        :param url: _description_
+        :type url: _type_
+        :param headers: _description_, defaults to {}
+        :type headers: dict, optional
+        :param method: _description_, defaults to "GET"
+        :type method: str, optional
+        :param data: _description_, defaults to None
+        :type data: _type_, optional
+        :param max_limit: _description_, defaults to None
+        :type max_limit: _type_, optional
+        :param interval: _description_, defaults to None
+        :type interval: _type_, optional
+        :param on_response_fetched: _description_, defaults to None
+        :type on_response_fetched: _type_, optional
+        """
+        self.context = context
         self.url = url
-        self.headers = headers or {}
+        self.headers = headers
         self.current_repeat = 0
         self.method = method
         self.data = data
@@ -222,39 +268,43 @@ class CplusApiPooling(BaseApi):
         self.cancelled = False
 
     def __call_api(self):
-        """Call CPLUS API URL"""
         if self.method == "GET":
-            return requests.get(self.url, headers=self.headers)
-        return requests.post(self.url, self.data, headers=self.headers)
+            return self.context.get(self.url)
+        return self.context.post(self.url, self.data)
 
     def results(self):
-        """Return results of data.
-
-        :raises requests.exceptions.Timeout: Raised when getting request timeout
-
-        :return: CPLUS API response result
-        :rtype: dict
-        """
+        """Return results of data."""
         if self.cancelled:
             return {"status": JOB_CANCELLED_STATUS}
         self.current_repeat += 1
         if self.limit != -1 and self.current_repeat >= self.limit:
-            raise requests.exceptions.Timeout()
+            raise CplusApiRequestError("Request Timeout when fetching status!")
         try:
-            response = self.__call_api()
-            if response.status_code != 200:
-                raise CplusApiRequestError(f"{response.status_code} - {response.text}")
-            result = response.json()
+            response, status_code = self.__call_api()
+            if status_code != 200:
+                error_detail = response.get("detail", "Unknown Error!")
+                raise CplusApiRequestError(f"{status_code} - {error_detail}")
             if self.on_response_fetched:
-                self.on_response_fetched(result)
-            if result["status"] in self.FINAL_STATUS_LIST:
-                return result
+                self.on_response_fetched(response)
+            if response["status"] in self.FINAL_STATUS_LIST:
+                return response
             else:
                 time.sleep(self.interval)
                 return self.results()
-        except requests.exceptions.Timeout:
+        except Exception:
             time.sleep(self.interval)
             return self.results()
+
+
+class TrendsApiUrl:
+    """Trends API Urls."""
+
+    def __init__(self) -> None:
+        self.base_url = TRENDS_EARTH_API_URL
+
+    @property
+    def auth(self):
+        return f"{self.base_url}/auth"
 
 
 class CplusApiUrl:
@@ -262,8 +312,6 @@ class CplusApiUrl:
 
     def __init__(self):
         self.base_url = self.get_base_api_url()
-        self.trends_earth_api_client = api.APIClient(TRENDS_EARTH_API_URL, TIMEOUT)
-        self._api_token = self.api_token
 
     def get_base_api_url(self) -> str:
         """Returns the base API URL.
@@ -277,50 +325,6 @@ class CplusApiUrl:
             return settings_manager.get_value(Settings.BASE_API_URL)
         else:
             return BASE_API_URL
-
-    def _make_request(self, description, **kwargs):
-        from qgis.core import QgsApplication
-        from ..trends_earth.api import RequestTask
-        api_task = RequestTask(description, **kwargs)
-        QgsApplication.taskManager().addTask(api_task)
-        result = api_task.waitForFinished((30 + 1) * 1000)
-
-        if not result:
-            log("Request timed out")
-
-        return api_task.resp
-
-    @property
-    def api_token(self) -> str:
-        """Fetch token from Trends.Earth API
-
-        :raises CplusApiRequestError: If request is failing
-
-        :return: Trends.Earth Access Token
-        :rtype: str
-        """
-        access_token = self.trends_earth_api_client.login()
-
-        # result = response.json()
-        # access_token = result.get("access_token", None)
-        if access_token is None:
-            raise CplusApiRequestError(
-                "Error authenticating to Trends Earth API: missing access_token!"
-            )
-        self._api_token = access_token
-        return access_token
-
-    @property
-    def headers(self) -> dict:
-        """Return headers for Cplus API request
-
-
-        :return: Headers for Cplus API request
-        :rtype: dict
-        """
-        return {
-            "Authorization": f"Bearer {self._api_token}",
-        }
 
     def layer_detail(self, layer_uuid) -> str:
         """Cplus API URL to get layer detail
@@ -440,61 +444,69 @@ class CplusApiUrl:
         :return: Cplus API URL for scenario output list
         :rtype: str
         """
-        return f"{self.base_url}/scenario_output/{scenario_uuid}/list/?download_all=true&page=1&page_size=100"
+        return (
+            f"{self.base_url}/scenario_output/{scenario_uuid}/"
+            "list/?page=1&page_size=100"
+        )
 
 
-class CplusApiRequest(BaseApi, QtCore.QObject):
+class CplusApiRequest(BaseApiClient):
     """Class to send request to Cplus API."""
 
     page_size = 50
 
     def __init__(self) -> None:
-        super(CplusApiRequest, self).__init__()
+        super().__init__()
         self.urls = CplusApiUrl()
-        self.headers = self.urls.headers
+        self.trends_urls = TrendsApiUrl()
+        self._api_token = None
+        self.token_exp = None
 
-    def get(self, url):
-        """GET requests.
+    def _default_headers(self):
+        return {
+            "Authorization": f"Bearer {self.api_token}",
+            "Content-Type": "application/json",
+        }
 
-        :param url: Cplus API URL
-        :type url: str
+    def _is_valid_token(self):
+        return (
+            self._api_token is not None
+            and self.token_exp > datetime.datetime.now() + datetime.timedelta(hours=1)
+        )
 
-        :return: Response from Cplus API
-        :rtype: requests.Response
-        """
-        # return requests.get(url, headers=self.urls.headers)
-        resp = super().get(url)
-        return self._process_response(resp)
-
-    def post(self, url: str, data: typing.Union[dict, list]):
-        """POST requests.
-
-        :param url: Cplus API URL
-        :type url: typing.Union[dict, list]
-        :param data: Cplus API payload
-        :type data: dict
-
-        :return: Response from Cplus API
-        :rtype: requests.Response
-        """
-        # return requests.post(url, json=data, headers=self.urls.headers)
-        resp = super().post(url, data)
-        return self._process_response(resp)
-
-    def put(self, url: str, data: typing.Union[dict, list]):
-        """PUT requests.
-
-        :param url: Cplus API URL
-        :type url: typing.Union[dict, list]
-        :param data: Cplus API payload
-        :type data: dict
-
-        :return: Response from Cplus API
-        :rtype: requests.Response
-        """
-        # return requests.post(url, json=data, headers=self.urls.headers)
-        resp = self.put(url, data)
-        return self._process_response(resp)
+    @property
+    def api_token(self):
+        if self._is_valid_token():
+            return self._api_token
+        # fetch token from Trends Earth API
+        auth_config = auth.get_auth_config(auth.TE_API_AUTH_SETUP, warn=None)
+        if (
+            not auth_config
+            or not auth_config.config("username")
+            or not auth_config.config("password")
+        ):
+            log("API unable to login - setup auth configuration before using")
+            return
+        payload = {
+            "email": auth_config.config("username"),
+            "password": auth_config.config("password"),
+        }
+        response, status_code = self.post(
+            self.trends_urls.auth, payload, {"Content-Type": "application/json"}
+        )
+        if status_code != 200:
+            detail = response.get("description", "Unknwon Error!")
+            raise CplusApiRequestError(
+                "Error authenticating to Trends Earth API: " f"{status_code} - {detail}"
+            )
+        access_token = response.get("access_token", None)
+        if access_token is None:
+            raise CplusApiRequestError(
+                "Error authenticating to Trends Earth API: " "missing access_token!"
+            )
+        self._api_token = access_token
+        self.token_exp = datetime.datetime.now() + datetime.timedelta(days=1)
+        return access_token
 
     def get_layer_detail(self, layer_uuid) -> dict:
         """Request for getting layer detail
@@ -514,7 +526,8 @@ class CplusApiRequest(BaseApi, QtCore.QObject):
         :param payload: List of Layer UUID
         :type payload: list
 
-        :return: dict consisting of which Layer UUIDs are available, unavailable, or invalid
+        :return: dict consisting of which Layer UUIDs are available,
+            unavailable, or invalid
         :rtype: dict
         """
         log(self.urls.layer_check())
@@ -548,16 +561,21 @@ class CplusApiRequest(BaseApi, QtCore.QObject):
             raise CplusApiRequestError(result.get("detail", ""))
         return result
 
-    def finish_upload_layer(self, layer_uuid: str,
-                            upload_id: typing.Union[str, None],
-                            items: typing.Union[typing.List[dict], None]) -> dict:
+    def finish_upload_layer(
+        self,
+        layer_uuid: str,
+        upload_id: typing.Union[str, None],
+        items: typing.Union[typing.List[dict], None],
+    ) -> dict:
         """Request for finishing layer upload
 
         :param layer_uuid: UUID of the uploaded layer
         :type layer_uuid: str
-        :param upload_id: Upload ID of the multipart upload, optional, defaults to None
+        :param upload_id: Upload ID of the multipart upload, optional,
+            defaults to None
         :type upload_id: str
-        :param items: List of uploaded items for multipart upload, optional, defaults to None
+        :param items: List of uploaded items for multipart upload, optional,
+            defaults to None
         :type items: typing.Union[typing.List[dict], None]
 
         :return: Dictionary containing the UUID, name, size of the upload file
@@ -584,7 +602,9 @@ class CplusApiRequest(BaseApi, QtCore.QObject):
         :rtype: bool
         """
         payload = {"multipart_upload_id": upload_id, "items": []}
-        result, status_code = self.post(self.urls.layer_upload_abort(layer_uuid), payload)
+        result, status_code = self.post(
+            self.urls.layer_upload_abort(layer_uuid), payload
+        )
         if status_code != 204:
             raise CplusApiRequestError(result.get("detail", ""))
         return True
@@ -630,7 +650,7 @@ class CplusApiRequest(BaseApi, QtCore.QObject):
         :rtype: CplusApiPooling
         """
         url = self.urls.scenario_status(scenario_uuid)
-        return CplusApiPooling(url, self.urls.headers)
+        return CplusApiPooling(self, url, self.urls.headers)
 
     def cancel_scenario(self, scenario_uuid: str) -> bool:
         """Cancel scenario execution

@@ -67,6 +67,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
     :param scenario: Scenario object
     :type scenario: Scenario
     """
+
     def __init__(
         self,
         analysis_scenario_name: str,
@@ -141,12 +142,12 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         # filename = '/home/zamuzakki/latest.tif'
         # download_file(url, filename)
         # return False
-        urls = ["http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/cplus_scenario_output_15fd.tif?AWSAccessKeyId=miniocplus&Signature=%2Fusda2FRhVolHQXtZcAdz3SngiM%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/weighted_activities/Alien_Plant_Removal_9ab9_cleaned.tif?AWSAccessKeyId=miniocplus&Signature=aI5e1u5HmqwA%2FRc2aS9fDkZxGYc%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/weighted_activities/Alien_Plant_Removal_bee5.tif?AWSAccessKeyId=miniocplus&Signature=iuzf888geVK5379mMw1fg7qj8VA%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/normalized_pathways/Alien_Plant_Removal_6df8.tif?AWSAccessKeyId=miniocplus&Signature=LBg%2F2bxJayZ8zxdLlx2zrm6s6c0%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/normalized_activities/Alien_Plant_Removal_0fc4.tif?AWSAccessKeyId=miniocplus&Signature=cUD6S5%2FG9fcRWw%2FmuAkLwSvWals%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/mask_zip/mask.shx?AWSAccessKeyId=miniocplus&Signature=st7LPHgie7yqmKgKO0wSn0EnS8c%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/mask_zip/mask.dbf?AWSAccessKeyId=miniocplus&Signature=42EwkEUXS8h%2FAG3Qy8vbI%2FeT7js%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/mask_zip/mask.shp?AWSAccessKeyId=miniocplus&Signature=i%2B03btCOFULu7%2Bkudv9Qa7rt4x0%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/mask_zip/mask.prj?AWSAccessKeyId=miniocplus&Signature=nwEWEQaWOV%2FO4hgr65fdjLMln3A%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/mask_zip/mask.cpg?AWSAccessKeyId=miniocplus&Signature=NAXbTZ%2FEWxGoZEOpYtTcqziOTL8%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/masked_activities/Alien_Plant_Removal_3de5.tif?AWSAccessKeyId=miniocplus&Signature=oY52A2T6E85AOV1DYfPbQvZ9h6o%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/activities/Alien_Plant_Removal_61e5.tif?AWSAccessKeyId=miniocplus&Signature=AQMUf4VgxzEuif1LEHJX%2BO2RA9k%3D&Expires=1717762755"]
-        try:
-            download_files(urls, self.scenario_directory)
-        except Exception as e:
-            self.log_message(str(e))
-        return False
+        # urls = ["http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/cplus_scenario_output_15fd.tif?AWSAccessKeyId=miniocplus&Signature=%2Fusda2FRhVolHQXtZcAdz3SngiM%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/weighted_activities/Alien_Plant_Removal_9ab9_cleaned.tif?AWSAccessKeyId=miniocplus&Signature=aI5e1u5HmqwA%2FRc2aS9fDkZxGYc%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/weighted_activities/Alien_Plant_Removal_bee5.tif?AWSAccessKeyId=miniocplus&Signature=iuzf888geVK5379mMw1fg7qj8VA%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/normalized_pathways/Alien_Plant_Removal_6df8.tif?AWSAccessKeyId=miniocplus&Signature=LBg%2F2bxJayZ8zxdLlx2zrm6s6c0%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/normalized_activities/Alien_Plant_Removal_0fc4.tif?AWSAccessKeyId=miniocplus&Signature=cUD6S5%2FG9fcRWw%2FmuAkLwSvWals%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/mask_zip/mask.shx?AWSAccessKeyId=miniocplus&Signature=st7LPHgie7yqmKgKO0wSn0EnS8c%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/mask_zip/mask.dbf?AWSAccessKeyId=miniocplus&Signature=42EwkEUXS8h%2FAG3Qy8vbI%2FeT7js%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/mask_zip/mask.shp?AWSAccessKeyId=miniocplus&Signature=i%2B03btCOFULu7%2Bkudv9Qa7rt4x0%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/mask_zip/mask.prj?AWSAccessKeyId=miniocplus&Signature=nwEWEQaWOV%2FO4hgr65fdjLMln3A%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/mask_zip/mask.cpg?AWSAccessKeyId=miniocplus&Signature=NAXbTZ%2FEWxGoZEOpYtTcqziOTL8%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/masked_activities/Alien_Plant_Removal_3de5.tif?AWSAccessKeyId=miniocplus&Signature=oY52A2T6E85AOV1DYfPbQvZ9h6o%3D&Expires=1717762755", "http://0.0.0.0:9010/cplus/30/b66e6cb4-a9a2-4d91-8ce3-adc5938ad1e5/activities/Alien_Plant_Removal_61e5.tif?AWSAccessKeyId=miniocplus&Signature=AQMUf4VgxzEuif1LEHJX%2BO2RA9k%3D&Expires=1717762755"]
+        # try:
+        #     download_files(urls, self.scenario_directory)
+        # except Exception as e:
+        #     self.log_message(str(e))
+        # return False
 
         try:
             self.upload_layers()
@@ -315,7 +316,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         items_to_check = {}
 
         activity_pwl_uuids = set()
-        self.log_message(json.dumps(todict(self.analysis_activities), cls=CustomJsonEncoder))
+        self.log_message(
+            json.dumps(todict(self.analysis_activities), cls=CustomJsonEncoder)
+        )
         for idx, activity in enumerate(self.analysis_activities):
             for pathway in activity.pathways:
                 if pathway:
@@ -691,7 +694,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         activity_obj = Activity(**activity)
         return activity_obj
 
-    def __set_scenario(self, output_list: typing.List[dict], download_paths: list) -> None:
+    def __set_scenario(
+        self, output_list: typing.List[dict], download_paths: list
+    ) -> None:
         """Set scenario object based on output list and downloaded file paths
         to be used in generating report
 
