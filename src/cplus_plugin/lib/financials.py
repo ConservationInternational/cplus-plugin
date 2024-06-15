@@ -96,8 +96,6 @@ def create_npv_pwls(
         log(message=tr("No base directory for saving NPV PWLs."), info=False)
         return
 
-    print(base_dir)
-
     # Create NPV PWL subdirectory
     FileUtils.create_npv_pwls_dir(base_dir)
 

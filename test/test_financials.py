@@ -95,7 +95,7 @@ class TestFinancialNpv(TestCase):
             len(npv_collection.mappings), npv_feedback
         )
 
-        ncs_pathway = get_ncs_pathways()[0]
+        ncs_pathway = get_ncs_pathways(use_projected=True)[0]
         reference_layer = ncs_pathway.to_map_layer()
         reference_crs = reference_layer.crs()
         reference_pixel_size = reference_layer.rasterUnitsPerPixelX()
