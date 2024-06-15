@@ -29,6 +29,14 @@ from utilities_for_testing import get_qgis_app
 QGIS_APP, CANVAS, IFACE, PARENT = get_qgis_app()
 
 
+class ConsoleFeedBack(QgsProcessingFeedback):
+    _errors = []
+
+    def reportError(self, error, fatalError=False):
+        print(error)
+        self._errors.append(error)
+
+
 class TestFinancialNpv(TestCase):
     """Tests for financial NPV computations."""
 
@@ -81,7 +89,8 @@ class TestFinancialNpv(TestCase):
         _ = npv_collection.normalize_npvs()
 
         npv_processing_context = QgsProcessingContext()
-        npv_feedback = QgsProcessingFeedback(False)
+        # npv_feedback = QgsProcessingFeedback(False)
+        npv_feedback = ConsoleFeedBack()
         npv_multi_step_feedback = QgsProcessingMultiStepFeedback(
             len(npv_collection.mappings), npv_feedback
         )
