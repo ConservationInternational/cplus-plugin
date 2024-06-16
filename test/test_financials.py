@@ -146,8 +146,8 @@ class TestFinancialNpv(TestCase):
         pwl_exists = os.path.exists(pwl_layer_path)
         pwl_npv_layer = QgsRasterLayer(pwl_layer_path, "Test NPV PWL")
 
-        self.assertTrue(pwl_exists, msg="NPV PWL layer exists.")
-        self.assertTrue(pwl_npv_layer.isValid(), msg="NPV PWL raster is valid.")
+        self.assertTrue(pwl_exists, msg="NPV PWL layer does not exists.")
+        self.assertTrue(pwl_npv_layer.isValid(), msg="NPV PWL raster is not valid.")
 
     def test_npv_pwl_model_creation(self):
         """Test the creation and saving of an NPV PWL data model."""
@@ -171,4 +171,6 @@ class TestFinancialNpv(TestCase):
 
         npv_pwl = settings_manager.find_layer_by_name(test_activity_npv.base_name)
 
-        self.assertIsNotNone(npv_pwl)
+        self.assertIsNotNone(
+            npv_pwl, msg="NPV PWL data model was not saved in the settings."
+        )
