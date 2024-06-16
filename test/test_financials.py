@@ -17,6 +17,7 @@ from qgis.core import (
 )
 
 from cplus_plugin.conf import settings_manager, Settings
+from cplus_plugin.gui.qgis_cplus_main import QgisCplusMain
 from cplus_plugin.lib.financials import compute_discount_value, create_npv_pwls
 from cplus_plugin.utils import FileUtils
 
@@ -147,3 +148,27 @@ class TestFinancialNpv(TestCase):
 
         self.assertTrue(pwl_exists, msg="NPV PWL layer exists.")
         self.assertTrue(pwl_npv_layer.isValid(), msg="NPV PWL raster is valid.")
+
+    def test_npv_pwl_model_creation(self):
+        """Test the creation and saving of an NPV PWL data model."""
+
+        main_dock_widget = QgisCplusMain(IFACE, PARENT)
+
+        test_activity_npv = None
+
+        def proxy_npv_pwl_created(activity_npv, pwl_path, algorithm, context, feedback):
+            nonlocal test_activity_npv
+            nonlocal main_dock_widget
+            assert activity_npv
+            if test_activity_npv is None:
+                test_activity_npv = activity_npv
+
+            main_dock_widget.on_npv_pwl_created(
+                activity_npv, pwl_path, algorithm, context, feedback
+            )
+
+        self._run_npv_pwl_creation(proxy_npv_pwl_created)
+
+        npv_pwl = settings_manager.find_layer_by_name(test_activity_npv.base_name)
+
+        self.assertIsNotNone(npv_pwl)
