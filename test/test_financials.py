@@ -12,6 +12,7 @@ from qgis.core import (
     QgsProcessingContext,
     QgsProcessingFeedback,
     QgsProcessingMultiStepFeedback,
+    QgsRasterLayer,
 )
 
 from cplus_plugin.conf import settings_manager, Settings
@@ -129,4 +130,8 @@ class TestFinancialNpv(TestCase):
             on_pwl_layer_created,
         )
 
-        self.assertIsNotNone(pwl_layer_path)
+        pwl_exists = os.path.exists(pwl_layer_path)
+        pwl_npv_layer = QgsRasterLayer(pwl_layer_path, "Test NPV PWL")
+
+        self.assertTrue(pwl_exists, msg="NPV PWL layer exists.")
+        self.assertTrue(pwl_npv_layer.isValid(), msg="NPV PWL raster is valid.")
