@@ -57,7 +57,7 @@ def create_npv_pwls(
     target_extent: str,
     on_finish_func: typing.Callable = None,
     on_removed_func: typing.Callable = None,
-):
+) -> typing.List:
     """Creates constant raster layers based on the normalized NPV values for
     the specified activities.
 
@@ -90,11 +90,15 @@ def create_npv_pwls(
     :param on_removed_func: Function to be executed when a disabled NPV PWL has
     been removed.
     :type on_finish_func: Callable
+
+    :returns: A list containing the processing results (as a dictionary) for
+    each successful run.
+    :rtype: list
     """
     base_dir = settings_manager.get_value(Settings.BASE_DIR)
     if not base_dir:
         log(message=tr("No base directory for saving NPV PWLs."), info=False)
-        return
+        return []
 
     # Create NPV PWL subdirectory
     FileUtils.create_npv_pwls_dir(base_dir)

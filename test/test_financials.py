@@ -4,6 +4,7 @@ Unit tests for financial NPV computations.
 """
 
 import os
+import typing
 from unittest import TestCase
 
 from processing.core.Processing import Processing
@@ -31,6 +32,8 @@ QGIS_APP, CANVAS, IFACE, PARENT = get_qgis_app()
 
 
 class ConsoleFeedBack(QgsProcessingFeedback):
+    """Logs error information in the standard output device."""
+
     _errors = []
 
     def reportError(self, error, fatalError=False):
@@ -83,14 +86,16 @@ class TestFinancialNpv(TestCase):
         normalized_npv = round(activity_npv_1.params.normalized_npv, 4)
         self.assertEqual(normalized_npv, 0.0259)
 
-    def test_create_npv_pwl(self):
-        """Test the creation of an NPV PWL raster layer."""
+    @classmethod
+    def _run_npv_pwl_creation(cls, on_finish_func: typing.Callable):
+        """Executes function for creating the NPV PWL then runs the user-defined
+        call back function once the callback function has successfully finished.
+        """
         npv_collection = get_activity_npv_collection()
         npv_collection.update_computed_normalization_range()
         _ = npv_collection.normalize_npvs()
 
         npv_processing_context = QgsProcessingContext()
-        # npv_feedback = QgsProcessingFeedback(False)
         npv_feedback = ConsoleFeedBack()
         npv_multi_step_feedback = QgsProcessingMultiStepFeedback(
             len(npv_collection.mappings), npv_feedback
@@ -109,8 +114,24 @@ class TestFinancialNpv(TestCase):
         )
 
         base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
-        settings_manager.set_value(Settings.BASE_DIR, base_dir)
+        settings_base_dir = settings_manager.get_value(Settings.BASE_DIR)
+        if settings_base_dir != base_dir:
+            settings_manager.set_value(Settings.BASE_DIR, base_dir)
         FileUtils.create_pwls_dir(base_dir)
+
+        create_npv_pwls(
+            npv_collection,
+            npv_processing_context,
+            npv_multi_step_feedback,
+            npv_feedback,
+            reference_crs.authid(),
+            reference_pixel_size,
+            reference_extent_str,
+            on_finish_func,
+        )
+
+    def test_create_npv_pwl(self):
+        """Test the creation of an NPV PWL raster layer."""
 
         pwl_layer_path = None
 
@@ -119,16 +140,7 @@ class TestFinancialNpv(TestCase):
             assert pwl_path
             pwl_layer_path = pwl_path
 
-        results = create_npv_pwls(
-            npv_collection,
-            npv_processing_context,
-            npv_multi_step_feedback,
-            npv_feedback,
-            reference_crs.authid(),
-            reference_pixel_size,
-            reference_extent_str,
-            on_pwl_layer_created,
-        )
+        self._run_npv_pwl_creation(on_pwl_layer_created)
 
         pwl_exists = os.path.exists(pwl_layer_path)
         pwl_npv_layer = QgsRasterLayer(pwl_layer_path, "Test NPV PWL")
