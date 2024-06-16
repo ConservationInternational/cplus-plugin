@@ -129,4 +129,4 @@ class TestFinancialNpv(TestCase):
             on_pwl_layer_created,
         )
 
-        self.assertGreater(len(results), 0)
+        self.assertIsNotNone(pwl_layer_path)
