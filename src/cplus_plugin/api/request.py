@@ -435,9 +435,9 @@ class CplusApiPooling:
         """
         if self.cancelled:
             return {"status": JOB_CANCELLED_STATUS}
-        self.current_repeat += 1
         if self.limit != -1 and self.current_repeat >= self.limit:
             raise CplusApiRequestError("Request Timeout when fetching status!")
+        self.current_repeat += 1
         try:
             response, status_code = self.__call_api()
             if status_code != 200:
@@ -450,7 +450,8 @@ class CplusApiPooling:
             else:
                 time.sleep(self.interval)
                 return self.results()
-        except Exception:
+        except Exception as ex:
+            log(f"Error when fetching results {ex}", info=False)
             time.sleep(self.interval)
             return self.results()
 
