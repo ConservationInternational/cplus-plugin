@@ -90,7 +90,8 @@ class TestFinancialNpv(TestCase):
     @classmethod
     def _run_npv_pwl_creation(cls, on_finish_func: typing.Callable):
         """Executes function for creating the NPV PWL then runs the user-defined
-        call back function once the callback function has successfully finished.
+        call back function once the NPV PWL processing function has successfully
+        finished.
         """
         npv_collection = get_activity_npv_collection()
         npv_collection.update_computed_normalization_range()
