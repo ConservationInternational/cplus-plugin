@@ -214,14 +214,14 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         (ncs_pathway, ncs_carbon, etc.) as value.
         :type upload_dict: dict
 
-        :return: final_result, a list of dictionary containing UUID of the uploaded
-        file, size, and final filename
+        :return: final_result, a list of dictionary containing UUID
+            of the uploaded file, size, and final filename
         :rtype: typing.List[dict]
         """
 
         self.__update_scenario_status(
             {
-                "progress_text": f"Uploading layers with concurrent request",
+                "progress_text": "Uploading layers with concurrent request",
                 "progress": 0,
             }
         )
@@ -245,8 +245,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         :param shapefile_path: Path of the shapefile
         :type shapefile_path: str
 
-        :return: Zip file path if the specified `shapefile_path` ends with .shp, return
-            shapefile_path otherwise
+        :return: Zip file path if the specified `shapefile_path`
+            ends with .shp, return shapefile_path otherwise
         :rtype: str
         """
 
