@@ -664,6 +664,19 @@
              </widget>
             </item>
             <item>
+             <widget class="QToolButton" name="comparison_report_btn">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="toolTip">
+               <string>Generate scenario comparison report</string>
+              </property>
+              <property name="text">
+               <string>...</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QToolButton" name="remove_scenario_btn">
               <property name="toolTip">
                <string>Remove the selected scenario from the scenario history.</string>

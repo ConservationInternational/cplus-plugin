@@ -390,12 +390,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.add_scenario_btn.setIcon(FileUtils.get_icon("symbologyAdd.svg"))
         self.info_scenario_btn.setIcon(FileUtils.get_icon("mActionIdentify.svg"))
         self.load_scenario_btn.setIcon(FileUtils.get_icon("mActionReload.svg"))
+        self.comparison_report_btn.setIcon(FileUtils.get_icon("mIconReport.svg"))
         self.remove_scenario_btn.setIcon(FileUtils.get_icon("symbologyRemove.svg"))
 
         self.add_scenario_btn.clicked.connect(self.add_scenario)
         self.load_scenario_btn.clicked.connect(self.load_scenario)
         self.info_scenario_btn.clicked.connect(self.show_scenario_info)
+        self.comparison_report_btn.clicked.connect(self.generate_comparison_report)
         self.remove_scenario_btn.clicked.connect(self.remove_scenario)
+
+        self.scenario_list.itemSelectionChanged.connect(
+            self.on_scenario_list_selection_changed
+        )
 
     def priority_groups_update(self, target_item, selected_items):
         """Updates the priority groups list item with the passed
@@ -1270,6 +1276,43 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 settings_manager.delete_scenario(scenario_id)
 
             self.update_scenario_list()
+
+    def generate_comparison_report(self):
+        """Slot raised to generate a comparison for two or more selected
+        scenario results.
+        """
+        selected_items = self.scenario_list.selectedItems()
+        if len(selected_items) < 2:
+            msg = tr(
+                "You must select at least two scenarios to generate the comparison report."
+            )
+            self.show_message(msg)
+            return
+
+        scenario_results = []
+        for item in selected_items:
+            scenario_identifier = item.data(QtCore.Qt.UserRole)
+            scenario = settings_manager.get_scenario(scenario_identifier)
+            scenario_result = settings_manager.get_scenario_result(scenario_identifier)
+            scenario_result.scenario = scenario
+            if not scenario_result:
+                continue
+            scenario_results.append(scenario_result)
+
+        if len(scenario_results) < 2:
+            msg = tr(
+                "Unable to retrieve the results for all the selected scenarios."
+            )
+            self.show_message(msg)
+            return
+
+    def on_scenario_list_selection_changed(self):
+        """Slot raised when the selection of scenarios changes."""
+        selected_items = self.scenario_list.selectedItems()
+        if len(selected_items) < 2:
+            self.comparison_report_btn.setEnabled(False)
+        else:
+            self.comparison_report_btn.setEnabled(True)
 
     def prepare_message_bar(self):
         """Initializes the widget message bar settings"""

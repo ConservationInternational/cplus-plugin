@@ -452,7 +452,7 @@ class FileUtils:
         Caller needs to verify that the file actually exists.
 
         :param file_name: Template file name including the extension. If
-        none is specified then it will use `main.qpt` as the default
+        none is specified then it will use `scenario_analysis.qpt` as the default
         template name.
         :type file_name: str
 
