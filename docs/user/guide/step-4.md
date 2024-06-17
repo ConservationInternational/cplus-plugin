@@ -17,7 +17,7 @@ Click on the 1️⃣ `Step 4` option, to go to Step 4.
 **Process the scenario online:** By default, this option is off. When selected, the scenario is sent to a remote server via the Internet for processing. This enables real-time analysis using the server's resources. It is useful for quick results or complex data that may strain local devices. However, it needs a stable internet connection.
 
 ![Processing Options](./img/step4-3.png)
-Processing Options
+
 ## Run Scenario
 
 **Run Scenario:** Click on the `Run Scenario` button to execute the scenario and generate the report.
