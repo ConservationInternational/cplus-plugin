@@ -224,7 +224,7 @@ class ReportGeneratorTask(QgsTask):
 
 
 class ReportGenerator:
-    """Generator for CPLUS reports."""
+    """Generator for CPLUS report_templates."""
 
     AREA_DECIMAL_PLACES = 2
 
@@ -378,14 +378,14 @@ class ReportGenerator:
     @property
     def output_dir(self) -> str:
         """Creates, if it does not exist, the output directory
-        where the analysis reports will be saved. This is relative
+        where the analysis report_templates will be saved. This is relative
         to the base directory and scenario output sub-folder.
 
-        :returns: Output directory where the analysis reports
+        :returns: Output directory where the analysis report_templates
         will be saved.
         :rtype: str
         """
-        # Create reports directory
+        # Create report_templates directory
         if not self._report_output_dir:
             p = Path(self._context.scenario_output_dir)
             if not p.exists():

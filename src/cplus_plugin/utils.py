@@ -32,7 +32,11 @@ from qgis.analysis import QgsAlignRaster
 
 from qgis import processing
 
-from .definitions.defaults import DOCUMENTATION_SITE, REPORT_FONT_NAME, TEMPLATE_NAME
+from .definitions.defaults import (
+    DOCUMENTATION_SITE,
+    REPORT_FONT_NAME,
+    SCENARIO_ANALYSIS_TEMPLATE_NAME,
+)
 from .definitions.constants import (
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
@@ -460,9 +464,9 @@ class FileUtils:
         :rtype: str
         """
         if file_name is None:
-            file_name = TEMPLATE_NAME
+            file_name = SCENARIO_ANALYSIS_TEMPLATE_NAME
 
-        absolute_path = f"{FileUtils.plugin_dir()}/data/reports/{file_name}"
+        absolute_path = f"{FileUtils.plugin_dir()}/data/report_templates/{file_name}"
 
         return os.path.normpath(absolute_path)
 

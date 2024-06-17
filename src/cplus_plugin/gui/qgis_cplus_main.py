@@ -1300,9 +1300,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             scenario_results.append(scenario_result)
 
         if len(scenario_results) < 2:
-            msg = tr(
-                "Unable to retrieve the results for all the selected scenarios."
-            )
+            msg = tr("Unable to retrieve the results for all the selected scenarios.")
             self.show_message(msg)
             return
 
@@ -1616,7 +1614,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param task: Analysis task
         :type task: ScenarioAnalysisTask
 
-        :param report_manager: Report manager used to generate analysis reports
+        :param report_manager: Report manager used to generate analysis report_templates
         :type report_manager: ReportManager
         """
 
@@ -1680,7 +1678,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param task: Analysis task
         :type task: ScenarioAnalysisTask
 
-        :param report_manager: Report manager used to generate analysis reports
+        :param report_manager: Report manager used to generate analysis report_templates
         :type report_manager: ReportManager
         """
         self.update_progress_bar(progress_dialog, 100)
@@ -1730,7 +1728,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param task: Analysis task
         :type task: ScenarioAnalysisTask
 
-        :param report_manager: Report manager used to generate analysis reports
+        :param report_manager: Report manager used to generate analysis report_templates
         :type report_manager: ReportManager
         """
 
@@ -2027,7 +2025,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
          all the analysis operations progress.
         :type progress_dialog: ProgressDialog
 
-        :param message: Report manager used to generate analysis reports
+        :param message: Report manager used to generate analysis report_templates
         :type message: ReportManager
         """
 
@@ -2190,7 +2188,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
          all the analysis operations progress.
         :type progress_dialog: ProgressDialog
 
-        :param report_manager: Report manager used to generate analysis reports
+        :param report_manager: Report manager used to generate analysis report_templates
         :type report_manager: ReportManager
         """
         if self.processing_cancelled:

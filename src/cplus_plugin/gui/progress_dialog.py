@@ -94,7 +94,7 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         self.pdf_action.setEnabled(False)
         self.menu.addAction(self.pdf_action)
 
-        # Open a Help for reports
+        # Open a Help for report_templates
         action = QAction(QIcon(ICON_HELP), "Help", parent=self)
         action.triggered.connect(self.open_report_help)
         action.setEnabled(True)

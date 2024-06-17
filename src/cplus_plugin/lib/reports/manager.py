@@ -22,6 +22,10 @@ from qgis.utils import iface
 
 from qgis.PyQt import QtCore, QtGui
 
+from ...definitions.defaults import (
+    SCENARIO_ANALYSIS_TEMPLATE_NAME,
+    SCENARIO_COMPARISON_TEMPLATE_NAME,
+)
 from ...models.base import Scenario, ScenarioResult
 from ...models.report import ReportContext, ReportResult, ReportSubmitStatus
 from ...utils import clean_filename, FileUtils, log, tr
@@ -228,7 +232,9 @@ class ReportManager(QtCore.QObject):
         :rtype: ReportSubmitStatus
         """
         if not scenario_result.output_layer_name:
-            log("Layer name for output scenario is empty. Cannot generate reports.")
+            log(
+                "Layer name for output scenario is empty. Cannot generate report_templates."
+            )
             return ReportSubmitStatus(False, None)
 
         if feedback is None:
@@ -345,7 +351,7 @@ class ReportManager(QtCore.QObject):
                 break
             counter += 1
 
-        template_path = FileUtils.report_template_path()
+        template_path = FileUtils.report_template_path(SCENARIO_ANALYSIS_TEMPLATE_NAME)
 
         return ReportContext(
             template_path,
