@@ -387,6 +387,14 @@ class ReportManager(QtCore.QObject):
 
         return True
 
+    def generate_comparison_report(self, scenario_results: typing.List[ScenarioResult]):
+        """Generates a report comparing the two or more scenarios.
+
+        :param scenario_results: Collection of scenario results to be compared.
+        :type scenario_results: list
+        """
+        pass
+
     def on_layout_designer_opened(self, designer: QgsLayoutDesignerInterface):
         """Sets a default zoom level for the report when opened for
         the first time.

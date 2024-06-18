@@ -1304,6 +1304,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.show_message(msg)
             return
 
+        report_manager.generate_comparison_report(scenario_results)
+
     def on_scenario_list_selection_changed(self):
         """Slot raised when the selection of scenarios changes."""
         selected_items = self.scenario_list.selectedItems()

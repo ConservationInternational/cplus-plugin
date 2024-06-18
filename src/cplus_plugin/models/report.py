@@ -8,7 +8,7 @@ from uuid import UUID
 
 from qgis.core import QgsFeedback, QgsRectangle
 
-from .base import Scenario
+from .base import Scenario, ScenarioResult
 
 
 @dataclasses.dataclass
@@ -63,3 +63,11 @@ class ReportResult:
             return ""
 
         return f"{self.output_dir}/{self.base_file_name}.pdf"
+
+
+@dataclasses.dataclass
+class ScenarioComparisonReportContext:
+    """Contextual information related to the generation of scenario comparison report."""
+
+    results: typing.List[Scenario]
+    output_dir: str
