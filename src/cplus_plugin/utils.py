@@ -3,7 +3,6 @@
     Plugin utilities
 """
 
-
 import hashlib
 import json
 import os
@@ -38,6 +37,7 @@ from .definitions.defaults import (
     SCENARIO_ANALYSIS_TEMPLATE_NAME,
 )
 from .definitions.constants import (
+    COMPARISON_REPORT_SEGMENT,
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
     NPV_PRIORITY_LAYERS_SEGMENT,
@@ -498,6 +498,20 @@ class FileUtils:
         )
         message = tr("Missing parent directory when creating NPV PWLs subdirectory.")
         FileUtils.create_new_dir(npv_pwl_dir, message)
+
+    @staticmethod
+    def create_comparison_reports_dir(base_dir: str):
+        """Creates a comparison reports subdirectory under the base directory.
+        Skips creation of the subdirectory if it already exists.
+        """
+        if not Path(base_dir).is_dir():
+            return
+
+        comparison_reports_dir = f"{base_dir}/{COMPARISON_REPORT_SEGMENT}"
+        message = tr(
+            "Missing parent directory when creating comparison reports subdirectory."
+        )
+        FileUtils.create_new_dir(comparison_reports_dir, message)
 
     @staticmethod
     def create_ncs_carbon_dir(base_dir: str):

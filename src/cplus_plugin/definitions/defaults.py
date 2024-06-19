@@ -247,3 +247,5 @@ DEFAULT_REPORT_LICENSE = (
     "Creative Commons Attribution 4.0 International " "License (CC BY 4.0)"
 )
 BASE_API_URL = "https://stage.cplus.earth/api/v1"
+
+DEFAULT_BASE_COMPARISON_REPORT_NAME = "Scenario Comparison Report"

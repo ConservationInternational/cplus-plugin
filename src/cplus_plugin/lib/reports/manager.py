@@ -3,6 +3,8 @@
 Registers custom report variables for layout design
 and handles report generation.
 """
+
+import datetime
 import os
 from pathlib import Path
 from functools import partial
@@ -22,12 +24,20 @@ from qgis.utils import iface
 
 from qgis.PyQt import QtCore, QtGui
 
+from ...conf import settings_manager, Settings
+from ...definitions.constants import COMPARISON_REPORT_SEGMENT
 from ...definitions.defaults import (
+    DEFAULT_BASE_COMPARISON_REPORT_NAME,
     SCENARIO_ANALYSIS_TEMPLATE_NAME,
     SCENARIO_COMPARISON_TEMPLATE_NAME,
 )
 from ...models.base import Scenario, ScenarioResult
-from ...models.report import ReportContext, ReportResult, ReportSubmitStatus
+from ...models.report import (
+    ReportContext,
+    ReportResult,
+    ReportSubmitStatus,
+    ScenarioComparisonReportContext,
+)
 from ...utils import clean_filename, FileUtils, log, tr
 
 from .generator import ReportGeneratorTask
@@ -43,6 +53,9 @@ class ReportManager(QtCore.QObject):
     generate_error = QtCore.pyqtSignal(str)
     generate_completed = QtCore.pyqtSignal(str)
 
+    # Max number of comparison report tasks
+    COMPARISON_REPORT_LIMIT = 3
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -55,6 +68,9 @@ class ReportManager(QtCore.QObject):
 
         # Report results (value) indexed by scenario id (key)
         self._report_results = {}
+
+        # Flag for checking number of comparison report tasks
+        self._running_comparison_tasks = 0
 
         self.task_manager = QgsApplication.instance().taskManager()
         self.task_manager.statusChanged.connect(self.on_task_status_changed)
@@ -290,7 +306,7 @@ class ReportManager(QtCore.QObject):
     @classmethod
     def create_report_context(
         cls, scenario_result: ScenarioResult, feedback: QgsFeedback
-    ) -> typing.Union[ReportContext, None]:
+    ) -> typing.Optional[ReportContext]:
         """Creates the report context for use in the report
         generator task.
 
@@ -330,10 +346,7 @@ class ReportManager(QtCore.QObject):
 
         # Write project to file for use in the task since QgsProject
         # instances are not thread safe.
-        storage_type = QgsProject.instance().filePathStorage()
-        QgsProject.instance().setFilePathStorage(Qgis.FilePathType.Absolute)
-        result = QgsProject.instance().write(project_file_path)
-        QgsProject.instance().setFilePathStorage(storage_type)
+        result = cls._save_current_project(project_file_path)
 
         if not result:
             return None
@@ -354,14 +367,24 @@ class ReportManager(QtCore.QObject):
         template_path = FileUtils.report_template_path(SCENARIO_ANALYSIS_TEMPLATE_NAME)
 
         return ReportContext(
-            template_path,
-            scenario_result.scenario,
-            context_name,
-            scenario_report_dir,
-            project_file_path,
-            feedback,
-            scenario_result.output_layer_name,
+            template_path=template_path,
+            scenario=scenario_result.scenario,
+            name=context_name,
+            scenario_output_dir=scenario_report_dir,
+            project_file=project_file_path,
+            feedback=feedback,
+            output_layer_name=scenario_result.output_layer_name,
         )
+
+    @classmethod
+    def _save_current_project(cls, project_file_path):
+        """Saves the current project."""
+        storage_type = QgsProject.instance().filePathStorage()
+        QgsProject.instance().setFilePathStorage(Qgis.FilePathType.Absolute)
+        result = QgsProject.instance().write(project_file_path)
+        QgsProject.instance().setFilePathStorage(storage_type)
+
+        return result
 
     def open_layout_designer(self, result: ReportResult) -> bool:
         """Opens the analysis report in the layout designer. The
@@ -387,13 +410,87 @@ class ReportManager(QtCore.QObject):
 
         return True
 
-    def generate_comparison_report(self, scenario_results: typing.List[ScenarioResult]):
+    def generate_comparison_report(
+        self,
+        scenario_results: typing.List[ScenarioResult],
+        feedback: QgsFeedback = None,
+    ) -> ReportSubmitStatus:
         """Generates a report comparing the two or more scenarios.
 
         :param scenario_results: Collection of scenario results to be compared.
         :type scenario_results: list
+
+        :param feedback: Feedback object for reporting back to the main
+        application. Default is None.
+        :type feedback: QgsFeedback
+
+        :returns: True if the report generation process was successfully
+        submitted else False if a running process is re-submitted. Object
+        also contains feedback object for report updating and cancellation.
+        :rtype: ReportSubmitStatus
         """
-        pass
+        if self._running_comparison_tasks == self.COMPARISON_REPORT_LIMIT:
+            log("Reached limit of comparison report processes, try again later.")
+            return ReportSubmitStatus(False, None)
+
+        if feedback is None:
+            feedback = QgsFeedback(self)
+
+        comparison_context = self.create_comparison_report_context(
+            scenario_results, feedback
+        )
+        if comparison_context is None:
+            return ReportSubmitStatus(False, None)
+
+        return ReportSubmitStatus(True, feedback)
+
+    @classmethod
+    def create_comparison_report_context(
+        cls, scenario_results: typing.List[ScenarioResult], feedback: QgsFeedback
+    ) -> typing.Optional[ScenarioComparisonReportContext]:
+        """Create contextual information for generating the scenario comparison report.
+
+        :param scenario_results: Collection of scenario results to be compared.
+        :type scenario_results: list
+
+        :param feedback: Feedback object for reporting back to the main
+        application.
+        :type feedback: QgsFeedback
+        """
+        base_dir = settings_manager.get_value(Settings.BASE_DIR)
+        if base_dir is None:
+            log(f"Base directory is empty, unable to generate comparison report.")
+            return None
+
+        FileUtils.create_comparison_reports_dir(base_dir)
+
+        folder_name = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        report_dir = os.path.normpath(
+            f"{base_dir}/{COMPARISON_REPORT_SEGMENT}/{folder_name}"
+        )
+        FileUtils.create_new_dir(report_dir)
+
+        project_file_path = os.path.join(report_dir, f"{COMPARISON_REPORT_SEGMENT}.qgz")
+        # Save project file.
+        result = cls._save_current_project(project_file_path)
+        if not result:
+            log(f"Unable to save the project for scenario report generation.")
+            return None
+
+        layout_name = f"{COMPARISON_REPORT_SEGMENT} {folder_name}"
+
+        template_path = FileUtils.report_template_path(
+            SCENARIO_COMPARISON_TEMPLATE_NAME
+        )
+
+        return ScenarioComparisonReportContext(
+            template_path=template_path,
+            name=layout_name,
+            project_file=project_file_path,
+            feedback=feedback,
+            results=scenario_results,
+            output_dir=report_dir,
+        )
 
     def on_layout_designer_opened(self, designer: QgsLayoutDesignerInterface):
         """Sets a default zoom level for the report when opened for

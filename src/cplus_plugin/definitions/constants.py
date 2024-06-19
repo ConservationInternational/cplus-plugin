@@ -8,6 +8,7 @@ NCS_PATHWAY_SEGMENT = "ncs_pathways"
 NCS_CARBON_SEGMENT = "ncs_carbon"
 PRIORITY_LAYERS_SEGMENT = "priority_layers"
 NPV_PRIORITY_LAYERS_SEGMENT = "npv"
+COMPARISON_REPORT_SEGMENT = "comparison_reports"
 
 # Naming for outputs sub-folder relative to base directory
 OUTPUTS_SEGMENT = "outputs"

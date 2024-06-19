@@ -12,15 +12,21 @@ from .base import Scenario, ScenarioResult
 
 
 @dataclasses.dataclass
-class ReportContext:
-    """Context information for generating a report."""
+class AbstractReportContext:
+    """Common context information for generating a scenario report."""
 
     template_path: str
-    scenario: Scenario
     name: str
-    scenario_output_dir: str
     project_file: str
     feedback: QgsFeedback
+
+
+@dataclasses.dataclass
+class ReportContext(AbstractReportContext):
+    """Context information for generating a scenario analysis report."""
+
+    scenario: Scenario
+    scenario_output_dir: str
     output_layer_name: str
 
 
@@ -66,8 +72,8 @@ class ReportResult:
 
 
 @dataclasses.dataclass
-class ScenarioComparisonReportContext:
+class ScenarioComparisonReportContext(AbstractReportContext):
     """Contextual information related to the generation of scenario comparison report."""
 
-    results: typing.List[Scenario]
+    results: typing.List[ScenarioResult]
     output_dir: str
