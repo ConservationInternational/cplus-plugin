@@ -81,11 +81,12 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         # check if there is ongoing upload
         layer_mapping = settings_manager.get_all_layer_mapping()
         for identifier, layer in layer_mapping.items():
-            if "upload_id" not in layer:
+            upload_id = layer.get("upload_id", None)
+            if not upload_id:
                 continue
             self.log_message(f"Cancelling upload file: {layer['path']} ")
             try:
-                self.request.abort_upload_layer(layer["uuid"], layer["upload_id"])
+                self.request.abort_upload_layer(layer["uuid"], upload_id)
                 settings_manager.remove_layer_mapping(identifier)
             except Exception as ex:
                 self.log_message(f"Problem aborting upload layer: {ex}")
@@ -418,9 +419,17 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             identifier = layer_path.replace(os.sep, "--")
             uploaded_layer_dict = settings_manager.get_layer_mapping(identifier)
             if uploaded_layer_dict:
-                if "upload_id" in uploaded_layer_dict:
+                existing_upload_id = uploaded_layer_dict.get("upload_id", None)
+                existing_uuid = uploaded_layer_dict.get("uuid", None)
+                if existing_upload_id and existing_uuid:
                     # if upload_id exists, then upload is not finished
-                    output[layer_path] = False
+                    try:
+                        self.request.abort_upload_layer(
+                            existing_uuid, existing_upload_id
+                        )
+                    except Exception as ex:
+                        pass
+                    output[layer_path] = items_to_check[layer_path]
                 if layer_path == uploaded_layer_dict["path"]:
                     uuid_to_path[uploaded_layer_dict["uuid"]] = layer_path
                     self.path_to_layer_mapping[layer_path] = uploaded_layer_dict
