@@ -12,7 +12,7 @@ from .base import Scenario, ScenarioResult
 
 
 @dataclasses.dataclass
-class AbstractReportContext:
+class BaseReportContext:
     """Common context information for generating a scenario report."""
 
     template_path: str
@@ -22,7 +22,7 @@ class AbstractReportContext:
 
 
 @dataclasses.dataclass
-class ReportContext(AbstractReportContext):
+class ReportContext(BaseReportContext):
     """Context information for generating a scenario analysis report."""
 
     scenario: Scenario
@@ -72,8 +72,21 @@ class ReportResult:
 
 
 @dataclasses.dataclass
-class ScenarioComparisonReportContext(AbstractReportContext):
-    """Contextual information related to the generation of scenario comparison report."""
+class ScenarioComparisonReportContext(BaseReportContext):
+    """Contextual information related to the generation of scenario
+    comparison report.
+    """
 
     results: typing.List[ScenarioResult]
     output_dir: str
+
+
+@dataclasses.dataclass
+class ScenarioAreaInfo:
+    """Contains information on the result of calculating a
+    scenario's area.
+    """
+
+    name: str
+    identifier: UUID
+    area: dict = dataclasses.field(default_factory=dict)

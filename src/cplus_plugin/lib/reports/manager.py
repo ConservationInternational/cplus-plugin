@@ -40,7 +40,10 @@ from ...models.report import (
 )
 from ...utils import clean_filename, FileUtils, log, tr
 
-from .generator import ReportGeneratorTask
+from .generator import (
+    ScenarioAnalysisReportGeneratorTask,
+    ScenarioComparisonReportGeneratorTask,
+)
 from .variables import LayoutVariableRegister
 
 
@@ -136,7 +139,7 @@ class ReportManager(QtCore.QObject):
         """
         scenario_id = self.scenario_by_task_id(task_id)
 
-        # Not related to CPLUS report or task
+        # Not related to CPLUS scenario analysis report
         if not scenario_id:
             return
 
@@ -267,7 +270,7 @@ class ReportManager(QtCore.QObject):
 
         msg_tr = tr("Generating report for")
         description = f"{msg_tr} {ctx.scenario.name}"
-        report_task = ReportGeneratorTask(description, ctx)
+        report_task = ScenarioAnalysisReportGeneratorTask(description, ctx)
 
         report_task_completed = partial(self.report_task_completed, report_task)
 
@@ -442,7 +445,23 @@ class ReportManager(QtCore.QObject):
         if comparison_context is None:
             return ReportSubmitStatus(False, None)
 
+        description = tr("Generating scenario comparison report")
+        task = ScenarioComparisonReportGeneratorTask(description, comparison_context)
+        task.statusChanged.connect(self.on_comparison_task_status_changed)
+        self.task_manager.addTask(task)
+
         return ReportSubmitStatus(True, feedback)
+
+    def on_comparison_task_status_changed(self, status: int):
+        """Slot raised when the comparison task status has changed.
+
+        :param status: Task status:
+        :type status: int
+        """
+        if status == QgsTask.TaskStatus.Running:
+            self._running_comparison_tasks += 1
+        elif status in (QgsTask.TaskStatus.Complete, QgsTask.TaskStatus.Terminated):
+            self._running_comparison_tasks -= 1
 
     @classmethod
     def create_comparison_report_context(
@@ -477,7 +496,7 @@ class ReportManager(QtCore.QObject):
             log(f"Unable to save the project for scenario report generation.")
             return None
 
-        layout_name = f"{COMPARISON_REPORT_SEGMENT} {folder_name}"
+        layout_name = f"{DEFAULT_BASE_COMPARISON_REPORT_NAME} {folder_name}"
 
         template_path = FileUtils.report_template_path(
             SCENARIO_COMPARISON_TEMPLATE_NAME

@@ -154,6 +154,7 @@ MAX_ACTIVITY_DESCRIPTION_LENGTH = 225
 # IDs for the given tables in the report template
 ACTIVITY_AREA_TABLE_ID = "activity_area_table"
 PRIORITY_GROUP_WEIGHT_TABLE_ID = "assigned_weights_table"
+AREA_COMPARISON_TABLE_ID = "comparison_table"
 
 # Initiliazing the plugin default data as found in the data directory
 priority_layer_path = (

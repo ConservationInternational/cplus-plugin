@@ -1294,9 +1294,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             scenario_identifier = item.data(QtCore.Qt.UserRole)
             scenario = settings_manager.get_scenario(scenario_identifier)
             scenario_result = settings_manager.get_scenario_result(scenario_identifier)
-            scenario_result.scenario = scenario
-            if not scenario_result:
+            if not scenario_result and not scenario:
                 continue
+            scenario_result.scenario = scenario
             scenario_results.append(scenario_result)
 
         if len(scenario_results) < 2:
@@ -1304,7 +1304,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.show_message(msg)
             return
 
-        report_manager.generate_comparison_report(scenario_results)
+        submit_result = report_manager.generate_comparison_report(scenario_results)
+        if not submit_result.status:
+            msg = self.tr(
+                "Unable to submit report request for creating the comparison report."
+            )
+            self.show_message(f"{msg}")
 
     def on_scenario_list_selection_changed(self):
         """Slot raised when the selection of scenarios changes."""

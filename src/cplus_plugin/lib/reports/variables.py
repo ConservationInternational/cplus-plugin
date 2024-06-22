@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from qgis.core import QgsExpressionContextUtils, QgsPrintLayout
 
 from ...conf import Settings, settings_manager
-from ...models.report import ReportContext
+from ...models.report import BaseReportContext
 from ...utils import tr
 
 
@@ -25,7 +25,7 @@ class CplusVariableInfo:
     default_value: object
     final_value: object
 
-    def update_final_value(self, context: ReportContext):
+    def update_final_value(self, context: BaseReportContext):
         """Computes the final value of the variable to be used
         in the layout.
 
@@ -61,7 +61,7 @@ class SettingsVariableInfo(CplusVariableInfo):
         """Returns the settings value."""
         return settings_manager.get_value(self.settings_type, "")
 
-    def update_final_value(self, context: ReportContext):
+    def update_final_value(self, context: BaseReportContext):
         """Computes the final value of the variable to be used
         in the layout.
 
@@ -80,7 +80,7 @@ class NoneValueSettingsVariableInfo(SettingsVariableInfo):
     the settings.
     """
 
-    def update_final_value(self, context: ReportContext):
+    def update_final_value(self, context: BaseReportContext):
         """Computes the final value of the variable to be used
         in the layout.
 
@@ -111,9 +111,10 @@ class ScenarioNameVariableInfo(CplusVariableInfo):
         self.default_value = ""
         self.final_value = ""
 
-    def update_final_value(self, context: ReportContext):
+    def update_final_value(self, context: BaseReportContext):
         """Set the scenario name."""
-        self.final_value = context.scenario.name
+        if hasattr(context, "scenario"):
+            self.final_value = context.scenario.name
 
 
 @dataclass
@@ -133,9 +134,10 @@ class ScenarioDescriptionVariableInfo(CplusVariableInfo):
         self.default_value = ""
         self.final_value = ""
 
-    def update_final_value(self, context: ReportContext):
+    def update_final_value(self, context: BaseReportContext):
         """Set the scenario description."""
-        self.final_value = context.scenario.description
+        if hasattr(context, "scenario"):
+            self.final_value = context.scenario.name
 
 
 class LayoutVariableRegister:
@@ -357,7 +359,7 @@ class LayoutVariableRegister:
         """
         layout.setCustomProperty(self.VAR_CPLUS_REPORT_PROPERTY, True)
 
-    def update_variables(self, layout: QgsPrintLayout, context: ReportContext):
+    def update_variables(self, layout: QgsPrintLayout, context: BaseReportContext):
         """Update the values for the CPLUS variables in the layout.
 
         :param layout: Layout object whose CPLUS variable values
