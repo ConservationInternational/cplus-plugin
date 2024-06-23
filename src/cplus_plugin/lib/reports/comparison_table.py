@@ -18,7 +18,7 @@ class ScenarioComparisonTableInfo(QtCore.QObject):
     ScenarioResult objects.
     """
 
-    NOT_AVAILABLE_STR = "N/A"
+    NOT_AVAILABLE_STR = "-"
     AREA_DECIMAL_PLACES = 2
 
     area_calculated = QtCore.pyqtSignal(ScenarioAreaInfo)
@@ -28,20 +28,26 @@ class ScenarioComparisonTableInfo(QtCore.QObject):
 
         self._scenario_results = results
         self._activity_header_info = []
+        self._scenario_activity_name_pixel = {}
         self._contents = []
         self._area_calculated = False
 
-        # Extract the header information
+        # Extract the header information and populate mapping of activity
+        # pixel value with the corresponding name
         for result in self._scenario_results:
-            for activity in result.scenario.weighted_activities:
-                activity_info = (
-                    str(activity.uuid),
-                    activity.name,
-                    activity.style_pixel_value,
-                )
+            name_pixel_mapping = {}
+            for pixel_value, activity in enumerate(
+                result.scenario.weighted_activities, 1
+            ):
+                activity_info = (str(activity.uuid), activity.name)
+                name_pixel_mapping[pixel_value] = activity.name
                 if activity_info in self._activity_header_info:
                     continue
                 self._activity_header_info.append(activity_info)
+
+            self._scenario_activity_name_pixel[
+                result.scenario.uuid
+            ] = name_pixel_mapping
 
     @property
     def columns(self) -> typing.List[QgsLayoutTableColumn]:
@@ -103,6 +109,16 @@ class ScenarioComparisonTableInfo(QtCore.QObject):
             scenario_area_info = ScenarioAreaInfo(
                 result.scenario.name, result.scenario.uuid, int_area_info
             )
+
+            # Remap activity pixel value with the name for the calculated area
+            activity_pixel_name_info = self._scenario_activity_name_pixel[
+                result.scenario.uuid
+            ]
+            activity_name_area_info = {
+                activity_pixel_name_info[pixel_value]: area
+                for pixel_value, area in int_area_info.items()
+            }
+
             self.area_calculated.emit(scenario_area_info)
 
             if len(int_area_info) == 0:
@@ -112,13 +128,14 @@ class ScenarioComparisonTableInfo(QtCore.QObject):
             row_data = []
             row_data.append(QgsTableCell(result.scenario.name))
             for header_info in self._activity_header_info:
-                pixel_value = header_info[2]
-                if pixel_value in int_area_info:
-                    activity_area = int_area_info[pixel_value]
+                activity_name = header_info[1]
+                if activity_name in activity_name_area_info:
+                    activity_area = activity_name_area_info[activity_name]
                 else:
                     activity_area = self.NOT_AVAILABLE_STR
 
                 area_cell = QgsTableCell(activity_area)
+                area_cell.setHorizontalAlignment(QtCore.Qt.AlignHCenter)
                 if isinstance(activity_area, Number):
                     number_format = QgsBasicNumericFormat()
                     number_format.setThousandsSeparator(",")

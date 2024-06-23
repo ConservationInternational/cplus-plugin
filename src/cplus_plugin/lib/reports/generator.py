@@ -613,14 +613,14 @@ class ScenarioComparisonReportGenerator(BaseScenarioReportGenerator):
 
         # Set columns
         columns = comparison_info.columns
-        # Have to call both functions below for the columns to be shown correctly
+        # Have to call both functions below for the columns to be
+        # shown correctly
         parent_table.setHeaders(columns)
         parent_table.setColumns(columns)
 
         # Set row information
         row_data = comparison_info.contents()
-
-        # parent_table.setTableContents(rows_data)
+        parent_table.setTableContents(row_data)
 
     def _run(self):
         """Implementation of base class with additional functions for
