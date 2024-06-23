@@ -58,11 +58,12 @@ from ...definitions.defaults import (
     MINIMUM_ITEM_WIDTH,
     PRIORITY_GROUP_WEIGHT_TABLE_ID,
 )
-from .layout_items import CplusMapRepeatItem
-from ...models.base import Activity
+from .layout_items import BasicScenarioDetailsItem, CplusMapRepeatItem
+from ...models.base import Activity, ScenarioResult
 from ...models.helpers import extent_to_project_crs_extent
 from ...models.report import (
     BaseReportContext,
+    RepeatAreaDimension,
     ReportContext,
     ReportResult,
     ScenarioComparisonReportContext,
@@ -553,13 +554,178 @@ class BaseScenarioReportGenerator:
         return True
 
 
-class ScenarioComparisonReportGenerator(BaseScenarioReportGenerator):
+class DuplicatableRepeatPageReportGenerator(BaseScenarioReportGenerator):
+    """Incorporates extra functionality duplicating a repeat page.
+
+    Subclass must have `_repeat_gae` and `_repeat_page_num` members.
+    """
+
+    def duplicate_repeat_page(self, position: int) -> bool:
+        """Duplicates the repeat page and adds it to the layout
+        at the given position.
+
+        :param position: Zero-based position to insert the duplicated page. If
+        the position is greater than the number of pages, then the
+        duplicated page will be inserted at the end of the layout.
+        :type position: int
+
+        :returns: True if the page was successfully duplicated else False.
+        :rtype: bool
+        """
+        if self._repeat_page is None:
+            return False
+
+        if self._layout is None:
+            return False
+
+        if self._repeat_page_num == -1:
+            tr_msg = "Repeat page not found in page collection"
+            self._error_messages.append(tr_msg)
+            return False
+
+        new_page = QgsLayoutItemPage(self._layout)
+        new_page.attemptResize(self._repeat_page.sizeWithUnits())
+        new_page.setPageStyleSymbol(self._repeat_page.pageStyleSymbol().clone())
+
+        # Insert empty repeat page at the given position
+        if position < self._layout.pageCollection().pageCount():
+            self._layout.pageCollection().insertPage(new_page, position)
+        else:
+            # Add at the end
+            position = self._layout.pageCollection().pageCount()
+            self._layout.pageCollection().addPage(new_page)
+
+        doc = QtXml.QDomDocument()
+        el = doc.createElement("CopyItems")
+        ctx = QgsReadWriteContext()
+        repeat_page_items = self._layout.pageCollection().itemsOnPage(
+            self._repeat_page_num
+        )
+        for item in repeat_page_items:
+            item.writeXml(el, doc, ctx)
+            doc.appendChild(el)
+
+        # Clear element identifier references
+        nodes = doc.elementsByTagName("LayoutItem")
+        for n in range(nodes.count()):
+            node = nodes.at(n)
+            if node.isElement():
+                node.toElement().removeAttribute("uuid")
+
+        page_ref_point = self._layout.pageCollection().pagePositionToLayoutPosition(
+            position, QgsLayoutPoint(0, 0)
+        )
+        _ = self._layout.addItemsFromXml(el, doc, ctx, page_ref_point, True)
+
+        return True
+
+    def get_dimension_for_repeat_item(
+        self, repeat_item: CplusMapRepeatItem
+    ) -> typing.Optional[RepeatAreaDimension]:
+        """Calculates the number of rows and columns for rendering
+        items based on the size of CPLUS repeat item. It also
+        determines the recommended width and height of the repeat
+        area.
+
+        :param repeat_item: The map repeat item where the items will
+        be rendered.
+        :type repeat_item: CplusMapRepeatItem
+
+        :returns: A recommended number of rows and columns respectively
+        for rendering the repeat items as well the recommended dimension
+        of the repeat area.
+        :rtype: RepeatAreaDimension
+        """
+        num_rows, num_cols = -1, -1
+        if MINIMUM_ITEM_HEIGHT <= 0 or MINIMUM_ITEM_WIDTH <= 0:
+            tr_msg = tr("Minimum repeat item dimensions cannot be used")
+            self._error_messages.append(tr_msg)
+            return None
+
+        repeat_size = repeat_item.sizeWithUnits()
+        repeat_width = repeat_size.width()
+        repeat_height = repeat_size.height()
+
+        repeat_ref_point = repeat_item.pagePositionWithUnits()
+        repeat_ref_x = repeat_ref_point.x()
+        repeat_ref_y = repeat_ref_point.y()
+
+        # Determine number of columns
+        num_cols = -1
+        adjusted_item_width = MINIMUM_ITEM_WIDTH
+        if repeat_width < MINIMUM_ITEM_WIDTH:
+            tr_msg = tr("Repeat item width is too small to render the model items")
+            self._error_messages.append(tr_msg)
+            return None
+
+        else:
+            num_cols = int(repeat_width // MINIMUM_ITEM_WIDTH)
+            bleed_item_width = (
+                repeat_width - (num_cols * MINIMUM_ITEM_WIDTH)
+            ) / num_cols
+            adjusted_item_width = MINIMUM_ITEM_WIDTH + bleed_item_width
+
+        # Determine number of rows
+        num_rows = -1
+        adjusted_item_height = MINIMUM_ITEM_HEIGHT
+        if repeat_height < MINIMUM_ITEM_HEIGHT:
+            tr_msg = tr("Repeat item height is too small to render the model items")
+            self._error_messages.append(tr_msg)
+            return None
+
+        else:
+            num_rows = int(repeat_height // MINIMUM_ITEM_HEIGHT)
+            bleed_item_height = (
+                repeat_height - (num_rows * MINIMUM_ITEM_HEIGHT)
+            ) / num_rows
+            adjusted_item_height = MINIMUM_ITEM_HEIGHT + bleed_item_height
+
+        return RepeatAreaDimension(
+            num_rows, num_cols, adjusted_item_width, adjusted_item_height
+        )
+
+
+class ScenarioComparisonReportGenerator(DuplicatableRepeatPageReportGenerator):
     """Generator for CPLUS scenario comparison reports."""
+
+    PAGE_ONE_REPEAT_AREA_ID = "CPLUS Map Repeat Area 1"
+    REPEAT_PAGE_ITEM_ID = "CPLUS Map Repeat Area 2"
 
     def __init__(
         self, context: ScenarioComparisonReportContext, feedback: QgsFeedback = None
     ):
         super().__init__(context, feedback)
+
+        # Repeat item for half page one
+        self._page_one_repeat_item = None
+
+        # For duplicating page
+        self._repeat_page_item = None
+
+        self._repeat_page = None
+        self._repeat_page_num = -1
+
+    def _set_repeat_items(self):
+        """Set the repeat items for rendering scenario details."""
+        if self._layout is None:
+            return
+
+        items = self._layout.items()
+        for item in items:
+            if isinstance(item, CplusMapRepeatItem):
+                if (
+                    item.id() == self.PAGE_ONE_REPEAT_AREA_ID
+                    and self._page_one_repeat_item is None
+                ):
+                    self._page_one_repeat_item = item
+                elif (
+                    item.id() == self.REPEAT_PAGE_ITEM_ID
+                    and self._repeat_page_item is None
+                ):
+                    self._repeat_page_item = item
+                    page_num = item.page()
+                    self._repeat_page = self._layout.pageCollection().page(page_num)
+                    self._repeat_page_num = page_num
 
     def _get_failed_result(self) -> ReportResult:
         """Creates the report result object."""
@@ -622,13 +788,98 @@ class ScenarioComparisonReportGenerator(BaseScenarioReportGenerator):
         row_data = comparison_info.contents()
         parent_table.setTableContents(row_data)
 
+    def _render_scenario_detail_items(self):
+        """Render scenario details in page one and subsequent pages."""
+        num_results = len(self._context.results)
+
+        if num_results == 0:
+            tr_msg = "No results for rendering scenario maps"
+            self._error_messages.append(tr_msg)
+            return
+
+        # Page one
+        if self._page_one_repeat_item is None:
+            tr_msg = tr(
+                "Unable to render scenario details in page one, no repeat item was found"
+            )
+            self._error_messages.append(tr_msg)
+            return
+
+        dimension_page_one = self.get_dimension_for_repeat_item(
+            self._page_one_repeat_item
+        )
+        if dimension_page_one is None:
+            tr_msg = tr(
+                "Unable to render scenario details in page one as rendering computation failed"
+            )
+            self._error_messages.append(tr_msg)
+            return
+
+        repeat_ref_point_page_one = self._page_one_repeat_item.pagePositionWithUnits()
+        repeat_ref_x_page_one = repeat_ref_point_page_one.x()
+        repeat_ref_y_page_one = repeat_ref_point_page_one.y()
+
+        max_items_page_one = dimension_page_one.rows * dimension_page_one.columns
+        page_one_results = self._context.results[:max_items_page_one]
+
+        # Render page one scenario details
+        page_one_result_count = 0
+        for r in range(dimension_page_one.rows):
+            page_one_y_position = repeat_ref_y_page_one + (
+                r * dimension_page_one.height
+            )
+            for c in range(dimension_page_one.columns):
+                if page_one_result_count == page_one_results:
+                    break
+
+                page_one_x_position = repeat_ref_x_page_one + (
+                    c * dimension_page_one.width
+                )
+
+                result = page_one_results[page_one_result_count]
+
+                scenario_item = BasicScenarioDetailsItem(
+                    self._layout, scenario_result=result
+                )
+                self._layout.addLayoutItem(scenario_item)
+                page_one_ref_point = QgsLayoutPoint(
+                    page_one_x_position, page_one_y_position, self._layout.units()
+                )
+                scenario_item.attemptMove(page_one_ref_point, True, False, 0)
+                scenario_item.attemptResize(
+                    QgsLayoutSize(
+                        dimension_page_one.width,
+                        dimension_page_one.height,
+                        self._layout.units(),
+                    )
+                )
+
+                page_one_result_count += 1
+
+        # Hide repeat item frame
+        for p in range(self._layout.pageCollection().pageCount()):
+            items = self._layout.pageCollection().itemsOnPage(p)
+            for item in items:
+                if isinstance(item, CplusMapRepeatItem):
+                    item.setFrameEnabled(False)
+
     def _run(self):
         """Implementation of base class with additional functions for
         generation of comparison reports.
         """
         super()._run()
 
+        self._set_repeat_items()
+
+        if self._process_check_cancelled_or_set_progress(25):
+            return self._get_failed_result()
+
         self._populate_scenario_area_table()
+
+        if self._process_check_cancelled_or_set_progress(65):
+            return self._get_failed_result()
+
+        self._render_scenario_detail_items()
 
         if self._process_check_cancelled_or_set_progress(85):
             return self._get_failed_result()
@@ -656,7 +907,7 @@ class ScenarioComparisonReportGenerator(BaseScenarioReportGenerator):
         )
 
 
-class ScenarioAnalysisReportGenerator(BaseScenarioReportGenerator):
+class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
     """Generator for CPLUS scenario analysis report."""
 
     def __init__(self, context: ReportContext, feedback: QgsFeedback = None):
@@ -788,65 +1039,6 @@ class ScenarioAnalysisReportGenerator(BaseScenarioReportGenerator):
                 self._repeat_page_num = page_num
                 self._repeat_item = item
 
-    def duplicate_repeat_page(self, position: int) -> bool:
-        """Duplicates the repeat page and adds it to the layout
-        at the given position.
-
-        :param position: Zero-based position to insert the duplicated page. If
-        the position is greater than the number of pages, then the
-        duplicated page will be inserted at the end of the layout.
-        :type position: int
-
-        :returns: True if the page was successfully duplicated else False.
-        :rtype: bool
-        """
-        if self._repeat_page is None:
-            return False
-
-        if self._layout is None:
-            return False
-
-        if self._repeat_page_num == -1:
-            tr_msg = "Repeat page not found in page collection"
-            self._error_messages.append(tr_msg)
-            return False
-
-        new_page = QgsLayoutItemPage(self._layout)
-        new_page.attemptResize(self._repeat_page.sizeWithUnits())
-        new_page.setPageStyleSymbol(self._repeat_page.pageStyleSymbol().clone())
-
-        # Insert empty repeat page at the given position
-        if position < self._layout.pageCollection().pageCount():
-            self._layout.pageCollection().insertPage(new_page, position)
-        else:
-            # Add at the end
-            position = self._layout.pageCollection().pageCount()
-            self._layout.pageCollection().addPage(new_page)
-
-        doc = QtXml.QDomDocument()
-        el = doc.createElement("CopyItems")
-        ctx = QgsReadWriteContext()
-        repeat_page_items = self._layout.pageCollection().itemsOnPage(
-            self._repeat_page_num
-        )
-        for item in repeat_page_items:
-            item.writeXml(el, doc, ctx)
-            doc.appendChild(el)
-
-        # Clear element identifier references
-        nodes = doc.elementsByTagName("LayoutItem")
-        for n in range(nodes.count()):
-            node = nodes.at(n)
-            if node.isElement():
-                node.toElement().removeAttribute("uuid")
-
-        page_ref_point = self._layout.pageCollection().pagePositionToLayoutPosition(
-            position, QgsLayoutPoint(0, 0)
-        )
-        _ = self._layout.addItemsFromXml(el, doc, ctx, page_ref_point, True)
-
-        return True
-
     def _render_repeat_items(self):
         """Render activities in the layout based on the
         scenario result.
@@ -856,48 +1048,17 @@ class ScenarioAnalysisReportGenerator(BaseScenarioReportGenerator):
             self._error_messages.append(tr_msg)
             return
 
-        if MINIMUM_ITEM_HEIGHT <= 0 or MINIMUM_ITEM_WIDTH <= 0:
-            tr_msg = tr("Minimum repeat item dimensions cannot be used")
+        dimension = self.get_dimension_for_repeat_item(self._repeat_item)
+        if dimension is None:
+            tr_msg = tr("Unable to render activities as rendering computation failed")
             self._error_messages.append(tr_msg)
             return
-
-        repeat_size = self._repeat_item.sizeWithUnits()
-        repeat_width = repeat_size.width()
-        repeat_height = repeat_size.height()
 
         repeat_ref_point = self._repeat_item.pagePositionWithUnits()
         repeat_ref_x = repeat_ref_point.x()
         repeat_ref_y = repeat_ref_point.y()
 
-        # Determine number of columns
-        num_cols = -1
-        adjusted_item_width = MINIMUM_ITEM_WIDTH
-        if repeat_width < MINIMUM_ITEM_WIDTH:
-            tr_msg = tr("Repeat item width is too small to render the activities")
-            self._error_messages.append(tr_msg)
-            return
-        else:
-            num_cols = int(repeat_width // MINIMUM_ITEM_WIDTH)
-            bleed_item_width = (
-                repeat_width - (num_cols * MINIMUM_ITEM_WIDTH)
-            ) / num_cols
-            adjusted_item_width = MINIMUM_ITEM_WIDTH + bleed_item_width
-
-        # Determine number of rows
-        num_rows = -1
-        adjusted_item_height = MINIMUM_ITEM_HEIGHT
-        if repeat_height < MINIMUM_ITEM_HEIGHT:
-            tr_msg = tr("Repeat item height is too small to render the activities")
-            self._error_messages.append(tr_msg)
-            return
-        else:
-            num_rows = int(repeat_height // MINIMUM_ITEM_HEIGHT)
-            bleed_item_height = (
-                repeat_height - (num_rows * MINIMUM_ITEM_HEIGHT)
-            ) / num_cols
-            adjusted_item_height = MINIMUM_ITEM_HEIGHT + bleed_item_height
-
-        max_items_page = num_rows * num_cols
+        max_items_page = dimension.rows * dimension.columns
 
         num_activities = len(self._context.scenario.weighted_activities)
 
@@ -931,19 +1092,19 @@ class ScenarioAnalysisReportGenerator(BaseScenarioReportGenerator):
         im_count = 0
         for p in range(num_pages):
             page_pos = self._repeat_page_num + p
-            for r in range(num_rows):
-                reference_y_pos = repeat_ref_y + (r * adjusted_item_height)
-                for c in range(num_cols):
+            for r in range(dimension.rows):
+                reference_y_pos = repeat_ref_y + (r * dimension.height)
+                for c in range(dimension.columns):
                     if im_count == num_activities:
                         break
 
                     activity = self._context.scenario.weighted_activities[im_count]
-                    reference_x_pos = repeat_ref_x + (c * adjusted_item_width)
+                    reference_x_pos = repeat_ref_x + (c * dimension.width)
                     self._add_activity_items(
                         reference_x_pos,
                         reference_y_pos,
-                        adjusted_item_width,
-                        adjusted_item_height,
+                        dimension.width,
+                        dimension.height,
                         page_pos,
                         activity,
                     )

@@ -4,15 +4,22 @@
 import typing
 
 from qgis.core import (
+    Qgis,
     QgsFillSymbol,
     QgsLayoutItemAbstractMetadata,
+    QgsLayoutItemGroup,
+    QgsLayoutItemLabel,
     QgsLayoutItemRegistry,
     QgsLayoutItemShape,
+    QgsLayoutPoint,
+    QgsLayoutSize,
+    QgsTextFormat,
+    QgsUnitTypes,
 )
-from qgis.PyQt import QtGui
+from qgis.PyQt import QtCore, QtGui
 
-from ...models.base import ModelComponentType
-from ...utils import FileUtils, tr
+from ...models.base import ModelComponentType, ScenarioResult
+from ...utils import FileUtils, get_report_font, tr
 
 
 CPLUS_MAP_REPEAT_ITEM_TYPE = QgsLayoutItemRegistry.PluginItem + 2350
@@ -110,3 +117,118 @@ class CplusMapRepeatItemLayoutItemMetadata(QgsLayoutItemAbstractMetadata):
     def createItem(self, layout) -> CplusMapRepeatItem:
         """Factory method that return the cplus map item."""
         return CplusMapRepeatItem(layout)
+
+
+class BasicScenarioDetailsItem(QgsLayoutItemGroup):
+    """Contains elements showing the basic details of a scenario such as a
+    title, map and legend.
+    """
+
+    def __init__(self, *args, **kwargs):
+        self._result: ScenarioResult = kwargs.pop("scenario_result", None)
+        super().__init__(*args, **kwargs)
+
+        self._add_scenario_layout_items()
+
+        self._update_scenario_details()
+
+    def _add_scenario_layout_items(self):
+        """Add layout items for showing the scenario details."""
+        reference_point = self.pagePositionWithUnits()
+        reference_point_x = reference_point.x()
+        reference_point_y = reference_point.y()
+
+        title_color = QtGui.QColor(QtCore.Qt.white)
+        label_margin = 1.2
+
+        # Scenario name
+        self._title_label = QgsLayoutItemLabel(self.layout())
+        self.layout().addLayoutItem(self._title_label)
+        self._title_label.attemptMove(reference_point, True, False, self.page())
+        self._title_label.attemptResize(QgsLayoutSize(200, 2, self.layout().units()))
+        self._title_label.setBackgroundColor(QtGui.QColor(3, 109, 0))
+        self._title_label.setBackgroundEnabled(True)
+        self._title_label.setHAlign(QtCore.Qt.AlignHCenter)
+        self._title_label.setMargin(label_margin)
+        self.set_label_font(self._title_label, 15, color=title_color)
+        self.addItem(self._title_label)
+
+        # Scenario description
+        self._description_label = QgsLayoutItemLabel(self.layout())
+        self.layout().addLayoutItem(self._description_label)
+        description_ref_point = QgsLayoutPoint(
+            reference_point_x, reference_point_y + 2, self.layout().units()
+        )
+        self._description_label.attemptMove(
+            description_ref_point, True, False, self.page()
+        )
+        self._description_label.attemptResize(
+            QgsLayoutSize(200, 10, self.layout().units())
+        )
+        self._description_label.setMargin(label_margin)
+        self.set_label_font(self._description_label, 9)
+        self.addItem(self._description_label)
+
+    def _update_scenario_details(self):
+        """Updates the layout items with the scenario information."""
+        if self._result is None:
+            return
+
+        self._title_label.setText(self._result.scenario.name)
+        self._description_label.setText(self._result.scenario.description)
+
+    @classmethod
+    def set_label_font(
+        cls,
+        label: QgsLayoutItemLabel,
+        size: float,
+        bold: bool = False,
+        italic: bool = False,
+        color: QtGui.QColor = None,
+    ):
+        """Set font properties of the given layout label item.
+
+        :param label: Label item whose font properties will
+        be updated.
+        :type label: QgsLayoutItemLabel
+
+        :param size: Point size of the font.
+        :type size: int
+
+        :param bold: True if font is to be bold, else
+        False (default).
+        :type bold: bool
+
+        :param italic: True if font is to be in italics, else
+        False (default).
+        :type italic: bool
+
+        :param color: Color for the text or None for the default color.
+        :type color: QtGui.QColor
+        """
+        font = get_report_font(size, bold, italic)
+        version = Qgis.versionInt()
+
+        # Text format size unit
+        if version < 33000:
+            unit_type = QgsUnitTypes.RenderUnit.RenderPoints
+        else:
+            unit_type = Qgis.RenderUnit.Points
+
+        # Label font setting option
+        if version < 32400:
+            label.setFont(font)
+            if color is not None:
+                label.setFontColor(color)
+        else:
+            txt_format = QgsTextFormat()
+            txt_format.setFont(font)
+            txt_format.setSize(size)
+            txt_format.setSizeUnit(unit_type)
+
+            if color is not None:
+                txt_format.setColor(color)
+
+            label.setTextFormat(txt_format)
+
+        label.refresh()

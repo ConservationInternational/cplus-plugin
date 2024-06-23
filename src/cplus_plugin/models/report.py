@@ -90,3 +90,15 @@ class ScenarioAreaInfo:
     name: str
     identifier: UUID
     area: dict = dataclasses.field(default_factory=dict)
+
+
+@dataclasses.dataclass
+class RepeatAreaDimension:
+    """Contains information for rendering repeat model items
+    such as scenarios or activities in a CPlus repeat item.
+    """
+
+    rows: int
+    columns: int
+    width: float
+    height: float
