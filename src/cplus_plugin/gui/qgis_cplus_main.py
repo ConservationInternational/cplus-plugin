@@ -396,7 +396,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.add_scenario_btn.clicked.connect(self.add_scenario)
         self.load_scenario_btn.clicked.connect(self.load_scenario)
         self.info_scenario_btn.clicked.connect(self.show_scenario_info)
-        self.comparison_report_btn.clicked.connect(self.generate_comparison_report)
+        self.comparison_report_btn.clicked.connect(self.on_generate_comparison_report)
         self.remove_scenario_btn.clicked.connect(self.remove_scenario)
 
         self.scenario_list.itemSelectionChanged.connect(
@@ -1277,7 +1277,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             self.update_scenario_list()
 
-    def generate_comparison_report(self):
+    def on_generate_comparison_report(self):
         """Slot raised to generate a comparison for two or more selected
         scenario results.
         """
@@ -1303,6 +1303,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             msg = tr("Unable to retrieve the results for all the selected scenarios.")
             self.show_message(msg)
             return
+
+        for result in scenario_results:
+            self.post_analysis(result, None, None, None)
 
         submit_result = report_manager.generate_comparison_report(scenario_results)
         if not submit_result.status:
