@@ -5,9 +5,8 @@ import traceback
 import typing
 from zipfile import ZipFile
 
-import requests
 from qgis.core import Qgis
-from .multipart_upload import upload_part
+
 from .request import (
     CplusApiRequest,
     JOB_COMPLETED_STATUS,
@@ -15,40 +14,37 @@ from .request import (
     CHUNK_SIZE,
 )
 from ..conf import settings_manager, Settings
-from ..models.base import Activity, NcsPathway
+from ..models.base import Activity, NcsPathway, Scenario
 from ..models.base import ScenarioResult
 from ..tasks import ScenarioAnalysisTask
 from ..utils import FileUtils, CustomJsonEncoder, todict
 
 
-def clean_filename(filename):
-    """Creates a safe filename by removing operating system
-    invalid filename characters.
-
-    :param filename: File name
-    :type filename: str
-
-    :returns A clean file name
-    :rtype str
-    """
-    characters = " %:/,\[]<>*?"
-
-    for character in characters:
-        if character in filename:
-            filename = filename.replace(character, "_")
-
-    return filename
-
-
 class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
+    """Prepares and runs the scenario analysis in Cplus API
+
+    :param analysis_scenario_name: Scenario name
+    :type analysis_scenario_name: str
+    :param analysis_scenario_description: Scenario description
+    :type analysis_scenario_description: str
+    :param analysis_activities: List of activity to be processed
+    :type analysis_activities: typing.List[Activity]
+    :param analysis_priority_layers_groups: List of priority layer groups
+    :type analysis_priority_layers_groups: typing.List[dict]
+    :param analysis_extent: Extents of the Scenario
+    :type analysis_extent: typing.List[float]
+    :param scenario: Scenario object
+    :type scenario: Scenario
+    """
+
     def __init__(
         self,
-        analysis_scenario_name,
-        analysis_scenario_description,
-        analysis_activities,
-        analysis_priority_layers_groups,
-        analysis_extent,
-        scenario,
+        analysis_scenario_name: str,
+        analysis_scenario_description: str,
+        analysis_activities: typing.List[Activity],
+        analysis_priority_layers_groups: typing.List[dict],
+        analysis_extent: typing.List[float],
+        scenario: Scenario,
     ):
         super().__init__(
             analysis_scenario_name,
@@ -69,24 +65,28 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.downloaded_output = 0
         self.scenario_status = None
 
-    def cancel_task(self, exception=None):
+    def cancel_task(self, exception: Exception = None):
         """
         Cancel QGIS task and cancel scenario processing on API.
+
+        :param exception: Exception to be added to cancel log
+        :type exception: Exception
         """
         if self.status_pooling:
             self.status_pooling.cancelled = True
         super().cancel_task(exception)
 
     def on_terminated(self):
-        """Called when the task is terminated."""
+        """Function to call when the task is terminated."""
         # check if there is ongoing upload
         layer_mapping = settings_manager.get_all_layer_mapping()
         for identifier, layer in layer_mapping.items():
-            if "upload_id" not in layer:
+            upload_id = layer.get("upload_id", None)
+            if not upload_id:
                 continue
             self.log_message(f"Cancelling upload file: {layer['path']} ")
             try:
-                self.request.abort_upload_layer(layer["uuid"], layer["upload_id"])
+                self.request.abort_upload_layer(layer["uuid"], upload_id)
                 settings_manager.remove_layer_mapping(identifier)
             except Exception as ex:
                 self.log_message(f"Problem aborting upload layer: {ex}")
@@ -99,7 +99,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         super().on_terminated()
 
     def run(self) -> bool:
-        """Run scenario analysis using API."""
+        """Run scenario analysis using API.
+
+        :return: True if successful, False otherwise
+        :rtype: bool
+        """
         self.request = CplusApiRequest()
         self.scenario_directory = self.get_scenario_directory()
         FileUtils.create_new_dir(self.scenario_directory)
@@ -137,13 +141,16 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             return False
         return not self.processing_cancelled
 
-    def run_upload(self, file_path, component_type) -> typing.Dict:
-        """
-        Upload a file as component type to the S3.
+    def run_upload(self, file_path: str, component_type: str) -> dict:
+        """Upload a file as component type to the S3.
+
         :param file_path: Path of the file to be uploaded
+        :type file_path: str
         :param component_type: Input layer type of the upload file (ncs_pathway, ncs_carbon, etc.)
+        :type component_type: str
+
         :return: result, containing UUID of the uploaded file, size, and final filename
-        :rtype: typing.Dict
+        :rtype: dict
         """
 
         self.log_message(f"Uploading {file_path} as {component_type}")
@@ -162,6 +169,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             "path": file_path,
         }
         settings_manager.save_layer_mapping(temp_layer)
+
         # do upload by chunks
         items = []
         idx = 0
@@ -173,18 +181,26 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 if not chunk:
                     break
                 url_item = upload_urls[idx]
-                part_item = upload_part(url_item["url"], chunk, url_item["part_number"])
-                items.append(part_item)
+                part_item = self.request.upload_file_part(
+                    url_item["url"], chunk, url_item["part_number"]
+                )
+                if part_item:
+                    items.append(part_item)
+                else:
+                    raise Exception(
+                        f"Error while uploading {file_path} as " f"{component_type}"
+                    )
                 self.uploaded_chunks += 1
                 self.__update_scenario_status(
                     {
-                        "progress_text": f"Uploading layers with concurrent request",
+                        "progress_text": "Uploading layers with concurrent request",
                         "progress": int(
                             (self.uploaded_chunks / self.total_file_upload_chunks) * 100
                         ),
                     }
                 )
                 idx += 1
+
         # finish upload
         result = {"uuid": None}
         if self.processing_cancelled:
@@ -192,19 +208,21 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         result = self.request.finish_upload_layer(layer_uuid, upload_id, items)
         return result
 
-    def run_parallel_upload(self, upload_dict) -> typing.List[typing.Dict]:
-        """
-        Upload file concurrently using ThreadPoolExecutor
+    def run_parallel_upload(self, upload_dict: dict) -> typing.List[dict]:
+        """Upload file concurrently using ThreadPoolExecutor
+
         :param upload_dict: Dictionary with file path as key and component type
         (ncs_pathway, ncs_carbon, etc.) as value.
-        :return: final_result, a list of dictionary containing UUID of the uploaded
-        file, size, and final filename
-        :rtype: List
+        :type upload_dict: dict
+
+        :return: final_result, a list of dictionary containing UUID
+            of the uploaded file, size, and final filename
+        :rtype: typing.List[dict]
         """
 
         self.__update_scenario_status(
             {
-                "progress_text": f"Uploading layers with concurrent request",
+                "progress_text": "Uploading layers with concurrent request",
                 "progress": 0,
             }
         )
@@ -220,7 +238,19 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             )
         return list(final_result)
 
-    def __zip_shapefiles(self, shapefile_path: str):
+    def __zip_shapefiles(self, shapefile_path: str) -> str:
+        """Zip shapefiles to an object with same name.
+        For example, the .shp filename is `test_file.shp`, then the zip file
+        name would be `test_file.zip`
+
+        :param shapefile_path: Path of the shapefile
+        :type shapefile_path: str
+
+        :return: Zip file path if the specified `shapefile_path`
+            ends with .shp, return shapefile_path otherwise
+        :rtype: str
+        """
+
         if shapefile_path.endswith(".shp"):
             output_dir = os.path.dirname(shapefile_path)
             filename_without_ext = os.path.splitext(os.path.basename(shapefile_path))[0]
@@ -236,11 +266,13 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             return zip_name
         return shapefile_path
 
-    def upload_layers(self):
-        """
-        Check whether layer has been uploaded. If not, then upload it to S3.
+    def upload_layers(self) -> typing.Union[bool, None]:
+        """Check whether layer has been uploaded. If not, then upload it to S3.
         The mapping between local file path and remote layer will then be
         added to QGIS settings.
+
+        :return: None if upload was successful, False otherwise
+        :rtype: typing.Union[bool, None]
         """
 
         files_to_upload = {}
@@ -372,21 +404,32 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             self.path_to_layer_mapping[uploaded_layer["path"]] = uploaded_layer
             settings_manager.save_layer_mapping(uploaded_layer, identifier)
 
-    def check_layer_uploaded(self, items_to_check: dict) -> dict:
-        """
-        Check whether a layer has been uploaded to CPLUS API
+    def check_layer_uploaded(self, items_to_check: typing.List[dict]) -> dict:
+        """Check whether a layer has been uploaded to CPLUS API
+
         :param items_to_check: Dictionary with file path as key and group as value
+        :type items_to_check: typing.List[dict]
+
+        :return: Dictionary with file path as key and layer availability as value
+        :rtype: dict
         """
         output = {}
         uuid_to_path = {}
-
         for layer_path, group in items_to_check.items():
             identifier = layer_path.replace(os.sep, "--")
             uploaded_layer_dict = settings_manager.get_layer_mapping(identifier)
             if uploaded_layer_dict:
-                if "upload_id" in uploaded_layer_dict:
+                existing_upload_id = uploaded_layer_dict.get("upload_id", None)
+                existing_uuid = uploaded_layer_dict.get("uuid", None)
+                if existing_upload_id and existing_uuid:
                     # if upload_id exists, then upload is not finished
-                    output[layer_path] = False
+                    try:
+                        self.request.abort_upload_layer(
+                            existing_uuid, existing_upload_id
+                        )
+                    except Exception as ex:
+                        pass
+                    output[layer_path] = items_to_check[layer_path]
                 if layer_path == uploaded_layer_dict["path"]:
                     uuid_to_path[uploaded_layer_dict["uuid"]] = layer_path
                     self.path_to_layer_mapping[layer_path] = uploaded_layer_dict
@@ -400,10 +443,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             output[layer_path] = items_to_check[layer_path]
         return output
 
-    def build_scenario_detail_json(self):
-        """
-        Build scenario detail JSON to be sent to CPLUS API
-        """
+    def build_scenario_detail_json(self) -> None:
+        """Build scenario detail JSON to be sent to CPLUS API"""
 
         old_scenario_dict = json.loads(
             json.dumps(todict(self.scenario), cls=CustomJsonEncoder)
@@ -545,10 +586,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             ),
         }
 
-    def __execute_scenario_analysis(self):
-        """
-        Execute scenario analysis
-        """
+    def __execute_scenario_analysis(self) -> None:
+        """Execute scenario analysis"""
         # submit scenario detail to the API
         self.__update_scenario_status(
             {"progress_text": "Submit and execute Scenario to CPLUS API", "progress": 0}
@@ -580,9 +619,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             scenario_error = status_response.get("errors", "Unknown error")
             raise Exception(scenario_error)
 
-    def __update_scenario_status(self, response):
-        """
-        Update processing status in QGIS modal.
+    def __update_scenario_status(self, response: dict) -> None:
+        """Update processing status in QGIS modal.
+
+        :param response: Response dictionary from Cplus API
+        :type response: dict
         """
         self.set_status_message(response.get("progress_text", ""))
         self.update_progress(response.get("progress", 0))
@@ -593,12 +634,17 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                     self.log_message(log)
             self.logs = new_logs
 
-    def __create_activity(self, activity: dict, download_dict: list):
-        """
-        Create activity object from activity dictionary and downloaded
+    def __create_activity(self, activity: dict, download_dict: dict) -> Activity:
+        """Create activity object from activity dictionary and downloaded
         file dictionary
-        :param activity: activity dictionary
-        :download_dict: downloaded file dictionary
+
+        :param activity: Activity dictionary
+        :type activity: dict
+        :download_dict: Downloaded file dictionary
+        :type download_dict: dict
+
+        :return: Activity object
+        :rtype: Activity
         """
         ncs_pathways = []
         for pathway in activity["pathways"]:
@@ -617,12 +663,16 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         activity_obj = Activity(**activity)
         return activity_obj
 
-    def __set_scenario(self, output_list, download_paths):
-        """
-        Set scenario object based on output list and downloaded file paths
+    def __set_scenario(
+        self, output_list: typing.List[dict], download_paths: list
+    ) -> None:
+        """Set scenario object based on output list and downloaded file paths
         to be used in generating report
-        :param output_list: List of output from CPLUS API
+
+        :param output_list: List of Scenario output from Cplus API
+        :type output_list: typing.List[dict]
         :download_paths: List of downloaded file paths
+        :type download_paths: list
         """
         output_fnames = []
         for output in output_list["results"]:
@@ -649,33 +699,50 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             "updated_detail"
         ]["priority_layer_groups"]
 
-    def download_file(self, url, local_filename):
+    def _on_download_file_progress(self, downloaded: int, total: int):
+        """Callback to update download file progreses
+
+        :param downloaded: total bytes of downloaded file
+        :type downloaded: int
+        :param total: size of downloaded file
+        :type total: int
+        """
+        part = (downloaded * 100 / total) if total > 0 else 0
+        downloaded_output = self.downloaded_output + part
+        self.__update_scenario_status(
+            {
+                "progress_text": "Downloading output files",
+                "progress": int((downloaded_output / self.total_file_output) * 90) + 5,
+            }
+        )
+
+    def download_file(self, url: str, local_filename: str) -> None:
+        """Download an output file from S3 to the local destination
+
+        :param url: URL of the file to download
+        :type url: str
+        :param local_filename: str
+        :type local_filename: str
+        """
         parent_dir = os.path.dirname(local_filename)
         if not os.path.exists(parent_dir):
             os.makedirs(parent_dir)
-        with requests.get(url, stream=True) as r:
-            r.raise_for_status()
-            if self.processing_cancelled:
-                return
-            with open(local_filename, "wb") as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-                    if self.processing_cancelled:
-                        return
+        self.request.download_file(url, local_filename, self._on_download_file_progress)
         self.downloaded_output += 1
         self.__update_scenario_status(
             {
-                "progress_text": f"Downloading output files",
+                "progress_text": "Downloading output files",
                 "progress": int((self.downloaded_output / self.total_file_output) * 90)
                 + 5,
             }
         )
 
-    def __retrieve_scenario_outputs(self, scenario_uuid):
-        """
-        Set scenario output object based on scenario UUID
+    def __retrieve_scenario_outputs(self, scenario_uuid: str):
+        """Set scenario output object based on scenario UUID
         to be used in generating report
+
+        :param scenario_uuid: Scenario UUID
+        :type scenario_uuid: str
         """
         self.__update_scenario_status(
             {"progress_text": "Downloading output files", "progress": 0}
@@ -703,12 +770,10 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 )
             download_paths.append(download_path)
 
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=3 if os.cpu_count() > 3 else 1
-        ) as executor:
-            executor.map(self.download_file, urls_to_download, download_paths)
-        if self.processing_cancelled:
-            return
+        for idx, url in enumerate(urls_to_download):
+            self.download_file(url, download_paths[idx])
+            if self.processing_cancelled:
+                return
 
         self.__set_scenario(output_list, download_paths)
 
