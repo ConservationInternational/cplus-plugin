@@ -9,10 +9,13 @@ from qgis.core import (
     QgsLayoutItemAbstractMetadata,
     QgsLayoutItemGroup,
     QgsLayoutItemLabel,
+    QgsLayoutItemMap,
     QgsLayoutItemRegistry,
     QgsLayoutItemShape,
     QgsLayoutPoint,
     QgsLayoutSize,
+    QgsProject,
+    QgsRasterLayer,
     QgsTextFormat,
     QgsUnitTypes,
 )
@@ -126,6 +129,7 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
 
     def __init__(self, *args, **kwargs):
         self._result: ScenarioResult = kwargs.pop("scenario_result", None)
+        self._project = kwargs.pop("project", None)
         super().__init__(*args, **kwargs)
 
         self._add_scenario_layout_items()
@@ -169,6 +173,18 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
         self.set_label_font(self._description_label, 9)
         self.addItem(self._description_label)
 
+        # Map for scenario HPA layer
+        self._scenario_map = QgsLayoutItemMap(self.layout())
+        self.layout().addLayoutItem(self._scenario_map)
+        map_ref_point = QgsLayoutPoint(
+            reference_point_x, reference_point_y + 15, self.layout().units()
+        )
+        self._scenario_map.attemptMove(map_ref_point, True, False, self.page())
+        self._scenario_map.attemptResize(QgsLayoutSize(200, 50, self.layout().units()))
+        normalized_scenario_name = self._result.scenario.name.lower().replace(" ", "_")
+        self._scenario_map.setId(f"map_{normalized_scenario_name}")
+        self.addItem(self._scenario_map)
+
     def _update_scenario_details(self):
         """Updates the layout items with the scenario information."""
         if self._result is None:
@@ -176,6 +192,32 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
 
         self._title_label.setText(self._result.scenario.name)
         self._description_label.setText(self._result.scenario.description)
+
+        scenario_layer = self._get_scenario_layer_in_project()
+        if scenario_layer is not None:
+            self._scenario_map.setLayers([scenario_layer])
+
+    def _get_scenario_layer_in_project(self) -> typing.Optional[QgsRasterLayer]:
+        """Gets the scenario layer from the project.
+
+        :returns: Raster layer corresponding to the scenario HPA.
+        :rtype: QgsRasterLayer
+        """
+        if self._project is None:
+            return None
+
+        layer_root = self._project.layerTreeRoot()
+        matching_tree_layers = [
+            tl
+            for tl in layer_root.findLayers()
+            if tl.layer().name() == self._result.output_layer_name
+        ]
+
+        if len(matching_tree_layers) == 0:
+            return None
+
+        scenario_tree_layer = matching_tree_layers[0]
+        return scenario_tree_layer.layer()
 
     @classmethod
     def set_label_font(

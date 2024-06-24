@@ -839,7 +839,7 @@ class ScenarioComparisonReportGenerator(DuplicatableRepeatPageReportGenerator):
                 result = page_one_results[page_one_result_count]
 
                 scenario_item = BasicScenarioDetailsItem(
-                    self._layout, scenario_result=result
+                    self._layout, scenario_result=result, project=self._project
                 )
                 self._layout.addLayoutItem(scenario_item)
                 page_one_ref_point = QgsLayoutPoint(
