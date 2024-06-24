@@ -31,6 +31,8 @@ jobs:
           - release-3_22
           - release-3_28
           - release-3_30
+          - final-3_34_6
+
         os: [ubuntu-22.04]
 
     steps:
