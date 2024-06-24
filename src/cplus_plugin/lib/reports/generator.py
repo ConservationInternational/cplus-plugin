@@ -822,6 +822,10 @@ class ScenarioComparisonReportGenerator(DuplicatableRepeatPageReportGenerator):
         max_items_page_one = dimension_page_one.rows * dimension_page_one.columns
         page_one_results = self._context.results[:max_items_page_one]
 
+        remaining_results = self._context.results[max_items_page_one:]
+
+        page_collection = self._layout.pageCollection()
+
         # Render page one scenario details
         page_one_result_count = 0
         for r in range(dimension_page_one.rows):
@@ -855,6 +859,36 @@ class ScenarioComparisonReportGenerator(DuplicatableRepeatPageReportGenerator):
                 )
 
                 page_one_result_count += 1
+
+        if len(remaining_results) > 0:
+            # Subsequent pages
+            if self._repeat_page_item is None:
+                tr_msg = tr(
+                    "Unable to render scenario details in page two and subsequent pages, no repeat item was found"
+                )
+                self._error_messages.append(tr_msg)
+                return
+
+            repeat_dimension = self.get_dimension_for_repeat_item(
+                self._repeat_page_item
+            )
+            if repeat_dimension is None:
+                tr_msg = tr(
+                    "Unable to render scenario details in page two and subsequent pages as rendering computation failed"
+                )
+                self._error_messages.append(tr_msg)
+                return
+
+            repeat_ref_point = self._repeat_page_item.pagePositionWithUnits()
+            repeat_ref_x = repeat_ref_point.x()
+            repeat_ref_y = repeat_ref_point.y()
+
+            max_items_repeat_page = repeat_dimension.rows * repeat_dimension.columns
+
+        else:
+            # Remove second page and subsequent ones
+            for i in range(1, page_collection.pageCount()):
+                page_collection.deletePage(i)
 
         # Hide repeat item frame
         for p in range(self._layout.pageCollection().pageCount()):
