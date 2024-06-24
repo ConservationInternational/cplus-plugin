@@ -27,12 +27,44 @@ from .npv_financial_model import NpvFinancialModel
 from ...lib.financials import compute_discount_value
 from ...utils import FileUtils, open_documentation, tr
 
+
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../../ui/financial_pwl_dialog.ui")
 )
 
 
-class FinancialValueItemDelegate(QtWidgets.QStyledItemDelegate):
+DEFAULT_DECIMAL_PLACES = 2
+
+
+class DisplayValueFormatterItemDelegate(QtWidgets.QStyledItemDelegate):
+    """
+    Delegate for formatting numeric values using thousand comma separator,
+    number of decimal places etc.
+    """
+
+    def displayText(self, value: float, locale: QtCore.QLocale) -> str:
+        """Format the value to incorporate thousand comma separator.
+
+        :param value: Value of the display role provided by the model.
+        :type value: float
+
+        :param locale: Locale for the value in the display role.
+        :type locale: QtCore.QLocale
+
+        :returns: Formatted value of the display role data.
+        :rtype: str
+        """
+        if value is None:
+            return ""
+
+        formatter = QgsBasicNumericFormat()
+        formatter.setShowThousandsSeparator(True)
+        formatter.setNumberDecimalPlaces(DEFAULT_DECIMAL_PLACES)
+
+        return formatter.formatDouble(float(value), QgsNumericFormatContext())
+
+
+class FinancialValueItemDelegate(DisplayValueFormatterItemDelegate):
     """
     Delegate for ensuring only numbers are specified in financial value
     fields.
@@ -82,27 +114,6 @@ class FinancialValueItemDelegate(QtWidgets.QStyledItemDelegate):
         else:
             widget.setText(str(value))
 
-    def displayText(self, value: float, locale: QtCore.QLocale) -> str:
-        """Format the value to incorporate thousand comma separator.
-
-        :param value: Value of the display role provided by the model.
-        :type value: float
-
-        :param locale: Locale for the value in the display role.
-        :type locale: QtCore.QLocale
-
-        :returns: Formatted value of the display role data.
-        :rtype: str
-        """
-        if value is None:
-            return ""
-
-        formatter = QgsBasicNumericFormat()
-        formatter.setShowThousandsSeparator(True)
-        formatter.setNumberDecimalPlaces(2)
-
-        return formatter.formatDouble(float(value), QgsNumericFormatContext())
-
     def setModelData(
         self,
         widget: QtWidgets.QWidget,
@@ -150,40 +161,14 @@ class FinancialValueItemDelegate(QtWidgets.QStyledItemDelegate):
         widget.setGeometry(option.rect)
 
 
-class ValueFormatterItemDelegate(QtWidgets.QStyledItemDelegate):
-    """
-    Delegate for formatting numeric values using thousand comma separator,
-    number of decimal places etc.
-    """
-
-    def displayText(self, value: float, locale: QtCore.QLocale) -> str:
-        """Format the value to incorporate thousand comma separator.
-
-        :param value: Value of the display role provided by the model.
-        :type value: float
-
-        :param locale: Locale for the value in the display role.
-        :type locale: QtCore.QLocale
-
-        :returns: Formatted value of the display role data.
-        :rtype: str
-        """
-        if value is None:
-            return ""
-
-        formatter = QgsBasicNumericFormat()
-        formatter.setShowThousandsSeparator(True)
-        formatter.setNumberDecimalPlaces(2)
-
-        return formatter.formatDouble(float(value), QgsNumericFormatContext())
-
-
 class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
     """Dialog for managing NPV priority weighting layers for activities."""
 
     DEFAULT_YEARS = 5
     DEFAULT_DISCOUNT_RATE = 0.0
-    NUM_DECIMAL_PLACES = 2
+    NUM_DECIMAL_PLACES = DEFAULT_DECIMAL_PLACES
+    MINIMUM_NPV_VALUE = 0.0
+    MAXIMUM_NPV_VALUE = 1000000000.000000
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -193,6 +178,11 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
         self._message_bar = QgsMessageBar()
         self.vl_notification.addWidget(self._message_bar)
+
+        self.sb_npv.setMaximum(self.MAXIMUM_NPV_VALUE)
+        self.sb_npv.setMinimum(self.MINIMUM_NPV_VALUE)
+        self.sb_npv.setDecimals(self.NUM_DECIMAL_PLACES)
+        self.sb_npv.setReadOnly(True)
 
         # Initialize UI
         help_icon = FileUtils.get_icon("mActionHelpContents_green.svg")
@@ -204,7 +194,17 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
         ok_button = self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
         ok_button.setText(tr("Update"))
-        self.buttonBox.accepted.connect(self._on_accepted)
+        # Prevent button from being triggered when Enter is pressed
+        # and use dummy interceptor below
+        ok_button.setAutoDefault(False)
+        ok_button.setDefault(False)
+        ok_button.clicked.connect(self._on_accepted)
+
+        # Workaround for intercepting Enter triggers thus preventing the
+        # dialog from being accepted. Not ideal but Qt issue
+        self._enter_interceptor_btn.setAutoDefault(True)
+        self._enter_interceptor_btn.setDefault(True)
+        self._enter_interceptor_btn.setVisible(False)
 
         self._npv = None
 
@@ -230,7 +230,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         self.tv_revenue_costs.setModel(self._npv_model)
         self._revenue_delegate = FinancialValueItemDelegate()
         self._costs_delegate = FinancialValueItemDelegate()
-        self._discounted_value_delegate = ValueFormatterItemDelegate()
+        self._discounted_value_delegate = DisplayValueFormatterItemDelegate()
         self.tv_revenue_costs.setItemDelegateForColumn(1, self._revenue_delegate)
         self.tv_revenue_costs.setItemDelegateForColumn(2, self._costs_delegate)
         self.tv_revenue_costs.setItemDelegateForColumn(
@@ -242,6 +242,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
         self.sb_num_years.valueChanged.connect(self.on_number_years_changed)
         self.sb_discount.valueChanged.connect(self.on_discount_rate_changed)
+        self.sb_npv.valueChanged.connect(self.on_total_npv_value_changed)
 
         # Set default values
         self.reset_npv_values()
@@ -266,6 +267,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
                 )
 
         self.gp_npv_pwl.toggled.connect(self._on_activity_npv_groupbox_toggled)
+        self.cb_manual_npv.toggled.connect(self._on_manual_npv_toggled)
 
     def open_help(self, activated: bool):
         """Opens the user documentation for the plugin in a browser."""
@@ -333,6 +335,25 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
             self.update_discounted_value(item.row())
             self._update_current_activity_npv()
 
+    def on_total_npv_value_changed(self, value: float):
+        """Slot raised when the total NPV has changed either through
+        automatic computation or manual input.
+
+        :param value: NPV value.
+        :type value: float
+        """
+        if (
+            not self._current_activity_identifier is None
+            and self.cb_manual_npv.isChecked()
+        ):
+            activity_npv = self._get_current_activity_npv()
+            if activity_npv is not None:
+                activity_npv.params.absolute_npv = self.sb_npv.value()
+
+                # Update NPV normalization range
+                if self.cb_computed_npv.isChecked():
+                    self._compute_min_max_range()
+
     def update_discounted_value(self, row: int):
         """Updated the discounted value for the given row number.
 
@@ -366,7 +387,8 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
             discounted_value_index, rounded_discounted_value, QtCore.Qt.EditRole
         )
 
-        self.compute_npv()
+        if not self.cb_manual_npv.isChecked():
+            self.compute_npv()
 
     def update_all_discounted_values(self):
         """Updates all discounted values that had already been
@@ -406,12 +428,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
         self._npv = npv
 
-        # Format display
-        formatter = QgsBasicNumericFormat()
-        formatter.setShowThousandsSeparator(True)
-        formatter.setNumberDecimalPlaces(2)
-
-        self.txt_npv.setText(formatter.formatDouble(npv, QgsNumericFormatContext()))
+        self.sb_npv.setValue(npv)
 
     def on_years_removed(self, index: QtCore.QModelIndex, start: int, end: int):
         """Slot raised when the year rows have been removed.
@@ -430,7 +447,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
     def copy_npv(self):
         """Copy NPV to the clipboard."""
-        QgsApplication.instance().clipboard().setText(self.txt_npv.text())
+        QgsApplication.instance().clipboard().setText(str(self.sb_npv.value()))
 
     def is_valid(self) -> bool:
         """Verifies if the input data is valid.
@@ -457,26 +474,33 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
             activity_name = activity_mapping.activity.name
 
-            # First check if size of yearly rates matches the numbers of years
-            if activity_mapping.params.years != len(
-                activity_mapping.params.yearly_rates
-            ):
-                msg = "Size of yearly rates and number of years do not match."
-                self._show_warning_message(msg)
-                if status:
-                    status = False
-                continue
+            if activity_mapping.params.manual_npv:
+                if activity_mapping.params.absolute_npv is None:
+                    missing_value_tr = tr("Manual NPV is missing")
+                    msg = f"{activity_name}: {missing_value_tr}."
+                    self._show_warning_message(msg)
 
-            missing_value_rows = []
-            for i, rates_info in enumerate(activity_mapping.params.yearly_rates):
-                if len(rates_info) < 3 or None in rates_info:
-                    missing_value_rows.append(str(i + 1))
+            else:
+                # First check if size of yearly rates matches the numbers of years
+                if activity_mapping.params.years != len(
+                    activity_mapping.params.yearly_rates
+                ):
+                    msg = tr("Size of yearly rates and number of years do not match.")
+                    self._show_warning_message(f"{activity_name}: {msg}")
+                    if status:
+                        status = False
+                    continue
 
-            if len(missing_value_rows) > 0:
-                msg = f"{activity_name}: {missing_msg_tr} {', '.join(missing_value_rows)}."
-                self._show_warning_message(msg)
-                if status:
-                    status = False
+                missing_value_rows = []
+                for i, rates_info in enumerate(activity_mapping.params.yearly_rates):
+                    if len(rates_info) < 3 or None in rates_info:
+                        missing_value_rows.append(str(i + 1))
+
+                if len(missing_value_rows) > 0:
+                    msg = f"{activity_name}: {missing_msg_tr} {', '.join(missing_value_rows)}."
+                    self._show_warning_message(msg)
+                    if status:
+                        status = False
 
         return status
 
@@ -558,7 +582,8 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         self._npv_model.set_number_of_years(self.DEFAULT_YEARS)
         self.sb_num_years.setValue(self.DEFAULT_YEARS)
         self.sb_discount.setValue(self.DEFAULT_DISCOUNT_RATE)
-        self.txt_npv.setText("")
+        self.cb_manual_npv.setChecked(False)
+        self.sb_npv.setValue(0.0)
         self.gp_npv_pwl.setChecked(False)
 
     def on_activity_selection_changed(
@@ -589,6 +614,18 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
         self.load_activity_npv(activity_npv)
 
+    def _get_current_activity_npv(self) -> typing.Optional[ActivityNpv]:
+        """Gets the current activity NPV model.
+
+        :returns: The current activity NPV model or None if the current
+        identifier is not set or if no model was found in the collection.
+        :rtype: ActivityNpv
+        """
+        if self._current_activity_identifier is None:
+            return None
+
+        return self._npv_collection.activity_npv(self._current_activity_identifier)
+
     def load_activity_npv(self, activity_npv: ActivityNpv):
         """Loads NPV parameters for an activity.
 
@@ -597,6 +634,8 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         """
         self._current_activity_identifier = activity_npv.activity_id
         npv_params = activity_npv.params
+
+        saved_total_npv = npv_params.absolute_npv
 
         self.gp_npv_pwl.setChecked(activity_npv.enabled)
 
@@ -608,8 +647,13 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         self.sb_discount.setValue(npv_params.discount)
         self.sb_discount.blockSignals(False)
 
+        self.cb_manual_npv.setChecked(npv_params.manual_npv)
+        if npv_params.manual_npv:
+            self._on_manual_npv_toggled(True)
+
         self._npv_model.set_number_of_years(npv_params.years)
 
+        # Update total NPV if auto-computed or manually defined
         for i, year_info in enumerate(npv_params.yearly_rates):
             if len(year_info) < 3:
                 continue
@@ -620,6 +664,9 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
             self._npv_model.setData(cost_index, year_info[1], QtCore.Qt.EditRole)
 
         self.update_all_discounted_values()
+
+        if npv_params.manual_npv:
+            self.sb_npv.setValue(saved_total_npv)
 
     def _update_current_activity_npv(self):
         """Update NPV parameters changes made in the UI to the underlying
@@ -632,27 +679,32 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
             self._current_activity_identifier
         )
 
-        activity_npv.params.years = self.sb_num_years.value()
-        activity_npv.params.discount = self.sb_discount.value()
+        activity_npv.params.manual_npv = self.cb_manual_npv.isChecked()
         activity_npv.enabled = self.gp_npv_pwl.isChecked()
 
-        yearly_rates = []
-        for row in range(self._npv_model.rowCount()):
-            revenue_value = self._npv_model.data(
-                self._npv_model.index(row, 1), QtCore.Qt.EditRole
-            )
-            cost_value = self._npv_model.data(
-                self._npv_model.index(row, 2), QtCore.Qt.EditRole
-            )
-            discount_value = self._npv_model.data(
-                self._npv_model.index(row, 3), QtCore.Qt.EditRole
-            )
-            yearly_rates.append((revenue_value, cost_value, discount_value))
+        if not activity_npv.params.manual_npv:
+            activity_npv.params.years = self.sb_num_years.value()
+            activity_npv.params.discount = self.sb_discount.value()
 
-        activity_npv.params.yearly_rates = yearly_rates
+            yearly_rates = []
+            for row in range(self._npv_model.rowCount()):
+                revenue_value = self._npv_model.data(
+                    self._npv_model.index(row, 1), QtCore.Qt.EditRole
+                )
+                cost_value = self._npv_model.data(
+                    self._npv_model.index(row, 2), QtCore.Qt.EditRole
+                )
+                discount_value = self._npv_model.data(
+                    self._npv_model.index(row, 3), QtCore.Qt.EditRole
+                )
+                yearly_rates.append((revenue_value, cost_value, discount_value))
 
-        if self._npv is not None:
+            activity_npv.params.yearly_rates = yearly_rates
+
+        if not self.cb_manual_npv.isChecked() and self._npv is not None:
             activity_npv.params.absolute_npv = self._npv
+        else:
+            activity_npv.params.absolute_npv = self.sb_npv.value()
 
         # Update NPV normalization range
         if self.cb_computed_npv.isChecked():
@@ -696,11 +748,40 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
             if not checked:
                 self._update_current_activity_npv()
             else:
-                activity_npv = self._npv_collection.activity_npv(
-                    self._current_activity_identifier
-                )
-                activity_npv.enabled = self.gp_npv_pwl.isChecked()
+                activity_npv = self._get_current_activity_npv()
+                if activity_npv is not None:
+                    activity_npv.enabled = self.gp_npv_pwl.isChecked()
 
                 # Update NPV normalization range
                 if self.cb_computed_npv.isChecked():
                     self._compute_min_max_range()
+
+    def _on_manual_npv_toggled(self, checked: bool):
+        """Slot raised to enable/disable manual NPV value.
+
+        :param checked: True if the manual NPV is enabled else False.
+        :type checked: bool
+        """
+        if checked:
+            self.sb_npv.setReadOnly(False)
+            self.sb_npv.setFocus()
+            self.enable_npv_parameters_widgets(False)
+
+            activity_npv = self._get_current_activity_npv()
+            if activity_npv is not None:
+                activity_npv.params.manual_npv = self.cb_manual_npv.isChecked()
+
+        else:
+            self.sb_npv.setReadOnly(True)
+            self.enable_npv_parameters_widgets(True)
+            self.compute_npv()
+
+    def enable_npv_parameters_widgets(self, enable: bool):
+        """Enable or disable the UI widgets for specifying NPV parameters.
+
+        :param enable: True to enable the widgets, else False to disable.
+        :type enable: bool
+        """
+        self.sb_num_years.setEnabled(enable)
+        self.sb_discount.setEnabled(enable)
+        self.tv_revenue_costs.setEnabled(enable)
