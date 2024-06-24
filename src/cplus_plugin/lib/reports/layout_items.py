@@ -9,11 +9,15 @@ from qgis.core import (
     QgsLayoutItemAbstractMetadata,
     QgsLayoutItemGroup,
     QgsLayoutItemLabel,
+    QgsLayoutItemLegend,
     QgsLayoutItemMap,
     QgsLayoutItemRegistry,
     QgsLayoutItemShape,
     QgsLayoutPoint,
     QgsLayoutSize,
+    QgsLegendRenderer,
+    QgsLegendStyle,
+    QgsMapLayerLegendUtils,
     QgsProject,
     QgsRasterLayer,
     QgsTextFormat,
@@ -149,7 +153,7 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
         self._title_label = QgsLayoutItemLabel(self.layout())
         self.layout().addLayoutItem(self._title_label)
         self._title_label.attemptMove(reference_point, True, False, self.page())
-        self._title_label.attemptResize(QgsLayoutSize(200, 2, self.layout().units()))
+        self._title_label.attemptResize(QgsLayoutSize(200, 10, self.layout().units()))
         self._title_label.setBackgroundColor(QtGui.QColor(3, 109, 0))
         self._title_label.setBackgroundEnabled(True)
         self._title_label.setHAlign(QtCore.Qt.AlignHCenter)
@@ -161,7 +165,7 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
         self._description_label = QgsLayoutItemLabel(self.layout())
         self.layout().addLayoutItem(self._description_label)
         description_ref_point = QgsLayoutPoint(
-            reference_point_x, reference_point_y + 2, self.layout().units()
+            reference_point_x, reference_point_y + 10, self.layout().units()
         )
         self._description_label.attemptMove(
             description_ref_point, True, False, self.page()
@@ -170,20 +174,36 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
             QgsLayoutSize(200, 10, self.layout().units())
         )
         self._description_label.setMargin(label_margin)
-        self.set_label_font(self._description_label, 9)
+        self.set_label_font(self._description_label, 10)
         self.addItem(self._description_label)
 
         # Map for scenario HPA layer
         self._scenario_map = QgsLayoutItemMap(self.layout())
         self.layout().addLayoutItem(self._scenario_map)
         map_ref_point = QgsLayoutPoint(
-            reference_point_x, reference_point_y + 15, self.layout().units()
+            reference_point_x, reference_point_y + 20, self.layout().units()
         )
         self._scenario_map.attemptMove(map_ref_point, True, False, self.page())
-        self._scenario_map.attemptResize(QgsLayoutSize(200, 50, self.layout().units()))
+        self._scenario_map.attemptResize(QgsLayoutSize(200, 40, self.layout().units()))
         normalized_scenario_name = self._result.scenario.name.lower().replace(" ", "_")
         self._scenario_map.setId(f"map_{normalized_scenario_name}")
         self.addItem(self._scenario_map)
+
+        # Map legend
+        self._legend = QgsLayoutItemLegend(self.layout())
+        self._legend.setLinkedMap(self._scenario_map)
+        self.layout().addLayoutItem(self._legend)
+        legend_ref_point = QgsLayoutPoint(
+            reference_point_x, reference_point_y + 100, self.layout().units()
+        )
+        self._legend.attemptMove(legend_ref_point, True, False, self.page())
+        self._legend.attemptResize(QgsLayoutSize(200, 10, self.layout().units()))
+        self._legend.setId(f"legend_{normalized_scenario_name}")
+        self._legend.setColumnCount(2)
+        self._legend.setSplitLayer(True)
+        self._legend.setBackgroundColor(QtGui.QColor(178, 223, 138))
+        self._legend.setBackgroundEnabled(True)
+        self.addItem(self._legend)
 
     def _update_scenario_details(self):
         """Updates the layout items with the scenario information."""
@@ -196,6 +216,10 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
         scenario_layer = self._get_scenario_layer_in_project()
         if scenario_layer is not None:
             self._scenario_map.setLayers([scenario_layer])
+            ext = scenario_layer.extent()
+            self._scenario_map.setExtent(ext)
+
+        self._update_map_legend()
 
     def _get_scenario_layer_in_project(self) -> typing.Optional[QgsRasterLayer]:
         """Gets the scenario layer from the project.
@@ -218,6 +242,70 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
 
         scenario_tree_layer = matching_tree_layers[0]
         return scenario_tree_layer.layer()
+
+    def _update_map_legend(self):
+        """Ensure that the legend only contains symbol categories of activities
+        in the scenario layer.
+        """
+        self._legend.setAutoUpdateModel(False)
+        model = self._legend.model()
+        activity_names = [
+            activity.name.lower()
+            for activity in self._result.scenario.weighted_activities
+        ]
+
+        # Hiding the first root group child title
+        root_group = model.rootGroup()
+        root_children = root_group.children() if root_group is not None else []
+
+        for child in root_children:
+            QgsLegendRenderer.setNodeLegendStyle(child, QgsLegendStyle.Hidden)
+
+        for tree_layer in model.rootGroup().findLayers():
+            if tree_layer.name() == self._result.output_layer_name:
+                # We need to refresh the tree layer for the nodes to be loaded
+                model.refreshLayerLegend(tree_layer)
+                scenario_child_nodes = model.layerLegendNodes(tree_layer)
+                activity_node_indices = []
+                for i, child_node in enumerate(scenario_child_nodes):
+                    node_name = str(child_node.data(QtCore.Qt.DisplayRole))
+                    # Only show nodes for activity nodes used for the scenario
+                    if node_name.lower() in activity_names:
+                        activity_node_indices.append(i)
+
+                QgsMapLayerLegendUtils.setLegendNodeOrder(
+                    tree_layer, activity_node_indices
+                )
+
+                # Remove the tree layer band title
+                QgsLegendRenderer.setNodeLegendStyle(tree_layer, QgsLegendStyle.Hidden)
+
+                model.refreshLayerLegend(tree_layer)
+            else:
+                # Remove all other non-scenario layers
+                node_index = model.node2index(tree_layer)
+                if not node_index.isValid():
+                    continue
+                model.removeRow(node_index.row(), node_index.parent())
+
+        # Set item font
+        item_font_size = 9
+        font = get_report_font(item_font_size)
+        version = Qgis.versionInt()
+        if version < 33000:
+            self._legend.setStyleFont(QgsLegendStyle.SymbolLabel, font)
+        else:
+            style = self._legend.style(QgsLegendStyle.SymbolLabel)
+            text_format = style.textFormat()
+            text_format.setFont(font)
+            text_format.setSize(item_font_size)
+            style.setTextFormat(text_format)
+            self._legend.setStyle(QgsLegendStyle.SymbolLabel, style)
+
+        # Refresh legend
+        self._legend.adjustBoxSize()
+        self._legend.invalidateCache()
+        self._legend.update()
 
     @classmethod
     def set_label_font(

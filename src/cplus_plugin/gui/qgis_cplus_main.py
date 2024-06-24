@@ -99,6 +99,7 @@ from ..definitions.defaults import (
     PILOT_AREA_EXTENT,
     OPTIONS_TITLE,
     ICON_PATH,
+    MAXIMUM_COMPARISON_REPORTS,
     PLUGIN_MESSAGE_LOG_TAB,
     QGIS_GDAL_PROVIDER,
     QGIS_MESSAGE_LEVEL_DICT,
@@ -1302,6 +1303,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if len(scenario_results) < 2:
             msg = tr("Unable to retrieve the results for all the selected scenarios.")
             self.show_message(msg)
+            return
+
+        if len(scenario_results) > MAXIMUM_COMPARISON_REPORTS:
+            msg = tr(
+                "Exceeded maximum number of scenarios for generating the comparison report. Limit is"
+            )
+            self.show_message(f"{msg} {MAXIMUM_COMPARISON_REPORTS}.")
             return
 
         for result in scenario_results:

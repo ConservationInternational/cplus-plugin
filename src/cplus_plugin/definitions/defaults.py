@@ -250,3 +250,4 @@ DEFAULT_REPORT_LICENSE = (
 BASE_API_URL = "https://stage.cplus.earth/api/v1"
 
 DEFAULT_BASE_COMPARISON_REPORT_NAME = "Scenario Comparison Report"
+MAXIMUM_COMPARISON_REPORTS = 10
