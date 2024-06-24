@@ -1,4 +1,4 @@
-# Step4: Select outputs and precessing options
+# Step4: Select outputs and processing options
 
 1. **Step 4:** `Step 4` guides the user to select the outputs to be saved into the file system for report generation. By clicking on the `Step 4` option, the user will navigate to the section dedicated to producing outputs. Here, the user finds a list of available outputs, each representing data that can be included in the report.
 
@@ -25,6 +25,8 @@ This step is crucial for tailoring the outputs to include only the necessary inf
     5. **Scenario Highest Position analysis:** By default, this output is checked. It generates the final highest position analysis outputs. Unselecting this option will disable report generation this is because the highest position analysis output is the required output for report generation.
 
 3. **Processing Options**
+
+    >NOTE: Users need to register and login with a Trends.Earth account to use the online API for processing with CPLUS.
 
     The user can also choose the processing option, deciding whether they want to process online or offline.
 
