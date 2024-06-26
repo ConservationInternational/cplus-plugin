@@ -16,7 +16,7 @@ To go to the settings the user can click on the plugin toolbar icon to reveal th
 
         ![general settings](./img/setting-3.png)
 
-        ## General Setting 
+        ## General Settings 
 
         **Base data directory:** Directory to read data from, and to which results will be written.
 
@@ -26,7 +26,7 @@ To go to the settings the user can click on the plugin toolbar icon to reveal th
 
         **Pathway suitability index:** Index multiplied to the pathways. Lower values means the pathway is less important, and higher means it's more important.
 
-        ## Snaping
+        ## Snapping
 
         Snapping will set rasters to match the cell alignment of a reference layer.
 
