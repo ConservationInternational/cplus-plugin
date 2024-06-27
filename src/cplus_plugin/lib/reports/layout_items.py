@@ -26,7 +26,7 @@ from qgis.core import (
 from qgis.PyQt import QtCore, QtGui
 
 from ...models.base import ModelComponentType, ScenarioResult
-from ...utils import FileUtils, get_report_font, tr
+from ...utils import FileUtils, get_report_font, log, tr
 
 
 CPLUS_MAP_REPEAT_ITEM_TYPE = QgsLayoutItemRegistry.PluginItem + 2350
@@ -146,8 +146,6 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
         reference_point_x = reference_point.x()
         reference_point_y = reference_point.y()
 
-        self.attemptResize(QgsLayoutSize(200, 100, self.layout().units()))
-
         title_color = QtGui.QColor(QtCore.Qt.white)
         label_margin = 1.2
 
@@ -173,7 +171,7 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
             description_ref_point, True, False, self.page()
         )
         self._description_label.attemptResize(
-            QgsLayoutSize(200, 15, self.layout().units())
+            QgsLayoutSize(200, 10, self.layout().units())
         )
         self._description_label.setMargin(label_margin)
         self.set_label_font(self._description_label, 11)
@@ -183,11 +181,12 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
         self._scenario_map = QgsLayoutItemMap(self.layout())
         self.layout().addLayoutItem(self._scenario_map)
         map_ref_point = QgsLayoutPoint(
-            reference_point_x, reference_point_y + 25, self.layout().units()
+            reference_point_x, reference_point_y + 20, self.layout().units()
         )
         self._scenario_map.attemptMove(map_ref_point, True, False, self.page())
-        self._scenario_map.attemptResize(QgsLayoutSize(200, 55, self.layout().units()))
+        self._scenario_map.attemptResize(QgsLayoutSize(200, 90, self.layout().units()))
         normalized_scenario_name = self._result.scenario.name.lower().replace(" ", "_")
+        self.setId(f"group_{normalized_scenario_name}")
         self._scenario_map.setId(f"map_{normalized_scenario_name}")
         self.addItem(self._scenario_map)
 
@@ -196,15 +195,16 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
         self._legend.setLinkedMap(self._scenario_map)
         self.layout().addLayoutItem(self._legend)
         legend_ref_point = QgsLayoutPoint(
-            reference_point_x, reference_point_y + 80, self.layout().units()
+            reference_point_x, reference_point_y + 110, self.layout().units()
         )
         self._legend.attemptMove(legend_ref_point, True, False, self.page())
-        self._legend.attemptResize(QgsLayoutSize(200, 20, self.layout().units()))
+        self._legend.attemptResize(QgsLayoutSize(200, 35, self.layout().units()))
         self._legend.setId(f"legend_{normalized_scenario_name}")
         self._legend.setColumnCount(2)
         self._legend.setSplitLayer(True)
         self._legend.setBackgroundColor(QtGui.QColor(178, 223, 138))
         self._legend.setBackgroundEnabled(True)
+        self._legend.setColumnSpace(0.5)
         self.addItem(self._legend)
 
     def _update_scenario_details(self):
@@ -221,10 +221,48 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
             ext = scenario_layer.extent()
             self._scenario_map.setExtent(ext)
             self._scenario_map.attemptResize(
-                QgsLayoutSize(200, 55, self.layout().units())
+                QgsLayoutSize(200, 90, self.layout().units())
             )
 
         self._update_map_legend()
+
+        self._scenario_updated = True
+
+    def attemptResize(self, *args, **kwargs):
+        """Override to set the correct position of the legend item."""
+        super().attemptResize(*args, **kwargs)
+
+        group_height = self.sizeWithUnits().height()
+        group_width = self.sizeWithUnits().width()
+
+        reference_point = self.pagePositionWithUnits()
+        reference_point_x = reference_point.x()
+        reference_point_y = reference_point.y()
+
+        # Set position of the legend
+        legend_height = self._legend.sizeWithUnits().height() / 2
+        new_reference_y = reference_point_y + (group_height - legend_height)
+        legend_ref_point = QgsLayoutPoint(
+            reference_point_x, new_reference_y, self.layout().units()
+        )
+        self._legend.attemptMove(legend_ref_point, True, False, self.page())
+        self._legend.attemptResize(
+            QgsLayoutSize(group_width, legend_height, self.layout().units())
+        )
+
+        # Set height for the map
+        map_height = group_height - (
+            legend_height
+            + self._title_label.sizeWithUnits().height()
+            + self._description_label.sizeWithUnits().height()
+        )
+        self._scenario_map.attemptResize(
+            QgsLayoutSize(
+                self._scenario_map.sizeWithUnits().width(),
+                map_height,
+                self.layout().units(),
+            )
+        )
 
     def _get_scenario_layer_in_project(self) -> typing.Optional[QgsRasterLayer]:
         """Gets the scenario layer from the project.
@@ -253,6 +291,7 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
         in the scenario layer.
         """
         self._legend.setAutoUpdateModel(False)
+        self._legend.setResizeToContents(False)
         model = self._legend.model()
         activity_names = [
             activity.name.lower()
@@ -294,7 +333,7 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
                 model.removeRow(node_index.row(), node_index.parent())
 
         # Set item font
-        item_font_size = 7
+        item_font_size = 7.5
         font = get_report_font(item_font_size)
         version = Qgis.versionInt()
         if version < 33000:

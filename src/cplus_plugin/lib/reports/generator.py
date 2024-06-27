@@ -885,9 +885,69 @@ class ScenarioComparisonReportGenerator(DuplicatableRepeatPageReportGenerator):
 
             max_items_repeat_page = repeat_dimension.rows * repeat_dimension.columns
 
+            # Calculate number of pages required
+            num_pages, req_pages = divmod(
+                len(remaining_results), int(max_items_repeat_page)
+            )
+            # Check if there is an additional page required
+            if req_pages != 0:
+                num_pages += 1
+
+            # First create the additional required pages for the
+            # report so that we don't also duplicate the already
+            # rendered items in the repeat page when adding the
+            # scenarios.
+            for p in range(1, num_pages):
+                page_pos = self._repeat_page_num + p
+                _ = self.duplicate_repeat_page(page_pos)
+
+            # Render page two+ scenario details
+            scenario_result_count = 0
+            for p in range(num_pages):
+                page_pos = self._repeat_page_num + p
+                for r in range(repeat_dimension.rows):
+                    repeat_page_y_position = repeat_ref_y + (
+                        r * repeat_dimension.height
+                    )
+                    for c in range(repeat_dimension.columns):
+                        if scenario_result_count == len(remaining_results):
+                            break
+
+                        repeat_page_x_position = repeat_ref_x + (
+                            c * repeat_dimension.width
+                        )
+
+                        result = remaining_results[scenario_result_count]
+
+                        scenario_item = BasicScenarioDetailsItem(
+                            self._layout, scenario_result=result, project=self._project
+                        )
+                        self._layout.addLayoutItem(scenario_item)
+                        repeat_ref_point = QgsLayoutPoint(
+                            repeat_page_x_position,
+                            repeat_page_y_position,
+                            self._layout.units(),
+                        )
+                        scenario_item.attemptMove(
+                            repeat_ref_point, True, False, page_pos
+                        )
+                        scenario_item.attemptResize(
+                            QgsLayoutSize(
+                                repeat_dimension.width,
+                                repeat_dimension.height,
+                                self._layout.units(),
+                            )
+                        )
+
+                        page_one_result_count += 1
+
         else:
             # Remove second page and subsequent ones
             for i in range(1, page_collection.pageCount()):
+                page_items = page_collection.itemsOnPage(i)
+                for item in page_items:
+                    self._layout.removeLayoutItem(item)
+                    item.deleteLater()
                 page_collection.deletePage(i)
 
         # Hide repeat item frame
