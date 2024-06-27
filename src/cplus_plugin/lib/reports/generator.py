@@ -939,7 +939,7 @@ class ScenarioComparisonReportGenerator(DuplicatableRepeatPageReportGenerator):
                             )
                         )
 
-                        page_one_result_count += 1
+                        scenario_result_count += 1
 
         else:
             # Remove second page and subsequent ones

@@ -141,10 +141,17 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
         self._update_scenario_details()
 
     def _add_scenario_layout_items(self):
-        """Add layout items for showing the scenario details."""
+        """Add layout items for showing the scenario details.
+
+        The position and size values for the map and legend are
+        just placeholder values and will be adjusted when the
+        parent item has been resized.
+        """
         reference_point = self.pagePositionWithUnits()
         reference_point_x = reference_point.x()
         reference_point_y = reference_point.y()
+
+        normalized_scenario_name = self._result.scenario.name.lower().replace(" ", "_")
 
         title_color = QtGui.QColor(QtCore.Qt.white)
         label_margin = 1.2
@@ -156,6 +163,7 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
         self._title_label.attemptResize(QgsLayoutSize(200, 10, self.layout().units()))
         self._title_label.setBackgroundColor(QtGui.QColor(3, 109, 0))
         self._title_label.setBackgroundEnabled(True)
+        self._title_label.setId(f"label_title_{normalized_scenario_name}")
         self._title_label.setHAlign(QtCore.Qt.AlignHCenter)
         self._title_label.setMargin(label_margin)
         self.set_label_font(self._title_label, 15, color=title_color)
@@ -174,6 +182,7 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
             QgsLayoutSize(200, 10, self.layout().units())
         )
         self._description_label.setMargin(label_margin)
+        self._description_label.setId(f"label_description_{normalized_scenario_name}")
         self.set_label_font(self._description_label, 11)
         self.addItem(self._description_label)
 
@@ -185,7 +194,6 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
         )
         self._scenario_map.attemptMove(map_ref_point, True, False, self.page())
         self._scenario_map.attemptResize(QgsLayoutSize(200, 90, self.layout().units()))
-        normalized_scenario_name = self._result.scenario.name.lower().replace(" ", "_")
         self.setId(f"group_{normalized_scenario_name}")
         self._scenario_map.setId(f"map_{normalized_scenario_name}")
         self.addItem(self._scenario_map)
@@ -205,6 +213,7 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
         self._legend.setBackgroundColor(QtGui.QColor(178, 223, 138))
         self._legend.setBackgroundEnabled(True)
         self._legend.setColumnSpace(0.5)
+        self._legend.setBoxSpace(1.2)
         self.addItem(self._legend)
 
     def _update_scenario_details(self):
@@ -225,8 +234,6 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
             )
 
         self._update_map_legend()
-
-        self._scenario_updated = True
 
     def attemptResize(self, *args, **kwargs):
         """Override to set the correct position of the legend item."""
