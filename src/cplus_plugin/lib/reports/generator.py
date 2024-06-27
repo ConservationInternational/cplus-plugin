@@ -944,6 +944,8 @@ class ScenarioComparisonReportGenerator(DuplicatableRepeatPageReportGenerator):
         else:
             # Remove second page and subsequent ones
             for i in range(1, page_collection.pageCount()):
+                # Some items are jumping back to page one hence the need
+                # to delete them before deleting the page.
                 page_items = page_collection.itemsOnPage(i)
                 for item in page_items:
                     self._layout.removeLayoutItem(item)
