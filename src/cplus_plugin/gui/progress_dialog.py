@@ -1,6 +1,7 @@
 """Analysis progress dialog file"""
 
 import os
+import typing
 
 from qgis.PyQt import (
     uic,
@@ -19,6 +20,7 @@ from ..definitions.defaults import (
     REPORT_DOCUMENTATION,
 )
 from ..lib.reports.manager import report_manager, ReportManager
+from ..models.report import ReportResult
 
 Ui_DlgProgress, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/analysis_progress_dialog.ui")
@@ -276,3 +278,93 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         self.btn_view_report.setEnabled(True)
         icon = self.style().standardIcon(QStyle.SP_DialogCloseButton)
         self.btn_cancel.setIcon(icon)
+
+
+class ReportProgressDialog(ProgressDialog):
+    """Shows progress for standalone report generation operations."""
+
+    def __init__(self, message, submit_result, parent=None):
+        super().__init__(message=message, parent=parent)
+
+        self.analysis_running = False
+        self.report_running = True
+
+        self._submit_result = submit_result
+        self.setWindowTitle(tr("Report Progress"))
+
+        self._task = None
+        if submit_result.identifier:
+            self._task = self.report_manager.task_by_id(int(submit_result.identifier))
+
+        if self._task is not None:
+            self._task.taskCompleted.connect(self.reporting_finished)
+            self._task.taskTerminated.connect(self.reporting_error)
+
+        if submit_result.feedback:
+            submit_result.feedback.progressChanged.connect(self.update_progress_bar)
+
+    def view_report_pdf(self):
+        """Opens a PDF version of the report"""
+        if self.report_result is None:
+            log("Report result not found.")
+            return
+
+        status = self.report_manager.view_pdf(self.report_result)
+        if not status:
+            log("Unable to open PDF report.")
+
+    def view_report_layout_designer(self):
+        """Opens the report in layout designer"""
+        if self.report_result is None:
+            log("Report result not found.")
+            return
+
+        status = self.report_manager.open_layout_designer(self.report_result)
+        if not status:
+            log("Unable to open layout designer.")
+
+    @property
+    def report_result(self) -> typing.Optional[ReportResult]:
+        """Gets the report result.
+
+        :returns: The report result based on the submit
+        status or None if the task is not found or the
+        task is not complete or an error occurred.
+        :rtype: ReportResult
+        """
+        if self._task is None:
+            return None
+
+        return self._task.result
+
+    def cancel_reporting(self):
+        """Cancel the report generation process."""
+        status = self.report_manager.remove_task_by_result(self._submit_result)
+        if not status:
+            self.report_running = False
+
+    def reporting_finished(self) -> None:
+        """Executed when report generation has been successfully completed."""
+        self.set_report_complete()
+
+        self.change_status_message(tr("Report generation complete."))
+
+        # Change cancel button to the close button status
+        self.btn_cancel.setText(tr("Close"))
+        self.btn_view_report.setEnabled(True)
+        icon = self.style().standardIcon(QStyle.SP_DialogCloseButton)
+        self.btn_cancel.setIcon(icon)
+
+        self.report_running = False
+
+    def reporting_error(self):
+        """Executed when a report generation error has occurred."""
+        self.change_status_message(
+            tr("Error generating report, see logs for more info.")
+        )
+
+        # Change cancel button to the close button status
+        self.btn_cancel.setText(tr("Close"))
+        self.btn_view_report.setEnabled(False)
+
+        self.report_running = False

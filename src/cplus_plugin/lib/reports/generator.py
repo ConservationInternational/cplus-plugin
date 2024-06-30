@@ -705,6 +705,8 @@ class ScenarioComparisonReportGenerator(DuplicatableRepeatPageReportGenerator):
         self._repeat_page = None
         self._repeat_page_num = -1
 
+        self._area_calculation_reference = 25
+
     def _set_repeat_items(self):
         """Set the repeat items for rendering scenario details."""
         if self._layout is None:
@@ -765,6 +767,11 @@ class ScenarioComparisonReportGenerator(DuplicatableRepeatPageReportGenerator):
 
         return self._report_output_dir
 
+    def _on_area_calculation_changed(self, progress: float):
+        """Slot raised when the area calculation has changed."""
+        area_progress = self._area_calculation_reference + (40 * progress / 100)
+        self._process_check_cancelled_or_set_progress(area_progress)
+
     def _populate_scenario_area_table(self):
         """Sets the areas of the different scenarios in the
         comparison table.
@@ -776,6 +783,9 @@ class ScenarioComparisonReportGenerator(DuplicatableRepeatPageReportGenerator):
             return
 
         comparison_info = ScenarioComparisonTableInfo(self._context.results)
+        comparison_info.feedback.progressChanged.connect(
+            self._on_area_calculation_changed
+        )
 
         # Set columns
         columns = comparison_info.columns

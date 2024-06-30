@@ -104,6 +104,18 @@ class ReportManager(QtCore.QObject):
         """
         self._variable_register.register_variables(layout)
 
+    def task_by_id(self, task_id: int) -> typing.Optional[QgsTask]:
+        """Gets the task using its identifier.
+
+        :param task_id: Task identifier.
+        :type task_id: int
+
+        :returns: The tas corresponding to the given ID or
+        None if not found.
+        :rtype: QgsTask
+        """
+        return self.task_manager.task(task_id)
+
     def scenario_by_task_id(self, task_id: int) -> str:
         """Gets the scenario identifier for the report generation t
         ask with the given ID.
@@ -188,6 +200,36 @@ class ReportManager(QtCore.QObject):
 
         return True
 
+    def remove_task_by_result(self, submit_result: ReportSubmitStatus) -> bool:
+        """Remove a report task based on the submit result.
+
+        :param submit_result: Submit result information.
+        :type submit_result: ReportSubmitStatus
+
+        :returns: True if the task has been successfully removed
+        else False if there is no associated task for the given
+        submit result.
+        :rtype: bool
+        """
+        for scenario_id, task_id in self._report_tasks.items():
+            if int(submit_result.identifier) == task_id:
+                self.remove_report_task(scenario_id)
+                return True
+
+        task = self.task_by_id(int(submit_result.identifier))
+        if task is None:
+            return False
+
+        if (
+            task.status() != QgsTask.TaskStatus.Complete
+            or task.status() != QgsTask.TaskStatus.Terminated
+        ):
+            submit_result.feedback.cancel()
+            task.cancel()
+            return True
+
+        return False
+
     def create_scenario_dir(self, scenario: Scenario) -> str:
         """Creates an output directory (within BASE_DIR) for saving the
         analysis outputs for the given scenario.
@@ -254,7 +296,7 @@ class ReportManager(QtCore.QObject):
             log(
                 "Layer name for output scenario is empty. Cannot generate report_templates."
             )
-            return ReportSubmitStatus(False, None)
+            return ReportSubmitStatus(False, None, "")
 
         if feedback is None:
             feedback = QgsFeedback(self)
@@ -262,7 +304,7 @@ class ReportManager(QtCore.QObject):
         ctx = self.create_report_context(scenario_result, feedback)
         if ctx is None:
             log("Could not create report context. Check directory settings.")
-            return ReportSubmitStatus(False, None)
+            return ReportSubmitStatus(False, None, "")
 
         scenario_id = str(ctx.scenario.uuid)
         if scenario_id in self._report_tasks:
@@ -281,7 +323,7 @@ class ReportManager(QtCore.QObject):
 
         self._report_tasks[scenario_id] = task_id
 
-        return ReportSubmitStatus(True, ctx.feedback)
+        return ReportSubmitStatus(True, ctx.feedback, str(task_id))
 
     def report_task_completed(self, task):
         if len(task._result.messages) > 0:
@@ -434,7 +476,7 @@ class ReportManager(QtCore.QObject):
         """
         if self._running_comparison_tasks == self.COMPARISON_REPORT_LIMIT:
             log("Reached limit of comparison report processes, try again later.")
-            return ReportSubmitStatus(False, None)
+            return ReportSubmitStatus(False, None, "")
 
         if feedback is None:
             feedback = QgsFeedback(self)
@@ -443,14 +485,14 @@ class ReportManager(QtCore.QObject):
             scenario_results, feedback
         )
         if comparison_context is None:
-            return ReportSubmitStatus(False, None)
+            return ReportSubmitStatus(False, None, "")
 
         description = tr("Generating scenario comparison report")
         task = ScenarioComparisonReportGeneratorTask(description, comparison_context)
         task.statusChanged.connect(self.on_comparison_task_status_changed)
-        self.task_manager.addTask(task)
+        task_id = self.task_manager.addTask(task)
 
-        return ReportSubmitStatus(True, feedback)
+        return ReportSubmitStatus(True, feedback, str(task_id))
 
     def on_comparison_task_status_changed(self, status: int):
         """Slot raised when the comparison task status has changed.

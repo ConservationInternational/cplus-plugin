@@ -36,6 +36,7 @@ class ReportSubmitStatus:
 
     status: bool
     feedback: QgsFeedback
+    identifier: str
 
 
 @dataclasses.dataclass

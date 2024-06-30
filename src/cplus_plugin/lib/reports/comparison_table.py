@@ -4,7 +4,14 @@
 from numbers import Number
 import typing
 
-from qgis.core import QgsBasicNumericFormat, QgsLayoutTableColumn, QgsTableCell
+from qgis.core import (
+    QgsBasicNumericFormat,
+    QgsFeedback,
+    QgsLayoutTableColumn,
+    QgsProcessingMultiStepFeedback,
+    QgsProcessingFeedback,
+    QgsTableCell,
+)
 from qgis.PyQt import QtCore, QtGui
 
 from ...models.base import ScenarioResult
@@ -31,6 +38,10 @@ class ScenarioComparisonTableInfo(QtCore.QObject):
         self._scenario_activity_name_pixel = {}
         self._contents = []
         self._area_calculated = False
+        self._area_feedback = QgsProcessingFeedback()
+        self._multistep_area_feedback = QgsProcessingMultiStepFeedback(
+            len(results), self._area_feedback
+        )
 
         # Extract the header information and populate mapping of activity
         # pixel value with the corresponding name
@@ -48,6 +59,16 @@ class ScenarioComparisonTableInfo(QtCore.QObject):
             self._scenario_activity_name_pixel[
                 result.scenario.uuid
             ] = name_pixel_mapping
+
+    @property
+    def feedback(self) -> QgsProcessingFeedback:
+        """Returns a feedback object fir updating or canceling the
+        process of area calculation.
+
+        :returns: Feedback for updating or canceling the process.
+        :rtype: QgsProcessingFeedback
+        """
+        return self._area_feedback
 
     @property
     def columns(self) -> typing.List[QgsLayoutTableColumn]:
@@ -91,7 +112,13 @@ class ScenarioComparisonTableInfo(QtCore.QObject):
 
         result_data = []
 
+        current_step = 0
+        self._multistep_area_feedback.setCurrentStep(current_step)
+
         for result in self._scenario_results:
+            if self._area_feedback.isCanceled():
+                return self._contents
+
             layer = layer_from_scenario_result(result)
             if layer is None:
                 msg = (
@@ -100,9 +127,14 @@ class ScenarioComparisonTableInfo(QtCore.QObject):
                     f"be created."
                 )
                 log(msg)
+
+                current_step += 1
+                self._multistep_area_feedback.setCurrentStep(current_step)
                 continue
 
-            area_info = calculate_raster_value_area(layer)
+            area_info = calculate_raster_value_area(
+                layer, feedback=self._multistep_area_feedback
+            )
             int_area_info = {
                 int(pixel_value): area for pixel_value, area in area_info.items()
             }
@@ -146,6 +178,9 @@ class ScenarioComparisonTableInfo(QtCore.QObject):
                 row_data.append(area_cell)
 
             result_data.append(row_data)
+
+            current_step += 1
+            self._multistep_area_feedback.setCurrentStep(current_step)
 
         self._contents = result_data
         self._area_calculated = True

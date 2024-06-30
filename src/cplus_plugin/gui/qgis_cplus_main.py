@@ -45,7 +45,7 @@ from qgis.utils import iface
 
 from .activity_widget import ActivityContainerWidget
 from .priority_group_widget import PriorityGroupWidget
-from .progress_dialog import ProgressDialog
+from .progress_dialog import ReportProgressDialog, ProgressDialog
 from ..trends_earth import auth
 from ..api.scenario_task_api_client import ScenarioAnalysisTaskApiClient
 from ..definitions.constants import (
@@ -92,9 +92,9 @@ from ..definitions.defaults import (
 from ..lib.extent_check import extent_within_pilot
 from ..lib.reports.manager import report_manager, ReportManager
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
-from ..resources import *
 from ..tasks import ScenarioAnalysisTask
 from ..utils import open_documentation, tr, log, FileUtils, write_to_file
+
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/qgis_cplus_main_dockwidget.ui")
@@ -1294,6 +1294,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             return
 
         for result in scenario_results:
+            msg_tr = tr("Loading map layers for scenario")
+            log(message=f"{msg_tr}: {result.scenario.name}")
             self.post_analysis(result, None, None, None)
 
         submit_result = report_manager.generate_comparison_report(scenario_results)
@@ -1302,6 +1304,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 "Unable to submit report request for creating the comparison report."
             )
             self.show_message(f"{msg}")
+            return
+
+        QgsApplication.processEvents()
+
+        self.report_progress_dialog = ReportProgressDialog(
+            tr("Generating comparison report"), submit_result
+        )
+        self.report_progress_dialog.run_dialog()
 
     def on_scenario_list_selection_changed(self):
         """Slot raised when the selection of scenarios changes."""
