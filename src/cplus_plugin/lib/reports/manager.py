@@ -425,8 +425,10 @@ class ReportManager(QtCore.QObject):
     def _save_current_project(cls, project_file_path):
         """Saves the current project."""
         storage_type = QgsProject.instance().filePathStorage()
+        print(f"STORAGE TYPE: {str(storage_type)}")
         QgsProject.instance().setFilePathStorage(Qgis.FilePathType.Absolute)
         result = QgsProject.instance().write(project_file_path)
+        print(f"PROJECT SAVE RESULT: {result!s}")
         QgsProject.instance().setFilePathStorage(storage_type)
 
         return result
@@ -520,7 +522,6 @@ class ReportManager(QtCore.QObject):
         """
         base_dir = settings_manager.get_value(Settings.BASE_DIR)
         if base_dir is None:
-            print("BASE DIR IS EMPTY")
             log(f"Base directory is empty, unable to generate comparison report.")
             return None
 
@@ -533,10 +534,10 @@ class ReportManager(QtCore.QObject):
         FileUtils.create_new_dir(report_dir)
 
         project_file_path = os.path.join(report_dir, f"{COMPARISON_REPORT_SEGMENT}.qgz")
+        print(str(project_file_path))
         # Save project file.
         result = cls._save_current_project(project_file_path)
         if not result:
-            print("UNABLE TO SAVE PROJECT")
             log(f"Unable to save the project for scenario report generation.")
             return None
 

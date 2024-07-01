@@ -35,7 +35,7 @@ class TestReportManager(TestCase):
     def test_successful_submit_when_base_dir_set(self):
         """Assert a successful job submit when the BASE_DIR has been set."""
         rpm = ReportManager()
-        base_dir = os.path.normpath(f"{QtCore.QDir.homePath()}/cplus_base")
+        base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
         settings_manager.set_value(Settings.BASE_DIR, str(base_dir))
         scenario_result = get_test_scenario_result()
         report_submit = rpm.generate(scenario_result, QgsFeedback())
@@ -46,7 +46,7 @@ class TestReportManager(TestCase):
         comparison report.
         """
         rpm = ReportManager()
-        base_dir = os.path.normpath(f"{QtCore.QDir.homePath()}/cplus_base")
+        base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
         settings_manager.set_value(Settings.BASE_DIR, str(base_dir))
         scenario_results = [get_test_scenario_result(), get_test_scenario_result()]
         report_submit = rpm.generate_comparison_report(scenario_results, QgsFeedback())
