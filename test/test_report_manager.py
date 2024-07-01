@@ -25,10 +25,11 @@ QGIS_APP, CANVAS, IFACE, PARENT = get_qgis_app()
 class TestReportManager(TestCase):
     """Tests for the report manager."""
 
-    def test_failed_submit_without_base_dir(self):
-        """Assert a failed job submit if the BASE_DIR has not been set."""
+    def test_failed_submit_when_same_result_submitted_twice(self):
+        """Assert a failed job submit if the same scenario result is submitted twice."""
         rpm = ReportManager()
         scenario_result = get_test_scenario_result()
+        _ = rpm.generate(scenario_result, QgsFeedback())
         report_submit = rpm.generate(scenario_result, QgsFeedback())
         self.assertFalse(report_submit.status)
 

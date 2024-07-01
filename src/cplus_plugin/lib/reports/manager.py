@@ -293,7 +293,7 @@ class ReportManager(QtCore.QObject):
         :rtype: ReportSubmitStatus
         """
         if not scenario_result.output_layer_name:
-            print(
+            log(
                 "Layer name for output scenario is empty. Cannot generate report_templates."
             )
             return ReportSubmitStatus(False, None, "")
@@ -303,7 +303,7 @@ class ReportManager(QtCore.QObject):
 
         ctx = self.create_report_context(scenario_result, feedback)
         if ctx is None:
-            print("Could not create report context. Check directory settings.")
+            log("Could not create report context. Check directory settings.")
             return ReportSubmitStatus(False, None, "")
 
         scenario_id = str(ctx.scenario.uuid)
@@ -392,7 +392,6 @@ class ReportManager(QtCore.QObject):
         # Write project to file for use in the task since QgsProject
         # instances are not thread safe.
         result = cls._save_current_project(project_file_path)
-
         if not result:
             return None
 
@@ -532,7 +531,6 @@ class ReportManager(QtCore.QObject):
         FileUtils.create_new_dir(report_dir)
 
         project_file_path = os.path.join(report_dir, f"{COMPARISON_REPORT_SEGMENT}.qgz")
-        print(str(project_file_path))
         # Save project file.
         result = cls._save_current_project(project_file_path)
         if not result:
