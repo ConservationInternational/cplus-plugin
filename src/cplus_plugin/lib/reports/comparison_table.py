@@ -62,7 +62,7 @@ class ScenarioComparisonTableInfo(QtCore.QObject):
 
     @property
     def feedback(self) -> QgsProcessingFeedback:
-        """Returns a feedback object fir updating or canceling the
+        """Returns a feedback object for updating or canceling the
         process of area calculation.
 
         :returns: Feedback for updating or canceling the process.
