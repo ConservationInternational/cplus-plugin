@@ -304,6 +304,9 @@ class BaseScenarioReportGenerator:
     def __init__(self, context: BaseReportContext, feedback: QgsFeedback = None):
         self._context = context
         self._feedback = context.feedback or feedback
+        if self._feedback:
+            self._feedback.canceled.connect(self._on_feedback_canceled)
+
         self._error_messages: typing.List[str] = []
         self._error_occurred = False
         self._layout = None
@@ -354,6 +357,13 @@ class BaseScenarioReportGenerator:
         :rtype: str
         """
         return self._output_layout_path
+
+    def _on_feedback_canceled(self):
+        """Slot raised when the main feedback object has been canceled.
+
+        Default implementation does nothing.
+        """
+        pass
 
     def _process_check_cancelled_or_set_progress(self, value: float) -> bool:
         """Check if there is a request to cancel the process
@@ -707,6 +717,11 @@ class ScenarioComparisonReportGenerator(DuplicatableRepeatPageReportGenerator):
 
         self._area_calculation_reference = 25
 
+        self._comparison_info = ScenarioComparisonTableInfo(self._context.results)
+        self._comparison_info.feedback.progressChanged.connect(
+            self._on_area_calculation_changed
+        )
+
     def _set_repeat_items(self):
         """Set the repeat items for rendering scenario details."""
         if self._layout is None:
@@ -738,6 +753,12 @@ class ScenarioComparisonReportGenerator(DuplicatableRepeatPageReportGenerator):
             tuple(self._error_messages),
             self._context.name,
         )
+
+    def _on_feedback_canceled(self):
+        """Cancel area calculation process."""
+        area_feedback = self._comparison_info.feedback
+        if area_feedback:
+            area_feedback.cancel()
 
     @property
     def output_dir(self) -> str:
@@ -782,20 +803,15 @@ class ScenarioComparisonReportGenerator(DuplicatableRepeatPageReportGenerator):
             self._error_messages.append(tr_msg)
             return
 
-        comparison_info = ScenarioComparisonTableInfo(self._context.results)
-        comparison_info.feedback.progressChanged.connect(
-            self._on_area_calculation_changed
-        )
-
         # Set columns
-        columns = comparison_info.columns
+        columns = self._comparison_info.columns
         # Have to call both functions below for the columns to be
         # shown correctly
         parent_table.setHeaders(columns)
         parent_table.setColumns(columns)
 
         # Set row information
-        row_data = comparison_info.contents()
+        row_data = self._comparison_info.contents()
         parent_table.setTableContents(row_data)
 
     def _render_scenario_detail_items(self):

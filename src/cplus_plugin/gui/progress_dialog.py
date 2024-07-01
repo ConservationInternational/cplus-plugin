@@ -368,3 +368,20 @@ class ReportProgressDialog(ProgressDialog):
         self.btn_view_report.setEnabled(False)
 
         self.report_running = False
+
+    def cancel_clicked(self) -> None:
+        """Slot raised when the cancel button is clicked.
+
+        Will stop reporting process.
+        """
+        if self.report_running:
+            self.cancel_reporting()
+
+            # Change cancel button to the close button status
+            self.btn_cancel.setText(tr("Close"))
+            self.btn_view_report.setEnabled(False)
+
+            self.change_status_message(tr("Report generation canceled."))
+        else:
+            # If close has been clicked.
+            super().close()
