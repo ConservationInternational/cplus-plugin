@@ -187,8 +187,10 @@ def get_test_scenario() -> Scenario:
     )
     return Scenario(
         UUID(SCENARIO_UUID_STR),
-        "Test Scenario" "Test scenario description",
+        "Test Scenario",
+        "Test scenario description",
         sp_extent,
+        [get_activity()],
         [get_activity()],
         [
             [
@@ -204,7 +206,7 @@ def get_test_scenario() -> Scenario:
 
 def get_test_scenario_result() -> ScenarioResult:
     """Returns a test scenario result object."""
-    return ScenarioResult(get_test_scenario())
+    return ScenarioResult(get_test_scenario(), output_layer_name="Test Scenario Layer")
 
 
 def get_activity_npvs() -> typing.List[ActivityNpv]:

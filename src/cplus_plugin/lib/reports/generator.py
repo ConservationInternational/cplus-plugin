@@ -43,6 +43,7 @@ from qgis.core import (
 
 from qgis.PyQt import QtCore, QtGui, QtXml
 
+from .comparison_table import ScenarioComparisonTableInfo
 from ...definitions.constants import (
     ACTIVITY_GROUP_LAYER_NAME,
     ACTIVITY_WEIGHTED_GROUP_NAME,
@@ -50,16 +51,23 @@ from ...definitions.constants import (
 )
 from ...definitions.defaults import (
     ACTIVITY_AREA_TABLE_ID,
+    AREA_COMPARISON_TABLE_ID,
     MAX_ACTIVITY_DESCRIPTION_LENGTH,
     MAX_ACTIVITY_NAME_LENGTH,
     MINIMUM_ITEM_HEIGHT,
     MINIMUM_ITEM_WIDTH,
     PRIORITY_GROUP_WEIGHT_TABLE_ID,
 )
-from .layout_items import CplusMapRepeatItem
-from ...models.base import Activity
+from .layout_items import BasicScenarioDetailsItem, CplusMapRepeatItem
+from ...models.base import Activity, ScenarioResult
 from ...models.helpers import extent_to_project_crs_extent
-from ...models.report import ReportContext, ReportResult
+from ...models.report import (
+    BaseReportContext,
+    RepeatAreaDimension,
+    ReportContext,
+    ReportResult,
+    ScenarioComparisonReportContext,
+)
 from ...utils import (
     calculate_raster_value_area,
     clean_filename,
@@ -70,19 +78,24 @@ from ...utils import (
 from .variables import create_bulleted_text, LayoutVariableRegister
 
 
-class ReportGeneratorTask(QgsTask):
-    """Proxy class for initiating the report generation process."""
+DEFAULT_AREA_DECIMAL_PLACES = 2
 
-    def __init__(self, description: str, context: ReportContext):
+
+class BaseScenarioReportGeneratorTask(QgsTask):
+    """Base proxy class for initiating the report generation process."""
+
+    def __init__(self, description: str, context: BaseReportContext):
         super().__init__(description)
         self._context = context
         self._result = None
-        self._generator = ReportGenerator(self._context, self._context.feedback)
+        self._generator = BaseScenarioReportGenerator(
+            self._context, self._context.feedback
+        )
         self.layout_manager = QgsProject.instance().layoutManager()
         self.layout_manager.layoutAdded.connect(self._on_layout_added)
 
     @property
-    def context(self) -> ReportContext:
+    def context(self) -> BaseReportContext:
         """Returns the report context used by the generator.
 
         :returns: Report context object used by the generator.
@@ -124,26 +137,12 @@ class ReportGeneratorTask(QgsTask):
         else:
             msg = tr("Unable to serialize current project for report generation.")
             msgs: typing.List[str] = [msg]
-            self._result = ReportResult(
-                False, self._context.scenario.uuid, "", tuple(msgs)
-            )
+            scenario_identifier = None
+            if hasattr(self._context, "scenario"):
+                scenario_identifier = self._context.scenario.uuid
+            self._result = ReportResult(False, scenario_identifier, "", tuple(msgs))
 
         return self._result.success
-
-    def _zoom_map_items_to_current_extents(self, layout: QgsPrintLayout):
-        """Zoom extents of map items in the layout to current map canvas
-        extents.
-        """
-        scenario_extent = extent_to_project_crs_extent(
-            self._context.scenario.extent, QgsProject.instance()
-        )
-        if scenario_extent is None:
-            log("Cannot set extents for map items in the report.")
-            return
-
-        for item in layout.items():
-            if isinstance(item, QgsLayoutItemMap):
-                item.zoomToExtent(scenario_extent)
 
     def _on_layout_added(self, name: str):
         """Slot raised when a layout has been added to the manager."""
@@ -166,9 +165,10 @@ class ReportGeneratorTask(QgsTask):
         # Set project metadata which will be cascaded to the PDF document
         project = QgsProject.instance()
         metadata = project.metadata()
-        metadata.setTitle(self._context.scenario.name)
         metadata.setAuthor("CPLUS plugin")
-        metadata.setAbstract(self._context.scenario.description)
+        if hasattr(self._context, "scenario"):
+            metadata.setTitle(self._context.scenario.name)
+            metadata.setAbstract(self._context.scenario.description)
         metadata.setCreationDateTime(QtCore.QDateTime.currentDateTime())
         project.setMetadata(metadata)
 
@@ -177,6 +177,31 @@ class ReportGeneratorTask(QgsTask):
         result = exporter.exportToPdf(pdf_path, QgsLayoutExporter.PdfExportSettings())
         if result != QgsLayoutExporter.ExportResult.Success:
             log(f"Could not export {layout_name} layout to PDF.", info=False)
+
+
+class ScenarioAnalysisReportGeneratorTask(BaseScenarioReportGeneratorTask):
+    """Proxy class for initiating the report generation process."""
+
+    def __init__(self, description: str, context: ReportContext):
+        super().__init__(description, context)
+        self._generator = ScenarioAnalysisReportGenerator(
+            context, self._context.feedback
+        )
+
+    def _zoom_map_items_to_current_extents(self, layout: QgsPrintLayout):
+        """Zoom extents of map items in the layout to current map canvas
+        extents.
+        """
+        scenario_extent = extent_to_project_crs_extent(
+            self._context.scenario.extent, QgsProject.instance()
+        )
+        if scenario_extent is None:
+            log("Cannot set extents for map items in the report.")
+            return
+
+        for item in layout.items():
+            if isinstance(item, QgsLayoutItemMap):
+                item.zoomToExtent(scenario_extent)
 
     def finished(self, result: bool):
         """If successful, add the layout to the project.
@@ -223,14 +248,65 @@ class ReportGeneratorTask(QgsTask):
                 feedback.setProgress(100)
 
 
-class ReportGenerator:
-    """Generator for CPLUS reports."""
+class ScenarioComparisonReportGeneratorTask(BaseScenarioReportGeneratorTask):
+    """Proxy class for initiating the generation of scenario comparison reports."""
 
-    AREA_DECIMAL_PLACES = 2
+    def __init__(self, description: str, context: ScenarioComparisonReportContext):
+        super().__init__(description, context)
+        self._generator = ScenarioComparisonReportGenerator(
+            context, self._context.feedback
+        )
 
-    def __init__(self, context: ReportContext, feedback: QgsFeedback = None):
+    def finished(self, result: bool):
+        """If successful, add the layout to the project.
+
+        :param result: Flag indicating if the result of the
+        report generation process. True if successful,
+        else False.
+        :type result: bool
+        """
+        if len(self._result.messages) > 0:
+            log(
+                f"Warnings and errors occurred when generating the "
+                f"scenario comparison report. See details below:",
+                info=False,
+            )
+            for err in self._result.messages:
+                err_msg = f"Comparison report - {err}\n"
+                log(err_msg, info=False)
+
+        if result:
+            log(f"Successfully generated the scenario comparison report.")
+
+            layout_path = self._generator.output_layout_path
+            if not layout_path:
+                log("Output layout could not be saved.", info=False)
+                return
+
+            feedback = self._context.feedback
+            project = QgsProject.instance()
+            layout = _load_layout_from_file(layout_path, project)
+            if layout is None:
+                log("Could not load layout from file.", info=False)
+                return
+
+            project.layoutManager().addLayout(layout)
+
+            if feedback is not None:
+                feedback.setProgress(100)
+
+
+class BaseScenarioReportGenerator:
+    """Base class for generating a scenario report."""
+
+    AREA_DECIMAL_PLACES = DEFAULT_AREA_DECIMAL_PLACES
+
+    def __init__(self, context: BaseReportContext, feedback: QgsFeedback = None):
         self._context = context
         self._feedback = context.feedback or feedback
+        if self._feedback:
+            self._feedback.canceled.connect(self._on_feedback_canceled)
+
         self._error_messages: typing.List[str] = []
         self._error_occurred = False
         self._layout = None
@@ -238,20 +314,9 @@ class ReportGenerator:
         self._variable_register = LayoutVariableRegister()
         self._report_output_dir = ""
         self._output_layout_path = ""
-        self._repeat_page = None
-        self._repeat_page_num = -1
-        self._repeat_item = None
-        self._reference_layer_group = None
-        self._scenario_layer = None
-        self._area_processing_feedback = None
-        self._activities_area = {}
-        self._pixel_area_info = {}
-
-        if self._feedback:
-            self._feedback.canceled.connect(self._on_feedback_cancelled)
 
     @property
-    def context(self) -> ReportContext:
+    def context(self) -> BaseReportContext:
         """Returns the report context used by the generator.
 
         :returns: Report context object used by the generator.
@@ -293,19 +358,12 @@ class ReportGenerator:
         """
         return self._output_layout_path
 
-    @property
-    def repeat_page(self) -> typing.Union[QgsLayoutItemPage, None]:
-        """Returns the page item that will be repeated based on the
-        number of activities in the scenario.
+    def _on_feedback_canceled(self):
+        """Slot raised when the main feedback object has been canceled.
 
-        A repeat page is a layout page item that contains the
-        first instance of a CplusMapRepeatItem.
-
-        :returns: Page item containing a CplusMapRepeatItem or None
-        if not found.
-        :rtype: QgsLayoutItemPage
+        Default implementation does nothing.
         """
-        return self._repeat_page
+        pass
 
     def _process_check_cancelled_or_set_progress(self, value: float) -> bool:
         """Check if there is a request to cancel the process
@@ -320,15 +378,6 @@ class ReportGenerator:
         self._feedback.setProgress(value)
 
         return False
-
-    def _on_feedback_cancelled(self):
-        # Slot raised when the main feedback object has been cancelled.
-        # Cancel both area calculation processes as well.
-        if (
-            self._area_processing_feedback
-            and not self._area_processing_feedback.isCanceled()
-        ):
-            self._area_processing_feedback.cancel()
 
     def _set_project(self):
         """Deserialize the project from the report context."""
@@ -358,68 +407,168 @@ class ReportGenerator:
             self._error_messages.append(f"{tr_msg} {self._context.project_file}.")
             return
 
-        # Set reference layer group in project i.e. the one that contains
-        # the scenario output layer.
-        layer_root = project.layerTreeRoot()
-        matching_tree_layers = [
-            tl
-            for tl in layer_root.findLayers()
-            if tl.layer().name() == self._context.output_layer_name
-        ]
-        if len(matching_tree_layers) > 0:
-            scenario_tree_layer = matching_tree_layers[0]
-            self._scenario_layer = scenario_tree_layer.layer()
-            parent = scenario_tree_layer.parent()
-            if parent.nodeType() == QgsLayerTreeNode.NodeType.NodeGroup:
-                self._reference_layer_group = parent
-
         self._project = project
+
+    @classmethod
+    def set_label_font(
+        cls,
+        label: QgsLayoutItemLabel,
+        size: float,
+        bold: bool = False,
+        italic: bool = False,
+    ):
+        """Set font properties of the given layout label item.
+
+        :param label: Label item whose font properties will
+        be updated.
+        :type label: QgsLayoutItemLabel
+
+        :param size: Point size of the font.
+        :type size: int
+
+        :param bold: True if font is to be bold, else
+        False (default).
+        :type bold: bool
+
+        :param italic: True if font is to be in italics, else
+        False (default).
+        :type italic: bool
+        """
+        font = get_report_font(size, bold, italic)
+        version = Qgis.versionInt()
+
+        # Text format size unit
+        if version < 33000:
+            unit_type = QgsUnitTypes.RenderUnit.RenderPoints
+        else:
+            unit_type = Qgis.RenderUnit.Points
+
+        # Label font setting option
+        if version < 32400:
+            label.setFont(font)
+        else:
+            txt_format = QgsTextFormat()
+            txt_format.setFont(font)
+            txt_format.setSize(size)
+            txt_format.setSizeUnit(unit_type)
+            label.setTextFormat(txt_format)
+
+        label.refresh()
+
+    def _get_manual_table_from_id(
+        self, table_id: str
+    ) -> typing.Optional[QgsLayoutItemManualTable]:
+        """Get the table object from the corresponding item id or return None
+        if the table was not found.
+        """
+        table_frame = self._layout.itemById(table_id)
+        if table_frame is None:
+            return None
+
+        return table_frame.multiFrame()
 
     @property
     def output_dir(self) -> str:
         """Creates, if it does not exist, the output directory
-        where the analysis reports will be saved. This is relative
-        to the base directory and scenario output sub-folder.
+        where the report_templates will be saved.
 
-        :returns: Output directory where the analysis reports
+        :returns: Output directory where the report_templates
         will be saved.
         :rtype: str
         """
-        # Create reports directory
-        if not self._report_output_dir:
-            p = Path(self._context.scenario_output_dir)
-            if not p.exists():
-                try:
-                    p.mkdir()
-                except FileNotFoundError:
-                    tr_msg = (
-                        "Missing parent directory when creating "
-                        "'report' subdirectory."
-                    )
-                    self._error_messages.append(tr_msg)
-                    return ""
+        raise NotImplementedError
 
-        self._report_output_dir = self._context.scenario_output_dir
+    def run(self) -> ReportResult:
+        """Initiates the report generation process and returns
+        a result which contains information on whether the
+        process succeeded or failed.
 
-        return self._report_output_dir
-
-    def _set_repeat_page(self):
-        """Check if the layout has a map repeat item and set
-        the corresponding page item containing the map repeat item
-        or leave it as None if not found.
-
-        Current implementation only supports one repeat item.
+        :returns: The result of the report generation process.
+        :rtype: ReportResult
         """
-        if self._layout is None:
-            return
+        try:
+            return self._run()
+        except Exception as ex:
+            # Last resort to capture general exceptions.
+            exc_info = "".join(traceback.TracebackException.from_exception(ex).format())
+            self._error_messages.append(exc_info)
+            return self._get_failed_result()
 
-        items = self._layout.items()
-        for item in items:
-            if isinstance(item, CplusMapRepeatItem):
-                page_num = item.page()
-                self._repeat_page = self._layout.pageCollection().page(page_num)
-                self._repeat_page_num = page_num
-                self._repeat_item = item
+    def _run(self) -> ReportResult:
+        """Runs report generation process."""
+        if self._process_check_cancelled_or_set_progress(0):
+            return self._get_failed_result()
+
+        self._set_project()
+        if self._project is None:
+            return self._get_failed_result()
+
+        if self._process_check_cancelled_or_set_progress(5):
+            return self._get_failed_result()
+
+        if not self._load_template() or not self.output_dir:
+            return self._get_failed_result()
+
+        if self._process_check_cancelled_or_set_progress(12):
+            return self._get_failed_result()
+
+        # Update variable values
+        self._variable_register.update_variables(self.layout, self._context)
+
+        if self._process_check_cancelled_or_set_progress(15):
+            return self._get_failed_result()
+
+    def _save_layout_to_file(self) -> bool:
+        """Serialize the layout to a temporary file."""
+        temp_layout_file = QtCore.QTemporaryFile()
+        if not temp_layout_file.open():
+            tr_msg = tr("Could not open temporary file to write the layout.")
+            self._error_messages.append(tr_msg)
+            return False
+
+        file_name = temp_layout_file.fileName()
+        self._output_layout_path = f"{file_name}.qpt"
+
+        result = self._layout.saveAsTemplate(
+            self._output_layout_path, QgsReadWriteContext()
+        )
+        if not result:
+            tr_msg = tr("Could not save the layout template.")
+            self._error_messages.append(tr_msg)
+            return False
+
+        return True
+
+    def _get_failed_result(self) -> ReportResult:
+        """Creates the report result object."""
+        raise NotImplementedError
+
+    def _load_template(self) -> bool:
+        """Loads the template in the report context and registers
+        CPLUS variables.
+
+        :returns: True if the template was successfully loaded,
+        else False.
+        :rtype: bool
+        """
+        layout = _load_layout_from_file(
+            self._context.template_path, self._project, self._error_messages
+        )
+        if layout is None:
+            return False
+
+        self._layout = layout
+        self._variable_register.register_variables(self._layout)
+        self._layout.setName(self._context.name)
+
+        return True
+
+
+class DuplicatableRepeatPageReportGenerator(BaseScenarioReportGenerator):
+    """Incorporates extra functionality duplicating a repeat page.
+
+    Subclass must have `_repeat_gae` and `_repeat_page_num` members.
+    """
 
     def duplicate_repeat_page(self, position: int) -> bool:
         """Duplicates the repeat page and adds it to the layout
@@ -480,25 +629,34 @@ class ReportGenerator:
 
         return True
 
-    def _render_repeat_items(self):
-        """Render activities in the layout based on the
-        scenario result.
+    def get_dimension_for_repeat_item(
+        self, repeat_item: CplusMapRepeatItem
+    ) -> typing.Optional[RepeatAreaDimension]:
+        """Calculates the number of rows and columns for rendering
+        items based on the size of CPLUS repeat item. It also
+        determines the recommended width and height of the repeat
+        area.
+
+        :param repeat_item: The map repeat item where the items will
+        be rendered.
+        :type repeat_item: CplusMapRepeatItem
+
+        :returns: A recommended number of rows and columns respectively
+        for rendering the repeat items as well the recommended dimension
+        of the repeat area.
+        :rtype: RepeatAreaDimension
         """
-        if self._repeat_item is None:
-            tr_msg = tr("Unable to render activities as no repeat " "item was found.")
-            self._error_messages.append(tr_msg)
-            return
-
+        num_rows, num_cols = -1, -1
         if MINIMUM_ITEM_HEIGHT <= 0 or MINIMUM_ITEM_WIDTH <= 0:
-            tr_msg = tr("Minimum repeat item dimensions cannot be used.")
+            tr_msg = tr("Minimum repeat item dimensions cannot be used")
             self._error_messages.append(tr_msg)
-            return
+            return None
 
-        repeat_size = self._repeat_item.sizeWithUnits()
+        repeat_size = repeat_item.sizeWithUnits()
         repeat_width = repeat_size.width()
         repeat_height = repeat_size.height()
 
-        repeat_ref_point = self._repeat_item.pagePositionWithUnits()
+        repeat_ref_point = repeat_item.pagePositionWithUnits()
         repeat_ref_x = repeat_ref_point.x()
         repeat_ref_y = repeat_ref_point.y()
 
@@ -506,9 +664,10 @@ class ReportGenerator:
         num_cols = -1
         adjusted_item_width = MINIMUM_ITEM_WIDTH
         if repeat_width < MINIMUM_ITEM_WIDTH:
-            tr_msg = tr("Repeat item width is too small to render the activities.")
+            tr_msg = tr("Repeat item width is too small to render the model items")
             self._error_messages.append(tr_msg)
-            return
+            return None
+
         else:
             num_cols = int(repeat_width // MINIMUM_ITEM_WIDTH)
             bleed_item_width = (
@@ -520,22 +679,513 @@ class ReportGenerator:
         num_rows = -1
         adjusted_item_height = MINIMUM_ITEM_HEIGHT
         if repeat_height < MINIMUM_ITEM_HEIGHT:
-            tr_msg = tr("Repeat item height is too small to render the " "activities.")
+            tr_msg = tr("Repeat item height is too small to render the model items")
             self._error_messages.append(tr_msg)
-            return
+            return None
+
         else:
             num_rows = int(repeat_height // MINIMUM_ITEM_HEIGHT)
             bleed_item_height = (
                 repeat_height - (num_rows * MINIMUM_ITEM_HEIGHT)
-            ) / num_cols
+            ) / num_rows
             adjusted_item_height = MINIMUM_ITEM_HEIGHT + bleed_item_height
 
-        max_items_page = num_rows * num_cols
+        return RepeatAreaDimension(
+            num_rows, num_cols, adjusted_item_width, adjusted_item_height
+        )
+
+
+class ScenarioComparisonReportGenerator(DuplicatableRepeatPageReportGenerator):
+    """Generator for CPLUS scenario comparison reports."""
+
+    PAGE_ONE_REPEAT_AREA_ID = "CPLUS Map Repeat Area 1"
+    REPEAT_PAGE_ITEM_ID = "CPLUS Map Repeat Area 2"
+
+    def __init__(
+        self, context: ScenarioComparisonReportContext, feedback: QgsFeedback = None
+    ):
+        super().__init__(context, feedback)
+
+        # Repeat item for half page one
+        self._page_one_repeat_item = None
+
+        # For duplicating page
+        self._repeat_page_item = None
+
+        self._repeat_page = None
+        self._repeat_page_num = -1
+
+        self._area_calculation_reference = 25
+
+        self._comparison_info = ScenarioComparisonTableInfo(self._context.results)
+        self._comparison_info.feedback.progressChanged.connect(
+            self._on_area_calculation_changed
+        )
+
+    def _set_repeat_items(self):
+        """Set the repeat items for rendering scenario details."""
+        if self._layout is None:
+            return
+
+        items = self._layout.items()
+        for item in items:
+            if isinstance(item, CplusMapRepeatItem):
+                if (
+                    item.id() == self.PAGE_ONE_REPEAT_AREA_ID
+                    and self._page_one_repeat_item is None
+                ):
+                    self._page_one_repeat_item = item
+                elif (
+                    item.id() == self.REPEAT_PAGE_ITEM_ID
+                    and self._repeat_page_item is None
+                ):
+                    self._repeat_page_item = item
+                    page_num = item.page()
+                    self._repeat_page = self._layout.pageCollection().page(page_num)
+                    self._repeat_page_num = page_num
+
+    def _get_failed_result(self) -> ReportResult:
+        """Creates the report result object."""
+        return ReportResult(
+            False,
+            None,
+            self.output_dir,
+            tuple(self._error_messages),
+            self._context.name,
+        )
+
+    def _on_feedback_canceled(self):
+        """Cancel area calculation process."""
+        area_feedback = self._comparison_info.feedback
+        if area_feedback:
+            area_feedback.cancel()
+
+    @property
+    def output_dir(self) -> str:
+        """Creates, if it does not exist, the output directory
+        where the comparison report_templates will be saved. This is relative
+        to the base directory and comparison reports sub-folder.
+
+        :returns: Output directory where the scenario report_templates
+        will be saved.
+        :rtype: str
+        """
+        # Create report_templates directory
+        if not self._report_output_dir:
+            p = Path(self._context.output_dir)
+            if not p.exists():
+                try:
+                    p.mkdir()
+                except FileNotFoundError:
+                    tr_msg = (
+                        "Missing parent directory when creating "
+                        "'report' subdirectory"
+                    )
+                    self._error_messages.append(tr_msg)
+                    return ""
+
+        self._report_output_dir = self._context.output_dir
+
+        return self._report_output_dir
+
+    def _on_area_calculation_changed(self, progress: float):
+        """Slot raised when the area calculation has changed."""
+        area_progress = self._area_calculation_reference + (40 * progress / 100)
+        self._process_check_cancelled_or_set_progress(area_progress)
+
+    def _populate_scenario_area_table(self):
+        """Sets the areas of the different scenarios in the
+        comparison table.
+        """
+        parent_table = self._get_manual_table_from_id(AREA_COMPARISON_TABLE_ID)
+        if parent_table is None:
+            tr_msg = tr("Could not find parent table for comparison of scenario areas")
+            self._error_messages.append(tr_msg)
+            return
+
+        # Set columns
+        columns = self._comparison_info.columns
+        # Have to call both functions below for the columns to be
+        # shown correctly
+        parent_table.setHeaders(columns)
+        parent_table.setColumns(columns)
+
+        # Set row information
+        row_data = self._comparison_info.contents()
+        parent_table.setTableContents(row_data)
+
+    def _render_scenario_detail_items(self):
+        """Render scenario details in page one and subsequent pages."""
+        num_results = len(self._context.results)
+
+        if num_results == 0:
+            tr_msg = "No results for rendering scenario maps"
+            self._error_messages.append(tr_msg)
+            return
+
+        # Page one
+        if self._page_one_repeat_item is None:
+            tr_msg = tr(
+                "Unable to render scenario details in page one, no repeat item was found"
+            )
+            self._error_messages.append(tr_msg)
+            return
+
+        dimension_page_one = self.get_dimension_for_repeat_item(
+            self._page_one_repeat_item
+        )
+        if dimension_page_one is None:
+            tr_msg = tr(
+                "Unable to render scenario details in page one as rendering computation failed"
+            )
+            self._error_messages.append(tr_msg)
+            return
+
+        repeat_ref_point_page_one = self._page_one_repeat_item.pagePositionWithUnits()
+        repeat_ref_x_page_one = repeat_ref_point_page_one.x()
+        repeat_ref_y_page_one = repeat_ref_point_page_one.y()
+
+        max_items_page_one = dimension_page_one.rows * dimension_page_one.columns
+        page_one_results = self._context.results[:max_items_page_one]
+
+        remaining_results = self._context.results[max_items_page_one:]
+
+        page_collection = self._layout.pageCollection()
+
+        # Render page one scenario details
+        page_one_result_count = 0
+        for r in range(dimension_page_one.rows):
+            page_one_y_position = repeat_ref_y_page_one + (
+                r * dimension_page_one.height
+            )
+            for c in range(dimension_page_one.columns):
+                if page_one_result_count == page_one_results:
+                    break
+
+                page_one_x_position = repeat_ref_x_page_one + (
+                    c * dimension_page_one.width
+                )
+
+                result = page_one_results[page_one_result_count]
+
+                scenario_item = BasicScenarioDetailsItem(
+                    self._layout, scenario_result=result, project=self._project
+                )
+                self._layout.addLayoutItem(scenario_item)
+                page_one_ref_point = QgsLayoutPoint(
+                    page_one_x_position, page_one_y_position, self._layout.units()
+                )
+                scenario_item.attemptMove(page_one_ref_point, True, False, 0)
+                scenario_item.attemptResize(
+                    QgsLayoutSize(
+                        dimension_page_one.width,
+                        dimension_page_one.height,
+                        self._layout.units(),
+                    )
+                )
+
+                page_one_result_count += 1
+
+        if len(remaining_results) > 0:
+            # Subsequent pages
+            if self._repeat_page_item is None:
+                tr_msg = tr(
+                    "Unable to render scenario details in page two and subsequent pages, no repeat item was found"
+                )
+                self._error_messages.append(tr_msg)
+                return
+
+            repeat_dimension = self.get_dimension_for_repeat_item(
+                self._repeat_page_item
+            )
+            if repeat_dimension is None:
+                tr_msg = tr(
+                    "Unable to render scenario details in page two and subsequent pages as rendering computation failed"
+                )
+                self._error_messages.append(tr_msg)
+                return
+
+            repeat_ref_point = self._repeat_page_item.pagePositionWithUnits()
+            repeat_ref_x = repeat_ref_point.x()
+            repeat_ref_y = repeat_ref_point.y()
+
+            max_items_repeat_page = repeat_dimension.rows * repeat_dimension.columns
+
+            # Calculate number of pages required
+            num_pages, req_pages = divmod(
+                len(remaining_results), int(max_items_repeat_page)
+            )
+            # Check if there is an additional page required
+            if req_pages != 0:
+                num_pages += 1
+
+            # First create the additional required pages for the
+            # report so that we don't also duplicate the already
+            # rendered items in the repeat page when adding the
+            # scenarios.
+            for p in range(1, num_pages):
+                page_pos = self._repeat_page_num + p
+                _ = self.duplicate_repeat_page(page_pos)
+
+            # Render page two+ scenario details
+            scenario_result_count = 0
+            for p in range(num_pages):
+                page_pos = self._repeat_page_num + p
+                for r in range(repeat_dimension.rows):
+                    repeat_page_y_position = repeat_ref_y + (
+                        r * repeat_dimension.height
+                    )
+                    for c in range(repeat_dimension.columns):
+                        if scenario_result_count == len(remaining_results):
+                            break
+
+                        repeat_page_x_position = repeat_ref_x + (
+                            c * repeat_dimension.width
+                        )
+
+                        result = remaining_results[scenario_result_count]
+
+                        scenario_item = BasicScenarioDetailsItem(
+                            self._layout, scenario_result=result, project=self._project
+                        )
+                        self._layout.addLayoutItem(scenario_item)
+                        repeat_ref_point = QgsLayoutPoint(
+                            repeat_page_x_position,
+                            repeat_page_y_position,
+                            self._layout.units(),
+                        )
+                        scenario_item.attemptMove(
+                            repeat_ref_point, True, False, page_pos
+                        )
+                        scenario_item.attemptResize(
+                            QgsLayoutSize(
+                                repeat_dimension.width,
+                                repeat_dimension.height,
+                                self._layout.units(),
+                            )
+                        )
+
+                        scenario_result_count += 1
+
+        else:
+            # Remove second page and subsequent ones
+            for i in range(1, page_collection.pageCount()):
+                # Some items are jumping back to page one hence the need
+                # to delete them before deleting the page.
+                page_items = page_collection.itemsOnPage(i)
+                for item in page_items:
+                    self._layout.removeLayoutItem(item)
+                    item.deleteLater()
+                page_collection.deletePage(i)
+
+        # Hide repeat item frame
+        for p in range(self._layout.pageCollection().pageCount()):
+            items = self._layout.pageCollection().itemsOnPage(p)
+            for item in items:
+                if isinstance(item, CplusMapRepeatItem):
+                    item.setFrameEnabled(False)
+
+    def _run(self):
+        """Implementation of base class with additional functions for
+        generation of comparison reports.
+        """
+        super()._run()
+
+        self._set_repeat_items()
+
+        if self._process_check_cancelled_or_set_progress(25):
+            return self._get_failed_result()
+
+        self._populate_scenario_area_table()
+
+        if self._process_check_cancelled_or_set_progress(65):
+            return self._get_failed_result()
+
+        self._render_scenario_detail_items()
+
+        if self._process_check_cancelled_or_set_progress(85):
+            return self._get_failed_result()
+
+        # Add CPLUS report flag
+        self._variable_register.set_report_flag(self._layout)
+
+        if self._process_check_cancelled_or_set_progress(85):
+            return self._get_failed_result()
+
+        result = self._save_layout_to_file()
+        if not result:
+            return self._get_failed_result()
+
+        if self._process_check_cancelled_or_set_progress(90):
+            return self._get_failed_result()
+
+        return ReportResult(
+            True,
+            None,
+            self.output_dir,
+            tuple(self._error_messages),
+            self._context.name,
+            clean_filename(self._context.name),
+        )
+
+
+class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
+    """Generator for CPLUS scenario analysis report."""
+
+    def __init__(self, context: ReportContext, feedback: QgsFeedback = None):
+        super().__init__(context, feedback)
+        self._repeat_page = None
+        self._repeat_page_num = -1
+        self._repeat_item = None
+        self._reference_layer_group = None
+        self._scenario_layer = None
+        self._area_processing_feedback = None
+        self._activities_area = {}
+        self._pixel_area_info = {}
+
+        if self._feedback:
+            self._feedback.canceled.connect(self._on_feedback_cancelled)
+
+    @property
+    def repeat_page(self) -> typing.Union[QgsLayoutItemPage, None]:
+        """Returns the page item that will be repeated based on the
+        number of activities in the scenario.
+
+        A repeat page is a layout page item that contains the
+        first instance of a CplusMapRepeatItem.
+
+        :returns: Page item containing a CplusMapRepeatItem or None
+        if not found.
+        :rtype: QgsLayoutItemPage
+        """
+        return self._repeat_page
+
+    def _process_check_cancelled_or_set_progress(self, value: float) -> bool:
+        """Check if there is a request to cancel the process
+        if a feedback object had been specified.
+        """
+        if (self._feedback and self._feedback.isCanceled()) or self._error_occurred:
+            tr_msg = tr("Report generation cancelled")
+            self._error_messages.append(tr_msg)
+
+            return True
+
+        self._feedback.setProgress(value)
+
+        return False
+
+    def _on_feedback_cancelled(self):
+        # Slot raised when the main feedback object has been cancelled.
+        # Cancel both area calculation processes as well.
+        if (
+            self._area_processing_feedback
+            and not self._area_processing_feedback.isCanceled()
+        ):
+            self._area_processing_feedback.cancel()
+
+    def _get_failed_result(self) -> ReportResult:
+        """Creates the report result object."""
+        return ReportResult(
+            False,
+            self._context.scenario.uuid,
+            self.output_dir,
+            tuple(self._error_messages),
+            self._context.name,
+        )
+
+    def _set_project(self):
+        """Deserialize the project from the report context."""
+        super()._set_project()
+
+        if self._project is None:
+            return
+
+        # Set reference layer group in project i.e. the one that contains
+        # the scenario output layer.
+        layer_root = self._project.layerTreeRoot()
+        matching_tree_layers = [
+            tl
+            for tl in layer_root.findLayers()
+            if tl.layer().name() == self._context.output_layer_name
+        ]
+        if len(matching_tree_layers) > 0:
+            scenario_tree_layer = matching_tree_layers[0]
+            self._scenario_layer = scenario_tree_layer.layer()
+            parent = scenario_tree_layer.parent()
+            if parent.nodeType() == QgsLayerTreeNode.NodeType.NodeGroup:
+                self._reference_layer_group = parent
+
+    @property
+    def output_dir(self) -> str:
+        """Creates, if it does not exist, the output directory
+        where the analysis report_templates will be saved. This is relative
+        to the base directory and scenario output sub-folder.
+
+        :returns: Output directory where the analysis report_templates
+        will be saved.
+        :rtype: str
+        """
+        # Create report_templates directory
+        if not self._report_output_dir:
+            p = Path(self._context.scenario_output_dir)
+            if not p.exists():
+                try:
+                    p.mkdir()
+                except FileNotFoundError:
+                    tr_msg = (
+                        "Missing parent directory when creating "
+                        "'report' subdirectory"
+                    )
+                    self._error_messages.append(tr_msg)
+                    return ""
+
+        self._report_output_dir = self._context.scenario_output_dir
+
+        return self._report_output_dir
+
+    def _set_repeat_page(self):
+        """Check if the layout has a map repeat item and set
+        the corresponding page item containing the map repeat item
+        or leave it as None if not found.
+
+        Current implementation only supports one repeat item.
+        """
+        if self._layout is None:
+            return
+
+        items = self._layout.items()
+        for item in items:
+            if isinstance(item, CplusMapRepeatItem):
+                page_num = item.page()
+                self._repeat_page = self._layout.pageCollection().page(page_num)
+                self._repeat_page_num = page_num
+                self._repeat_item = item
+
+    def _render_repeat_items(self):
+        """Render activities in the layout based on the
+        scenario result.
+        """
+        if self._repeat_item is None:
+            tr_msg = tr("Unable to render activities as no repeat item was found")
+            self._error_messages.append(tr_msg)
+            return
+
+        dimension = self.get_dimension_for_repeat_item(self._repeat_item)
+        if dimension is None:
+            tr_msg = tr("Unable to render activities as rendering computation failed")
+            self._error_messages.append(tr_msg)
+            return
+
+        repeat_ref_point = self._repeat_item.pagePositionWithUnits()
+        repeat_ref_x = repeat_ref_point.x()
+        repeat_ref_y = repeat_ref_point.y()
+
+        max_items_page = dimension.rows * dimension.columns
 
         num_activities = len(self._context.scenario.weighted_activities)
 
         if num_activities == 0:
-            tr_msg = "No activities in the scenario."
+            tr_msg = "No activities in the scenario"
             self._error_messages.append(tr_msg)
             return
 
@@ -564,19 +1214,19 @@ class ReportGenerator:
         im_count = 0
         for p in range(num_pages):
             page_pos = self._repeat_page_num + p
-            for r in range(num_rows):
-                reference_y_pos = repeat_ref_y + (r * adjusted_item_height)
-                for c in range(num_cols):
+            for r in range(dimension.rows):
+                reference_y_pos = repeat_ref_y + (r * dimension.height)
+                for c in range(dimension.columns):
                     if im_count == num_activities:
                         break
 
                     activity = self._context.scenario.weighted_activities[im_count]
-                    reference_x_pos = repeat_ref_x + (c * adjusted_item_width)
+                    reference_x_pos = repeat_ref_x + (c * dimension.width)
                     self._add_activity_items(
                         reference_x_pos,
                         reference_y_pos,
-                        adjusted_item_width,
-                        adjusted_item_height,
+                        dimension.width,
+                        dimension.height,
                         page_pos,
                         activity,
                     )
@@ -631,7 +1281,7 @@ class ReportGenerator:
             # Resize item again after the scale has been set correctly
             im_map.attemptResize(QgsLayoutSize(width, map_height, self._layout.units()))
         else:
-            log(f"Could not find matching map layer for {activity.name} activity.")
+            log(f"Could not find matching map layer for {activity.name} activity")
 
         # Background IM details shape
         shape_height = 0.2 * height
@@ -868,52 +1518,6 @@ class ReportGenerator:
             QgsLayoutSize(label_width, im_pathways_lbl_height, self._layout.units())
         )
 
-    @classmethod
-    def set_label_font(
-        cls,
-        label: QgsLayoutItemLabel,
-        size: float,
-        bold: bool = False,
-        italic: bool = False,
-    ):
-        """Set font properties of the given layout label item.
-
-        :param label: Label item whose font properties will
-        be updated.
-        :type label: QgsLayoutItemLabel
-
-        :param size: Point size of the font.
-        :type size: int
-
-        :param bold: True if font is to be bold, else
-        False (default).
-        :type bold: bool
-
-        :param italic: True if font is to be in italics, else
-        False (default).
-        :type italic: bool
-        """
-        font = get_report_font(size, bold, italic)
-        version = Qgis.versionInt()
-
-        # Text format size unit
-        if version < 33000:
-            unit_type = QgsUnitTypes.RenderUnit.RenderPoints
-        else:
-            unit_type = Qgis.RenderUnit.Points
-
-        # Label font setting option
-        if version < 32400:
-            label.setFont(font)
-        else:
-            txt_format = QgsTextFormat()
-            txt_format.setFont(font)
-            txt_format.setSize(size)
-            txt_format.setSizeUnit(unit_type)
-            label.setTextFormat(txt_format)
-
-        label.refresh()
-
     def _get_activity_layer_in_project(
         self, activity_identifier: str, weighted: bool = False
     ) -> typing.Union[QgsRasterLayer, None]:
@@ -935,14 +1539,14 @@ class ReportGenerator:
 
         if self._project is None:
             tr_msg = tr(
-                "Project could not be recreated, unable to fetch the activity layer."
+                "Project could not be recreated, unable to fetch the activity layer"
             )
             self._error_messages.append(tr_msg)
             return None
 
         if self._reference_layer_group is None:
             tr_msg = tr(
-                "Could not find the scenario layer group, unable to fetch the activity layer."
+                "Could not find the scenario layer group, unable to fetch the activity layer"
             )
             self._error_messages.append(tr_msg)
             return None
@@ -950,7 +1554,7 @@ class ReportGenerator:
         activity_layer_group = self._reference_layer_group.findGroup(category_name)
         if activity_layer_group is None:
             tr_msg = tr(
-                f"Could not find the {category_name} layer group, unable to fetch the activity layer."
+                f"Could not find the {category_name} layer group, unable to fetch the activity layer"
             )
             self._error_messages.append(tr_msg)
             return None
@@ -963,7 +1567,7 @@ class ReportGenerator:
         ]
         if len(matching_tree_layers) == 0:
             tr_msg = tr(
-                f"Could not find the activity layer in the {category_name} layer group."
+                f"Could not find the activity layer in the {category_name} layer group"
             )
             self._error_messages.append(tr_msg)
             return None
@@ -974,7 +1578,7 @@ class ReportGenerator:
         """Textual adjustments to the main map legend."""
         legend_item: QgsLayoutItemLegend = self._layout.itemById("legend_main_map")
         if legend_item is None:
-            tr_msg = tr("Could not find the main map legend.")
+            tr_msg = tr("Could not find the main map legend")
             self._error_messages.append(tr_msg)
             return
 
@@ -1025,18 +1629,6 @@ class ReportGenerator:
         legend_item.invalidateCache()
         legend_item.update()
 
-    def _get_table_from_id(
-        self, table_id: str
-    ) -> typing.Union[QgsLayoutItemManualTable, None]:
-        """Get the table object from the corresponding item id or return None
-        if the table was not found.
-        """
-        table_frame = self._layout.itemById(table_id)
-        if table_frame is None:
-            return None
-
-        return table_frame.multiFrame()
-
     def _populate_activity_area_table(self):
         """Populate the table(s) for activities and
         corresponding areas.
@@ -1044,20 +1636,20 @@ class ReportGenerator:
         self._area_calculation_progress_reference = 60
         self._area_calculation_step_increment = 20
 
-        parent_table = self._get_table_from_id(ACTIVITY_AREA_TABLE_ID)
+        parent_table = self._get_manual_table_from_id(ACTIVITY_AREA_TABLE_ID)
         if parent_table is None:
-            tr_msg = tr("Could not find parent table for areas of activities.")
+            tr_msg = tr("Could not find parent table for areas of activities")
             self._error_messages.append(tr_msg)
             return
 
         num_activities = len(self._context.scenario.activities)
         if num_activities == 0:
-            tr_msg = tr("No activities in the scenario.")
+            tr_msg = tr("No activities in the scenario")
             self._error_messages.append(tr_msg)
             return
 
         if self._scenario_layer is None:
-            tr_msg = tr("Scenario layer could not be set to calculate the area.")
+            tr_msg = tr("Scenario layer could not be set to calculate the area")
             self._error_messages.append(tr_msg)
             return
 
@@ -1065,7 +1657,7 @@ class ReportGenerator:
         pixel_area_info = self._pixel_area_info
 
         if len(pixel_area_info) == 0:
-            tr_msg = tr("No activity areas from the calculation.")
+            tr_msg = tr("No activity areas from the calculation")
             self._error_occurred = True
             self._error_messages.append(tr_msg)
             return
@@ -1102,9 +1694,9 @@ class ReportGenerator:
 
     def _populate_scenario_weighting_values(self):
         """Populate table with weighting values for priority layer groups."""
-        parent_table = self._get_table_from_id(PRIORITY_GROUP_WEIGHT_TABLE_ID)
+        parent_table = self._get_manual_table_from_id(PRIORITY_GROUP_WEIGHT_TABLE_ID)
         if parent_table is None:
-            tr_msg = tr("Could not find parent table for priority weighting values.")
+            tr_msg = tr("Could not find parent table for priority weighting values")
             self._error_messages.append(tr_msg)
             return
 
@@ -1136,45 +1728,9 @@ class ReportGenerator:
 
         parent_table.setTableContents(rows_data)
 
-    def run(self) -> ReportResult:
-        """Initiates the report generation process and returns
-        a result which contains information on whether the
-        process succeeded or failed.
-
-        :returns: The result of the report generation process.
-        :rtype: ReportResult
-        """
-        try:
-            return self._run()
-        except Exception as ex:
-            # Last resort to capture general exceptions.
-            exc_info = "".join(traceback.TracebackException.from_exception(ex).format())
-            self._error_messages.append(exc_info)
-            return self._get_failed_result()
-
     def _run(self) -> ReportResult:
         """Runs report generation process."""
-        if self._process_check_cancelled_or_set_progress(0):
-            return self._get_failed_result()
-
-        self._set_project()
-        if self._project is None:
-            return self._get_failed_result()
-
-        if self._process_check_cancelled_or_set_progress(5):
-            return self._get_failed_result()
-
-        if not self._load_template() or not self.output_dir:
-            return self._get_failed_result()
-
-        if self._process_check_cancelled_or_set_progress(12):
-            return self._get_failed_result()
-
-        # Update variable values
-        self._variable_register.update_variables(self.layout, self._context)
-
-        if self._process_check_cancelled_or_set_progress(15):
-            return self._get_failed_result()
+        super()._run()
 
         # Set repeat page
         self._set_repeat_page()
@@ -1225,37 +1781,6 @@ class ReportGenerator:
             clean_filename(self._context.name),
         )
 
-    def _save_layout_to_file(self) -> bool:
-        """Serialize the layout to a temporary file."""
-        temp_layout_file = QtCore.QTemporaryFile()
-        if not temp_layout_file.open():
-            tr_msg = tr("Could not open temporary file to write the layout.")
-            self._error_messages.append(tr_msg)
-            return False
-
-        file_name = temp_layout_file.fileName()
-        self._output_layout_path = f"{file_name}.qpt"
-
-        result = self._layout.saveAsTemplate(
-            self._output_layout_path, QgsReadWriteContext()
-        )
-        if not result:
-            tr_msg = tr("Could not save the layout template.")
-            self._error_messages.append(tr_msg)
-            return False
-
-        return True
-
-    def _get_failed_result(self) -> ReportResult:
-        """Creates the report result object."""
-        return ReportResult(
-            False,
-            self._context.scenario.uuid,
-            self.output_dir,
-            tuple(self._error_messages),
-            self._context.name,
-        )
-
     def export_to_pdf(self) -> bool:
         """Exports the layout to a PDF file in the output
         directory using the layout name as the file name.
@@ -1275,26 +1800,6 @@ class ReportGenerator:
             tr_msg = tr("Could not export layout to PDF")
             self._error_messages.append(f"{tr_msg} {pdf_path}.")
             return False
-
-    def _load_template(self) -> bool:
-        """Loads the template in the report context and registers
-        CPLUS variables.
-
-        :returns: True if the template was successfully loaded,
-        else False.
-        :rtype: bool
-        """
-        layout = _load_layout_from_file(
-            self._context.template_path, self._project, self._error_messages
-        )
-        if layout is None:
-            return False
-
-        self._layout = layout
-        self._variable_register.register_variables(self._layout)
-        self._layout.setName(self._context.name)
-
-        return True
 
 
 def _load_layout_from_file(
@@ -1317,14 +1822,14 @@ def _load_layout_from_file(
         if not template_file.open(QtCore.QIODevice.ReadOnly):
             if error_messages:
                 tr_msg = tr("Unable to read template file")
-                error_messages.append(f"{tr_msg} {template_path}.")
+                error_messages.append(f"{tr_msg} {template_path}")
             doc_status = False
 
         if doc_status:
             if not doc.setContent(template_file):
                 if error_messages:
                     tr_msg = tr("Failed to parse template file contents")
-                    error_messages.append(f"{tr_msg} {template_path}.")
+                    error_messages.append(f"{tr_msg} {template_path}")
                 doc_status = False
     finally:
         template_file.close()
@@ -1337,7 +1842,7 @@ def _load_layout_from_file(
     if not load_status:
         if error_messages:
             tr_msg = tr("Could not load template from")
-            error_messages.append(f"{tr_msg} {template_path}.")
+            error_messages.append(f"{tr_msg} {template_path}")
         return None
 
     return layout
