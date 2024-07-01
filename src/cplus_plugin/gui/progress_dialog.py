@@ -291,6 +291,7 @@ class ReportProgressDialog(ProgressDialog):
 
         self._submit_result = submit_result
         self.setWindowTitle(tr("Report Progress"))
+        self.title.setText(tr("Reporting progress"))
 
         self._task = None
         if submit_result.identifier:
