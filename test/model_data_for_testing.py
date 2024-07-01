@@ -206,7 +206,7 @@ def get_test_scenario() -> Scenario:
 
 def get_test_scenario_result() -> ScenarioResult:
     """Returns a test scenario result object."""
-    return ScenarioResult(get_test_scenario())
+    return ScenarioResult(get_test_scenario(), output_layer_name="Test Scenario Layer")
 
 
 def get_activity_npvs() -> typing.List[ActivityNpv]:
