@@ -22,7 +22,9 @@ from ...utils import calculate_raster_value_area, log, tr
 
 class ScenarioComparisonTableInfo(QtCore.QObject):
     """Get area information for the scenarios in the corresponding
-    ScenarioResult objects.
+    ScenarioResult objects and uses this information to generate
+    QgsLayoutTableColumn and QgsTableCell objects for use in a
+    scenario comparison table.
     """
 
     NOT_AVAILABLE_STR = "-"
