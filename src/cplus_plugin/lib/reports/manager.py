@@ -484,9 +484,7 @@ class ReportManager(QtCore.QObject):
         comparison_context = self.create_comparison_report_context(
             scenario_results, feedback
         )
-        print("Comparison context created")
         if comparison_context is None:
-            print("Comparison context is None")
             return ReportSubmitStatus(False, None, "")
 
         description = tr("Generating scenario comparison report")
@@ -522,6 +520,7 @@ class ReportManager(QtCore.QObject):
         """
         base_dir = settings_manager.get_value(Settings.BASE_DIR)
         if base_dir is None:
+            print("BASE DIR IS EMPTY")
             log(f"Base directory is empty, unable to generate comparison report.")
             return None
 
@@ -537,6 +536,7 @@ class ReportManager(QtCore.QObject):
         # Save project file.
         result = cls._save_current_project(project_file_path)
         if not result:
+            print("UNABLE TO SAVE PROJECT")
             log(f"Unable to save the project for scenario report generation.")
             return None
 
