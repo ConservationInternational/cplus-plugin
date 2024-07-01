@@ -484,7 +484,9 @@ class ReportManager(QtCore.QObject):
         comparison_context = self.create_comparison_report_context(
             scenario_results, feedback
         )
+        print("Comparison context created")
         if comparison_context is None:
+            print("Comparison context is None")
             return ReportSubmitStatus(False, None, "")
 
         description = tr("Generating scenario comparison report")
