@@ -38,7 +38,7 @@ class TestReportManager(TestCase):
         base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
         settings_manager.set_value(Settings.BASE_DIR, str(base_dir))
         scenario_result = get_test_scenario_result()
-        report_submit = rpm.generate(scenario_result, QgsFeedback())
+        report_submit = rpm.generate(scenario_result)
         self.assertTrue(report_submit.status)
 
     def test_generate_comparison_report_submit_status(self):

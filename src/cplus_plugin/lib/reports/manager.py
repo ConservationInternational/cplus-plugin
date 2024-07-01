@@ -293,7 +293,7 @@ class ReportManager(QtCore.QObject):
         :rtype: ReportSubmitStatus
         """
         if not scenario_result.output_layer_name:
-            log(
+            print(
                 "Layer name for output scenario is empty. Cannot generate report_templates."
             )
             return ReportSubmitStatus(False, None, "")
@@ -303,12 +303,12 @@ class ReportManager(QtCore.QObject):
 
         ctx = self.create_report_context(scenario_result, feedback)
         if ctx is None:
-            log("Could not create report context. Check directory settings.")
+            print("Could not create report context. Check directory settings.")
             return ReportSubmitStatus(False, None, "")
 
         scenario_id = str(ctx.scenario.uuid)
         if scenario_id in self._report_tasks:
-            return ReportSubmitStatus(False, ctx.feedback)
+            return ReportSubmitStatus(False, ctx.feedback, "")
 
         msg_tr = tr("Generating report for")
         description = f"{msg_tr} {ctx.scenario.name}"
@@ -425,10 +425,8 @@ class ReportManager(QtCore.QObject):
     def _save_current_project(cls, project_file_path):
         """Saves the current project."""
         storage_type = QgsProject.instance().filePathStorage()
-        print(f"STORAGE TYPE: {str(storage_type)}")
         QgsProject.instance().setFilePathStorage(Qgis.FilePathType.Absolute)
         result = QgsProject.instance().write(project_file_path)
-        print(f"PROJECT SAVE RESULT: {result!s}")
         QgsProject.instance().setFilePathStorage(storage_type)
 
         return result
