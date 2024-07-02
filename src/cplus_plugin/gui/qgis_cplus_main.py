@@ -1928,13 +1928,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :rtype: QgsPalettedRasterRenderer
         """
         area_classes = []
-        for activity in activities:
+        for i, activity in enumerate(activities, start=1):
             activity_name = activity.name
 
-            raster_val = activity.style_pixel_value
             color = activity.scenario_fill_symbol().color()
             color_ramp_shader = QgsColorRampShader.ColorRampItem(
-                float(raster_val), QtGui.QColor(color), activity_name
+                float(i), QtGui.QColor(color), activity_name
             )
             area_classes.append(color_ramp_shader)
 
