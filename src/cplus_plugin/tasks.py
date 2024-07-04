@@ -388,48 +388,53 @@ class ScenarioAnalysisTask(QgsTask):
         self.feedback = QgsProcessingFeedback()
         self.feedback.progressChanged.connect(self.update_progress)
 
-        alg_params = {
-            "COPY_SUBDATASETS": False,
-            "DATA_TYPE": 6,  # Float32
-            "EXTRA": "",
-            "INPUT": layer_path,
-            "NODATA": None,
-            "OPTIONS": "",
-            "TARGET_CRS": None,
-            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-        }
-        translate_output = processing.run(
-            "gdal:translate",
-            alg_params,
-            context=self.processing_context,
-            feedback=self.feedback,
-            is_child_algorithm=True,
-        )
+        try:
+            alg_params = {
+                "COPY_SUBDATASETS": False,
+                "DATA_TYPE": 6,  # Float32
+                "EXTRA": "",
+                "INPUT": layer_path,
+                "NODATA": None,
+                "OPTIONS": "",
+                "TARGET_CRS": None,
+                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+            }
+            translate_output = processing.run(
+                "gdal:translate",
+                alg_params,
+                context=self.processing_context,
+                feedback=self.feedback,
+                is_child_algorithm=True,
+            )
 
-        alg_params = {
-            "DATA_TYPE": 0,  # Use Input Layer Data Type
-            "EXTRA": "",
-            "INPUT": translate_output["OUTPUT"],
-            "MULTITHREADING": False,
-            "NODATA": -9999,
-            "OPTIONS": "",
-            "RESAMPLING": 0,  # Nearest Neighbour
-            "SOURCE_CRS": None,
-            "TARGET_CRS": None,
-            "TARGET_EXTENT": None,
-            "TARGET_EXTENT_CRS": None,
-            "TARGET_RESOLUTION": None,
-            "OUTPUT": output_path,
-        }
-        outputs = processing.run(
-            "gdal:warpreproject",
-            alg_params,
-            context=self.processing_context,
-            feedback=self.feedback,
-            is_child_algorithm=True,
-        )
+            alg_params = {
+                "DATA_TYPE": 0,  # Use Input Layer Data Type
+                "EXTRA": "",
+                "INPUT": translate_output["OUTPUT"],
+                "MULTITHREADING": False,
+                "NODATA": -9999,
+                "OPTIONS": "",
+                "RESAMPLING": 0,  # Nearest Neighbour
+                "SOURCE_CRS": None,
+                "TARGET_CRS": None,
+                "TARGET_EXTENT": None,
+                "TARGET_EXTENT_CRS": None,
+                "TARGET_RESOLUTION": None,
+                "OUTPUT": output_path,
+            }
+            outputs = processing.run(
+                "gdal:warpreproject",
+                alg_params,
+                context=self.processing_context,
+                feedback=self.feedback,
+                is_child_algorithm=True,
+            )
 
-        return outputs is not None
+            return outputs is not None
+        except Exception as e:
+            log(f"Problem replacing no data value from a snapping output, {e}")
+
+        return False
 
     def run_pathways_analysis(self, activities, extent, temporary_output=False):
         """Runs the required activity pathways analysis on the passed
