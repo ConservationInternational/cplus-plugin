@@ -35,9 +35,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-172</y>
-        <width>557</width>
-        <height>875</height>
+        <y>0</y>
+        <width>558</width>
+        <height>755</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -198,7 +198,7 @@
        <item>
         <widget class="QgsCollapsibleGroupBox" name="sieve_group_box">
          <property name="enabled">
-          <bool>false</bool>
+          <bool>true</bool>
          </property>
          <property name="title">
           <string>Sieve </string>
