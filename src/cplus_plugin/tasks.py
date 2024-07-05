@@ -236,14 +236,14 @@ class ScenarioAnalysisTask(QgsTask):
             )
 
         # TODO enable the sieve functionality
-        # sieve_enabled = self.get_settings_value(
-        #     Settings.SIEVE_ENABLED, default=False, setting_type=bool
-        # )
-        #
-        # if sieve_enabled:
-        #     self.run_activities_sieve(
-        #         self.analysis_activities,
-        #     )
+        sieve_enabled = self.get_settings_value(
+            Settings.SIEVE_ENABLED, default=False, setting_type=bool
+        )
+
+        if sieve_enabled:
+            self.run_activities_sieve(
+                self.analysis_activities,
+            )
 
         # After creating activities, we normalize them using the same coefficients
         # used in normalizing their respective pathways.
