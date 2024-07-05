@@ -35,9 +35,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-172</y>
-        <width>557</width>
-        <height>875</height>
+        <y>0</y>
+        <width>558</width>
+        <height>732</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -158,13 +158,6 @@
               </layout>
              </item>
              <item>
-              <widget class="QLabel" name="reference_layer_label">
-               <property name="text">
-                <string>Reference layer</string>
-               </property>
-              </widget>
-             </item>
-             <item>
               <layout class="QHBoxLayout" name="horizontalLayout">
                <item>
                 <widget class="QgsFileWidget" name="map_layer_file_widget">
@@ -198,7 +191,7 @@
        <item>
         <widget class="QgsCollapsibleGroupBox" name="sieve_group_box">
          <property name="enabled">
-          <bool>false</bool>
+          <bool>true</bool>
          </property>
          <property name="title">
           <string>Sieve </string>
@@ -214,8 +207,11 @@
            <layout class="QHBoxLayout" name="horizontalLayout_3">
             <item>
              <widget class="QLabel" name="resample_method_2">
+              <property name="toolTip">
+               <string>Minimum number of connectect pixel that should be preserved when sieving.</string>
+              </property>
               <property name="text">
-               <string>Pixel size</string>
+               <string>Threshold</string>
               </property>
              </widget>
             </item>
@@ -236,7 +232,7 @@
             <item>
              <widget class="QgsFileWidget" name="mask_layer_widget">
               <property name="toolTip">
-               <string>Select reference layer from the local filesystem.</string>
+               <string>Select reference layer to be used as mask layer for sieving.</string>
               </property>
              </widget>
             </item>
