@@ -6,6 +6,14 @@ from dataclasses import field, fields
 import typing
 import uuid
 
+from qgis.core import (
+    QgsCoordinateReferenceSystem,
+    QgsCoordinateTransform,
+    QgsProject,
+    QgsRasterLayer,
+    QgsRectangle,
+)
+
 from .base import (
     BaseModelComponent,
     BaseModelComponentType,
@@ -14,6 +22,7 @@ from .base import (
     LayerModelComponentType,
     LayerType,
     NcsPathway,
+    ScenarioResult,
     SpatialExtent,
 )
 from ..definitions.constants import (
@@ -41,17 +50,10 @@ from ..definitions.constants import (
     YEARS_ATTRIBUTE,
     YEARLY_RATES_ATTRIBUTE,
 )
-from ..definitions.defaults import DEFAULT_CRS_ID
+from ..definitions.defaults import DEFAULT_CRS_ID, QGIS_GDAL_PROVIDER
 from .financial import ActivityNpv, ActivityNpvCollection, NpvParameters
 
 from ..utils import log
-
-from qgis.core import (
-    QgsCoordinateReferenceSystem,
-    QgsCoordinateTransform,
-    QgsProject,
-    QgsRectangle,
-)
 
 
 def model_component_to_dict(
@@ -598,3 +600,23 @@ def create_activity_npv_collection(
         activity_npv_collection.mappings = npv_mappings
 
     return activity_npv_collection
+
+
+def layer_from_scenario_result(
+    result: ScenarioResult,
+) -> typing.Optional[QgsRasterLayer]:
+    """Gets the scenario output layer from the results of the
+    analysis.
+
+    :returns: Raster layer corresponding to the output scenario
+    path or None if the file does not exist or if the raster layer
+    is invalid.
+    :rtype: QgsRasterLayer
+    """
+    layer_file = result.analysis_output.get("OUTPUT")
+
+    layer = QgsRasterLayer(layer_file, result.scenario.name, QGIS_GDAL_PROVIDER)
+    if not layer.isValid():
+        return None
+
+    return layer
