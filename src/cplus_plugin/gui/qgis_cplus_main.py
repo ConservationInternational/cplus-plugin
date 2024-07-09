@@ -1211,11 +1211,17 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 )
         scenario_result = settings_manager.get_scenario_result(scenario_identifier)
 
+        all_activities = sorted(
+            scenario.weighted_activities,
+            key=lambda activity_instance: activity_instance.style_pixel_value,
+        )
+        for index, activity in enumerate(all_activities):
+            activity.style_pixel_value = index + 1
+
+        scenario.weighted_activities = all_activities
+
         if scenario_result:
             scenario_result.scenario = scenario
-
-        log(f"Scenario -- {scenario} \n")
-        log(f"scenario result {scenario_result}")
 
         self.post_analysis(scenario_result, None, None, None)
 
@@ -1278,6 +1284,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             scenario_result = settings_manager.get_scenario_result(scenario_identifier)
             if not scenario_result and not scenario:
                 continue
+
+            all_activities = sorted(
+                scenario.weighted_activities,
+                key=lambda activity_instance: activity_instance.style_pixel_value,
+            )
+            for index, activity in enumerate(all_activities):
+                activity.style_pixel_value = index + 1
+
+            scenario.weighted_activities = all_activities
+
             scenario_result.scenario = scenario
             scenario_results.append(scenario_result)
 

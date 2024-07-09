@@ -646,7 +646,7 @@
                <bool>true</bool>
               </property>
               <property name="toolTip">
-               <string>Load the selected scenario details into step 1 inputs.</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Load the selected scenario details into step 1 inputs and respective layers into the map canvas.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
                <string>...</string>
