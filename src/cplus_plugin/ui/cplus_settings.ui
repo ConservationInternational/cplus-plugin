@@ -208,7 +208,7 @@
             <item>
              <widget class="QLabel" name="resample_method_2">
               <property name="toolTip">
-               <string>Minimum number of connected pixel that should be preserved when sieving.</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum number of connected pixels that should be preserved when sieving.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
                <string>Threshold</string>
