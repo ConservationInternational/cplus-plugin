@@ -46,17 +46,17 @@ To go to the settings the user can click on the plugin toolbar icon to reveal th
 
         - *Average*: Computes the average of all non-nodata contributing pixels.
 
-        - *Mode*: Select the value which appears most often of all the sampled pixels.
+        - *Mode*: Select the value that appears most often of all the sampled pixels.
 
         - *Maximum*: Selects the maximum value which appears of all the sampled pixels.
 
         - *Minimum*: Selects the minimum value which appears of all the sampled pixels.
 
-        - *Median*: Selects the median value which appears in all the sampled pixels.
+        - *Median*: Selects the median value that appears in all the sampled pixels.
 
-        - *First quartile (Q1)*: Select the first quartile value which appears in all the sampled pixels.
+        - *First quartile (Q1)*: Select the first quartile value that appears in all the sampled pixels.
 
-        - *Third quartile (Q3)*: Select the third quartile value which appears in all the sampled pixels.
+        - *Third quartile (Q3)*: Select the third quartile value that appears in all the sampled pixels.
 
         **Reference layer:** The reference layer to which the cell alignment will be applied. The user can choose a file from the system.
 
@@ -66,15 +66,15 @@ To go to the settings the user can click on the plugin toolbar icon to reveal th
 
         ![sieve settings](./img/setting-5.png)
 
-        The `Sieve function` is a tool designed to filter raster data based on a specified pixel size. It enables users to define a minimum area threshold, such that any contiguous area in the raster dataset smaller than the specified size will be removed or filtered out.
+        The `Sieve Function` is a tool designed to filter raster data based on a specified threshold. It enables users to define a minimum area threshold, such that any contiguous area in the raster dataset smaller than the specified size will be removed or filtered out.
 
         This functionality is particularly useful for projects or activities that require a minimum spatial extent to be meaningful or practical. For instance, it might not be feasible to undertake an activity on a parcel of land that is smaller than a certain size, such as a hectare.
 
-        By setting the desired pixel size, users can ensure that only areas meeting the specified minimum extent are retained in the dataset, while smaller features are eliminated. This process helps streamline data analysis and ensures that only relevant spatial entities are considered for further processing or analysis.
+        By setting the desired threshold, users can ensure that only areas meeting the specified minimum extent are retained in the dataset, while smaller features are eliminated. This process helps streamline data analysis and ensures that only relevant spatial entities are considered for further processing or analysis.
 
         The user can use this by checking the checkbox available in front of the `Sieve`.
 
-        **Pixel Size:** The user can specify the pixel size to filter out areas smaller than the specified value.
+        **Threshold Size:** Enter the desired threshold value in the Threshold field. This value represents the minimum number of connected pixels that should be preserved when sieving. Any contiguous area smaller than this threshold will be filtered out.
 
         **Reference Layer:** The reference layer to which the sieve function will be applied. The user can choose the layer from the system.
 
