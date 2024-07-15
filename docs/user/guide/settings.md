@@ -61,6 +61,31 @@ Snapping will set rasters to match the cell alignment of a reference layer.
 
 Resampling performed on pixel values. You can choose the method of your choice from the dropdown. Click on the 3️⃣ `Resample method dropdown` to choose the method. The reference layer to which the cell alignment will be applied. You can select a file from the system, by clicking on the 4️⃣ `Three dots`. Rescale values according to cell size. You can check or uncheck the 5️⃣ `CheckBox`.
 
+**Sieve Function:** 
+
+The `Sieve` function is a tool designed to filter raster data based on a specified pixel size. This function allows users to define a minimum area threshold, ensuring that any contiguous area in the raster dataset smaller than the specified size will be removed or filtered out. This feature is particularly useful for projects requiring a minimum spatial extent to be meaningful or practical.
+
+#### Steps to Use the Sieve Function
+
+![Sieve function](./img/settings-20.png)
+
+- Navigate to the settings where the sieve function can be configured.
+- Check the 1️⃣ checkbox available in front of the Sieve option to enable the sieve function.
+- Enter the desired threshold value in the 2️⃣ `Threshold` field. This value represents the minimum number of connected pixels that should be preserved when sieving. Any contiguous area smaller than this threshold will be filtered out.
+- Select the 3️⃣ `Reference Layer` from the system to which the sieve function will be applied.
+- Click on the 4️⃣ `OK` button to apply the sieve function settings. This will filter the raster data based on the specified pixel size and reference layer.
+- Click on the Cancel button to close the dialog without applying any changes.
+
+##### Practical Use Cases
+
+The sieve function is particularly useful in scenarios where a minimum spatial extent is necessary for practical or meaningful activities. For example:
+
+-**Land Management:** Ensuring that only parcels of land larger than a hectare are considered for agricultural projects.
+
+- **Environmental Studies:** Filtering out small, insignificant areas from raster data to focus on larger, more relevant features.
+
+By setting the desired pixel size, users can streamline their data analysis, ensuring that only relevant spatial entities are considered for further processing or analysis.
+
 **Mask Layer:**
 
 Masking layers are used to specify areas that should be excluded from further analysis. You can use the available buttons to add, edit and remove the layers.
@@ -127,7 +152,7 @@ Click on the `Update profile` button to update the profile. Upon clicking the up
 
 ![Update profile form](./img/settings-12.png)
 
-You can update the fields you want to change by editing the respective field. Click on the `Save` button to save the changes. After successful updating, a success message will pop up.
+You can update the fields you want to change by editing the respective fields. Click on the `Save` button to save the changes. After successful updating, a success message will pop up.
 
 ![Message pop up](./img/settings-13.png)
 

@@ -12,13 +12,13 @@
 
     In the bottom right corner of the scenario history, you will find four buttons with the following functions:
 
-        - **Plus Icon:** This button allows you to save the scenario to the scenario history section. Clicking on it enables you to include additional scenarios for review and analysis within the scenario history.
+    - **Plus Icon:** This button allows you to save the scenario to the scenario history section. Clicking on it enables you to include additional scenarios for review and analysis within the scenario history.
 
-        - **Refresh Button:** This button serves the function of loading the selected scenario details into Step 1 of the interface. Upon selecting a scenario from the list within the Scenario History section, users can click the Round Arrow button to load the details of that scenario into Step 1. This action facilitates a seamless transition from reviewing scenario history to initiating further analysis or action within the system.
+    - **Refresh Button:** This button serves the function of loading the selected scenario details into Step 1 of the interface. Upon selecting a scenario from the list within the Scenario History section, users can click the Round Arrow button to load the details of that scenario into Step 1. This action facilitates a seamless transition from reviewing scenario history to initiating further analysis or action within the system.
 
-        - **Information Icon:** By clicking on the information icon, users can access useful information related to the scenarios. This feature provides additional insights, explanations, or tips to enhance the understanding and interpretation of the scenario history data.
+    - **Information Icon:** By clicking on the information icon, users can access useful information related to the scenarios. This feature provides additional insights, explanations, or tips to enhance the understanding and interpretation of the scenario history data.
 
-        - **Minus Icon:** The minus icon serves the purpose of removing the scenario from the scenario history section. Clicking on this icon allows users to delete specific scenarios from the history, streamlining the displayed records to focus on relevant information.
+    - **Minus Icon:** The minus icon serves the purpose of removing the scenario from the scenario history section. Clicking on this icon allows users to delete specific scenarios from the history, streamlining the displayed records to focus on relevant information.
 
 3. **Processing Scenario Logs:** This section provides a detailed record of logs about the ongoing processing scenario. It offers real-time insights into the actions, events, and outcomes within the current scenario. Users can monitor the progress, identify any errors or issues, and troubleshoot accordingly. These logs are essential for tracking the execution flow and diagnosing any anomalies during the processing workflow.
 
