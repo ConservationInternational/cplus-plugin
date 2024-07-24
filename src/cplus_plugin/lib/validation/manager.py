@@ -6,22 +6,16 @@ Manager for data validation processes.
 import typing
 
 from qgis.core import (
-    Qgis,
     QgsApplication,
-    QgsFeedback,
-    QgsProject,
-    QgsPrintLayout,
     QgsTask,
 )
 
-from qgis.PyQt import QtCore, QtGui
+from qgis.PyQt import QtCore, sip
 
 from ...models.base import ModelComponentType, NcsPathway
 from ...models.helpers import clone_ncs_pathway
 from ...models.validation import SubmitResult, ValidationResult
 from .validators import NcsDataValidator
-
-from ...utils import log
 
 
 class ValidationManager(QtCore.QObject):
@@ -86,6 +80,11 @@ class ValidationManager(QtCore.QObject):
         """Cancel all validation processes of NCS pathway datasets."""
         for task_id in list(self._validation_tasks):
             ncs_validator = self._validation_tasks[task_id]
+            # In some OSs, the underlying C++ task object is de-referenced
+            # unexpectedly hence the need to check if it exists.
+            if sip.isdeleted(ncs_validator):
+                continue
+
             status = ncs_validator.status()
             if (
                 status == QgsTask.TaskStatus.Running
