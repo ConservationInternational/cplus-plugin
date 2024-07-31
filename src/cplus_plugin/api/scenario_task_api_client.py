@@ -481,10 +481,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 if pathway:
                     if pathway["path"] and os.path.exists(pathway["path"]):
                         if self.path_to_layer_mapping.get(pathway["path"], None):
-                            pathway["uuid"] = self.path_to_layer_mapping.get(
+                            pathway["layer_uuid"] = self.path_to_layer_mapping.get(
                                 pathway["path"]
                             )["uuid"]
-                            pathway["layer_uuid"] = pathway["uuid"]
                             pathway["layer_type"] = 0
 
                     carbon_uuids = []
@@ -615,6 +614,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         if activity_filename in download_dict:
             activity["path"] = download_dict[activity_filename]
         activity_obj = Activity(**activity)
+        activity_obj.pathways = ncs_pathways
         return activity_obj
 
     def __set_scenario(self, output_list, download_paths):
