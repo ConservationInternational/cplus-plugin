@@ -19,12 +19,17 @@ from ..utils import log
 from .request import CplusApiRequest
 
 
-class FetchScenarioHistoryTask(QgsTask):
+class BaseScenarioTask(QgsTask):
     task_finished = QtCore.pyqtSignal(object)
 
     def __init__(self):
         super().__init__()
         self.request = CplusApiRequest()
+
+
+class FetchScenarioHistoryTask(BaseScenarioTask):
+    def __init__(self):
+        super().__init__()
         self.result = []
 
     def run(self):
@@ -64,11 +69,8 @@ class FetchScenarioHistoryTask(QgsTask):
 
 
 class FetchScenarioOutputTask(QgsTask):
-    task_finished = QtCore.pyqtSignal(object)
-
     def __init__(self, scenario: Scenario):
         super().__init__()
-        self.request = CplusApiRequest()
         self.scenario = scenario
         self.total_file_output = 0
         self.downloaded_output = 0
@@ -232,3 +234,20 @@ class FetchScenarioOutputTask(QgsTask):
         self.scenario.activities = activities
         self.scenario.weighted_activities = weighted_activities
         self.scenario.priority_layer_groups = scenario_detail["priority_layer_groups"]
+
+
+class DeleteScenarioTask(BaseScenarioTask):
+    def __init__(self, scenario_server_uuid):
+        super().__init__()
+        self.scenario_server_uuid = scenario_server_uuid
+
+    def run(self):
+        try:
+            self.request.delete_scenario(self.scenario_server_uuid)
+            return True
+        except Exception as ex:
+            log(f"Error during delete scenario: {ex}", info=False)
+            return False
+
+    def finished(self, is_success):
+        self.task_finished.emit(is_success)

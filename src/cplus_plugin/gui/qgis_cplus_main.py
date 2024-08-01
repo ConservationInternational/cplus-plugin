@@ -52,6 +52,7 @@ from ..api.scenario_task_api_client import ScenarioAnalysisTaskApiClient
 from ..api.scenario_history_tasks import (
     FetchScenarioHistoryTask,
     FetchScenarioOutputTask,
+    DeleteScenarioTask,
 )
 from ..definitions.constants import (
     ACTIVITY_GROUP_LAYER_NAME,
@@ -1131,6 +1132,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             item.setSizeHint(item_widget.sizeHint())
             item.setData(QtCore.Qt.UserRole, str(scenario.uuid))
             item.setData(QtCore.Qt.UserRole + 1, scenario.name)
+            if scenario.server_uuid:
+                item.setData(QtCore.Qt.UserRole + 2, str(scenario.server_uuid))
+            else:
+                item.setData(QtCore.Qt.UserRole + 2, "")
             self.scenario_list.setItemWidget(item, item_widget)
 
     def add_scenario(self):
@@ -1286,6 +1291,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     continue
                 settings_manager.delete_scenario(scenario_id)
 
+                scenario_server_uuid = item.data(QtCore.Qt.UserRole + 2)
+                if scenario_server_uuid == "":
+                    continue
+                task = DeleteScenarioTask(scenario_server_uuid)
+                QgsApplication.taskManager().addTask(task)
             self.update_scenario_list()
 
     def on_generate_comparison_report(self):

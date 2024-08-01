@@ -210,7 +210,7 @@ class CplusApiUrl:
         return f"{self.base_url}/scenario/history/?{params}"
 
     def scenario_delete(self, scenario_uuid):
-        return f"{self.base_url}/scenario/{scenario_uuid}/delete/"
+        return f"{self.base_url}/scenario/{scenario_uuid}/detail/"
 
 
 class CplusApiRequest:
@@ -228,6 +228,10 @@ class CplusApiRequest:
     def post(self, url, data: json):
         """GET requests."""
         return requests.post(url, json=data, headers=self.urls.headers)
+
+    def delete(self, url):
+        """DELETE requests."""
+        return requests.delete(url, headers=self.urls.headers)
 
     def get_layer_detail(self, layer_uuid):
         response = self.get(self.urls.layer_detail(layer_uuid))
@@ -347,3 +351,9 @@ class CplusApiRequest:
                 )
             )
         return scenario_results
+
+    def delete_scenario(self, scenario_uuid):
+        response = self.delete(self.urls.scenario_delete(scenario_uuid))
+        if response.status_code != 204:
+            result = response.json()
+            raise CplusApiRequestError(result.get("detail", ""))
