@@ -1130,6 +1130,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             item = QtWidgets.QListWidgetItem(self.scenario_list)
             item.setSizeHint(item_widget.sizeHint())
             item.setData(QtCore.Qt.UserRole, str(scenario.uuid))
+            item.setData(QtCore.Qt.UserRole + 1, scenario.name)
             self.scenario_list.setItemWidget(item, item_widget)
 
     def add_scenario(self):
@@ -1267,7 +1268,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         texts = []
         for item in self.scenario_list.selectedItems():
-            current_text = item.data(QtCore.Qt.DisplayRole)
+            current_text = item.data(QtCore.Qt.UserRole + 1)
             texts.append(current_text)
 
         reply = QtWidgets.QMessageBox.warning(
