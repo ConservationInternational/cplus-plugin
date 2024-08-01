@@ -68,7 +68,7 @@ class FetchScenarioHistoryTask(BaseScenarioTask):
         return self.request.fetch_scenario_history()
 
 
-class FetchScenarioOutputTask(QgsTask):
+class FetchScenarioOutputTask(BaseScenarioTask):
     def __init__(self, scenario: Scenario):
         super().__init__()
         self.scenario = scenario

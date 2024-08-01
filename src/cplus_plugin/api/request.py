@@ -331,13 +331,6 @@ class CplusApiRequest:
                 extent = detail.get("extent_project", [])
             else:
                 extent = detail.get("extent", [])
-            if extent:
-                extent = [
-                    float(extent[0]),
-                    float(extent[2]),
-                    float(extent[1]),
-                    float(extent[3]),
-                ]
             scenario_results.append(
                 Scenario(
                     uuid=uuid.uuid4(),

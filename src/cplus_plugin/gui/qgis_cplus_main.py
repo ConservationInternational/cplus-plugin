@@ -1610,6 +1610,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     self.analysis_priority_layers_groups,
                     self.analysis_extent,
                     scenario,
+                    SpatialExtent(
+                        bbox=[
+                            passed_extent.xMinimum(),
+                            passed_extent.xMaximum(),
+                            passed_extent.yMinimum(),
+                            passed_extent.yMaximum(),
+                        ]
+                    ),
                 )
             else:
                 analysis_task = ScenarioAnalysisTask(

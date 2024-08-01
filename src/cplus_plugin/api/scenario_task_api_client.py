@@ -6,7 +6,7 @@ import typing
 from zipfile import ZipFile
 
 import requests
-from qgis.core import Qgis, QgsCoordinateReferenceSystem, QgsProject, QgsRectangle
+from qgis.core import Qgis
 from .multipart_upload import upload_part
 from .request import (
     CplusApiRequest,
@@ -14,12 +14,11 @@ from .request import (
     JOB_STOPPED_STATUS,
     CHUNK_SIZE,
 )
-from ..definitions.defaults import DEFAULT_CRS_ID
 from ..conf import settings_manager, Settings
 from ..models.base import Activity, NcsPathway
 from ..models.base import ScenarioResult
 from ..tasks import ScenarioAnalysisTask
-from ..utils import FileUtils, CustomJsonEncoder, todict, transform_extent
+from ..utils import FileUtils, CustomJsonEncoder, todict
 
 
 def clean_filename(filename):
@@ -50,6 +49,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         analysis_priority_layers_groups,
         analysis_extent,
         scenario,
+        extent_box,
     ):
         super().__init__(
             analysis_scenario_name,
@@ -69,6 +69,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.total_file_output = 0
         self.downloaded_output = 0
         self.scenario_status = None
+        self.extent_box = extent_box
 
     def cancel_task(self, exception=None):
         """
@@ -514,29 +515,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 priority_layer["layer_uuid"] = ""
             priority_layer["path"] = ""
 
-        project = QgsProject.instance()
-        source_crs = project.crs()
-        default_crs = QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
-        extent = old_scenario_dict["extent"]["bbox"]
-        extent_project = extent
-        if source_crs != default_crs:
-            extent_project = QgsRectangle(
-                float(extent_project[0]),
-                float(extent_project[2]),
-                float(extent_project[1]),
-                float(extent_project[3]),
-            )
-            rect = transform_extent(
-                extent_project,
-                source_crs,
-                default_crs,
-            )
-            extent_project = [
-                rect.xMinimum(),
-                rect.yMinimum(),
-                rect.xMaximum(),
-                rect.yMaximum(),
-            ]
         self.scenario_detail = {
             "scenario_name": old_scenario_dict["name"],
             "scenario_desc": old_scenario_dict["description"],
@@ -558,7 +536,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             "highest_position": highest_position,
             "mask_path": ", ".join(masking_layers),
             "mask_layer_uuids": mask_layer_uuids,
-            "extent": extent,
+            "extent": old_scenario_dict["extent"]["bbox"],
             "priority_layer_groups": old_scenario_dict.get("priority_layer_groups", []),
             "priority_layers": json.loads(
                 json.dumps(priority_layers, cls=CustomJsonEncoder)
@@ -566,7 +544,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             "activities": json.loads(
                 json.dumps(old_scenario_dict["activities"], cls=CustomJsonEncoder)
             ),
-            "extent_project": extent_project,
+            "extent_project": self.extent_box.bbox,
         }
 
     def __execute_scenario_analysis(self):
