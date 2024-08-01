@@ -2,9 +2,11 @@ import json
 import math
 import os
 import time
+import uuid
 
 import requests
 
+from ..models.base import Scenario, SpatialExtent
 from ..utils import log, get_layer_type
 from ..conf import settings_manager, Settings
 from ..trends_earth import auth
@@ -201,6 +203,15 @@ class CplusApiUrl:
     def scenario_output_list(self, scenario_uuid):
         return f"{self.base_url}/scenario_output/{scenario_uuid}/list/?download_all=true&page=1&page_size=100"
 
+    def scenario_history_list(self, page=1, page_size=10, filters={}):
+        params = f"page={page}&page_size={page_size}"
+        for key, filter in filters.items():
+            params = params + f"&{key}={filter}"
+        return f"{self.base_url}/scenario/history/?{params}"
+
+    def scenario_delete(self, scenario_uuid):
+        return f"{self.base_url}/scenario/{scenario_uuid}/delete/"
+
 
 class CplusApiRequest:
     """Request to Cplus API."""
@@ -301,3 +312,31 @@ class CplusApiRequest:
         if response.status_code != 200:
             raise CplusApiRequestError(result.get("detail", ""))
         return result
+
+    def fetch_scenario_history(self, page=1, page_size=10):
+        filters = {"status": "Completed"}
+        response = self.get(self.urls.scenario_history_list(page, page_size, filters))
+        result = response.json()
+        if response.status_code != 200:
+            raise CplusApiRequestError(result.get("detail", ""))
+        scenario_results = []
+        for item in result["results"]:
+            detail = item["detail"]
+            extent = []
+            if "extent_project" in detail:
+                extent = detail.get("extent_project", [])
+            else:
+                extent = detail.get("extent", [])
+            scenario_results.append(
+                Scenario(
+                    uuid=uuid.uuid4(),
+                    name=detail.get("scenario_name", ""),
+                    description=detail.get("scenario_desc", ""),
+                    extent=SpatialExtent(bbox=extent),
+                    server_uuid=uuid.UUID(item["uuid"]),
+                    activities=[],
+                    weighted_activities=[],
+                    priority_layer_groups=[],
+                )
+            )
+        return scenario_results

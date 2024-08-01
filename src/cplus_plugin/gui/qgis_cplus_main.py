@@ -45,9 +45,14 @@ from qgis.utils import iface
 
 from .activity_widget import ActivityContainerWidget
 from .priority_group_widget import PriorityGroupWidget
+from .scenario_item_widget import ScenarioItemWidget
 from .progress_dialog import ReportProgressDialog, ProgressDialog
 from ..trends_earth import auth
 from ..api.scenario_task_api_client import ScenarioAnalysisTaskApiClient
+from ..api.scenario_history_tasks import (
+    FetchScenarioHistoryTask,
+    FetchScenarioOutputTask,
+)
 from ..definitions.constants import (
     ACTIVITY_GROUP_LAYER_NAME,
     ACTIVITY_IDENTIFIER_PROPERTY,
@@ -168,6 +173,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         # Scenario list
 
         self.update_scenario_list()
+        self.fetch_scenario_history_list()
 
     def outputs_options_changed(self):
         """
@@ -1115,10 +1121,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.scenario_list.clear()
 
         for scenario in scenarios:
-            item = QtWidgets.QListWidgetItem()
-            item.setData(QtCore.Qt.DisplayRole, scenario.name)
+            type = "Available offline"
+            if scenario.server_uuid:
+                scenario_result = settings_manager.get_scenario_result(scenario.uuid)
+                if scenario_result is None:
+                    type = "Online"
+            item_widget = ScenarioItemWidget(scenario.name, type)
+            item = QtWidgets.QListWidgetItem(self.scenario_list)
+            item.setSizeHint(item_widget.sizeHint())
             item.setData(QtCore.Qt.UserRole, str(scenario.uuid))
-            self.scenario_list.addItem(item)
+            self.scenario_list.setItemWidget(item, item_widget)
 
     def add_scenario(self):
         """Adds a new scenario into the scenario list."""
@@ -1153,6 +1165,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             activities=activities,
             weighted_activities=weighted_activities,
             priority_layer_groups=priority_layer_groups,
+            server_uuid=(
+                self.scenario_result.scenario.server_uuid
+                if self.scenario_result
+                else None
+            ),
         )
         settings_manager.save_scenario(scenario)
         if self.scenario_result:
@@ -1222,6 +1239,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         if scenario_result:
             scenario_result.scenario = scenario
+        elif scenario and scenario.server_uuid:
+            # needs to load the output from server
+            task = FetchScenarioOutputTask(scenario)
+            task.task_finished.connect(self.on_fetch_scenario_output_finished)
+            QgsApplication.taskManager().addTask(task)
 
         self.post_analysis(scenario_result, None, None, None)
 
@@ -1336,6 +1358,21 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.comparison_report_btn.setEnabled(False)
         else:
             self.comparison_report_btn.setEnabled(True)
+
+    def fetch_scenario_history_list(self):
+        # TODO: check if user is logged in
+        task = FetchScenarioHistoryTask()
+        task.task_finished.connect(self.on_fetch_scenario_history_list_finished)
+        QgsApplication.taskManager().addTask(task)
+
+    def on_fetch_scenario_history_list_finished(self, success):
+        if not success:
+            return
+        self.update_scenario_list()
+
+    def on_fetch_scenario_output_finished(self, scenario_result):
+        self.post_analysis(scenario_result, None, None, None)
+        self.update_scenario_list()
 
     def prepare_message_bar(self):
         """Initializes the widget message bar settings"""
@@ -1836,9 +1873,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             # Add scenario result layer to the canvas with styling
             layer_file = scenario_result.analysis_output.get("OUTPUT")
+            layer_dt = (
+                scenario_result.created_date
+                if scenario_result.created_date
+                else datetime.datetime.now()
+            )
             layer_name = (
                 f"{SCENARIO_OUTPUT_LAYER_NAME}_"
-                f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+                f'{layer_dt.strftime("%Y_%m_%d_%H_%M_%S")}'
             )
 
             if (

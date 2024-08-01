@@ -6,7 +6,7 @@ import typing
 from zipfile import ZipFile
 
 import requests
-from qgis.core import Qgis
+from qgis.core import Qgis, QgsCoordinateReferenceSystem, QgsProject, QgsRectangle
 from .multipart_upload import upload_part
 from .request import (
     CplusApiRequest,
@@ -14,11 +14,12 @@ from .request import (
     JOB_STOPPED_STATUS,
     CHUNK_SIZE,
 )
+from ..definitions.defaults import DEFAULT_CRS_ID
 from ..conf import settings_manager, Settings
 from ..models.base import Activity, NcsPathway
 from ..models.base import ScenarioResult
 from ..tasks import ScenarioAnalysisTask
-from ..utils import FileUtils, CustomJsonEncoder, todict
+from ..utils import FileUtils, CustomJsonEncoder, todict, transform_extent
 
 
 def clean_filename(filename):
@@ -513,6 +514,29 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 priority_layer["layer_uuid"] = ""
             priority_layer["path"] = ""
 
+        project = QgsProject.instance()
+        source_crs = project.crs()
+        default_crs = QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
+        extent = old_scenario_dict["extent"]["bbox"]
+        extent_project = extent
+        if source_crs != default_crs:
+            extent_project = QgsRectangle(
+                float(extent_project[0]),
+                float(extent_project[2]),
+                float(extent_project[1]),
+                float(extent_project[3]),
+            )
+            rect = transform_extent(
+                extent_project,
+                source_crs,
+                default_crs,
+            )
+            extent_project = [
+                rect.xMinimum(),
+                rect.yMinimum(),
+                rect.xMaximum(),
+                rect.yMaximum(),
+            ]
         self.scenario_detail = {
             "scenario_name": old_scenario_dict["name"],
             "scenario_desc": old_scenario_dict["description"],
@@ -534,7 +558,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             "highest_position": highest_position,
             "mask_path": ", ".join(masking_layers),
             "mask_layer_uuids": mask_layer_uuids,
-            "extent": old_scenario_dict["extent"]["bbox"],
+            "extent": extent,
             "priority_layer_groups": old_scenario_dict.get("priority_layer_groups", []),
             "priority_layers": json.loads(
                 json.dumps(priority_layers, cls=CustomJsonEncoder)
@@ -542,6 +566,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             "activities": json.loads(
                 json.dumps(old_scenario_dict["activities"], cls=CustomJsonEncoder)
             ),
+            "extent_project": extent_project,
         }
 
     def __execute_scenario_analysis(self):
@@ -648,6 +673,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.scenario.priority_layer_groups = self.new_scenario_detail[
             "updated_detail"
         ]["priority_layer_groups"]
+        self.scenario.server_uuid = self.scenario_api_uuid
 
     def download_file(self, url, local_filename):
         parent_dir = os.path.dirname(local_filename)
@@ -718,7 +744,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             analysis_output=self.output,
         )
 
-        self.analysis_priority_layers_groups
         self.__update_scenario_status(
             {"progress_text": "Finished downloading output files", "progress": 100}
         )
