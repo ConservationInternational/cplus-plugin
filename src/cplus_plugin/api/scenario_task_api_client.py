@@ -19,6 +19,7 @@ from ..models.base import Activity, NcsPathway
 from ..models.base import ScenarioResult
 from ..tasks import ScenarioAnalysisTask
 from ..utils import FileUtils, CustomJsonEncoder, todict
+from ..api.scenario_history_tasks import BaseFetchScenarioOutput
 
 
 def clean_filename(filename):
@@ -40,7 +41,7 @@ def clean_filename(filename):
     return filename
 
 
-class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
+class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutput):
     def __init__(
         self,
         analysis_scenario_name,
@@ -51,7 +52,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         scenario,
         extent_box,
     ):
-        super().__init__(
+        super(ScenarioAnalysisTaskApiClient, self).__init__(
             analysis_scenario_name,
             analysis_scenario_description,
             analysis_activities,
@@ -595,86 +596,35 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                     self.log_message(log)
             self.logs = new_logs
 
-    def __create_activity(self, activity: dict, download_dict: list):
-        """
-        Create activity object from activity dictionary and downloaded
-        file dictionary
-        :param activity: activity dictionary
-        :download_dict: downloaded file dictionary
-        """
-        ncs_pathways = []
-        for pathway in activity["pathways"]:
-            if "layer_uuid" in pathway:
-                del pathway["layer_uuid"]
-            if "carbon_uuids" in pathway:
-                del pathway["carbon_uuids"]
-            pathway_filename = os.path.basename(pathway["path"])
-            if pathway_filename in download_dict:
-                pathway["path"] = download_dict[pathway_filename]
-                ncs_pathways.append(NcsPathway(**pathway))
-        activity["pathways"] = ncs_pathways
-        activity_filename = os.path.basename(activity["path"])
-        if activity_filename in download_dict:
-            activity["path"] = download_dict[activity_filename]
-        activity_obj = Activity(**activity)
-        activity_obj.pathways = ncs_pathways
-        return activity_obj
-
-    def __set_scenario(self, output_list, download_paths):
-        """
-        Set scenario object based on output list and downloaded file paths
-        to be used in generating report
-        :param output_list: List of output from CPLUS API
-        :download_paths: List of downloaded file paths
-        """
-        output_fnames = []
-        for output in output_list["results"]:
-            if "_cleaned" in output["filename"]:
-                output_fnames.append(output["filename"])
-
-        weighted_activities = []
-        activities = []
-
-        download_dict = {os.path.basename(d): d for d in download_paths}
-
-        for activity in self.new_scenario_detail["updated_detail"]["activities"]:
-            activities.append(self.__create_activity(activity, download_dict))
-        for activity in self.new_scenario_detail["updated_detail"][
-            "weighted_activities"
-        ]:
-            weighted_activities.append(self.__create_activity(activity, download_dict))
-
-        self.analysis_weighted_activities = weighted_activities
-        self.analysis_activities = activities
-        self.scenario.activities = activities
-        self.scenario.weighted_activities = weighted_activities
-        self.scenario.priority_layer_groups = self.new_scenario_detail[
-            "updated_detail"
-        ]["priority_layer_groups"]
-        self.scenario.server_uuid = self.scenario_api_uuid
+    def is_download_cancelled(self):
+        return self.processing_cancelled
 
     def download_file(self, url, local_filename):
-        parent_dir = os.path.dirname(local_filename)
-        if not os.path.exists(parent_dir):
-            os.makedirs(parent_dir)
-        with requests.get(url, stream=True) as r:
-            r.raise_for_status()
-            if self.processing_cancelled:
-                return
-            with open(local_filename, "wb") as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-                    if self.processing_cancelled:
-                        return
-        self.downloaded_output += 1
-        self.__update_scenario_status(
-            {
-                "progress_text": f"Downloading output files",
-                "progress": int((self.downloaded_output / self.total_file_output) * 90)
-                + 5,
-            }
-        )
+        # parent_dir = os.path.dirname(local_filename)
+        # if not os.path.exists(parent_dir):
+        #     os.makedirs(parent_dir)
+        # with requests.get(url, stream=True) as r:
+        #     r.raise_for_status()
+        #     if self.processing_cancelled:
+        #         return
+        #     with open(local_filename, "wb") as f:
+        #         for chunk in r.iter_content(chunk_size=8192):
+        #             if chunk:
+        #                 f.write(chunk)
+        #             if self.processing_cancelled:
+        #                 return
+        # self.downloaded_output += 1
+        super().download_file(url, local_filename)
+        if not self.is_download_cancelled():
+            self.__update_scenario_status(
+                {
+                    "progress_text": f"Downloading output files",
+                    "progress": int(
+                        (self.downloaded_output / self.total_file_output) * 90
+                    )
+                    + 5,
+                }
+            )
 
     def __retrieve_scenario_outputs(self, scenario_uuid):
         """
@@ -688,40 +638,19 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.__update_scenario_status(
             {"progress_text": "Downloading output files", "progress": 5}
         )
-        self.total_file_output = len(output_list["results"])
-        self.downloaded_output = 0
-        urls_to_download = []
-        download_paths = []
-        for output in output_list["results"]:
-            urls_to_download.append(output["url"])
-            if output["is_final_output"]:
-                download_path = os.path.join(
-                    self.scenario_directory, output["filename"]
-                )
-                final_output_path = download_path
-                self.output = output["output_meta"]
-                self.output["OUTPUT"] = final_output_path
-            else:
-                download_path = os.path.join(
-                    self.scenario_directory, output["group"], output["filename"]
-                )
-            download_paths.append(download_path)
 
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=3 if os.cpu_count() > 3 else 1
-        ) as executor:
-            executor.map(self.download_file, urls_to_download, download_paths)
-        if self.processing_cancelled:
-            return
-
-        self.__set_scenario(output_list, download_paths)
-
-        self.scenario_result = ScenarioResult(
-            scenario=self.scenario,
-            scenario_directory=self.scenario_directory,
-            analysis_output=self.output,
+        updated_scenario, scenario_result = self.fetch_scenario_output(
+            self.scenario,
+            self.new_scenario_detail["updated_detail"],
+            output_list,
+            self.scenario_directory,
         )
-
+        self.scenario = updated_scenario
+        self.scenario.server_uuid = self.scenario_api_uuid
+        self.scenario_result = scenario_result
+        self.output = scenario_result.analysis_output
+        self.analysis_activities = self.scenario.activities
+        self.analysis_weighted_activities = self.scenario.weighted_activities
         self.__update_scenario_status(
             {"progress_text": "Finished downloading output files", "progress": 100}
         )
