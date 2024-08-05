@@ -5,7 +5,6 @@ import traceback
 import typing
 from zipfile import ZipFile
 
-import requests
 from qgis.core import Qgis
 from .multipart_upload import upload_part
 from .request import (
@@ -15,8 +14,6 @@ from .request import (
     CHUNK_SIZE,
 )
 from ..conf import settings_manager, Settings
-from ..models.base import Activity, NcsPathway
-from ..models.base import ScenarioResult
 from ..tasks import ScenarioAnalysisTask
 from ..utils import FileUtils, CustomJsonEncoder, todict
 from ..api.scenario_history_tasks import BaseFetchScenarioOutput
@@ -181,7 +178,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
                 self.uploaded_chunks += 1
                 self.__update_scenario_status(
                     {
-                        "progress_text": f"Uploading layers with concurrent request",
+                        "progress_text": "Uploading layers with concurrent request",
                         "progress": int(
                             (self.uploaded_chunks / self.total_file_upload_chunks) * 100
                         ),
@@ -538,7 +535,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             "mask_path": ", ".join(masking_layers),
             "mask_layer_uuids": mask_layer_uuids,
             "extent": old_scenario_dict["extent"]["bbox"],
-            "priority_layer_groups": old_scenario_dict.get("priority_layer_groups", []),
+            "priority_layer_groups": (
+                old_scenario_dict.get("priority_layer_groups", [])
+            ),
             "priority_layers": json.loads(
                 json.dumps(priority_layers, cls=CustomJsonEncoder)
             ),
@@ -597,28 +596,27 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             self.logs = new_logs
 
     def is_download_cancelled(self):
+        """Check if download is cancelled.
+
+        This method should be overriden by child class.
+        :return: True if task has been cancelled
+        :rtype: bool
+        """
         return self.processing_cancelled
 
     def download_file(self, url, local_filename):
-        # parent_dir = os.path.dirname(local_filename)
-        # if not os.path.exists(parent_dir):
-        #     os.makedirs(parent_dir)
-        # with requests.get(url, stream=True) as r:
-        #     r.raise_for_status()
-        #     if self.processing_cancelled:
-        #         return
-        #     with open(local_filename, "wb") as f:
-        #         for chunk in r.iter_content(chunk_size=8192):
-        #             if chunk:
-        #                 f.write(chunk)
-        #             if self.processing_cancelled:
-        #                 return
-        # self.downloaded_output += 1
+        """Download file output.
+
+        :param url: URL to the file output
+        :type url: str
+        :param local_filename: output filepath
+        :type local_filename: str
+        """
         super().download_file(url, local_filename)
         if not self.is_download_cancelled():
             self.__update_scenario_status(
                 {
-                    "progress_text": f"Downloading output files",
+                    "progress_text": "Downloading output files",
                     "progress": int(
                         (self.downloaded_output / self.total_file_output) * 90
                     )

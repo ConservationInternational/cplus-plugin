@@ -94,12 +94,21 @@ class FetchScenarioHistoryTask(BaseScenarioTask):
 
 
 class BaseFetchScenarioOutput:
+    """Base class for fetching scenario output."""
+
     def __init__(self) -> None:
+        """Initialize BaseFetchScenarioOutput class."""
         self.downloaded_output = 0
         self.total_file_output = 0
         self.created_datetime = datetime.datetime.now()
 
     def is_download_cancelled(self):
+        """Check if download is cancelled.
+
+        This method should be overriden by child class.
+        :return: True if task has been cancelled
+        :rtype: bool
+        """
         return False
 
     def download_file(self, url, local_filename):
@@ -127,11 +136,12 @@ class BaseFetchScenarioOutput:
 
     def __create_activity(self, activity: dict, download_dict: list):
         """
-        Create activity object from activity dictionary and downloaded
-        file dictionary.
+        Create activity object from activity and downloaded file dictionary.
 
         :param activity: activity dictionary
-        :download_dict: downloaded file dictionary
+        :type activity: dict
+        :param download_dict: downloaded file dictionary
+        :type download_dict: dict
         """
         ncs_pathways = []
         for pathway in activity["pathways"]:
@@ -161,9 +171,11 @@ class BaseFetchScenarioOutput:
         :param scenario_detail: Scenario dictionary from API
         :type scenario_detail: dict
         :param output_list: Scenario output list from API
-        :type output_list: dictionary
+        :type output_list: dict
         :param download_paths: List of downloaded file paths
         :type download_paths: list
+        :return: Scenario object
+        :rtype: Scenario
         """
         output_fnames = []
         for output in output_list["results"]:
@@ -200,8 +212,10 @@ class BaseFetchScenarioOutput:
         :type original_scenario: Scenario
         :param scenario_detail: scenario detail dictionary
         :type scenario_detail: dict
-        :param scenario_detail: dictionary that contains output list from API
-        :type scenario_detail: dict
+        :param output_list: Scenario output list from API
+        :type output_list: dict
+        :param scenario_directory: dictionary that contains outputs from API
+        :type scenario_directory: dict
         """
         self.total_file_output = len(output_list["results"])
         self.downloaded_output = 0
@@ -269,6 +283,12 @@ class FetchScenarioOutputTask(BaseScenarioTask, BaseFetchScenarioOutput):
         )
 
     def is_download_cancelled(self):
+        """Check if download is cancelled.
+
+        This method should be overriden by child class.
+        :return: True if task has been cancelled
+        :rtype: bool
+        """
         return self.processing_cancelled
 
     def run(self):
