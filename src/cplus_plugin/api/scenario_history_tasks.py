@@ -20,6 +20,8 @@ from .request import CplusApiRequest
 
 
 class BaseScenarioTask(QgsTask):
+    """Base Qgs task for Scenario API Operation."""
+
     task_finished = QtCore.pyqtSignal(object)
 
     def __init__(self):
@@ -28,11 +30,19 @@ class BaseScenarioTask(QgsTask):
 
 
 class FetchScenarioHistoryTask(BaseScenarioTask):
+    """Task to fetch scenario history from API."""
+
     def __init__(self):
+        """Task initialization."""
         super().__init__()
         self.result = []
 
     def run(self):
+        """Execute the task logic.
+
+        :return: True if task runs successfully
+        :rtype: bool
+        """
         try:
             self.result = self.fetch_scenario_history()
             return True
@@ -41,11 +51,21 @@ class FetchScenarioHistoryTask(BaseScenarioTask):
             return False
 
     def finished(self, is_success):
+        """Handler when task has been executed.
+
+        :param is_success: True if task runs successfully.
+        :type is_success: bool
+        """
         if is_success:
             self.store_scenario_list(self.result)
         self.task_finished.emit(is_success)
 
     def store_scenario_list(self, result: List[Scenario]):
+        """Store scenario history into settings_manager.
+
+        :param result: Scenario history list from API
+        :type result: List[Scenario]
+        """
         scenarios: List[Scenario] = settings_manager.get_scenarios()
         existing_scenarios = [s for s in scenarios if s.server_uuid is not None]
         for scenario in result:
@@ -65,11 +85,23 @@ class FetchScenarioHistoryTask(BaseScenarioTask):
                 settings_manager.delete_scenario(scenario.uuid)
 
     def fetch_scenario_history(self):
+        """Fetch scenario history list from API.
+
+        :return: latest 10 scenario history.
+        :rtype: List[Scenario]
+        """
         return self.request.fetch_scenario_history()
 
 
 class FetchScenarioOutputTask(BaseScenarioTask):
+    """Fetch scenario output from API."""
+
     def __init__(self, scenario: Scenario):
+        """Task initialization.
+
+        :param scenario: scenario object to fetch the output.
+        :type scenario: Scenario
+        """
         super().__init__()
         self.scenario = scenario
         self.total_file_output = 0
@@ -80,6 +112,11 @@ class FetchScenarioOutputTask(BaseScenarioTask):
         self.scenario_result = None
 
     def get_scenario_directory(self):
+        """Generate scenario directory from output datetime.
+
+        :return: Path to scenario directory
+        :rtype: str
+        """
         base_dir = settings_manager.get_value(Settings.BASE_DIR)
         return os.path.join(
             f"{base_dir}",
@@ -87,6 +124,11 @@ class FetchScenarioOutputTask(BaseScenarioTask):
         )
 
     def run(self):
+        """Execute the task logic.
+
+        :return: True if task runs successfully
+        :rtype: bool
+        """
         try:
             scenario_data = self.fetch_scenario_detail()
             self.created_datetime = datetime.datetime.strptime(
@@ -102,6 +144,11 @@ class FetchScenarioOutputTask(BaseScenarioTask):
             return False
 
     def finished(self, is_success):
+        """Handler when task has been executed.
+
+        :param is_success: True if task runs successfully.
+        :type is_success: bool
+        """
         if is_success:
             settings_manager.save_scenario(self.scenario)
             if self.scenario_result:
@@ -111,16 +158,20 @@ class FetchScenarioOutputTask(BaseScenarioTask):
         self.task_finished.emit(self.scenario_result)
 
     def fetch_scenario_detail(self):
+        """Fetch scenario detail from API.
+
+        :return: scenario detail dictionary
+        :rtype: dict
+        """
         return self.request.fetch_scenario_detail(self.scenario.server_uuid)
 
     def fetch_scenario_output(self, scenario_detail):
-        # self.__update_scenario_status(
-        #     {"progress_text": "Downloading output files", "progress": 0}
-        # )
+        """Fetch scenario outputs from API.
+
+        :param scenario_detail: scenario detail dictionary
+        :type scenario_detail: dict
+        """
         output_list = self.request.fetch_scenario_output_list(self.scenario.server_uuid)
-        # self.__update_scenario_status(
-        #     {"progress_text": "Downloading output files", "progress": 5}
-        # )
         self.total_file_output = len(output_list["results"])
         self.downloaded_output = 0
         urls_to_download = []
@@ -157,11 +208,14 @@ class FetchScenarioOutputTask(BaseScenarioTask):
             analysis_output=final_output,
         )
 
-        # self.__update_scenario_status(
-        #     {"progress_text": "Finished downloading output files", "progress": 100}
-        # )
-
     def download_file(self, url, local_filename):
+        """Download file output.
+
+        :param url: URL to the file output
+        :type url: str
+        :param local_filename: output filepath
+        :type local_filename: str
+        """
         parent_dir = os.path.dirname(local_filename)
         if not os.path.exists(parent_dir):
             os.makedirs(parent_dir)
@@ -176,13 +230,6 @@ class FetchScenarioOutputTask(BaseScenarioTask):
                     if self.processing_cancelled:
                         return
         self.downloaded_output += 1
-        # self.__update_scenario_status(
-        #     {
-        #         "progress_text": f"Downloading output files",
-        #         "progress": int((self.downloaded_output / self.total_file_output) * 90)
-        #         + 5,
-        #     }
-        # )
 
     def __create_activity(self, activity: dict, download_dict: list):
         """
@@ -237,11 +284,23 @@ class FetchScenarioOutputTask(BaseScenarioTask):
 
 
 class DeleteScenarioTask(BaseScenarioTask):
+    """Task to delete Scenario from API."""
+
     def __init__(self, scenario_server_uuid):
+        """Initialize the task.
+
+        :param scenario_server_uuid: scenario server uuid
+        :type scenario_server_uuid: str
+        """
         super().__init__()
         self.scenario_server_uuid = scenario_server_uuid
 
     def run(self):
+        """Execute the task logic.
+
+        :return: True if task runs successfully
+        :rtype: bool
+        """
         try:
             self.request.delete_scenario(self.scenario_server_uuid)
             return True
@@ -250,4 +309,9 @@ class DeleteScenarioTask(BaseScenarioTask):
             return False
 
     def finished(self, is_success):
+        """Handler when task has been executed.
+
+        :param is_success: True if task runs successfully.
+        :type is_success: bool
+        """
         self.task_finished.emit(is_success)

@@ -1294,6 +1294,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 scenario_server_uuid = item.data(QtCore.Qt.UserRole + 2)
                 if scenario_server_uuid == "":
                     continue
+                if not self.has_trends_auth():
+                    continue
                 task = DeleteScenarioTask(scenario_server_uuid)
                 QgsApplication.taskManager().addTask(task)
             self.update_scenario_list()
@@ -1371,19 +1373,44 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.comparison_report_btn.setEnabled(True)
 
     def fetch_scenario_history_list(self):
-        # TODO: check if user is logged in
+        """Fetch scenario history list from API."""
+        if not self.has_trends_auth():
+            return
         task = FetchScenarioHistoryTask()
         task.task_finished.connect(self.on_fetch_scenario_history_list_finished)
         QgsApplication.taskManager().addTask(task)
 
     def on_fetch_scenario_history_list_finished(self, success):
+        """Callback when plugin has finished pulling scenario history list.
+
+        :param success: True if API call is successful
+        :type success: bool
+        """
         if not success:
             return
         self.update_scenario_list()
 
     def on_fetch_scenario_output_finished(self, scenario_result):
+        """Callback when plugin has finished downloading scenario output.
+
+        :param scenario_result: Scenario result from API
+        :type scenario_result: ScenarioResult
+        """
         self.post_analysis(scenario_result, None, None, None)
         self.update_scenario_list()
+
+    def has_trends_auth(self):
+        """Check if plugin has user Trends.Earth authentication.
+
+        :return: True if user has provided the username and password.
+        :rtype: bool
+        """
+        auth_config = auth.get_auth_config(auth.TE_API_AUTH_SETUP, warn=None)
+        return (
+            auth_config
+            and auth_config.config("username")
+            and auth_config.config("password")
+        )
 
     def prepare_message_bar(self):
         """Initializes the widget message bar settings"""
@@ -1494,12 +1521,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             return
 
         if self.processing_type.isChecked():
-            auth_config = auth.get_auth_config(auth.TE_API_AUTH_SETUP, warn=None)
-            if (
-                not auth_config
-                or not auth_config.config("username")
-                or not auth_config.config("password")
-            ):
+            if not self.has_trends_auth():
                 self.show_message(
                     tr(
                         f"Trends.Earth account is not set! "
@@ -1687,7 +1709,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         after it has been terminated.
         """
         task.on_terminated()
-        log(f"Main task terminated")
+        log("Main task terminated")
 
     def analysis_complete(self, task, report_manager, progress_dialog):
         """Calls the responsible function for handling analysis results outputs
