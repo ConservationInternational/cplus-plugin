@@ -643,6 +643,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             output_list,
             self.scenario_directory,
         )
+        if updated_scenario is None:
+            raise Exception("Failed download scenario outputs!")
         self.scenario = updated_scenario
         self.scenario.server_uuid = self.scenario_api_uuid
         self.scenario_result = scenario_result

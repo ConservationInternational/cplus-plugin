@@ -122,7 +122,8 @@ class BaseFetchScenarioOutput:
         parent_dir = os.path.dirname(local_filename)
         if not os.path.exists(parent_dir):
             os.makedirs(parent_dir)
-        with requests.get(url, stream=True) as r:
+        headers = {"Cache-Control": "no-cache"}
+        with requests.get(url, stream=True, headers=headers) as r:
             r.raise_for_status()
             if self.is_download_cancelled():
                 return
@@ -203,6 +204,19 @@ class BaseFetchScenarioOutput:
             server_uuid=original_scenario.server_uuid,
         )
 
+    def __validate_output_paths(self, download_paths):
+        """Validate whether all output paths exist.
+
+        :param download_paths: Output file paths
+        :type download_paths: list
+        :return: True if all paths exist
+        :rtype: bool
+        """
+        for path in download_paths:
+            if not os.path.exists(path):
+                return False
+        return True
+
     def fetch_scenario_output(
         self, original_scenario, scenario_detail, output_list, scenario_directory
     ):
@@ -241,7 +255,9 @@ class BaseFetchScenarioOutput:
         ) as executor:
             executor.map(self.download_file, urls_to_download, download_paths)
         if self.is_download_cancelled():
-            return
+            return None, None
+        if not self.__validate_output_paths(download_paths):
+            return None, None
         scenario = self.__create_scenario(
             original_scenario, scenario_detail, output_list, download_paths
         )
@@ -314,6 +330,8 @@ class FetchScenarioOutputTask(BaseScenarioTask, BaseFetchScenarioOutput):
                 output_list,
                 self.scenario_directory,
             )
+            if updated_scenario is None:
+                return False
             self.scenario = updated_scenario
             self.scenario_result = scenario_result
             return True
@@ -333,6 +351,8 @@ class FetchScenarioOutputTask(BaseScenarioTask, BaseFetchScenarioOutput):
                 settings_manager.save_scenario_result(
                     self.scenario_result, str(self.scenario.uuid)
                 )
+        elif not self.processing_cancelled:
+            log("Failed download scenario outputs!", info=False)
         self.task_finished.emit(self.scenario_result)
 
     def fetch_scenario_detail(self):
