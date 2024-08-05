@@ -90,7 +90,7 @@ class FetchScenarioOutputTask(BaseScenarioTask):
         try:
             scenario_data = self.fetch_scenario_detail()
             self.created_datetime = datetime.datetime.strptime(
-                scenario_data["submitted_on"], "%Y-%m-%dT%H:%M:%S.%fZ"
+                scenario_data["submitted_on"], "%Y-%m-%dT%H:%M:%SZ"
             )
             self.scenario_directory = self.get_scenario_directory()
             if os.path.exists(self.scenario_directory):
