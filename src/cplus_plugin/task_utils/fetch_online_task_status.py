@@ -13,6 +13,7 @@ class FetchOnlineTaskStatusTask(QgsTask):
     """This shows how to subclass QgsTask"""
 
     task_completed = pyqtSignal()
+    task_running = pyqtSignal()
 
     def __init__(self, main_widget):
         super().__init__()
@@ -57,6 +58,8 @@ class FetchOnlineTaskStatusTask(QgsTask):
                         )
             if logs[-1]["log"] == "Task has been completed.":
                 self.task_completed.emit()
+            else:
+                self.task_running.emit()
 
         return True
 

@@ -295,21 +295,35 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.run_cplus_main_task(progress_dialog, scenario, analysis_task)
 
     def on_online_task_completed(self):
-        online_task = settings_manager.get_online_task()
         from qgis.PyQt.QtWidgets import QPushButton
+        online_task = settings_manager.get_online_task()
+        if online_task:
+            widget = self.message_bar.createMessage(
+                tr(f"Task {online_task['name']} has completed successfully."),
+            )
+            button = QPushButton(widget)
+            button.setText("Generate Report")
+            button.pressed.connect(self.on_generate_report_button_clicked)
+            widget.layout().addWidget(button)
+            self.update_message_bar(widget)
 
-        widget = self.message_bar.createMessage(
-            tr(f"Task {online_task['name']} has completed successfully."),
-        )
-        button = QPushButton(widget)
-        button.setText("Generate Report")
-        button.pressed.connect(self.on_generate_report_button_clicked)
-        widget.layout().addWidget(button)
-        self.update_message_bar(widget)
+    def on_online_task_running(self):
+        from qgis.PyQt.QtWidgets import QPushButton
+        online_task = settings_manager.get_online_task()
+        if online_task:
+            widget = self.message_bar.createMessage(
+                tr(f"Task {online_task['name']} is still running."),
+            )
+            button = QPushButton(widget)
+            button.setText("View status")
+            button.pressed.connect(self.on_view_status_button_clicked)
+            widget.layout().addWidget(button)
+            self.update_message_bar(widget)
 
     def fetch_online_task_status(self):
         self.task = FetchOnlineTaskStatusTask(self)
         self.task.task_completed.connect(self.on_online_task_completed)
+        self.task.task_running.connect(self.on_online_task_running)
         QgsApplication.taskManager().addTask(self.task)
 
     def outputs_options_changed(self):
