@@ -296,6 +296,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def on_online_task_completed(self):
         from qgis.PyQt.QtWidgets import QPushButton
+
         online_task = settings_manager.get_online_task()
         if online_task:
             widget = self.message_bar.createMessage(
@@ -309,6 +310,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def on_online_task_running(self):
         from qgis.PyQt.QtWidgets import QPushButton
+
         online_task = settings_manager.get_online_task()
         if online_task:
             widget = self.message_bar.createMessage(
@@ -360,9 +362,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         progress_changed = partial(self.update_progress_bar, progress_dialog)
         analysis_task.custom_progress_changed.connect(progress_changed)
 
-        status_message_changed = partial(
-            self.update_progress_dialog, progress_dialog
-        )
+        status_message_changed = partial(self.update_progress_dialog, progress_dialog)
 
         analysis_task.status_message_changed.connect(status_message_changed)
 
