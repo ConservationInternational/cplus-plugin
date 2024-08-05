@@ -49,6 +49,7 @@ nav:
             - Utilities: developer/api/core/api_utils.md
             - Financials: developer/api/core/api_financials.md
             - Reports:
+                - Comparison Table: developer/api/core/api_report_scenario_comparison_table.md
                 - Generator: developer/api/core/api_reports_generator.md
                 - Layout items: developer/api/core/api_reports_layout_items.md
                 - Manager: developer/api/core/api_reports_manager.md

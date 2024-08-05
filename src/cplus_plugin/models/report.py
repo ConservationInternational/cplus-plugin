@@ -8,19 +8,25 @@ from uuid import UUID
 
 from qgis.core import QgsFeedback, QgsRectangle
 
-from .base import Scenario
+from .base import Scenario, ScenarioResult
 
 
 @dataclasses.dataclass
-class ReportContext:
-    """Context information for generating a report."""
+class BaseReportContext:
+    """Common context information for generating a scenario report."""
 
     template_path: str
-    scenario: Scenario
     name: str
-    scenario_output_dir: str
     project_file: str
     feedback: QgsFeedback
+
+
+@dataclasses.dataclass
+class ReportContext(BaseReportContext):
+    """Context information for generating a scenario analysis report."""
+
+    scenario: Scenario
+    scenario_output_dir: str
     output_layer_name: str
 
 
@@ -30,6 +36,7 @@ class ReportSubmitStatus:
 
     status: bool
     feedback: QgsFeedback
+    identifier: str
 
 
 @dataclasses.dataclass
@@ -63,3 +70,36 @@ class ReportResult:
             return ""
 
         return f"{self.output_dir}/{self.base_file_name}.pdf"
+
+
+@dataclasses.dataclass
+class ScenarioComparisonReportContext(BaseReportContext):
+    """Contextual information related to the generation of scenario
+    comparison report.
+    """
+
+    results: typing.List[ScenarioResult]
+    output_dir: str
+
+
+@dataclasses.dataclass
+class ScenarioAreaInfo:
+    """Contains information on the result of calculating a
+    scenario's area.
+    """
+
+    name: str
+    identifier: UUID
+    area: dict = dataclasses.field(default_factory=dict)
+
+
+@dataclasses.dataclass
+class RepeatAreaDimension:
+    """Contains information for rendering repeat model items
+    such as scenarios or activities in a CPlus repeat item.
+    """
+
+    rows: int
+    columns: int
+    width: float
+    height: float

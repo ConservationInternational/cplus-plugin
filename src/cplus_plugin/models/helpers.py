@@ -6,6 +6,14 @@ from dataclasses import field, fields
 import typing
 import uuid
 
+from qgis.core import (
+    QgsCoordinateReferenceSystem,
+    QgsCoordinateTransform,
+    QgsProject,
+    QgsRasterLayer,
+    QgsRectangle,
+)
+
 from .base import (
     BaseModelComponent,
     BaseModelComponentType,
@@ -14,6 +22,7 @@ from .base import (
     LayerModelComponentType,
     LayerType,
     NcsPathway,
+    ScenarioResult,
     SpatialExtent,
 )
 from ..definitions.constants import (
@@ -27,6 +36,7 @@ from ..definitions.constants import (
     NAME_ATTRIBUTE,
     DESCRIPTION_ATTRIBUTE,
     LAYER_TYPE_ATTRIBUTE,
+    MANUAL_NPV_ATTRIBUTE,
     NPV_MAPPINGS_ATTRIBUTE,
     MAX_VALUE_ATTRIBUTE,
     MIN_VALUE_ATTRIBUTE,
@@ -40,17 +50,10 @@ from ..definitions.constants import (
     YEARS_ATTRIBUTE,
     YEARLY_RATES_ATTRIBUTE,
 )
-from ..definitions.defaults import DEFAULT_CRS_ID
+from ..definitions.defaults import DEFAULT_CRS_ID, QGIS_GDAL_PROVIDER
 from .financial import ActivityNpv, ActivityNpvCollection, NpvParameters
 
 from ..utils import log
-
-from qgis.core import (
-    QgsCoordinateReferenceSystem,
-    QgsCoordinateTransform,
-    QgsProject,
-    QgsRectangle,
-)
 
 
 def model_component_to_dict(
@@ -452,6 +455,7 @@ def activity_npv_to_dict(activity_npv: ActivityNpv) -> dict:
         ABSOLUTE_NPV_ATTRIBUTE: activity_npv.params.absolute_npv,
         NORMALIZED_NPV_ATTRIBUTE: activity_npv.params.normalized_npv,
         YEARLY_RATES_ATTRIBUTE: activity_npv.params.yearly_rates,
+        MANUAL_NPV_ATTRIBUTE: activity_npv.params.manual_npv,
         ENABLED_ATTRIBUTE: activity_npv.enabled,
         ACTIVITY_IDENTIFIER_PROPERTY: activity_npv.activity_id,
     }
@@ -479,21 +483,25 @@ def create_activity_npv(activity_npv_dict: dict) -> typing.Optional[ActivityNpv]
     if DISCOUNT_ATTRIBUTE in activity_npv_dict:
         args.append(activity_npv_dict[DISCOUNT_ATTRIBUTE])
 
-    if ABSOLUTE_NPV_ATTRIBUTE in activity_npv_dict:
-        args.append(activity_npv_dict[ABSOLUTE_NPV_ATTRIBUTE])
-
-    if NORMALIZED_NPV_ATTRIBUTE in activity_npv_dict:
-        args.append(activity_npv_dict[NORMALIZED_NPV_ATTRIBUTE])
-
-    if len(args) < 4:
+    if len(args) < 2:
         return None
 
-    yearly_rates = []
+    kwargs = {}
+
+    if ABSOLUTE_NPV_ATTRIBUTE in activity_npv_dict:
+        kwargs[ABSOLUTE_NPV_ATTRIBUTE] = activity_npv_dict[ABSOLUTE_NPV_ATTRIBUTE]
+
+    if NORMALIZED_NPV_ATTRIBUTE in activity_npv_dict:
+        kwargs[NORMALIZED_NPV_ATTRIBUTE] = activity_npv_dict[NORMALIZED_NPV_ATTRIBUTE]
+
+    if MANUAL_NPV_ATTRIBUTE in activity_npv_dict:
+        kwargs[MANUAL_NPV_ATTRIBUTE] = activity_npv_dict[MANUAL_NPV_ATTRIBUTE]
+
+    npv_params = NpvParameters(*args, **kwargs)
+
     if YEARLY_RATES_ATTRIBUTE in activity_npv_dict:
         yearly_rates = activity_npv_dict[YEARLY_RATES_ATTRIBUTE]
-
-    npv_params = NpvParameters(*args)
-    npv_params.yearly_rates = yearly_rates
+        npv_params.yearly_rates = yearly_rates
 
     npv_enabled = False
     if ENABLED_ATTRIBUTE in activity_npv_dict:
@@ -592,3 +600,23 @@ def create_activity_npv_collection(
         activity_npv_collection.mappings = npv_mappings
 
     return activity_npv_collection
+
+
+def layer_from_scenario_result(
+    result: ScenarioResult,
+) -> typing.Optional[QgsRasterLayer]:
+    """Gets the scenario output layer from the results of the
+    analysis.
+
+    :returns: Raster layer corresponding to the output scenario
+    path or None if the file does not exist or if the raster layer
+    is invalid.
+    :rtype: QgsRasterLayer
+    """
+    layer_file = result.analysis_output.get("OUTPUT")
+
+    layer = QgsRasterLayer(layer_file, result.scenario.name, QGIS_GDAL_PROVIDER)
+    if not layer.isValid():
+        return None
+
+    return layer

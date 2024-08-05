@@ -6,20 +6,31 @@ This step deals with the **Natural Climate Solution (NCS) pathways** and the **A
 
 *Figure 1: Step 2 allows the user to create and edit NCS pathways and Activities*
 
-Step 2 buttons (**Figure 2**):
+Activities buttons:
 
-- **Add**: Adds a new pathway or activity.
+- **Add**: Adds a new activity.
 
-- **Delete**: Delete a pathway or activity.
+- **Delete**: Delete an activity.
 
-- **Editing**: Edit an existing pathway or activity.
+- **Editing**: Edit an existing activity.
 
-- **Refresh view**: Checks the base directory for data.
-
+- **Ordering pixel value:** Edit activity order.
 
 ![CPLUS step 2 buttons](img/plugin-step2-buttons.png)
 
-*Figure 2: Create, delete, and edit buttons*
+NCS pathways buttons:
+
+- **Add**: Adds a new pathway.
+
+- **Delete**: Delete a pathway.
+
+- **Editing**: Edit an existing pathway.
+
+- **Refresh view**: Checks the base directory for data.
+
+- **Validation inspector:** Checks the validations.
+
+![CPLUS step 2 pathways buttons](img/plugin-step2-pathways-buttons.png)
 
 ## NCS Pathway
 

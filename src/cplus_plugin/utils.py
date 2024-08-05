@@ -3,7 +3,6 @@
     Plugin utilities
 """
 
-
 import hashlib
 import json
 import os
@@ -32,8 +31,13 @@ from qgis.analysis import QgsAlignRaster
 
 from qgis import processing
 
-from .definitions.defaults import DOCUMENTATION_SITE, REPORT_FONT_NAME, TEMPLATE_NAME
+from .definitions.defaults import (
+    DOCUMENTATION_SITE,
+    REPORT_FONT_NAME,
+    SCENARIO_ANALYSIS_TEMPLATE_NAME,
+)
 from .definitions.constants import (
+    COMPARISON_REPORT_SEGMENT,
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
     NPV_PRIORITY_LAYERS_SEGMENT,
@@ -452,7 +456,7 @@ class FileUtils:
         Caller needs to verify that the file actually exists.
 
         :param file_name: Template file name including the extension. If
-        none is specified then it will use `main.qpt` as the default
+        none is specified then it will use `scenario_analysis.qpt` as the default
         template name.
         :type file_name: str
 
@@ -460,9 +464,9 @@ class FileUtils:
         :rtype: str
         """
         if file_name is None:
-            file_name = TEMPLATE_NAME
+            file_name = SCENARIO_ANALYSIS_TEMPLATE_NAME
 
-        absolute_path = f"{FileUtils.plugin_dir()}/data/reports/{file_name}"
+        absolute_path = f"{FileUtils.plugin_dir()}/data/report_templates/{file_name}"
 
         return os.path.normpath(absolute_path)
 
@@ -494,6 +498,20 @@ class FileUtils:
         )
         message = tr("Missing parent directory when creating NPV PWLs subdirectory.")
         FileUtils.create_new_dir(npv_pwl_dir, message)
+
+    @staticmethod
+    def create_comparison_reports_dir(base_dir: str):
+        """Creates a comparison reports subdirectory under the base directory.
+        Skips creation of the subdirectory if it already exists.
+        """
+        if not Path(base_dir).is_dir():
+            return
+
+        comparison_reports_dir = f"{base_dir}/{COMPARISON_REPORT_SEGMENT}"
+        message = tr(
+            "Missing parent directory when creating comparison reports subdirectory."
+        )
+        FileUtils.create_new_dir(comparison_reports_dir, message)
 
     @staticmethod
     def create_ncs_carbon_dir(base_dir: str):

@@ -239,14 +239,14 @@ class ScenarioAnalysisTask(QgsTask):
             )
 
         # TODO enable the sieve functionality
-        # sieve_enabled = self.get_settings_value(
-        #     Settings.SIEVE_ENABLED, default=False, setting_type=bool
-        # )
-        #
-        # if sieve_enabled:
-        #     self.run_activities_sieve(
-        #         self.analysis_activities,
-        #     )
+        sieve_enabled = self.get_settings_value(
+            Settings.SIEVE_ENABLED, default=False, setting_type=bool
+        )
+
+        if sieve_enabled:
+            self.run_activities_sieve(
+                self.analysis_activities,
+            )
 
         # After creating activities, we normalize them using the same coefficients
         # used in normalizing their respective pathways.
@@ -391,48 +391,53 @@ class ScenarioAnalysisTask(QgsTask):
         self.feedback = QgsProcessingFeedback()
         self.feedback.progressChanged.connect(self.update_progress)
 
-        alg_params = {
-            "COPY_SUBDATASETS": False,
-            "DATA_TYPE": 6,  # Float32
-            "EXTRA": "",
-            "INPUT": layer_path,
-            "NODATA": None,
-            "OPTIONS": "",
-            "TARGET_CRS": None,
-            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-        }
-        translate_output = processing.run(
-            "gdal:translate",
-            alg_params,
-            context=self.processing_context,
-            feedback=self.feedback,
-            is_child_algorithm=True,
-        )
+        try:
+            alg_params = {
+                "COPY_SUBDATASETS": False,
+                "DATA_TYPE": 6,  # Float32
+                "EXTRA": "",
+                "INPUT": layer_path,
+                "NODATA": None,
+                "OPTIONS": "",
+                "TARGET_CRS": None,
+                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+            }
+            translate_output = processing.run(
+                "gdal:translate",
+                alg_params,
+                context=self.processing_context,
+                feedback=self.feedback,
+                is_child_algorithm=True,
+            )
 
-        alg_params = {
-            "DATA_TYPE": 0,  # Use Input Layer Data Type
-            "EXTRA": "",
-            "INPUT": translate_output["OUTPUT"],
-            "MULTITHREADING": False,
-            "NODATA": -9999,
-            "OPTIONS": "",
-            "RESAMPLING": 0,  # Nearest Neighbour
-            "SOURCE_CRS": None,
-            "TARGET_CRS": None,
-            "TARGET_EXTENT": None,
-            "TARGET_EXTENT_CRS": None,
-            "TARGET_RESOLUTION": None,
-            "OUTPUT": output_path,
-        }
-        outputs = processing.run(
-            "gdal:warpreproject",
-            alg_params,
-            context=self.processing_context,
-            feedback=self.feedback,
-            is_child_algorithm=True,
-        )
+            alg_params = {
+                "DATA_TYPE": 0,  # Use Input Layer Data Type
+                "EXTRA": "",
+                "INPUT": translate_output["OUTPUT"],
+                "MULTITHREADING": False,
+                "NODATA": -9999,
+                "OPTIONS": "",
+                "RESAMPLING": 0,  # Nearest Neighbour
+                "SOURCE_CRS": None,
+                "TARGET_CRS": None,
+                "TARGET_EXTENT": None,
+                "TARGET_EXTENT_CRS": None,
+                "TARGET_RESOLUTION": None,
+                "OUTPUT": output_path,
+            }
+            outputs = processing.run(
+                "gdal:warpreproject",
+                alg_params,
+                context=self.processing_context,
+                feedback=self.feedback,
+                is_child_algorithm=True,
+            )
 
-        return outputs is not None
+            return outputs is not None
+        except Exception as e:
+            log(f"Problem replacing no data value from a snapping output, {e}")
+
+        return False
 
     def run_pathways_analysis(self, activities, extent, temporary_output=False):
         """Runs the required activity pathways analysis on the passed
@@ -1376,7 +1381,7 @@ class ScenarioAnalysisTask(QgsTask):
         threshold size (in pixels) and replaces them with the pixel value of
         the largest neighbour polygon.
 
-        :param models: List of the analyzed implementation models
+        :param models: List of the analyzed activities
         :type models: typing.List[ImplementationModel]
 
         :param extent: Selected area of interest extent
@@ -1393,9 +1398,7 @@ class ScenarioAnalysisTask(QgsTask):
             # Will not proceed if processing has been cancelled by the user
             return False
 
-        self.set_status_message(
-            tr("Applying sieve function to the implementation models")
-        )
+        self.set_status_message(tr("Applying sieve function to the activities"))
 
         try:
             for model in models:
@@ -1452,9 +1455,143 @@ class ScenarioAnalysisTask(QgsTask):
                     "OUTPUT": output,
                 }
 
-                self.log_message(
-                    f"Used parameters for running sieve function to the models: {alg_params} \n"
+                self.log_message(f"Used parameters for sieving: {alg_params} \n")
+
+                input_name = os.path.splitext(os.path.basename(model.path))[0]
+
+                # Step 1: Create a binary mask from the original raster
+                binary_mask = processing.run(
+                    "qgis:rastercalculator",
+                    {
+                        "CELLSIZE": 0,
+                        "LAYERS": [model.path],
+                        "CRS": None,
+                        "EXPRESSION": f"{input_name}@1 > 0",
+                        "OUTPUT": "TEMPORARY_OUTPUT",
+                    },
+                )["OUTPUT"]
+
+                # feedback.pushInfo(f"binary mask {binary_mask}")
+
+                # binary_mask_layer = QgsRasterLayer(binary_mask, 'binary')
+
+                # QgsProject.instance().addMapLayer(binary_mask_layer)
+
+                # Step 2: Run sieve analysis from on the binary mask
+                sieved_mask = processing.run(
+                    "gdal:sieve",
+                    {
+                        "INPUT": binary_mask,
+                        "THRESHOLD": threshold_value,
+                        "EIGHT_CONNECTEDNESS": True,
+                        "NO_MASK": True,
+                        "MASK_LAYER": None,
+                        "OUTPUT": "TEMPORARY_OUTPUT",
+                    },
+                    context=self.processing_context,
+                    feedback=self.feedback,
+                )["OUTPUT"]
+
+                # feedback.pushInfo(f"sieved mask {sieved_mask}")
+
+                # sieved_mask_layer = QgsRasterLayer(sieved_mask, 'sieved_mask')
+
+                # QgsProject.instance().addMapLayer(sieved_mask_layer)
+
+                expr = f"({os.path.splitext(os.path.basename(sieved_mask))[0]}@1 > 0) * {os.path.splitext(os.path.basename(sieved_mask))[0]}@1"
+                # feedback.pushInfo(f"used expression {expr}")
+
+                # Step 3: Remove and convert any no data value to 0
+                sieved_mask_clean = processing.run(
+                    "qgis:rastercalculator",
+                    {
+                        "CELLSIZE": 0,
+                        "LAYERS": [sieved_mask],
+                        "CRS": None,
+                        "EXPRESSION": expr,
+                        "OUTPUT": "TEMPORARY_OUTPUT",
+                    },
+                    context=self.processing_context,
+                    feedback=self.feedback,
+                )["OUTPUT"]
+
+                # feedback.pushInfo(f"sieved mask clean {sieved_mask_clean}")
+
+                # sieved_mask_clean_layer = QgsRasterLayer(sieved_mask_clean, 'sieved_mask_clean')
+
+                # QgsProject.instance().addMapLayer(sieved_mask_clean_layer)
+
+                expr_2 = f"{input_name}@1 * {os.path.splitext(os.path.basename(sieved_mask_clean))[0]}@1"
+
+                # feedback.pushInfo(f"Used expression 2 {expr_2}")
+
+                # Step 4: Join the sieved mask with the original input layer to filter out the small areas
+                sieve_output = processing.run(
+                    "qgis:rastercalculator",
+                    {
+                        "CELLSIZE": 0,
+                        "LAYERS": [model.path, sieved_mask_clean],
+                        "CRS": None,
+                        "EXPRESSION": expr_2,
+                        "OUTPUT": "TEMPORARY_OUTPUT",
+                    },
+                    context=self.processing_context,
+                    feedback=self.feedback,
+                )["OUTPUT"]
+
+                # feedback.pushInfo(f"sieved output joined {sieve_output}")
+
+                # sieve_output_layer = QgsRasterLayer(sieve_output, 'sieve_output')
+
+                # QgsProject.instance().addMapLayer(sieve_output_layer)
+
+                # expr_3 = f'if ( {os.path.splitext(os.path.basename(sieve_output))[0]}@1 <= 0, -9999, {os.path.splitext(os.path.basename(sieve_output))[0]}@1 )'
+
+                # feedback.pushInfo(f"used expression 3 {expr_3}")
+
+                # Step 5. Replace all 0 with -9999 using if ("combined@1" <= 0, -9999, "combined@1")
+                sieve_output_updated = processing.run(
+                    "gdal:rastercalculator",
+                    {
+                        "INPUT_A": f"{sieve_output}",
+                        "BAND_A": 1,
+                        "FORMULA": "9999*(A<=0)*(-1)+A*(A>0)",
+                        "NO_DATA": None,
+                        "EXTENT_OPT": 0,
+                        "PROJWIN": None,
+                        "RTYPE": 5,
+                        "OPTIONS": "",
+                        "EXTRA": "",
+                        "OUTPUT": "TEMPORARY_OUTPUT",
+                    },
+                    context=self.processing_context,
+                    feedback=self.feedback,
+                )["OUTPUT"]
+
+                # feedback.pushInfo(f"sieved output updated {sieve_output_updated}")
+
+                # sieve_output_updated_layer = QgsRasterLayer(sieve_output_updated, 'sieve_output_updated')
+
+                # QgsProject.instance().addMapLayer(sieve_output_updated_layer)
+
+                # Step 6. Run sum statistics with ignore no data values set to false and no data value of -9999
+                results = processing.run(
+                    "native:cellstatistics",
+                    {
+                        "INPUT": [sieve_output_updated],
+                        "STATISTIC": 0,
+                        "IGNORE_NODATA": False,
+                        "REFERENCE_LAYER": sieve_output_updated,
+                        "OUTPUT_NODATA_VALUE": -9999,
+                        "OUTPUT": output,
+                    },
+                    context=self.processing_context,
+                    feedback=self.feedback,
                 )
+
+                # self.log_message(
+                #     f"Used parameters for running sieve function to the models: {alg_params} \n"
+                # )
 
                 feedback = QgsProcessingFeedback()
 
@@ -1463,12 +1600,6 @@ class ScenarioAnalysisTask(QgsTask):
                 if self.processing_cancelled:
                     return False
 
-                results = processing.run(
-                    "gdal:sieve",
-                    alg_params,
-                    context=self.processing_context,
-                    feedback=self.feedback,
-                )
                 model.path = results["OUTPUT"]
 
         except Exception as e:

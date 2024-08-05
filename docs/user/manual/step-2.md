@@ -61,35 +61,39 @@ Overall, Step 2 provides users with comprehensive tools for defining and configu
 
     1. **Arrows:** Click on the available `Arrow` button in front of the error to expand that error log.
 
-        ![Expand one](./img/manual-step3-validation-3.png)
+        ![Expand one](./img/manual-step3-validation-5.png)
 
     2. **Expand All:** Click on the `Expand All` button, to expand all the error messages.
 
-        ![Expand all](./img/manual-step3-validation-4.png)
+        ![Expand all](./img/manual-step3-validation-6.png)
 
-        *Error Types*
+    3. **Collapse All:** Click on the `Collapse All` button, to collapse all the messages.
 
-        - **Rule: Must be of raster data type**
+    4. **Revalidate:** Click on the `Revalidate` button, to revalidate. Upon clicking it will rerun the validations.
 
-        - **Rule: Must have the same CRS**
-
-        - **Rule: Must have a projected CRS type**
-
-        - **Rule: NoData value must be -9999**
-
-        - **Rule: Must have the same spatial resolution**
-
-        - **Rule: NCS and respective carbon layers should have the same spatial resolution**
-
-    3. **Collapse All:** Click on the `Collapse All` button, to collapse all the error messages.
+        ![Revalidate](./img/manual-step3-validation-7.png)
 
     4. **Close:** Click on the `Close` button, to close the validation inspector window.
 
-The user can also check the validation inspector window to view the passed validations.
+The user can also check the validation inspector window to view the failed validations.
 
-![Success](./img/manual-step3-validation-5.png)
+![Success](./img/manual-step3-validation-3.png)
 
-![Expand all](./img/manual-step3-validation-6.png)
+![Expand all](./img/manual-step3-validation-4.png)
+
+*Error Types*
+
+- **Rule: Must be of raster data type**
+
+- **Rule: Must have the same CRS**
+
+- **Rule: Must have a projected CRS type**
+
+- **Rule: NoData value must be -9999**
+
+- **Rule: Must have the same spatial resolution**
+
+- **Rule: NCS and respective carbon layers should have the same spatial resolution**
 
 Click [here](step-3.md) to explore the step 3 section.
 
