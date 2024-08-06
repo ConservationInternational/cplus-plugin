@@ -5,8 +5,10 @@
 """
 
 import datetime
+import json
 import os
 import uuid
+from dateutil import tz
 from functools import partial
 from pathlib import Path
 
@@ -257,7 +259,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             if not self.current_analysis_task:
                 return
 
-            message_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            try:
+                to_zone = tz.tzlocal()
+                message_dict = json.loads(message)
+                if sorted(list(message_dict.keys())) == ['date_time', 'log']:
+                    message = message_dict['log']
+                    message_time = message_dict['date_time'].replace("Z", "+00:00")
+                    message_time = datetime.datetime.fromisoformat(message_time)
+                    message_time = message_time.astimezone(to_zone).strftime("%Y-%m-%dT%H:%M:%S")
+                else:
+                    message_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            except json.decoder.JSONDecodeError:
+                message_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
             message = (
                 f"{self.log_text_box.toPlainText()} "
                 f"{message_time} {QGIS_MESSAGE_LEVEL_DICT[level]} "

@@ -590,6 +590,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             new_logs = response.get("logs")
             for log in new_logs:
                 if log not in self.logs:
+                    log = json.dumps(log)
                     self.log_message(log)
             self.logs = new_logs
 
