@@ -1569,6 +1569,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 transformed_extent.yMaximum(),
             ]
             if self.processing_type.isChecked():
+                self.analysis_activities = [
+                    settings_manager.get_activity(str(activity.uuid)) for activity in self.analysis_activities
+                ]
+                scenario.activities = self.analysis_activities
                 analysis_task = ScenarioAnalysisTaskApiClient(
                     self.analysis_scenario_name,
                     self.analysis_scenario_description,
