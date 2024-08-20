@@ -83,6 +83,8 @@ def log(
     :type notify: bool
     """
     level = Qgis.Info if info else Qgis.Warning
+    if not isinstance(message, str):
+        message = json.dumps(todict(message), cls=CustomJsonEncoder)
     QgsMessageLog.logMessage(
         message,
         name,

@@ -590,6 +590,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             new_logs = response.get("logs")
             for log in new_logs:
                 if log not in self.logs:
+                    log = json.dumps(log)
                     self.log_message(log)
             self.logs = new_logs
 
@@ -718,7 +719,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             analysis_output=self.output,
         )
 
-        self.analysis_priority_layers_groups
         self.__update_scenario_status(
             {"progress_text": "Finished downloading output files", "progress": 100}
         )
