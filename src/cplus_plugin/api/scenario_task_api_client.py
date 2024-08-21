@@ -68,6 +68,14 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.total_file_output = 0
         self.downloaded_output = 0
         self.scenario_status = None
+        self.__post_init__()
+
+    def __post_init__(self):
+        self.analysis_activities = [
+            settings_manager.get_activity(str(activity.uuid))
+            for activity in self.analysis_activities
+        ]
+        self.scenario.activities = self.analysis_activities
 
     def cancel_task(self, exception=None):
         """
