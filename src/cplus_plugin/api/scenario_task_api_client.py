@@ -277,7 +277,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                         if os.path.exists(carbon_path):
                             items_to_check[carbon_path] = "ncs_carbon"
 
-            for settings_layer in self.get_settings_activity_priority_layers(activity.uuid):
+            for settings_layer in self.get_settings_activity_priority_layers(
+                activity.uuid
+            ):
                 if settings_layer:
                     activity_pwl_uuids.add(settings_layer.get("uuid", ""))
 
@@ -523,7 +525,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 if priority_layer:
                     priority_layer["path"] = ""
                     for pl in priority_layers:
-                        self.log_message(f'pl: {pl}')
+                        self.log_message(f"pl: {pl}")
                         if pl["name"] == priority_layer["name"]:
                             priority_layer["uuid"] = pl["uuid"]
                             break

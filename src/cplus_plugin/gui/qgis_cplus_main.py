@@ -263,11 +263,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             try:
                 to_zone = tz.tzlocal()
                 message_dict = json.loads(message)
-                if sorted(list(message_dict.keys())) == ['date_time', 'log']:
-                    message = message_dict['log']
-                    message_time = message_dict['date_time'].replace("Z", "+00:00")
+                if sorted(list(message_dict.keys())) == ["date_time", "log"]:
+                    message = message_dict["log"]
+                    message_time = message_dict["date_time"].replace("Z", "+00:00")
                     message_time = datetime.datetime.fromisoformat(message_time)
-                    message_time = message_time.astimezone(to_zone).strftime("%Y-%m-%dT%H:%M:%S")
+                    message_time = message_time.astimezone(to_zone).strftime(
+                        "%Y-%m-%dT%H:%M:%S"
+                    )
                 else:
                     message_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
             except json.decoder.JSONDecodeError:
@@ -1570,7 +1572,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             ]
             if self.processing_type.isChecked():
                 self.analysis_activities = [
-                    settings_manager.get_activity(str(activity.uuid)) for activity in self.analysis_activities
+                    settings_manager.get_activity(str(activity.uuid))
+                    for activity in self.analysis_activities
                 ]
                 scenario.activities = self.analysis_activities
                 analysis_task = ScenarioAnalysisTaskApiClient(
