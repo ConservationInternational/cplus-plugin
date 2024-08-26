@@ -258,8 +258,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             # task don't save the log message.
             if not self.current_analysis_task:
                 return
-
-            message_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
             try:
                 to_zone = tz.tzlocal()
                 message_dict = json.loads(message)
