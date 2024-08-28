@@ -5,9 +5,7 @@ import traceback
 import typing
 from zipfile import ZipFile
 
-import requests
 from qgis.core import Qgis
-from .multipart_upload import upload_part
 from .request import (
     CplusApiRequest,
     JOB_COMPLETED_STATUS,

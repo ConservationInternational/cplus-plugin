@@ -269,7 +269,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     )
                 else:
                     message_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-            except json.decoder.JSONDecodeError:
+            except Exception:
                 message_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
             message = (
                 f"{self.log_text_box.toPlainText()} "

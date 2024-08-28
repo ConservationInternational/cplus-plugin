@@ -1,3 +1,4 @@
+import io
 import json
 import math
 import os
@@ -5,9 +6,10 @@ import time
 import typing
 import datetime
 
+from qgis import processing
 from qgis.PyQt import QtCore
 from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkReply
-from qgis.core import QgsNetworkAccessManager, QgsFileDownloader
+from qgis.core import QgsNetworkAccessManager, QgsFileDownloader, QgsNetworkReplyContent
 
 from functools import partial
 from ..utils import log, get_layer_type, CustomJsonEncoder
@@ -369,7 +371,7 @@ class CplusApiRequest:
                 self._get_raw_header_value(value),
             )
 
-    def _read_json_response(self, reply: QNetworkReply) -> dict:
+    def _read_json_response(self, reply: typing.Union[QNetworkReply, QgsNetworkReplyContent]) -> dict:
         """Parse json response from reply object.
 
         :param reply: reply object
@@ -380,15 +382,22 @@ class CplusApiRequest:
         """
         response = {}
         try:
-            ret = reply.readAll().data().decode("utf-8")
-            debug_log(f"Response: {ret}")
-            response = json.loads(ret)
+            if isinstance(reply, QNetworkReply):
+                ret = reply.readAll().data().decode("utf-8")
+                response = json.loads(ret)
+            elif isinstance(reply, QgsNetworkReplyContent):
+                ret = reply.content()
+                response = json.load(io.BytesIO(ret))
+            else:
+                err_msg = "Unknown object type: {}.".format(str(reply))
+                debug_log(err_msg)
         except Exception as ex:
             log(f"Error parsing API response {ex}")
+        debug_log(f"Response: {response}")
         return response
 
     def _handle_response(
-        self, url: str, reply: QNetworkReply
+        self, url: str, reply: typing.Union[QNetworkReply, QgsNetworkReplyContent]
     ) -> typing.Tuple[dict, int]:
         """Handle response from a request.
 
@@ -417,11 +426,13 @@ class CplusApiRequest:
             else:
                 log(f"HTTP Error: {http_status} from request {url}")
                 json_response = self._read_json_response(reply)
-            reply.deleteLater()
+            if isinstance(reply, QNetworkReply):
+                reply.deleteLater()
         else:
             # log the error string
             log(f"Network Error: {reply.errorString()} from request {url}")
-            reply.deleteLater()
+            if isinstance(reply, QNetworkReply):
+                reply.deleteLater()
             raise CplusApiRequestError(f"Network error: {reply.errorString()}")
         http_status = http_status if http_status is not None else 500
         debug_log(f"Status-Code: {http_status}")
@@ -469,6 +480,7 @@ class CplusApiRequest:
         nam = QgsNetworkAccessManager.instance()
         headers = headers or self._default_headers()
         request = self._generate_request(url, headers)
+        # reply = nam.blockingGet(request)
         reply = nam.get(request)
         self._make_request(reply)
         return self._handle_response(url, reply)
@@ -494,8 +506,7 @@ class CplusApiRequest:
         headers = headers or self._default_headers()
         request = self._generate_request(url, headers)
         json_data = self._get_request_payload(data)
-        reply = nam.post(request, json_data)
-        self._make_request(reply)
+        reply = nam.blockingPost(request, json_data)
         return self._handle_response(url, reply)
 
     def put(
@@ -571,6 +582,12 @@ class CplusApiRequest:
         downloader.downloadProgress.connect(on_download_progress)
         downloader.startDownload()
         event_loop.exec_()
+
+        # params = {
+        #     "URL": url,
+        #     "OUTPUT": file_path
+        # }
+        # algorithm_result = processing.run("qgis:filedownloader", params, feedback=feedback)
 
     def _do_upload_file_part(
         self, url: str, chunk: typing.Union[bytes, bytearray], file_part_number: int
