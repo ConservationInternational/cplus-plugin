@@ -9,8 +9,10 @@ import json
 import os
 import typing
 import uuid
+from dateutil import tz
 from functools import partial
 from pathlib import Path
+
 from qgis.PyQt import (
     QtCore,
     QtGui,
@@ -45,14 +47,10 @@ from qgis.gui import (
 from qgis.utils import iface
 
 from .activity_widget import ActivityContainerWidget
-from .components.custom_tree_widget import CustomTreeWidget
-from .priority_group_dialog import PriorityGroupDialog
 from .priority_group_widget import PriorityGroupWidget
-from .priority_layer_dialog import PriorityLayerDialog
-from .progress_dialog import ProgressDialog
+from .progress_dialog import ReportProgressDialog, ProgressDialog
 from ..trends_earth import auth
 from ..api.scenario_task_api_client import ScenarioAnalysisTaskApiClient
-from ..conf import settings_manager, Settings
 from ..definitions.constants import (
     ACTIVITY_GROUP_LAYER_NAME,
     ACTIVITY_IDENTIFIER_PROPERTY,
@@ -70,36 +68,22 @@ from .scenario_dialog import ScenarioDialog
 
 from ..models.base import (
     PriorityLayerType,
-    Scenario,
-    ScenarioResult,
-    ScenarioState,
-    SpatialExtent,
 )
 from ..models.financial import ActivityNpv
 from ..conf import settings_manager, Settings
 
-from ..lib.extent_check import extent_within_pilot
 from ..lib.financials import create_npv_pwls
-from ..lib.reports.manager import report_manager, ReportManager
-
-from ..tasks import ScenarioAnalysisTask
 
 from .components.custom_tree_widget import CustomTreeWidget
 
 from ..resources import *
 
-from ..utils import (
-    open_documentation,
-    tr,
-    log,
-    FileUtils,
-    write_to_file,
-)
 from ..definitions.defaults import (
     ADD_LAYER_ICON_PATH,
     PILOT_AREA_EXTENT,
     OPTIONS_TITLE,
     ICON_PATH,
+    MAXIMUM_COMPARISON_REPORTS,
     PLUGIN_MESSAGE_LOG_TAB,
     QGIS_GDAL_PROVIDER,
     QGIS_MESSAGE_LEVEL_DICT,
@@ -111,9 +95,9 @@ from ..definitions.defaults import (
 from ..lib.extent_check import extent_within_pilot
 from ..lib.reports.manager import report_manager, ReportManager
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
-from ..resources import *
 from ..tasks import ScenarioAnalysisTask
 from ..utils import open_documentation, tr, log, FileUtils, write_to_file
+
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/qgis_cplus_main_dockwidget.ui")
@@ -273,8 +257,20 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             # task don't save the log message.
             if not self.current_analysis_task:
                 return
-
-            message_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            try:
+                to_zone = tz.tzlocal()
+                message_dict = json.loads(message)
+                if sorted(list(message_dict.keys())) == ["date_time", "log"]:
+                    message = message_dict["log"]
+                    message_time = message_dict["date_time"].replace("Z", "+00:00")
+                    message_time = datetime.datetime.fromisoformat(message_time)
+                    message_time = message_time.astimezone(to_zone).strftime(
+                        "%Y-%m-%dT%H:%M:%S"
+                    )
+                else:
+                    message_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            except json.decoder.JSONDecodeError:
+                message_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
             message = (
                 f"{self.log_text_box.toPlainText()} "
                 f"{message_time} {QGIS_MESSAGE_LEVEL_DICT[level]} "
@@ -389,12 +385,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.add_scenario_btn.setIcon(FileUtils.get_icon("symbologyAdd.svg"))
         self.info_scenario_btn.setIcon(FileUtils.get_icon("mActionIdentify.svg"))
         self.load_scenario_btn.setIcon(FileUtils.get_icon("mActionReload.svg"))
+        self.comparison_report_btn.setIcon(FileUtils.get_icon("mIconReport.svg"))
         self.remove_scenario_btn.setIcon(FileUtils.get_icon("symbologyRemove.svg"))
 
         self.add_scenario_btn.clicked.connect(self.add_scenario)
         self.load_scenario_btn.clicked.connect(self.load_scenario)
         self.info_scenario_btn.clicked.connect(self.show_scenario_info)
+        self.comparison_report_btn.clicked.connect(self.on_generate_comparison_report)
         self.remove_scenario_btn.clicked.connect(self.remove_scenario)
+
+        self.scenario_list.itemSelectionChanged.connect(
+            self.on_scenario_list_selection_changed
+        )
 
     def priority_groups_update(self, target_item, selected_items):
         """Updates the priority groups list item with the passed
@@ -1222,11 +1224,17 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 )
         scenario_result = settings_manager.get_scenario_result(scenario_identifier)
 
+        all_activities = sorted(
+            scenario.weighted_activities,
+            key=lambda activity_instance: activity_instance.style_pixel_value,
+        )
+        for index, activity in enumerate(all_activities):
+            activity.style_pixel_value = index + 1
+
+        scenario.weighted_activities = all_activities
+
         if scenario_result:
             scenario_result.scenario = scenario
-
-        log(f"Scenario -- {scenario} \n")
-        log(f"scenario result {scenario_result}")
 
         self.post_analysis(scenario_result, None, None, None)
 
@@ -1269,6 +1277,78 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 settings_manager.delete_scenario(scenario_id)
 
             self.update_scenario_list()
+
+    def on_generate_comparison_report(self):
+        """Slot raised to generate a comparison for two or more selected
+        scenario results.
+        """
+        selected_items = self.scenario_list.selectedItems()
+        if len(selected_items) < 2:
+            msg = tr(
+                "You must select at least two scenarios to generate the comparison report."
+            )
+            self.show_message(msg)
+            return
+
+        scenario_results = []
+        for item in selected_items:
+            scenario_identifier = item.data(QtCore.Qt.UserRole)
+            scenario = settings_manager.get_scenario(scenario_identifier)
+            scenario_result = settings_manager.get_scenario_result(scenario_identifier)
+            if not scenario_result and not scenario:
+                continue
+
+            all_activities = sorted(
+                scenario.weighted_activities,
+                key=lambda activity_instance: activity_instance.style_pixel_value,
+            )
+            for index, activity in enumerate(all_activities):
+                activity.style_pixel_value = index + 1
+
+            scenario.weighted_activities = all_activities
+
+            scenario_result.scenario = scenario
+            scenario_results.append(scenario_result)
+
+        if len(scenario_results) < 2:
+            msg = tr("Unable to retrieve the results for all the selected scenarios.")
+            self.show_message(msg)
+            return
+
+        if len(scenario_results) > MAXIMUM_COMPARISON_REPORTS:
+            msg = tr(
+                "Exceeded maximum number of scenarios for generating the comparison report. Limit is"
+            )
+            self.show_message(f"{msg} {MAXIMUM_COMPARISON_REPORTS}.")
+            return
+
+        for result in scenario_results:
+            msg_tr = tr("Loading map layers for scenario")
+            log(message=f"{msg_tr}: {result.scenario.name}")
+            self.post_analysis(result, None, None, None)
+
+        submit_result = report_manager.generate_comparison_report(scenario_results)
+        if not submit_result.status:
+            msg = self.tr(
+                "Unable to submit report request for creating the comparison report."
+            )
+            self.show_message(f"{msg}")
+            return
+
+        QgsApplication.processEvents()
+
+        self.report_progress_dialog = ReportProgressDialog(
+            tr("Generating comparison report"), submit_result
+        )
+        self.report_progress_dialog.run_dialog()
+
+    def on_scenario_list_selection_changed(self):
+        """Slot raised when the selection of scenarios changes."""
+        selected_items = self.scenario_list.selectedItems()
+        if len(selected_items) < 2:
+            self.comparison_report_btn.setEnabled(False)
+        else:
+            self.comparison_report_btn.setEnabled(True)
 
     def prepare_message_bar(self):
         """Initializes the widget message bar settings"""
@@ -1577,7 +1657,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param task: Analysis task
         :type task: ScenarioAnalysisTask
 
-        :param report_manager: Report manager used to generate analysis reports
+        :param report_manager: Report manager used to generate analysis report_templates
         :type report_manager: ReportManager
         """
 
@@ -1641,7 +1721,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param task: Analysis task
         :type task: ScenarioAnalysisTask
 
-        :param report_manager: Report manager used to generate analysis reports
+        :param report_manager: Report manager used to generate analysis report_templates
         :type report_manager: ReportManager
         """
         self.update_progress_bar(progress_dialog, 100)
@@ -1691,7 +1771,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param task: Analysis task
         :type task: ScenarioAnalysisTask
 
-        :param report_manager: Report manager used to generate analysis reports
+        :param report_manager: Report manager used to generate analysis report_templates
         :type report_manager: ReportManager
         """
 
@@ -1988,7 +2068,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
          all the analysis operations progress.
         :type progress_dialog: ProgressDialog
 
-        :param message: Report manager used to generate analysis reports
+        :param message: Report manager used to generate analysis report_templates
         :type message: ReportManager
         """
 
@@ -2151,7 +2231,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
          all the analysis operations progress.
         :type progress_dialog: ProgressDialog
 
-        :param report_manager: Report manager used to generate analysis reports
+        :param report_manager: Report manager used to generate analysis report_templates
         :type report_manager: ReportManager
         """
         if self.processing_cancelled:

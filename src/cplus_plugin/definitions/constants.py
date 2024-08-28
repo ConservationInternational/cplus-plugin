@@ -8,6 +8,7 @@ NCS_PATHWAY_SEGMENT = "ncs_pathways"
 NCS_CARBON_SEGMENT = "ncs_carbon"
 PRIORITY_LAYERS_SEGMENT = "priority_layers"
 NPV_PRIORITY_LAYERS_SEGMENT = "npv"
+COMPARISON_REPORT_SEGMENT = "comparison_reports"
 
 # Naming for outputs sub-folder relative to base directory
 OUTPUTS_SEGMENT = "outputs"
@@ -43,6 +44,7 @@ MAX_VALUE_ATTRIBUTE = "maximum_value"
 COMPUTED_ATTRIBUTE = "use_computed"
 NPV_MAPPINGS_ATTRIBUTE = "mappings"
 REMOVE_EXISTING_ATTRIBUTE = "remove_existing"
+MANUAL_NPV_ATTRIBUTE = "manual_npv"
 
 ACTIVITY_IDENTIFIER_PROPERTY = "activity_identifier"
 NPV_COLLECTION_PROPERTY = "npv_collection"

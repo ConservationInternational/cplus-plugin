@@ -137,7 +137,8 @@ CI_LOGO_PATH = str(
 )
 
 # Default template file name
-TEMPLATE_NAME = "main.qpt"
+SCENARIO_ANALYSIS_TEMPLATE_NAME = "scenario_analysis.qpt"
+SCENARIO_COMPARISON_TEMPLATE_NAME = "scenario_comparison.qpt"
 
 # Minimum sizes (in mm) for repeat items in the template
 MINIMUM_ITEM_WIDTH = 100
@@ -153,6 +154,7 @@ MAX_ACTIVITY_DESCRIPTION_LENGTH = 225
 # IDs for the given tables in the report template
 ACTIVITY_AREA_TABLE_ID = "activity_area_table"
 PRIORITY_GROUP_WEIGHT_TABLE_ID = "assigned_weights_table"
+AREA_COMPARISON_TABLE_ID = "comparison_table"
 
 # Initiliazing the plugin default data as found in the data directory
 priority_layer_path = (
@@ -246,3 +248,6 @@ DEFAULT_REPORT_LICENSE = (
     "Creative Commons Attribution 4.0 International " "License (CC BY 4.0)"
 )
 BASE_API_URL = "https://stage.cplus.earth/api/v1"
+
+DEFAULT_BASE_COMPARISON_REPORT_NAME = "Scenario Comparison Report"
+MAXIMUM_COMPARISON_REPORTS = 10

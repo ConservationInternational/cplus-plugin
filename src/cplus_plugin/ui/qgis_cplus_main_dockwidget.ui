@@ -646,7 +646,7 @@
                <bool>true</bool>
               </property>
               <property name="toolTip">
-               <string>Load the selected scenario details into step 1 inputs.</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Load the selected scenario details into step 1 inputs and respective layers into the map canvas.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
                <string>...</string>
@@ -657,6 +657,19 @@
              <widget class="QToolButton" name="info_scenario_btn">
               <property name="toolTip">
                <string>Click to see the information about the current selected scenario</string>
+              </property>
+              <property name="text">
+               <string>...</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QToolButton" name="comparison_report_btn">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="toolTip">
+               <string>Generate scenario comparison report</string>
               </property>
               <property name="text">
                <string>...</string>

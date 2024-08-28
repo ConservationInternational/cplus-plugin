@@ -5,8 +5,9 @@ import traceback
 import typing
 from zipfile import ZipFile
 
+import requests
 from qgis.core import Qgis
-
+from .multipart_upload import upload_part
 from .request import (
     CplusApiRequest,
     JOB_COMPLETED_STATUS,
@@ -18,6 +19,25 @@ from ..models.base import Activity, NcsPathway, Scenario
 from ..models.base import ScenarioResult
 from ..tasks import ScenarioAnalysisTask
 from ..utils import FileUtils, CustomJsonEncoder, todict
+
+
+def clean_filename(filename):
+    """Creates a safe filename by removing operating system
+    invalid filename characters.
+
+    :param filename: File name
+    :type filename: str
+
+    :returns A clean file name
+    :rtype str
+    """
+    characters = " %:/,\[]<>*?"
+
+    for character in characters:
+        if character in filename:
+            filename = filename.replace(character, "_")
+
+    return filename
 
 
 class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
@@ -69,6 +89,14 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.total_file_output = 0
         self.downloaded_output = 0
         self.scenario_status = None
+        self.__post_init__()
+
+    def __post_init__(self):
+        self.analysis_activities = [
+            settings_manager.get_activity(str(activity.uuid))
+            for activity in self.analysis_activities
+        ]
+        self.scenario.activities = self.analysis_activities
 
     def cancel_task(self, exception: Exception = None):
         """
@@ -214,7 +242,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         result = self.request.finish_upload_layer(layer_uuid, upload_id, items)
         return result
 
-    def run_parallel_upload(self, upload_dict: dict) -> typing.List[dict]:
+    def run_parallel_upload(self, upload_dict) -> typing.List[typing.Dict]:
         """Upload file concurrently using ThreadPoolExecutor
 
         :param upload_dict: Dictionary with file path as key and component type
@@ -421,6 +449,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         """
         output = {}
         uuid_to_path = {}
+
         for layer_path, group in items_to_check.items():
             identifier = layer_path.replace(os.sep, "--")
             uploaded_layer_dict = settings_manager.get_layer_mapping(identifier)
@@ -521,6 +550,16 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             else ""
         )
 
+        priority_layers = self.get_priority_layers()
+        for priority_layer in priority_layers:
+            if priority_layer.get("path", "") in self.path_to_layer_mapping:
+                priority_layer["layer_uuid"] = self.path_to_layer_mapping[
+                    priority_layer.get("path", "")
+                ]["uuid"]
+            else:
+                priority_layer["layer_uuid"] = ""
+            priority_layer["path"] = ""
+
         for activity in old_scenario_dict["activities"]:
             activity["layer_type"] = 0
             activity["path"] = ""
@@ -550,16 +589,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                     priority_layer["path"] = ""
                     new_priority_layers.append(priority_layer)
             activity["priority_layers"] = new_priority_layers
-
-        priority_layers = self.get_priority_layers()
-        for priority_layer in priority_layers:
-            if priority_layer.get("path", "") in self.path_to_layer_mapping:
-                priority_layer["layer_uuid"] = self.path_to_layer_mapping[
-                    priority_layer.get("path", "")
-                ]["uuid"]
-            else:
-                priority_layer["layer_uuid"] = ""
-            priority_layer["path"] = ""
 
         self.scenario_detail = {
             "scenario_name": old_scenario_dict["name"],
@@ -637,6 +666,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             new_logs = response.get("logs")
             for log in new_logs:
                 if log not in self.logs:
+                    log = json.dumps(log)
                     self.log_message(log)
             self.logs = new_logs
 
@@ -789,7 +819,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             analysis_output=self.output,
         )
 
-        self.analysis_priority_layers_groups
         self.__update_scenario_status(
             {"progress_text": "Finished downloading output files", "progress": 100}
         )
