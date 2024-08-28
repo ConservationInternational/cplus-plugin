@@ -25,14 +25,19 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
 
     :param analysis_scenario_name: Scenario name
     :type analysis_scenario_name: str
+
     :param analysis_scenario_description: Scenario description
     :type analysis_scenario_description: str
+
     :param analysis_activities: List of activity to be processed
     :type analysis_activities: typing.List[Activity]
+
     :param analysis_priority_layers_groups: List of priority layer groups
     :type analysis_priority_layers_groups: typing.List[dict]
+
     :param analysis_extent: Extents of the Scenario
     :type analysis_extent: typing.List[float]
+
     :param scenario: Scenario object
     :type scenario: Scenario
     """
@@ -146,6 +151,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
 
         :param file_path: Path of the file to be uploaded
         :type file_path: str
+
         :param component_type: Input layer type of the upload file (ncs_pathway, ncs_carbon, etc.)
         :type component_type: str
 

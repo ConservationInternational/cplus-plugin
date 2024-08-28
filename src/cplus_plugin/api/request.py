@@ -27,6 +27,7 @@ def debug_log(message: str, data: dict = {}):
 
     :param message: message
     :type message: str
+
     :param data: payload, defaults to {}
     :type data: dict, optional
     """
@@ -39,6 +40,7 @@ def debug_log(message: str, data: dict = {}):
 
 class CplusApiRequestError(Exception):
     """Error class for Cplus API Request.
+
     :param message: Error message
     :type message: str
     """
@@ -52,320 +54,6 @@ class CplusApiRequestError(Exception):
         log(message, info=False)
         self.message = message
         super().__init__(self.message)
-
-
-class BaseApiClient:
-    """Base class for API client."""
-
-    def _get_raw_header_value(self, value: str) -> QtCore.QByteArray:
-        """Get byte array of header name or value.
-
-        :param value: header name/value
-        :type value: str
-        :return: bytes array of string value
-        :rtype: QtCore.QByteArray
-        """
-        return QtCore.QByteArray(bytes(value, encoding="utf-8"))
-
-    def _default_headers(self) -> dict:
-        """Get default headers for this client.
-
-        :return: dictionary of header name and its value.
-        :rtype: dict
-        """
-        return {"Content-Type": "application/json"}
-
-    def _generate_request(self, url: str, headers: dict = {}) -> QNetworkRequest:
-        """Generate request from url and set headers in the request.
-
-        :param url: URL in request
-        :type url: str
-        :param headers: header dictionary, defaults to {}
-        :type headers: dict, optional
-        :return: request object
-        :rtype: QNetworkRequest
-        """
-        request = QNetworkRequest(QtCore.QUrl(url))
-        self._set_headers(request, headers)
-        return request
-
-    def _set_headers(self, request: QNetworkRequest, headers: dict = {}):
-        """Set headers into a request object.
-
-        :param request: request object
-        :type request: QNetworkRequest
-        :param headers: header dictionary, defaults to {}
-        :type headers: dict, optional
-        """
-        for key, value in headers.items():
-            request.setRawHeader(
-                self._get_raw_header_value(key),
-                self._get_raw_header_value(value),
-            )
-
-    def _read_json_response(self, reply: QNetworkReply) -> dict:
-        """Parse json response from reply object.
-
-        :param reply: reply object
-        :type reply: QNetworkReply
-        :return: dictionary of the response, empty if failed to parse
-        :rtype: dict
-        """
-        response = {}
-        try:
-            ret = reply.readAll().data().decode("utf-8")
-            debug_log(f"Response: {ret}")
-            response = json.loads(ret)
-        except Exception as ex:
-            log(f"Error parsing API response {ex}")
-        return response
-
-    def _handle_response(
-        self, url: str, reply: QNetworkReply
-    ) -> typing.Tuple[dict, int]:
-        """Handle response from a request.
-
-        :param url: URL from the request
-        :type url: str
-        :param reply: reply object
-        :type reply: QNetworkReply
-        :raises CplusApiRequestError: raises when there is Network Error
-        :return: tuple of response dictionary and HTTP status code
-        :rtype: typing.Tuple[dict, int]
-        """
-        json_response = {}
-        http_status = None
-        # Check for network errors
-        if reply.error() == QNetworkReply.NoError:
-            # Check the HTTP status code
-            http_status = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
-            if http_status is not None and 200 <= http_status < 300:
-                if http_status == 204:
-                    json_response = {}
-                else:
-                    json_response = self._read_json_response(reply)
-            else:
-                log(f"HTTP Error: {http_status} from request {url}")
-                json_response = self._read_json_response(reply)
-            reply.deleteLater()
-        else:
-            # log the error string
-            log(f"Network Error: {reply.errorString()} from request {url}")
-            reply.deleteLater()
-            raise CplusApiRequestError(f"Network error: {reply.errorString()}")
-        http_status = http_status if http_status is not None else 500
-        debug_log(f"Status-Code: {http_status}")
-        return json_response, http_status
-
-    def _make_request(self, reply: QNetworkReply):
-        """Make request in the event loop.
-
-        :param reply: reply object
-        :type reply: QNetworkReply
-        """
-        debug_log(f"URL: {reply.request().url()}")
-        # Create an event loop
-        event_loop = QtCore.QEventLoop()
-        # Connect the reply's finished signal to the event loop's quit slot
-        reply.finished.connect(event_loop.quit)
-        # Start the event loop, waiting for the request to complete
-        event_loop.exec_()
-
-    def _get_request_payload(self, data: typing.Union[dict, list]) -> QtCore.QByteArray:
-        """Get byte array of json request payload.
-
-        :param data: request payload
-        :type data: typing.Union[dict, list]
-        :return: byte array object
-        :rtype: QtCore.QByteArray
-        """
-        return QtCore.QByteArray(
-            json.dumps(data, cls=CustomJsonEncoder).encode("utf-8")
-        )
-
-    def get(self, url: str, headers: dict = {}) -> typing.Tuple[dict, int]:
-        """Trigger a GET request.
-
-        :param url: Cplus API URL
-        :type url: str
-        :param headers: header dictionary, defaults to {}
-        :type headers: dict
-        :return: tuple of response dictionary and HTTP status code
-        :rtype: typing.Tuple[dict, int]
-        """
-        nam = QgsNetworkAccessManager.instance()
-        headers = headers or self._default_headers()
-        request = self._generate_request(url, headers)
-        reply = nam.get(request)
-        self._make_request(reply)
-        return self._handle_response(url, reply)
-
-    def post(
-        self, url: str, data: typing.Union[dict, list], headers: dict = {}
-    ) -> typing.Tuple[dict, int]:
-        """Trigger a POST request.
-
-        :param url: Cplus API URL
-        :type url: str
-        :param data: API payload
-        :type data: typing.Union[dict, list]
-        :param headers: header dictionary, defaults to {}
-        :type headers: dict
-        :return: tuple of response dictionary and HTTP status code
-        :rtype: typing.Tuple[dict, int]
-        """
-        nam = QgsNetworkAccessManager.instance()
-        headers = headers or self._default_headers()
-        request = self._generate_request(url, headers)
-        json_data = self._get_request_payload(data)
-        reply = nam.post(request, json_data)
-        self._make_request(reply)
-        return self._handle_response(url, reply)
-
-    def put(
-        self, url: str, data: typing.Union[dict, list], headers: dict = {}
-    ) -> typing.Tuple[dict, int]:
-        """Trigger a PUT request.
-
-        :param url: Cplus API URL
-        :type url: str
-        :param data: API payload
-        :type data: typing.Union[dict, list]
-        :param headers: header dictionary, defaults to {}
-        :type headers: dict
-        :return: tuple of response dictionary and HTTP status code
-        :rtype: typing.Tuple[dict, int]
-        """
-        nam = QgsNetworkAccessManager.instance()
-        headers = headers or self._default_headers()
-        request = self._generate_request(url, headers)
-        json_data = self._get_request_payload(data)
-        reply = nam.put(request, json_data)
-        self._make_request(reply)
-        return self._handle_response(url, reply)
-
-    def _on_download_error(self, filename: str, error):
-        """Callback when there is an error in download file.
-
-        :param filename: filename of the downloaded file
-        :type filename: str
-        :param error: exception
-        :type error: any
-        :raises CplusApiRequestError: error
-        """
-        log(f"Error while downloading file to {filename}: {error}")
-        raise CplusApiRequestError(f"Unable to start download of {filename}, {error}")
-
-    def _on_download_finished(self, filename: str):
-        """Callback when download file is finished
-
-        :param filename: filename of the downloaded file
-        :type filename: str
-        """
-        log(f"Finished downloading file to {filename}")
-
-    def download_file(self, url: str, file_path: str, on_download_progress):
-        """Download a file from url and save into output file in file_path.
-
-        :param url: Download URL
-        :type url: str
-        :param file_path: Path to the output file
-        :type file_path: str
-        :param on_download_progress: callback for download progress signal
-        :type on_download_progress: any
-        """
-        filename = os.path.basename(file_path)
-        event_loop = QtCore.QEventLoop()
-        downloader = QgsFileDownloader(QtCore.QUrl(url), file_path, delayStart=True)
-
-        download_finished = partial(self._on_download_finished, filename)
-        download_error = partial(self._on_download_error, filename)
-
-        downloader.downloadCompleted.connect(download_finished)
-        downloader.downloadExited.connect(event_loop.quit)
-        downloader.downloadCanceled.connect(event_loop.quit)
-        downloader.downloadError.connect(download_error)
-        downloader.downloadProgress.connect(on_download_progress)
-        downloader.startDownload()
-        event_loop.exec_()
-
-    def _do_upload_file_part(
-        self, url: str, chunk: typing.Union[bytes, bytearray], file_part_number: int
-    ) -> dict:
-        """Trigger a PUT request to upload a chunk file to the url.
-
-        :param url: Upload URL
-        :type url: str
-        :param chunk: File chunk to be uploaded
-        :type chunk: bytes or bytearray
-        :param file_part_number: File part number
-        :type file_part_number: int
-        :raises Exception: raises when there is Network Error
-        :return: Dictionary of part_number and etag
-        :rtype: dict
-        """
-        nam = QgsNetworkAccessManager.instance()
-        request = QNetworkRequest(QtCore.QUrl(url))
-        request.setHeader(QNetworkRequest.ContentTypeHeader, "application/octet-stream")
-        request.setHeader(QNetworkRequest.ContentLengthHeader, len(chunk))
-        if url.startswith("http://"):
-            # add header for minio host in local env
-            request.setRawHeader(
-                self._get_raw_header_value("Host"),
-                self._get_raw_header_value("minio:9000"),
-            )
-        reply = nam.put(request, chunk)
-        self._make_request(reply)
-        response = {}
-        if reply.error() == QNetworkReply.NoError:
-            etag = reply.rawHeader(b"ETag")
-            response = {
-                "part_number": file_part_number,
-                "etag": etag.data().decode("utf-8"),
-            }
-            debug_log("Upload chunk finished:", response)
-            reply.deleteLater()
-        else:
-            reply.deleteLater()
-            raise Exception(f"Network Error: {reply.errorString()}")
-        return response
-
-    def upload_file_part(
-        self,
-        url: str,
-        chunk: typing.Union[bytes, bytearray],
-        file_part_number: int,
-        max_retries=5,
-    ) -> dict:
-        """Do upload of a file part using exponential backoff.
-
-        :param url: Upload URL
-        :type url: str
-        :param chunk: File chunk to be uploaded
-        :type chunk: typing.Union[bytes, bytearray]
-        :param file_part_number: File part number
-        :type file_part_number: int
-        :param max_retries: Maximum retries in exponential backoff, defaults to 5
-        :type max_retries: int, optional
-        :return: Dictionary of part_number and etag
-        :rtype: dict
-        """
-        retries = 0
-        while retries < max_retries:
-            try:
-                return self._do_upload_file_part(url, chunk, file_part_number)
-            except Exception as e:
-                log(f"Request failed: {e}")
-                retries += 1
-                if retries < max_retries:
-                    # Calculate the exponential backoff delay
-                    delay = 2**retries
-                    log(f"Retrying in {delay} seconds...")
-                    time.sleep(delay)
-                else:
-                    log("Max retries exceeded.")
-                    raise
-        return None
 
 
 class CplusApiPooling:
@@ -390,18 +78,25 @@ class CplusApiPooling:
 
         :param context: context object for making the API request
         :type context: BaseApiClient
+
         :param url: URL for pooling the status
         :type url: str
+
         :param headers: header dictionary, defaults to {}
         :type headers: dict, optional
+
         :param method: API method, defaults to "GET"
         :type method: str, optional
+
         :param data: payload for POST method, defaults to None
         :type data: dict, optional
+
         :param max_limit: maximum retries when pooling, defaults to None
         :type max_limit: int, optional
+
         :param interval: interval for pooling, defaults to None
         :type interval: int, optional
+
         :param on_response_fetched: callback when response is fetched, defaults to None
         :type on_response_fetched: any, optional
         """
@@ -430,6 +125,7 @@ class CplusApiPooling:
         """Fetch the results from API every X seconds and stop when status is in the final status list.
 
         :raises CplusApiRequestError: raisess when max limit is reached or server returns non 200 status code.
+
         :return: response dictionary
         :rtype: dict
         """
@@ -610,7 +306,7 @@ class CplusApiUrl:
         )
 
 
-class CplusApiRequest(BaseApiClient):
+class CplusApiRequest:
     """Class to send request to Cplus API."""
 
     page_size = 50
@@ -621,6 +317,346 @@ class CplusApiRequest(BaseApiClient):
         self.trends_urls = TrendsApiUrl()
         self._api_token = None
         self.token_exp = None
+
+
+    def _get_raw_header_value(self, value: str) -> QtCore.QByteArray:
+        """Get byte array of header name or value.
+
+        :param value: header name/value
+        :type value: str
+
+        :return: bytes array of string value
+        :rtype: QtCore.QByteArray
+        """
+        return QtCore.QByteArray(bytes(value, encoding="utf-8"))
+
+    def _default_headers(self) -> dict:
+        """Get default headers for this client.
+
+        :return: dictionary of header name and its value.
+        :rtype: dict
+        """
+        return {"Content-Type": "application/json"}
+
+    def _generate_request(self, url: str, headers: dict = {}) -> QNetworkRequest:
+        """Generate request from url and set headers in the request.
+
+        :param url: URL in request
+        :type url: str
+
+        :param headers: header dictionary, defaults to {}
+        :type headers: dict, optional
+
+        :return: request object
+        :rtype: QNetworkRequest
+        """
+        request = QNetworkRequest(QtCore.QUrl(url))
+        self._set_headers(request, headers)
+        return request
+
+    def _set_headers(self, request: QNetworkRequest, headers: dict = {}):
+        """Set headers into a request object.
+
+        :param request: request object
+        :type request: QNetworkRequest
+
+        :param headers: header dictionary, defaults to {}
+        :type headers: dict, optional
+        """
+        for key, value in headers.items():
+            request.setRawHeader(
+                self._get_raw_header_value(key),
+                self._get_raw_header_value(value),
+            )
+
+    def _read_json_response(self, reply: QNetworkReply) -> dict:
+        """Parse json response from reply object.
+
+        :param reply: reply object
+        :type reply: QNetworkReply
+
+        :return: dictionary of the response, empty if failed to parse
+        :rtype: dict
+        """
+        response = {}
+        try:
+            ret = reply.readAll().data().decode("utf-8")
+            debug_log(f"Response: {ret}")
+            response = json.loads(ret)
+        except Exception as ex:
+            log(f"Error parsing API response {ex}")
+        return response
+
+    def _handle_response(
+        self, url: str, reply: QNetworkReply
+    ) -> typing.Tuple[dict, int]:
+        """Handle response from a request.
+
+        :param url: URL from the request
+        :type url: str
+
+        :param reply: reply object
+        :type reply: QNetworkReply
+
+        :raises CplusApiRequestError: raises when there is Network Error
+
+        :return: tuple of response dictionary and HTTP status code
+        :rtype: typing.Tuple[dict, int]
+        """
+        json_response = {}
+        http_status = None
+        # Check for network errors
+        if reply.error() == QNetworkReply.NoError:
+            # Check the HTTP status code
+            http_status = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+            if http_status is not None and 200 <= http_status < 300:
+                if http_status == 204:
+                    json_response = {}
+                else:
+                    json_response = self._read_json_response(reply)
+            else:
+                log(f"HTTP Error: {http_status} from request {url}")
+                json_response = self._read_json_response(reply)
+            reply.deleteLater()
+        else:
+            # log the error string
+            log(f"Network Error: {reply.errorString()} from request {url}")
+            reply.deleteLater()
+            raise CplusApiRequestError(f"Network error: {reply.errorString()}")
+        http_status = http_status if http_status is not None else 500
+        debug_log(f"Status-Code: {http_status}")
+        return json_response, http_status
+
+    def _make_request(self, reply: QNetworkReply):
+        """Make request in the event loop.
+
+        :param reply: reply object
+        :type reply: QNetworkReply
+        """
+        debug_log(f"URL: {reply.request().url()}")
+        # Create an event loop
+        event_loop = QtCore.QEventLoop()
+        # Connect the reply's finished signal to the event loop's quit slot
+        reply.finished.connect(event_loop.quit)
+        # Start the event loop, waiting for the request to complete
+        event_loop.exec_()
+
+    def _get_request_payload(self, data: typing.Union[dict, list]) -> QtCore.QByteArray:
+        """Get byte array of json request payload.
+
+        :param data: request payload
+        :type data: typing.Union[dict, list]
+
+        :return: byte array object
+        :rtype: QtCore.QByteArray
+        """
+        return QtCore.QByteArray(
+            json.dumps(data, cls=CustomJsonEncoder).encode("utf-8")
+        )
+
+    def get(self, url: str, headers: dict = {}) -> typing.Tuple[dict, int]:
+        """Trigger a GET request.
+
+        :param url: Cplus API URL
+        :type url: str
+
+        :param headers: header dictionary, defaults to {}
+        :type headers: dict
+
+        :return: tuple of response dictionary and HTTP status code
+        :rtype: typing.Tuple[dict, int]
+        """
+        nam = QgsNetworkAccessManager.instance()
+        headers = headers or self._default_headers()
+        request = self._generate_request(url, headers)
+        reply = nam.get(request)
+        self._make_request(reply)
+        return self._handle_response(url, reply)
+
+    def post(
+        self, url: str, data: typing.Union[dict, list], headers: dict = {}
+    ) -> typing.Tuple[dict, int]:
+        """Trigger a POST request.
+
+        :param url: Cplus API URL
+        :type url: str
+
+        :param data: API payload
+        :type data: typing.Union[dict, list]
+
+        :param headers: header dictionary, defaults to {}
+        :type headers: dict
+
+        :return: tuple of response dictionary and HTTP status code
+        :rtype: typing.Tuple[dict, int]
+        """
+        nam = QgsNetworkAccessManager.instance()
+        headers = headers or self._default_headers()
+        request = self._generate_request(url, headers)
+        json_data = self._get_request_payload(data)
+        reply = nam.post(request, json_data)
+        self._make_request(reply)
+        return self._handle_response(url, reply)
+
+    def put(
+        self, url: str, data: typing.Union[dict, list], headers: dict = {}
+    ) -> typing.Tuple[dict, int]:
+        """Trigger a PUT request.
+
+        :param url: Cplus API URL
+        :type url: str
+
+        :param data: API payload
+        :type data: typing.Union[dict, list]
+
+        :param headers: header dictionary, defaults to {}
+        :type headers: dict
+
+        :return: tuple of response dictionary and HTTP status code
+        :rtype: typing.Tuple[dict, int]
+        """
+        nam = QgsNetworkAccessManager.instance()
+        headers = headers or self._default_headers()
+        request = self._generate_request(url, headers)
+        json_data = self._get_request_payload(data)
+        reply = nam.put(request, json_data)
+        self._make_request(reply)
+        return self._handle_response(url, reply)
+
+    def _on_download_error(self, filename: str, error):
+        """Callback when there is an error in download file.
+
+        :param filename: filename of the downloaded file
+        :type filename: str
+
+        :param error: exception
+        :type error: any
+
+        :raises CplusApiRequestError: error
+        """
+        log(f"Error while downloading file to {filename}: {error}")
+        raise CplusApiRequestError(f"Unable to start download of {filename}, {error}")
+
+    def _on_download_finished(self, filename: str):
+        """Callback when download file is finished
+
+        :param filename: filename of the downloaded file
+        :type filename: str
+        """
+        log(f"Finished downloading file to {filename}")
+
+    def download_file(self, url: str, file_path: str, on_download_progress):
+        """Download a file from url and save into output file in file_path.
+
+        :param url: Download URL
+        :type url: str
+
+        :param file_path: Path to the output file
+        :type file_path: str
+
+        :param on_download_progress: callback for download progress signal
+        :type on_download_progress: any
+        """
+        filename = os.path.basename(file_path)
+        event_loop = QtCore.QEventLoop()
+        downloader = QgsFileDownloader(QtCore.QUrl(url), file_path, delayStart=True)
+
+        download_finished = partial(self._on_download_finished, filename)
+        download_error = partial(self._on_download_error, filename)
+
+        downloader.downloadCompleted.connect(download_finished)
+        downloader.downloadExited.connect(event_loop.quit)
+        downloader.downloadCanceled.connect(event_loop.quit)
+        downloader.downloadError.connect(download_error)
+        downloader.downloadProgress.connect(on_download_progress)
+        downloader.startDownload()
+        event_loop.exec_()
+
+    def _do_upload_file_part(
+        self, url: str, chunk: typing.Union[bytes, bytearray], file_part_number: int
+    ) -> dict:
+        """Trigger a PUT request to upload a chunk file to the url.
+
+        :param url: Upload URL
+        :type url: str
+
+        :param chunk: File chunk to be uploaded
+        :type chunk: bytes or bytearray
+
+        :param file_part_number: File part number
+        :type file_part_number: int
+
+        :raises Exception: raises when there is Network Error
+        :return: Dictionary of part_number and etag
+
+        :rtype: dict
+        """
+        nam = QgsNetworkAccessManager.instance()
+        request = QNetworkRequest(QtCore.QUrl(url))
+        request.setHeader(QNetworkRequest.ContentTypeHeader, "application/octet-stream")
+        request.setHeader(QNetworkRequest.ContentLengthHeader, len(chunk))
+        if url.startswith("http://"):
+            # add header for minio host in local env
+            request.setRawHeader(
+                self._get_raw_header_value("Host"),
+                self._get_raw_header_value("minio:9000"),
+            )
+        reply = nam.put(request, chunk)
+        self._make_request(reply)
+        response = {}
+        if reply.error() == QNetworkReply.NoError:
+            etag = reply.rawHeader(b"ETag")
+            response = {
+                "part_number": file_part_number,
+                "etag": etag.data().decode("utf-8"),
+            }
+            debug_log("Upload chunk finished:", response)
+            reply.deleteLater()
+        else:
+            reply.deleteLater()
+            raise Exception(f"Network Error: {reply.errorString()}")
+        return response
+
+    def upload_file_part(
+        self,
+        url: str,
+        chunk: typing.Union[bytes, bytearray],
+        file_part_number: int,
+        max_retries=5,
+    ) -> dict:
+        """Do upload of a file part using exponential backoff.
+
+        :param url: Upload URL
+        :type url: str
+
+        :param chunk: File chunk to be uploaded
+        :type chunk: typing.Union[bytes, bytearray]
+
+        :param file_part_number: File part number
+        :type file_part_number: int
+
+        :param max_retries: Maximum retries in exponential backoff, defaults to 5
+        :type max_retries: int, optional
+
+        :return: Dictionary of part_number and etag
+        :rtype: dict
+        """
+        retries = 0
+        while retries < max_retries:
+            try:
+                return self._do_upload_file_part(url, chunk, file_part_number)
+            except Exception as e:
+                log(f"Request failed: {e}")
+                retries += 1
+                if retries < max_retries:
+                    # Calculate the exponential backoff delay
+                    delay = 2**retries
+                    log(f"Retrying in {delay} seconds...")
+                    time.sleep(delay)
+                else:
+                    log("Max retries exceeded.")
+                    raise
+        return None
 
     def _default_headers(self) -> dict:
         """Get default headers for Cplus API requests.
@@ -714,8 +750,10 @@ class CplusApiRequest(BaseApiClient):
 
         :param file_path: Path of the file to be uploaded
         :type file_path: str
+
         :param component_type: Layer component type, e.g. "ncs_pathway"
         :type component_type: str
+
         :raises CplusApiRequestError: If the request is failing
 
         :return: Dictionary of the layer to be uploaded
@@ -745,9 +783,11 @@ class CplusApiRequest(BaseApiClient):
 
         :param layer_uuid: UUID of the uploaded layer
         :type layer_uuid: str
+
         :param upload_id: Upload ID of the multipart upload, optional,
             defaults to None
         :type upload_id: str
+
         :param items: List of uploaded items for multipart upload, optional,
             defaults to None
         :type items: typing.Union[typing.List[dict], None]
@@ -768,8 +808,10 @@ class CplusApiRequest(BaseApiClient):
 
         :param layer_uuid: UUID of a Layer that is currently being uploaded
         :type layer_uuid: str
+
         :param upload_id: Multipart Upload ID
         :type upload_id: str
+
         :raises CplusApiRequestError: If the abort is failed
 
         :return: True if upload is successfully aborted
@@ -788,6 +830,7 @@ class CplusApiRequest(BaseApiClient):
 
         :param scenario_detail: Scenario detail
         :type scenario_detail: dict
+
         :raises CplusApiRequestError: If the failed to submit scenario
 
         :return: Scenario UUID
@@ -804,6 +847,7 @@ class CplusApiRequest(BaseApiClient):
 
         :param scenario_uuid: Scenario UUID
         :type scenario_uuid: str
+
         :raises CplusApiRequestError: If the failed to execute scenario
 
         :return: True if the scenario was successfully executed
@@ -831,6 +875,7 @@ class CplusApiRequest(BaseApiClient):
 
         :param scenario_uuid: Scenario UUID
         :type scenario_uuid: str
+
         :raises CplusApiRequestError: If the failed to cancel scenario
 
         :return: True if the scenario was successfully cancelled
@@ -846,6 +891,7 @@ class CplusApiRequest(BaseApiClient):
 
         :param scenario_uuid: Scenario UUID
         :type scenario_uuid: str
+
         :raises CplusApiRequestError: If the failed to list scenario output
 
         :return: List of scenario output:
@@ -861,6 +907,7 @@ class CplusApiRequest(BaseApiClient):
 
         :param scenario_uuid: Scenario UUID
         :type scenario_uuid: str
+
         :raises CplusApiRequestError: If the failed to list scenario output
 
         :return: Scenario detail
