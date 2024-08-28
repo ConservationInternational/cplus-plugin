@@ -320,7 +320,6 @@ class CplusApiRequest:
         self._api_token = None
         self.token_exp = None
 
-
     def _get_raw_header_value(self, value: str) -> QtCore.QByteArray:
         """Get byte array of header name or value.
 
@@ -371,7 +370,9 @@ class CplusApiRequest:
                 self._get_raw_header_value(value),
             )
 
-    def _read_json_response(self, reply: typing.Union[QNetworkReply, QgsNetworkReplyContent]) -> dict:
+    def _read_json_response(
+        self, reply: typing.Union[QNetworkReply, QgsNetworkReplyContent]
+    ) -> dict:
         """Parse json response from reply object.
 
         :param reply: reply object
