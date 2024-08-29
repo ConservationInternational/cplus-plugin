@@ -6,7 +6,6 @@ from PyQt5 import QtCore
 from qgis.core import QgsNetworkAccessManager, QgsFileDownloader
 from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkReply
 from cplus_plugin.api.request import (
-    BaseApiClient,
     CplusApiRequestError,
     CplusApiPooling,
     JOB_COMPLETED_STATUS,
@@ -21,56 +20,8 @@ def mocked_exec_loop():
     pass
 
 
-class TestBaseApiClient(unittest.TestCase):
-    @patch("qgis.core.QgsNetworkAccessManager.instance")
-    def setUp(self, mock_nam_instance):
-        self.client = BaseApiClient()
-        self.mock_nam = mock_nam_instance.return_value
-
-    def test_get_raw_header_value(self):
-        result = self.client._get_raw_header_value("test-header")
-        self.assertEqual(result, QtCore.QByteArray(b"test-header"))
-
-    def test_default_headers(self):
-        expected_headers = {"Content-Type": "application/json"}
-        self.assertEqual(self.client._default_headers(), expected_headers)
-
-    def test_generate_request(self):
-        url = "http://example.com"
-        headers = {"Authorization": "Bearer token"}
-        request = self.client._generate_request(url, headers)
-        self.assertIsNotNone(request)
-        self.assertEqual(request.url(), QtCore.QUrl(url))
-
-    @patch("qgis.PyQt.QtNetwork.QNetworkReply")
-    def test_read_json_response(self, mock_reply):
-        mock_reply.readAll.return_value.data.return_value = b'{"key": "value"}'
-        response = self.client._read_json_response(mock_reply)
-        self.assertEqual(response, {"key": "value"})
-
-    @patch("qgis.PyQt.QtNetwork.QNetworkReply")
-    def test_handle_response(self, mock_reply):
-        url = "http://example.com"
-        mock_reply.error.return_value = QNetworkReply.NoError
-        mock_reply.attribute.return_value = 200
-        mock_reply.readAll.return_value.data.return_value = b'{"key": "value"}'
-        response, status_code = self.client._handle_response(url, mock_reply)
-        self.assertEqual(response, {"key": "value"})
-        self.assertEqual(status_code, 200)
-        mock_reply.error.return_value = QNetworkReply.ConnectionRefusedError
-        with self.assertRaises(CplusApiRequestError):
-            response, status_code = self.client._handle_response(url, mock_reply)
-
-    @patch("qgis.PyQt.QtNetwork.QNetworkReply")
-    @patch("PyQt5.QtCore.QEventLoop.exec_")
-    def test_make_request(self, mock_event_loop, mock_reply):
-        mock_event_loop.exec_.side_effect = mocked_exec_loop
-        self.client._make_request(mock_reply)
-        mock_event_loop.assert_called_once()
-
-
 class TestCplusApiPooling(unittest.TestCase):
-    @patch("cplus_plugin.api.request.BaseApiClient")
+    @patch("cplus_plugin.api.request.CplusApiRequest")
     def setUp(self, mock_base_api_client):
         self.mock_context = mock_base_api_client.return_value
         self.url = "http://example.com"
@@ -214,6 +165,52 @@ class TestCplusApiRequest(unittest.TestCase):
         self.api_request.token_exp = datetime.datetime.now() + datetime.timedelta(
             days=1
         )
+
+    @patch("qgis.core.QgsNetworkAccessManager.instance")
+    def setUp(self, mock_nam_instance):
+        self.client = CplusApiRequest()
+        self.mock_nam = mock_nam_instance.return_value
+
+    def test_get_raw_header_value(self):
+        result = self.client._get_raw_header_value("test-header")
+        self.assertEqual(result, QtCore.QByteArray(b"test-header"))
+
+    def test_default_headers(self):
+        expected_headers = {"Content-Type": "application/json"}
+        self.assertEqual(self.client._default_headers(), expected_headers)
+
+    def test_generate_request(self):
+        url = "http://example.com"
+        headers = {"Authorization": "Bearer token"}
+        request = self.client._generate_request(url, headers)
+        self.assertIsNotNone(request)
+        self.assertEqual(request.url(), QtCore.QUrl(url))
+
+    @patch("qgis.PyQt.QtNetwork.QNetworkReply")
+    def test_read_json_response(self, mock_reply):
+        mock_reply.readAll.return_value.data.return_value = b'{"key": "value"}'
+        response = self.client._read_json_response(mock_reply)
+        self.assertEqual(response, {"key": "value"})
+
+    @patch("qgis.PyQt.QtNetwork.QNetworkReply")
+    def test_handle_response(self, mock_reply):
+        url = "http://example.com"
+        mock_reply.error.return_value = QNetworkReply.NoError
+        mock_reply.attribute.return_value = 200
+        mock_reply.readAll.return_value.data.return_value = b'{"key": "value"}'
+        response, status_code = self.client._handle_response(url, mock_reply)
+        self.assertEqual(response, {"key": "value"})
+        self.assertEqual(status_code, 200)
+        mock_reply.error.return_value = QNetworkReply.ConnectionRefusedError
+        with self.assertRaises(CplusApiRequestError):
+            response, status_code = self.client._handle_response(url, mock_reply)
+
+    @patch("qgis.PyQt.QtNetwork.QNetworkReply")
+    @patch("PyQt5.QtCore.QEventLoop.exec_")
+    def test_make_request(self, mock_event_loop, mock_reply):
+        mock_event_loop.exec_.side_effect = mocked_exec_loop
+        self.client._make_request(mock_reply)
+        mock_event_loop.assert_called_once()
 
     @patch.object(CplusApiRequest, "post")
     @patch.object(CplusApiRequest, "_is_valid_token", return_value=True)
