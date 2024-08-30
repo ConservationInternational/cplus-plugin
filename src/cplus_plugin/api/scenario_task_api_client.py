@@ -750,6 +750,20 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             }
         )
 
+    def _download_progress(self, value):
+        """Tracks the download progress of value and updates
+        the info message when the download has finished
+
+        :param value: Download progress value
+        :type value: int
+        """
+        self.__update_scenario_status(
+            {
+                "progress_text": "Downloading output files",
+                "progress": value,
+            }
+        )
+
     def download_file(self, url: str, local_filename: str) -> None:
         """Download an output file from S3 to the local destination
 
@@ -761,7 +775,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         parent_dir = os.path.dirname(local_filename)
         if not os.path.exists(parent_dir):
             os.makedirs(parent_dir)
-        self.request.download_file(url, local_filename, self._on_download_file_progress)
+        self.request.download_file(url, local_filename, self._download_progress)
         self.downloaded_output += 1
         self.__update_scenario_status(
             {

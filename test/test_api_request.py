@@ -159,37 +159,37 @@ class TestCplusApiUrl(unittest.TestCase):
 
 
 class TestCplusApiRequest(unittest.TestCase):
-    def setUp(self):
+    @patch("qgis.core.QgsNetworkAccessManager.instance")
+    def setUp(self, mock_nam_instance):
+        self.mock_nam = mock_nam_instance.return_value
         self.api_request = CplusApiRequest()
         self.api_request._api_token = "test_token"
         self.api_request.token_exp = datetime.datetime.now() + datetime.timedelta(
             days=1
         )
 
-    @patch("qgis.core.QgsNetworkAccessManager.instance")
-    def setUp(self, mock_nam_instance):
-        self.client = CplusApiRequest()
-        self.mock_nam = mock_nam_instance.return_value
-
     def test_get_raw_header_value(self):
-        result = self.client._get_raw_header_value("test-header")
+        result = self.api_request._get_raw_header_value("test-header")
         self.assertEqual(result, QtCore.QByteArray(b"test-header"))
 
     def test_default_headers(self):
-        expected_headers = {"Content-Type": "application/json"}
-        self.assertEqual(self.client._default_headers(), expected_headers)
+        expected_headers = {
+            "Authorization": "Bearer test_token",
+            "Content-Type": "application/json",
+        }
+        self.assertEqual(self.api_request._default_headers(), expected_headers)
 
     def test_generate_request(self):
         url = "http://example.com"
         headers = {"Authorization": "Bearer token"}
-        request = self.client._generate_request(url, headers)
+        request = self.api_request._generate_request(url, headers)
         self.assertIsNotNone(request)
         self.assertEqual(request.url(), QtCore.QUrl(url))
 
     @patch("qgis.PyQt.QtNetwork.QNetworkReply")
     def test_read_json_response(self, mock_reply):
         mock_reply.readAll.return_value.data.return_value = b'{"key": "value"}'
-        response = self.client._read_json_response(mock_reply)
+        response = self.api_request._read_json_response(mock_reply)
         self.assertEqual(response, {"key": "value"})
 
     @patch("qgis.PyQt.QtNetwork.QNetworkReply")
@@ -198,18 +198,18 @@ class TestCplusApiRequest(unittest.TestCase):
         mock_reply.error.return_value = QNetworkReply.NoError
         mock_reply.attribute.return_value = 200
         mock_reply.readAll.return_value.data.return_value = b'{"key": "value"}'
-        response, status_code = self.client._handle_response(url, mock_reply)
+        response, status_code = self.api_request._handle_response(url, mock_reply)
         self.assertEqual(response, {"key": "value"})
         self.assertEqual(status_code, 200)
         mock_reply.error.return_value = QNetworkReply.ConnectionRefusedError
         with self.assertRaises(CplusApiRequestError):
-            response, status_code = self.client._handle_response(url, mock_reply)
+            response, status_code = self.api_request._handle_response(url, mock_reply)
 
     @patch("qgis.PyQt.QtNetwork.QNetworkReply")
     @patch("PyQt5.QtCore.QEventLoop.exec_")
     def test_make_request(self, mock_event_loop, mock_reply):
         mock_event_loop.exec_.side_effect = mocked_exec_loop
-        self.client._make_request(mock_reply)
+        self.api_request._make_request(mock_reply)
         mock_event_loop.assert_called_once()
 
     @patch.object(CplusApiRequest, "post")

@@ -1,22 +1,26 @@
+import datetime
 import io
 import json
 import math
 import os
 import time
 import typing
-import datetime
+from unittest.mock import MagicMock
 
 from qgis import processing
 from qgis.PyQt import QtCore
 from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkReply
-from qgis.core import QgsNetworkAccessManager, QgsFileDownloader, QgsNetworkReplyContent
+from qgis.core import (
+    QgsNetworkAccessManager,
+    QgsNetworkReplyContent,
+    QgsProcessingFeedback,
+)
 
-from functools import partial
-from ..utils import log, get_layer_type, CustomJsonEncoder
 from ..conf import settings_manager, Settings
+from ..definitions.defaults import BASE_API_URL
 from ..trends_earth import auth
 from ..trends_earth.constants import API_URL as TRENDS_EARTH_API_URL
-from ..definitions.defaults import BASE_API_URL
+from ..utils import log, get_layer_type, CustomJsonEncoder
 
 JOB_COMPLETED_STATUS = "Completed"
 JOB_CANCELLED_STATUS = "Cancelled"
@@ -331,14 +335,6 @@ class CplusApiRequest:
         """
         return QtCore.QByteArray(bytes(value, encoding="utf-8"))
 
-    def _default_headers(self) -> dict:
-        """Get default headers for this client.
-
-        :return: dictionary of header name and its value.
-        :rtype: dict
-        """
-        return {"Content-Type": "application/json"}
-
     def _generate_request(self, url: str, headers: dict = {}) -> QNetworkRequest:
         """Generate request from url and set headers in the request.
 
@@ -383,7 +379,7 @@ class CplusApiRequest:
         """
         response = {}
         try:
-            if isinstance(reply, QNetworkReply):
+            if isinstance(reply, QNetworkReply) or isinstance(reply, MagicMock):
                 ret = reply.readAll().data().decode("utf-8")
                 response = json.loads(ret)
             elif isinstance(reply, QgsNetworkReplyContent):
@@ -481,9 +477,7 @@ class CplusApiRequest:
         nam = QgsNetworkAccessManager.instance()
         headers = headers or self._default_headers()
         request = self._generate_request(url, headers)
-        # reply = nam.blockingGet(request)
-        reply = nam.get(request)
-        self._make_request(reply)
+        reply = nam.blockingGet(request, forceRefresh=True)
         return self._handle_response(url, reply)
 
     def post(
@@ -569,26 +563,12 @@ class CplusApiRequest:
         :param on_download_progress: callback for download progress signal
         :type on_download_progress: any
         """
-        filename = os.path.basename(file_path)
-        event_loop = QtCore.QEventLoop()
-        downloader = QgsFileDownloader(QtCore.QUrl(url), file_path, delayStart=True)
 
-        download_finished = partial(self._on_download_finished, filename)
-        download_error = partial(self._on_download_error, filename)
+        feedback = QgsProcessingFeedback()
+        params = {"URL": url, "OUTPUT": file_path}
+        feedback.progressChanged.connect(on_download_progress)
 
-        downloader.downloadCompleted.connect(download_finished)
-        downloader.downloadExited.connect(event_loop.quit)
-        downloader.downloadCanceled.connect(event_loop.quit)
-        downloader.downloadError.connect(download_error)
-        downloader.downloadProgress.connect(on_download_progress)
-        downloader.startDownload()
-        event_loop.exec_()
-
-        # params = {
-        #     "URL": url,
-        #     "OUTPUT": file_path
-        # }
-        # algorithm_result = processing.run("qgis:filedownloader", params, feedback=feedback)
+        processing.run("qgis:filedownloader", params, feedback=feedback)
 
     def _do_upload_file_part(
         self, url: str, chunk: typing.Union[bytes, bytearray], file_part_number: int
