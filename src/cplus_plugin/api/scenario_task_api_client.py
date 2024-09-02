@@ -172,7 +172,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             return False
         return not self.processing_cancelled
 
-    def run_upload(self, file_path: str, component_type: str) -> dict:
+    def run_upload(self, file_path, component_type) -> typing.Dict:
         """Upload a file as component type to the S3.
 
         :param file_path: Path of the file to be uploaded
@@ -182,7 +182,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         :type component_type: str
 
         :return: result, containing UUID of the uploaded file, size, and final filename
-        :rtype: dict
+        :rtype: typing.Dict
         """
 
         self.log_message(f"Uploading {file_path} as {component_type}")
