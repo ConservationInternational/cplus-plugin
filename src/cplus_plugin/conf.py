@@ -231,7 +231,6 @@ class Settings(enum.Enum):
 
     # DEBUG
     DEBUG = "debug"
-    DEV_MODE = "dev_mode"
     BASE_API_URL = "base_api_url"
 
 
