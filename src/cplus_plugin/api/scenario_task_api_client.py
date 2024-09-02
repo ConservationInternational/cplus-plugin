@@ -68,6 +68,14 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.total_file_output = 0
         self.downloaded_output = 0
         self.scenario_status = None
+        self.__post_init__()
+
+    def __post_init__(self):
+        self.analysis_activities = [
+            settings_manager.get_activity(str(activity.uuid))
+            for activity in self.analysis_activities
+        ]
+        self.scenario.activities = self.analysis_activities
 
     def cancel_task(self, exception=None):
         """
@@ -404,7 +412,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         """
         Build scenario detail JSON to be sent to CPLUS API
         """
-
         old_scenario_dict = json.loads(
             json.dumps(todict(self.scenario), cls=CustomJsonEncoder)
         )
@@ -474,6 +481,16 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             else ""
         )
 
+        priority_layers = self.get_priority_layers()
+        for priority_layer in priority_layers:
+            if priority_layer.get("path", "") in self.path_to_layer_mapping:
+                priority_layer["layer_uuid"] = self.path_to_layer_mapping[
+                    priority_layer.get("path", "")
+                ]["uuid"]
+            else:
+                priority_layer["layer_uuid"] = ""
+            priority_layer["path"] = ""
+
         for activity in old_scenario_dict["activities"]:
             activity["layer_type"] = 0
             activity["path"] = ""
@@ -503,16 +520,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                     priority_layer["path"] = ""
                     new_priority_layers.append(priority_layer)
             activity["priority_layers"] = new_priority_layers
-
-        priority_layers = self.get_priority_layers()
-        for priority_layer in priority_layers:
-            if priority_layer.get("path", "") in self.path_to_layer_mapping:
-                priority_layer["layer_uuid"] = self.path_to_layer_mapping[
-                    priority_layer.get("path", "")
-                ]["uuid"]
-            else:
-                priority_layer["layer_uuid"] = ""
-            priority_layer["path"] = ""
 
         self.scenario_detail = {
             "scenario_name": old_scenario_dict["name"],
@@ -590,6 +597,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             new_logs = response.get("logs")
             for log in new_logs:
                 if log not in self.logs:
+                    log = json.dumps(log)
                     self.log_message(log)
             self.logs = new_logs
 
@@ -718,7 +726,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             analysis_output=self.output,
         )
 
-        self.analysis_priority_layers_groups
         self.__update_scenario_status(
             {"progress_text": "Finished downloading output files", "progress": 100}
         )
