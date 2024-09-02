@@ -62,6 +62,7 @@ def test_package(package="test"):
     :type package: str
     """
     test_loader = unittest.defaultTestLoader
+
     try:
         test_suite = test_loader.discover(package)
     except ImportError:
