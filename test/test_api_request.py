@@ -1,10 +1,9 @@
 import unittest
 import datetime
-from functools import partial
 from unittest.mock import patch, MagicMock
 from PyQt5 import QtCore
-from qgis.core import QgsNetworkAccessManager, QgsFileDownloader
-from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkReply
+from PyQt5.QtCore import QIODevice, QByteArray
+from qgis.PyQt.QtNetwork import QNetworkReply
 from cplus_plugin.api.request import (
     CplusApiRequestError,
     CplusApiPooling,
@@ -18,6 +17,30 @@ from cplus_plugin.definitions.defaults import BASE_API_URL
 
 def mocked_exec_loop():
     pass
+
+
+class MockQNetworkReply(QNetworkReply):
+    def __init__(self, data: bytes, error_code=None, error_string=""):
+        super().__init__()
+        self.data = QByteArray(data)
+        self.error_code = error_code
+        self.error_string = error_string
+        self.open(QIODevice.ReadOnly)
+
+    def readAll(self):
+        return self.data
+
+    def error(self):
+        return self.error_code
+
+    def errorString(self):
+        return self.error_string
+
+    def attribute(self, attr_name):
+        return 200
+
+    def isFinished(self):
+        return True  # Simulating that the request is complete
 
 
 class TestCplusApiPooling(unittest.TestCase):
@@ -186,24 +209,29 @@ class TestCplusApiRequest(unittest.TestCase):
         self.assertIsNotNone(request)
         self.assertEqual(request.url(), QtCore.QUrl(url))
 
-    @patch("qgis.PyQt.QtNetwork.QNetworkReply")
-    def test_read_json_response(self, mock_reply):
-        mock_reply.readAll.return_value.data.return_value = b'{"key": "value"}'
+    def test_read_json_response(self):
+        mock_reply = MockQNetworkReply(
+            data=b'{"key": "value"}',
+            error_code=QNetworkReply.NoError,
+            error_string=QNetworkReply.NoError,
+        )
         response = self.api_request._read_json_response(mock_reply)
         self.assertEqual(response, {"key": "value"})
 
-    @patch("qgis.PyQt.QtNetwork.QNetworkReply")
-    def test_handle_response(self, mock_reply):
+    def test_handle_response(self):
         url = "http://example.com"
-        mock_reply.error.return_value = QNetworkReply.NoError
-        mock_reply.attribute.return_value = 200
-        mock_reply.readAll.return_value.data.return_value = b'{"key": "value"}'
+        mock_reply = MockQNetworkReply(
+            data=b'{"key": "value"}',
+            error_code=QNetworkReply.NoError,
+            error_string=QNetworkReply.NoError,
+        )
         response, status_code = self.api_request._handle_response(url, mock_reply)
         self.assertEqual(response, {"key": "value"})
         self.assertEqual(status_code, 200)
-        mock_reply.error.return_value = QNetworkReply.ConnectionRefusedError
+        mock_reply.error = MagicMock()
+        mock_reply.side_effect = QNetworkReply.ConnectionRefusedError
         with self.assertRaises(CplusApiRequestError):
-            response, status_code = self.api_request._handle_response(url, mock_reply)
+            self.api_request._handle_response(url, mock_reply)
 
     @patch("qgis.PyQt.QtNetwork.QNetworkReply")
     @patch("PyQt5.QtCore.QEventLoop.exec_")

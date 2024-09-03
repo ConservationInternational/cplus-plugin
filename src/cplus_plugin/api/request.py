@@ -5,7 +5,6 @@ import math
 import os
 import time
 import typing
-from unittest.mock import MagicMock
 
 from qgis import processing
 from qgis.PyQt import QtCore
@@ -379,7 +378,7 @@ class CplusApiRequest:
         """
         response = {}
         try:
-            if isinstance(reply, QNetworkReply) or isinstance(reply, MagicMock):
+            if isinstance(reply, QNetworkReply):
                 ret = reply.readAll().data().decode("utf-8")
                 response = json.loads(ret)
             elif isinstance(reply, QgsNetworkReplyContent):
@@ -823,7 +822,7 @@ class CplusApiRequest:
             raise CplusApiRequestError(result.get("detail", ""))
         return True
 
-    def submit_scenario_detail(self, scenario_detail: dict) -> bool:
+    def submit_scenario_detail(self, scenario_detail: dict) -> str:
         """Submitting scenario JSON to Cplus API
 
         :param scenario_detail: Scenario detail
@@ -832,7 +831,7 @@ class CplusApiRequest:
         :raises CplusApiRequestError: If the failed to submit scenario
 
         :return: Scenario UUID
-        :rtype: bool
+        :rtype: str
         """
         debug_log("scenario_detail payload", scenario_detail)
         result, status_code = self.post(self.urls.scenario_submit(), scenario_detail)
