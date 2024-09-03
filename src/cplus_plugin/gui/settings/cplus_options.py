@@ -44,17 +44,17 @@ from ...trends_earth import auth, api, download
 Ui_DlgSettings, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "../../ui/cplus_settings.ui")
 )
-Ui_DlgSettingsLogin, _ = uic.loadUiType(
-    os.path.join(os.path.dirname(__file__), "../../ui/DlgSettingsLogin.ui")
+Ui_TrendsEarthDlgSettingsLogin, _ = uic.loadUiType(
+    os.path.join(os.path.dirname(__file__), "../../ui/trends_earth_login.ui")
 )
-Ui_DlgSettingsEditForgotPassword, _ = uic.loadUiType(
-    os.path.join(os.path.dirname(__file__), "../../ui/DlgSettingsEditForgotPassword.ui")
+Ui_TrendsEarthDlgSettingsEditForgotPassword, _ = uic.loadUiType(
+    os.path.join(os.path.dirname(__file__), "../../ui/trends_earth_forgot_password.ui")
 )
-Ui_DlgSettingsRegister, _ = uic.loadUiType(
-    os.path.join(os.path.dirname(__file__), "../../ui/DlgSettingsRegister.ui")
+Ui_TrendsEarthSettingsRegister, _ = uic.loadUiType(
+    os.path.join(os.path.dirname(__file__), "../../ui/trends_earth_register.ui")
 )
-Ui_DlgSettingsEditUpdate, _ = uic.loadUiType(
-    os.path.join(os.path.dirname(__file__), "../../ui/DlgSettingsEditUpdate.ui")
+Ui_TrendsEarthSettingsEditUpdate, _ = uic.loadUiType(
+    os.path.join(os.path.dirname(__file__), "../../ui/trends_earth_edit_update.ui")
 )
 
 
@@ -108,7 +108,7 @@ def _get_user_email(auth_setup, warn=True):
         return email
 
 
-class DlgSettingsRegister(QtWidgets.QDialog, Ui_DlgSettingsRegister):
+class DlgSettingsRegister(QtWidgets.QDialog, Ui_TrendsEarthSettingsRegister):
     authConfigInitialised = QtCore.pyqtSignal(str)
 
     def __init__(self, parent=None):
@@ -182,7 +182,7 @@ class DlgSettingsRegister(QtWidgets.QDialog, Ui_DlgSettingsRegister):
             return None
 
 
-class DlgSettingsLogin(QtWidgets.QDialog, Ui_DlgSettingsLogin):
+class DlgSettingsLogin(QtWidgets.QDialog, Ui_TrendsEarthDlgSettingsLogin):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -235,7 +235,7 @@ class DlgSettingsLogin(QtWidgets.QDialog, Ui_DlgSettingsLogin):
             self.close()
 
 
-class DlgSettingsEditUpdate(QtWidgets.QDialog, Ui_DlgSettingsEditUpdate):
+class DlgSettingsEditUpdate(QtWidgets.QDialog, Ui_TrendsEarthSettingsEditUpdate):
     def __init__(self, user, parent=None):
         super().__init__(parent)
 
@@ -306,7 +306,7 @@ class DlgSettingsEditUpdate(QtWidgets.QDialog, Ui_DlgSettingsEditUpdate):
 
 
 class DlgSettingsEditForgotPassword(
-    QtWidgets.QDialog, Ui_DlgSettingsEditForgotPassword
+    QtWidgets.QDialog, Ui_TrendsEarthDlgSettingsEditForgotPassword
 ):
     def __init__(self, parent=None):
         super().__init__(parent)
