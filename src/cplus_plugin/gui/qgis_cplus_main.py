@@ -1861,7 +1861,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             if (
                 scenario_result.output_layer_name is not None
-                and scenario_result.output_layer_name is not ""
+                and scenario_result.output_layer_name != ""
             ):
                 layer_name = scenario_result.output_layer_name
 
