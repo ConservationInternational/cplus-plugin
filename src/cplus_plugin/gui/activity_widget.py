@@ -132,18 +132,6 @@ class ActivityContainerWidget(QtWidgets.QWidget, WidgetUi):
         """
         self.activity_view.remove_ncs_pathway_items(ncs_pathway_uuid)
 
-    def enable_default_items(self, enable: bool):
-        """Enable or disable default NCS pathway and activity items.
-
-        :param enable: True to enable or False to disable default items.
-        :type enable: bool
-        """
-        if not self._items_loaded:
-            return
-
-        self.ncs_pathway_view.enable_default_items(enable)
-        self.activity_view.enable_default_items(enable)
-
     def show_message(self, message, level=Qgis.Warning):
         """Shows message if message bar has been specified.
 
