@@ -117,11 +117,15 @@ class CplusApiUrl:
         self.trends_urls = TrendsApiUrl()
         self._api_token = self.api_token
 
-    def get_base_api_url(self):
-        """Returns the base API URL."""
+    def get_base_api_url(self) -> str:
+        """Returns the base API URL.
 
-        dev_mode = settings_manager.get_value(Settings.DEV_MODE, False, bool)
-        if dev_mode:
+        :return: Base API URL
+        :rtype: str
+        """
+
+        debug = settings_manager.get_value(Settings.DEBUG, False, bool)
+        if debug:
             return settings_manager.get_value(Settings.BASE_API_URL)
         else:
             return BASE_API_URL
