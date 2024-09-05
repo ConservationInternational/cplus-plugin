@@ -50,8 +50,6 @@ from .definitions.defaults import (
     ABOUT_DOCUMENTATION_SITE,
     CI_LOGO_PATH,
     CPLUS_LOGO_PATH,
-    DEFAULT_ACTIVITIES,
-    DEFAULT_NCS_PATHWAYS,
     DEFAULT_REPORT_DISCLAIMER,
     DEFAULT_REPORT_LICENSE,
     DOCUMENTATION_SITE,
@@ -461,98 +459,6 @@ def initialize_model_settings():
 
         # Create priority weighting layers subdirectory
         FileUtils.create_pwls_dir(base_dir)
-
-    new_pathways_uuid = []
-
-    # Add default pathways
-    for ncs_dict in DEFAULT_NCS_PATHWAYS:
-        try:
-            ncs_uuid = ncs_dict[UUID_ATTRIBUTE]
-            ncs = settings_manager.get_ncs_pathway(ncs_uuid)
-
-            new_pathways_uuid.append(ncs_uuid)
-
-            if ncs is None:
-                # Update dir
-                base_dir = settings_manager.get_value(Settings.BASE_DIR, None)
-                if base_dir is not None:
-                    # Pathway location
-                    file_name = ncs_dict[PATH_ATTRIBUTE]
-                    absolute_path = f"{base_dir}/{NCS_PATHWAY_SEGMENT}/{file_name}"
-                    abs_path = str(os.path.normpath(absolute_path))
-                    ncs_dict[PATH_ATTRIBUTE] = abs_path
-
-                    # Carbon location
-                    carbon_file_names = ncs_dict[CARBON_PATHS_ATTRIBUTE]
-                    abs_carbon_paths = []
-                    for carbon_file_name in carbon_file_names:
-                        abs_carbon_path = (
-                            f"{base_dir}/{NCS_CARBON_SEGMENT}/{carbon_file_name}"
-                        )
-                        norm_carbon_path = str(os.path.normpath(abs_carbon_path))
-                        abs_carbon_paths.append(norm_carbon_path)
-                    ncs_dict[CARBON_PATHS_ATTRIBUTE] = abs_carbon_paths
-
-                ncs_dict[USER_DEFINED_ATTRIBUTE] = False
-                settings_manager.save_ncs_pathway(ncs_dict)
-        except KeyError as ke:
-            log(f"Default NCS configuration load error - {str(ke)}")
-            continue
-
-    # Preset color brewer scheme names
-    preset_scheme_names = QgsColorBrewerColorRamp.listSchemeNames()
-
-    for ncs in settings_manager.get_all_ncs_pathways():
-        if str(ncs.uuid) not in new_pathways_uuid:
-            settings_manager.remove_ncs_pathway(str(ncs.uuid))
-
-    new_activities_uuids = []
-    # Add default activities
-    for i, activity_dict in enumerate(DEFAULT_ACTIVITIES, start=1):
-        try:
-            activity_uuid = activity_dict[UUID_ATTRIBUTE]
-            activity = settings_manager.get_activity(activity_uuid)
-            new_activities_uuids.append(activity_uuid)
-            if activity is None:
-                if STYLE_ATTRIBUTE in activity_dict:
-                    style_info = activity_dict[STYLE_ATTRIBUTE]
-                    if ACTIVITY_LAYER_STYLE_ATTRIBUTE in style_info:
-                        activity_layer_style = style_info[
-                            ACTIVITY_LAYER_STYLE_ATTRIBUTE
-                        ]
-                        if COLOR_RAMP_PROPERTIES_ATTRIBUTE in activity_layer_style:
-                            # Must be a preset color brewer scheme name
-                            scheme_name = activity_layer_style[
-                                COLOR_RAMP_PROPERTIES_ATTRIBUTE
-                            ]
-                            if scheme_name in preset_scheme_names:
-                                color_ramp = QgsColorBrewerColorRamp(scheme_name, 8)
-                                color_ramp_properties = color_ramp.properties()
-                                # Save the color ramp properties instead of just the
-                                # scheme name
-                                activity_dict[STYLE_ATTRIBUTE][
-                                    ACTIVITY_LAYER_STYLE_ATTRIBUTE
-                                ][
-                                    COLOR_RAMP_PROPERTIES_ATTRIBUTE
-                                ] = color_ramp_properties
-                                activity_dict[STYLE_ATTRIBUTE][
-                                    ACTIVITY_LAYER_STYLE_ATTRIBUTE
-                                ][
-                                    COLOR_RAMP_TYPE_ATTRIBUTE
-                                ] = QgsColorBrewerColorRamp.typeString()
-
-                activity_dict[PIXEL_VALUE_ATTRIBUTE] = i
-                activity_dict[USER_DEFINED_ATTRIBUTE] = False
-                settings_manager.save_activity(activity_dict)
-        except KeyError as ke:
-            log(f"Default activity configuration load error - {str(ke)}")
-            continue
-
-    for activity in settings_manager.get_all_activities():
-        if activity.user_defined:
-            continue
-        if str(activity.uuid) not in new_activities_uuids:
-            settings_manager.remove_activity(str(activity.uuid))
 
     settings_manager.set_value(activity_ncs_setting, True)
 

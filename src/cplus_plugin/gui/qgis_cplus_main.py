@@ -92,7 +92,6 @@ from ..definitions.defaults import (
     SCENARIO_LOG_FILE_NAME,
     USER_DOCUMENTATION_SITE,
 )
-from ..lib.extent_check import extent_within_pilot
 from ..lib.reports.manager import report_manager, ReportManager
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
 from ..tasks import ScenarioAnalysisTask
@@ -136,7 +135,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         # Insert widget for step 2
         self.activity_widget = ActivityContainerWidget(self, self.message_bar)
-        self.activity_widget.ncs_reloaded.connect(self.on_ncs_pathways_reloaded)
         self.tab_widget.insertTab(1, self.activity_widget, self.tr("Step 2"))
         self.tab_widget.currentChanged.connect(self.on_tab_step_changed)
 
@@ -310,9 +308,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.scenario_name.textChanged.connect(self.save_scenario)
         self.scenario_description.textChanged.connect(self.save_scenario)
         self.extent_box.extentChanged.connect(self.save_scenario)
-
-        # Monitors if current extents are within the pilot AOI
-        self.extent_box.extentChanged.connect(self.on_extent_changed)
 
         icon_pixmap = QtGui.QPixmap(ICON_PATH)
         self.icon_la.setPixmap(icon_pixmap)
@@ -539,72 +534,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         for item in list_items:
             self.priority_groups_list.setItemWidget(item[0], 0, item[1])
 
-        # Trigger process to enable/disable PWLs based on current extents
-        self.on_extent_changed(self.extent_box.outputExtent())
-
-    def on_ncs_pathways_reloaded(self):
-        """Slot raised when NCS pathways have been reloaded in the view."""
-        within_pilot_area = extent_within_pilot(
-            self.extent_box.outputExtent(), self.extent_box.outputCrs()
-        )
-        self.activity_widget.enable_default_items(within_pilot_area)
-
-    def on_extent_changed(self, new_extent: QgsRectangle):
-        """Slot raised when scenario extents have changed.
-
-        Used to enable/disable default model items if they are within or
-        outside the pilot AOI.
-        """
-        within_pilot_area = extent_within_pilot(new_extent, self.extent_box.outputCrs())
-
-        if not within_pilot_area:
-            msg = tr(
-                "Area of interest is outside the pilot area. Please use your "
-                "own NCS pathways, activities and PWLs."
-            )
-            self.show_message(msg, Qgis.Info)
-
-        else:
-            self.message_bar.clearWidgets()
-
-        self.activity_widget.enable_default_items(within_pilot_area)
-
-        # Enable/disable PWL items
-        for i in range(self.priority_layers_list.count()):
-            pwl_item = self.priority_layers_list.item(i)
-            uuid_str = pwl_item.data(QtCore.Qt.UserRole)
-            if not uuid_str:
-                continue
-
-            pwl_uuid = uuid.UUID(uuid_str)
-            pwl = settings_manager.get_priority_layer(pwl_uuid)
-            if USER_DEFINED_ATTRIBUTE not in pwl:
-                continue
-
-            is_user_defined = pwl.get(USER_DEFINED_ATTRIBUTE)
-            if is_user_defined:
-                continue
-
-            if within_pilot_area:
-                pwl_item.setFlags(self.pwl_item_flags)
-            else:
-                pwl_item.setFlags(QtCore.Qt.NoItemFlags)
-
-        # Enable/disable PWL items already defined under the priority groups
-        for i in range(self.priority_groups_list.topLevelItemCount()):
-            group_item = self.priority_groups_list.topLevelItem(i)
-
-            for c in range(group_item.childCount()):
-                pwl_tree_item = group_item.child(c)
-                is_user_defined = pwl_tree_item.data(0, QtCore.Qt.UserRole)
-                if is_user_defined:
-                    continue
-
-                if within_pilot_area:
-                    pwl_tree_item.setFlags(self.pwl_item_flags)
-                else:
-                    pwl_tree_item.setFlags(QtCore.Qt.NoItemFlags)
-
     def group_value_changed(self, group_name, group_value):
         """Slot to handle priority group widget changes.
 
@@ -711,9 +640,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                             children.append(child)
                         group.addChildren(children)
 
-        # Trigger check to enable/disable PWLs
-        self.on_extent_changed(self.extent_box.outputExtent())
-
     def add_priority_layer_group(self, target_group=None, priority_layer=None):
         """Adds priority layer from the weighting layers into a priority group
         If no target_group or priority_layer is passed then the current selected
@@ -795,9 +721,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                     priority_layer["groups"] = new_groups
                     settings_manager.save_priority_layer(priority_layer)
-
-        # Trigger check to enable/disable PWLs based on current extent
-        self.on_extent_changed(self.extent_box.outputExtent())
 
     def remove_priority_layer_group(self):
         """Remove the current select priority layer from the current priority group."""
@@ -1861,7 +1784,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             if (
                 scenario_result.output_layer_name is not None
-                and scenario_result.output_layer_name is not ""
+                and scenario_result.output_layer_name != ""
             ):
                 layer_name = scenario_result.output_layer_name
 

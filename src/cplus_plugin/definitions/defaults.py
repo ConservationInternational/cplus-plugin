@@ -169,26 +169,6 @@ with priority_layer_path.open("r") as fh:
 PRIORITY_LAYERS = priority_layers_dict["layers"]
 
 
-pathways_path = (
-    Path(__file__).parent.parent.resolve() / "data" / "default" / "ncs_pathways.json"
-)
-
-with pathways_path.open("r") as fh:
-    pathways_dict = json.load(fh)
-# Path just contains the file name and is relative to {download_folder}/ncs_pathways
-DEFAULT_NCS_PATHWAYS = pathways_dict["pathways"]
-
-
-activities_path = (
-    Path(__file__).parent.parent.resolve() / "data" / "default" / "activities.json"
-)
-
-with activities_path.open("r") as fh:
-    models_dict = json.load(fh)
-
-DEFAULT_ACTIVITIES = models_dict["activities"]
-
-
 PRIORITY_GROUPS = [
     {
         "uuid": "dcfb3214-4877-441c-b3ef-8228ab6dfad3",
