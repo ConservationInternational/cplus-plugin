@@ -242,6 +242,16 @@ def calculate_raster_value_area(
     return pixel_areas
 
 
+def generate_random_color() -> QtGui.QColor:
+    """Generate a random color object using a system-seeded
+    deterministic approach.
+
+    :returns: A random generated color.
+    :rtype: QColor
+    """
+    return QtGui.QColor.fromRgb(QtCore.QRandomGenerator.global_().generate())
+
+
 def transform_extent(extent, source_crs, dest_crs):
     """Transforms the passed extent into the destination crs
 

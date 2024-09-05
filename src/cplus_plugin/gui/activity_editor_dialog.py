@@ -10,8 +10,8 @@ import uuid
 from qgis.core import (
     Qgis,
     QgsColorRamp,
-    QgsFillSymbol,
     QgsFillSymbolLayer,
+    QgsGradientColorRamp,
     QgsMapLayerProxyModel,
     QgsRasterLayer,
 )
@@ -30,7 +30,7 @@ from ..definitions.constants import (
 )
 from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
 from ..models.base import Activity
-from ..utils import FileUtils, open_documentation, tr
+from ..utils import FileUtils, generate_random_color, open_documentation, tr
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/activity_editor_dialog.ui")
@@ -52,10 +52,16 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.style_btn.setSymbolType(Qgis.SymbolType.Fill)
 
         self.btn_color_ramp.setShowNull(False)
-        self.btn_color_ramp.setRandomColorRamp()
+        self.btn_color_ramp.setShowGradientOnly(True)
         self.btn_color_ramp.setColorRampDialogTitle(
             self.tr("Set Color Ramp for Output Activity")
         )
+        # Default gradient colour which closely matches the color
+        # for the activity in the scenario layer
+        start_color = generate_random_color()
+        stop_color = generate_random_color()
+        self.btn_color_ramp.setColorRamp(QgsGradientColorRamp(start_color, stop_color))
+        self.style_btn.setColor(start_color)
 
         self.buttonBox.accepted.connect(self._on_accepted)
         self.btn_select_file.clicked.connect(self._on_select_file)
@@ -218,9 +224,8 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._show_warning_message(msg)
             status = False
 
-        output_model_color_ramp = self.btn_color_ramp.colorRamp()
-        if output_model_color_ramp is None:
-            msg = tr("No color ramp defined for the output model layer.")
+        if self.btn_color_ramp.colorRamp() is None or self.btn_color_ramp.isNull():
+            msg = tr("No color ramp defined for the output activity layer.")
             self._show_warning_message(msg)
             status = False
 
