@@ -31,7 +31,6 @@ from .definitions.defaults import PRIORITY_LAYERS
 from .models.base import (
     Activity,
     NcsPathway,
-    PriorityLayerType,
     Scenario,
     ScenarioResult,
     SpatialExtent,
@@ -91,6 +90,7 @@ class ScenarioSettings(Scenario):
 
         activities_list = settings.value("activities", [])
         weighted_activities_list = settings.value("activities", [])
+        server_uuid = settings.value("server_uuid", None)
 
         activities = []
 
@@ -103,14 +103,17 @@ class ScenarioSettings(Scenario):
                 saved_activity = settings_manager.get_activity(
                     setting_activity.get("uuid")
                 )
-                saved_activity.path = setting_activity.get("path")
+                if saved_activity is None:
+                    continue
 
                 for pathways in setting_activity[PATHWAYS_ATTRIBUTE]:
                     for path_uuid, path in pathways.items():
                         pathway = settings_manager.get_ncs_pathway(path_uuid)
-                        pathway.path = path
-                        saved_activity.add_ncs_pathway(pathway)
+                        if pathway:
+                            pathway.path = path
+                            saved_activity.add_ncs_pathway(pathway)
 
+                saved_activity.path = setting_activity.get("path")
                 activities.append(saved_activity)
 
             for activity in weighted_activities_list:
@@ -119,14 +122,17 @@ class ScenarioSettings(Scenario):
                 saved_activity = settings_manager.get_activity(
                     setting_activity.get("uuid")
                 )
-                saved_activity.path = setting_activity.get("path")
+                if saved_activity is None:
+                    continue
 
                 for pathways in setting_activity[PATHWAYS_ATTRIBUTE]:
                     for path_uuid, path in pathways.items():
                         pathway = settings_manager.get_ncs_pathway(path_uuid)
-                        pathway.path = path
-                        saved_activity.add_ncs_pathway(pathway)
+                        if pathway:
+                            pathway.path = path
+                            saved_activity.add_ncs_pathway(pathway)
 
+                saved_activity.path = setting_activity.get("path")
                 weighted_activities.append(saved_activity)
         except Exception as e:
             log(f"Problem fetching saved activities, {e}")
@@ -139,6 +145,7 @@ class ScenarioSettings(Scenario):
             activities=activities,
             weighted_activities=weighted_activities,
             priority_layer_groups=[],
+            server_uuid=uuid.UUID(server_uuid) if server_uuid else None,
         )
 
     @classmethod
@@ -156,6 +163,7 @@ class ScenarioSettings(Scenario):
 
         with qgis_settings(spatial_key) as settings:
             bbox = settings.value("bbox", None)
+            bbox = [float(b) for b in bbox]
             spatial_extent = SpatialExtent(bbox=bbox)
 
         return spatial_extent
@@ -233,6 +241,8 @@ class Settings(enum.Enum):
     DEBUG = "debug"
     BASE_API_URL = "base_api_url"
 
+    ACTIVE_ONLINE_TASK = "active_online_task"
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""
@@ -244,6 +254,7 @@ class SettingsManager(QtCore.QObject):
     PRIORITY_LAYERS_GROUP_NAME: str = "priority_layers"
     NCS_PATHWAY_BASE: str = "ncs_pathways"
     LAYER_MAPPING_BASE: str = "layer_mapping"
+    ONLINE_TASK_BASE: str = "online_task"
 
     ACTIVITY_BASE: str = "activities"
 
@@ -356,7 +367,6 @@ class SettingsManager(QtCore.QObject):
         :type scenario_settings: ScenarioSettings
         """
         settings_key = self._get_scenario_settings_base(scenario_settings.uuid)
-
         self.save_scenario_extent(settings_key, scenario_settings.extent)
 
         activities = []
@@ -399,21 +409,27 @@ class SettingsManager(QtCore.QObject):
                 weighted_activities.append(json.dumps(activity))
 
         with qgis_settings(settings_key) as settings:
-            settings.setValue("uuid", scenario_settings.uuid)
+            settings.setValue("uuid", str(scenario_settings.uuid))
             settings.setValue("name", scenario_settings.name)
             settings.setValue("description", scenario_settings.description)
             settings.setValue("activities", activities)
             settings.setValue("weighted_activities", weighted_activities)
+            settings.setValue(
+                "server_uuid",
+                str(scenario_settings.server_uuid)
+                if scenario_settings.server_uuid
+                else None,
+            )
 
     def save_scenario_extent(self, key, extent):
         """Saves the scenario extent into plugin settings
         using the provided settings group key.
 
-        :param key: Scenario extent
-        :type key: SpatialExtent
+        :param key: QgsSettings group key
+        :type key: str
 
-        :param extent: QgsSettings group key
-        :type extent: str
+        :param extent: Scenario extent
+        :type extent: SpatialExtent
 
         Args:
             extent (SpatialExtent): Scenario extent
@@ -545,7 +561,8 @@ class SettingsManager(QtCore.QObject):
             analysis_output = scenario_settings.value("analysis_output")
             output_layer_name = scenario_settings.value("output_layer_name")
             scenario_directory = scenario_settings.value("scenario_directory")
-
+            if analysis_output is None:
+                return None
             try:
                 created_date = datetime.datetime.strptime(
                     created_date, "%Y_%m_%d_%H_%M_%S"
@@ -1391,6 +1408,45 @@ class SettingsManager(QtCore.QObject):
         npv_collection_dict = activity_npv_collection_to_dict(npv_collection)
         npv_collection_str = json.dumps(npv_collection_dict)
         self.set_value(NPV_COLLECTION_PROPERTY, npv_collection_str)
+
+    def save_online_scenario(self, scenario_uuid):
+        """Save the passed scenario settings into the plugin settings as online tasl
+
+        :param scenario_uuid: Scenario UUID
+        :type scenario_uuid: str
+        """
+        settings_manager.set_value(self.ONLINE_TASK_BASE, scenario_uuid)
+
+    def _get_online_tasks_settings_base(self) -> str:
+        """Returns the path for Online Task settings.
+
+        :returns: Base path to Online Task group.
+        :rtype: str
+        """
+        return f"{self.BASE_GROUP_NAME}"
+
+    def get_running_online_scenario(self) -> typing.Dict:
+        """Retrieves running online scenario UUID.
+
+        :returns: Scenario settings instance
+        :rtype: ScenarioSettings
+        """
+
+        scenario_settings_key = self._get_online_tasks_settings_base()
+        with qgis_settings(scenario_settings_key) as settings:
+            return settings.value(self.ONLINE_TASK_BASE)
+
+    def delete_online_task(self):
+        """Delete the online task with the passed scenarion id.
+
+        :param scenario_id: Scenario identifier
+        :type scenario_id: str
+        """
+        log("delete online task")
+        with qgis_settings(self.BASE_GROUP_NAME) as settings:
+            a = settings.value(self.ONLINE_TASK_BASE)
+            log(a)
+            settings.remove(self.ONLINE_TASK_BASE)
 
 
 settings_manager = SettingsManager()

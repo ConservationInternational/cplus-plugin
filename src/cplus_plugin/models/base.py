@@ -333,6 +333,17 @@ class Activity(LayerModelComponent):
     layer_styles: dict = dataclasses.field(default_factory=dict)
     style_pixel_value: int = -1
 
+    @classmethod
+    def from_dict(cls, activity_dict: typing.Dict):
+        """Create an Activity object from Activity dict."""
+        pathways = []
+        for pathway in activity_dict["pathways"]:
+            del pathway["layer_uuid"]
+            del pathway["carbon_uuids"]
+            pathways.append(NcsPathway(**pathway))
+        activity_dict["pathways"] = pathways
+        return Activity(**activity_dict)
+
     def __post_init__(self):
         """Pre-checks on initialization."""
         super().__post_init__()
@@ -574,6 +585,7 @@ class Scenario(BaseModelComponent):
     weighted_activities: typing.List[Activity]
     priority_layer_groups: typing.List
     state: ScenarioState = ScenarioState.IDLE
+    server_uuid: UUID = None
 
 
 @dataclasses.dataclass
