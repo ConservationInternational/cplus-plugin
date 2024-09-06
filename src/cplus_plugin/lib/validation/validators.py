@@ -183,6 +183,10 @@ class RasterValidator(BaseRuleValidator):
         for model_component in self.model_components:
             if self.feedback.isCanceled():
                 return False
+            if model_component.is_default_layer():
+                progress += progress_increment
+                self._set_progress(progress)
+                continue
 
             is_valid = model_component.is_valid()
             if not is_valid:
@@ -253,6 +257,10 @@ class CrsValidator(BaseRuleValidator):
         for model_component in self.model_components:
             if self.feedback.isCanceled():
                 return False
+            if model_component.is_default_layer():
+                progress += progress_increment
+                self._set_progress(progress)
+                continue
 
             is_valid = model_component.is_valid()
             if not is_valid:
@@ -351,6 +359,10 @@ class ProjectedCrsValidator(BaseRuleValidator):
         for model_component in self.model_components:
             if self.feedback.isCanceled():
                 return False
+            if model_component.is_default_layer():
+                progress += progress_increment
+                self._set_progress(progress)
+                continue
 
             is_valid = model_component.is_valid()
             if not is_valid:
@@ -461,6 +473,10 @@ class NoDataValueValidator(BaseRuleValidator):
         for model_component in self.model_components:
             if self.feedback.isCanceled():
                 return False
+            if model_component.is_default_layer():
+                progress += progress_increment
+                self._set_progress(progress)
+                continue
 
             is_valid = model_component.is_valid()
             if not is_valid:
@@ -557,6 +573,10 @@ class ResolutionValidator(BaseRuleValidator):
         for model_component in self.model_components:
             if self.feedback.isCanceled():
                 return False
+            if model_component.is_default_layer():
+                progress += progress_increment
+                self._set_progress(progress)
+                continue
 
             is_valid = model_component.is_valid()
             if not is_valid:
@@ -697,6 +717,10 @@ class CarbonLayerResolutionValidator(ResolutionValidator):
         for model_component in self.model_components:
             if self.feedback.isCanceled():
                 return False
+            if model_component.is_default_layer():
+                progress += progress_increment
+                self._set_progress(progress)
+                continue
 
             is_valid = model_component.is_valid()
             if not is_valid:

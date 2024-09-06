@@ -14,30 +14,19 @@
    <string>NCS Pathway Editor</string>
   </property>
   <layout class="QGridLayout" name="gridLayout_2">
-   <item row="2" column="0" colspan="4">
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>Name</string>
-     </property>
-    </widget>
-   </item>
    <item row="5" column="0" colspan="4">
     <widget class="QPlainTextEdit" name="txt_description"/>
    </item>
-   <item row="9" column="0">
+   <item row="7" column="0" colspan="3">
+    <widget class="QgsMapLayerComboBox" name="cbo_layer"/>
+   </item>
+   <item row="1" column="0" colspan="4">
+    <layout class="QVBoxLayout" name="vl_notification"/>
+   </item>
+   <item row="11" column="0">
     <widget class="QPushButton" name="btn_help">
      <property name="text">
       <string>Help</string>
-     </property>
-    </widget>
-   </item>
-   <item row="9" column="2" colspan="2">
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
      </property>
     </widget>
    </item>
@@ -48,8 +37,113 @@
      </property>
     </widget>
    </item>
-   <item row="7" column="0" colspan="3">
-    <widget class="QgsMapLayerComboBox" name="cbo_layer"/>
+   <item row="10" column="0" colspan="4">
+    <widget class="QgsCollapsibleGroupBox" name="mGroupBox">
+     <property name="title">
+      <string>Carbon layers</string>
+     </property>
+     <property name="collapsed">
+      <bool>false</bool>
+     </property>
+     <property name="saveCheckedState">
+      <bool>false</bool>
+     </property>
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="1" column="0" colspan="5">
+       <widget class="QListView" name="lst_carbon_layers">
+        <property name="editTriggers">
+         <set>QAbstractItemView::NoEditTriggers</set>
+        </property>
+        <property name="selectionMode">
+         <enum>QAbstractItemView::ExtendedSelection</enum>
+        </property>
+        <property name="selectionBehavior">
+         <enum>QAbstractItemView::SelectRows</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QToolButton" name="btn_add_carbon">
+        <property name="toolTip">
+         <string>Add carbon layer</string>
+        </property>
+        <property name="text">
+         <string>...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <spacer name="horizontalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>367</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="0" column="4">
+       <widget class="QToolButton" name="btn_delete_carbon">
+        <property name="toolTip">
+         <string>Remove carbon layer</string>
+        </property>
+        <property name="text">
+         <string>...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="3">
+       <widget class="QToolButton" name="btn_edit_carbon">
+        <property name="toolTip">
+         <string>Edit carbon layer</string>
+        </property>
+        <property name="text">
+         <string>...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QToolButton" name="btn_add_default_carbon">
+        <property name="text">
+         <string>...</string>
+        </property>
+        <property name="popupMode">
+         <enum>QToolButton::MenuButtonPopup</enum>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="2" column="0" colspan="4">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Name</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="0" colspan="4">
+    <widget class="QLabel" name="label_4">
+     <property name="text">
+      <string>Map layer</string>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="1">
+    <spacer name="horizontalSpacer">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>178</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
    </item>
    <item row="0" column="0" colspan="4">
     <widget class="QFrame" name="frame">
@@ -131,91 +225,27 @@
      </layout>
     </widget>
    </item>
+   <item row="8" column="0" colspan="4">
+    <widget class="QLabel" name="label_5">
+     <property name="text">
+      <string>Online Defaults</string>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="2" colspan="2">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
    <item row="7" column="3">
     <widget class="QToolButton" name="btn_add_layer">
      <property name="text">
       <string>...</string>
-     </property>
-    </widget>
-   </item>
-   <item row="8" column="0" colspan="4">
-    <widget class="QgsCollapsibleGroupBox" name="mGroupBox">
-     <property name="title">
-      <string>Carbon layers</string>
-     </property>
-     <property name="collapsed">
-      <bool>false</bool>
-     </property>
-     <property name="saveCheckedState">
-      <bool>false</bool>
-     </property>
-     <layout class="QGridLayout" name="gridLayout">
-      <item row="0" column="0">
-       <spacer name="horizontalSpacer_2">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>367</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item row="0" column="1">
-       <widget class="QToolButton" name="btn_add_carbon">
-        <property name="toolTip">
-         <string>Add carbon layer</string>
-        </property>
-        <property name="text">
-         <string>...</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="2">
-       <widget class="QToolButton" name="btn_edit_carbon">
-        <property name="toolTip">
-         <string>Edit carbon layer</string>
-        </property>
-        <property name="text">
-         <string>...</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="3">
-       <widget class="QToolButton" name="btn_delete_carbon">
-        <property name="toolTip">
-         <string>Remove carbon layer</string>
-        </property>
-        <property name="text">
-         <string>...</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0" colspan="4">
-       <widget class="QListView" name="lst_carbon_layers">
-        <property name="editTriggers">
-         <set>QAbstractItemView::NoEditTriggers</set>
-        </property>
-        <property name="selectionMode">
-         <enum>QAbstractItemView::ExtendedSelection</enum>
-        </property>
-        <property name="selectionBehavior">
-         <enum>QAbstractItemView::SelectRows</enum>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="1" column="0" colspan="4">
-    <layout class="QVBoxLayout" name="vl_notification"/>
-   </item>
-   <item row="6" column="0" colspan="4">
-    <widget class="QLabel" name="label_4">
-     <property name="text">
-      <string>Map layer</string>
      </property>
     </widget>
    </item>
@@ -226,18 +256,8 @@
      </property>
     </widget>
    </item>
-   <item row="9" column="1">
-    <spacer name="horizontalSpacer">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>178</width>
-       <height>20</height>
-      </size>
-     </property>
-    </spacer>
+   <item row="9" column="0" colspan="4">
+    <widget class="QComboBox" name="cbo_default_layer"/>
    </item>
   </layout>
  </widget>

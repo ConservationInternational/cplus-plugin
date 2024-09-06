@@ -332,6 +332,7 @@ class QgisCplus:
             if dock_area == Qt.NoDockWidgetArea and not self.main_widget.isFloating():
                 self.iface.addDockWidget(Qt.RightDockWidgetArea, self.main_widget)
                 self.main_widget.show()
+                self.main_widget.update_scenario_list()
 
     def run_settings(self):
         """Options the CPLUS settings in the QGIS options dialog."""

@@ -139,7 +139,21 @@ class LayerModelComponent(BaseModelComponent):
 
     def __post_init__(self):
         """Try to set the layer and layer type properties."""
+        if self.layer_uuid:
+            return
         self.update_layer_type()
+
+    @property
+    def layer_uuid(self):
+        """Return Layer UUID for default layer.
+
+        Default layer's path will start with 'cplus://'.
+        :return: Server Layer UUID
+        :rtype: str
+        """
+        if self.path.startswith("cplus://"):
+            return self.path.replace("cplus://", "")
+        return None
 
     def update_layer_type(self):
         """Update the layer type if either the layer or
@@ -188,6 +202,8 @@ class LayerModelComponent(BaseModelComponent):
         invalid or of None type.
         :rtype: bool
         """
+        if self.layer_uuid:
+            return True
         layer = self.to_map_layer()
         if layer is None:
             return False
@@ -198,7 +214,17 @@ class LayerModelComponent(BaseModelComponent):
         """Uses BaseModelComponent equality test rather than
         what the dataclass default implementation will provide.
         """
+        if self.layer_uuid:
+            return self.layer_uuid == other.layer_uuid
         return super().__eq__(other)
+
+    def is_default_layer(self) -> bool:
+        """Check if layer is a default layer
+
+        :return: True if layer comes from server API
+        :rtype: bool
+        """
+        return self.layer_uuid is not None
 
 
 LayerModelComponentType = typing.TypeVar(
@@ -221,6 +247,34 @@ class PriorityLayer(BaseModelComponent):
     selected: bool = False
     path: str = ""
     type: PriorityLayerType = PriorityLayerType.DEFAULT
+
+    @property
+    def layer_uuid(self):
+        """Return Layer UUID for default layer.
+
+        Default layer's path will start with 'cplus://'.
+        :return: Server Layer UUID
+        :rtype: str
+        """
+        if self.path.startswith("cplus://"):
+            return self.path.replace("cplus://", "")
+        return None
+
+    def __eq__(self, other) -> bool:
+        """Uses BaseModelComponent equality test rather than
+        what the dataclass default implementation will provide.
+        """
+        if self.layer_uuid:
+            return self.layer_uuid == other.layer_uuid
+        return super().__eq__(other)
+
+    def is_default_layer(self) -> bool:
+        """Check if layer is a default layer
+
+        :return: True if layer comes from server API
+        :rtype: bool
+        """
+        return self.layer_uuid is not None
 
 
 @dataclasses.dataclass
@@ -256,7 +310,7 @@ class NcsPathway(LayerModelComponent):
 
         return True
 
-    def add_carbon_path(self, carbon_path: str) -> bool:
+    def add_carbon_path(self, carbon_path: str, is_default_layer: bool = False) -> bool:
         """Add a carbon layer path.
 
         Checks if the path has already been defined or if it exists
@@ -270,8 +324,9 @@ class NcsPathway(LayerModelComponent):
         if carbon_path in self.carbon_paths:
             return False
 
-        if not os.path.exists(carbon_path):
-            return False
+        if not is_default_layer:
+            if not os.path.exists(carbon_path):
+                return False
 
         self.carbon_paths.append(carbon_path)
 
@@ -288,7 +343,11 @@ class NcsPathway(LayerModelComponent):
         if the path is not defined.
         :rtype: list
         """
-        return [QgsRasterLayer(carbon_path) for carbon_path in self.carbon_paths]
+        return [
+            QgsRasterLayer(carbon_path)
+            for carbon_path in self.carbon_paths
+            if not carbon_path.startswith("cplus://")
+        ]
 
     def is_carbon_valid(self) -> bool:
         """Checks if the carbon layers are valid.
@@ -433,7 +492,11 @@ class Activity(LayerModelComponent):
         if the path is not defined.
         :rtype: list
         """
-        return [QgsRasterLayer(layer.get("path")) for layer in self.priority_layers]
+        return [
+            QgsRasterLayer(layer.get("path"))
+            for layer in self.priority_layers
+            if layer.get("path")
+        ]
 
     def is_pwls_valid(self) -> bool:
         """Checks if the priority layers are valid.

@@ -201,7 +201,6 @@ class CplusApiUrl:
     def layer_check(self) -> str:
         """Cplus API URL for checking layer validity
 
-
         :return: Cplus API URL for layer check
         :rtype: str
         """
@@ -237,6 +236,9 @@ class CplusApiUrl:
         :rtype: str
         """
         return f"{self.base_url}/layer/upload/{layer_uuid}/abort/"
+
+    def layer_default_list(self):
+        return f"{self.base_url}/layer/default/"
 
     def scenario_submit(self, plugin_version=None) -> str:
         """Cplus API URL for submitting scenario JSON
@@ -914,3 +916,30 @@ class CplusApiRequest:
         if status_code != 200:
             raise CplusApiRequestError(result.get("detail", ""))
         return result
+
+    def fetch_default_layer_list(self) -> dict:
+        """Fetch available default layers from Server.
+
+        :raises CplusApiRequestError: when response code is non-2xx
+        :return: Layer List
+        :rtype: dict
+        """
+        result, status_code = self.get(self.urls.layer_default_list())
+        if status_code != 200:
+            raise CplusApiRequestError(result.get("detail", ""))
+        data = {}
+        for layer in result:
+            component_type = layer.get("component_type", "")
+            out_layer = {
+                "type": component_type,
+                "layer_uuid": layer.get("uuid"),
+                "name": layer.get("filename"),
+                "size": layer.get("size"),
+                "layer_type": layer.get("layer_type"),
+                "metadata": layer.get("metadata", {}),
+            }
+            if component_type in data:
+                data[component_type].append(out_layer)
+            else:
+                data[component_type] = [out_layer]
+        return data
