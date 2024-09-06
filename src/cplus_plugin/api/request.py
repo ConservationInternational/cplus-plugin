@@ -5,6 +5,7 @@ import math
 import os
 import time
 import typing
+import uuid
 
 from qgis import processing
 from qgis.PyQt import QtCore
@@ -14,6 +15,8 @@ from qgis.core import (
     QgsNetworkReplyContent,
     QgsProcessingFeedback,
 )
+
+from ..models.base import Scenario, SpatialExtent, Activity
 
 from ..conf import settings_manager, Settings
 from ..definitions.defaults import BASE_API_URL
@@ -201,9 +204,14 @@ class CplusApiUrl:
     def layer_check(self) -> str:
         """Cplus API URL for checking layer validity
 
+        @property
+        def headers(self):
+            return {
+                "Authorization": f"Bearer {self._api_token}",
+            }
 
-        :return: Cplus API URL for layer check
-        :rtype: str
+            :return: Cplus API URL for layer check
+            :rtype: str
         """
         return f"{self.base_url}/layer/check/?id_type=layer_uuid"
 
@@ -294,6 +302,15 @@ class CplusApiUrl:
         :return: Cplus API URL for getting scenario detail
         :rtype: str
         """
+        return f"{self.base_url}/scenario/{scenario_uuid}/detail/"
+
+    def scenario_history_list(self, page=1, page_size=10, filters={}):
+        params = f"page={page}&page_size={page_size}"
+        for key, filter in filters.items():
+            params = params + f"&{key}={filter}"
+        return f"{self.base_url}/scenario/history/?{params}"
+
+    def scenario_delete(self, scenario_uuid):
         return f"{self.base_url}/scenario/{scenario_uuid}/detail/"
 
     def scenario_output_list(self, scenario_uuid) -> str:
@@ -833,7 +850,6 @@ class CplusApiRequest:
         :return: Scenario UUID
         :rtype: str
         """
-        debug_log("scenario_detail payload", scenario_detail)
         result, status_code = self.post(self.urls.scenario_submit(), scenario_detail)
         if status_code != 201:
             raise CplusApiRequestError(result.get("detail", ""))
@@ -912,5 +928,44 @@ class CplusApiRequest:
         """
         result, status_code = self.get(self.urls.scenario_detail(scenario_uuid))
         if status_code != 200:
+            raise CplusApiRequestError(result.get("detail", ""))
+        return result
+
+    def fetch_scenario_history(self, page=1, page_size=10):
+        filters = {"status": "Completed"}
+        result, status_code = self.get(
+            self.urls.scenario_history_list(page, page_size, filters)
+        )
+        if status_code != 200:
+            raise CplusApiRequestError(result.get("detail", ""))
+        scenario_results = []
+        for item in result["results"]:
+            detail = item["detail"]
+            extent = []
+            if "extent_project" in detail:
+                extent = detail.get("extent_project", [])
+            else:
+                extent = detail.get("extent", [])
+            scenario_results.append(
+                Scenario(
+                    uuid=uuid.uuid4(),
+                    name=detail.get("scenario_name", ""),
+                    description=detail.get("scenario_desc", ""),
+                    extent=SpatialExtent(bbox=extent),
+                    server_uuid=uuid.UUID(item["uuid"]),
+                    activities=[
+                        Activity.from_dict(activity)
+                        for activity in detail["activities"]
+                    ],
+                    weighted_activities=[],
+                    priority_layer_groups=detail["priority_layer_groups"],
+                )
+            )
+        return scenario_results
+
+    def delete_scenario(self, scenario_uuid):
+        response = self.delete(self.urls.scenario_delete(scenario_uuid))
+        if response.status_code != 204:
+            result = response.json()
             raise CplusApiRequestError(result.get("detail", ""))
         return result

@@ -91,6 +91,7 @@ class ScenarioSettings(Scenario):
 
         activities_list = settings.value("activities", [])
         weighted_activities_list = settings.value("activities", [])
+        server_uuid = settings.value("server_uuid", None)
 
         activities = []
 
@@ -103,14 +104,17 @@ class ScenarioSettings(Scenario):
                 saved_activity = settings_manager.get_activity(
                     setting_activity.get("uuid")
                 )
-                saved_activity.path = setting_activity.get("path")
+                if saved_activity is None:
+                    continue
 
                 for pathways in setting_activity[PATHWAYS_ATTRIBUTE]:
                     for path_uuid, path in pathways.items():
                         pathway = settings_manager.get_ncs_pathway(path_uuid)
-                        pathway.path = path
-                        saved_activity.add_ncs_pathway(pathway)
+                        if pathway:
+                            pathway.path = path
+                            saved_activity.add_ncs_pathway(pathway)
 
+                saved_activity.path = setting_activity.get("path")
                 activities.append(saved_activity)
 
             for activity in weighted_activities_list:
@@ -119,14 +123,17 @@ class ScenarioSettings(Scenario):
                 saved_activity = settings_manager.get_activity(
                     setting_activity.get("uuid")
                 )
-                saved_activity.path = setting_activity.get("path")
+                if saved_activity is None:
+                    continue
 
                 for pathways in setting_activity[PATHWAYS_ATTRIBUTE]:
                     for path_uuid, path in pathways.items():
                         pathway = settings_manager.get_ncs_pathway(path_uuid)
-                        pathway.path = path
-                        saved_activity.add_ncs_pathway(pathway)
+                        if pathway:
+                            pathway.path = path
+                            saved_activity.add_ncs_pathway(pathway)
 
+                saved_activity.path = setting_activity.get("path")
                 weighted_activities.append(saved_activity)
         except Exception as e:
             log(f"Problem fetching saved activities, {e}")
@@ -139,6 +146,7 @@ class ScenarioSettings(Scenario):
             activities=activities,
             weighted_activities=weighted_activities,
             priority_layer_groups=[],
+            server_uuid=uuid.UUID(server_uuid) if server_uuid else None,
         )
 
     @classmethod
@@ -156,6 +164,7 @@ class ScenarioSettings(Scenario):
 
         with qgis_settings(spatial_key) as settings:
             bbox = settings.value("bbox", None)
+            bbox = [float(b) for b in bbox]
             spatial_extent = SpatialExtent(bbox=bbox)
 
         return spatial_extent
@@ -356,7 +365,6 @@ class SettingsManager(QtCore.QObject):
         :type scenario_settings: ScenarioSettings
         """
         settings_key = self._get_scenario_settings_base(scenario_settings.uuid)
-
         self.save_scenario_extent(settings_key, scenario_settings.extent)
 
         activities = []
@@ -399,11 +407,17 @@ class SettingsManager(QtCore.QObject):
                 weighted_activities.append(json.dumps(activity))
 
         with qgis_settings(settings_key) as settings:
-            settings.setValue("uuid", scenario_settings.uuid)
+            settings.setValue("uuid", str(scenario_settings.uuid))
             settings.setValue("name", scenario_settings.name)
             settings.setValue("description", scenario_settings.description)
             settings.setValue("activities", activities)
             settings.setValue("weighted_activities", weighted_activities)
+            settings.setValue(
+                "server_uuid",
+                str(scenario_settings.server_uuid)
+                if scenario_settings.server_uuid
+                else None,
+            )
 
     def save_scenario_extent(self, key, extent):
         """Saves the scenario extent into plugin settings
@@ -545,7 +559,8 @@ class SettingsManager(QtCore.QObject):
             analysis_output = scenario_settings.value("analysis_output")
             output_layer_name = scenario_settings.value("output_layer_name")
             scenario_directory = scenario_settings.value("scenario_directory")
-
+            if analysis_output is None:
+                return None
             try:
                 created_date = datetime.datetime.strptime(
                     created_date, "%Y_%m_%d_%H_%M_%S"

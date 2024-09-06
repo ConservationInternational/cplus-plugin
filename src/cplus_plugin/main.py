@@ -329,6 +329,9 @@ class QgisCplus:
         if visible:
             app_window = self.iface.mainWindow()
             dock_area = app_window.dockWidgetArea(self.main_widget)
+            # Scenario list
+
+            self.main_widget.fetch_scenario_history_list()
             if dock_area == Qt.NoDockWidgetArea and not self.main_widget.isFloating():
                 self.iface.addDockWidget(Qt.RightDockWidgetArea, self.main_widget)
                 self.main_widget.show()

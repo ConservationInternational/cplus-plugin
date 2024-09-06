@@ -243,6 +243,7 @@ class ScenarioAnalysisReportGeneratorTask(BaseScenarioReportGeneratorTask):
             # Zoom the extents of map items in the layout then export to PDF
             self._zoom_map_items_to_current_extents(layout)
             project.layoutManager().addLayout(layout)
+            project.write()
 
             if feedback is not None:
                 feedback.setProgress(100)

@@ -4,6 +4,7 @@
 
 """
 import datetime
+import json
 import math
 import os
 import uuid
@@ -29,10 +30,18 @@ from .conf import settings_manager, Settings
 from .definitions.defaults import (
     SCENARIO_OUTPUT_FILE_NAME,
 )
-from .models.base import ScenarioResult, Activity
+from .models.base import ScenarioResult, SpatialExtent, Activity
 from .models.helpers import clone_activity
 from .resources import *
-from .utils import align_rasters, clean_filename, tr, log, FileUtils
+from .utils import (
+    align_rasters,
+    clean_filename,
+    tr,
+    log,
+    FileUtils,
+    CustomJsonEncoder,
+    todict,
+)
 
 
 class ScenarioAnalysisTask(QgsTask):
@@ -186,6 +195,11 @@ class ScenarioAnalysisTask(QgsTask):
         :param notify: Whether to notify user about the log
         :type notify: bool
         """
+        if not isinstance(message, str):
+            if isinstance(message, dict):
+                message = json.dumps(message, cls=CustomJsonEncoder)
+            else:
+                message = json.dumps(todict(message), cls=CustomJsonEncoder)
         log(message, name=name, info=info, notify=notify)
 
     def on_terminated(self):
