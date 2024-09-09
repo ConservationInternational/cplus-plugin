@@ -30,6 +30,7 @@ from ...models.validation import (
     ValidationResult,
 )
 from ...utils import log, tr
+from ...conf import settings_manager
 
 
 class BaseRuleValidator:
@@ -156,6 +157,25 @@ class BaseRuleValidator:
 
         return self._validate()
 
+    def get_default_layer_metadata(
+        self, layer_uuid: str, layer_type: str = "ncs_pathway"
+    ) -> typing.Dict:
+        """Get default layer metadata
+
+        :param layer_uuid: UUID of the layer
+        :type layer_uuid: str
+
+        :param layer_type: Type of the layer e.g. ncs_pathway
+        :type layer_type: str
+
+        :return: Layer metadata
+        :rtype: typing.Dict
+        """
+        layers = settings_manager.get_default_layers(layer_type, as_dict=True)
+        layer = layers.get(layer_uuid)
+        layer_metadata = layer.get("metadata", {})
+        return layer_metadata
+
 
 BaseRuleValidatorType = typing.TypeVar("BaseRuleValidatorType", bound=BaseRuleValidator)
 
@@ -183,10 +203,6 @@ class RasterValidator(BaseRuleValidator):
         for model_component in self.model_components:
             if self.feedback.isCanceled():
                 return False
-            if model_component.is_default_layer():
-                progress += progress_increment
-                self._set_progress(progress)
-                continue
 
             is_valid = model_component.is_valid()
             if not is_valid:
@@ -194,9 +210,16 @@ class RasterValidator(BaseRuleValidator):
                     status = False
                 non_raster_model_components.append(model_component.name)
             else:
-                layer = model_component.to_map_layer().clone()
-                if not isinstance(layer, QgsRasterLayer):
-                    non_raster_model_components.append(model_component.name)
+                if model_component.is_default_layer():
+                    layer_metadata = self.get_default_layer_metadata(
+                        model_component.layer_uuid
+                    )
+                    if not layer_metadata.get("is_raster", False):
+                        non_raster_model_components.append(model_component.name)
+                else:
+                    layer = model_component.to_map_layer().clone()
+                    if not isinstance(layer, QgsRasterLayer):
+                        non_raster_model_components.append(model_component.name)
 
             progress += progress_increment
             self._set_progress(progress)
@@ -257,10 +280,6 @@ class CrsValidator(BaseRuleValidator):
         for model_component in self.model_components:
             if self.feedback.isCanceled():
                 return False
-            if model_component.is_default_layer():
-                progress += progress_increment
-                self._set_progress(progress)
-                continue
 
             is_valid = model_component.is_valid()
             if not is_valid:
@@ -275,8 +294,15 @@ class CrsValidator(BaseRuleValidator):
                     crs_definitions[invalid_msg] = [model_component.name]
 
             else:
-                layer = model_component.to_map_layer().clone()
-                crs = layer.crs()
+                if model_component.is_default_layer():
+                    layer_metadata = self.get_default_layer_metadata(
+                        model_component.layer_uuid
+                    )
+                    crs = layer_metadata.get("crs", None)
+                else:
+                    layer = model_component.to_map_layer().clone()
+                    crs = layer.crs()
+
                 if crs is None:
                     # Flag that there is at least one dataset with an undefined CRS
                     if not has_undefined:
@@ -291,7 +317,10 @@ class CrsValidator(BaseRuleValidator):
                     else:
                         crs_definitions[undefined_msg] = [model_component.name]
                 else:
-                    crs_id = crs.authid()
+                    if model_component.is_default_layer():
+                        crs_id = crs
+                    else:
+                        crs_id = crs.authid()
                     if crs_id in crs_definitions:
                         layers = crs_definitions.get(crs_id)
                         layers.append(model_component.name)
@@ -359,10 +388,6 @@ class ProjectedCrsValidator(BaseRuleValidator):
         for model_component in self.model_components:
             if self.feedback.isCanceled():
                 return False
-            if model_component.is_default_layer():
-                progress += progress_increment
-                self._set_progress(progress)
-                continue
 
             is_valid = model_component.is_valid()
             if not is_valid:
@@ -377,8 +402,15 @@ class ProjectedCrsValidator(BaseRuleValidator):
                     geographic_crs_definitions[invalid_msg] = [model_component.name]
 
             else:
-                layer = model_component.to_map_layer().clone()
-                crs = layer.crs()
+                if model_component.is_default_layer():
+                    layer_metadata = self.get_default_layer_metadata(
+                        model_component.layer_uuid
+                    )
+                    crs = layer_metadata.get("crs", None)
+                else:
+                    layer = model_component.to_map_layer().clone()
+                    crs = layer.crs()
+
                 if crs is None:
                     # Flag that there is at least one dataset with an undefined CRS
                     if not has_undefined:
@@ -398,14 +430,22 @@ class ProjectedCrsValidator(BaseRuleValidator):
                     # Use this to capture the CRS auth ID incase all datasets have
                     # the same CRS type.
                     if not crs_type_id:
-                        crs_type_id = crs.authid()
+                        if model_component.is_default_layer():
+                            crs_type_id = crs
+                            layer_metadata = self.get_default_layer_metadata(
+                                model_component.layer_uuid
+                            )
+                            is_geographic = layer_metadata["is_geographic"]
+                        else:
+                            crs_type_id = crs.authid()
+                            is_geographic = crs.isGeographic()
 
-                    if crs.isGeographic():
-                        if crs.authid() in geographic_crs_definitions:
-                            layers = geographic_crs_definitions.get(crs.authid())
+                    if is_geographic:
+                        if crs_type_id in geographic_crs_definitions:
+                            layers = geographic_crs_definitions.get(crs_type_id)
                             layers.append(model_component.name)
                         else:
-                            geographic_crs_definitions[crs.authid()] = [
+                            geographic_crs_definitions[crs_type_id] = [
                                 model_component.name
                             ]
 
@@ -473,10 +513,6 @@ class NoDataValueValidator(BaseRuleValidator):
         for model_component in self.model_components:
             if self.feedback.isCanceled():
                 return False
-            if model_component.is_default_layer():
-                progress += progress_increment
-                self._set_progress(progress)
-                continue
 
             is_valid = model_component.is_valid()
             if not is_valid:
@@ -492,16 +528,30 @@ class NoDataValueValidator(BaseRuleValidator):
                     no_data_definitions[invalid_msg] = [model_component.name]
 
             else:
-                layer = model_component.to_map_layer().clone()
-                if not isinstance(layer, QgsRasterLayer):
-                    continue
+                if model_component.is_default_layer():
+                    layer_metadata = self.get_default_layer_metadata(
+                        model_component.layer_uuid
+                    )
+                    if not layer_metadata.get("is_raster", False):
+                        continue
+                else:
+                    layer = model_component.to_map_layer().clone()
+                    if not isinstance(layer, QgsRasterLayer):
+                        continue
 
                 # If band does not have NoData value then exclude from validation
-                raster_provider = layer.dataProvider()
-                if not raster_provider.sourceHasNoDataValue(self.BAND_NUMBER):
-                    continue
+                if model_component.is_default_layer():
+                    if "nodata_value" not in layer_metadata:
+                        continue
+                else:
+                    raster_provider = layer.dataProvider()
+                    if not raster_provider.sourceHasNoDataValue(self.BAND_NUMBER):
+                        continue
 
-                no_data_value = raster_provider.sourceNoDataValue(self.BAND_NUMBER)
+                if model_component.is_default_layer():
+                    no_data_value = layer_metadata["nodata_value"]
+                else:
+                    no_data_value = raster_provider.sourceNoDataValue(self.BAND_NUMBER)
                 if no_data_value != NO_DATA_VALUE:
                     if no_data_value in no_data_definitions:
                         layers = no_data_definitions.get(no_data_value)
@@ -573,10 +623,6 @@ class ResolutionValidator(BaseRuleValidator):
         for model_component in self.model_components:
             if self.feedback.isCanceled():
                 return False
-            if model_component.is_default_layer():
-                progress += progress_increment
-                self._set_progress(progress)
-                continue
 
             is_valid = model_component.is_valid()
             if not is_valid:
@@ -592,11 +638,25 @@ class ResolutionValidator(BaseRuleValidator):
                     spatial_resolution_definitions[invalid_msg] = [model_component.name]
 
             else:
-                layer = model_component.to_map_layer().clone()
-                if not isinstance(layer, QgsRasterLayer):
-                    continue
+                if model_component.is_default_layer():
+                    layer_metadata = self.get_default_layer_metadata(
+                        model_component.layer_uuid
+                    )
+                    if not layer_metadata.get("is_raster", False):
+                        continue
+                else:
+                    layer = model_component.to_map_layer().clone()
+                    if not isinstance(layer, QgsRasterLayer):
+                        continue
 
-                resolution_definition = self.create_resolution_definition(layer)
+                if model_component.is_default_layer():
+                    resolution_definition = (
+                        round(layer_metadata["resolution"][0], self.DECIMAL_PLACES),
+                        round(layer_metadata["resolution"][1], self.DECIMAL_PLACES),
+                        layer_metadata["unit"],
+                    )
+                else:
+                    resolution_definition = self.create_resolution_definition(layer)
                 if resolution_definition in spatial_resolution_definitions:
                     layers = spatial_resolution_definitions.get(resolution_definition)
                     layers.append(model_component.name)
@@ -715,12 +775,10 @@ class CarbonLayerResolutionValidator(ResolutionValidator):
         self._set_progress(progress)
 
         for model_component in self.model_components:
+            log("==========================")
+            log(model_component.name)
             if self.feedback.isCanceled():
                 return False
-            if model_component.is_default_layer():
-                progress += progress_increment
-                self._set_progress(progress)
-                continue
 
             is_valid = model_component.is_valid()
             if not is_valid:
@@ -736,37 +794,80 @@ class CarbonLayerResolutionValidator(ResolutionValidator):
                     carbon_resolution_definitions[invalid_msg] = [model_component.name]
 
             else:
-                ncs_layer = model_component.to_map_layer().clone()
-                if not isinstance(ncs_layer, QgsRasterLayer):
-                    continue
+                if model_component.is_default_layer():
+                    ncs_layer_metadata = self.get_default_layer_metadata(
+                        model_component.layer_uuid
+                    )
+                    if not ncs_layer_metadata.get("is_raster", False):
+                        continue
+                else:
+                    ncs_layer = model_component.to_map_layer().clone()
+                    if not isinstance(ncs_layer, QgsRasterLayer):
+                        continue
 
                 # Check if the model component is an NcsPathway
                 if not isinstance(model_component, NcsPathway):
                     continue
 
-                ncs_resolution_definition = self.create_resolution_definition(ncs_layer)
-
-                # Loop through the spatial resolution of each carbon layer
-                for layer in model_component.carbon_layers():
-                    if not layer.isValid():
-                        if model_component.name in carbon_resolution_definitions:
-                            carbon_definitions = carbon_resolution_definitions.get(
-                                model_component.name
-                            )
-                            carbon_definitions.append(invalid_carbon_msg)
-                        else:
-                            carbon_resolution_definitions[model_component.name] = [
-                                invalid_carbon_msg
-                            ]
-                        continue
-
-                    carbon_layer = layer.clone()
-                    carbon_resolution_definition = self.create_resolution_definition(
-                        carbon_layer
+                if model_component.is_default_layer():
+                    ncs_resolution_definition = (
+                        round(ncs_layer_metadata["resolution"][0], self.DECIMAL_PLACES),
+                        round(ncs_layer_metadata["resolution"][1], self.DECIMAL_PLACES),
+                        ncs_layer_metadata["unit"],
+                    )
+                else:
+                    ncs_resolution_definition = self.create_resolution_definition(
+                        ncs_layer
                     )
 
-                    # We will use the file name to represent the layer name
-                    layer_name = Path(carbon_layer.source()).stem
+                # Loop through the spatial resolution of each carbon path
+                for carbon_path in model_component.carbon_paths:
+                    if carbon_path.startswith("cplus://"):
+                        layer_uuid = carbon_path.replace("cplus://", "")
+                        carbon_layer_metadata = self.get_default_layer_metadata(
+                            layer_uuid, "ncs_carbon"
+                        )
+                    else:
+                        layer = QgsRasterLayer(carbon_path)
+                        log(f"is_valid: {layer.isValid()}")
+                        if not layer.isValid():
+                            if model_component.name in carbon_resolution_definitions:
+                                carbon_definitions = carbon_resolution_definitions.get(
+                                    model_component.name
+                                )
+                                carbon_definitions.append(invalid_carbon_msg)
+                            else:
+                                carbon_resolution_definitions[model_component.name] = [
+                                    invalid_carbon_msg
+                                ]
+                            continue
+
+                    if carbon_path.startswith("cplus://"):
+                        carbon_resolution_definition = (
+                            round(
+                                carbon_layer_metadata["resolution"][0],
+                                self.DECIMAL_PLACES,
+                            ),
+                            round(
+                                carbon_layer_metadata["resolution"][1],
+                                self.DECIMAL_PLACES,
+                            ),
+                            carbon_layer_metadata["unit"],
+                        )
+                    else:
+                        carbon_layer = layer.clone()
+                        carbon_resolution_definition = (
+                            self.create_resolution_definition(carbon_layer)
+                        )
+
+                    if carbon_path.startswith("cplus://"):
+                        layer_name = carbon_layer_metadata["name"]
+                    else:
+                        # We will use the file name to represent the layer name
+                        layer_name = Path(carbon_layer.source()).stem
+
+                    log(f"ncs_resolution_definition: {ncs_resolution_definition}")
+                    log(f"carbon_resolution_definition: {carbon_resolution_definition}")
                     if ncs_resolution_definition != carbon_resolution_definition:
                         if model_component.name in carbon_resolution_definitions:
                             carbon_definitions = carbon_resolution_definitions.get(

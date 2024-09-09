@@ -1045,23 +1045,30 @@ class SettingsManager(QtCore.QObject):
         """
         return f"{self.BASE_GROUP_NAME}/{self.SERVER_DEFAULT_LAYERS}"
 
-    def get_default_layers(self, type: str) -> typing.List[dict]:
+    def get_default_layers(self, layer_type: str, as_dict=False) -> typing.List[dict]:
         """Returns list of default layers by type.
 
-        :param type: ncs_pathway, priority_layer, or ncs_carbon
-        :type type: str
+        :param layer_type: ncs_pathway, priority_layer, or ncs_carbon
+        :type layer_type: str
         :return: List of dictionary of ncs pathway
         :rtype: typing.List[dict]
         """
         layers = []
         default_layers_root = self._get_default_layers_settings_base()
         with qgis_settings(default_layers_root) as settings:
-            layers_str = settings.value(type, "")
+            layers_str = settings.value(layer_type, "")
             if layers_str:
                 try:
                     layers = json.loads(layers_str)
                 except json.JSONDecodeError:
                     log("Layers JSON is invalid")
+        if as_dict:
+            if layer_type == "ncs_carbon":
+                layers = {
+                    f"{layer['layer_uuid']}/{layer['name']}": layer for layer in layers
+                }
+            else:
+                layers = {layer["layer_uuid"]: layer for layer in layers}
         return layers
 
     def save_default_layers(self, type: str, layers: typing.List):
