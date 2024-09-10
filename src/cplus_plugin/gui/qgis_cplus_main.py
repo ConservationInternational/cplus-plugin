@@ -169,6 +169,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         # Scenario list
         self.update_scenario_list()
+        # Fetch default layers
+        self.fetch_default_layer_list()
 
     def outputs_options_changed(self):
         """
