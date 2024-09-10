@@ -332,7 +332,6 @@ class QgisCplus:
 
             # Fetch scenario history list and default layers
             if dock_area != Qt.NoDockWidgetArea:
-                self.main_widget.update_scenario_list()
                 self.main_widget.fetch_default_layer_list()
 
             if dock_area == Qt.NoDockWidgetArea and not self.main_widget.isFloating():

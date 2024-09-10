@@ -167,6 +167,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.on_log_message_received
         )
 
+        # Scenario list
+        self.update_scenario_list()
+
     def outputs_options_changed(self):
         """
         Handles selected outputs changes
