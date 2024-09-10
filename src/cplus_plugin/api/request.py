@@ -545,6 +545,25 @@ class CplusApiRequest:
         self._make_request(reply)
         return self._handle_response(url, reply)
 
+    def delete(self, url: str, headers: dict = {}) -> typing.Tuple[dict, int]:
+        """Trigger a DELETE request.
+
+        :param url: Cplus API URL
+        :type url: str
+
+        :param headers: header dictionary, defaults to {}
+        :type headers: dict
+
+        :return: tuple of response dictionary and HTTP status code
+        :rtype: typing.Tuple[dict, int]
+        """
+        nam = QgsNetworkAccessManager.instance()
+        headers = headers or self._default_headers()
+        request = self._generate_request(url, headers)
+        reply = nam.deleteResource(request)
+        self._make_request(reply)
+        return self._handle_response(url, reply)
+
     def _on_download_error(self, filename: str, error):
         """Callback when there is an error in download file.
 
@@ -932,6 +951,19 @@ class CplusApiRequest:
         return result
 
     def fetch_scenario_history(self, page=1, page_size=10):
+        """Fetch scenario history from server.
+
+        :param page: page number, defaults to 1
+        :type page: int, optional
+
+        :param page_size: page size to fetch, defaults to 10
+        :type page_size: int, optional
+
+        :raises CplusApiRequestError: Raises when server return non-2xx code
+
+        :return: List of Scenario object
+        :rtype: List[Scenario]
+        """
         filters = {"status": "Completed"}
         result, status_code = self.get(
             self.urls.scenario_history_list(page, page_size, filters)
@@ -964,8 +996,17 @@ class CplusApiRequest:
         return scenario_results
 
     def delete_scenario(self, scenario_uuid):
-        response = self.delete(self.urls.scenario_delete(scenario_uuid))
-        if response.status_code != 204:
-            result = response.json()
+        """Delete scenario history from server.
+
+        :param scenario_uuid: Server's scenario UUID
+        :type scenario_uuid: str
+
+        :raises CplusApiRequestError: Raises when server return non-204 code
+
+        :return: No content
+        :rtype: dictionary
+        """
+        result, status_code = self.delete(self.urls.scenario_delete(scenario_uuid))
+        if status_code != 204:
             raise CplusApiRequestError(result.get("detail", ""))
         return result
