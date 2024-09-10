@@ -775,8 +775,6 @@ class CarbonLayerResolutionValidator(ResolutionValidator):
         self._set_progress(progress)
 
         for model_component in self.model_components:
-            log("==========================")
-            log(model_component.name)
             if self.feedback.isCanceled():
                 return False
 
@@ -829,7 +827,6 @@ class CarbonLayerResolutionValidator(ResolutionValidator):
                         )
                     else:
                         layer = QgsRasterLayer(carbon_path)
-                        log(f"is_valid: {layer.isValid()}")
                         if not layer.isValid():
                             if model_component.name in carbon_resolution_definitions:
                                 carbon_definitions = carbon_resolution_definitions.get(
@@ -866,8 +863,6 @@ class CarbonLayerResolutionValidator(ResolutionValidator):
                         # We will use the file name to represent the layer name
                         layer_name = Path(carbon_layer.source()).stem
 
-                    log(f"ncs_resolution_definition: {ncs_resolution_definition}")
-                    log(f"carbon_resolution_definition: {carbon_resolution_definition}")
                     if ncs_resolution_definition != carbon_resolution_definition:
                         if model_component.name in carbon_resolution_definitions:
                             carbon_definitions = carbon_resolution_definitions.get(

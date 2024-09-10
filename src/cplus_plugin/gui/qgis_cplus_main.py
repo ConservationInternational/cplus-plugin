@@ -167,6 +167,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.on_log_message_received
         )
 
+
     def outputs_options_changed(self):
         """
         Handles selected outputs changes
