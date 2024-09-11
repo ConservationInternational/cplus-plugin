@@ -9,7 +9,6 @@ import datetime
 import json
 import os
 
-import requests
 from qgis.PyQt import QtCore
 from qgis.core import QgsTask
 
@@ -44,30 +43,6 @@ class BaseFetchScenarioOutput:
         :rtype: bool
         """
         return False
-
-    def download_file(self, url, local_filename):
-        """Download file output.
-
-        :param url: URL to the file output
-        :type url: str
-        :param local_filename: output filepath
-        :type local_filename: str
-        """
-        parent_dir = os.path.dirname(local_filename)
-        if not os.path.exists(parent_dir):
-            os.makedirs(parent_dir)
-        headers = {"Cache-Control": "no-cache"}
-        with requests.get(url, stream=True, headers=headers) as r:
-            r.raise_for_status()
-            if self.is_download_cancelled():
-                return
-            with open(local_filename, "wb") as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-                    if self.is_download_cancelled():
-                        return
-        self.downloaded_output += 1
 
     def __create_activity(self, activity: dict, download_dict: list):
         """
