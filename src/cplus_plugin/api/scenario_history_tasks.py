@@ -4,17 +4,16 @@
 
 """
 import datetime
-import json
 import os
 import shutil
 from typing import List
 
 from qgis.PyQt import QtCore
 
-from .base import BaseScenarioTask, BaseFetchScenarioOutput
+from .base import BaseScenarioTask
 from .request import CplusApiRequest
 from .scenario_task_api_client import ScenarioAnalysisTaskApiClient
-from ..conf import settings_manager, Settings
+from ..conf import settings_manager
 from ..models.base import Scenario
 from ..models.base import SpatialExtent
 from ..utils import log
