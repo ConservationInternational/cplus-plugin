@@ -13,8 +13,8 @@ from .request import (
     CHUNK_SIZE,
 )
 from ..conf import settings_manager, Settings
-from ..models.base import Activity, NcsPathway, Scenario
-from ..models.base import ScenarioResult
+from cplus_core.models.base import Activity, NcsPathway, Scenario
+from cplus_core.models.base import ScenarioResult
 from cplus_core.analysis import ScenarioAnalysisTask, TaskConfig
 from ..utils import FileUtils, CustomJsonEncoder, todict
 

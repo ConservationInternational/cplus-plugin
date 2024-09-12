@@ -67,7 +67,7 @@ from .priority_group_dialog import PriorityGroupDialog
 
 from .scenario_dialog import ScenarioDialog
 
-from ..models.base import (
+from cplus_core.models.base import (
     PriorityLayerType,
 )
 from ..models.financial import ActivityNpv
@@ -94,7 +94,12 @@ from ..definitions.defaults import (
     USER_DOCUMENTATION_SITE,
 )
 from ..lib.reports.manager import report_manager, ReportManager
-from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
+from cplus_core.models.base import (
+    Scenario,
+    ScenarioResult,
+    ScenarioState,
+    SpatialExtent,
+)
 from cplus_core.analysis import ScenarioAnalysisTask, TaskConfig
 from ..utils import open_documentation, tr, log, FileUtils, write_to_file
 
@@ -1305,14 +1310,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :return: config for scenario analysis task
         :rtype: TaskConfig
         """
-        task_config = TaskConfig(
-            scenario.name,
-            scenario.description,
-            scenario.extent.bbox,
-            scenario.activities,
+        return TaskConfig(
+            scenario,
             settings_manager.get_priority_layers(),
             scenario.priority_layer_groups,
-            str(scenario.uuid),
+            settings_manager.get_all_activities(),
             settings_manager.get_value(
                 Settings.SNAPPING_ENABLED, default=False, setting_type=bool
             ),
@@ -1343,8 +1345,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             ),
             self.get_scenario_directory(),
         )
-        task_config.scenario = scenario
-        return task_config
 
     def on_log_message(
         self,
@@ -1580,6 +1580,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 transformed_extent.yMinimum(),
                 transformed_extent.yMaximum(),
             ]
+
             if self.processing_type.isChecked():
                 analysis_task = ScenarioAnalysisTaskApiClient(task_config)
             else:
