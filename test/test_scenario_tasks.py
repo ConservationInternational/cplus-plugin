@@ -16,7 +16,7 @@ from qgis.core import QgsRasterLayer
 
 from cplus_plugin.conf import settings_manager, Settings
 
-from cplus_plugin.tasks import ScenarioAnalysisTask
+from cplus_core.analysis import ScenarioAnalysisTask
 from cplus_core.models.base import Scenario, NcsPathway, Activity
 
 

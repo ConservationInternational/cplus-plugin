@@ -495,8 +495,10 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         snap_rescale = self.get_settings_value(
             Settings.RESCALE_VALUES, default=False, setting_type=bool
         )
-        resampling_method = self.get_settings_value(
-            Settings.RESAMPLING_METHOD, default=0
+        resampling_method = int(
+            self.get_settings_value(
+                Settings.RESAMPLING_METHOD, default=0, setting_type=int
+            )
         )
         ncs_with_carbon = self.get_settings_value(
             Settings.NCS_WITH_CARBON, default=False, setting_type=bool
