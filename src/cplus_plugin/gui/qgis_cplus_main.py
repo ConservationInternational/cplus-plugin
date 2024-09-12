@@ -12,6 +12,7 @@ import uuid
 from dateutil import tz
 from functools import partial
 from pathlib import Path
+import traceback
 
 from qgis.PyQt import (
     QtCore,
@@ -94,7 +95,7 @@ from ..definitions.defaults import (
 )
 from ..lib.reports.manager import report_manager, ReportManager
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
-from ..tasks import ScenarioAnalysisTask
+from cplus_core.analysis import ScenarioAnalysisTask, TaskConfig
 from ..utils import open_documentation, tr, log, FileUtils, write_to_file
 
 
@@ -1283,6 +1284,94 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
         self.dock_widget_contents.layout().insertLayout(0, self.grid_layout)
 
+    def get_scenario_directory(self) -> str:
+        """Generate scenario directory for current task.
+
+        :return: Path to scenario directory
+        :rtype: str
+        """
+        base_dir = settings_manager.get_value(Settings.BASE_DIR)
+        return os.path.join(
+            f"{base_dir}",
+            "scenario_" f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}',
+        )
+
+    def create_task_config(self, scenario: Scenario) -> TaskConfig:
+        """Create task config from scenario and settings_manager.
+
+        :param scenario: Scenario object
+        :type scenario: Scenario
+
+        :return: config for scenario analysis task
+        :rtype: TaskConfig
+        """
+        task_config = TaskConfig(
+            scenario.name,
+            scenario.description,
+            scenario.extent.bbox,
+            scenario.activities,
+            settings_manager.get_priority_layers(),
+            scenario.priority_layer_groups,
+            str(scenario.uuid),
+            settings_manager.get_value(
+                Settings.SNAPPING_ENABLED, default=False, setting_type=bool
+            ),
+            settings_manager.get_value(Settings.RESAMPLING_METHOD, default=0),
+            settings_manager.get_value(
+                Settings.RESCALE_VALUES, default=False, setting_type=bool
+            ),
+            settings_manager.get_value(Settings.PATHWAY_SUITABILITY_INDEX, default=0),
+            settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.0),
+            settings_manager.get_value(
+                Settings.SIEVE_ENABLED, default=False, setting_type=bool
+            ),
+            settings_manager.get_value(Settings.SIEVE_THRESHOLD, default=10.0),
+            settings_manager.get_value(
+                Settings.NCS_WITH_CARBON, default=True, setting_type=bool
+            ),
+            settings_manager.get_value(
+                Settings.LANDUSE_PROJECT, default=True, setting_type=bool
+            ),
+            settings_manager.get_value(
+                Settings.LANDUSE_NORMALIZED, default=True, setting_type=bool
+            ),
+            settings_manager.get_value(
+                Settings.LANDUSE_WEIGHTED, default=True, setting_type=bool
+            ),
+            settings_manager.get_value(
+                Settings.HIGHEST_POSITION, default=True, setting_type=bool
+            ),
+            self.get_scenario_directory(),
+        )
+        task_config.scenario = scenario
+        return task_config
+
+    def on_log_message(
+        self,
+        message: str,
+        name: str = "qgis_cplus",
+        info: bool = True,
+        notify: bool = True,
+    ):
+        """Logs the message into QGIS logs using qgis_cplus as the default
+        log instance.
+        If notify_user is True, user will be notified about the log.
+
+        :param message: The log message
+        :type message: str
+
+        :param name: Name of te log instance, qgis_cplus is the default
+        :type message: str
+
+        :param info: Whether the message is about info or a
+            warning
+        :type info: bool
+
+        :param notify: Whether to notify user about the log
+        :type notify: bool
+        """
+        log(message, name=name, info=info, notify=notify)
+
     def run_analysis(self):
         """Runs the plugin analysis
         Creates new QgsTask, progress dialog and report manager
@@ -1417,6 +1506,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 weighted_activities=[],
                 priority_layer_groups=self.analysis_priority_layers_groups,
             )
+            task_config = self.create_task_config(scenario)
 
             self.processing_cancelled = False
 
@@ -1491,23 +1581,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 transformed_extent.yMaximum(),
             ]
             if self.processing_type.isChecked():
-                analysis_task = ScenarioAnalysisTaskApiClient(
-                    self.analysis_scenario_name,
-                    self.analysis_scenario_description,
-                    self.analysis_activities,
-                    self.analysis_priority_layers_groups,
-                    self.analysis_extent,
-                    scenario,
-                )
+                analysis_task = ScenarioAnalysisTaskApiClient(task_config)
             else:
-                analysis_task = ScenarioAnalysisTask(
-                    self.analysis_scenario_name,
-                    self.analysis_scenario_description,
-                    self.analysis_activities,
-                    self.analysis_priority_layers_groups,
-                    self.analysis_extent,
-                    scenario,
-                )
+                analysis_task = ScenarioAnalysisTask(task_config)
 
             progress_changed = partial(self.update_progress_bar, progress_dialog)
             analysis_task.custom_progress_changed.connect(progress_changed)
@@ -1519,6 +1595,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             analysis_task.status_message_changed.connect(status_message_changed)
 
             analysis_task.info_message_changed.connect(self.show_message)
+
+            analysis_task.log_received.connect(self.on_log_message)
 
             self.current_analysis_task = analysis_task
 
@@ -1561,6 +1639,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     ', error message "{}"'.format(err)
                 )
             )
+            log(traceback.format_exc())
 
     def task_terminated(
         self, task: typing.Union[ScenarioAnalysisTask, ScenarioAnalysisTaskApiClient]

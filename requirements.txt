@@ -1,0 +1,3 @@
+# cplus-core
+# git+https://github.com/kartoza/cplus-core.git@v0.0.3
+git+https://github.com/kartoza/cplus-core.git@feat-refactor-conf

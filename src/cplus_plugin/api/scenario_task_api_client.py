@@ -15,7 +15,7 @@ from .request import (
 from ..conf import settings_manager, Settings
 from ..models.base import Activity, NcsPathway, Scenario
 from ..models.base import ScenarioResult
-from ..tasks import ScenarioAnalysisTask
+from cplus_core.analysis import ScenarioAnalysisTask, TaskConfig
 from ..utils import FileUtils, CustomJsonEncoder, todict
 
 
@@ -60,23 +60,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
     :type scenario: Scenario
     """
 
-    def __init__(
-        self,
-        analysis_scenario_name: str,
-        analysis_scenario_description: str,
-        analysis_activities: typing.List[Activity],
-        analysis_priority_layers_groups: typing.List[dict],
-        analysis_extent: typing.List[float],
-        scenario: Scenario,
-    ):
-        super().__init__(
-            analysis_scenario_name,
-            analysis_scenario_description,
-            analysis_activities,
-            analysis_priority_layers_groups,
-            analysis_extent,
-            scenario,
-        )
+    def __init__(self, task_config: TaskConfig):
+        super().__init__(task_config)
         self.total_file_upload_size = 0
         self.total_file_upload_chunks = 0
         self.uploaded_chunks = 0
@@ -136,7 +121,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         :rtype: bool
         """
         self.request = CplusApiRequest()
-        self.scenario_directory = self.get_scenario_directory()
+        self.scenario_directory = self.task_config.base_dir
         FileUtils.create_new_dir(self.scenario_directory)
 
         try:
