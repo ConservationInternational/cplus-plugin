@@ -51,6 +51,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
             self.layer_description.textChanged,
             self.map_layer_file_widget.fileChanged,
             self.map_layer_box.layerChanged,
+            self.cbo_default_layer.currentIndexChanged,
         ]
 
         for signal in ok_signals:
@@ -81,11 +82,14 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
             self.layer_name.text() != ""
             and self.layer_description.toPlainText() != ""
             and (
-                self.map_layer_box.currentLayer() is not None
-                or (
-                    self.map_layer_file_widget.filePath() is not None
-                    and self.map_layer_file_widget.filePath() is not ""
+                (
+                    self.map_layer_box.currentLayer() is not None
+                    or (
+                        self.map_layer_file_widget.filePath() is not None
+                        and self.map_layer_file_widget.filePath() is not ""
+                    )
                 )
+                or self._get_selected_default_layer() != {}
             )
         )
         self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(enabled_state)
@@ -108,6 +112,14 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
 
         self.select_models_btn.clicked.connect(self.open_layer_select_dialog)
 
+        default_priority_layers = settings_manager.get_default_layers("priority_layer")
+        self.cbo_default_layer.addItem("")
+        self.cbo_default_layer.addItems([p["name"] for p in default_priority_layers])
+        self.cbo_default_layer.setCurrentIndex(0)
+        self.cbo_default_layer.currentIndexChanged.connect(
+            self._on_default_layer_selection_changed
+        )
+
         if self.layer is not None:
             # If its an NPV PWL, then disable controls as the information is managed
             # through the NPV manager. Only the description can be updated.
@@ -116,16 +128,24 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
                 self._disable_input_controls()
 
             layer_path = self.layer.get("path")
-
-            layer_uuids = [layer.get("uuid") for layer in PRIORITY_LAYERS]
-            if not os.path.isabs(layer_path) and self.layer.get("uuid") in layer_uuids:
-                base_dir = settings_manager.get_value(Settings.BASE_DIR)
-                layer_path = f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/{layer_path}"
+            if layer_path.startswith("cplus://"):
+                layer_uuid = layer_path.replace("cplus://", "")
+                for i, layer in enumerate(default_priority_layers):
+                    if layer["layer_uuid"] == layer_uuid:
+                        self.cbo_default_layer.setCurrentIndex(i + 1)
+                        break
+            else:
+                layer_uuids = [layer.get("uuid") for layer in PRIORITY_LAYERS]
+                if (
+                    not os.path.isabs(layer_path)
+                    and self.layer.get("uuid") in layer_uuids
+                ):
+                    base_dir = settings_manager.get_value(Settings.BASE_DIR)
+                    layer_path = f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/{layer_path}"
+                self.map_layer_file_widget.setFilePath(layer_path)
 
             self.layer_name.setText(self.layer["name"])
             self.layer_description.setText(self.layer["description"])
-
-            self.map_layer_file_widget.setFilePath(layer_path)
 
             all_activities = settings_manager.get_all_activities()
 
@@ -223,7 +243,12 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         layer["description"] = self.layer_description.toPlainText()
         layer["groups"] = layer_groups
 
-        layer["path"] = self.map_layer_file_widget.filePath()
+        default_layer = self._get_selected_default_layer()
+        if default_layer:
+            layer["path"] = "cplus://" + default_layer.get("layer_uuid")
+        else:
+            layer["path"] = self.map_layer_file_widget.filePath()
+
         layer["type"] = layer_type
         layer[USER_DEFINED_ATTRIBUTE] = self._user_defined
 
@@ -237,3 +262,23 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
     def open_help(self):
         """Opens the user documentation for the plugin in a browser"""
         open_documentation(USER_DOCUMENTATION_SITE)
+
+    def _get_selected_default_layer(self) -> dict:
+        """Returns selected default layer.
+
+        :return: layer dictionary
+        :rtype: dict
+        """
+        layer_name = self.cbo_default_layer.currentText()
+        if layer_name == "":
+            return {}
+        priority_layers = settings_manager.get_default_layers("priority_layer")
+        layer = [p for p in priority_layers if p["name"] == layer_name]
+        return layer[0] if layer else {}
+
+    def _on_default_layer_selection_changed(self):
+        """Event raised when default layer selection is changed."""
+        layer = self._get_selected_default_layer()
+        metadata = layer.get("metadata", {})
+        self.layer_name.setText(metadata.get("name", layer.get("name", "")))
+        self.layer_description.setPlainText(metadata.get("description", ""))

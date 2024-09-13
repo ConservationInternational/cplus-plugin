@@ -17,6 +17,7 @@ from cplus_core.models.base import Activity, NcsPathway, Scenario
 from cplus_core.models.base import ScenarioResult
 from cplus_core.analysis import ScenarioAnalysisTask, TaskConfig
 from ..utils import FileUtils, CustomJsonEncoder, todict
+from ..api.base import BaseFetchScenarioOutput
 
 
 def clean_filename(filename):
@@ -38,29 +39,17 @@ def clean_filename(filename):
     return filename
 
 
-class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
+class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutput):
     """Prepares and runs the scenario analysis in Cplus API
-
-    :param analysis_scenario_name: Scenario name
-    :type analysis_scenario_name: str
-
-    :param analysis_scenario_description: Scenario description
-    :type analysis_scenario_description: str
-
-    :param analysis_activities: List of activity to be processed
-    :type analysis_activities: typing.List[Activity]
-
-    :param analysis_priority_layers_groups: List of priority layer groups
-    :type analysis_priority_layers_groups: typing.List[dict]
-
-    :param analysis_extent: Extents of the Scenario
-    :type analysis_extent: typing.List[float]
 
     :param scenario: Scenario object
     :type scenario: Scenario
+
+    :param extent_box: Project extent
+    :type extent_box: list of float
     """
 
-    def __init__(self, task_config: TaskConfig):
+    def __init__(self, task_config: TaskConfig, extent_box):
         super().__init__(task_config)
         self.total_file_upload_size = 0
         self.total_file_upload_chunks = 0
@@ -72,9 +61,10 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.total_file_output = 0
         self.downloaded_output = 0
         self.scenario_status = None
-        self.__post_init__()
+        self.extent_box = extent_box
+        self.__post_init()
 
-    def __post_init__(self):
+    def __post_init(self):
         self.analysis_activities = [
             settings_manager.get_activity(str(activity.uuid))
             for activity in self.analysis_activities
@@ -94,25 +84,28 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
 
     def on_terminated(self):
         """Function to call when the task is terminated."""
-        # check if there is ongoing upload
-        layer_mapping = settings_manager.get_all_layer_mapping()
-        for identifier, layer in layer_mapping.items():
-            upload_id = layer.get("upload_id", None)
-            if not upload_id:
-                continue
-            self.log_message(f"Cancelling upload file: {layer['path']} ")
-            try:
-                self.request.abort_upload_layer(layer["uuid"], upload_id)
-                settings_manager.remove_layer_mapping(identifier)
-            except Exception as ex:
-                self.log_message(f"Problem aborting upload layer: {ex}")
-        self.log_message(f"Cancel scenario {self.scenario_api_uuid}")
-        if self.scenario_api_uuid and self.scenario_status not in [
-            JOB_COMPLETED_STATUS,
-            JOB_STOPPED_STATUS,
-        ]:
-            self.request.cancel_scenario(self.scenario_api_uuid)
-        super().on_terminated()
+
+        hide_task = getattr(self, "hide_task", False)
+        if not hide_task:
+            # check if there is ongoing upload
+            layer_mapping = settings_manager.get_all_layer_mapping()
+            for identifier, layer in layer_mapping.items():
+                if "upload_id" not in layer:
+                    continue
+                self.log_message(f"Cancelling upload file: {layer['path']} ")
+                try:
+                    self.request.abort_upload_layer(layer["uuid"], layer["upload_id"])
+                    settings_manager.remove_layer_mapping(identifier)
+                except Exception as ex:
+                    self.log_message(f"Problem aborting upload layer: {ex}")
+            self.log_message(f"Cancel scenario {self.scenario_api_uuid}")
+            if self.scenario_api_uuid and self.scenario_status not in [
+                JOB_COMPLETED_STATUS,
+                JOB_STOPPED_STATUS,
+            ]:
+                self.request.cancel_scenario(self.scenario_api_uuid)
+                settings_manager.delete_online_task()
+        super().on_terminated(hide=hide_task)
 
     def run(self) -> bool:
         """Run scenario analysis using API.
@@ -208,7 +201,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                         f"Error while uploading {file_path} as " f"{component_type}"
                     )
                 self.uploaded_chunks += 1
-                self.__update_scenario_status(
+                self._update_scenario_status(
                     {
                         "progress_text": "Uploading layers with concurrent request",
                         "progress": int(
@@ -237,7 +230,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         :rtype: typing.List[dict]
         """
 
-        self.__update_scenario_status(
+        self._update_scenario_status(
             {
                 "progress_text": "Uploading layers with concurrent request",
                 "progress": 0,
@@ -294,7 +287,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
 
         files_to_upload = {}
 
-        self.__update_scenario_status(
+        self._update_scenario_status(
             {"progress_text": "Checking layers to be uploaded", "progress": 0}
         )
         masking_layers = self.get_masking_layers()
@@ -318,7 +311,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 if priority_layer:
                     activity_pwl_uuids.add(priority_layer.get("uuid", ""))
 
-            self.__update_scenario_status(
+            self._update_scenario_status(
                 {
                     "progress_text": "Checking Activity layers to be uploaded",
                     "progress": (idx + 1 / check_counts) * 100,
@@ -349,7 +342,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             if sieve_mask_layer:
                 zip_path = self.__zip_shapefiles(sieve_mask_layer)
                 items_to_check[zip_path] = "sieve_mask_layer"
-            self.__update_scenario_status(
+            self._update_scenario_status(
                 {
                     "progress_text": "Checking layers to be uploaded",
                     "progress": (3 / check_counts) * 100,
@@ -364,7 +357,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             if reference_layer:
                 zip_path = self.__zip_shapefiles(reference_layer)
                 items_to_check[zip_path] = "snap_layer"
-        self.__update_scenario_status(
+        self._update_scenario_status(
             {
                 "progress_text": "Checking layers to be uploaded",
                 "progress": (4 / check_counts) * 100,
@@ -375,7 +368,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             zip_path = self.__zip_shapefiles(masking_layer)
             items_to_check[zip_path] = "mask_layer"
 
-            self.__update_scenario_status(
+            self._update_scenario_status(
                 {
                     "progress_text": "Checking layers to be uploaded",
                     "progress": (idx + 5 / check_counts) * 100,
@@ -397,7 +390,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         new_uploaded_layer = {}
 
         if len(files_to_upload) == 0:
-            self.__update_scenario_status(
+            self._update_scenario_status(
                 {"progress_text": "All layers have been uploaded", "progress": 100}
             )
         else:
@@ -412,7 +405,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                         res["path"] = file_path
                         new_uploaded_layer[file_path] = res
                         break
-            self.__update_scenario_status(
+            self._update_scenario_status(
                 {"progress_text": "All layers have been uploaded", "progress": 100}
             )
 
@@ -537,10 +530,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
 
         priority_layers = self.get_priority_layers()
         for priority_layer in priority_layers:
-            if priority_layer.get("path", "") in self.path_to_layer_mapping:
-                priority_layer["layer_uuid"] = self.path_to_layer_mapping[
-                    priority_layer.get("path", "")
-                ]["uuid"]
+            path = priority_layer.get("path", "")
+            if path.startswith("cplus://"):
+                priority_layer["layer_uuid"] = path.replace("cplus://", "")
+            elif path in self.path_to_layer_mapping:
+                priority_layer["layer_uuid"] = self.path_to_layer_mapping[path]["uuid"]
             else:
                 priority_layer["layer_uuid"] = ""
             priority_layer["path"] = ""
@@ -549,30 +543,37 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             activity["layer_type"] = 0
             activity["path"] = ""
             for pathway in activity["pathways"]:
-                if pathway:
-                    if pathway["path"] and os.path.exists(pathway["path"]):
-                        if self.path_to_layer_mapping.get(pathway["path"], None):
-                            pathway["uuid"] = self.path_to_layer_mapping.get(
-                                pathway["path"]
-                            )["uuid"]
-                            pathway["layer_uuid"] = pathway["uuid"]
-                            pathway["layer_type"] = 0
+                if pathway is None:
+                    continue
+                path = pathway["path"]
+                if path.startswith("cplus://"):
+                    pathway["layer_uuid"] = path.replace("cplus://", "")
+                    pathway["layer_type"] = 0
+                elif path and os.path.exists(path):
+                    if self.path_to_layer_mapping.get(path, None):
+                        pathway["uuid"] = self.path_to_layer_mapping.get(path)["uuid"]
+                        pathway["layer_uuid"] = pathway["uuid"]
+                        pathway["layer_type"] = 0
 
-                    carbon_uuids = []
-                    for carbon_path in pathway["carbon_paths"]:
-                        if os.path.exists(carbon_path):
-                            if self.path_to_layer_mapping.get(carbon_path, None):
-                                carbon_uuids.append(
-                                    self.path_to_layer_mapping.get(carbon_path)["uuid"]
-                                )
-                    pathway["carbon_paths"] = []
-                    pathway["carbon_uuids"] = carbon_uuids
-                    pathway["path"] = ""
+                carbon_uuids = []
+                for carbon_path in pathway["carbon_paths"]:
+                    if carbon_path.startswith("cplus://"):
+                        names = carbon_path.split("/")
+                        carbon_uuids.append(names[-2])
+                    elif os.path.exists(carbon_path):
+                        if self.path_to_layer_mapping.get(carbon_path, None):
+                            carbon_uuids.append(
+                                self.path_to_layer_mapping.get(carbon_path)["uuid"]
+                            )
+                pathway["carbon_paths"] = []
+                pathway["carbon_uuids"] = carbon_uuids
+                pathway["path"] = ""
             new_priority_layers = []
             for priority_layer in activity["priority_layers"]:
-                if priority_layer:
-                    priority_layer["path"] = ""
-                    new_priority_layers.append(priority_layer)
+                if priority_layer is None:
+                    continue
+                priority_layer["path"] = ""
+                new_priority_layers.append(priority_layer)
             activity["priority_layers"] = new_priority_layers
 
         self.scenario_detail = {
@@ -597,23 +598,30 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             "mask_path": ", ".join(masking_layers),
             "mask_layer_uuids": mask_layer_uuids,
             "extent": old_scenario_dict["extent"]["bbox"],
-            "priority_layer_groups": old_scenario_dict.get("priority_layer_groups", []),
+            "priority_layer_groups": (
+                old_scenario_dict.get("priority_layer_groups", [])
+            ),
             "priority_layers": json.loads(
                 json.dumps(priority_layers, cls=CustomJsonEncoder)
             ),
             "activities": json.loads(
                 json.dumps(old_scenario_dict["activities"], cls=CustomJsonEncoder)
             ),
+            "extent_project": self.extent_box.bbox,
         }
 
     def __execute_scenario_analysis(self) -> None:
         """Execute scenario analysis"""
         # submit scenario detail to the API
-        self.__update_scenario_status(
+        self._update_scenario_status(
             {"progress_text": "Submit and execute Scenario to CPLUS API", "progress": 0}
         )
         scenario_uuid = self.request.submit_scenario_detail(self.scenario_detail)
         self.scenario_api_uuid = scenario_uuid
+        scenario_json = self.request.fetch_scenario_detail(scenario_uuid)
+        scenario_obj = self.request.build_scenario_from_scenario_json(scenario_json)
+        settings_manager.save_scenario(scenario_obj)
+        settings_manager.save_online_scenario(str(scenario_obj.uuid))
 
         # execute scenario detail
         self.request.execute_scenario(scenario_uuid)
@@ -623,7 +631,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
 
         # fetch status by interval
         self.status_pooling = self.request.fetch_scenario_status(scenario_uuid)
-        self.status_pooling.on_response_fetched = self.__update_scenario_status
+        self.status_pooling.on_response_fetched = self._update_scenario_status
         status_response = self.status_pooling.results()
 
         if self.processing_cancelled:
@@ -634,12 +642,12 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.new_scenario_detail = self.request.fetch_scenario_detail(scenario_uuid)
 
         if self.scenario_status == JOB_COMPLETED_STATUS:
-            self.__retrieve_scenario_outputs(scenario_uuid)
+            self._retrieve_scenario_outputs(scenario_uuid)
         elif self.scenario_status == JOB_STOPPED_STATUS:
             scenario_error = status_response.get("errors", "Unknown error")
             raise Exception(scenario_error)
 
-    def __update_scenario_status(self, response: dict) -> None:
+    def _update_scenario_status(self, response: dict) -> None:
         """Update processing status in QGIS modal.
 
         :param response: Response dictionary from Cplus API
@@ -730,7 +738,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         """
         part = (downloaded * 100 / total) if total > 0 else 0
         downloaded_output = self.downloaded_output + part
-        self.__update_scenario_status(
+        self._update_scenario_status(
             {
                 "progress_text": "Downloading output files",
                 "progress": int((downloaded_output / self.total_file_output) * 90) + 5,
@@ -744,7 +752,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         :param value: Download progress value
         :type value: int
         """
-        self.__update_scenario_status(
+        self._update_scenario_status(
             {
                 "progress_text": "Downloading output files",
                 "progress": value,
@@ -764,7 +772,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             os.makedirs(parent_dir)
         self.request.download_file(url, local_filename, self._download_progress)
         self.downloaded_output += 1
-        self.__update_scenario_status(
+        self._update_scenario_status(
             {
                 "progress_text": "Downloading output files",
                 "progress": int((self.downloaded_output / self.total_file_output) * 90)
@@ -772,52 +780,43 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             }
         )
 
-    def __retrieve_scenario_outputs(self, scenario_uuid: str):
+    def delete_online_task(self):
+        running_online_scenario_uuid = settings_manager.get_running_online_scenario()
+        online_task = settings_manager.get_scenario(running_online_scenario_uuid)
+        if online_task:
+            if online_task.server_uuid == self.scenario_api_uuid:
+                settings_manager.delete_online_task()
+
+    def _retrieve_scenario_outputs(self, scenario_uuid: str):
         """Set scenario output object based on scenario UUID
         to be used in generating report
 
         :param scenario_uuid: Scenario UUID
         :type scenario_uuid: str
         """
-        self.__update_scenario_status(
+        self._update_scenario_status(
             {"progress_text": "Downloading output files", "progress": 0}
         )
         output_list = self.request.fetch_scenario_output_list(scenario_uuid)
-        self.__update_scenario_status(
+        self._update_scenario_status(
             {"progress_text": "Downloading output files", "progress": 5}
         )
-        self.total_file_output = len(output_list["results"])
-        self.downloaded_output = 0
-        urls_to_download = []
-        download_paths = []
-        for output in output_list["results"]:
-            urls_to_download.append(output["url"])
-            if output["is_final_output"]:
-                download_path = os.path.join(
-                    self.scenario_directory, output["filename"]
-                )
-                final_output_path = download_path
-                self.output = output["output_meta"]
-                self.output["OUTPUT"] = final_output_path
-            else:
-                download_path = os.path.join(
-                    self.scenario_directory, output["group"], output["filename"]
-                )
-            download_paths.append(download_path)
 
-        for idx, url in enumerate(urls_to_download):
-            self.download_file(url, download_paths[idx])
-            if self.processing_cancelled:
-                return
-
-        self.__set_scenario(output_list, download_paths)
-
-        self.scenario_result = ScenarioResult(
-            scenario=self.scenario,
-            scenario_directory=self.scenario_directory,
-            analysis_output=self.output,
+        updated_scenario, scenario_result = self.fetch_scenario_output(
+            self.scenario,
+            self.new_scenario_detail["updated_detail"],
+            output_list,
+            self.scenario_directory,
         )
-
-        self.__update_scenario_status(
+        if updated_scenario is None:
+            raise Exception("Failed download scenario outputs!")
+        self.scenario = updated_scenario
+        self.scenario.server_uuid = self.scenario_api_uuid
+        self.scenario_result = scenario_result
+        self.output = scenario_result.analysis_output
+        self.analysis_activities = self.scenario.activities
+        self.analysis_weighted_activities = self.scenario.weighted_activities
+        self._update_scenario_status(
             {"progress_text": "Finished downloading output files", "progress": 100}
         )
+        self.delete_online_task()

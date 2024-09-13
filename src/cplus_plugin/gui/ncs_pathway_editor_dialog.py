@@ -68,6 +68,25 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.btn_edit_carbon.setEnabled(False)
         self.btn_edit_carbon.clicked.connect(self._on_edit_carbon_layer)
 
+        pathways = settings_manager.get_default_layers("ncs_pathway")
+        self.cbo_default_layer.addItem("")
+        self.cbo_default_layer.addItems([p["name"] for p in pathways])
+        self.cbo_default_layer.setCurrentIndex(0)
+        self.cbo_default_layer.currentIndexChanged.connect(
+            self._on_default_layer_selection_changed
+        )
+
+        add_default_icon = FileUtils.get_icon("mActionAddDefaultCarbonLayer.svg")
+        self.btn_add_default_carbon.setIcon(add_default_icon)
+        self.btn_add_default_carbon.setMenu(QtWidgets.QMenu(self))
+        items = settings_manager.get_default_layers("ncs_carbon")
+        for item in items:
+            action = QtWidgets.QAction(item["name"], self)
+            action.triggered.connect(
+                lambda checked, item=item: self._on_default_carbon_layer_selected(item)
+            )
+            self.btn_add_default_carbon.menu().addAction(action)
+
         self._excluded_names = excluded_names
         if excluded_names is None:
             self._excluded_names = []
@@ -132,6 +151,12 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         if self._layer:
             layer_path = self._layer.source()
             self._add_layer_path(layer_path)
+        if self._ncs_pathway.layer_uuid:
+            pathways = settings_manager.get_default_layers("ncs_pathway")
+            for i, layer in enumerate(pathways):
+                if layer["layer_uuid"] == self._ncs_pathway.layer_uuid:
+                    self.cbo_default_layer.setCurrentIndex(i + 1)
+                    break
 
         for carbon_path in self._ncs_pathway.carbon_paths:
             self._carbon_model.add_carbon_layer(carbon_path)
@@ -186,7 +211,8 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             status = False
 
         layer = self._get_selected_map_layer()
-        if layer is None:
+        default_layer = self._get_selected_default_layer()
+        if layer is None and default_layer is None:
             msg = tr("Map layer not specified.")
             self._show_warning_message(msg)
             status = False
@@ -216,9 +242,13 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._ncs_pathway.name = self.txt_name.text()
             self._ncs_pathway.description = self.txt_description.toPlainText()
 
-        self._ncs_pathway.path = self._layer.source()
         self._ncs_pathway.layer_type = LayerType.RASTER
+        default_layer = self._get_selected_default_layer()
 
+        if default_layer:
+            self._ncs_pathway.path = "cplus://" + default_layer.get("layer_uuid")
+        else:
+            self._ncs_pathway.path = self._layer.source()
         self._ncs_pathway.carbon_paths = self._carbon_model.carbon_paths()
 
     def _get_selected_map_layer(self) -> QgsRasterLayer:
@@ -235,6 +265,19 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
                 layer = QgsRasterLayer(current_path, layer_name)
 
         return layer
+
+    def _get_selected_default_layer(self) -> dict:
+        """Returns selected default layer.
+
+        :return: layer dictionary
+        :rtype: dict
+        """
+        layer_name = self.cbo_default_layer.currentText()
+        if layer_name == "":
+            return {}
+        pathways = settings_manager.get_default_layers("ncs_pathway")
+        layer = [p for p in pathways if p["name"] == layer_name]
+        return layer[0] if layer else {}
 
     def selected_carbon_items(self) -> typing.List[CarbonLayerItem]:
         """Returns the selected carbon items in the list view.
@@ -399,3 +442,18 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self._add_layer_path(layer_path)
         settings_manager.set_value(Settings.LAST_DATA_DIR, os.path.dirname(layer_path))
+
+    def _on_default_layer_selection_changed(self):
+        """Event raised when default layer selection is changed."""
+        layer = self._get_selected_default_layer()
+        metadata = layer.get("metadata", {})
+        self.txt_name.setText(metadata.get("name", layer.get("name", "")))
+        self.txt_description.setPlainText(metadata.get("description", ""))
+        # remove selection from cbo_layer
+        self.cbo_layer.setAdditionalItems([])
+
+    def _on_default_carbon_layer_selected(self, item):
+        """Event raised when default carbon layer is selected."""
+        layer_name = item["name"]
+        layer_path = "cplus://" + item["layer_uuid"] + "/" + layer_name
+        self._carbon_model.add_carbon_layer(layer_path)

@@ -136,6 +136,16 @@
     </layout>
    </item>
    <item>
+    <widget class="QLabel" name="label_4">
+     <property name="text">
+      <string>Online defaults</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QComboBox" name="cbo_default_layer"/>
+   </item>
+   <item>
     <widget class="QLabel" name="label">
      <property name="text">
       <string>Priority layer name</string>
