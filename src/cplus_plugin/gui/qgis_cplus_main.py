@@ -1186,9 +1186,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         scenario.weighted_activities = all_activities
 
-        if scenario_result:
-            scenario_result.scenario = scenario
-        elif scenario and scenario.server_uuid:
+        if scenario and scenario.server_uuid:
             self.analysis_scenario_name = scenario.name
             self.analysis_scenario_description = scenario.description
             self.analysis_extent = SpatialExtent(bbox=extent_list)
@@ -1232,6 +1230,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             analysis_task.scenario_api_uuid = scenario.server_uuid
             analysis_task.task_finished.connect(self.update_scenario_list)
 
+            log('self.run_cplus_main_task')
             self.run_cplus_main_task(progress_dialog, scenario, analysis_task)
 
     def show_scenario_info(self):
