@@ -550,10 +550,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
 
         priority_layers = self.get_priority_layers()
         for priority_layer in priority_layers:
-            if priority_layer.get("path", "") in self.path_to_layer_mapping:
-                priority_layer["layer_uuid"] = self.path_to_layer_mapping[
-                    priority_layer.get("path", "")
-                ]["uuid"]
+            path = priority_layer.get("path", "")
+            if path.startswith("cplus://"):
+                priority_layer["layer_uuid"] = path.replace("cplus://", "")
+            elif path in self.path_to_layer_mapping:
+                priority_layer["layer_uuid"] = self.path_to_layer_mapping[path]["uuid"]
             else:
                 priority_layer["layer_uuid"] = ""
             priority_layer["path"] = ""
