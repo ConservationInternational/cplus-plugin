@@ -191,7 +191,7 @@ class CplusApiUrl:
             return BASE_API_URL
 
     def layer_detail(self, layer_uuid) -> str:
-        """Cplus API URL to get layer detail
+        """Cplus API URL to get layer detail.
 
         :param layer_uuid: Layer UUID
         :type layer_uuid: str
@@ -202,7 +202,7 @@ class CplusApiUrl:
         return f"{self.base_url}/layer/{layer_uuid}/"
 
     def layer_check(self) -> str:
-        """Cplus API URL for checking layer validity
+        """Cplus API URL for checking layer validity.
 
         :return: Cplus API URL for layer check
         :rtype: str
@@ -210,7 +210,7 @@ class CplusApiUrl:
         return f"{self.base_url}/layer/check/?id_type=layer_uuid"
 
     def layer_upload_start(self) -> str:
-        """Cplus API URL for starting layer upload
+        """Cplus API URL for starting layer upload.
 
 
         :return: Cplus API URL for layer upload start
@@ -219,7 +219,7 @@ class CplusApiUrl:
         return f"{self.base_url}/layer/upload/start/"
 
     def layer_upload_finish(self, layer_uuid) -> str:
-        """Cplus API URL for finishing layer upload
+        """Cplus API URL for finishing layer upload.
 
         :param layer_uuid: Layer UUID
         :type layer_uuid: str
@@ -230,7 +230,7 @@ class CplusApiUrl:
         return f"{self.base_url}/layer/upload/{layer_uuid}/finish/"
 
     def layer_upload_abort(self, layer_uuid) -> str:
-        """Cplus API URL for aborting layer upload
+        """Cplus API URL for aborting layer upload.
 
         :param layer_uuid: Layer UUID
         :type layer_uuid: str
@@ -244,7 +244,7 @@ class CplusApiUrl:
         return f"{self.base_url}/layer/default/"
 
     def scenario_submit(self, plugin_version=None) -> str:
-        """Cplus API URL for submitting scenario JSON
+        """Cplus API URL for submitting scenario JSON.
 
         :param plugin_version: Version of the Cplus Plugin
         :type plugin_version: str
@@ -258,7 +258,7 @@ class CplusApiUrl:
         return url
 
     def scenario_execute(self, scenario_uuid) -> str:
-        """Cplus API URL for executing scenario
+        """Cplus API URL for executing scenario.
 
         :param scenario_uuid: Scenario UUID
         :type scenario_uuid: str
@@ -269,7 +269,7 @@ class CplusApiUrl:
         return f"{self.base_url}/scenario/{scenario_uuid}/execute/"
 
     def scenario_status(self, scenario_uuid) -> str:
-        """Cplus API URL for getting scenario status
+        """Cplus API URL for getting scenario status.
 
         :param scenario_uuid: Scenario UUID
         :type scenario_uuid: str
@@ -280,7 +280,7 @@ class CplusApiUrl:
         return f"{self.base_url}/scenario/{scenario_uuid}/status/"
 
     def scenario_cancel(self, scenario_uuid) -> str:
-        """Cplus API URL for cancelling scenario execution
+        """Cplus API URL for cancelling scenario execution.
 
         :param scenario_uuid: Scenario UUID
         :type scenario_uuid: str
@@ -297,7 +297,7 @@ class CplusApiUrl:
         return f"{self.base_url}/scenario/history/?{params}"
 
     def scenario_detail(self, scenario_uuid) -> str:
-        """Cplus API URL for getting scenario detal
+        """Cplus API URL for getting scenario detail.
 
         :param scenario_uuid: Scenario UUID
         :type scenario_uuid: str
@@ -308,10 +308,18 @@ class CplusApiUrl:
         return f"{self.base_url}/scenario/{scenario_uuid}/detail/"
 
     def scenario_delete(self, scenario_uuid):
+        """Cplus API URL for deleting a scenario.
+
+        :param scenario_uuid: Scenario UUID
+        :type scenario_uuid: str
+
+        :return: Cplus API URL for deleting a scenario
+        :rtype: str
+        """
         return f"{self.base_url}/scenario/{scenario_uuid}/detail/"
 
     def scenario_output_list(self, scenario_uuid) -> str:
-        """Cplus API URL for listing scenario output
+        """Cplus API URL for listing scenario output.
 
         :param scenario_uuid: Scenario UUID
         :type scenario_uuid: str
@@ -542,6 +550,25 @@ class CplusApiRequest:
         self._make_request(reply)
         return self._handle_response(url, reply)
 
+    def delete(self, url: str, headers: dict = {}) -> typing.Tuple[dict, int]:
+        """Trigger a DELETE request.
+
+        :param url: Cplus API URL
+        :type url: str
+
+        :param headers: header dictionary, defaults to {}
+        :type headers: dict
+
+        :return: tuple of response dictionary and HTTP status code
+        :rtype: typing.Tuple[dict, int]
+        """
+        nam = QgsNetworkAccessManager.instance()
+        headers = headers or self._default_headers()
+        request = self._generate_request(url, headers)
+        reply = nam.deleteResource(request)
+        self._make_request(reply)
+        return self._handle_response(url, reply)
+
     def _on_download_error(self, filename: str, error):
         """Callback when there is an error in download file.
 
@@ -557,7 +584,7 @@ class CplusApiRequest:
         raise CplusApiRequestError(f"Unable to start download of {filename}, {error}")
 
     def _on_download_finished(self, filename: str):
-        """Callback when download file is finished
+        """Callback when download file is finished.
 
         :param filename: filename of the downloaded file
         :type filename: str
@@ -681,7 +708,7 @@ class CplusApiRequest:
         }
 
     def _is_valid_token(self) -> bool:
-        """Check if api token exists and valid before its expiry
+        """Check if api token exists and valid before its expiry.
 
         :return: True if valid token
         :rtype: bool
@@ -732,7 +759,7 @@ class CplusApiRequest:
         return access_token
 
     def get_layer_detail(self, layer_uuid) -> dict:
-        """Request for getting layer detail
+        """Request for getting layer detail.
 
         :param layer_uuid: Layer UUID
         :type layer_uuid: str
@@ -744,7 +771,7 @@ class CplusApiRequest:
         return result
 
     def check_layer(self, payload) -> dict:
-        """Request for checking layer validity
+        """Request for checking layer validity.
 
         :param payload: List of Layer UUID
         :type payload: list
@@ -757,7 +784,7 @@ class CplusApiRequest:
         return result
 
     def start_upload_layer(self, file_path: str, component_type: str) -> dict:
-        """Request for starting layer upload
+        """Request for starting layer upload.
 
         :param file_path: Path of the file to be uploaded
         :type file_path: str
@@ -790,7 +817,7 @@ class CplusApiRequest:
         upload_id: typing.Union[str, None],
         items: typing.Union[typing.List[dict], None],
     ) -> dict:
-        """Request for finishing layer upload
+        """Request for finishing layer upload.
 
         :param layer_uuid: UUID of the uploaded layer
         :type layer_uuid: str
@@ -815,7 +842,7 @@ class CplusApiRequest:
         return result
 
     def abort_upload_layer(self, layer_uuid: str, upload_id: str) -> bool:
-        """Aborting layer upload
+        """Aborting layer upload.
 
         :param layer_uuid: UUID of a Layer that is currently being uploaded
         :type layer_uuid: str
@@ -837,7 +864,7 @@ class CplusApiRequest:
         return True
 
     def submit_scenario_detail(self, scenario_detail: dict) -> str:
-        """Submitting scenario JSON to Cplus API
+        """Submitting scenario JSON to Cplus API.
 
         :param scenario_detail: Scenario detail
         :type scenario_detail: dict
@@ -847,14 +874,13 @@ class CplusApiRequest:
         :return: Scenario UUID
         :rtype: str
         """
-        debug_log("scenario_detail payload", scenario_detail)
         result, status_code = self.post(self.urls.scenario_submit(), scenario_detail)
         if status_code != 201:
             raise CplusApiRequestError(result.get("detail", ""))
         return result["uuid"]
 
     def execute_scenario(self, scenario_uuid: str) -> bool:
-        """Executing scenario in Cplus API
+        """Executing scenario in Cplus API.
 
         :param scenario_uuid: Scenario UUID
         :type scenario_uuid: str
@@ -870,7 +896,7 @@ class CplusApiRequest:
         return True
 
     def fetch_scenario_status(self, scenario_uuid) -> CplusApiPooling:
-        """Fetching scenario status
+        """Fetching scenario status.
 
         :param scenario_uuid: Scenario UUID
         :type scenario_uuid: str
@@ -882,7 +908,7 @@ class CplusApiRequest:
         return CplusApiPooling(self, url)
 
     def cancel_scenario(self, scenario_uuid: str) -> bool:
-        """Cancel scenario execution
+        """Cancel scenario execution.
 
         :param scenario_uuid: Scenario UUID
         :type scenario_uuid: str
@@ -898,7 +924,7 @@ class CplusApiRequest:
         return True
 
     def fetch_scenario_output_list(self, scenario_uuid) -> typing.List[dict]:
-        """List scenario output
+        """List scenario output.
 
         :param scenario_uuid: Scenario UUID
         :type scenario_uuid: str
@@ -914,7 +940,7 @@ class CplusApiRequest:
         return result
 
     def fetch_scenario_detail(self, scenario_uuid: str) -> dict:
-        """Fetch scenario detail
+        """Fetch scenario detail.
 
         :param scenario_uuid: Scenario UUID
         :type scenario_uuid: str
@@ -1042,7 +1068,7 @@ class CplusApiRequest:
         :return: No content
         :rtype: dictionary
         """
-        response = self.delete(self.urls.scenario_delete(scenario_uuid))
-        if response.status_code != 204:
-            result = response.json()
+        result, status_code = self.delete(self.urls.scenario_delete(scenario_uuid))
+        if status_code != 204:
             raise CplusApiRequestError(result.get("detail", ""))
+        return result

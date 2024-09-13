@@ -14,7 +14,6 @@ from .request import (
 )
 from ..conf import settings_manager, Settings, ScenarioSettings
 from ..models.base import Activity, NcsPathway, Scenario
-from ..models.base import ScenarioResult
 from ..tasks import ScenarioAnalysisTask
 from ..utils import FileUtils, CustomJsonEncoder, todict
 from ..api.base import BaseFetchScenarioOutput
