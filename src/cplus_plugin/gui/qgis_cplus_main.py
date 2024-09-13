@@ -1543,6 +1543,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             scenario,
             settings_manager.get_priority_layers(),
             scenario.priority_layer_groups,
+            scenario.activities,
             settings_manager.get_all_activities(),
             settings_manager.get_value(
                 Settings.SNAPPING_ENABLED, default=False, setting_type=bool
