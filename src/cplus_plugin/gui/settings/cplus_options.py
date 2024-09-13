@@ -40,6 +40,7 @@ from ...definitions.defaults import (
 from ...trends_earth.constants import API_URL, TIMEOUT
 from ...utils import FileUtils, log, tr
 from ...trends_earth import auth, api, download
+from ..qgis_cplus_main import QgisCplusMain
 
 Ui_DlgSettings, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "../../ui/cplus_settings.ui")
@@ -231,6 +232,11 @@ class DlgSettingsLogin(QtWidgets.QDialog, Ui_TrendsEarthDlgSettingsLogin):
             auth.init_auth_config(
                 auth.TE_API_AUTH_SETUP, self.email.text(), self.password.text()
             )
+
+            cplus_main = QgisCplusMain(iface=None)
+            settings_manager.delete_online_scenario()
+            cplus_main.fetch_default_layer_list()
+            cplus_main.fetch_scenario_history_list()
             self.ok = True
             self.close()
 

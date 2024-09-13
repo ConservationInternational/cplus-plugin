@@ -155,12 +155,6 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         :param message: Message to show on the status bar
         :type message: str
         """
-        if message == "Uploading layers with concurrent request":
-            self.btn_hide.setEnabled(False)
-            self.btn_hide.setToolTip('Cannot minimize task when uploading layers')
-        else:
-            self.btn_hide.setEnabled(True)
-            self.btn_hide.setToolTip('Run online scenario in background')
 
         if message:
             self.lbl_status.setText(message)
@@ -309,6 +303,22 @@ class OnlineProgressDialog(Ui_DlgOnlineProgress, ProgressDialog):
         # Connections
         self.btn_hide.clicked.connect(self.hide_clicked)
 
+    def change_status_message(self, message=None) -> None:
+        """Updates the status message
+
+        :param message: Message to show on the status bar
+        :type message: str
+        """
+        if message == "Uploading layers with concurrent request":
+            self.btn_hide.setEnabled(False)
+            self.btn_hide.setToolTip('Cannot minimize task when uploading layers')
+        else:
+            self.btn_hide.setEnabled(True)
+            self.btn_hide.setToolTip('Run online scenario in background')
+
+        if message:
+            self.lbl_status.setText(message)
+
     def hide_clicked(self) -> None:
         """User clicked hide.
 
@@ -416,6 +426,7 @@ class ReportProgressDialog(ProgressDialog):
         self.btn_view_report.setEnabled(True)
         icon = self.style().standardIcon(QStyle.SP_DialogCloseButton)
         self.btn_cancel.setIcon(icon)
+        self.btn_hide.setEnabled(False)
 
         self.report_running = False
 
