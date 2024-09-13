@@ -18,6 +18,7 @@ from qgis.PyQt import (
     QtGui,
     QtWidgets,
 )
+from qgis.PyQt.QtWidgets import QPushButton
 from qgis.PyQt.uic import loadUiType
 from qgis.core import (
     Qgis,
@@ -48,10 +49,18 @@ from qgis.utils import iface
 
 from .activity_widget import ActivityContainerWidget
 from .priority_group_widget import PriorityGroupWidget
-from .progress_dialog import ReportProgressDialog, ProgressDialog
+from .scenario_item_widget import ScenarioItemWidget
+from .progress_dialog import OnlineProgressDialog, ReportProgressDialog, ProgressDialog
 from ..trends_earth import auth
 from ..api.scenario_task_api_client import ScenarioAnalysisTaskApiClient
 from ..api.layer_tasks import FetchDefaultLayerTask
+from ..api.scenario_history_tasks import (
+    FetchScenarioHistoryTask,
+    FetchScenarioOutputTask,
+    DeleteScenarioTask,
+    FetchOnlineTaskStatusTask,
+)
+from ..api.request import JOB_RUNNING_STATUS, JOB_COMPLETED_STATUS
 from ..definitions.constants import (
     ACTIVITY_GROUP_LAYER_NAME,
     ACTIVITY_IDENTIFIER_PROPERTY,
@@ -96,7 +105,15 @@ from ..definitions.defaults import (
 from ..lib.reports.manager import report_manager, ReportManager
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
 from ..tasks import ScenarioAnalysisTask
-from ..utils import open_documentation, tr, log, FileUtils, write_to_file
+from ..utils import (
+    open_documentation,
+    tr,
+    log,
+    FileUtils,
+    write_to_file,
+    todict,
+    CustomJsonEncoder,
+)
 
 
 WidgetUi, _ = loadUiType(
@@ -172,6 +189,51 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         # Fetch default layers
         self.fetch_default_layer_list()
 
+    def on_view_status_button_clicked(self):
+        """Handler when view status report button in tab 4 is clicked."""
+        log("View status button")
+
+        running_online_scenario_uuid = settings_manager.get_running_online_scenario()
+        online_task = settings_manager.get_scenario(running_online_scenario_uuid)
+        if online_task:
+            self.load_scenario(running_online_scenario_uuid)
+
+    def on_online_task_check_finished(self, status):
+        """
+        Handler for view online task and generate report button.
+
+        The button itself will be shown when Cplus plugin becomes visible.
+        """
+        running_online_scenario_uuid = settings_manager.get_running_online_scenario()
+        online_task = settings_manager.get_scenario(running_online_scenario_uuid)
+
+        if online_task:
+            if status == JOB_COMPLETED_STATUS:
+                message = f"Task {online_task.name} has completed successfully."
+                button_text = "Generate report"
+            elif status == JOB_RUNNING_STATUS:
+                message = f"Task {online_task.name} is still running."
+                button_text = "View status"
+            else:
+                message = f"Task {online_task.name} is {status}."
+                button_text = "OK"
+            widget = self.message_bar.createMessage(tr(message))
+            button = QPushButton(widget)
+
+            button.setText(button_text)
+            if status in [JOB_RUNNING_STATUS, JOB_COMPLETED_STATUS]:
+                load_scenario = partial(
+                    self.load_scenario, running_online_scenario_uuid
+                )
+                button.pressed.connect(load_scenario)
+            widget.layout().addWidget(button)
+            self.update_message_bar(widget)
+
+    def fetch_online_task_status(self):
+        self.task = FetchOnlineTaskStatusTask(self)
+        self.task.task_finished.connect(self.on_online_task_check_finished)
+        QgsApplication.taskManager().addTask(self.task)
+
     def outputs_options_changed(self):
         """
         Handles selected outputs changes
@@ -240,6 +302,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
         )
 
+        self.view_status_btn.clicked.connect(self.on_view_status_button_clicked)
+        running_online_scenario_uuid = settings_manager.get_running_online_scenario()
+        online_task = settings_manager.get_scenario(running_online_scenario_uuid)
+        if not online_task:
+            self.view_status_btn.setEnabled(False)
+        else:
+            self.view_status_btn.setEnabled(True)
+
     def on_log_message_received(self, message, tag, level):
         """Slot to handle log tab updates and processing logs
 
@@ -257,6 +327,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             # task don't save the log message.
             if not self.current_analysis_task:
                 return
+
             try:
                 to_zone = tz.tzlocal()
                 message_dict = json.loads(message)
@@ -281,6 +352,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             log_text_cursor.movePosition(QtGui.QTextCursor.End)
             self.log_text_box.setTextCursor(log_text_cursor)
             try:
+                os.makedirs(
+                    self.current_analysis_task.scenario_directory, exist_ok=True
+                )
                 processing_log_file = os.path.join(
                     self.current_analysis_task.scenario_directory,
                     SCENARIO_LOG_FILE_NAME,
@@ -1076,10 +1150,21 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.scenario_list.clear()
 
         for scenario in scenarios:
-            item = QtWidgets.QListWidgetItem()
-            item.setData(QtCore.Qt.DisplayRole, scenario.name)
+            scenario_type = "Available offline"
+            if scenario.server_uuid:
+                scenario_result = settings_manager.get_scenario_result(scenario.uuid)
+                if scenario_result is None:
+                    scenario_type = "Online"
+            item_widget = ScenarioItemWidget(scenario.name, scenario_type)
+            item = QtWidgets.QListWidgetItem(self.scenario_list)
+            item.setSizeHint(item_widget.sizeHint())
             item.setData(QtCore.Qt.UserRole, str(scenario.uuid))
-            self.scenario_list.addItem(item)
+            item.setData(QtCore.Qt.UserRole + 1, scenario.name)
+            if scenario.server_uuid:
+                item.setData(QtCore.Qt.UserRole + 2, str(scenario.server_uuid))
+            else:
+                item.setData(QtCore.Qt.UserRole + 2, "")
+            self.scenario_list.setItemWidget(item, item_widget)
 
     def add_scenario(self):
         """Adds a new scenario into the scenario list."""
@@ -1114,6 +1199,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             activities=activities,
             weighted_activities=weighted_activities,
             priority_layer_groups=priority_layer_groups,
+            server_uuid=(
+                self.scenario_result.scenario.server_uuid
+                if self.scenario_result
+                else None
+            ),
         )
         settings_manager.save_scenario(scenario)
         if self.scenario_result:
@@ -1123,24 +1213,27 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.update_scenario_list()
 
-    def load_scenario(self):
+    def load_scenario(self, scenario_identifier=None):
         """Edits the current selected scenario
         and updates the layer box list."""
-        if self.scenario_list.currentItem() is None:
-            self.show_message(
-                tr("Select first the scenario from the scenario list."),
-                Qgis.Critical,
-            )
-            return
+        if not scenario_identifier:
+            if self.scenario_list.currentItem() is None:
+                self.show_message(
+                    tr("Select first the scenario from the scenario list."),
+                    Qgis.Critical,
+                )
+                return
 
-        scenario_identifier = self.scenario_list.currentItem().data(QtCore.Qt.UserRole)
-
-        if scenario_identifier == "":
-            self.show_message(
-                tr("Could not fetch the selected priority layer for editing."),
-                Qgis.Critical,
+            scenario_identifier = self.scenario_list.currentItem().data(
+                QtCore.Qt.UserRole
             )
-            return
+
+            if scenario_identifier == "":
+                self.show_message(
+                    tr("Could not fetch the selected priority layer for editing."),
+                    Qgis.Critical,
+                )
+                return
 
         scenario = settings_manager.get_scenario(scenario_identifier)
 
@@ -1170,7 +1263,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     default_extent,
                     QgsCoordinateReferenceSystem("EPSG:4326"),
                 )
-        scenario_result = settings_manager.get_scenario_result(scenario_identifier)
 
         all_activities = sorted(
             scenario.weighted_activities,
@@ -1181,10 +1273,53 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         scenario.weighted_activities = all_activities
 
-        if scenario_result:
-            scenario_result.scenario = scenario
+        if scenario and scenario.server_uuid:
+            self.analysis_scenario_name = scenario.name
+            self.analysis_scenario_description = scenario.description
+            self.analysis_extent = SpatialExtent(bbox=extent_list)
+            self.analysis_activities = scenario.activities
+            self.analysis_priority_layers_groups = scenario.priority_layer_groups
 
-        self.post_analysis(scenario_result, None, None, None)
+            scenario_obj = Scenario(
+                uuid=scenario.uuid,
+                name=self.analysis_scenario_name,
+                description=self.analysis_scenario_description,
+                extent=self.analysis_extent,
+                activities=self.analysis_activities,
+                weighted_activities=scenario.weighted_activities,
+                priority_layer_groups=self.analysis_priority_layers_groups,
+            )
+            scenario_obj.server_uuid = scenario.server_uuid
+
+            self.processing_cancelled = False
+
+            progress_dialog = OnlineProgressDialog(
+                minimum=0,
+                maximum=100,
+                main_widget=self,
+                scenario_id=str(scenario.uuid),
+                scenario_name=self.analysis_scenario_name,
+            )
+            progress_dialog.analysis_cancelled.connect(
+                self.on_progress_dialog_cancelled
+            )
+            progress_dialog.run_dialog()
+
+            log("load_scenario")
+
+            analysis_task = FetchScenarioOutputTask(
+                self.analysis_scenario_name,
+                self.analysis_scenario_description,
+                self.analysis_activities,
+                self.analysis_priority_layers_groups,
+                self.analysis_extent,
+                scenario,
+                None,
+            )
+            analysis_task.scenario_api_uuid = scenario.server_uuid
+            analysis_task.task_finished.connect(self.update_scenario_list)
+
+            self.run_cplus_main_task(progress_dialog, scenario, analysis_task)
 
     def show_scenario_info(self):
         """Loads dialog for showing scenario information."""
@@ -1206,7 +1341,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         texts = []
         for item in self.scenario_list.selectedItems():
-            current_text = item.data(QtCore.Qt.DisplayRole)
+            current_text = item.data(QtCore.Qt.UserRole + 1)
             texts.append(current_text)
 
         reply = QtWidgets.QMessageBox.warning(
@@ -1224,6 +1359,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     continue
                 settings_manager.delete_scenario(scenario_id)
 
+                scenario_server_uuid = item.data(QtCore.Qt.UserRole + 2)
+                if scenario_server_uuid == "":
+                    continue
+                if not self.has_trends_auth():
+                    continue
+                task = DeleteScenarioTask(scenario_server_uuid)
+                QgsApplication.taskManager().addTask(task)
             self.update_scenario_list()
 
     def on_generate_comparison_report(self):
@@ -1297,6 +1439,77 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.comparison_report_btn.setEnabled(False)
         else:
             self.comparison_report_btn.setEnabled(True)
+
+    def fetch_scenario_history_list(self):
+        """Fetch scenario history list from API."""
+        if not self.has_trends_auth():
+            return
+        task = FetchScenarioHistoryTask()
+        task.task_finished.connect(self.on_fetch_scenario_history_list_finished)
+        QgsApplication.taskManager().addTask(task)
+
+    def on_fetch_scenario_history_list_finished(self, success):
+        """Callback when plugin has finished pulling scenario history list.
+
+        :param success: True if API call is successful
+        :type success: bool
+        """
+        if not success:
+            return
+        self.update_scenario_list()
+
+    def has_trends_auth(self):
+        """Check if plugin has user Trends.Earth authentication.
+
+        :return: True if user has provided the username and password.
+        :rtype: bool
+        """
+        auth_config = auth.get_auth_config(auth.TE_API_AUTH_SETUP, warn=None)
+        return (
+            auth_config
+            and auth_config.config("username")
+            and auth_config.config("password")
+        )
+
+    def run_cplus_main_task(self, progress_dialog, scenario, analysis_task):
+        progress_changed = partial(self.update_progress_bar, progress_dialog)
+        analysis_task.custom_progress_changed.connect(progress_changed)
+
+        status_message_changed = partial(self.update_progress_dialog, progress_dialog)
+
+        analysis_task.status_message_changed.connect(status_message_changed)
+
+        analysis_task.info_message_changed.connect(self.show_message)
+
+        self.current_analysis_task = analysis_task
+
+        progress_dialog.analysis_task = analysis_task
+        progress_dialog.scenario_id = str(scenario.uuid)
+
+        report_running = partial(self.on_report_running, progress_dialog)
+        report_error = partial(self.on_report_error, progress_dialog)
+        report_finished = partial(self.on_report_finished, progress_dialog)
+
+        # Report manager
+        scenario_report_manager = report_manager
+
+        scenario_report_manager.generate_started.connect(report_running)
+        scenario_report_manager.generate_error.connect(report_error)
+        scenario_report_manager.generate_completed.connect(report_finished)
+
+        analysis_complete = partial(
+            self.analysis_complete,
+            analysis_task,
+            scenario_report_manager,
+            progress_dialog,
+        )
+
+        analysis_task.taskCompleted.connect(analysis_complete)
+
+        analysis_terminated = partial(self.task_terminated, analysis_task)
+        analysis_task.taskTerminated.connect(analysis_terminated)
+
+        QgsApplication.taskManager().addTask(analysis_task)
 
     def prepare_message_bar(self):
         """Initializes the widget message bar settings"""
@@ -1407,12 +1620,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             return
 
         if self.processing_type.isChecked():
-            auth_config = auth.get_auth_config(auth.TE_API_AUTH_SETUP, warn=None)
-            if (
-                not auth_config
-                or not auth_config.config("username")
-                or not auth_config.config("password")
-            ):
+            if not self.has_trends_auth():
                 self.show_message(
                     tr(
                         f"Trends.Earth account is not set! "
@@ -1446,13 +1654,23 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.processing_cancelled = False
 
             # Creates and opens the progress dialog for the analysis
-            progress_dialog = ProgressDialog(
-                minimum=0,
-                maximum=100,
-                main_widget=self,
-                scenario_id=str(scenario.uuid),
-                scenario_name=self.analysis_scenario_name,
-            )
+            if self.processing_type.isChecked():
+                progress_dialog = OnlineProgressDialog(
+                    minimum=0,
+                    maximum=100,
+                    main_widget=self,
+                    scenario_id=str(scenario.uuid),
+                    scenario_name=self.analysis_scenario_name,
+                )
+            else:
+                # Creates and opens the progress dialog for the analysis
+                progress_dialog = ProgressDialog(
+                    minimum=0,
+                    maximum=100,
+                    main_widget=self,
+                    scenario_id=str(scenario.uuid),
+                    scenario_name=self.analysis_scenario_name,
+                )
             progress_dialog.analysis_cancelled.connect(
                 self.on_progress_dialog_cancelled
             )
@@ -1529,6 +1747,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     self.analysis_priority_layers_groups,
                     self.analysis_extent,
                     scenario,
+                    SpatialExtent(
+                        bbox=[
+                            passed_extent.xMinimum(),
+                            passed_extent.xMaximum(),
+                            passed_extent.yMinimum(),
+                            passed_extent.yMaximum(),
+                        ]
+                    ),
                 )
             else:
                 analysis_task = ScenarioAnalysisTask(
@@ -1540,46 +1766,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     scenario,
                 )
 
-            progress_changed = partial(self.update_progress_bar, progress_dialog)
-            analysis_task.custom_progress_changed.connect(progress_changed)
-
-            status_message_changed = partial(
-                self.update_progress_dialog, progress_dialog
-            )
-
-            analysis_task.status_message_changed.connect(status_message_changed)
-
-            analysis_task.info_message_changed.connect(self.show_message)
-
-            self.current_analysis_task = analysis_task
-
-            progress_dialog.analysis_task = analysis_task
-            progress_dialog.scenario_id = str(scenario.uuid)
-
-            report_running = partial(self.on_report_running, progress_dialog)
-            report_error = partial(self.on_report_error, progress_dialog)
-            report_finished = partial(self.on_report_finished, progress_dialog)
-
-            # Report manager
-            scenario_report_manager = report_manager
-
-            scenario_report_manager.generate_started.connect(report_running)
-            scenario_report_manager.generate_error.connect(report_error)
-            scenario_report_manager.generate_completed.connect(report_finished)
-
-            analysis_complete = partial(
-                self.analysis_complete,
-                analysis_task,
-                scenario_report_manager,
-                progress_dialog,
-            )
-
-            analysis_task.taskCompleted.connect(analysis_complete)
-
-            analysis_terminated = partial(self.task_terminated, analysis_task)
-            analysis_task.taskTerminated.connect(analysis_terminated)
-
-            QgsApplication.taskManager().addTask(analysis_task)
+            self.run_cplus_main_task(progress_dialog, scenario, analysis_task)
 
         except Exception as err:
             self.show_message(
@@ -1603,7 +1790,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type task: typing.Union[ScenarioAnalysisTask, ScenarioAnalysisTaskApiClient]
         """
         task.on_terminated()
-        log(f"Main task terminated")
+        log("Main task terminated")
 
     def analysis_complete(self, task, report_manager, progress_dialog):
         """Calls the responsible function for handling analysis results outputs
@@ -1808,9 +1995,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             # Add scenario result layer to the canvas with styling
             layer_file = scenario_result.analysis_output.get("OUTPUT")
+            layer_dt = (
+                scenario_result.created_date
+                if scenario_result.created_date
+                else datetime.datetime.now()
+            )
             layer_name = (
                 f"{SCENARIO_OUTPUT_LAYER_NAME}_"
-                f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+                f'{layer_dt.strftime("%Y_%m_%d_%H_%M_%S")}'
             )
 
             if (
@@ -2050,10 +2242,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param message: Message to be updated
         :type message: str
         """
-        message_bar_item = self.message_bar.createMessage(message)
+        log("update_message_bar")
+        if isinstance(message, str):
+            message_bar_item = self.message_bar.createMessage(message)
+        else:
+            message_bar_item = message
         self.message_bar.pushWidget(message_bar_item, Qgis.Info)
 
-    def show_message(self, message, level=Qgis.Warning):
+    def show_message(self, message, level=Qgis.Warning, duration: int = 0):
         """Shows message on the main widget message bar.
 
         :param message: Text message
@@ -2061,9 +2257,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         :param level: Message level type
         :type level: Qgis.MessageLevel
+
+        :param duration: Duration of the shown message
+        :type level: int
         """
         self.message_bar.clearWidgets()
-        self.message_bar.pushMessage(message, level=level)
+        self.message_bar.pushMessage(message, level=level, duration=duration)
 
     def zoom_pilot_area(self):
         """Zoom the current main map canvas to the pilot area extent."""
