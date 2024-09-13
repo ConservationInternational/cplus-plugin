@@ -254,6 +254,7 @@ class SettingsManager(QtCore.QObject):
     PRIORITY_LAYERS_GROUP_NAME: str = "priority_layers"
     NCS_PATHWAY_BASE: str = "ncs_pathways"
     LAYER_MAPPING_BASE: str = "layer_mapping"
+    SERVER_DEFAULT_LAYERS: str = "default_layers"
     ONLINE_TASK_BASE: str = "online_task"
 
     ACTIVITY_BASE: str = "activities"
@@ -1052,6 +1053,58 @@ class SettingsManager(QtCore.QObject):
     def remove_layer_mapping(self, identifier: str):
         """Remove layer mapping from settings."""
         self.remove(f"{self.LAYER_MAPPING_BASE}/{identifier}")
+
+    def _get_default_layers_settings_base(self) -> str:
+        """Returns the path for Default Layers settings.
+
+        :returns: Base path to Default Layers group.
+        :rtype: str
+        """
+        return f"{self.BASE_GROUP_NAME}/{self.SERVER_DEFAULT_LAYERS}"
+
+    def get_default_layers(self, layer_type: str, as_dict=False) -> typing.List[dict]:
+        """Returns list of default layers by type.
+
+        :param layer_type: ncs_pathway, priority_layer, or ncs_carbon
+        :type layer_type: str
+        :return: List of dictionary of ncs pathway
+        :rtype: typing.List[dict]
+        """
+        layers = []
+        default_layers_root = self._get_default_layers_settings_base()
+        with qgis_settings(default_layers_root) as settings:
+            layers_str = settings.value(layer_type, "")
+            if layers_str:
+                try:
+                    layers = json.loads(layers_str)
+                except json.JSONDecodeError:
+                    log("Layers JSON is invalid")
+        if as_dict:
+            if layer_type == "ncs_carbon":
+                layers = {
+                    f"{layer['layer_uuid']}/{layer['name']}": layer for layer in layers
+                }
+            else:
+                layers = {layer["layer_uuid"]: layer for layer in layers}
+        return layers
+
+    def save_default_layers(self, type: str, layers: typing.List):
+        """Save default layers by type
+
+        :param type: ncs_pathway, priority_layer, or ncs_carbon
+        :type type: str
+        :param layers: layer list
+        :type layers: typing.List
+        """
+        default_layers_root = self._get_default_layers_settings_base()
+
+        with qgis_settings(default_layers_root) as settings:
+            settings.setValue(type, json.dumps(layers))
+
+    def remove_default_layers(self):
+        """Remove default layers from settings."""
+        default_layers_root = self._get_default_layers_settings_base()
+        self.remove(default_layers_root)
 
     def _get_ncs_pathway_settings_base(self) -> str:
         """Returns the path for NCS pathway settings.
