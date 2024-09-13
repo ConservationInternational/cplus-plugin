@@ -1233,7 +1233,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             analysis_task.scenario_api_uuid = scenario.server_uuid
             analysis_task.task_finished.connect(self.update_scenario_list)
 
-            log('self.run_cplus_main_task')
             self.run_cplus_main_task(progress_dialog, scenario, analysis_task)
 
     def show_scenario_info(self):
