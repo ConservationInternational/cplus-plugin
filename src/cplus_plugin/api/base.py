@@ -6,6 +6,7 @@
 import concurrent.futures
 import copy
 import datetime
+import json
 import os
 
 from qgis.PyQt import QtCore
@@ -49,6 +50,7 @@ class BaseFetchScenarioOutput:
 
         :param activity: activity dictionary
         :type activity: dict
+
         :param download_dict: downloaded file dictionary
         :type download_dict: dict
         """
@@ -77,12 +79,16 @@ class BaseFetchScenarioOutput:
 
         :param original_scenario: Original scenario
         :type original_scenario: Scenario
+
         :param scenario_detail: Scenario dictionary from API
         :type scenario_detail: dict
+
         :param output_list: Scenario output list from API
         :type output_list: dict
+
         :param download_paths: List of downloaded file paths
         :type download_paths: list
+
         :return: Scenario object
         :rtype: Scenario
         """
@@ -96,9 +102,9 @@ class BaseFetchScenarioOutput:
 
         download_dict = {os.path.basename(d): d for d in download_paths}
 
-        for activity in scenario_detail["activities"]:
+        for activity in scenario_detail.get("activities", []):
             activities.append(self.__create_activity(activity, download_dict))
-        for activity in scenario_detail["weighted_activities"]:
+        for activity in scenario_detail.get("weighted_activities", []):
             weighted_activities.append(self.__create_activity(activity, download_dict))
 
         scenario = Scenario(
@@ -108,7 +114,7 @@ class BaseFetchScenarioOutput:
             extent=original_scenario.extent,
             activities=activities,
             weighted_activities=weighted_activities,
-            priority_layer_groups=scenario_detail["priority_layer_groups"],
+            priority_layer_groups=scenario_detail.get("priority_layer_groups", []),
             server_uuid=original_scenario.server_uuid,
         )
         return scenario
@@ -118,6 +124,7 @@ class BaseFetchScenarioOutput:
 
         :param download_paths: Output file paths
         :type download_paths: list
+
         :return: True if all paths exist
         :rtype: bool
         """
@@ -134,13 +141,18 @@ class BaseFetchScenarioOutput:
 
         :param original_scenario: Original scenario
         :type original_scenario: Scenario
+
         :param scenario_detail: scenario detail dictionary
         :type scenario_detail: dict
+
         :param output_list: Scenario output list from API
         :type output_list: dict
+
         :param scenario_directory: dictionary that contains outputs from API
         :type scenario_directory: dict
         """
+        if not scenario_detail:
+            return None, None
         self.total_file_output = len(output_list["results"])
         self.downloaded_output = 0
 

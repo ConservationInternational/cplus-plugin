@@ -31,7 +31,6 @@ from .definitions.defaults import PRIORITY_LAYERS
 from .models.base import (
     Activity,
     NcsPathway,
-    PriorityLayerType,
     Scenario,
     ScenarioResult,
     SpatialExtent,
@@ -242,6 +241,8 @@ class Settings(enum.Enum):
     DEBUG = "debug"
     BASE_API_URL = "base_api_url"
 
+    ACTIVE_ONLINE_TASK = "active_online_task"
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""
@@ -253,6 +254,8 @@ class SettingsManager(QtCore.QObject):
     PRIORITY_LAYERS_GROUP_NAME: str = "priority_layers"
     NCS_PATHWAY_BASE: str = "ncs_pathways"
     LAYER_MAPPING_BASE: str = "layer_mapping"
+    SERVER_DEFAULT_LAYERS: str = "default_layers"
+    ONLINE_TASK_BASE: str = "online_task"
 
     ACTIVITY_BASE: str = "activities"
 
@@ -423,11 +426,11 @@ class SettingsManager(QtCore.QObject):
         """Saves the scenario extent into plugin settings
         using the provided settings group key.
 
-        :param key: Scenario extent
-        :type key: SpatialExtent
+        :param key: QgsSettings group key
+        :type key: str
 
-        :param extent: QgsSettings group key
-        :type extent: str
+        :param extent: Scenario extent
+        :type extent: SpatialExtent
 
         Args:
             extent (SpatialExtent): Scenario extent
@@ -1051,6 +1054,58 @@ class SettingsManager(QtCore.QObject):
         """Remove layer mapping from settings."""
         self.remove(f"{self.LAYER_MAPPING_BASE}/{identifier}")
 
+    def _get_default_layers_settings_base(self) -> str:
+        """Returns the path for Default Layers settings.
+
+        :returns: Base path to Default Layers group.
+        :rtype: str
+        """
+        return f"{self.BASE_GROUP_NAME}/{self.SERVER_DEFAULT_LAYERS}"
+
+    def get_default_layers(self, layer_type: str, as_dict=False) -> typing.List[dict]:
+        """Returns list of default layers by type.
+
+        :param layer_type: ncs_pathway, priority_layer, or ncs_carbon
+        :type layer_type: str
+        :return: List of dictionary of ncs pathway
+        :rtype: typing.List[dict]
+        """
+        layers = []
+        default_layers_root = self._get_default_layers_settings_base()
+        with qgis_settings(default_layers_root) as settings:
+            layers_str = settings.value(layer_type, "")
+            if layers_str:
+                try:
+                    layers = json.loads(layers_str)
+                except json.JSONDecodeError:
+                    log("Layers JSON is invalid")
+        if as_dict:
+            if layer_type == "ncs_carbon":
+                layers = {
+                    f"{layer['layer_uuid']}/{layer['name']}": layer for layer in layers
+                }
+            else:
+                layers = {layer["layer_uuid"]: layer for layer in layers}
+        return layers
+
+    def save_default_layers(self, type: str, layers: typing.List):
+        """Save default layers by type
+
+        :param type: ncs_pathway, priority_layer, or ncs_carbon
+        :type type: str
+        :param layers: layer list
+        :type layers: typing.List
+        """
+        default_layers_root = self._get_default_layers_settings_base()
+
+        with qgis_settings(default_layers_root) as settings:
+            settings.setValue(type, json.dumps(layers))
+
+    def remove_default_layers(self):
+        """Remove default layers from settings."""
+        default_layers_root = self._get_default_layers_settings_base()
+        self.remove(default_layers_root)
+
     def _get_ncs_pathway_settings_base(self) -> str:
         """Returns the path for NCS pathway settings.
 
@@ -1406,6 +1461,45 @@ class SettingsManager(QtCore.QObject):
         npv_collection_dict = activity_npv_collection_to_dict(npv_collection)
         npv_collection_str = json.dumps(npv_collection_dict)
         self.set_value(NPV_COLLECTION_PROPERTY, npv_collection_str)
+
+    def save_online_scenario(self, scenario_uuid):
+        """Save the passed scenario settings into the plugin settings as online tasl
+
+        :param scenario_uuid: Scenario UUID
+        :type scenario_uuid: str
+        """
+        settings_manager.set_value(self.ONLINE_TASK_BASE, scenario_uuid)
+
+    def _get_online_tasks_settings_base(self) -> str:
+        """Returns the path for Online Task settings.
+
+        :returns: Base path to Online Task group.
+        :rtype: str
+        """
+        return f"{self.BASE_GROUP_NAME}"
+
+    def get_running_online_scenario(self) -> typing.Dict:
+        """Retrieves running online scenario UUID.
+
+        :returns: Scenario settings instance
+        :rtype: ScenarioSettings
+        """
+
+        scenario_settings_key = self._get_online_tasks_settings_base()
+        with qgis_settings(scenario_settings_key) as settings:
+            return settings.value(self.ONLINE_TASK_BASE)
+
+    def delete_online_task(self):
+        """Delete the online task with the passed scenarion id.
+
+        :param scenario_id: Scenario identifier
+        :type scenario_id: str
+        """
+        log("delete online task")
+        with qgis_settings(self.BASE_GROUP_NAME) as settings:
+            a = settings.value(self.ONLINE_TASK_BASE)
+            log(a)
+            settings.remove(self.ONLINE_TASK_BASE)
 
 
 settings_manager = SettingsManager()

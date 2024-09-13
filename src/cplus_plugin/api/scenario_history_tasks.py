@@ -11,7 +11,7 @@ from typing import List
 from qgis.PyQt import QtCore
 
 from .base import BaseScenarioTask
-from .request import CplusApiRequest
+from .request import CplusApiRequest, CplusApiRequestError
 from .scenario_task_api_client import ScenarioAnalysisTaskApiClient
 from ..conf import settings_manager
 from ..models.base import Scenario
@@ -71,7 +71,13 @@ class FetchScenarioHistoryTask(BaseScenarioTask):
                 continue
             # check if the scenario has been downloaded
             scenario_result = settings_manager.get_scenario_result(scenario.uuid)
-            if scenario_result is None:
+            running_online_scenario_uuid = (
+                settings_manager.get_running_online_scenario()
+            )
+            if (
+                scenario_result is None
+                and str(scenario.uuid) != running_online_scenario_uuid
+            ):
                 settings_manager.delete_scenario(scenario.uuid)
 
     def fetch_scenario_history(self):
@@ -183,7 +189,9 @@ class FetchScenarioOutputTask(ScenarioAnalysisTaskApiClient):
                             shutil.rmtree(os.path.join(self.scenario_directory, file))
                         else:
                             os.remove(path)
-
+            if self.processing_cancelled:
+                # Will not proceed if processing has been cancelled by the user
+                return False
             self._retrieve_scenario_outputs(self.scenario_api_uuid)
             return True
         except Exception as ex:
@@ -213,3 +221,54 @@ class FetchScenarioOutputTask(ScenarioAnalysisTaskApiClient):
         :rtype: dict
         """
         return self.request.fetch_scenario_detail(self.scenario.server_uuid)
+
+
+class FetchOnlineTaskStatusTask(FetchScenarioHistoryTask):
+    """Task to fetch online scenario status from API."""
+
+    task_finished = QtCore.pyqtSignal(str)
+
+    def __init__(self, main_widget):
+        super().__init__()
+        self.main_widget = main_widget
+        self.exception = None
+        self.request = CplusApiRequest()
+        self.task_status = None
+
+    def fetch_running_scenario(self):
+        """Fetch running scenario list from API.
+
+        :return: latest 10 scenario that is running.
+        :rtype: List[Scenario]
+        """
+        return self.request.fetch_scenario_history(status="Running")
+
+    def run(self):
+        """Run fetch status using API."""
+        running_online_scenario_uuid = settings_manager.get_running_online_scenario()
+        online_task = settings_manager.get_scenario(running_online_scenario_uuid)
+        if not online_task:
+            online_tasks = self.fetch_running_scenario()
+            if len(online_tasks) > 0:
+                online_task = online_tasks[0]
+            else:
+                online_task = None
+
+        if online_task:
+            try:
+                status_response = self.request.fetch_scenario_detail(
+                    online_task.server_uuid
+                )
+                self.task_status = status_response["status"]
+            except CplusApiRequestError:
+                self.task_status = "Error"
+
+        return True
+
+    def finished(self, result):
+        """This method is automatically called when self.run returns."""
+        self.task_finished.emit(self.task_status)
+
+    def cancel(self):
+        """Cancel ongoing task."""
+        super().cancel()

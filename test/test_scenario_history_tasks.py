@@ -154,9 +154,12 @@ class TestFetchScenarioOutputTask(unittest.TestCase):
         with patch.object(
             FetchScenarioOutputTask, "fetch_scenario_output"
         ) as mock_fetch_output:
-            mock_fetch_output.return_value = (scenario, MagicMock())
-            result = task.run()
-            task.finished(result)
+            with patch.object(
+                FetchScenarioOutputTask, "delete_online_task"
+            ) as mock_delete_online_task:
+                mock_fetch_output.return_value = (scenario, MagicMock())
+                result = task.run()
+                task.finished(result)
 
         self.assertTrue(result)
         mock_save_scenario.assert_called_once()

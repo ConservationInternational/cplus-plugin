@@ -12,7 +12,7 @@ from .request import (
     JOB_STOPPED_STATUS,
     CHUNK_SIZE,
 )
-from ..conf import settings_manager, Settings
+from ..conf import settings_manager, Settings, ScenarioSettings
 from ..models.base import Activity, NcsPathway, Scenario
 from ..tasks import ScenarioAnalysisTask
 from ..utils import FileUtils, CustomJsonEncoder, todict
@@ -89,9 +89,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
         self.downloaded_output = 0
         self.scenario_status = None
         self.extent_box = extent_box
-        self.__post_init__()
+        self.__post_init()
 
-    def __post_init__(self):
+    def __post_init(self):
         self.analysis_activities = [
             settings_manager.get_activity(str(activity.uuid))
             for activity in self.analysis_activities
@@ -111,25 +111,28 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
 
     def on_terminated(self):
         """Function to call when the task is terminated."""
-        # check if there is ongoing upload
-        layer_mapping = settings_manager.get_all_layer_mapping()
-        for identifier, layer in layer_mapping.items():
-            upload_id = layer.get("upload_id", None)
-            if not upload_id:
-                continue
-            self.log_message(f"Cancelling upload file: {layer['path']} ")
-            try:
-                self.request.abort_upload_layer(layer["uuid"], upload_id)
-                settings_manager.remove_layer_mapping(identifier)
-            except Exception as ex:
-                self.log_message(f"Problem aborting upload layer: {ex}")
-        self.log_message(f"Cancel scenario {self.scenario_api_uuid}")
-        if self.scenario_api_uuid and self.scenario_status not in [
-            JOB_COMPLETED_STATUS,
-            JOB_STOPPED_STATUS,
-        ]:
-            self.request.cancel_scenario(self.scenario_api_uuid)
-        super().on_terminated()
+
+        hide_task = getattr(self, "hide_task", False)
+        if not hide_task:
+            # check if there is ongoing upload
+            layer_mapping = settings_manager.get_all_layer_mapping()
+            for identifier, layer in layer_mapping.items():
+                if "upload_id" not in layer:
+                    continue
+                self.log_message(f"Cancelling upload file: {layer['path']} ")
+                try:
+                    self.request.abort_upload_layer(layer["uuid"], layer["upload_id"])
+                    settings_manager.remove_layer_mapping(identifier)
+                except Exception as ex:
+                    self.log_message(f"Problem aborting upload layer: {ex}")
+            self.log_message(f"Cancel scenario {self.scenario_api_uuid}")
+            if self.scenario_api_uuid and self.scenario_status not in [
+                JOB_COMPLETED_STATUS,
+                JOB_STOPPED_STATUS,
+            ]:
+                self.request.cancel_scenario(self.scenario_api_uuid)
+                settings_manager.delete_online_task()
+        super().on_terminated(hide=hide_task)
 
     def run(self) -> bool:
         """Run scenario analysis using API.
@@ -552,10 +555,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
 
         priority_layers = self.get_priority_layers()
         for priority_layer in priority_layers:
-            if priority_layer.get("path", "") in self.path_to_layer_mapping:
-                priority_layer["layer_uuid"] = self.path_to_layer_mapping[
-                    priority_layer.get("path", "")
-                ]["uuid"]
+            path = priority_layer.get("path", "")
+            if path.startswith("cplus://"):
+                priority_layer["layer_uuid"] = path.replace("cplus://", "")
+            elif path in self.path_to_layer_mapping:
+                priority_layer["layer_uuid"] = self.path_to_layer_mapping[path]["uuid"]
             else:
                 priority_layer["layer_uuid"] = ""
             priority_layer["path"] = ""
@@ -564,30 +568,37 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             activity["layer_type"] = 0
             activity["path"] = ""
             for pathway in activity["pathways"]:
-                if pathway:
-                    if pathway["path"] and os.path.exists(pathway["path"]):
-                        if self.path_to_layer_mapping.get(pathway["path"], None):
-                            pathway["uuid"] = self.path_to_layer_mapping.get(
-                                pathway["path"]
-                            )["uuid"]
-                            pathway["layer_uuid"] = pathway["uuid"]
-                            pathway["layer_type"] = 0
+                if pathway is None:
+                    continue
+                path = pathway["path"]
+                if path.startswith("cplus://"):
+                    pathway["layer_uuid"] = path.replace("cplus://", "")
+                    pathway["layer_type"] = 0
+                elif path and os.path.exists(path):
+                    if self.path_to_layer_mapping.get(path, None):
+                        pathway["uuid"] = self.path_to_layer_mapping.get(path)["uuid"]
+                        pathway["layer_uuid"] = pathway["uuid"]
+                        pathway["layer_type"] = 0
 
-                    carbon_uuids = []
-                    for carbon_path in pathway["carbon_paths"]:
-                        if os.path.exists(carbon_path):
-                            if self.path_to_layer_mapping.get(carbon_path, None):
-                                carbon_uuids.append(
-                                    self.path_to_layer_mapping.get(carbon_path)["uuid"]
-                                )
-                    pathway["carbon_paths"] = []
-                    pathway["carbon_uuids"] = carbon_uuids
-                    pathway["path"] = ""
+                carbon_uuids = []
+                for carbon_path in pathway["carbon_paths"]:
+                    if carbon_path.startswith("cplus://"):
+                        names = carbon_path.split("/")
+                        carbon_uuids.append(names[-2])
+                    elif os.path.exists(carbon_path):
+                        if self.path_to_layer_mapping.get(carbon_path, None):
+                            carbon_uuids.append(
+                                self.path_to_layer_mapping.get(carbon_path)["uuid"]
+                            )
+                pathway["carbon_paths"] = []
+                pathway["carbon_uuids"] = carbon_uuids
+                pathway["path"] = ""
             new_priority_layers = []
             for priority_layer in activity["priority_layers"]:
-                if priority_layer:
-                    priority_layer["path"] = ""
-                    new_priority_layers.append(priority_layer)
+                if priority_layer is None:
+                    continue
+                priority_layer["path"] = ""
+                new_priority_layers.append(priority_layer)
             activity["priority_layers"] = new_priority_layers
 
         self.scenario_detail = {
@@ -632,6 +643,10 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
         )
         scenario_uuid = self.request.submit_scenario_detail(self.scenario_detail)
         self.scenario_api_uuid = scenario_uuid
+        scenario_json = self.request.fetch_scenario_detail(scenario_uuid)
+        scenario_obj = self.request.build_scenario_from_scenario_json(scenario_json)
+        settings_manager.save_scenario(scenario_obj)
+        settings_manager.save_online_scenario(str(scenario_obj.uuid))
 
         # execute scenario detail
         self.request.execute_scenario(scenario_uuid)
@@ -790,6 +805,13 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             }
         )
 
+    def delete_online_task(self):
+        running_online_scenario_uuid = settings_manager.get_running_online_scenario()
+        online_task = settings_manager.get_scenario(running_online_scenario_uuid)
+        if online_task:
+            if online_task.server_uuid == self.scenario_api_uuid:
+                settings_manager.delete_online_task()
+
     def _retrieve_scenario_outputs(self, scenario_uuid: str):
         """Set scenario output object based on scenario UUID
         to be used in generating report
@@ -822,3 +844,4 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
         self._update_scenario_status(
             {"progress_text": "Finished downloading output files", "progress": 100}
         )
+        self.delete_online_task()

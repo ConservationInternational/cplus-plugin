@@ -202,9 +202,12 @@ class ScenarioAnalysisTask(QgsTask):
                 message = json.dumps(todict(message), cls=CustomJsonEncoder)
         log(message, name=name, info=info, notify=notify)
 
-    def on_terminated(self):
+    def on_terminated(self, hide=False):
         """Called when the task is terminated."""
-        message = "Processing has been cancelled by the user."
+        if hide:
+            message = "Processing has been minimized by the user."
+        else:
+            message = "Processing has been cancelled by the user."
         if self.error:
             message = f"Problem in running scenario analysis: {self.error}"
         self.set_status_message(tr(message))

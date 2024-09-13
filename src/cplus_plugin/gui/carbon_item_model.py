@@ -46,6 +46,13 @@ class CarbonLayerItem(QtGui.QStandardItem):
 
     def update(self, layer_path: str):
         """Update the UI properties."""
+        if self._layer_path.startswith("cplus://"):
+            paths = self._layer_path.split("/")
+            self.setText(f"Online Default: {paths[-1]}")
+            self.setToolTip(f"Online Default: {paths[-1]}")
+            self._is_valid = True
+            self.setIcon(QtGui.QIcon())
+            return
         self._layer_path = str(os.path.normpath(layer_path))
         p = Path(self._layer_path)
         self.setText(p.name)
@@ -117,7 +124,10 @@ class CarbonLayerModel(QtGui.QStandardItemModel):
         an invalid index if not found.
         :rtype: QtCore.QModelIndex
         """
-        norm_path = str(os.path.normpath(layer_path))
+        if not layer_path.startswith("cplus://"):
+            norm_path = str(os.path.normpath(layer_path))
+        else:
+            norm_path = layer_path
         matching_index = None
         for r in range(self.rowCount()):
             index = self.index(r, 0)

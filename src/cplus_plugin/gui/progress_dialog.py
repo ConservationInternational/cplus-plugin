@@ -26,6 +26,10 @@ Ui_DlgProgress, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/analysis_progress_dialog.ui")
 )
 
+Ui_DlgOnlineProgress, _ = uic.loadUiType(
+    os.path.join(os.path.dirname(__file__), "../ui/online_analysis_progress_dialog.ui")
+)
+
 
 class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
     """Progress dialog class"""
@@ -247,10 +251,12 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
 
         super().reject()
 
-    def stop_processing(self) -> None:
+    def stop_processing(self, hide=False) -> None:
         """The user cancelled the processing."""
-
-        self.change_status_message(tr("Processing has been cancelled by the user"))
+        if hide:
+            self.change_status_message(tr("Processing has been minimized by the user"))
+        else:
+            self.change_status_message(tr("Processing has been cancelled by the user"))
 
         # Stops the processing task
         if self.main_widget:
@@ -278,6 +284,55 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         self.btn_view_report.setEnabled(True)
         icon = self.style().standardIcon(QStyle.SP_DialogCloseButton)
         self.btn_cancel.setIcon(icon)
+
+
+class OnlineProgressDialog(Ui_DlgOnlineProgress, ProgressDialog):
+    def __init__(
+        self,
+        message=None,
+        minimum=0,
+        maximum=100,
+        main_widget=None,
+        parent=None,
+        scenario_id=None,
+        scenario_name=None,
+    ):
+        super().__init__(
+            message, minimum, maximum, main_widget, parent, scenario_id, scenario_name
+        )
+        # Connections
+        self.btn_hide.clicked.connect(self.hide_clicked)
+
+    def hide_clicked(self) -> None:
+        """User clicked hide.
+
+        QGIS processing will be stopped, but online processing will be continued.
+        """
+
+        self.analysis_task.hide_task = True
+        self.analysis_cancelled.emit()
+        self.main_widget.view_status_btn.setEnabled(True)
+        self.main_widget.processing_type.setEnabled(False)
+        self.main_widget.processing_type.setToolTip(
+            "Cannot choose online processing due to user having active online processing"
+        )
+
+        self.cancel_reporting()
+
+        if self.analysis_running:
+            self.analysis_task.hide_task = True
+            # If cancelled is clicked
+            self.stop_processing(hide=True)
+            try:
+                if self.analysis_task:
+                    self.analysis_task.processing_cancelled = True
+                    self.analysis_task.cancel()
+            except RuntimeError as e:
+                # The analysis task should have been removed after
+                # scenario analyis is done, this is the only way to find
+                # out if the analysis has been completed.
+                pass
+        super().close()
 
 
 class ReportProgressDialog(ProgressDialog):
