@@ -50,6 +50,7 @@ class BaseFetchScenarioOutput:
 
         :param activity: activity dictionary
         :type activity: dict
+
         :param download_dict: downloaded file dictionary
         :type download_dict: dict
         """
@@ -78,18 +79,19 @@ class BaseFetchScenarioOutput:
 
         :param original_scenario: Original scenario
         :type original_scenario: Scenario
+
         :param scenario_detail: Scenario dictionary from API
         :type scenario_detail: dict
+
         :param output_list: Scenario output list from API
         :type output_list: dict
+
         :param download_paths: List of downloaded file paths
         :type download_paths: list
+
         :return: Scenario object
         :rtype: Scenario
         """
-        from ..utils import log, todict, CustomJsonEncoder
-
-        log(json.dumps(todict(scenario_detail), cls=CustomJsonEncoder))
         output_fnames = []
         for output in output_list["results"]:
             if "_cleaned" in output["filename"]:
@@ -122,6 +124,7 @@ class BaseFetchScenarioOutput:
 
         :param download_paths: Output file paths
         :type download_paths: list
+
         :return: True if all paths exist
         :rtype: bool
         """
@@ -138,10 +141,13 @@ class BaseFetchScenarioOutput:
 
         :param original_scenario: Original scenario
         :type original_scenario: Scenario
+
         :param scenario_detail: scenario detail dictionary
         :type scenario_detail: dict
+
         :param output_list: Scenario output list from API
         :type output_list: dict
+
         :param scenario_directory: dictionary that contains outputs from API
         :type scenario_directory: dict
         """
@@ -180,7 +186,6 @@ class BaseFetchScenarioOutput:
 
         if not self.__validate_output_paths(download_paths):
             return None, None
-
         scenario = self.__create_scenario(
             original_scenario, scenario_detail, output_list, download_paths
         )

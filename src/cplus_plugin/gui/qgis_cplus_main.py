@@ -184,8 +184,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.on_log_message_received
         )
 
-        # Scenario list
-        self.update_scenario_list()
+        # Fetch scenario history list
+        self.fetch_scenario_history_list()
         # Fetch default layers
         self.fetch_default_layer_list()
 
@@ -1305,8 +1305,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             progress_dialog.run_dialog()
 
-            log("load_scenario")
-
             analysis_task = FetchScenarioOutputTask(
                 self.analysis_scenario_name,
                 self.analysis_scenario_description,
@@ -1443,6 +1441,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def fetch_scenario_history_list(self):
         """Fetch scenario history list from API."""
         if not self.has_trends_auth():
+            self.update_scenario_list()
             return
         task = FetchScenarioHistoryTask()
         task.task_finished.connect(self.on_fetch_scenario_history_list_finished)
@@ -1454,8 +1453,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param success: True if API call is successful
         :type success: bool
         """
-        if not success:
-            return
         self.update_scenario_list()
 
     def has_trends_auth(self):
