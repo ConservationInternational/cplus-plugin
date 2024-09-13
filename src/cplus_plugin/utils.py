@@ -10,6 +10,7 @@ import uuid
 import datetime
 from pathlib import Path
 from uuid import UUID
+from enum import Enum
 
 from qgis.PyQt import QtCore, QtGui
 from qgis.core import (
@@ -580,7 +581,7 @@ class CustomJsonEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, UUID):
             # if the obj is uuid, we simply return the value of uuid
-            return obj.hex
+            return str(obj)
         if isinstance(obj, datetime.datetime):
             # if the obj is uuid, we simply return the value of uuid
             return obj.isoformat()
@@ -592,7 +593,9 @@ def todict(obj, classkey=None):
     Convert any object to dictionary
     """
 
-    if isinstance(obj, dict):
+    if isinstance(obj, Enum):
+        return obj.value
+    elif isinstance(obj, dict):
         data = {}
         for k, v in obj.items():
             data[k] = todict(v, classkey)

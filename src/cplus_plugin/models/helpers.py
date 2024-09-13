@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """Helper functions for supporting model management."""
-
+import json
 from dataclasses import field, fields
 import typing
 import uuid
@@ -232,7 +232,13 @@ def layer_component_to_dict(
     """
     base_attrs = model_component_to_dict(layer_component, uuid_to_str)
     base_attrs[PATH_ATTRIBUTE] = layer_component.path
-    base_attrs[LAYER_TYPE_ATTRIBUTE] = int(layer_component.layer_type)
+    try:
+        base_attrs[LAYER_TYPE_ATTRIBUTE] = int(layer_component.layer_type)
+    except TypeError:
+        if base_attrs["path"].endswith(".tif"):
+            base_attrs[LAYER_TYPE_ATTRIBUTE] = 0
+        elif base_attrs["path"].endswith(".shp"):
+            base_attrs[LAYER_TYPE_ATTRIBUTE] = 1
     base_attrs[USER_DEFINED_ATTRIBUTE] = layer_component.user_defined
 
     return base_attrs
