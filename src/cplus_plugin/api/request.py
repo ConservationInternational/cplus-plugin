@@ -204,11 +204,8 @@ class CplusApiUrl:
     def layer_check(self) -> str:
         """Cplus API URL for checking layer validity
 
-        def layer_detail(self, layer_uuid):
-            return f"{self.base_url}/layer/{layer_uuid}/"
-
-            :return: Cplus API URL for layer check
-            :rtype: str
+        :return: Cplus API URL for layer check
+        :rtype: str
         """
         return f"{self.base_url}/layer/check/?id_type=layer_uuid"
 
@@ -242,6 +239,9 @@ class CplusApiUrl:
         :rtype: str
         """
         return f"{self.base_url}/layer/upload/{layer_uuid}/abort/"
+
+    def layer_default_list(self):
+        return f"{self.base_url}/layer/default/"
 
     def scenario_submit(self, plugin_version=None) -> str:
         """Cplus API URL for submitting scenario JSON
@@ -929,8 +929,42 @@ class CplusApiRequest:
             raise CplusApiRequestError(result.get("detail", ""))
         return result
 
+    def fetch_default_layer_list(self) -> dict:
+        """Fetch available default layers from Server.
+
+        :raises CplusApiRequestError: when response code is non-2xx
+        :return: Layer List
+        :rtype: dict
+        """
+        result, status_code = self.get(self.urls.layer_default_list())
+        if status_code != 200:
+            raise CplusApiRequestError(result.get("detail", ""))
+        data = {}
+        for layer in result:
+            component_type = layer.get("component_type", "")
+            out_layer = {
+                "type": component_type,
+                "layer_uuid": layer.get("uuid"),
+                "name": layer.get("filename"),
+                "size": layer.get("size"),
+                "layer_type": layer.get("layer_type"),
+                "metadata": layer.get("metadata", {}),
+            }
+            if component_type in data:
+                data[component_type].append(out_layer)
+            else:
+                data[component_type] = [out_layer]
+        return data
+
     def build_scenario_from_scenario_json(self, scenario_json):
-        """Build scenario object from scenario JSON"""
+        """Build scenario object from scenario JSON.
+
+        :param scenario_json: scenario json dict
+        :type scenario_json: dict
+
+        :return: Scenario object
+        :rtype: Scenario
+        """
         detail = scenario_json["detail"]
         extent = []
         if "extent_project" in detail:
@@ -953,6 +987,19 @@ class CplusApiRequest:
         return scenario
 
     def fetch_scenario_history(self, page=1, page_size=10, status="Completed"):
+        """Fetch scenario history from server.
+
+        :param page: page number, defaults to 1
+        :type page: int, optional
+
+        :param page_size: page size to fetch, defaults to 10
+        :type page_size: int, optional
+
+        :raises CplusApiRequestError: Raises when server return non-2xx code
+
+        :return: List of Scenario object
+        :rtype: List[Scenario]
+        """
         filters = {"status": status}
         result, status_code = self.get(
             self.urls.scenario_history_list(page, page_size, filters)
@@ -985,6 +1032,16 @@ class CplusApiRequest:
         return scenario_results
 
     def delete_scenario(self, scenario_uuid):
+        """Delete scenario history from server.
+
+        :param scenario_uuid: Server's scenario UUID
+        :type scenario_uuid: str
+
+        :raises CplusApiRequestError: Raises when server return non-204 code
+
+        :return: No content
+        :rtype: dictionary
+        """
         response = self.delete(self.urls.scenario_delete(scenario_uuid))
         if response.status_code != 204:
             result = response.json()
