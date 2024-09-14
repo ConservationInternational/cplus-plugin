@@ -273,4 +273,5 @@ class FetchOnlineTaskStatusTask(FetchScenarioHistoryTask):
         self.task_finished.emit(self.task_status)
 
     def cancel(self):
+        """Cancel ongoing task."""
         super().cancel()
