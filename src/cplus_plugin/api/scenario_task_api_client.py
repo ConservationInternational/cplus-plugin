@@ -6,18 +6,18 @@ import typing
 from zipfile import ZipFile
 
 from qgis.core import Qgis
+
 from .request import (
     CplusApiRequest,
     JOB_COMPLETED_STATUS,
     JOB_STOPPED_STATUS,
     CHUNK_SIZE,
 )
-from ..conf import settings_manager, Settings, ScenarioSettings
+from ..api.base import BaseFetchScenarioOutput
+from ..conf import settings_manager, Settings
 from ..models.base import Activity, NcsPathway, Scenario
-from ..models.base import ScenarioResult
 from ..tasks import ScenarioAnalysisTask
 from ..utils import FileUtils, CustomJsonEncoder, todict
-from ..api.base import BaseFetchScenarioOutput
 
 
 def clean_filename(filename):

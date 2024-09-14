@@ -40,7 +40,6 @@ from ...definitions.defaults import (
 from ...trends_earth.constants import API_URL, TIMEOUT
 from ...utils import FileUtils, log, tr
 from ...trends_earth import auth, api, download
-from ..qgis_cplus_main import QgisCplusMain
 
 Ui_DlgSettings, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "../../ui/cplus_settings.ui")
@@ -184,7 +183,7 @@ class DlgSettingsRegister(QtWidgets.QDialog, Ui_TrendsEarthSettingsRegister):
 
 
 class DlgSettingsLogin(QtWidgets.QDialog, Ui_TrendsEarthDlgSettingsLogin):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, main_widget=None):
         super().__init__(parent)
 
         self.setupUi(self)
@@ -194,6 +193,7 @@ class DlgSettingsLogin(QtWidgets.QDialog, Ui_TrendsEarthDlgSettingsLogin):
 
         self.ok = False
         self.trends_earth_api_client = api.APIClient(API_URL, TIMEOUT)
+        self.main_widget = main_widget
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -233,10 +233,10 @@ class DlgSettingsLogin(QtWidgets.QDialog, Ui_TrendsEarthDlgSettingsLogin):
                 auth.TE_API_AUTH_SETUP, self.email.text(), self.password.text()
             )
 
-            cplus_main = QgisCplusMain(iface=None)
             settings_manager.delete_online_scenario()
-            cplus_main.fetch_default_layer_list()
-            cplus_main.fetch_scenario_history_list()
+            settings_manager.remove_default_layers()
+            self.main_widget.fetch_default_layer_list()
+            self.main_widget.fetch_scenario_history_list()
             self.ok = True
             self.close()
 
@@ -382,9 +382,10 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
     from the menu drop-down or the QGIS settings.
     """
 
-    def __init__(self, parent=None) -> None:
+    def __init__(self, parent=None, main_widget=None) -> None:
         """QGIS CPLUS Plugin Settings dialog."""
         QgsOptionsPageWidget.__init__(self, parent)
+        self.main_widget = main_widget
 
         self.setupUi(self)
         self.message_bar = qgis.gui.QgsMessageBar(self)
@@ -454,7 +455,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         # Trends.Earth settings
         self.dlg_settings_register = DlgSettingsRegister()
-        self.dlg_settings_login = DlgSettingsLogin()
+        self.dlg_settings_login = DlgSettingsLogin(main_widget=self.main_widget)
 
         self.pushButton_register.clicked.connect(self.register)
         self.pushButton_login.clicked.connect(self.login)
@@ -850,7 +851,7 @@ class CplusOptionsFactory(QgsOptionsWidgetFactory):
     QgsOptionsWidgetFactory is used to accomplish this.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, main_widget=None) -> None:
         """QGIS CPLUS Plugin Settings factory."""
         super().__init__()
 
@@ -862,6 +863,7 @@ class CplusOptionsFactory(QgsOptionsWidgetFactory):
         else:
             self.setTitle(OPTIONS_TITLE)
             self.setKey(CPLUS_OPTIONS_KEY)
+        self.main_widget = main_widget
 
     def icon(self) -> QIcon:
         """Returns the icon which will be used for the CPLUS options tab.
@@ -898,4 +900,4 @@ class CplusOptionsFactory(QgsOptionsWidgetFactory):
         :rtype: CplusSettings
         """
 
-        return CplusSettings(parent)
+        return CplusSettings(parent, main_widget=self.main_widget)

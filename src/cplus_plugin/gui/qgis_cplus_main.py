@@ -1144,6 +1144,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Fetches scenarios from plugin settings and updates the
         scenario history list
         """
+        log('update_scenario_list')
         scenarios = settings_manager.get_scenarios()
 
         if len(scenarios) >= 0:
@@ -1151,6 +1152,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         for scenario in scenarios:
             scenario_type = "Available offline"
+            log(str(scenario.name))
             if scenario.server_uuid:
                 scenario_result = settings_manager.get_scenario_result(scenario.uuid)
                 if scenario_result is None:
@@ -1454,6 +1456,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param success: True if API call is successful
         :type success: bool
         """
+        log(f'on_fetch_scenario_history_list_finished: {success}')
         if not success:
             return
         self.update_scenario_list()

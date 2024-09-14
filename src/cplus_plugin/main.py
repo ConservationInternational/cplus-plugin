@@ -112,11 +112,6 @@ class QgisCplus:
         self.toolBtnAction = self.toolbar.addWidget(self.toolButton)
         self.actions.append(self.toolBtnAction)
 
-        # Create options factories
-        self.cplus_options_factory = CplusOptionsFactory()
-        self.reports_options_factory = ReportOptionsFactory()
-        self.log_options_factory = LogOptionsFactory()
-
         create_priority_layers()
 
         initialize_model_settings()
@@ -132,6 +127,11 @@ class QgisCplus:
         self.main_widget.visibilityChanged.connect(
             self.on_dock_widget_visibility_changed
         )
+
+        # Create options factories
+        self.cplus_options_factory = CplusOptionsFactory(main_widget=self.main_widget)
+        self.reports_options_factory = ReportOptionsFactory()
+        self.log_options_factory = LogOptionsFactory()
 
         self.options_factory = None
 
@@ -333,10 +333,6 @@ class QgisCplus:
             if dock_area == Qt.NoDockWidgetArea and not self.main_widget.isFloating():
                 self.iface.addDockWidget(Qt.RightDockWidgetArea, self.main_widget)
                 self.main_widget.show()
-                # Check online task
-                self.main_widget.fetch_online_task_status()
-                # Scenario list
-                self.main_widget.fetch_scenario_history_list()
 
     def run_settings(self):
         """Options the CPLUS settings in the QGIS options dialog."""
