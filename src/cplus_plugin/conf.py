@@ -519,8 +519,7 @@ class SettingsManager(QtCore.QObject):
                     settings.remove(scenario_identifier)
 
     def delete_online_scenario(self):
-        """Delete online scenario from QGIS settings
-        """
+        """Delete online scenario from QGIS settings"""
 
         with qgis_settings(
             f"{self.BASE_GROUP_NAME}/" f"{self.SCENARIO_GROUP_NAME}"

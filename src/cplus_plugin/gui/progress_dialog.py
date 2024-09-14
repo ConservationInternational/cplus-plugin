@@ -311,10 +311,10 @@ class OnlineProgressDialog(Ui_DlgOnlineProgress, ProgressDialog):
         """
         if message == "Uploading layers with concurrent request":
             self.btn_hide.setEnabled(False)
-            self.btn_hide.setToolTip('Cannot minimize task when uploading layers')
+            self.btn_hide.setToolTip("Cannot minimize task when uploading layers")
         else:
             self.btn_hide.setEnabled(True)
-            self.btn_hide.setToolTip('Run online scenario in background')
+            self.btn_hide.setToolTip("Run online scenario in background")
 
         if message:
             self.lbl_status.setText(message)
