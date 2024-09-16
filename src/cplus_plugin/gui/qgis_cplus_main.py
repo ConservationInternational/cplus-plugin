@@ -1303,15 +1303,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             progress_dialog.run_dialog()
 
-            analysis_task = FetchScenarioOutputTask(
-                self.analysis_scenario_name,
-                self.analysis_scenario_description,
-                self.analysis_activities,
-                self.analysis_priority_layers_groups,
-                self.analysis_extent,
-                scenario,
-                None,
-            )
+            task_config = self.create_task_config(scenario)
+            task_config.all_activities = self.analysis_activities
+            task_config.base_dir = settings_manager.get_value(Settings.BASE_DIR)
+
+            analysis_task = FetchScenarioOutputTask(task_config, scenario.extent)
             analysis_task.scenario_api_uuid = scenario.server_uuid
             analysis_task.task_finished.connect(self.update_scenario_list)
 

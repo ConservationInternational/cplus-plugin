@@ -14,10 +14,9 @@ from processing.core.Processing import Processing
 
 from qgis.core import QgsRasterLayer
 
-from cplus_plugin.conf import settings_manager, Settings
-
-from cplus_core.analysis import ScenarioAnalysisTask
+from cplus_core.analysis import ScenarioAnalysisTask, TaskConfig
 from cplus_core.models.base import Scenario, NcsPathway, Activity
+from cplus_core.utils.helper import BaseFileUtils
 
 
 class ScenarioAnalysisTaskTest(unittest.TestCase):
@@ -66,38 +65,35 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             priority_layer_groups=[],
         )
 
-        analysis_task = ScenarioAnalysisTask(
-            "test_scenario_pathways_analysis",
-            "test_scenario_pathways_analysis_description",
-            [test_activity],
-            [],
-            test_layer.extent(),
-            scenario,
+        base_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "data",
+            "pathways",
         )
+        scenario_directory = os.path.join(
+            f"{base_dir}",
+            f'scenario_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+            f"{str(uuid.uuid4())[:4]}",
+        )
+        BaseFileUtils.create_new_dir(scenario_directory)
+
+        task_config = TaskConfig(
+            scenario,
+            [],
+            [],
+            [test_activity],
+            [test_activity],
+            pathway_suitability_index=1.0,
+            carbon_coefficient=1.0,
+            base_dir=scenario_directory,
+        )
+        analysis_task = ScenarioAnalysisTask(task_config)
 
         extent_string = (
             f"{test_extent.xMinimum()},{test_extent.xMaximum()},"
             f"{test_extent.yMinimum()},{test_extent.yMaximum()}"
             f" [{test_layer.crs().authid()}]"
         )
-
-        base_dir = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "data",
-            "pathways",
-        )
-
-        scenario_directory = os.path.join(
-            f"{base_dir}",
-            f'scenario_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
-            f"{str(uuid.uuid4())[:4]}",
-        )
-
-        analysis_task.scenario_directory = scenario_directory
-
-        settings_manager.set_value(Settings.BASE_DIR, base_dir)
-        settings_manager.set_value(Settings.PATHWAY_SUITABILITY_INDEX, 1.0)
-        settings_manager.set_value(Settings.CARBON_COEFFICIENT, 1.0)
 
         past_stat = test_layer.dataProvider().bandStatistics(1)
 
@@ -161,39 +157,35 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             priority_layer_groups=[],
         )
 
-        analysis_task = ScenarioAnalysisTask(
-            "test_scenario_pathways_normalization",
-            "test_scenario_pathways_normalization_description",
-            [test_activity],
-            [],
-            test_layer.extent(),
-            scenario,
+        base_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "data",
+            "pathways",
         )
+        scenario_directory = os.path.join(
+            f"{base_dir}",
+            f'scenario_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+            f"_{str(uuid.uuid4())[:4]}",
+        )
+        BaseFileUtils.create_new_dir(scenario_directory)
+
+        task_config = TaskConfig(
+            scenario,
+            [],
+            [],
+            [test_activity],
+            [test_activity],
+            pathway_suitability_index=1.0,
+            carbon_coefficient=1.0,
+            base_dir=scenario_directory,
+        )
+        analysis_task = ScenarioAnalysisTask(task_config)
 
         extent_string = (
             f"{test_extent.xMinimum()},{test_extent.xMaximum()},"
             f"{test_extent.yMinimum()},{test_extent.yMaximum()}"
             f" [{test_layer.crs().authid()}]"
         )
-
-        base_dir = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "data",
-            "pathways",
-        )
-
-        scenario_directory = os.path.join(
-            f"{base_dir}",
-            f'scenario_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
-            f"_{str(uuid.uuid4())[:4]}",
-        )
-
-        analysis_task.scenario_directory = scenario_directory
-
-        settings_manager.set_value(Settings.BASE_DIR, base_dir)
-        settings_manager.set_value(Settings.PATHWAY_SUITABILITY_INDEX, 1.0)
-        settings_manager.set_value(Settings.CARBON_COEFFICIENT, 1.0)
-
         past_stat = test_layer.dataProvider().bandStatistics(1)
 
         self.assertEqual(past_stat.minimumValue, 1.0)
@@ -269,38 +261,35 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             priority_layer_groups=[],
         )
 
-        analysis_task = ScenarioAnalysisTask(
-            "test_scenario_activities_creation",
-            "test_scenario_activities_creation_description",
-            [test_activity],
-            [],
-            test_extent,
-            scenario,
+        base_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "data",
+            "pathways",
         )
+        scenario_directory = os.path.join(
+            f"{base_dir}",
+            f'scenario_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+            f"_{str(uuid.uuid4())[:4]}",
+        )
+        BaseFileUtils.create_new_dir(scenario_directory)
+
+        task_config = TaskConfig(
+            scenario,
+            [],
+            [],
+            [test_activity],
+            [test_activity],
+            pathway_suitability_index=1.0,
+            carbon_coefficient=1.0,
+            base_dir=scenario_directory,
+        )
+        analysis_task = ScenarioAnalysisTask(task_config)
 
         extent_string = (
             f"{test_extent.xMinimum()},{test_extent.xMaximum()},"
             f"{test_extent.yMinimum()},{test_extent.yMaximum()}"
             f" [{first_test_layer.crs().authid()}]"
         )
-
-        base_dir = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "data",
-            "pathways",
-        )
-
-        scenario_directory = os.path.join(
-            f"{base_dir}",
-            f'scenario_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
-            f"_{str(uuid.uuid4())[:4]}",
-        )
-
-        analysis_task.scenario_directory = scenario_directory
-
-        settings_manager.set_value(Settings.BASE_DIR, base_dir)
-        settings_manager.set_value(Settings.PATHWAY_SUITABILITY_INDEX, 1.0)
-        settings_manager.set_value(Settings.CARBON_COEFFICIENT, 1.0)
 
         first_layer_stat = first_test_layer.dataProvider().bandStatistics(1)
         second_layer_stat = second_test_layer.dataProvider().bandStatistics(1)
@@ -440,38 +429,35 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             priority_layer_groups=[],
         )
 
-        analysis_task = ScenarioAnalysisTask(
-            "test_scenario_activities_creation",
-            "test_scenario_activities_creation_description",
-            [test_activity],
-            [],
-            test_extent,
-            scenario,
+        base_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "data",
+            "activities",
         )
+        scenario_directory = os.path.join(
+            f"{base_dir}",
+            f'scenario_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+            f"_{str(uuid.uuid4())[:4]}",
+        )
+        BaseFileUtils.create_new_dir(scenario_directory)
+
+        task_config = TaskConfig(
+            scenario,
+            [],
+            [],
+            [test_activity],
+            [test_activity],
+            pathway_suitability_index=1.0,
+            carbon_coefficient=1.0,
+            base_dir=scenario_directory,
+        )
+        analysis_task = ScenarioAnalysisTask(task_config)
 
         extent_string = (
             f"{test_extent.xMinimum()},{test_extent.xMaximum()},"
             f"{test_extent.yMinimum()},{test_extent.yMaximum()}"
             f" [{activity_layer.crs().authid()}]"
         )
-
-        base_dir = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "data",
-            "activities",
-        )
-
-        scenario_directory = os.path.join(
-            f"{base_dir}",
-            f'scenario_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
-            f"_{str(uuid.uuid4())[:4]}",
-        )
-
-        analysis_task.scenario_directory = scenario_directory
-
-        settings_manager.set_value(Settings.BASE_DIR, base_dir)
-        settings_manager.set_value(Settings.PATHWAY_SUITABILITY_INDEX, 1.0)
-        settings_manager.set_value(Settings.CARBON_COEFFICIENT, 1.0)
 
         first_layer_stat = activity_layer.dataProvider().bandStatistics(1)
 
@@ -525,10 +511,6 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             "groups": [test_priority_group],
         }
 
-        settings_manager.save_priority_group(test_priority_group)
-
-        settings_manager.save_priority_layer(priority_layer_1)
-
         test_activity = Activity(
             uuid=uuid.uuid4(),
             name="test_activity",
@@ -537,8 +519,6 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             path=activity_layer_path_1,
             priority_layers=[priority_layer_1],
         )
-
-        settings_manager.save_activity(test_activity)
 
         activity_layer = QgsRasterLayer(test_activity.path, test_activity.name)
 
@@ -554,39 +534,35 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             priority_layer_groups=[],
         )
 
-        analysis_task = ScenarioAnalysisTask(
-            "test_scenario_activities_creation",
-            "test_scenario_activities_creation_description",
-            [test_activity],
-            [],
-            test_extent,
-            scenario,
+        base_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "data",
+            "activities",
         )
+        scenario_directory = os.path.join(
+            f"{base_dir}",
+            f'scenario_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+            f"_{str(uuid.uuid4())[:4]}",
+        )
+        BaseFileUtils.create_new_dir(scenario_directory)
+
+        task_config = TaskConfig(
+            scenario,
+            [priority_layer_1],
+            [test_priority_group],
+            [test_activity],
+            [test_activity],
+            pathway_suitability_index=1.0,
+            carbon_coefficient=1.0,
+            base_dir=scenario_directory,
+        )
+        analysis_task = ScenarioAnalysisTask(task_config)
 
         extent_string = (
             f"{test_extent.xMinimum()},{test_extent.xMaximum()},"
             f"{test_extent.yMinimum()},{test_extent.yMaximum()}"
             f" [{activity_layer.crs().authid()}]"
         )
-
-        base_dir = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "data",
-            "activities",
-        )
-
-        scenario_directory = os.path.join(
-            f"{base_dir}",
-            f'scenario_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
-            f"_{str(uuid.uuid4())[:4]}",
-        )
-
-        analysis_task.scenario_directory = scenario_directory
-
-        settings_manager.set_value(Settings.BASE_DIR, base_dir)
-        settings_manager.set_value(Settings.PATHWAY_SUITABILITY_INDEX, 1.0)
-        settings_manager.set_value(Settings.CARBON_COEFFICIENT, 1.0)
-
         first_layer_stat = activity_layer.dataProvider().bandStatistics(1)
 
         self.assertEqual(first_layer_stat.minimumValue, 1.0)
