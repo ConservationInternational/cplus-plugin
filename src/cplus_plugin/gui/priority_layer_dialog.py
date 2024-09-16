@@ -17,7 +17,7 @@ from qgis.PyQt.uic import loadUiType
 from qgis.gui import QgsFileWidget
 
 from ..conf import settings_manager, Settings
-from ..utils import FileUtils, open_documentation
+from ..utils import FileUtils, open_documentation, log
 from ..models.base import PriorityLayerType
 from ..definitions.defaults import ICON_PATH, PRIORITY_LAYERS, USER_DOCUMENTATION_SITE
 from ..definitions.constants import PRIORITY_LAYERS_SEGMENT, USER_DEFINED_ATTRIBUTE

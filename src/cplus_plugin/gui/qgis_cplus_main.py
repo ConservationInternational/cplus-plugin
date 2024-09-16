@@ -1028,6 +1028,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         group = settings_manager.get_priority_group(group_identifier)
         current_text = group.get("name")
 
+        if current_text is None:
+            self.show_message(
+                tr(
+                    "Couldn't find the priority group,"
+                    " make sure you select the priority group root item."
+                ),
+                Qgis.Critical,
+            )
+            return
+
         if group_identifier is None or group_identifier == "":
             self.show_message(
                 tr("Could not fetch the selected priority group for editing."),
