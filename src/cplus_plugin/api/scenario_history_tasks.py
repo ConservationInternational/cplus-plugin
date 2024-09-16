@@ -22,10 +22,11 @@ from ..utils import log
 class FetchScenarioHistoryTask(BaseScenarioTask):
     """Task to fetch scenario history from API."""
 
-    def __init__(self):
+    def __init__(self, main_widget=None):
         """Task initialization."""
         super().__init__()
         self.result = []
+        self.main_widget = main_widget
 
     def run(self):
         """Execute the task logic.
@@ -49,6 +50,8 @@ class FetchScenarioHistoryTask(BaseScenarioTask):
         if is_success:
             self.store_scenario_list(self.result)
         self.task_finished.emit(is_success)
+        if self.main_widget:
+            self.main_widget.update_scenario_list
 
     def store_scenario_list(self, result: List[Scenario]):
         """Store scenario history into settings_manager.

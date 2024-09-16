@@ -207,8 +207,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         if online_task:
             if status == JOB_COMPLETED_STATUS:
-                message = f"Task {online_task.name} has completed successfully."
-                button_text = "Generate report"
+                message = f"Task {online_task.name} has completed successfully. You can download the result from Log tab."
+                button_text = "OK"
             elif status == JOB_RUNNING_STATUS:
                 message = f"Task {online_task.name} is still running."
                 button_text = "View status"
@@ -216,15 +216,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 message = f"Task {online_task.name} is {status}."
                 button_text = "OK"
             widget = self.message_bar.createMessage(tr(message))
-            button = QPushButton(widget)
 
-            button.setText(button_text)
-            if status in [JOB_RUNNING_STATUS, JOB_COMPLETED_STATUS]:
+            if status == JOB_RUNNING_STATUS:
+                button = QPushButton(widget)
+                button.setText(button_text)
                 load_scenario = partial(
                     self.load_scenario, running_online_scenario_uuid
                 )
                 button.pressed.connect(load_scenario)
-            widget.layout().addWidget(button)
+                widget.layout().addWidget(button)
             self.update_message_bar(widget)
 
     def fetch_online_task_status(self):
@@ -1451,6 +1451,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param success: True if API call is successful
         :type success: bool
         """
+        if not success:
+            return
         self.update_scenario_list()
 
     def has_trends_auth(self):

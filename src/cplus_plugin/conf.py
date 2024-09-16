@@ -518,6 +518,18 @@ class SettingsManager(QtCore.QObject):
                 if str(scenario_identifier) == str(scenario_id):
                     settings.remove(scenario_identifier)
 
+    def delete_online_scenario(self):
+        """Delete online scenario from QGIS settings"""
+
+        with qgis_settings(
+            f"{self.BASE_GROUP_NAME}/" f"{self.SCENARIO_GROUP_NAME}"
+        ) as settings:
+            for scenario_identifier in settings.childGroups():
+                scenario = settings_manager.get_scenario(scenario_identifier)
+                if scenario.server_uuid:
+                    settings_manager.delete_scenario_result(scenario_identifier)
+                    settings_manager.delete_scenario(scenario_identifier)
+
     def delete_all_scenarios(self):
         """Deletes all the plugin scenarios settings."""
         with qgis_settings(
