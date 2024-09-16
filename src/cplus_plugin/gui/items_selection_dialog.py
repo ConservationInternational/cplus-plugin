@@ -135,9 +135,16 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
             item = self.list_widget.item(index)
             if item.checkState() == QtCore.Qt.Checked:
                 items_text.append(item.text())
-        item_names = ",".join(items_text)
-        items = [item for item in items if item.name in item_names]
-        return items
+
+        final_items = []
+
+        for item in items:
+            for item_name in items_text:
+                if item.name == item_name:
+                    final_items.append(item)
+                    break
+
+        return final_items
 
     def unselected_items(self):
         """Returns unselected items from the dialog"""
