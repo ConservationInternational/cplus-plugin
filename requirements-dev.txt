@@ -32,7 +32,7 @@ mkdocs-material-extensions == 1.0.3
 mkdocs-material == 8.1.7
 mkdocstrings-python == 1.6.0
 mkdocs-video == 1.1.0
-mkdocs==1.4.2
+mkdocs == 1.4.2
 packaging == 21.3
 pygments == 2.11.2
 pymdown-extensions == 9.1
