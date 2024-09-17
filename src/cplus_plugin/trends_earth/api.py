@@ -283,7 +283,7 @@ class APIClient(QtCore.QObject):
             "/auth", method="post", payload={"email": email, "password": password}
         )
         if resp:
-            if 'access_token' in resp:
+            if "access_token" in resp:
                 return True
             else:
                 log(
@@ -360,7 +360,6 @@ class APIClient(QtCore.QObject):
             resp = None
 
         if resp is not None:
-
             try:
                 if type(resp) is QtNetwork.QNetworkReply:
                     ret = resp.readAll()
@@ -428,7 +427,7 @@ class APIClient(QtCore.QObject):
     def delete_user(self, email="me"):
         resp = self.call_api("/api/v1/user/me", "delete", use_token=True)
 
-        if 'data' in resp:
+        if "data" in resp:
             return True
         else:
             return None

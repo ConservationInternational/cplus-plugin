@@ -182,15 +182,15 @@ class DlgSettingsRegister(QtWidgets.QDialog, Ui_TrendsEarthSettingsRegister):
                 QtWidgets.QMessageBox.information(
                     None,
                     self.tr("Registration failed"),
-                    self.tr(
-                        resp.get("detail", "")
-                    ),
+                    self.tr(resp.get("detail", "")),
                 )
         else:
             QtWidgets.QMessageBox.information(
                 None,
                 self.tr("Failed"),
-                self.tr("Failed to register. Please check your internet connection and try again."),
+                self.tr(
+                    "Failed to register. Please check your internet connection and try again."
+                ),
             )
             return None
 
@@ -334,7 +334,9 @@ class DlgSettingsEditUpdate(QtWidgets.QDialog, Ui_TrendsEarthSettingsEditUpdate)
             QtWidgets.QMessageBox.information(
                 None,
                 self.tr("Failed"),
-                self.tr("Failed to update user information. Please check your internet connection and try again."),
+                self.tr(
+                    "Failed to update user information. Please check your internet connection and try again."
+                ),
             )
 
 
@@ -410,7 +412,9 @@ class DlgSettingsEditForgotPassword(
                 QtWidgets.QMessageBox.information(
                     None,
                     self.tr("Failed"),
-                    self.tr("Failed to reset password. Please check your internet connection and try again."),
+                    self.tr(
+                        "Failed to reset password. Please check your internet connection and try again."
+                    ),
                 )
 
 
