@@ -59,7 +59,6 @@ nav:
                 - Feedback: developer/api/core/api_validation_feedback.md
                 - Manager: developer/api/core/api_validation_manager.md
                 - Validators: developer/api/core/api_validation_validators.md
-            - Extents: developer/api/core/api_pilot_extent.md
           - Models:
             - Model base: developer/api/models/api_base.md
             - Helpers: developer/api/models/api_helpers.md
