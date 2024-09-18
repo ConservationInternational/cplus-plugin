@@ -30,7 +30,7 @@ mkdocs-git-revision-date-localized-plugin
 mkdocs-material-extensions == 1.0.3
 mkdocs-material
 # mkdocstrings == 0.26.1
-mkdocstrings-python == 1.11.1
+mkdocstrings-python
 mkdocs-video
 mkdocs
 packaging == 21.3
