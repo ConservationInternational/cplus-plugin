@@ -29,7 +29,6 @@ mergedeep == 1.3.4
 mkdocs-git-revision-date-localized-plugin
 mkdocs-material-extensions == 1.0.3
 mkdocs-material
-# mkdocstrings == 0.26.1
 mkdocstrings-python
 mkdocs-video
 mkdocs
