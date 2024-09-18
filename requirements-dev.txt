@@ -28,14 +28,14 @@ markupsafe == 2.0.1
 mergedeep == 1.3.4
 mkdocs-git-revision-date-localized-plugin == 0.11.1
 mkdocs-material-extensions == 1.0.3
-mkdocs-material == 8.1.7
+mkdocs-material
 # mkdocstrings == 0.26.1
 mkdocstrings-python == 1.11.1
 mkdocs-video == 1.1.0
-mkdocs == 1.4.2
+mkdocs
 packaging == 21.3
 pygments == 2.11.2
-pymdown-extensions == 9.1
+pymdown-extensions
 pyparsing == 3.0.6
 pyqt5-qt5 == 5.15.2
 pyqt5-sip == 12.9.0
