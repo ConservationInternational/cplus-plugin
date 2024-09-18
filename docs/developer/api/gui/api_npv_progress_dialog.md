@@ -1,6 +1,6 @@
 # NPV Progress Dialog
 
-::: src.cplus_plugin.gui.financials.npv_manager_dialog
+::: src.cplus_plugin.gui.financials.npv_progress_dialog
     handler: python
     options:
         docstring_style: sphinx
