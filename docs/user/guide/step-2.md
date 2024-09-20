@@ -34,7 +34,7 @@ NCS pathways buttons:
 
 ## How to add NCS pathway
 
-Click on the left green plus button to add a new pathway (**Figure 3**).
+Click on the left green plus button ![plus button](./img/plugin-step2-1.png) to add a new pathway (**Figure 3**).
 
 **You can use two methods to add the NCS pathway**
 
@@ -82,9 +82,10 @@ In this method, you will add a new NCS pathway using online defaults. This optio
 
 - Click on the `OK` button to add the NCS pathway.
 
-- After Choosing from Online Defaults
 
 After selecting the online default, the system will automatically fill in the name and description fields for you. You can then add a carbon layer from the available options in the system.
+
+![After online default](./img/plugin-step2-2.png)
 
 <blockquote> If the NCS pathway is broken (e.g. layer or file cannot be found), the pathway text
 will have an exclamation mark next to it. The user will need to rectify the issue before continuing to
