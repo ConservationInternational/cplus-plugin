@@ -20,6 +20,35 @@
 
 - ![edit button](img/mActionToggleEditing.svg): Edit the selected PWL.
 
+## Methods to create layers
+
+### Method 1: Create manually 
+
+- The following parameters need to be set:
+    - **Priority layer**: The layer that represents the priority layer.
+    - **Priority layer name**: A unique identifier for the priority layer.
+    - **Priority layer description**: A detailed description of the priority layer.
+
+- Click the `Assign activities` button to select activities to be associated with the priority layer.
+  
+![Priority Layer Dialog](img/step3-priority-layer-dialog-1.png)
+
+
+- Select the activities you want to be associated with the priority layer.
+
+- Click **OK**.
+
+![Multiple Item Selection](img/step3-multiple-item-selection.png)
+
+
+### Method 2: Create Online
+
+Click on the `Online defaults` to select the default priority layer from the available options.
+
+![Priority Layer Dialog](img/step3-priority-layer-dialog-2.png)
+
+- Then click **OK** to add the priority layer to PWL.
+
 ## Financial Priority Weighted Layer Editor dialog
 
 The Net Present Value (NPV) Tool is designed to assist users in making informed financial decisions by evaluating and prioritising activities based on their projected cash flows and the time value of money. This manual provides comprehensive instructions on how to utilise the NPV tool effectively.
@@ -83,6 +112,8 @@ The primary purpose of the NPV Tool is to help users prioritise activities by pr
 
 - **Priority layer**: Select the priority layer.
 
+- **Online Defaults**: Select priority layers from online defaults.
+
 - **Priority layer name**: A unique name for the priority layer.
 
 - **Priority layer description**: A detailed description for the priority layer.
@@ -110,6 +141,8 @@ The primary purpose of the NPV Tool is to help users prioritise activities by pr
 - **Status**: A status message on the current analysis being performed.
 
 - **View Report**: This button will remain disabled until the processing is done.
+
+- **Hide**: This button will hide the  progress dialog.
 
 - **Cancel**: Clicking this button will stop the processing.
 
