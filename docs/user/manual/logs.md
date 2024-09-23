@@ -6,6 +6,24 @@
 
 2. **Scenario History:** In this section, users can explore the history of previously executed scenarios. It serves as an archive of past processing scenarios, allowing users to review, analyse, and reference historical data. Users can retrieve valuable information about past activities, outcomes, and trends, facilitating informed decision-making and performance evaluation. The scenario history provides a comprehensive overview of past system activities, offering insights into long-term patterns and performance metrics.
 
+- **Offline Scenarios :** In this scenario, reports are stored locally and can be accessed even when the system is offline. To view the offline scenario, the user has to select the report and then click on `refresh` button, this will load the scenario and display on the map canvas.
+
+- **Online Scenarios :** The stored online scenarios in the log help users load and analyse scenarios they have run online. To view the online scenario, the user has to select the report and then click on the  `refresh` button, this will load the scenario and display on the map canvas.
+
+    Benefits of storing logs of online scenarios:
+
+    - Keep track of executed scenarios.
+
+    - Allow users to review and analyze previously run scenarios.
+
+    - Provide a record for troubleshooting and auditing purposes.
+
+    - Facilitate comparison between different scenarios for better decision-making.
+  
+    *After the completion of report generation, the user will receive an email confirming the successful completion of the report.*
+
+    ![Scenario Email](./img/logs-13.png)
+
     ![Scenario history](./img/logs-2.png)
 
     Once the scenario is completed that scenario history will be shown in the scenario history section.
@@ -21,6 +39,7 @@
     - **Scenario Comparison Report:** This feature allows users to run scenario comparisons, and generate comparison reports. These reports are saved in the base data directory specified in the CPLUS plugin settings.
 
         **Run the Scenario:** Ensure the scenario runs successfully.
+
         **Save Scenario History:** Click on the plus icon (+) to save the scenario history into the logs. The user can save the scenario after the scenario runs successfully.
 
         ![Comparison report](./img/logs-5.png)
@@ -63,7 +82,7 @@
 
     - **Minus Icon:** The minus icon serves the purpose of removing the scenario from the scenario history section. Clicking on this icon allows users to delete specific scenarios from the history, streamlining the displayed records to focus on relevant information.
 
-3. **Processing Scenario Logs:** This section provides a detailed record of logs about the ongoing processing scenario. It offers real-time insights into the actions, events, and outcomes within the current scenario. Users can monitor the progress, identify any errors or issues, and troubleshoot accordingly. These logs are essential for tracking the execution flow and diagnosing any anomalies during the processing workflow.
+1. **Processing Scenario Logs:** This section provides a detailed record of logs about the ongoing processing scenario. It offers real-time insights into the actions, events, and outcomes within the current scenario. Users can monitor the progress, identify any errors or issues, and troubleshoot accordingly. These logs are essential for tracking the execution flow and diagnosing any anomalies during the processing workflow.
 
     ![Processing log](./img/logs-3.png)
 
