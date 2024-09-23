@@ -187,7 +187,9 @@ class BaseFetchScenarioOutput:
             is_valid, invalid_indexes = self.__validate_output_paths(download_paths)
             if len(invalid_indexes) <= len(urls_to_download):
                 urls_to_download = [urls_to_download[idx] for idx in invalid_indexes]
-                download_paths_copy = [download_paths_copy[idx] for idx in invalid_indexes]
+                download_paths_copy = [
+                    download_paths_copy[idx] for idx in invalid_indexes
+                ]
             if iteration == max_iteration:
                 break
             iteration += 1
