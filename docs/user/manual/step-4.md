@@ -34,7 +34,7 @@ This step is crucial for tailoring the outputs to include only the necessary inf
 
     1. **Process the scenario online:** By default, this option is unchecked. When the user selects this option, the scenario is processed online using the API. This means that the system sends the scenario data to a remote server or service via the Internet. The remote server performs the necessary computations or analysis based on the provided scenario data. Processing online allows for real-time analysis and can leverage the computing power and resources available on the remote server. This option might be preferred when the user requires quicker results or when the scenario data is too large or complex to be processed efficiently on the user's local device. However, processing online may require a stable internet connection.
    
-    2. If the user has previously selected `Online defaults`, this option will be selected automatically. 
+    *If the user has previously selected `Online defaults`, this option will be selected automatically.*
 
 4. **Run Scenario:** 
 
