@@ -64,7 +64,7 @@ Select the target layer from the priority weighting layers list from its priorit
   
 ![Priority layer editing/adding dialog](img/manual-priority-layer-dialog-4.png)
 
-- Then click **OK** to add the priority layer to PWL.
+- Then click on the 1️⃣ `OK` button, to add the priority layer to PWL.
        
 - ![remove button](img/symbologyRemove.svg): Remove the selected PWL.
 
