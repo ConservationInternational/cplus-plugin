@@ -2152,8 +2152,13 @@ class ScenarioAnalysisTask(QgsTask):
             passed_extent_box[3],
         )
 
+        # We explicitly set the created_date since the current implementation
+        # of the data model means that the attribute value is set only once when
+        # the class is loaded hence subsequent instances will have the same value.
         self.scenario_result = ScenarioResult(
-            scenario=self.scenario, scenario_directory=self.scenario_directory
+            scenario=self.scenario,
+            scenario_directory=self.scenario_directory,
+            created_date=datetime.datetime.now(),
         )
 
         try:

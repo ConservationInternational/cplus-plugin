@@ -1633,7 +1633,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                     tree_layer, activity_node_indices
                 )
 
-                # Removing the tree layer band title
+                # Remove the tree layer band title
                 QgsLegendRenderer.setNodeLegendStyle(tree_layer, QgsLegendStyle.Hidden)
 
                 model.refreshLayerLegend(tree_layer)
