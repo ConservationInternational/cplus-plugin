@@ -273,10 +273,11 @@ def download_files(urls, out_folder):
 def get_admin_bounds() -> typing.Dict[str, Country]:
     raw_admin_bounds = read_json("admin_bounds_key.json.gz", verify=False)
     countries_regions = {}
+    if raw_admin_bounds is None:
+        return {}
     for country_name, raw_country in raw_admin_bounds.items():
         countries_regions[country_name] = Country.deserialize(country_name, raw_country)
     return countries_regions
-
 
 def get_cities() -> typing.Dict[str, typing.Dict[str, City]]:
     cities_key = read_json("cities.json.gz", verify=False)
