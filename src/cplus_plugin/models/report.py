@@ -3,10 +3,12 @@
 """ Data models for report production."""
 
 import dataclasses
+from enum import IntEnum
 import typing
 from uuid import UUID
 
-from qgis.core import QgsFeedback, QgsRectangle
+from qgis.core import QgsFeedback, QgsLayoutTableColumn
+from qgis.PyQt import QtCore
 
 from .base import Scenario, ScenarioResult
 
@@ -103,3 +105,50 @@ class RepeatAreaDimension:
     columns: int
     width: float
     height: float
+
+
+@dataclasses.dataclass
+class MetricColumn:
+    """This class contains information required to create
+    custom columns in the activity table in a scenario
+    report.
+    """
+
+    name: str
+    header: str
+    expression: str
+    alignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignHCenter
+    auto_calculated: bool = False
+
+    def to_qgs_column(self) -> QgsLayoutTableColumn:
+        """Convert this object to a QgsLayoutTableColumn for use
+        in a QgsLayoutTable.
+
+        :returns: A layout column object containing the heading,
+        horizontal alignment and width specified.
+        :rtype: QgsLayoutTableColumn
+        """
+        layout_column = QgsLayoutTableColumn(self.header)
+        layout_column.setHAlignment(self.alignment)
+        layout_column.setWidth(0)
+
+        return layout_column
+
+
+class ExpressionType(IntEnum):
+    """Type of expression."""
+
+    COLUMN = 0
+    CUSTOM = 1
+
+
+@dataclasses.dataclass
+class ActivityColumnMetric:
+    """This class provides granular control of the metric
+    applied in each activity's column.
+    """
+
+    column_name: str  # Assuming each metric column will have a unique name
+    activity_id: str
+    expression: str
+    expression_type: ExpressionType = ExpressionType.COLUMN

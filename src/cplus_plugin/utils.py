@@ -464,6 +464,23 @@ class FileUtils:
         return QtGui.QIcon(icon_path)
 
     @staticmethod
+    def get_pixmap(file_name: str) -> QtGui.QPixmap:
+        """Creates a pixmap based on the file name in the 'icons' folder.
+
+        :param file_name: File name which should include the extension.
+        :type file_name: str
+
+        :returns: Pixmap object matching the file name.
+        :rtype: QtGui.QPixmap
+        """
+        pixmap_path = os.path.normpath(f"{FileUtils.plugin_dir()}/icons/{file_name}")
+
+        if not os.path.exists(pixmap_path):
+            return QtGui.QPixmap()
+
+        return QtGui.QPixmap(pixmap_path)
+
+    @staticmethod
     def report_template_path(file_name=None) -> str:
         """Get the absolute path to the template file with the given name.
         Caller needs to verify that the file actually exists.

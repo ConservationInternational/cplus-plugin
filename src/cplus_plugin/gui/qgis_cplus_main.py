@@ -48,6 +48,7 @@ from qgis.gui import (
 from qgis.utils import iface
 
 from .activity_widget import ActivityContainerWidget
+from .metrics_builder_dialog import ActivityMetricsBuilder
 from .priority_group_widget import PriorityGroupWidget
 from .scenario_item_widget import ScenarioItemWidget
 from .progress_dialog import OnlineProgressDialog, ReportProgressDialog, ProgressDialog
@@ -167,6 +168,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.landuse_weighted.toggled.connect(self.outputs_options_changed)
         self.highest_position.toggled.connect(self.outputs_options_changed)
         self.processing_type.toggled.connect(self.processing_options_changed)
+        self.chb_metric_builder.toggled.connect(self.on_use_custom_metrics)
+        self.btn_metric_builder.clicked.connect(self.on_show_metrics_wizard)
+        edit_table_icon = FileUtils.get_icon("mActionEditTable.svg")
+        self.btn_metric_builder.setIcon(edit_table_icon)
 
         self.load_layer_options()
 
@@ -2418,6 +2423,22 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def open_settings(self):
         """Options the CPLUS settings in the QGIS options dialog."""
         self.iface.showOptionsDialog(currentPage=OPTIONS_TITLE)
+
+    def on_use_custom_metrics(self, checked: bool):
+        """Slot raised when use custom metrics has been enabled or disabled.
+
+        :param checked: True to use custom metrics else False.
+        :type checked: bool
+        """
+        self.btn_metric_builder.setEnabled(checked)
+
+    def on_show_metrics_wizard(self):
+        """Slot raised to show the metric customization
+        wizard for the scenario analysis report.
+        """
+        metrics_builder = ActivityMetricsBuilder(self)
+        if metrics_builder.exec_() == QtWidgets.QDialog.Accepted:
+            pass
 
     def run_report(self, progress_dialog, report_manager):
         """Run report generation. This should be called after the
