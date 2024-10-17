@@ -1,3 +1,15 @@
+---
+title: Conservation International
+summary:
+    - Jeremy Prior
+    - Ketan Bamniya
+date:
+some_url:
+copyright:
+contact:
+license: This program is free software; you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
+---
+
 # Step4: Select outputs and Processing options
 
 Click on the 1️⃣ `Step 4` option, to go to Step 4.

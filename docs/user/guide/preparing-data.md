@@ -1,3 +1,15 @@
+---
+title: Conservation International
+summary:
+    - Jeremy Prior
+    - Ketan Bamniya
+date:
+some_url:
+copyright:
+contact:
+license: This program is free software; you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
+---
+
 # Preparing data
 
 Data preparation is an important step before performing data analysis. This is especially true for spatial data (rasters and vector layers), as many factors play a role in the result. Here are some factors that need to be considered:
