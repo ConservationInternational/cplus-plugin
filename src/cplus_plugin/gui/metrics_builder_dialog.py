@@ -17,14 +17,14 @@ from qgis.core import (
 )
 from qgis.gui import QgsGui, QgsMessageBar
 
-from qgis.PyQt import QtGui, QtWidgets
+from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
 from ..conf import Settings, settings_manager
 
 from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
-from .metrics_builder_model import MetricColumnListModel
+from .metrics_builder_model import MetricColumnListItem, MetricColumnListModel
 from ..models.base import Activity
 from ..utils import FileUtils, log, generate_random_color, open_documentation, tr
 
@@ -88,6 +88,9 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         self.splitter.setStretchFactor(1, 75)
 
         self.lst_columns.setModel(self._column_list_model)
+        self.lst_columns.selectionModel().selectionChanged.connect(
+            self.on_column_selection_changed
+        )
 
     def on_page_id_changed(self, page_id: int):
         """Slot raised when the page ID changes.
@@ -126,16 +129,93 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         if ok and column_name:
             # Remove special characters
             clean_column_name = re.sub("\W+", " ", column_name)
+            column_exists = self._column_list_model.column_exists(clean_column_name)
+            if column_exists:
+                QtWidgets.QMessageBox.warning(
+                    self,
+                    tr("Duplicate Column Name"),
+                    tr("There is an already existing column name"),
+                )
+                return
+
             self._column_list_model.add_new_column(clean_column_name)
 
     def on_remove_column(self):
-        """Slot raised to remove an existing column."""
-        pass
+        """Slot raised to remove the selected column."""
+        selected_items = self.selected_column_items()
+        for item in selected_items:
+            self._column_list_model.remove_column(item.name)
 
     def on_move_up_column(self):
         """Slot raised to move the selected column one level up."""
-        pass
+        selected_items = self.selected_column_items()
+        if len(selected_items) == 0:
+            return
+
+        item = selected_items[0]
+        row = self._column_list_model.move_column_up(item.row())
+        if row == -1:
+            return
+
+        # Maintain selection
+        self.select_column(row)
 
     def on_move_down_column(self):
         """Slot raised to move the selected column one level down."""
-        pass
+        selected_items = self.selected_column_items()
+        if len(selected_items) == 0:
+            return
+
+        item = selected_items[0]
+        row = self._column_list_model.move_column_down(item.row())
+        if row == -1:
+            return
+
+        # Maintain selection
+        self.select_column(row)
+
+    def select_column(self, row: int):
+        """Select the column item in the specified row.
+
+        :param row: Column item in the specified row number to be selected.
+        :type row: int
+        """
+        index = self._column_list_model.index(row, 0)
+        if not index.isValid():
+            return
+
+        selection_model = self.lst_columns.selectionModel()
+        selection_model.select(index, QtCore.QItemSelectionModel.ClearAndSelect)
+
+    def on_column_selection_changed(
+        self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection
+    ):
+        """Slot raised when selection in the columns view has changed.
+
+        :param selected: Current item selection.
+        :type selected: QtCore.QItemSelection
+
+        :param deselected: Previously selected items that have been
+        deselected.
+        :type deselected: QtCore.QItemSelection
+        """
+        self.btn_delete_column.setEnabled(True)
+        self.btn_column_up.setEnabled(True)
+        self.btn_column_down.setEnabled(True)
+
+        selected_columns = self.selected_column_items()
+        if len(selected_columns) != 1:
+            self.btn_delete_column.setEnabled(False)
+            self.btn_column_up.setEnabled(False)
+            self.btn_column_down.setEnabled(False)
+
+    def selected_column_items(self) -> typing.List[MetricColumnListItem]:
+        """Returns the selected column items in the column list view.
+
+        :returns: A collection of the selected column items.
+        :rtype: list
+        """
+        selection_model = self.lst_columns.selectionModel()
+        idxs = selection_model.selectedRows()
+
+        return [self._column_list_model.item(idx.row()) for idx in idxs]
