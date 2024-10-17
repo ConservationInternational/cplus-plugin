@@ -48,16 +48,7 @@
        <enum>QFrame::Raised</enum>
       </property>
       <layout class="QGridLayout" name="gridLayout">
-       <property name="leftMargin">
-        <number>2</number>
-       </property>
-       <property name="topMargin">
-        <number>2</number>
-       </property>
-       <property name="rightMargin">
-        <number>2</number>
-       </property>
-       <property name="bottomMargin">
+       <property name="margin">
         <number>2</number>
        </property>
        <property name="spacing">
@@ -115,16 +106,7 @@
     <string notr="true">1</string>
    </attribute>
    <layout class="QGridLayout" name="gridLayout_8">
-    <property name="leftMargin">
-     <number>0</number>
-    </property>
-    <property name="topMargin">
-     <number>0</number>
-    </property>
-    <property name="rightMargin">
-     <number>0</number>
-    </property>
-    <property name="bottomMargin">
+    <property name="margin">
      <number>0</number>
     </property>
     <item row="0" column="0">
@@ -141,20 +123,11 @@
          <x>0</x>
          <y>0</y>
          <width>586</width>
-         <height>416</height>
+         <height>429</height>
         </rect>
        </property>
        <layout class="QGridLayout" name="gridLayout_7">
-        <property name="leftMargin">
-         <number>0</number>
-        </property>
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <property name="rightMargin">
-         <number>0</number>
-        </property>
-        <property name="bottomMargin">
+        <property name="margin">
          <number>0</number>
         </property>
         <item row="0" column="0">
@@ -234,7 +207,14 @@
              </widget>
             </item>
             <item row="1" column="0" colspan="5">
-             <widget class="QListView" name="lst_columns"/>
+             <widget class="QListView" name="lst_columns">
+              <property name="editTriggers">
+               <set>QAbstractItemView::NoEditTriggers</set>
+              </property>
+              <property name="selectionBehavior">
+               <enum>QAbstractItemView::SelectRows</enum>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
@@ -283,7 +263,7 @@
                 </widget>
                </item>
                <item row="2" column="1">
-                <widget class="QgsFieldExpressionWidget" name="cbo_column_expression"/>
+                <widget class="QgsFieldExpressionWidget" name="cbo_column_expression" native="true"/>
                </item>
               </layout>
              </widget>

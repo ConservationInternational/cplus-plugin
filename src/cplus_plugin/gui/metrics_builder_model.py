@@ -2,7 +2,7 @@
 """
 MVC models for the metrics builder.
 """
-import os
+from enum import IntEnum
 import typing
 
 from qgis.PyQt import QtCore, QtGui
@@ -151,6 +151,13 @@ class MetricColumnListItem(QtGui.QStandardItem):
         return self._column
 
 
+class MoveDirection(IntEnum):
+    """Move an item up or down."""
+
+    UP = 0
+    DOWN = 1
+
+
 class MetricColumnListModel(QtGui.QStandardItemModel):
     """View model for list-based metric column objects."""
 
@@ -190,6 +197,120 @@ class MetricColumnListModel(QtGui.QStandardItemModel):
         an already existing name in the model.
         :rtype: MetricColumnListItem or None
         """
+        existing_column = self.column_exists(column_item.name)
+        if existing_column:
+            return None
+
         self.appendRow(column_item)
 
         return column_item
+
+    def column_exists(self, name: str) -> bool:
+        """Checks if a column with the given name exists.
+
+        :param name: Name of the column.
+        :type name: str
+
+        :returns: True if the column name exists, else False.
+        :rtype: bool
+        """
+        item = self.item_from_name(name)
+
+        if item is None:
+            return False
+
+        return True
+
+    def item_from_name(self, name: str) -> typing.Optional[MetricColumnListItem]:
+        """Gets the model item from the column name.
+
+        It performs a case-insensitive search of
+        the first matching model item.
+
+        :param name: Name of the column.
+        :type name:str
+
+        :returns: The first matching model item if
+        found else None.
+        :rtype: MetricColumnListItem
+        """
+        items = self.findItems(name, QtCore.Qt.MatchFixedString)
+
+        if len(items) > 0:
+            return items[0]
+
+        return None
+
+    def remove_column(self, name: str) -> bool:
+        """Removes the column matching the given name.
+
+        :param name: Name of the column to be removed.
+        :type name: str
+
+        :returns: True if the column was successfully
+        removed else False if there is no column matching
+        the given name.
+        :rtype: bool
+        """
+        item = self.item_from_name(name)
+
+        if item is None:
+            return False
+
+        return self.removeRows(item.row(), 1)
+
+    def move_column_up(self, row: int) -> int:
+        """Moves the column item in the given row one level up.
+
+        :param row: Column item in the given row to be moved up.
+        :type row: int
+
+        :returns: New position of the column item or -1 if the column
+        item was not moved up.
+        :rtype: int
+        """
+        return self.move_column(row, MoveDirection.UP)
+
+    def move_column_down(self, row: int) -> int:
+        """Moves the column item in the given row one level down.
+
+        :param row: Column item in the given row to be moved down.
+        :type row: int
+
+        :returns: New position of the column item or -1 if the column
+        item was not moved down.
+        :rtype: int
+        """
+        return self.move_column(row, MoveDirection.DOWN)
+
+    def move_column(self, row: int, direction: MoveDirection) -> int:
+        """Moves the column item in the given row one by a level
+        up or down as defined in the direction.
+
+        :param row: Position of the column item to be moved.
+        :type row: int
+
+        :param direction: Direction to move the column item.
+        :type direction: MoveDirection
+
+        :returns: New position of the column item or -1 if the column
+        item was not moved.
+        :rtype: int
+        """
+        if direction == MoveDirection.UP and row < 1:
+            return -1
+        elif direction == MoveDirection.DOWN and row >= self.rowCount() - 1:
+            return -1
+
+        item = self.takeRow(row)
+        if item is None:
+            return -1
+
+        if direction == MoveDirection.UP:
+            new_position = row - 1
+        elif direction == MoveDirection.DOWN:
+            new_position = row + 1
+
+        self.insertRow(new_position, item)
+
+        return new_position
