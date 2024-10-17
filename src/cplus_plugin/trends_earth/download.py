@@ -279,6 +279,7 @@ def get_admin_bounds() -> typing.Dict[str, Country]:
         countries_regions[country_name] = Country.deserialize(country_name, raw_country)
     return countries_regions
 
+
 def get_cities() -> typing.Dict[str, typing.Dict[str, City]]:
     cities_key = read_json("cities.json.gz", verify=False)
     countries_cities = {}
