@@ -110,6 +110,9 @@
      <number>0</number>
     </property>
     <item row="0" column="0">
+     <layout class="QVBoxLayout" name="vl_column_notification"/>
+    </item>
+    <item row="1" column="0">
      <widget class="QScrollArea" name="scrollArea">
       <property name="frameShape">
        <enum>QFrame::NoFrame</enum>
@@ -123,7 +126,7 @@
          <x>0</x>
          <y>0</y>
          <width>586</width>
-         <height>429</height>
+         <height>408</height>
         </rect>
        </property>
        <layout class="QGridLayout" name="gridLayout_7">
@@ -146,20 +149,20 @@
             <enum>QFrame::Raised</enum>
            </property>
            <layout class="QGridLayout" name="gridLayout_2">
-            <item row="2" column="1">
-             <widget class="QToolButton" name="btn_add_column">
-              <property name="toolTip">
-               <string>Add column</string>
-              </property>
-              <property name="text">
-               <string>...</string>
-              </property>
-             </widget>
-            </item>
             <item row="0" column="0">
              <widget class="QLabel" name="label_2">
               <property name="text">
                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Columns&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="2">
+             <widget class="QToolButton" name="btn_delete_column">
+              <property name="toolTip">
+               <string>Remove column</string>
+              </property>
+              <property name="text">
+               <string>...</string>
               </property>
              </widget>
             </item>
@@ -186,20 +189,10 @@
               </property>
              </widget>
             </item>
-            <item row="2" column="2">
-             <widget class="QToolButton" name="btn_delete_column">
+            <item row="2" column="1">
+             <widget class="QToolButton" name="btn_add_column">
               <property name="toolTip">
-               <string>Remove column</string>
-              </property>
-              <property name="text">
-               <string>...</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="4">
-             <widget class="QToolButton" name="btn_column_down">
-              <property name="toolTip">
-               <string>Move column one level down</string>
+               <string>Add column</string>
               </property>
               <property name="text">
                <string>...</string>
@@ -213,6 +206,16 @@
               </property>
               <property name="selectionBehavior">
                <enum>QAbstractItemView::SelectRows</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="4">
+             <widget class="QToolButton" name="btn_column_down">
+              <property name="toolTip">
+               <string>Move column one level down</string>
+              </property>
+              <property name="text">
+               <string>...</string>
               </property>
              </widget>
             </item>
@@ -243,7 +246,11 @@
                 </widget>
                </item>
                <item row="0" column="1" colspan="2">
-                <widget class="QLineEdit" name="txt_column_name"/>
+                <widget class="QLineEdit" name="txt_column_name">
+                 <property name="maxLength">
+                  <number>50</number>
+                 </property>
+                </widget>
                </item>
                <item row="1" column="0">
                 <widget class="QLabel" name="label_5">
@@ -253,7 +260,7 @@
                 </widget>
                </item>
                <item row="1" column="1" colspan="2">
-                <widget class="QComboBox" name="txt_column_alignment"/>
+                <widget class="QComboBox" name="cbo_column_alignment"/>
                </item>
                <item row="2" column="0">
                 <widget class="QLabel" name="label_6">
@@ -262,7 +269,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="2" column="1">
+               <item row="2" column="1" colspan="2">
                 <widget class="QgsFieldExpressionWidget" name="cbo_column_expression" native="true"/>
                </item>
               </layout>
