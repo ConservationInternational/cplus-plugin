@@ -92,8 +92,8 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         self.btn_column_down.setEnabled(False)
         self.btn_column_down.clicked.connect(self.on_move_down_column)
 
-        self.splitter.setStretchFactor(0, 25)
-        self.splitter.setStretchFactor(1, 75)
+        self.splitter.setStretchFactor(0, 20)
+        self.splitter.setStretchFactor(1, 80)
 
         self.cbo_column_expression.setAllowEmptyFieldName(True)
         self.cbo_column_expression.setAllowEvalErrors(False)
@@ -127,6 +127,18 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
             f"{len(self.pageIds())!s}"
         )
         self.setWindowTitle(window_title)
+
+    def validateCurrentPage(self) -> bool:
+        """Validates the current page.
+
+        :returns: True if the current page is valid, else False.
+        :rtype: bool
+        """
+        # Columns page
+        if self.currentId() == 1:
+            return self.is_columns_page_valid()
+
+        return True
 
     def on_help_requested(self):
         """Slot raised when the help button has been clicked.
@@ -163,7 +175,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         """Slot raised to add a new column."""
         label_text = (
             f"{tr('Specify the name of the column.')}<br>"
-            f"<i>{tr('Any special characters will be removed.')}"
+            f"<i><sup>*</sup>{tr('Any special characters will be removed.')}"
             f"</i>"
         )
         column_name, ok = QtWidgets.QInputDialog.getText(
@@ -290,6 +302,12 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
 
         self.cbo_column_expression.blockSignals(False)
 
+    def clear_column_properties(self):
+        """Clear widget values for column properties."""
+        self.txt_column_name.clear()
+        self.cbo_column_alignment.clear()
+        self.cbo_column_expression.setExpression("")
+
     def on_column_selection_changed(
         self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection
     ):
@@ -369,3 +387,33 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
             self.cbo_column_alignment.currentIndex()
         )
         current_column.expression = self.cbo_column_expression.currentText()
+
+    def is_columns_page_valid(self) -> bool:
+        """Validates the columns page.
+
+        :returns: True if the columns page is valid, else False.
+        :rtype: bool
+        """
+        self._column_message_bar.clearWidgets()
+
+        if self._column_list_model.rowCount() == 0:
+            self.push_column_message(
+                tr(
+                    "At least one column is required to use in the activity metrics table."
+                )
+            )
+            return False
+
+        is_valid = True
+
+        for r in range(self._column_list_model.rowCount()):
+            item = self._column_list_model.item(r)
+            if not item.is_valid:
+                if is_valid:
+                    is_valid = False
+
+                tr_msg = tr("header label is empty")
+                msg = f"'{item.name}' {tr_msg}."
+                self.push_column_message(msg)
+
+        return is_valid

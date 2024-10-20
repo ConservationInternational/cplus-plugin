@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>604</width>
-    <height>512</height>
+    <width>574</width>
+    <height>486</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -125,8 +125,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>586</width>
-         <height>408</height>
+         <width>556</width>
+         <height>382</height>
         </rect>
        </property>
        <layout class="QGridLayout" name="gridLayout_7">
@@ -315,35 +315,29 @@
    <attribute name="pageId">
     <string notr="true">2</string>
    </attribute>
-   <widget class="QGroupBox" name="gb_custom_activity_metric">
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>10</y>
-      <width>591</width>
-      <height>371</height>
-     </rect>
-    </property>
-    <property name="title">
-     <string>Customize activity metric</string>
-    </property>
-    <property name="checkable">
-     <bool>true</bool>
-    </property>
-    <property name="checked">
-     <bool>false</bool>
-    </property>
-    <widget class="QTableView" name="tv_activity_metrics">
-     <property name="geometry">
-      <rect>
-       <x>20</x>
-       <y>30</y>
-       <width>551</width>
-       <height>331</height>
-      </rect>
-     </property>
-    </widget>
-   </widget>
+   <layout class="QGridLayout" name="gridLayout_10">
+    <item row="0" column="0">
+     <layout class="QVBoxLayout" name="vl_metric_notification"/>
+    </item>
+    <item row="1" column="0">
+     <widget class="QGroupBox" name="gb_custom_activity_metric">
+      <property name="title">
+       <string>Customize activity metric</string>
+      </property>
+      <property name="checkable">
+       <bool>true</bool>
+      </property>
+      <property name="checked">
+       <bool>false</bool>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_9">
+       <item row="0" column="0">
+        <widget class="QTableView" name="tb_activity_metrics"/>
+       </item>
+      </layout>
+     </widget>
+    </item>
+   </layout>
   </widget>
   <widget class="QWizardPage" name="pg_summary">
    <property name="title">
