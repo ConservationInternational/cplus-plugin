@@ -24,7 +24,11 @@ from qgis.PyQt.uic import loadUiType
 from ..conf import Settings, settings_manager
 
 from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
-from .metrics_builder_model import MetricColumnListItem, MetricColumnListModel
+from .metrics_builder_model import (
+    ActivityMetricTableModel,
+    MetricColumnListItem,
+    MetricColumnListModel,
+)
 from ..models.base import Activity
 from ..models.report import MetricColumn
 from ..utils import FileUtils, log, generate_random_color, open_documentation, tr
@@ -49,11 +53,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
 
         self._column_list_model = MetricColumnListModel()
 
-        # Add the default area column
-        area_metric_column = MetricColumn(
-            "Area", tr("Area (Ha)"), "", auto_calculated=True
-        )
-        self._column_list_model.add_new_column(area_metric_column)
+        self._activity_metric_table_model = ActivityMetricTableModel()
 
         # Initialize wizard
         ci_icon = FileUtils.get_icon("cplus_logo.svg")
@@ -114,6 +114,25 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
             self._on_column_expression_changed
         )
 
+        # Add the default area column
+        area_metric_column = MetricColumn(
+            "Area", tr("Area (Ha)"), "", auto_calculated=True
+        )
+        area_column_item = MetricColumnListItem(area_metric_column)
+        self.add_column_item(area_column_item)
+
+        # Activity metrics page
+        self.tb_activity_metrics.setModel(self._activity_metric_table_model)
+
+    @property
+    def column_list_model(self) -> MetricColumnListModel:
+        """Gets the columns list model used in the wizard.
+
+        :returns: The columns list model used in the model.
+        :rtype: MetricColumnListModel
+        """
+        return self._column_list_model
+
     def on_page_id_changed(self, page_id: int):
         """Slot raised when the page ID changes.
 
@@ -127,6 +146,24 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
             f"{len(self.pageIds())!s}"
         )
         self.setWindowTitle(window_title)
+
+    def initializePage(self, page_id: int):
+        """Initialize wizard page prior to loading.
+
+        :param page_id: ID of the wizard page.
+        :type page_id: int
+        """
+        # Activity metrics page
+        if page_id == 2:
+            # If expression is not specified for at
+            # least one column then enable the groupbox.
+            for item in self._column_list_model.column_items:
+                if (
+                    not item.expression
+                    and not self.gb_custom_activity_metric.isChecked()
+                ):
+                    self.gb_custom_activity_metric.setChecked(True)
+                    break
 
     def validateCurrentPage(self) -> bool:
         """Validates the current page.
@@ -196,20 +233,35 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
                 )
                 return
 
-            self._column_list_model.add_new_column(clean_column_name)
+            column_item = MetricColumnListItem(clean_column_name)
+            self.add_column_item(column_item)
 
-            item = self._column_list_model.item_from_name(column_name)
-            if item is None:
-                return
+    def add_column_item(self, item: MetricColumnListItem):
+        """Adds a metric column item.
 
-            # Select item
-            self.select_column(item.row())
+        :param item: Metrics column item to be added.
+        :type item: MetricColumnListItem
+        """
+        self._column_list_model.add_column(item)
+
+        # Select item
+        self.select_column(item.row())
+
+        # Add column to activity metrics table
+        self._activity_metric_table_model.add_column(item.model)
+        self.resize_activity_metrics_table()
 
     def on_remove_column(self):
         """Slot raised to remove the selected column."""
         selected_items = self.selected_column_items()
         for item in selected_items:
+            index = item.row()
             self._column_list_model.remove_column(item.name)
+
+            # Remove corresponding column in activity metrics table
+            self._activity_metric_table_model.remove_column(index)
+
+        self.resize_activity_metrics_table()
 
     def on_move_up_column(self):
         """Slot raised to move the selected column one level up."""
@@ -218,12 +270,18 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
             return
 
         item = selected_items[0]
-        row = self._column_list_model.move_column_up(item.row())
+        current_row = item.row()
+        row = self._column_list_model.move_column_up(current_row)
         if row == -1:
             return
 
         # Maintain selection
         self.select_column(row)
+
+        # Move corresponding column in the activity metrics table.
+        # We have normalized it to reflect the position in the
+        # metrics table.
+        self._activity_metric_table_model.move_column_left(current_row + 1)
 
     def on_move_down_column(self):
         """Slot raised to move the selected column one level down."""
@@ -232,12 +290,18 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
             return
 
         item = selected_items[0]
-        row = self._column_list_model.move_column_down(item.row())
+        current_row = item.row()
+        row = self._column_list_model.move_column_down(current_row)
         if row == -1:
             return
 
         # Maintain selection
         self.select_column(row)
+
+        # Move corresponding column in the activity metrics
+        # table. We have normalized it to reflect the position
+        # in the metrics table.
+        self._activity_metric_table_model.move_column_right(current_row + 1)
 
     def select_column(self, row: int):
         """Select the column item in the specified row.
@@ -388,6 +452,11 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         )
         current_column.expression = self.cbo_column_expression.currentText()
 
+        # Update column properties in activity metrics table
+        self._activity_metric_table_model.update_column_properties(
+            current_column.row(), current_column.model
+        )
+
     def is_columns_page_valid(self) -> bool:
         """Validates the columns page.
 
@@ -399,15 +468,15 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         if self._column_list_model.rowCount() == 0:
             self.push_column_message(
                 tr(
-                    "At least one column is required to use in the activity metrics table."
+                    "At least one column is required to use in the activity "
+                    "metrics table."
                 )
             )
             return False
 
         is_valid = True
 
-        for r in range(self._column_list_model.rowCount()):
-            item = self._column_list_model.item(r)
+        for item in self._column_list_model.column_items:
             if not item.is_valid:
                 if is_valid:
                     is_valid = False
@@ -417,3 +486,19 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
                 self.push_column_message(msg)
 
         return is_valid
+
+    def resize_activity_metrics_table(self):
+        """Resize column width of activity metrics table for the
+        entire width to be occupied.
+
+        Use a reasonable size if the table has only one column.
+        """
+        if self._activity_metric_table_model.columnCount() == 1:
+            self.tb_activity_metrics.setColumnWidth(0, 120)
+            return
+
+        width = self.tb_activity_metrics.width()
+        # Make all columns have the same width
+        column_count = self._activity_metric_table_model.columnCount()
+        for c in range(column_count):
+            self.tb_activity_metrics.setColumnWidth(c, int(width / float(column_count)))

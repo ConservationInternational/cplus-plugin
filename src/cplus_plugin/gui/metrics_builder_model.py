@@ -7,6 +7,9 @@ import typing
 
 from qgis.PyQt import QtCore, QtGui
 
+from ..definitions.constants import ACTIVITY_NAME
+
+from ..models.base import Activity
 from ..models.report import MetricColumn
 
 from ..utils import FileUtils, tr
@@ -151,19 +154,39 @@ class MetricColumnListItem(QtGui.QStandardItem):
         return self._column
 
 
-class MoveDirection(IntEnum):
+class VerticalMoveDirection(IntEnum):
     """Move an item up or down."""
 
     UP = 0
     DOWN = 1
 
 
+class HorizontalMoveDirection(IntEnum):
+    """Move an item left or right."""
+
+    LEFT = 0
+    RIGHT = 1
+
+
 class MetricColumnListModel(QtGui.QStandardItemModel):
     """View model for list-based metric column objects."""
+
+    column_added = QtCore.pyqtSignal(MetricColumnListItem)
+    column_removed = QtCore.pyqtSignal(int)
+    column_moved = QtCore.pyqtSignal(MetricColumnListItem, VerticalMoveDirection)
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setColumnCount(1)
+
+    @property
+    def column_items(self) -> typing.List[MetricColumnListItem]:
+        """Gets all the column items in the model.
+
+        :returns: All the column items in the model.
+        :rtype: typing.List[MetricColumnListItem]
+        """
+        return [self.item(r) for r in range(self.rowCount())]
 
     def add_new_column(self, name_column: typing.Union[str, MetricColumn]) -> bool:
         """Adds a new column to the model.
@@ -202,6 +225,8 @@ class MetricColumnListModel(QtGui.QStandardItemModel):
             return None
 
         self.appendRow(column_item)
+
+        self.column_added.emit(column_item)
 
         return column_item
 
@@ -257,7 +282,12 @@ class MetricColumnListModel(QtGui.QStandardItemModel):
         if item is None:
             return False
 
-        return self.removeRows(item.row(), 1)
+        status = self.removeRows(item.row(), 1)
+
+        if status:
+            self.column_removed.emit(item)
+
+        return status
 
     def move_column_up(self, row: int) -> int:
         """Moves the column item in the given row one level up.
@@ -269,7 +299,7 @@ class MetricColumnListModel(QtGui.QStandardItemModel):
         item was not moved up.
         :rtype: int
         """
-        return self.move_column(row, MoveDirection.UP)
+        return self.move_column(row, VerticalMoveDirection.UP)
 
     def move_column_down(self, row: int) -> int:
         """Moves the column item in the given row one level down.
@@ -281,9 +311,9 @@ class MetricColumnListModel(QtGui.QStandardItemModel):
         item was not moved down.
         :rtype: int
         """
-        return self.move_column(row, MoveDirection.DOWN)
+        return self.move_column(row, VerticalMoveDirection.DOWN)
 
-    def move_column(self, row: int, direction: MoveDirection) -> int:
+    def move_column(self, row: int, direction: VerticalMoveDirection) -> int:
         """Moves the column item in the given row one by a level
         up or down as defined in the direction.
 
@@ -291,26 +321,199 @@ class MetricColumnListModel(QtGui.QStandardItemModel):
         :type row: int
 
         :param direction: Direction to move the column item.
-        :type direction: MoveDirection
+        :type direction: VerticalMoveDirection
 
         :returns: New position of the column item or -1 if the column
         item was not moved.
         :rtype: int
         """
-        if direction == MoveDirection.UP and row < 1:
+        if direction == VerticalMoveDirection.UP and row < 1:
             return -1
-        elif direction == MoveDirection.DOWN and row >= self.rowCount() - 1:
+        elif direction == VerticalMoveDirection.DOWN and row >= self.rowCount() - 1:
             return -1
 
         item = self.takeRow(row)
         if item is None:
             return -1
 
-        if direction == MoveDirection.UP:
+        if direction == VerticalMoveDirection.UP:
             new_position = row - 1
-        elif direction == MoveDirection.DOWN:
+        elif direction == VerticalMoveDirection.DOWN:
             new_position = row + 1
 
         self.insertRow(new_position, item)
 
+        self.column_moved.emit(item, direction)
+
         return new_position
+
+
+class ActivityNameTableItem(QtGui.QStandardItem):
+    """Represents an activity name in the metrics table.."""
+
+    def __init__(self, name: str):
+        super().__init__()
+
+        self.setEditable(False)
+
+        self.setTextAlignment(QtCore.Qt.AlignCenter)
+
+        background = self.background()
+        background.setColor(QtCore.Qt.lightGray)
+        background.setStyle(QtCore.Qt.SolidPattern)
+
+
+class ActivityMetricTableModel(QtGui.QStandardItemModel):
+    """View model for activity metrics in a table."""
+
+    def __init__(self, parent=None, columns: typing.List[MetricColumn] = None):
+        super().__init__(parent)
+
+        self.setColumnCount(1)
+        # Add default activity name header
+        self.setHorizontalHeaderLabels([tr(ACTIVITY_NAME)])
+
+        self._metric_columns = []
+        if columns is not None:
+            self._metric_columns = columns
+
+    @property
+    def metric_columns(self) -> typing.List[MetricColumn]:
+        """Gets the metric columns used in the model to
+        define the headers.
+
+        :returns: Metric columns used in the model.
+        :rtype: typing.List[MetricColumn]
+        """
+        return list(self._metric_columns)
+
+    def add_column(self, column: MetricColumn):
+        """Adds a column to the model based on the information
+        in the metric column.
+
+        :param column: Metric column containing information
+        for defining the new column.
+        :type column: MetricColumn
+        """
+        headers = [
+            self.headerData(c, QtCore.Qt.Horizontal) for c in range(self.columnCount())
+        ]
+        headers.append(column.header)
+        self.setHorizontalHeaderLabels(headers)
+        self._metric_columns.append(column)
+
+    def remove_column(self, index: int) -> bool:
+        """Remove the column at the specified index.
+
+        The index will be normalized to reflect the first
+        metric column since index zero is reserved for the
+        activity name column which is fixed.
+
+        :param index: Index of the column to be removed.
+        :type index: int
+
+        :returns: True if the column was successfully
+        removed else False.
+        :rtype: bool
+        """
+        if index == -1:
+            return False
+
+        model_index = index + 1
+
+        status = self.removeColumns(model_index, 1)
+
+        del self._metric_columns[index]
+
+        return status
+
+    def update_column_properties(self, index: int, column: MetricColumn):
+        """Updates the properties of an underlying metric column
+        in the model.
+
+        :param index: Index of the column to the updated.
+        :type index: int
+
+        :param column: Updated column metric object.
+        :type column: MetricColumn
+        """
+        if index == -1:
+            return False
+
+        # Update header
+        model_index = index + 1
+        self.setHeaderData(
+            model_index, QtCore.Qt.Horizontal, column.header, QtCore.Qt.DisplayRole
+        )
+        self._metric_columns[index] = column
+
+    def add_activity(self, activity: Activity) -> bool:
+        """Adds an activity row in the activity metrics table.
+
+        :param activity: Activity to be added.
+        :type activity: Activity
+
+        :returns: True if the activity was successfully added
+        else False.
+        :rtype: bool
+        """
+        pass
+
+    def move_column(
+        self, current_index: int, direction: HorizontalMoveDirection
+    ) -> int:
+        """MOve the column in the specified index left or right depending on the
+        move direction.
+
+        :param current_index: Index of the column to be moved.
+        :type current_index: int
+
+        :param direction: Direction to move the column, either left or right.
+        :type direction: HorizontalMoveDirection
+
+        :returns: New position of the column or -1 if the column
+        item was not moved.
+        :rtype: int
+        """
+        # The activity name column will always be on the extreme left (LTR)
+        if current_index <= 1 or current_index >= self.columnCount() - 1:
+            return -1
+
+        if direction == HorizontalMoveDirection.LEFT:
+            new_index = current_index - 1
+        else:
+            new_index = current_index + 1
+
+        # Move items
+        column_items = self.takeColumn(current_index)
+        self.insertColumn(new_index, column_items)
+
+        # Move column header
+        header_item = self.takeHorizontalHeaderItem(current_index)
+        self.setHorizontalHeaderItem(new_index, header_item)
+
+        return new_index
+
+    def move_column_left(self, current_index: int) -> int:
+        """Convenience method for moving a column to the left.
+
+        :param current_index: Index of the column to be moved.
+        :type current_index: int
+
+        :returns: New position of the column or -1 if the column
+        item was not moved.
+        :rtype: int
+        """
+        return self.move_column(current_index, HorizontalMoveDirection.LEFT)
+
+    def move_column_right(self, current_index: int) -> int:
+        """Convenience method for moving a column to the right.
+
+        :param current_index: Index of the column to be moved.
+        :type current_index: int
+
+        :returns: New position of the column or -1 if the column
+        item was not moved.
+        :rtype: int
+        """
+        return self.move_column(current_index, HorizontalMoveDirection.RIGHT)
