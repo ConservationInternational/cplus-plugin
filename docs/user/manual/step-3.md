@@ -18,6 +18,12 @@ license: This program is free software; you can redistribute it and/or modify it
 
 - **Priority groups**: Users can define different priority groups to which Priority Weighted Layers (PWLs) can be assigned. These groups represent different categories or themes that contribute to the overall analysis.
 
+- ![add button](img/symbologyAdd.svg): Add a new Priority group.
+
+- ![edit button](img/mActionToggleEditing.svg): Edit the selected Priority group.
+
+- ![remove button](img/symbologyRemove.svg): Remove the selected Priority group.
+
 - **Priority weighted layers (PWL)**: Users can assign importance values to each priority group by associating them with Priority Weighted Layers. These layers represent the spatial data layers or attributes that contribute to the analysis.
 
 - ![right arrow](img/cplus_right_arrow.svg): Remove the selected PWL from the priority group.
@@ -28,9 +34,9 @@ license: This program is free software; you can redistribute it and/or modify it
 
 - ![add button](img/symbologyAdd.svg): Add a new PWL.
 
-- ![remove button](img/symbologyRemove.svg): Remove the selected PWL.
-
 - ![edit button](img/mActionToggleEditing.svg): Edit the selected PWL.
+
+- ![remove button](img/symbologyRemove.svg): Remove the selected PWL.
 
 ## Methods to create layers
 
@@ -99,11 +105,15 @@ The primary purpose of the NPV Tool is to help users prioritise activities by pr
 
 5. **Copy icon:** The user can copy the NPV by clicking on the copy icon available next to the net present value per hectare box.
 
-6. **Min/Max Normalization Range:** It is recommended to keep the `Use computed NPVs` check box enabled (default option). This ensures that the minimum and maximum normalisation values are synced and automatically updated based on user input. The min/max values will be based on enabled NPV parameters for activities. Disabled NPV parameters will be excluded from the computation.
+6. **User-defined NPV checkbox:** By enabling this checkbox we can manually set the `Net present value per hectare` value.
 
-7. **Remove Existing WPL Checkbox:** When the `Remove existing PWLs for disabled activity NPVs check box` is enabled, any previously created NPV PWLs will be deleted upon updating the NPVs.
+7. **Min/Max Normalisation Range:** It is recommended to keep the `Use computed NPVs` check box enabled (default option). This ensures that the minimum and maximum normalisation values are synced and automatically updated based on user input. The min/max values will be based on enabled NPV parameters for activities. Disabled NPV parameters will be excluded from the computation.
 
-8. **Update Button:** Click the `Update` button to show a dialog displaying the progress of creating/updating the NPVs.
+8. **Remove Existing WPL Checkbox:** When the `Remove existing PWLs for disabled activity NPVs check box` is enabled, any previously created NPV PWLs will be deleted upon updating the NPVs.
+
+9. **Cancel Button:** Click on the cancel button to cancel the adding NPV.
+
+10. **Update Button:** Click the `Update` button to show a dialog displaying the progress of creating/updating the NPVs.
 
     - When creating NPV PWL rasters, the corresponding PWLs will be created or updated in the list of PWLs.
     - The naming convention for these layers is `[activity name] NPV Norm`.
@@ -115,8 +125,6 @@ The primary purpose of the NPV Tool is to help users prioritise activities by pr
 - The extents are based on the user-defined extents specified in Step 1.
 
 ![NPV directory](./img/step3-7.png)
-
-9. **Cancel Button:** Click on the cancel button to cancel the adding NPV.
 
 ## Priority Weighted Layers Editor dialog
 
