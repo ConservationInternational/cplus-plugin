@@ -12,7 +12,7 @@ from ..definitions.constants import ACTIVITY_NAME
 from ..models.base import Activity
 from ..models.report import MetricColumn
 
-from ..utils import FileUtils, tr
+from ..utils import FileUtils, log, tr
 
 
 class MetricColumnListItem(QtGui.QStandardItem):
@@ -332,8 +332,8 @@ class MetricColumnListModel(QtGui.QStandardItemModel):
         elif direction == VerticalMoveDirection.DOWN and row >= self.rowCount() - 1:
             return -1
 
-        item = self.takeRow(row)
-        if item is None:
+        items = self.takeRow(row)
+        if items is None or len(items) == 0:
             return -1
 
         if direction == VerticalMoveDirection.UP:
@@ -341,9 +341,9 @@ class MetricColumnListModel(QtGui.QStandardItemModel):
         elif direction == VerticalMoveDirection.DOWN:
             new_position = row + 1
 
-        self.insertRow(new_position, item)
+        self.insertRow(new_position, items[0])
 
-        self.column_moved.emit(item, direction)
+        self.column_moved.emit(items[0], direction)
 
         return new_position
 
@@ -462,7 +462,7 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
     def move_column(
         self, current_index: int, direction: HorizontalMoveDirection
     ) -> int:
-        """MOve the column in the specified index left or right depending on the
+        """Move the column in the specified index left or right depending on the
         move direction.
 
         :param current_index: Index of the column to be moved.
@@ -476,7 +476,13 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
         :rtype: int
         """
         # The activity name column will always be on the extreme left (LTR)
-        if current_index <= 1 or current_index >= self.columnCount() - 1:
+        if current_index <= 1 and direction == HorizontalMoveDirection.LEFT:
+            return -1
+
+        if (
+            current_index >= self.columnCount() - 1
+            and direction == HorizontalMoveDirection.RIGHT
+        ):
             return -1
 
         if direction == HorizontalMoveDirection.LEFT:
@@ -484,12 +490,10 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
         else:
             new_index = current_index + 1
 
-        # Move items
+        # Move header and items
+        header_item = self.takeHorizontalHeaderItem(current_index)
         column_items = self.takeColumn(current_index)
         self.insertColumn(new_index, column_items)
-
-        # Move column header
-        header_item = self.takeHorizontalHeaderItem(current_index)
         self.setHorizontalHeaderItem(new_index, header_item)
 
         return new_index
