@@ -17,6 +17,8 @@ ACTIVITY_GROUP_LAYER_NAME = "Activity Maps"
 ACTIVITY_WEIGHTED_GROUP_NAME = "Weighted Activity Maps"
 NCS_PATHWAYS_GROUP_LAYER_NAME = "NCS Pathways Maps"
 
+ACTIVITY_NAME = "Activity"
+
 # Attribute names
 CARBON_COEFFICIENT_ATTRIBUTE = "carbon_coefficient"
 CARBON_PATHS_ATTRIBUTE = "carbon_paths"

@@ -10,7 +10,7 @@ from uuid import UUID
 from qgis.core import QgsFeedback, QgsLayoutTableColumn
 from qgis.PyQt import QtCore
 
-from .base import Scenario, ScenarioResult
+from .base import Activity, Scenario, ScenarioResult
 
 
 @dataclasses.dataclass
@@ -152,3 +152,4 @@ class ActivityColumnMetric:
     activity_id: str
     expression: str
     expression_type: ExpressionType = ExpressionType.COLUMN
+    activity: Activity = None
