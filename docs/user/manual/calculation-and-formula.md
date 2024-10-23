@@ -61,15 +61,15 @@ where *CarbonCoefficient* is the carbon coefficient value multiplied with the av
 
 &emsp;&emsp;&nbsp;&nbsp;&nbsp; *n* is the number of carbon rasters.
 
-- The results from the above calculation are normalized to create the normalized NCS Weighted Carbon layer
-- A normalized raster's pixel values range from 0 to 1
-- Normalization is done as shown in **Equation 2**
+- The results from the above calculation are normalised to create the normalised NCS Weighted Carbon layer
+- A normalised raster's pixel values range from 0 to 1
+- Normalisation is done as shown in **Equation 2**
 
 $$
-\operatorname{Normalized NCS weighted carbon} =\frac{value - min}{max - min}
+\operatorname{Normalised NCS weighted carbon} =\frac{value - min}{max - min}
 $$
 
-*Equation 2: Normalized NCS weighted carbon*
+*Equation 2: Normalised NCS weighted carbon*
 
 where *value* is the pixel value;
 
@@ -79,7 +79,7 @@ where *value* is the pixel value;
 
 ### Activity
 
-- Because an activity can consist of multiple pathways, the normalized results will be summed
+- Because an activity can consist of multiple pathways, the normalised results will be summed
 - All NCS weighted carbon layers, as created from **Equation 2**, are summed as shown in **Equation 3** to
 create the activity from the pathways
 
@@ -93,8 +93,8 @@ where *NcsWeightedCarbon* is a pathway set up by the user; and
 
 &emsp;&emsp;&nbsp;&nbsp;&nbsp; *n* is the number of pathways.
 
-- Now that the pathways have been summed for the activity, the result needs to be normalized
-- The Suitability index and the Carbon coefficient then needs to be taken into account after the normalized raster
+- Now that the pathways have been summed for the activity, the result needs to be normalised
+- The Suitability index and the Carbon coefficient then needs to be taken into account after the normalised raster
 has been created
 - This calculation is shown in **Equation 4**
 

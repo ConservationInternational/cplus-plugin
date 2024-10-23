@@ -78,7 +78,7 @@ For example, if you are creating an NCS pathway for Agroforestry, you would sele
 
 Once you have entered all the required details, click on the `OK` button to add the NCS pathway.
 
-### Methode 2 add using online default
+### Method 2 add using online default
 
 In this method, you will add a new NCS pathway using online defaults. This option is available if you have an account on the Trends.Earth platform.
 
