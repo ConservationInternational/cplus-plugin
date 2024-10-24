@@ -351,16 +351,27 @@ class MetricColumnListModel(QtGui.QStandardItemModel):
 class ActivityNameTableItem(QtGui.QStandardItem):
     """Represents an activity name in the metrics table.."""
 
-    def __init__(self, name: str):
+    def __init__(self, activity: Activity):
         super().__init__()
 
-        self.setEditable(False)
+        self._activity = activity
 
+        self.setEditable(False)
+        self.setText(activity.name)
         self.setTextAlignment(QtCore.Qt.AlignCenter)
 
         background = self.background()
         background.setColor(QtCore.Qt.lightGray)
         background.setStyle(QtCore.Qt.SolidPattern)
+
+    @property
+    def activity(self) -> Activity:
+        """Gets the activity model in the item.
+
+        :returns: The activity model in the item.
+        :rtype: Activity
+        """
+        return self._activity
 
 
 class ActivityMetricTableModel(QtGui.QStandardItemModel):
@@ -457,7 +468,26 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
         else False.
         :rtype: bool
         """
-        pass
+        # Check if there is a similar activity
+        matching_activities = [
+            act for act in self.activities if act.uuid == activity.uuid
+        ]
+        if len(matching_activities) > 0:
+            return False
+
+        activity_item = ActivityNameTableItem(activity)
+        self.appendRow(activity_item)
+
+        return True
+
+    @property
+    def activities(self) -> typing.List[Activity]:
+        """Gets all the activities in the model.
+
+        :returns: All activities in the model.
+        :rtype: typing.List[Activity]
+        """
+        return [self.item(r, 0).activity for r in self.rowCount()]
 
     def move_column(
         self, current_index: int, direction: HorizontalMoveDirection
