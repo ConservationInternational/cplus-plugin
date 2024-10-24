@@ -1,3 +1,15 @@
+---
+title: Conservation International
+summary:
+    - Jeremy Prior
+    - Ketan Bamniya
+date:
+some_url:
+copyright:
+contact:
+license: This program is free software; you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
+---
+
 # Scenario files
 
 The scenario files are stored in the base directory of the system. The base directory can be configured from the settings. You can refer to the [Settings Documentation](./settings.md) for detailed instructions on how to set the base directory.
