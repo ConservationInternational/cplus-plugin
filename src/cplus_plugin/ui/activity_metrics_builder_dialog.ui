@@ -33,7 +33,7 @@
     <string>Welcome to the Activity Table Metrics Customization Tool</string>
    </property>
    <property name="subTitle">
-    <string>This step-by-step wizard is designed to help you customize the activity table in a scenario analysis report by using custom expressions.</string>
+    <string>This step-by-step wizard is designed to help you easily customize the activity table in the scenario analysis report by using custom expressions.</string>
    </property>
    <attribute name="pageId">
     <string notr="true">0</string>
