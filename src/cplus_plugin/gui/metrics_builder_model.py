@@ -363,6 +363,7 @@ class ActivityNameTableItem(QtGui.QStandardItem):
         background = self.background()
         background.setColor(QtCore.Qt.lightGray)
         background.setStyle(QtCore.Qt.SolidPattern)
+        self.setBackground(background)
 
     @property
     def activity(self) -> Activity:
@@ -487,7 +488,7 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
         :returns: All activities in the model.
         :rtype: typing.List[Activity]
         """
-        return [self.item(r, 0).activity for r in self.rowCount()]
+        return [self.item(r, 0).activity for r in range(self.rowCount())]
 
     def move_column(
         self, current_index: int, direction: HorizontalMoveDirection
