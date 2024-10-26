@@ -78,6 +78,7 @@ from .priority_group_dialog import PriorityGroupDialog
 from .scenario_dialog import ScenarioDialog
 
 from ..models.base import (
+    Activity,
     PriorityLayerType,
 )
 from ..models.financial import ActivityNpv
@@ -844,11 +845,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             # Get CRS and pixel size from at least one of the selected
             # NCS pathways.
-            selected_activities = [
-                item.activity
-                for item in self.activity_widget.selected_activity_items()
-                if item.isEnabled()
-            ]
+            selected_activities = self.selected_activities()
             if len(selected_activities) == 0:
                 log(
                     message=tr(
@@ -1577,11 +1574,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     group_layer_dict["layers"].append(layer.get("name"))
             self.analysis_priority_layers_groups.append(group_layer_dict)
 
-        self.analysis_activities = [
-            item.activity
-            for item in self.activity_widget.selected_activity_items()
-            if item.isEnabled()
-        ]
+        self.analysis_activities = self.selected_activities()
 
         self.analysis_weighted_ims = []
 
@@ -1794,6 +1787,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     ', error message "{}"'.format(err)
                 )
             )
+
+    def selected_activities(self) -> typing.List[Activity]:
+        """Gets the collection of selected activities.
+
+        :returns: A list of selected activities.
+        :rtype: typing.List[Activity]
+        """
+        return [
+            item.activity
+            for item in self.activity_widget.selected_activity_items()
+            if item.isEnabled()
+        ]
 
     def task_terminated(
         self, task: typing.Union[ScenarioAnalysisTask, ScenarioAnalysisTaskApiClient]
@@ -2388,11 +2393,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.message_bar.clearWidgets()
 
         if index == 3:
-            analysis_activities = [
-                item.activity
-                for item in self.activity_widget.selected_activity_items()
-                if item.isEnabled()
-            ]
+            analysis_activities = self.selected_activities()
             is_online_processing = False
             for activity in analysis_activities:
                 for pathway in activity.pathways:
@@ -2438,6 +2439,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         wizard for the scenario analysis report.
         """
         metrics_builder = ActivityMetricsBuilder(self)
+        metrics_builder.activities = self.selected_activities()
         if metrics_builder.exec_() == QtWidgets.QDialog.Accepted:
             pass
 

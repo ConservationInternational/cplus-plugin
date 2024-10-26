@@ -41,11 +41,15 @@ WidgetUi, _ = loadUiType(
 class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
     """Wizard for customizing custom activity metrics table."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, activities=None):
         super().__init__(parent)
         self.setupUi(self)
 
         QgsGui.enableAutoGeometryRestore(self)
+
+        self._activities = []
+        if activities is not None:
+            self._activities = activities
 
         # Setup notification bars
         self._column_message_bar = QgsMessageBar()
@@ -124,6 +128,9 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         # Activity metrics page
         self.tb_activity_metrics.setModel(self._activity_metric_table_model)
 
+        # Update activities if specified
+        self._update_activities()
+
     @property
     def column_list_model(self) -> MetricColumnListModel:
         """Gets the columns list model used in the wizard.
@@ -132,6 +139,36 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         :rtype: MetricColumnListModel
         """
         return self._column_list_model
+
+    @property
+    def activity_table_model(self) -> ActivityMetricTableModel:
+        """Gets the activity table model used to show the metric for
+        each activity and column.
+
+        :returns: The activity table model.
+        :rtype: ActivityMetricTableModel
+        """
+        return self._activity_metric_table_model
+
+    @property
+    def activities(self) -> typing.List[Activity]:
+        """Gets the activities in the model.
+
+        :returns: All the activities in the model.
+        :rtype:
+        """
+        return self._activities
+
+    @activities.setter
+    def activities(self, activities: typing.List[Activity]):
+        """Sets the activities to be used in the model.
+
+        :param activities: Activities to be used in the model i.e.
+        those whose metrics will be used in the customization.
+        :type activities: typing.List[Activity]
+        """
+        self._activities = activities
+        self._update_activities()
 
     def on_page_id_changed(self, page_id: int):
         """Slot raised when the page ID changes.
@@ -183,6 +220,23 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         Opens the online help documentation in the user's browser.
         """
         open_documentation(USER_DOCUMENTATION_SITE)
+
+    def clear_activities(self):
+        """Removes all activities in the activity metrics table."""
+        self._activity_metric_table_model.removeRows(
+            0, self._activity_metric_table_model.rowCount()
+        )
+
+    def _update_activities(self):
+        """Update the list of activities in the activity metrics
+        table.
+
+        Clears any existing activities.
+        """
+        self.clear_activities()
+
+        for activity in self.activities:
+            self._activity_metric_table_model.add_activity(activity)
 
     def push_column_message(
         self,
