@@ -135,11 +135,12 @@ class MetricColumn:
         return layout_column
 
 
-class ExpressionType(IntEnum):
-    """Type of expression."""
+class MetricType(IntEnum):
+    """Type of metric or expression."""
 
     COLUMN = 0
     CUSTOM = 1
+    NOT_SET = 2
 
 
 @dataclasses.dataclass
@@ -148,8 +149,18 @@ class ActivityColumnMetric:
     applied in each activity's column.
     """
 
-    column_name: str  # Assuming each metric column will have a unique name
-    activity_id: str
-    expression: str
-    expression_type: ExpressionType = ExpressionType.COLUMN
-    activity: Activity = None
+    activity: Activity
+    metric_column: MetricColumn
+    metric_type: MetricType = MetricType.NOT_SET
+    expression: str = ""
+
+
+@dataclasses.dataclass
+class MetricConfiguration:
+    """Container for metric column and
+    activity column metric data models.
+    """
+
+    activities: typing.List[Activity]
+    metric_columns: typing.List[MetricColumn]
+    activity_metrics: typing.List[typing.List[ActivityColumnMetric]]

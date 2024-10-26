@@ -64,7 +64,7 @@ class TestActivityComponentWidget(TestCase):
         """
         activity = get_activity()
         activity_widget = ActivityComponentWidget(PARENT)
-        result = activity_widget.add_activity(activity)
+        result = activity_widget.append_activity(activity)
         self.assertTrue(result)
 
     def test_add_activity_with_layer(self):
@@ -74,14 +74,14 @@ class TestActivityComponentWidget(TestCase):
         activity = get_activity()
         layer = get_test_layer()
         activity_widget = ActivityComponentWidget(PARENT)
-        result = activity_widget.add_activity(activity, layer)
+        result = activity_widget.append_activity(activity, layer)
         self.assertTrue(result)
 
     def test_get_activities(self):
         """Assert number of activity objects retrieved."""
         activity = get_activity()
         activity_widget = ActivityComponentWidget(PARENT)
-        _ = activity_widget.add_activity(activity)
+        _ = activity_widget.append_activity(activity)
         activities = activity_widget.activities()
         self.assertEqual(len(activities), 1)
 
@@ -89,7 +89,7 @@ class TestActivityComponentWidget(TestCase):
         """Assert activities objects can be cleared."""
         activity = get_activity()
         activity_widget = ActivityComponentWidget(PARENT)
-        _ = activity_widget.add_activity(activity)
+        _ = activity_widget.append_activity(activity)
         activity_widget.clear()
         activities = activity_widget.activities()
         self.assertEqual(len(activities), 0)
@@ -101,7 +101,7 @@ class TestActivityComponentWidget(TestCase):
         activity = get_activity()
         activity.clear_layer()
         activity_widget = ActivityComponentWidget(PARENT)
-        _ = activity_widget.add_activity(activity)
+        _ = activity_widget.append_activity(activity)
 
         # Select the added activity.
         sel_model = activity_widget.selection_model
@@ -121,7 +121,7 @@ class TestActivityComponentWidget(TestCase):
         """
         activity = get_activity()
         activity_widget = ActivityComponentWidget(PARENT)
-        _ = activity_widget.add_activity(activity)
+        _ = activity_widget.append_activity(activity)
 
         # Select the added activity.
         sel_model = activity_widget.selection_model

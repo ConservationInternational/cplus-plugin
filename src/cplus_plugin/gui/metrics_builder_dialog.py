@@ -118,18 +118,20 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
             self._on_column_expression_changed
         )
 
+        # Activity metrics page
+        self.tb_activity_metrics.setModel(self._activity_metric_table_model)
+
+        # Update activities if specified
+        self._update_activities()
+
+        self.tb_activity_metrics.installEventFilter(self)
+
         # Add the default area column
         area_metric_column = MetricColumn(
             "Area", tr("Area (Ha)"), "", auto_calculated=True
         )
         area_column_item = MetricColumnListItem(area_metric_column)
         self.add_column_item(area_column_item)
-
-        # Activity metrics page
-        self.tb_activity_metrics.setModel(self._activity_metric_table_model)
-
-        # Update activities if specified
-        self._update_activities()
 
     @property
     def column_list_model(self) -> MetricColumnListModel:
@@ -236,7 +238,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         self.clear_activities()
 
         for activity in self.activities:
-            self._activity_metric_table_model.add_activity(activity)
+            self._activity_metric_table_model.append_activity(activity)
 
     def push_column_message(
         self,
@@ -302,8 +304,8 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         self.select_column(item.row())
 
         # Add column to activity metrics table
-        self._activity_metric_table_model.add_column(item.model)
-        self.resize_activity_metrics_table()
+        self._activity_metric_table_model.append_column(item.model)
+        self.resize_activity_table_columns()
 
     def on_remove_column(self):
         """Slot raised to remove the selected column."""
@@ -315,7 +317,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
             # Remove corresponding column in activity metrics table
             self._activity_metric_table_model.remove_column(index)
 
-        self.resize_activity_metrics_table()
+        self.resize_activity_table_columns()
 
     def on_move_up_column(self):
         """Slot raised to move the selected column one level up."""
@@ -541,7 +543,23 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
 
         return is_valid
 
-    def resize_activity_metrics_table(self):
+    def eventFilter(self, observed_object: QtCore.QObject, event: QtCore.QEvent):
+        """Captures events sent to specific widgets in the wizard.
+
+        :param observed_object: Object receiving the event.
+        :type observed_object: QtCore.QObject
+
+        :param event: The specific event being received by the observed object.
+        :type event: QtCore.QEvent
+        """
+        # Resize activity metric table columns based on the size of the table view.
+        if observed_object == self.tb_activity_metrics:
+            if event.type() == QtCore.QEvent.Resize:
+                self.resize_activity_table_columns()
+
+        return super().eventFilter(observed_object, event)
+
+    def resize_activity_table_columns(self):
         """Resize column width of activity metrics table for the
         entire width to be occupied.
 
@@ -554,5 +572,6 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         width = self.tb_activity_metrics.width()
         # Make all columns have the same width
         column_count = self._activity_metric_table_model.columnCount()
+        column_width = int(width / float(column_count))
         for c in range(column_count):
-            self.tb_activity_metrics.setColumnWidth(c, int(width / float(column_count)))
+            self.tb_activity_metrics.setColumnWidth(c, column_width)
