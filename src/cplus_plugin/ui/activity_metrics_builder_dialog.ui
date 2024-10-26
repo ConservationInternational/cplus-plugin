@@ -310,7 +310,7 @@
     <string>Activity Metric</string>
    </property>
    <property name="subTitle">
-    <string>Customize the metric for each selected activity. Double click a cell to edit the metric.</string>
+    <string>Customize the metric for each selected activity. </string>
    </property>
    <attribute name="pageId">
     <string notr="true">2</string>
@@ -331,8 +331,15 @@
        <bool>false</bool>
       </property>
       <layout class="QGridLayout" name="gridLayout_9">
-       <item row="0" column="0">
+       <item row="1" column="0">
         <widget class="QTableView" name="tb_activity_metrics"/>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>Double click a column cell to edit its metric</string>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>

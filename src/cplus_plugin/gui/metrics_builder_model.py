@@ -10,9 +10,14 @@ from qgis.PyQt import QtCore, QtGui
 from ..definitions.constants import ACTIVITY_NAME
 
 from ..models.base import Activity
-from ..models.report import MetricColumn
+from ..models.report import ActivityColumnMetric, MetricColumn, MetricType
 
 from ..utils import FileUtils, log, tr
+
+
+METRIC_COLUMN_LIST_ITEM_TYPE = QtGui.QStandardItem.UserType + 6
+ACTIVITY_NAME_TABLE_ITEM_TYPE = QtGui.QStandardItem.UserType + 7
+ACTIVITY_COLUMN_METRIC_TABLE_ITEM_TYPE = QtGui.QStandardItem.UserType + 8
 
 
 class MetricColumnListItem(QtGui.QStandardItem):
@@ -152,6 +157,14 @@ class MetricColumnListItem(QtGui.QStandardItem):
         :rtype: MetricColumn
         """
         return self._column
+
+    def type(self) -> int:
+        """Returns the type of the standard item.
+
+        :returns: Type identifier of the item.
+        :rtype: int
+        """
+        return METRIC_COLUMN_LIST_ITEM_TYPE
 
 
 class VerticalMoveDirection(IntEnum):
@@ -349,7 +362,7 @@ class MetricColumnListModel(QtGui.QStandardItemModel):
 
 
 class ActivityNameTableItem(QtGui.QStandardItem):
-    """Represents an activity name in the metrics table.."""
+    """Represents an activity name in the metrics table."""
 
     def __init__(self, activity: Activity):
         super().__init__()
@@ -373,6 +386,72 @@ class ActivityNameTableItem(QtGui.QStandardItem):
         :rtype: Activity
         """
         return self._activity
+
+    def type(self) -> int:
+        """Returns the type of the standard item.
+
+        :returns: Type identifier of the item.
+        :rtype: int
+        """
+        return ACTIVITY_NAME_TABLE_ITEM_TYPE
+
+
+class ActivityColumnMetricItem(QtGui.QStandardItem):
+    """Represents an activity's metric information for a
+    specific column.
+    """
+
+    def __init__(self, activity_column_metric: ActivityColumnMetric):
+        super().__init__()
+
+        self._activity_column_metric = activity_column_metric
+
+        self.setEditable(True)
+        self.setText(
+            ActivityColumnMetricItem.metric_type_to_str(
+                activity_column_metric.metric_type
+            )
+        )
+        self.setTextAlignment(
+            self._activity_column_metric.metric_column.alignment
+            | QtCore.Qt.AlignVCenter
+        )
+
+    @staticmethod
+    def metric_type_to_str(metric_type: MetricType) -> str:
+        """Returns the corresponding string representation for
+        the given metric type.
+
+        :param metric_type: Type of metric or expression.
+        :type metric_type: MetricType
+
+        :returns: The corresponding string representation of
+        the given metric type.
+        :rtype: str
+        """
+        if metric_type == MetricType.COLUMN:
+            return tr("<Column metric>")
+        elif metric_type == MetricType.CUSTOM:
+            return tr("<Custom metric>")
+        else:
+            return tr("<Not set>")
+
+    @property
+    def column_metric(self) -> ActivityColumnMetric:
+        """Gets the underlying activity column metric data model.
+
+        :returns: The underlying activity column metric data model.
+        :rtype: ActivityColumnMetric
+        """
+        return self._activity_column_metric
+
+    def type(self) -> int:
+        """Returns the type of the standard item.
+
+        :returns: Type identifier of the item.
+        :rtype: int
+        """
+        return ACTIVITY_COLUMN_METRIC_TABLE_ITEM_TYPE
 
 
 class ActivityMetricTableModel(QtGui.QStandardItemModel):
@@ -399,7 +478,7 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
         """
         return list(self._metric_columns)
 
-    def add_column(self, column: MetricColumn):
+    def append_column(self, column: MetricColumn):
         """Adds a column to the model based on the information
         in the metric column.
 
@@ -407,11 +486,27 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
         for defining the new column.
         :type column: MetricColumn
         """
-        headers = [
-            self.headerData(c, QtCore.Qt.Horizontal) for c in range(self.columnCount())
-        ]
-        headers.append(column.header)
-        self.setHorizontalHeaderLabels(headers)
+        column_items = []
+
+        # Update rows based on the selected activities
+        for activity in self.activities:
+            activity_column_metric = ActivityColumnMetric(
+                activity,
+                column,
+                MetricType.COLUMN if column.expression else MetricType.NOT_SET,
+                column.expression if column.expression else "",
+            )
+            item = ActivityColumnMetricItem(activity_column_metric)
+            column_items.append(item)
+
+        self.appendColumn(column_items)
+        self.setHeaderData(
+            self.columnCount() - 1,
+            QtCore.Qt.Horizontal,
+            column.header,
+            QtCore.Qt.DisplayRole,
+        )
+
         self._metric_columns.append(column)
 
     def remove_column(self, index: int) -> bool:
@@ -459,7 +554,7 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
         )
         self._metric_columns[index] = column
 
-    def add_activity(self, activity: Activity) -> bool:
+    def append_activity(self, activity: Activity) -> bool:
         """Adds an activity row in the activity metrics table.
 
         :param activity: Activity to be added.
@@ -476,8 +571,26 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
         if len(matching_activities) > 0:
             return False
 
+        row_items = []
+
         activity_item = ActivityNameTableItem(activity)
-        self.appendRow(activity_item)
+        row_items.append(activity_item)
+
+        log("Checking for metric columns...")
+
+        # Set corresponding activity column metric items
+        for mc in self._metric_columns:
+            log("There is an existing column:")
+            log(mc.header)
+            activity_column_metric = ActivityColumnMetric(
+                activity,
+                mc,
+                MetricType.COLUMN if mc.expression else MetricType.NOT_SET,
+                mc.expression if mc.expression else "",
+            )
+            row_items.append(ActivityColumnMetricItem(activity_column_metric))
+
+        self.appendRow(row_items)
 
         return True
 
