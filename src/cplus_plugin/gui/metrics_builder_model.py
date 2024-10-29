@@ -19,6 +19,9 @@ METRIC_COLUMN_LIST_ITEM_TYPE = QtGui.QStandardItem.UserType + 6
 ACTIVITY_NAME_TABLE_ITEM_TYPE = QtGui.QStandardItem.UserType + 7
 ACTIVITY_COLUMN_METRIC_TABLE_ITEM_TYPE = QtGui.QStandardItem.UserType + 8
 
+COLUMN_METRIC_STR = "<Column metric>"
+CUSTOM_METRIC_STR = "<Custom metric>"
+
 
 class MetricColumnListItem(QtGui.QStandardItem):
     """Represents a single carbon layer path."""
@@ -406,16 +409,20 @@ class ActivityColumnMetricItem(QtGui.QStandardItem):
 
         self._activity_column_metric = activity_column_metric
 
-        self.setEditable(True)
-        self.setText(
-            ActivityColumnMetricItem.metric_type_to_str(
-                activity_column_metric.metric_type
-            )
-        )
+        if activity_column_metric.metric_column.auto_calculated:
+            self.setEditable(False)
+        else:
+            self.setEditable(True)
+
+        self._update_display_text()
         self.setTextAlignment(
             self._activity_column_metric.metric_column.alignment
             | QtCore.Qt.AlignVCenter
         )
+
+        # self.setData(self._activity_column_metric.metric_type, QtCore.Qt.EditRole)
+
+        self._update_tool_tip()
 
     @staticmethod
     def metric_type_to_str(metric_type: MetricType) -> str:
@@ -430,9 +437,9 @@ class ActivityColumnMetricItem(QtGui.QStandardItem):
         :rtype: str
         """
         if metric_type == MetricType.COLUMN:
-            return tr("<Column metric>")
+            return tr(COLUMN_METRIC_STR)
         elif metric_type == MetricType.CUSTOM:
-            return tr("<Custom metric>")
+            return tr(CUSTOM_METRIC_STR)
         else:
             return tr("<Not set>")
 
@@ -444,6 +451,77 @@ class ActivityColumnMetricItem(QtGui.QStandardItem):
         :rtype: ActivityColumnMetric
         """
         return self._activity_column_metric
+
+    @property
+    def metric_type(self) -> MetricType:
+        """Gets the metric type of the underlying data model.
+
+        :returns: The metric type of the underlying data model.
+        :rtype: MetricType
+        """
+        return self._activity_column_metric.metric_type
+
+    def update_metric_type(self, metric_type: MetricType, expression: str = ""):
+        """Updates the metric type of the underlying metric model.
+
+        :param metric_type: Metric type to be used by the model.
+        :type metric_type: MetricType
+
+        :param expression: Expression for the given metric type.
+        Default is an empty string.
+        :type expression: str
+        """
+        if self._activity_column_metric.metric_type == metric_type:
+            return
+
+        self._activity_column_metric.metric_type = metric_type
+        self._activity_column_metric.expression = expression
+
+        self._update_display_text()
+        self._update_tool_tip()
+
+    def update_metric_model(self, model: MetricColumn):
+        """Updates the underlying metric model.
+
+        :param model: Metric column containing updated properties.
+        :type model: MetricColumn
+        """
+        if (
+            self._activity_column_metric.metric_type == MetricType.NOT_SET
+            and model.expression
+        ):
+            self._activity_column_metric.metric_type = MetricType.COLUMN
+            self._activity_column_metric.expression = model.expression
+        elif (
+            self._activity_column_metric.metric_type == MetricType.COLUMN
+            and not model.expression
+        ):
+            self._activity_column_metric.metric_type = MetricType.NOT_SET
+            self._activity_column_metric.expression = ""
+
+        self._activity_column_metric.metric_column = model
+
+        self._update_display_text()
+        self._update_tool_tip()
+
+    def _update_tool_tip(self):
+        """Updates the tooltip to show the expression."""
+        if self._activity_column_metric.metric_type == MetricType.NOT_SET:
+            self.setToolTip("")
+        else:
+            self.setToolTip(self._activity_column_metric.expression)
+
+    def _update_display_text(self):
+        """Updates the display text of the item.
+
+        This should be called when there are any
+        changes in the activity column metric model.
+        """
+        self.setText(
+            ActivityColumnMetricItem.metric_type_to_str(
+                self._activity_column_metric.metric_type
+            )
+        )
 
     def type(self) -> int:
         """Returns the type of the standard item.
@@ -527,7 +605,6 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
             return False
 
         model_index = index + 1
-
         status = self.removeColumns(model_index, 1)
 
         del self._metric_columns[index]
@@ -544,15 +621,23 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
         :param column: Updated column metric object.
         :type column: MetricColumn
         """
-        if index == -1:
+        model_index = index + 1
+        if model_index == 0 or model_index >= self.columnCount():
             return False
 
         # Update header
-        model_index = index + 1
         self.setHeaderData(
             model_index, QtCore.Qt.Horizontal, column.header, QtCore.Qt.DisplayRole
         )
         self._metric_columns[index] = column
+
+        # Update corresponding column metric items in the given column
+        for r in range(self.rowCount()):
+            column_metric_item = self.item(r, model_index)
+            if column_metric_item is None:
+                continue
+
+            column_metric_item.update_metric_model(column)
 
     def append_activity(self, activity: Activity) -> bool:
         """Adds an activity row in the activity metrics table.
@@ -576,12 +661,8 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
         activity_item = ActivityNameTableItem(activity)
         row_items.append(activity_item)
 
-        log("Checking for metric columns...")
-
         # Set corresponding activity column metric items
         for mc in self._metric_columns:
-            log("There is an existing column:")
-            log(mc.header)
             activity_column_metric = ActivityColumnMetric(
                 activity,
                 mc,

@@ -7,15 +7,8 @@ import os
 import re
 import typing
 
-from qgis.core import (
-    Qgis,
-    QgsColorRamp,
-    QgsFillSymbolLayer,
-    QgsGradientColorRamp,
-    QgsMapLayerProxyModel,
-    QgsRasterLayer,
-)
-from qgis.gui import QgsGui, QgsMessageBar
+from qgis.core import Qgis, QgsVectorLayer
+from qgis.gui import QgsExpressionBuilderDialog, QgsGui, QgsMessageBar
 
 from qgis.PyQt import QtCore, QtGui, QtWidgets
 
@@ -23,19 +16,157 @@ from qgis.PyQt.uic import loadUiType
 
 from ..conf import Settings, settings_manager
 
-from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
+from ..definitions.defaults import METRIC_ACTIVITY_AREA, USER_DOCUMENTATION_SITE
 from .metrics_builder_model import (
+    ActivityColumnMetricItem,
     ActivityMetricTableModel,
+    COLUMN_METRIC_STR,
+    CUSTOM_METRIC_STR,
     MetricColumnListItem,
     MetricColumnListModel,
 )
 from ..models.base import Activity
-from ..models.report import MetricColumn
-from ..utils import FileUtils, log, generate_random_color, open_documentation, tr
+from ..models.report import MetricColumn, MetricType
+from ..utils import FileUtils, log, open_documentation, tr
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/activity_metrics_builder_dialog.ui")
 )
+
+
+class MetricItemDelegate(QtWidgets.QStyledItemDelegate):
+    """
+    Delegate for enabling the user to choose the type of metric for a
+    particular activity column.
+    """
+
+    def createEditor(
+        self,
+        parent: QtWidgets.QWidget,
+        option: QtWidgets.QStyleOptionViewItem,
+        idx: QtCore.QModelIndex,
+    ) -> QtWidgets.QLineEdit:
+        """Creates a combobox for choosing the metric type.
+
+        :param parent: Parent widget.
+        :type parent: QtWidgets.QWidget
+
+        :param option: Options for drawing the widget in the view.
+        :type option: QtWidgets.QStyleOptionViewItem
+
+        :param idx: Location of the request in the data model.
+        :type idx: QtCore.QModelIndex
+
+        :returns: The editor widget.
+        :rtype: QtWidgets.QLineEdit
+        """
+        metric_combobox = QtWidgets.QComboBox(parent)
+        metric_combobox.setFrame(False)
+        metric_combobox.addItem(tr(COLUMN_METRIC_STR), MetricType.COLUMN)
+        metric_combobox.addItem(tr(CUSTOM_METRIC_STR), MetricType.CUSTOM)
+        metric_combobox.currentIndexChanged.connect(self.on_metric_type_changed)
+
+        return metric_combobox
+
+    def setEditorData(self, widget: QtWidgets.QWidget, idx: QtCore.QModelIndex):
+        """Sets the data to be displayed and edited by the editor.
+
+        :param widget: Editor widget.
+        :type widget: QtWidgets.QWidget
+
+        :param idx: Location in the data model.
+        :type idx: QtCore.QModelIndex
+        """
+        select_index = -1
+
+        item = idx.model().itemFromIndex(idx)
+        if item is None or not isinstance(item, ActivityColumnMetricItem):
+            return
+
+        current_metric_type = item.metric_type
+        if current_metric_type == MetricType.COLUMN:
+            select_index = widget.findData(MetricType.COLUMN)
+        elif current_metric_type == MetricType.CUSTOM:
+            select_index = widget.findData(MetricType.CUSTOM)
+
+        if select_index != -1:
+            # We are temporarily blocking the index changed slot
+            # so that the expression dialog will not be shown if
+            # the metric type is custom.
+            widget.blockSignals(True)
+            widget.setCurrentIndex(select_index)
+            widget.blockSignals(False)
+
+    def on_metric_type_changed(self, index: int):
+        """Slot raised when the metric type has changed.
+
+        We use this to load the expression builder if a
+        custom metric is selected.
+
+        :param index: Index of the current selection.
+        :type index: int
+        """
+        if index == -1:
+            return
+
+        editor = self.sender()
+        metric_type = editor.itemData(index)
+        if metric_type != MetricType.CUSTOM:
+            return
+
+        expression_builder = QgsExpressionBuilderDialog(None, "", editor, "cplus")
+        expression_builder.setWindowTitle(tr("Activity Column Expression Builder"))
+        if expression_builder.exec_() == QtWidgets.QDialog.Accepted:
+            pass
+
+        self.commitData.emit(editor)
+        self.closeEditor.emit(editor, QtWidgets.QAbstractItemDelegate.NoHint)
+
+    def setModelData(
+        self,
+        widget: QtWidgets.QWidget,
+        model: QtCore.QAbstractItemModel,
+        idx: QtCore.QModelIndex,
+    ):
+        """Gets data from the editor widget and stores it in the specified
+        model at the item index.
+
+        :param widget: Editor widget.
+        :type widget: QtWidgets.QWidget
+
+        :param model: Model to store the editor data in.
+        :type model: QtCore.QAbstractItemModel
+
+        :param idx: Location in the data model.
+        :type idx: QtCore.QModelIndex
+        """
+        metric_type = widget.itemData(widget.currentIndex())
+        item = idx.model().itemFromIndex(idx)
+        if item is None or not isinstance(item, ActivityColumnMetricItem):
+            return
+
+        item.update_metric_type(metric_type)
+
+    def updateEditorGeometry(
+        self,
+        widget: QtWidgets.QWidget,
+        option: QtWidgets.QStyleOptionViewItem,
+        idx: QtCore.QModelIndex,
+    ):
+        """Updates the geometry of the editor for the item with the given index,
+        according to the rectangle specified in the option.
+
+        :param widget: Widget whose geometry will be updated.
+        :type widget: QtWidgets.QWidget
+
+        :param option: Option containing the rectangle for
+        updating the widget.
+        :type option: QtWidgets.QStyleOptionViewItem
+
+        :param idx: Location of the widget in the data model.
+        :type idx: QtCore.QModelIndex
+        """
+        widget.setGeometry(option.rect)
 
 
 class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
@@ -128,7 +259,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
 
         # Add the default area column
         area_metric_column = MetricColumn(
-            "Area", tr("Area (Ha)"), "", auto_calculated=True
+            "Area", tr("Area (Ha)"), METRIC_ACTIVITY_AREA, auto_calculated=True
         )
         area_column_item = MetricColumnListItem(area_metric_column)
         self.add_column_item(area_column_item)
@@ -186,23 +317,21 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         )
         self.setWindowTitle(window_title)
 
-    def initializePage(self, page_id: int):
-        """Initialize wizard page prior to loading.
-
-        :param page_id: ID of the wizard page.
-        :type page_id: int
-        """
         # Activity metrics page
         if page_id == 2:
             # If expression is not specified for at
             # least one column then enable the groupbox.
+            group_box_checked = False
+            self.gb_custom_activity_metric.setChecked(group_box_checked)
             for item in self._column_list_model.column_items:
                 if (
                     not item.expression
                     and not self.gb_custom_activity_metric.isChecked()
                 ):
-                    self.gb_custom_activity_metric.setChecked(True)
+                    group_box_checked = True
                     break
+
+            self.gb_custom_activity_metric.setChecked(group_box_checked)
 
     def validateCurrentPage(self) -> bool:
         """Validates the current page.
@@ -306,6 +435,11 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         # Add column to activity metrics table
         self._activity_metric_table_model.append_column(item.model)
         self.resize_activity_table_columns()
+
+        if not item.model.auto_calculated:
+            self.tb_activity_metrics.setItemDelegateForColumn(
+                item.row() + 1, MetricItemDelegate()
+            )
 
     def on_remove_column(self):
         """Slot raised to remove the selected column."""
