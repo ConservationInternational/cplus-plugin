@@ -154,6 +154,24 @@ class ActivityColumnMetric:
     metric_type: MetricType = MetricType.NOT_SET
     expression: str = ""
 
+    def is_valid(self) -> bool:
+        """Checks if the activity column metric is valid.
+
+        :returns: True if the activity column metric is
+        valid else False.
+        :rtype: bool
+        """
+        if self.activity is None or self.metric_column is None:
+            return False
+
+        if self.metric_type == MetricType.NOT_SET:
+            return False
+
+        if not self.expression:
+            return False
+
+        return True
+
 
 @dataclasses.dataclass
 class MetricConfiguration:
