@@ -139,7 +139,7 @@ class MetricType(IntEnum):
     """Type of metric or expression."""
 
     COLUMN = 0
-    CUSTOM = 1
+    CELL = 1
     NOT_SET = 2
 
 

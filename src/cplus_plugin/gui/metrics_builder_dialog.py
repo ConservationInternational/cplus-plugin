@@ -19,9 +19,10 @@ from ..conf import Settings, settings_manager
 from ..definitions.defaults import METRIC_ACTIVITY_AREA, USER_DOCUMENTATION_SITE
 from .metrics_builder_model import (
     ActivityColumnMetricItem,
+    ActivityColumnSummaryTreeModel,
     ActivityMetricTableModel,
     COLUMN_METRIC_STR,
-    CUSTOM_METRIC_STR,
+    CELL_METRIC_STR,
     MetricColumnListItem,
     MetricColumnListModel,
 )
@@ -66,7 +67,7 @@ class ColumnMetricItemDelegate(QtWidgets.QStyledItemDelegate):
         metric_combobox.setFrame(False)
         metric_combobox.setProperty(self.INDEX_PROPERTY_NAME, idx)
         metric_combobox.addItem(tr(COLUMN_METRIC_STR), MetricType.COLUMN)
-        metric_combobox.addItem(tr(CUSTOM_METRIC_STR), MetricType.CUSTOM)
+        metric_combobox.addItem(tr(CELL_METRIC_STR), MetricType.CELL)
         metric_combobox.currentIndexChanged.connect(self.on_metric_type_changed)
 
         return metric_combobox
@@ -89,13 +90,13 @@ class ColumnMetricItemDelegate(QtWidgets.QStyledItemDelegate):
         current_metric_type = item.metric_type
         if current_metric_type == MetricType.COLUMN:
             select_index = widget.findData(MetricType.COLUMN)
-        elif current_metric_type == MetricType.CUSTOM:
-            select_index = widget.findData(MetricType.CUSTOM)
+        elif current_metric_type == MetricType.CELL:
+            select_index = widget.findData(MetricType.CELL)
 
         if select_index != -1:
             # We are temporarily blocking the index changed slot
             # so that the expression dialog will not be shown if
-            # the metric type is custom.
+            # the metric type is cell-based.
             widget.blockSignals(True)
             widget.setCurrentIndex(select_index)
             widget.blockSignals(False)
@@ -104,7 +105,7 @@ class ColumnMetricItemDelegate(QtWidgets.QStyledItemDelegate):
         """Slot raised when the metric type has changed.
 
         We use this to load the expression builder if a
-        custom metric is selected.
+        cell metric is selected.
 
         :param index: Index of the current selection.
         :type index: int
@@ -114,7 +115,7 @@ class ColumnMetricItemDelegate(QtWidgets.QStyledItemDelegate):
 
         editor = self.sender()
         metric_type = editor.itemData(index)
-        if metric_type != MetricType.CUSTOM:
+        if metric_type != MetricType.CELL:
             return
 
         model_index = editor.property(self.INDEX_PROPERTY_NAME)
@@ -133,7 +134,7 @@ class ColumnMetricItemDelegate(QtWidgets.QStyledItemDelegate):
         expression_builder.setWindowTitle(tr("Activity Column Expression Builder"))
         if expression_builder.exec_() == QtWidgets.QDialog.Accepted:
             activity_column_metric_item.update_metric_type(
-                MetricType.CUSTOM, expression_builder.expressionText()
+                MetricType.CELL, expression_builder.expressionText()
             )
 
         self.commitData.emit(editor)
@@ -214,8 +215,8 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         self.vl_metric_notification.addWidget(self._activity_metric_message_bar)
 
         self._column_list_model = MetricColumnListModel()
-
         self._activity_metric_table_model = ActivityMetricTableModel()
+        self._summary_model = ActivityColumnSummaryTreeModel()
 
         # Initialize wizard
         ci_icon = FileUtils.get_icon("cplus_logo.svg")
@@ -283,6 +284,9 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         self._update_activities()
 
         self.tb_activity_metrics.installEventFilter(self)
+
+        # Final summary page
+        self.tv_summary.setModel(self._summary_model)
 
         # Add the default area column
         area_metric_column = MetricColumn(
@@ -359,6 +363,10 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
                     break
 
             self.gb_custom_activity_metric.setChecked(group_box_checked)
+
+        # Final summary page
+        elif page_id == 3:
+            self.load_summary_details()
 
     def validateCurrentPage(self) -> bool:
         """Validates the current page.
@@ -492,8 +500,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
 
         if not item.model.auto_calculated:
             self.tb_activity_metrics.setItemDelegateForColumn(
-                item.row() + 1,
-                ColumnMetricItemDelegate(self.tb_activity_metrics)
+                item.row() + 1, ColumnMetricItemDelegate(self.tb_activity_metrics)
             )
 
     def on_remove_column(self):
@@ -758,7 +765,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
 
         is_valid = self._activity_metric_table_model.validate(True)
         if not is_valid:
-            msg = tr("The highlighted activity metric items are invalid.")
+            msg = tr("The metrics for the highlighted items are undefined.")
             self.push_activity_metric_message(msg)
 
         return is_valid
@@ -795,3 +802,9 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         column_width = int(width / float(column_count))
         for c in range(column_count):
             self.tb_activity_metrics.setColumnWidth(c, column_width)
+
+    def load_summary_details(self):
+        """Load items summarizing the metric configuration."""
+        activity_column_metric_models = self._activity_metric_table_model.models
+        self._summary_model.set_summary_models(activity_column_metric_models)
+        self.tv_summary.expandAll()

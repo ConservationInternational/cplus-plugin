@@ -20,7 +20,7 @@ ACTIVITY_NAME_TABLE_ITEM_TYPE = QtGui.QStandardItem.UserType + 7
 ACTIVITY_COLUMN_METRIC_TABLE_ITEM_TYPE = QtGui.QStandardItem.UserType + 8
 
 COLUMN_METRIC_STR = "<Column metric>"
-CUSTOM_METRIC_STR = "<Custom metric>"
+CELL_METRIC_STR = "<Cell metric>"
 
 
 class MetricColumnListItem(QtGui.QStandardItem):
@@ -438,13 +438,13 @@ class ActivityColumnMetricItem(QtGui.QStandardItem):
         """
         if metric_type == MetricType.COLUMN:
             return tr(COLUMN_METRIC_STR)
-        elif metric_type == MetricType.CUSTOM:
-            return tr(CUSTOM_METRIC_STR)
+        elif metric_type == MetricType.CELL:
+            return tr(CELL_METRIC_STR)
         else:
             return tr("<Not set>")
 
     @property
-    def column_metric(self) -> ActivityColumnMetric:
+    def model(self) -> ActivityColumnMetric:
         """Gets the underlying activity column metric data model.
 
         :returns: The underlying activity column metric data model.
@@ -702,9 +702,9 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
             if column_metric_item is None:
                 continue
 
-            # We ignore custom metrics since we do not want to fiddle
-            # with what the user has already specified.
-            if column_metric_item.metric_type == MetricType.CUSTOM:
+            # We ignore cell metrics since we do not want to change
+            # what the user has already specified.
+            if column_metric_item.metric_type == MetricType.CELL:
                 continue
 
             column_metric_item.update_metric_model(column)
@@ -854,3 +854,77 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
                 item = self.item(r, c)
                 if not item.is_valid():
                     item.highlight_invalid(False)
+
+    @property
+    def models(self) -> typing.List[typing.List[ActivityColumnMetric]]:
+        """Gets the mapping of activity column metric data models.
+
+        :returns: A nested list of activity column metrics in the same order
+        that they are stored in the model.
+        :rtype: typing.List[typing.List[ActivityColumnMetric]]
+        """
+        activity_metric_models = []
+
+        for r in range(self.rowCount()):
+            row_models = []
+            for c in range(1, self.columnCount()):
+                item = self.item(r, c)
+                row_models.append(item.model)
+
+            activity_metric_models.append(row_models)
+
+        return activity_metric_models
+
+
+class ActivityColumnSummaryItem(QtGui.QStandardItem):
+    """Provides an item for displaying the configuration of metrics
+    for the activity by listing the specific metrics for each
+    column.
+    """
+
+    def __init__(self, activity_column_metrics: typing.List[ActivityColumnMetric]):
+        super().__init__()
+
+        self._activity_column_metrics = activity_column_metrics
+
+        self._reference_activity = None
+        for acm in self._activity_column_metrics:
+            if self._reference_activity is None:
+                self._reference_activity = acm.activity
+                self.setText(acm.activity.name)
+
+            column_item = QtGui.QStandardItem()
+            column_item.setIcon(FileUtils.get_icon("table_column.svg"))
+            column_details = (
+                f"{acm.metric_column.header}: "
+                f"{ActivityColumnMetricItem.metric_type_to_str(acm.metric_type)}"
+            )
+            column_item.setText(column_details)
+            column_item.setToolTip(acm.expression)
+            self.appendRow(column_item)
+
+
+class ActivityColumnSummaryTreeModel(QtGui.QStandardItemModel):
+    """View model for managing activity column metric data models in a tree view."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setColumnCount(1)
+
+    def set_summary_models(
+        self, activity_metric_models: typing.List[typing.List[ActivityColumnMetric]]
+    ):
+        """Update the model to use the specified activity column metric data models.
+
+        Any existing items will be removed prior to loading the specified data models.
+
+        :param activity_metric_models: Nested list of activity column metric data models.
+        :type activity_metric_models: typing.List[typing.List[ActivityColumnMetric]]
+        """
+        # Clear any prior existing items
+        self.removeRows(0, self.rowCount())
+
+        for activity_metric_row in activity_metric_models:
+            summary_item = ActivityColumnSummaryItem(activity_metric_row)
+            self.appendRow(summary_item)

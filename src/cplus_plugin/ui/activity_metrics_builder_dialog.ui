@@ -355,7 +355,7 @@
     <string>Summary</string>
    </property>
    <property name="subTitle">
-    <string>Review and save the metrics configuration to be applied in the scenario analysis report.</string>
+    <string>Review and save the metrics configuration to be used in the scenario analysis report.</string>
    </property>
    <attribute name="pageId">
     <string notr="true">3</string>
@@ -363,6 +363,9 @@
    <layout class="QGridLayout" name="gridLayout_5">
     <item row="0" column="0">
      <widget class="QTreeView" name="tv_summary">
+      <property name="editTriggers">
+       <set>QAbstractItemView::NoEditTriggers</set>
+      </property>
       <property name="rootIsDecorated">
        <bool>true</bool>
       </property>
