@@ -34,11 +34,13 @@ WidgetUi, _ = loadUiType(
 )
 
 
-class MetricItemDelegate(QtWidgets.QStyledItemDelegate):
+class ColumnMetricItemDelegate(QtWidgets.QStyledItemDelegate):
     """
     Delegate for enabling the user to choose the type of metric for a
     particular activity column.
     """
+
+    INDEX_PROPERTY_NAME = "delegate_index"
 
     def createEditor(
         self,
@@ -62,6 +64,7 @@ class MetricItemDelegate(QtWidgets.QStyledItemDelegate):
         """
         metric_combobox = QtWidgets.QComboBox(parent)
         metric_combobox.setFrame(False)
+        metric_combobox.setProperty(self.INDEX_PROPERTY_NAME, idx)
         metric_combobox.addItem(tr(COLUMN_METRIC_STR), MetricType.COLUMN)
         metric_combobox.addItem(tr(CUSTOM_METRIC_STR), MetricType.CUSTOM)
         metric_combobox.currentIndexChanged.connect(self.on_metric_type_changed)
@@ -114,10 +117,24 @@ class MetricItemDelegate(QtWidgets.QStyledItemDelegate):
         if metric_type != MetricType.CUSTOM:
             return
 
-        expression_builder = QgsExpressionBuilderDialog(None, "", editor, "cplus")
+        model_index = editor.property(self.INDEX_PROPERTY_NAME)
+        if not model_index.isValid():
+            log(tr("Invalid index for activity column metric."))
+            return
+
+        activity_column_metric_item = model_index.model().itemFromIndex(model_index)
+        if activity_column_metric_item is None:
+            log(tr("Activity column metric could not be found."))
+            return
+
+        expression_builder = QgsExpressionBuilderDialog(
+            None, activity_column_metric_item.expression, editor, "CPLUS"
+        )
         expression_builder.setWindowTitle(tr("Activity Column Expression Builder"))
         if expression_builder.exec_() == QtWidgets.QDialog.Accepted:
-            pass
+            activity_column_metric_item.update_metric_type(
+                MetricType.CUSTOM, expression_builder.expressionText()
+            )
 
         self.commitData.emit(editor)
         self.closeEditor.emit(editor, QtWidgets.QAbstractItemDelegate.NoHint)
@@ -145,7 +162,14 @@ class MetricItemDelegate(QtWidgets.QStyledItemDelegate):
         if item is None or not isinstance(item, ActivityColumnMetricItem):
             return
 
-        item.update_metric_type(metric_type)
+        # Inherit the column expression if defined
+        expression = ""
+        if metric_type == MetricType.COLUMN:
+            metric_column = model.metric_column(idx.column() - 1)
+            if metric_column is not None:
+                expression = metric_column.expression
+
+        item.update_metric_type(metric_type, expression)
 
     def updateEditorGeometry(
         self,
@@ -185,6 +209,9 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         # Setup notification bars
         self._column_message_bar = QgsMessageBar()
         self.vl_column_notification.addWidget(self._column_message_bar)
+
+        self._activity_metric_message_bar = QgsMessageBar()
+        self.vl_metric_notification.addWidget(self._activity_metric_message_bar)
 
         self._column_list_model = MetricColumnListModel()
 
@@ -343,6 +370,9 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         if self.currentId() == 1:
             return self.is_columns_page_valid()
 
+        elif self.currentId() == 2:
+            return self.is_activity_metrics_page_valid()
+
         return True
 
     def on_help_requested(self):
@@ -393,6 +423,30 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
 
         self._column_message_bar.pushMessage(message, level, 5)
 
+    def push_activity_metric_message(
+        self,
+        message: str,
+        level: Qgis.MessageLevel = Qgis.MessageLevel.Warning,
+        clear_first: bool = False,
+    ):
+        """Push a message to the notification bar in the
+        activity metric wizard page.
+
+        :param message: Message to the show in the notification bar.
+        :type message: str
+
+        :param level: Severity of the message. Warning is the default.
+        :type level: Qgis.MessageLevel
+
+        :param clear_first: Clear any current messages in the notification
+        bar, default is False.
+        :type clear_first: bool
+        """
+        if clear_first:
+            self._activity_metric_message_bar.clearWidgets()
+
+        self._activity_metric_message_bar.pushMessage(message, level, 5)
+
     def on_add_column(self):
         """Slot raised to add a new column."""
         label_text = (
@@ -438,7 +492,8 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
 
         if not item.model.auto_calculated:
             self.tb_activity_metrics.setItemDelegateForColumn(
-                item.row() + 1, MetricItemDelegate()
+                item.row() + 1,
+                ColumnMetricItemDelegate(self.tb_activity_metrics)
             )
 
     def on_remove_column(self):
@@ -471,7 +526,22 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         # Move corresponding column in the activity metrics table.
         # We have normalized it to reflect the position in the
         # metrics table.
-        self._activity_metric_table_model.move_column_left(current_row + 1)
+        reference_index = current_row + 1
+        reference_delegate = self.tb_activity_metrics.itemDelegateForColumn(
+            reference_index
+        )
+        adjacent_delegate = self.tb_activity_metrics.itemDelegateForColumn(
+            reference_index - 1
+        )
+        new_index = self._activity_metric_table_model.move_column_left(reference_index)
+        if new_index != -1:
+            # Also adjust the delegates
+            self.tb_activity_metrics.setItemDelegateForColumn(
+                new_index, reference_delegate
+            )
+            self.tb_activity_metrics.setItemDelegateForColumn(
+                new_index + 1, adjacent_delegate
+            )
 
     def on_move_down_column(self):
         """Slot raised to move the selected column one level down."""
@@ -640,7 +710,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         current_column.alignment = self.cbo_column_alignment.itemData(
             self.cbo_column_alignment.currentIndex()
         )
-        current_column.expression = self.cbo_column_expression.currentText()
+        current_column.expression = self.cbo_column_expression.expression()
 
         # Update column properties in activity metrics table
         self._activity_metric_table_model.update_column_properties(
@@ -674,6 +744,22 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
                 tr_msg = tr("header label is empty")
                 msg = f"'{item.name}' {tr_msg}."
                 self.push_column_message(msg)
+
+        return is_valid
+
+    def is_activity_metrics_page_valid(self) -> bool:
+        """Validates the activity metrics page.
+
+        :returns: True if the activity metrics page is valid,
+        else False.
+        :rtype: bool
+        """
+        self._activity_metric_message_bar.clearWidgets()
+
+        is_valid = self._activity_metric_table_model.validate(True)
+        if not is_valid:
+            msg = tr("The highlighted activity metric items are invalid.")
+            self.push_activity_metric_message(msg)
 
         return is_valid
 

@@ -453,6 +453,15 @@ class ActivityColumnMetricItem(QtGui.QStandardItem):
         return self._activity_column_metric
 
     @property
+    def expression(self) -> str:
+        """Gets the item's expression.
+
+        :returns: Item's expression.
+        :rtype: str
+        """
+        return self._activity_column_metric.expression
+
+    @property
     def metric_type(self) -> MetricType:
         """Gets the metric type of the underlying data model.
 
@@ -531,6 +540,39 @@ class ActivityColumnMetricItem(QtGui.QStandardItem):
         """
         return ACTIVITY_COLUMN_METRIC_TABLE_ITEM_TYPE
 
+    def is_valid(self) -> bool:
+        """Checks if the activity column metric is valid.
+
+        :returns: True if the activity column metric is
+        valid else False.
+        :rtype: bool
+        """
+        return self._activity_column_metric.is_valid()
+
+    def highlight_invalid(self, show: bool):
+        """Highlights the item with a red background to indicate
+        that the activity column metric is invalid.
+
+        :param show: True to highlight the item else False to
+        disable. A call to highlight will first verify that the
+        data model is valid. If it is valid then the item will
+        not be highlighted.
+        :type show: bool
+        """
+        if self.is_valid() and show:
+            return
+
+        background = self.background()
+
+        if show:
+            background.setColor(QtGui.QColor("#ffaeae"))
+            background.setStyle(QtCore.Qt.SolidPattern)
+        else:
+            background.setColor(QtCore.Qt.white)
+            background.setStyle(QtCore.Qt.NoBrush)
+
+        self.setBackground(background)
+
 
 class ActivityMetricTableModel(QtGui.QStandardItemModel):
     """View model for activity metrics in a table."""
@@ -545,6 +587,14 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
         self._metric_columns = []
         if columns is not None:
             self._metric_columns = columns
+
+        # Timer for intermittently showing invalid items
+        self._validation_highlight_timer = QtCore.QTimer()
+        self._validation_highlight_timer.setSingleShot(True)
+        self._validation_highlight_timer.setInterval(5000)
+        self._validation_highlight_timer.timeout.connect(
+            self._on_validation_highlight_timeout
+        )
 
     @property
     def metric_columns(self) -> typing.List[MetricColumn]:
@@ -611,6 +661,21 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
 
         return status
 
+    def metric_column(self, index: int) -> typing.Optional[MetricColumn]:
+        """Gets the metric column at the given location.
+
+        :param index: Index of the metric column.
+        :type index: int
+
+        :returns: The metric column at the given index else
+        None if the index is invalid.
+        :rtype: typing.Optional[MetricColumn]
+        """
+        if index < 0 or index > len(self._metric_columns) - 1:
+            return None
+
+        return self._metric_columns[index]
+
     def update_column_properties(self, index: int, column: MetricColumn):
         """Updates the properties of an underlying metric column
         in the model.
@@ -635,6 +700,11 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
         for r in range(self.rowCount()):
             column_metric_item = self.item(r, model_index)
             if column_metric_item is None:
+                continue
+
+            # We ignore custom metrics since we do not want to fiddle
+            # with what the user has already specified.
+            if column_metric_item.metric_type == MetricType.CUSTOM:
                 continue
 
             column_metric_item.update_metric_model(column)
@@ -746,3 +816,41 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
         :rtype: int
         """
         return self.move_column(current_index, HorizontalMoveDirection.RIGHT)
+
+    def validate(self, highlight_invalid: bool) -> bool:
+        """Validate the items in the model.
+
+        :param highlight_invalid: True to highlight invalid
+        activity metric column items, else False to ignore
+        highlighting invalid items. If True, the invalid items
+        will be highlighted for a default period of 3000ms.
+        :type highlight_invalid: bool
+
+        :returns: True if the items are valid else False.
+        :rtype: bool
+        """
+        is_valid = True
+
+        if self._validation_highlight_timer.isActive():
+            self._validation_highlight_timer.stop()
+
+        self._validation_highlight_timer.start()
+
+        for r in range(self.rowCount()):
+            for c in range(1, self.columnCount()):
+                item = self.item(r, c)
+                if not item.is_valid():
+                    if is_valid:
+                        is_valid = False
+                    if highlight_invalid:
+                        item.highlight_invalid(True)
+
+        return is_valid
+
+    def _on_validation_highlight_timeout(self):
+        """Revert invalid items to a normal background."""
+        for r in range(self.rowCount()):
+            for c in range(1, self.columnCount()):
+                item = self.item(r, c)
+                if not item.is_valid():
+                    item.highlight_invalid(False)
