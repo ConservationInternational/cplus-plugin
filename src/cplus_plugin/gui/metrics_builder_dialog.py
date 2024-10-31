@@ -23,6 +23,7 @@ from .metrics_builder_model import (
     ActivityMetricTableModel,
     COLUMN_METRIC_STR,
     CELL_METRIC_STR,
+    HorizontalMoveDirection,
     MetricColumnListItem,
     MetricColumnListModel,
 )
@@ -534,20 +535,55 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         # We have normalized it to reflect the position in the
         # metrics table.
         reference_index = current_row + 1
+        self._move_activity_metric_column(reference_index, HorizontalMoveDirection.LEFT)
+
+    def _move_activity_metric_column(
+        self, reference_index: int, direction: HorizontalMoveDirection
+    ):
+        """Moves the activity column metric at the given index
+        depending on the direction.
+
+        :param reference_index: Location of the reference column
+        that will be moved.
+        :type reference_index: int
+
+        :param direction: Direction the reference column will
+        be moved.
+        :type direction: HorizontalMoveDirection
+        """
+        if direction == HorizontalMoveDirection.LEFT:
+            adjacent_index = reference_index - 1
+        else:
+            adjacent_index = reference_index + 1
+
         reference_delegate = self.tb_activity_metrics.itemDelegateForColumn(
             reference_index
         )
         adjacent_delegate = self.tb_activity_metrics.itemDelegateForColumn(
-            reference_index - 1
+            adjacent_index
         )
-        new_index = self._activity_metric_table_model.move_column_left(reference_index)
+
+        if direction == HorizontalMoveDirection.LEFT:
+            new_index = self._activity_metric_table_model.move_column_left(
+                reference_index
+            )
+        else:
+            new_index = self._activity_metric_table_model.move_column_right(
+                reference_index
+            )
+
         if new_index != -1:
+            if direction == HorizontalMoveDirection.LEFT:
+                adjacent_new_index = new_index + 1
+            else:
+                adjacent_new_index = new_index - 1
+
             # Also adjust the delegates
             self.tb_activity_metrics.setItemDelegateForColumn(
                 new_index, reference_delegate
             )
             self.tb_activity_metrics.setItemDelegateForColumn(
-                new_index + 1, adjacent_delegate
+                adjacent_new_index, adjacent_delegate
             )
 
     def on_move_down_column(self):
@@ -565,10 +601,13 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         # Maintain selection
         self.select_column(row)
 
-        # Move corresponding column in the activity metrics
-        # table. We have normalized it to reflect the position
-        # in the metrics table.
-        self._activity_metric_table_model.move_column_right(current_row + 1)
+        # Move corresponding column in the activity metrics table.
+        # We have normalized it to reflect the position in the
+        # metrics table.
+        reference_index = current_row + 1
+        self._move_activity_metric_column(
+            reference_index, HorizontalMoveDirection.RIGHT
+        )
 
     def select_column(self, row: int):
         """Select the column item in the specified row.
