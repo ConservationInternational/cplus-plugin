@@ -17,6 +17,10 @@ from qgis.PyQt.uic import loadUiType
 from ..conf import Settings, settings_manager
 
 from ..definitions.defaults import METRIC_ACTIVITY_AREA, USER_DOCUMENTATION_SITE
+from ..lib.reports.metrics import (
+    create_metrics_expression_context,
+    create_metrics_expression_scope,
+)
 from .metrics_builder_model import (
     ActivityColumnMetricItem,
     ActivityColumnSummaryTreeModel,
@@ -130,7 +134,11 @@ class ColumnMetricItemDelegate(QtWidgets.QStyledItemDelegate):
             return
 
         expression_builder = QgsExpressionBuilderDialog(
-            None, activity_column_metric_item.expression, editor, "CPLUS"
+            None,
+            activity_column_metric_item.expression,
+            editor,
+            "CPLUS",
+            create_metrics_expression_context(),
         )
         expression_builder.setWindowTitle(tr("Activity Column Expression Builder"))
         if expression_builder.exec_() == QtWidgets.QDialog.Accepted:
@@ -264,6 +272,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         self.cbo_column_expression.setExpressionDialogTitle(
             tr("Column Expression Builder")
         )
+        self.cbo_column_expression.appendScope(create_metrics_expression_scope())
 
         self.lst_columns.setModel(self._column_list_model)
         self.lst_columns.selectionModel().selectionChanged.connect(
