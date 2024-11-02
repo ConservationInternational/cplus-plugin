@@ -6,6 +6,7 @@
 import hashlib
 import json
 import os
+import typing
 import uuid
 import datetime
 from pathlib import Path
@@ -658,3 +659,104 @@ def get_layer_type(file_path: str):
         return 1
     else:
         return -1
+
+
+def function_help_to_html(
+    function_name: str,
+    description: str,
+    arguments: typing.List[tuple] = None,
+    examples: typing.List[tuple] = None,
+) -> str:
+    """Creates a HTML string containing the detailed help of an expression function.
+
+    The specific HTML formatting is deduced from the code here:
+    https://github.com/qgis/QGIS/blob/master/src/core/expression/qgsexpression.cpp#L565
+
+    :param function_name: Name of the expression function.
+    :type function_name: str
+
+    :param description: Detailed description of the function.
+    :type description: str
+
+    :param arguments: List containing the arguments. Each argument should consist of a
+    tuple containing three elements i.e. argument name, description and bool where True
+    will indicate the argument is optional. Take note of the order as mandatory
+    arguments should be first in the list.
+    :type arguments: typing.List[tuple]
+
+    :param examples: Examples of using the function. Each item in the list should be
+    a tuple containing an example expression and the corresponding return value.
+    :type examples: typing.List[tuple]
+
+    :returns: The expression function's help in HTML for use in, for example, an
+    expression builder.
+    :rtype: str
+    """
+    if arguments is None:
+        arguments = []
+
+    if examples is None:
+        examples = []
+
+    html_segments = []
+
+    # Title
+    html_segments.append(f"<h3>function {function_name}</h3>\n")
+
+    # Description
+    html_segments.append(f'<div class="description"><p>{description}</p></div>')
+
+    # Syntax
+    html_segments.append(
+        f'<h4>Syntax</h4>\n<div class="syntax">\n<code>'
+        f'<span class="functionname">{function_name}</span>'
+        f"("
+    )
+
+    has_optional = False
+    separator = ""
+    for arg in arguments:
+        arg_name = arg[0]
+        arg_mandatory = arg[2]
+        if not has_optional and arg_mandatory:
+            html_segments.append("[")
+            has_optional = True
+
+        html_segments.append(separator)
+        html_segments.append(f'<span class="argument">{arg_name}</span>')
+
+        if arg_mandatory:
+            html_segments.append("]")
+
+        separator = ","
+
+    html_segments.append(")</code>")
+
+    if has_optional:
+        html_segments.append("<br/><br/>[ ] marks optional components")
+
+    # Arguments
+    if len(arguments) > 0:
+        html_segments.append('<h4>Arguments</h4>\n<div class="arguments">\n<table>')
+        for arg in arguments:
+            arg_name = arg[0]
+            arg_description = arg[1]
+            html_segments.append(
+                f'<tr><td class="argument">{arg_name}</td><td>{arg_description}</td></tr>'
+            )
+
+        html_segments.append("</table>\n</div>\n")
+
+    # Examples
+    if len(examples) > 0:
+        html_segments.append('<h4>Examples</h4>\n<div class="examples">\n<ul>\n')
+        for example in examples:
+            expression = example[0]
+            return_value = example[1]
+            html_segments.append(
+                f"<li><code>{expression}</code> &rarr; <code>{return_value}</code>"
+            )
+
+        html_segments.append("</ul>\n</div>\n")
+
+    return "".join(html_segments)
