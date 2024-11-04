@@ -211,6 +211,8 @@ class ColumnMetricItemDelegate(QtWidgets.QStyledItemDelegate):
 class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
     """Wizard for customizing custom activity metrics table."""
 
+    AREA_COLUMN = "Area"
+
     def __init__(self, parent=None, activities=None):
         super().__init__(parent)
         self.setupUi(self)
@@ -305,7 +307,10 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
 
         # Add the default area column
         area_metric_column = MetricColumn(
-            "Area", tr("Area (Ha)"), METRIC_ACTIVITY_AREA, auto_calculated=True
+            self.AREA_COLUMN,
+            tr("Area (Ha)"),
+            METRIC_ACTIVITY_AREA,
+            auto_calculated=True,
         )
         area_column_item = MetricColumnListItem(area_metric_column)
         self.add_column_item(area_column_item)
@@ -379,6 +384,9 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         if not configuration.is_valid():
             log("Metric configuration is invalid and cannot be loaded.")
             return
+
+        # Remove the default area
+        self.remove_column(self.AREA_COLUMN)
 
         # Add metric columns
         for mc in configuration.metric_columns:
@@ -584,13 +592,26 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         """Slot raised to remove the selected column."""
         selected_items = self.selected_column_items()
         for item in selected_items:
-            index = item.row()
-            self._column_list_model.remove_column(item.name)
-
-            # Remove corresponding column in activity metrics table
-            self._activity_metric_table_model.remove_column(index)
+            self.remove_column(item.name)
 
         self.resize_activity_table_columns()
+
+    def remove_column(self, name: str):
+        """Remove a metric column with the given name.
+
+        :param name: Name of the metric column to be removed.
+        :type name: str
+        """
+        item = self._column_list_model.item_from_name(name)
+        if item is None:
+            return
+
+        index = item.row()
+
+        self._column_list_model.remove_column(name)
+
+        # Remove corresponding column in activity metrics table
+        self._activity_metric_table_model.remove_column(index)
 
     def on_move_up_column(self):
         """Slot raised to move the selected column one level up."""

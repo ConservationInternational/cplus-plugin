@@ -767,7 +767,7 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
         item was not moved.
         :rtype: int
         """
-        # The activity name column will always be on the extreme left (LTR)
+        # The activity name column will always be on the extreme left
         if current_index <= 1 and direction == HorizontalMoveDirection.LEFT:
             return -1
 
@@ -787,6 +787,10 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
         column_items = self.takeColumn(current_index)
         self.insertColumn(new_index, column_items)
         self.setHorizontalHeaderItem(new_index, header_item)
+
+        # Also reposition metric columns
+        metric_column = self._metric_columns.pop(current_index - 1)
+        self._metric_columns.insert(new_index - 1, metric_column)
 
         return new_index
 
