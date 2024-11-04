@@ -179,6 +179,66 @@ class MetricConfiguration:
     activity column metric data models.
     """
 
-    activities: typing.List[Activity]
     metric_columns: typing.List[MetricColumn]
     activity_metrics: typing.List[typing.List[ActivityColumnMetric]]
+
+    def is_valid(self) -> bool:
+        """Checks the validity of the configuration.
+
+        It verifies if the number of metric columns matches the
+        column mappings for activity metrics.
+
+        :returns: True if the configuration is valid, else False.
+        :rtype: bool
+        """
+        column_metrics_len = 0
+        if len(self.activity_metrics) > 0:
+            column_metrics_len = len(self.activity_metrics[0])
+
+        return len(self.metric_columns) == column_metrics_len
+
+    @property
+    def activities(self) -> typing.List[Activity]:
+        """Gets the activity models in the configuration.
+
+        :returns: Activity models in the configuration.
+        :rtype: typing.List[Activity]
+        """
+        activities = []
+        for activity_row in self.activity_metrics:
+            if len(activity_row) > 0:
+                activities.append(activity_row[0].activity)
+
+        return activities
+
+    def find(
+        self, activity_id: str, name_header: str
+    ) -> typing.Optional[ActivityColumnMetric]:
+        """Returns a matching activity column metric model
+        for the activity with the given UUID and the corresponding
+        metric column name or header label.
+
+        :param activity_id: The activity's unique identifier.
+        :type activity_id: str
+
+        :param name_header: The metric column name or header to match.
+        :type name_header: str
+
+        :returns: Matching column metric or None if not found.
+        :rtype: typing.Optional[ActivityColumnMetric]
+        """
+
+        def _search_list(model_list: typing.List, activity_identifier: str, name: str):
+            for model in model_list:
+                if isinstance(model, list):
+                    yield from _search_list(model, activity_identifier, name)
+                else:
+                    if str(model.activity.uuid) == activity_identifier and (
+                        model.metric_column.name == name
+                        or model.metric_column.name == name
+                    ):
+                        yield model
+
+        match = next(_search_list(self.activity_metrics, activity_id, name_header), -1)
+
+        return match if match != -1 else None

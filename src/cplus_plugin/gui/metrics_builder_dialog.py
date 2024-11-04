@@ -10,7 +10,7 @@ import typing
 from qgis.core import Qgis, QgsVectorLayer
 from qgis.gui import QgsExpressionBuilderDialog, QgsGui, QgsMessageBar
 
-from qgis.PyQt import QtCore, QtGui, QtWidgets
+from qgis.PyQt import QtCore, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
@@ -32,7 +32,8 @@ from .metrics_builder_model import (
     MetricColumnListModel,
 )
 from ..models.base import Activity
-from ..models.report import MetricColumn, MetricType
+from ..models.helpers import clone_activity
+from ..models.report import MetricColumn, MetricConfiguration, MetricType
 from ..utils import FileUtils, log, open_documentation, tr
 
 WidgetUi, _ = loadUiType(
@@ -47,6 +48,7 @@ class ColumnMetricItemDelegate(QtWidgets.QStyledItemDelegate):
     """
 
     INDEX_PROPERTY_NAME = "delegate_index"
+    EXPRESSION_PROPERTY_NAME = "cell_expression"
 
     def createEditor(
         self,
@@ -142,8 +144,9 @@ class ColumnMetricItemDelegate(QtWidgets.QStyledItemDelegate):
         )
         expression_builder.setWindowTitle(tr("Activity Column Expression Builder"))
         if expression_builder.exec_() == QtWidgets.QDialog.Accepted:
-            activity_column_metric_item.update_metric_type(
-                MetricType.CELL, expression_builder.expressionText()
+            # Save the expression in the combobox's custom property collection
+            editor.setProperty(
+                self.EXPRESSION_PROPERTY_NAME, expression_builder.expressionText()
             )
 
         self.commitData.emit(editor)
@@ -178,6 +181,8 @@ class ColumnMetricItemDelegate(QtWidgets.QStyledItemDelegate):
             metric_column = model.metric_column(idx.column() - 1)
             if metric_column is not None:
                 expression = metric_column.expression
+        elif metric_type == MetricType.CELL:
+            expression = widget.property(self.EXPRESSION_PROPERTY_NAME)
 
         item.update_metric_type(metric_type, expression)
 
@@ -214,7 +219,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
 
         self._activities = []
         if activities is not None:
-            self._activities = activities
+            self._activities = [clone_activity(activity) for activity in activities]
 
         # Setup notification bars
         self._column_message_bar = QgsMessageBar()
@@ -341,8 +346,58 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         those whose metrics will be used in the customization.
         :type activities: typing.List[Activity]
         """
-        self._activities = activities
+        self._activities = [clone_activity(activity) for activity in activities]
         self._update_activities()
+
+    @property
+    def metric_configuration(self) -> MetricConfiguration:
+        """Gets the user configuration for metric column and
+        corresponding cell metric configuration.
+
+        :returns: User metric configuration.
+        :rtype: MetricConfiguration
+        """
+        return MetricConfiguration(
+            self._activity_metric_table_model.metric_columns,
+            self._activity_metric_table_model.models,
+        )
+
+    def load_configuration(self, configuration: MetricConfiguration):
+        """Load a metric configuration.
+
+        All the columns in the configuration will be loaded, with an attempt
+        to restore the metric configuration of similar activities that
+        existed in the configuration with those currently being configured.
+
+        :param configuration: Configuration containing mapping of metric
+        columns and cell metrics.
+        :type configuration: MetricConfiguration
+        """
+        if configuration is None:
+            return
+
+        if not configuration.is_valid():
+            log("Metric configuration is invalid and cannot be loaded.")
+            return
+
+        # Add metric columns
+        for mc in configuration.metric_columns:
+            item = MetricColumnListItem(mc)
+            self.add_column_item(item)
+
+        # Configure activity cell metrics matching the same activity
+        # and column name in the configuration
+        for r in range(self._activity_metric_table_model.rowCount()):
+            for c in range(1, self._activity_metric_table_model.columnCount()):
+                item = self.item(r, c)
+                # Fetch the closest match in configuration (based on activity ID and name or header label)
+                model_match = configuration.find(
+                    str(item.model.activity.uuid), item.model.metric_column.name
+                )
+                if model_match is None:
+                    continue
+
+                item.update_metric_type(model_match.metric_type, model_match.expression)
 
     def on_page_id_changed(self, page_id: int):
         """Slot raised when the page ID changes.

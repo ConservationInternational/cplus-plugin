@@ -480,9 +480,6 @@ class ActivityColumnMetricItem(QtGui.QStandardItem):
         Default is an empty string.
         :type expression: str
         """
-        if self._activity_column_metric.metric_type == metric_type:
-            return
-
         self._activity_column_metric.metric_type = metric_type
         self._activity_column_metric.expression = expression
 
