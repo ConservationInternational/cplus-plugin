@@ -43,7 +43,7 @@ WidgetUi, _ = loadUiType(
 
 class ColumnMetricItemDelegate(QtWidgets.QStyledItemDelegate):
     """
-    Delegate for enabling the user to choose the type of metric for a
+    Delegate that allows the user to choose the type of metric for a
     particular activity column.
     """
 
@@ -75,7 +75,7 @@ class ColumnMetricItemDelegate(QtWidgets.QStyledItemDelegate):
         metric_combobox.setProperty(self.INDEX_PROPERTY_NAME, idx)
         metric_combobox.addItem(tr(COLUMN_METRIC_STR), MetricType.COLUMN)
         metric_combobox.addItem(tr(CELL_METRIC_STR), MetricType.CELL)
-        metric_combobox.currentIndexChanged.connect(self.on_metric_type_changed)
+        metric_combobox.activated.connect(self.on_metric_type_changed)
 
         return metric_combobox
 
@@ -144,7 +144,7 @@ class ColumnMetricItemDelegate(QtWidgets.QStyledItemDelegate):
         )
         expression_builder.setWindowTitle(tr("Activity Column Expression Builder"))
         if expression_builder.exec_() == QtWidgets.QDialog.Accepted:
-            # Save the expression in the combobox's custom property collection
+            # Save the expression for use when persisting in the model
             editor.setProperty(
                 self.EXPRESSION_PROPERTY_NAME, expression_builder.expressionText()
             )
@@ -175,9 +175,9 @@ class ColumnMetricItemDelegate(QtWidgets.QStyledItemDelegate):
         if item is None or not isinstance(item, ActivityColumnMetricItem):
             return
 
-        # Inherit the column expression if defined
         expression = ""
         if metric_type == MetricType.COLUMN:
+            # Inherit the column expression if defined
             metric_column = model.metric_column(idx.column() - 1)
             if metric_column is not None:
                 expression = metric_column.expression
@@ -382,6 +382,10 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
 
         # Add metric columns
         for mc in configuration.metric_columns:
+            # Do not add a column with a similar name
+            if self._column_list_model.column_exists(mc.name):
+                continue
+
             item = MetricColumnListItem(mc)
             self.add_column_item(item)
 
@@ -389,8 +393,9 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         # and column name in the configuration
         for r in range(self._activity_metric_table_model.rowCount()):
             for c in range(1, self._activity_metric_table_model.columnCount()):
-                item = self.item(r, c)
-                # Fetch the closest match in configuration (based on activity ID and name or header label)
+                item = self._activity_metric_table_model.item(r, c)
+                # Fetch the closest match in configuration (based on activity
+                # ID and name or header label)
                 model_match = configuration.find(
                     str(item.model.activity.uuid), item.model.metric_column.name
                 )
@@ -551,9 +556,16 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
     def add_column_item(self, item: MetricColumnListItem):
         """Adds a metric column item.
 
+        If there is a column with a similar name, the item
+        will not be added.
+
         :param item: Metrics column item to be added.
         :type item: MetricColumnListItem
         """
+        # Check if there are items with a similar name
+        if self._column_list_model.column_exists(item.name):
+            return
+
         self._column_list_model.add_column(item)
 
         # Select item
