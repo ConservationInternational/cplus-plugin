@@ -106,6 +106,7 @@ from ..definitions.defaults import (
 )
 from ..lib.reports.manager import report_manager, ReportManager
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
+from ..models.report import MetricConfiguration
 from ..tasks import ScenarioAnalysisTask
 from ..utils import (
     open_documentation,
@@ -143,6 +144,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.task = None
         self.processing_cancelled = False
         self.current_analysis_task = None
+
+        # Activity metric configuration
+        self._metric_configuration: MetricConfiguration = None
 
         # Set icons for buttons
         help_icon = FileUtils.get_icon("mActionHelpContents_green.svg")
@@ -2440,8 +2444,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
         metrics_builder = ActivityMetricsBuilder(self)
         metrics_builder.activities = self.selected_activities()
+
+        # Load previously defined configuration
+        if self._metric_configuration is not None:
+            metrics_builder.load_configuration(self._metric_configuration)
+
         if metrics_builder.exec_() == QtWidgets.QDialog.Accepted:
-            pass
+            self._metric_configuration = metrics_builder.metric_configuration
 
     def run_report(self, progress_dialog, report_manager):
         """Run report generation. This should be called after the
