@@ -1533,11 +1533,58 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
         self.dock_widget_contents.layout().insertLayout(0, self.grid_layout)
 
+    def is_metric_configuration_valid(self) -> bool:
+        """Checks if the setup of the metrics configuration for the scenario analysis report is correct.
+
+        :returns: True if the configuration is correct else False.
+        :rtype: bool
+        """
+        if not self.chb_metric_builder.isChecked():
+            # Not applicable so just return True
+            return True
+        else:
+            metric_configuration = settings_manager.get_metric_configuration()
+            if metric_configuration is None or not metric_configuration.is_valid():
+                self.show_message(
+                    tr(
+                        f"Metrics configuration is invalid or not yet defined. "
+                        f"Use the metrics builder to verify."
+                    )
+                )
+                return False
+
+            # Compare activities
+            selected_activities_ids = set(
+                [str(activity.uuid) for activity in self.selected_activities()]
+            )
+            metric_activity_ids = set(
+                [str(activity.uuid) for activity in metric_configuration.activities]
+            )
+            if selected_activities_ids == metric_activity_ids:
+                return True
+            elif selected_activities_ids.issubset(metric_activity_ids):
+                return True
+            elif len(selected_activities_ids.difference(metric_activity_ids)) > 0:
+                self.show_message(
+                    tr(
+                        f"There are activities whose metrics has not not been "
+                        f"defined. Use the metrics builder to update."
+                    )
+                )
+                return False
+
+        return True
+
     def run_analysis(self):
         """Runs the plugin analysis
         Creates new QgsTask, progress dialog and report manager
          for each new scenario analysis.
         """
+        if not self.is_metric_configuration_valid():
+            log(
+                "Scenario cannot run due to an invalid metrics configuration. See preceding errors."
+            )
+            return
 
         extent_list = PILOT_AREA_EXTENT["coordinates"]
         default_extent = QgsRectangle(
