@@ -139,7 +139,8 @@ CI_LOGO_PATH = str(
 )
 
 # Default template file name
-SCENARIO_ANALYSIS_TEMPLATE_NAME = "scenario_analysis.qpt"
+SCENARIO_ANALYSIS_TEMPLATE_NAME = "scenario_analysis_default.qpt"
+SCENARIO_ANALYSIS_METRICS_TEMPLATE_NAME = "scenario_analysis_metrics.qpt"
 SCENARIO_COMPARISON_TEMPLATE_NAME = "scenario_comparison.qpt"
 
 # Minimum sizes (in mm) for repeat items in the template

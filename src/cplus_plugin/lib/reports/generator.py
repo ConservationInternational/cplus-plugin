@@ -44,6 +44,7 @@ from qgis.core import (
 from qgis.PyQt import QtCore, QtGui, QtXml
 
 from .comparison_table import ScenarioComparisonTableInfo
+from ...conf import settings_manager
 from ...definitions.constants import (
     ACTIVITY_GROUP_LAYER_NAME,
     ACTIVITY_WEIGHTED_GROUP_NAME,
@@ -1043,6 +1044,10 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         self._area_processing_feedback = None
         self._activities_area = {}
         self._pixel_area_info = {}
+        self._use_custom_metrics = context.custom_metrics
+        self._metrics_configuration = None
+        if self._use_custom_metrics:
+            self._metrics_configuration = settings_manager.get_metric_configuration()
 
         if self._feedback:
             self._feedback.canceled.connect(self._on_feedback_cancelled)

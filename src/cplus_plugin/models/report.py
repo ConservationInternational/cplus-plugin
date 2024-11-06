@@ -30,6 +30,7 @@ class ReportContext(BaseReportContext):
     scenario: Scenario
     scenario_output_dir: str
     output_layer_name: str
+    custom_metrics: bool
 
 
 @dataclasses.dataclass
