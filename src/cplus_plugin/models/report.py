@@ -141,6 +141,28 @@ class MetricType(IntEnum):
     COLUMN = 0
     CELL = 1
     NOT_SET = 2
+    UNKNOWN = 3
+
+    @staticmethod
+    def from_int(int_enum: int) -> "MetricType":
+        """Creates the metric type enum from the
+        corresponding int equivalent.
+
+        :param int_enum: Integer representing the metric type.
+        :type int_enum: int
+
+        :returns: Metric type enum corresponding to the given
+        int else unknown if not found.
+        :rtype: MetricType
+        """
+        if int_enum == 0:
+            return MetricType.COLUMN
+        elif int_enum == 1:
+            return MetricType.CELL
+        elif int_enum == 2:
+            return MetricType.NOT_SET
+        else:
+            return MetricType.UNKNOWN
 
 
 @dataclasses.dataclass
