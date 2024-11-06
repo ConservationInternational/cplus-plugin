@@ -762,10 +762,11 @@ def create_metric_configuration(
     """Creates a metric configuration from the equivalent dictionary representation.
 
     :param metric_configuration_dict: Dictionary containing information for deserializing
-    a metric configuration object
+    a metric configuration object.
     :type metric_configuration_dict: dict
 
-    :param referenced_activities: Activities that are referenced in the metric configuration.
+    :param referenced_activities: Activities which will be used to extract those
+    referenced in the metric configuration.
     :type referenced_activities: typing.List[Activity]
 
     :returns: Metric configuration object or None if the deserialization failed.
@@ -785,9 +786,17 @@ def create_metric_configuration(
     activity_column_metrics = []
     activity_column_metric_dicts = metric_configuration_dict[ACTIVITY_METRICS_PROPERTY]
     for activity_row_dict in activity_column_metric_dicts:
+        if len(activity_row_dict) == 0:
+            continue
+
+        # Check if the activity exists
+        activity_id = activity_row_dict[0][ACTIVITY_IDENTIFIER_PROPERTY]
+        if activity_id not in indexed_activities:
+            # Most likely the activity in the metric config has been deleted
+            continue
+
         activity_row_metrics = []
         for activity_metric_dict in activity_row_dict:
-            activity_id = activity_metric_dict[ACTIVITY_IDENTIFIER_PROPERTY]
             name = activity_metric_dict[METRIC_IDENTIFIER_PROPERTY]
             activity = indexed_activities[activity_id]
             metric_column = indexed_metric_columns[name]
