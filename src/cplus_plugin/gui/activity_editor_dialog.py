@@ -65,15 +65,19 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self.buttonBox.accepted.connect(self._on_accepted)
         self.btn_select_file.clicked.connect(self._on_select_file)
+        self.btn_select_mask.clicked.connect(self._on_select_mask)
         self.btn_help.clicked.connect(self.open_help)
 
         icon_pixmap = QtGui.QPixmap(ICON_PATH)
         self.icon_la.setPixmap(icon_pixmap)
 
         self.cbo_layer.setFilters(QgsMapLayerProxyModel.Filter.RasterLayer)
+        self.mask_layer.setFilters(QgsMapLayerProxyModel.Filter.VectorLayer)
+
 
         self._edit_mode = False
         self._layer = None
+        self._mask_layer = None
 
         self._excluded_names = excluded_names
         if excluded_names is None:
@@ -185,6 +189,25 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
             self.cbo_layer.setCurrentIndex(num_layers)
         else:
             self.cbo_layer.setCurrentIndex(matching_index)
+
+    def _add_mask_layer_path(self, layer_path: str):
+        """Select or add layer path to the map layer combobox."""
+        matching_index = -1
+        num_layers = self.mask_layer.count()
+        for index in range(num_layers):
+            layer = self.mask_layer.layer(index)
+            if layer is None:
+                continue
+            if os.path.normpath(layer.source()) == os.path.normpath(layer_path):
+                matching_index = index
+                break
+
+        if matching_index == -1:
+            self.mask_layer.setAdditionalItems([layer_path])
+            # Set added path as current item
+            self.mask_layer.setCurrentIndex(num_layers)
+        else:
+            self.mask_layer.setCurrentIndex(matching_index)
 
     def validate(self) -> bool:
         """Validates if name has been specified.
@@ -357,4 +380,36 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.cbo_layer.setAdditionalItems([])
 
         self._add_layer_path(layer_path)
+        settings_manager.set_value(Settings.LAST_DATA_DIR, os.path.dirname(layer_path))
+
+    def _on_select_mask(self, activated: bool):
+        """Slot raised to select a mask layer."""
+        data_dir = settings_manager.get_value(Settings.LAST_DATA_DIR, "")
+        if not data_dir and self._mask_layer:
+            data_path = self._mask_layer.source()
+            if os.path.exists(data_path):
+                data_dir = os.path.dirname(data_path)
+
+        if not data_dir:
+            data_dir = "/home"
+
+        filter_tr = tr("All files")
+
+        layer_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self,
+            self.tr("Select Activity Mask Layer"),
+            data_dir,
+            f"{filter_tr} (*.*)",
+            options=QtWidgets.QFileDialog.DontResolveSymlinks,
+        )
+        if not layer_path:
+            return
+
+        existing_paths = self.mask_layer.additionalItems()
+        if layer_path in existing_paths:
+            return
+
+        self.mask_layer.setAdditionalItems([])
+
+        self._add_mask_layer_path(layer_path)
         settings_manager.set_value(Settings.LAST_DATA_DIR, os.path.dirname(layer_path))
