@@ -1275,8 +1275,11 @@ class ScenarioAnalysisTask(QgsTask):
                 )
                 return False
 
+            # see https://qgis.org/pyqgis/master/core/Qgis.html#qgis.core.Qgis.GeometryType
             if Qgis.versionInt() < 33000:
-                layer_check = initial_mask_layer.geometryType() == QgsWkbTypes.Polygon
+                layer_check = (
+                    initial_mask_layer.geometryType() == QgsWkbTypes.PolygonGeometry
+                )
             else:
                 layer_check = (
                     initial_mask_layer.geometryType() == Qgis.GeometryType.Polygon
@@ -1426,9 +1429,10 @@ class ScenarioAnalysisTask(QgsTask):
                     )
                     return False
 
+                # see https://qgis.org/pyqgis/master/core/Qgis.html#qgis.core.Qgis.GeometryType
                 if Qgis.versionInt() < 33000:
                     layer_check = (
-                        initial_mask_layer.geometryType() == QgsWkbTypes.Polygon
+                        initial_mask_layer.geometryType() == QgsWkbTypes.PolygonGeometry
                     )
                 else:
                     layer_check = (
@@ -1530,6 +1534,7 @@ class ScenarioAnalysisTask(QgsTask):
         except Exception as e:
             self.log_message(f"Problem masking activities layers, {e} \n")
             self.cancel_task(e)
+
             return False
 
         return True
