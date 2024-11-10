@@ -390,6 +390,7 @@ class Activity(LayerModelComponent):
     pathways: typing.List[NcsPathway] = dataclasses.field(default_factory=list)
     priority_layers: typing.List[typing.Dict] = dataclasses.field(default_factory=list)
     layer_styles: dict = dataclasses.field(default_factory=dict)
+    mask_paths: typing.List[str] = dataclasses.field(default_factory=list)
     style_pixel_value: int = -1
 
     @classmethod

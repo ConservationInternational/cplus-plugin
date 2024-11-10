@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>477</width>
-    <height>508</height>
+    <height>588</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -188,20 +188,6 @@
       <string>Style</string>
      </property>
      <layout class="QGridLayout" name="gridLayout">
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_4">
-        <property name="text">
-         <string>Output activity layer</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>Scenario layer</string>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="1" colspan="2">
        <widget class="QgsSymbolButton" name="style_btn">
         <property name="sizePolicy">
@@ -240,6 +226,20 @@
         </property>
        </widget>
       </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>Output activity layer</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Scenario layer</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>
@@ -256,19 +256,50 @@
    <item row="8" column="0" colspan="3">
     <widget class="QgsCollapsibleGroupBox" name="mask_box">
      <property name="title">
-      <string>Mask layer</string>
+      <string>Mask layers</string>
      </property>
      <property name="checkable">
       <bool>true</bool>
      </property>
      <layout class="QGridLayout" name="gridLayout_4">
       <item row="0" column="0">
-       <widget class="QgsMapLayerComboBox" name="mask_layer"/>
+       <spacer name="horizontalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
       </item>
       <item row="0" column="1">
-       <widget class="QToolButton" name="btn_select_mask">
+       <widget class="QToolButton" name="btn_add_mask">
         <property name="text">
          <string>...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="3">
+       <widget class="QToolButton" name="btn_delete_mask">
+        <property name="text">
+         <string>...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QToolButton" name="btn_edit_mask">
+        <property name="text">
+         <string>...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="4">
+       <widget class="QListWidget" name="lst_mask_layers">
+        <property name="selectionMode">
+         <enum>QAbstractItemView::MultiSelection</enum>
         </property>
        </widget>
       </item>
