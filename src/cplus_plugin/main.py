@@ -261,7 +261,9 @@ class QgisCplus:
         # Install report font
         self.install_report_font()
 
-        # register_metric_functions()
+        # Register metric functions. Note that these are
+        # scoped for specific contexts.
+        register_metric_functions()
 
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin widget is closed."""
@@ -279,6 +281,9 @@ class QgisCplus:
             self.iface.unregisterOptionsWidgetFactory(self.cplus_options_factory)
             self.iface.unregisterOptionsWidgetFactory(self.reports_options_factory)
             self.iface.unregisterOptionsWidgetFactory(self.log_options_factory)
+
+            # Unregister metric functions
+            unregister_metric_functions()
 
         except Exception as e:
             log(str(e), info=False)
