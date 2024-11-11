@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>746</width>
+    <width>685</width>
     <height>486</height>
    </rect>
   </property>
@@ -143,8 +143,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>728</width>
-         <height>395</height>
+         <width>667</width>
+         <height>382</height>
         </rect>
        </property>
        <layout class="QGridLayout" name="gridLayout_7">
@@ -176,20 +176,13 @@
             <enum>QFrame::Raised</enum>
            </property>
            <layout class="QGridLayout" name="gridLayout_2">
-            <item row="0" column="0">
-             <widget class="QLabel" name="label_2">
-              <property name="text">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Columns&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <item row="1" column="0" colspan="5">
+             <widget class="QListView" name="lst_columns">
+              <property name="editTriggers">
+               <set>QAbstractItemView::NoEditTriggers</set>
               </property>
-             </widget>
-            </item>
-            <item row="2" column="2">
-             <widget class="QToolButton" name="btn_delete_column">
-              <property name="toolTip">
-               <string>Remove column</string>
-              </property>
-              <property name="text">
-               <string>...</string>
+              <property name="selectionBehavior">
+               <enum>QAbstractItemView::SelectRows</enum>
               </property>
              </widget>
             </item>
@@ -206,10 +199,10 @@
               </property>
              </spacer>
             </item>
-            <item row="2" column="3">
-             <widget class="QToolButton" name="btn_column_up">
+            <item row="2" column="2">
+             <widget class="QToolButton" name="btn_delete_column">
               <property name="toolTip">
-               <string>Move column one level up</string>
+               <string>Remove column</string>
               </property>
               <property name="text">
                <string>...</string>
@@ -226,16 +219,6 @@
               </property>
              </widget>
             </item>
-            <item row="1" column="0" colspan="5">
-             <widget class="QListView" name="lst_columns">
-              <property name="editTriggers">
-               <set>QAbstractItemView::NoEditTriggers</set>
-              </property>
-              <property name="selectionBehavior">
-               <enum>QAbstractItemView::SelectRows</enum>
-              </property>
-             </widget>
-            </item>
             <item row="2" column="4">
              <widget class="QToolButton" name="btn_column_down">
               <property name="toolTip">
@@ -243,6 +226,23 @@
               </property>
               <property name="text">
                <string>...</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="3">
+             <widget class="QToolButton" name="btn_column_up">
+              <property name="toolTip">
+               <string>Move column one level up</string>
+              </property>
+              <property name="text">
+               <string>...</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_2">
+              <property name="text">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Columns&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
              </widget>
             </item>
@@ -302,6 +302,13 @@
               </layout>
              </widget>
             </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_8">
+              <property name="text">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic; color:#ff0000;&quot;&gt;*&lt;/span&gt;&lt;span style=&quot; font-style:italic;&quot;&gt; Required field&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+             </widget>
+            </item>
             <item row="3" column="1">
              <spacer name="verticalSpacer">
               <property name="orientation">
@@ -319,13 +326,6 @@
              <widget class="QLabel" name="label_3">
               <property name="text">
                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Properties&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0">
-             <widget class="QLabel" name="label_8">
-              <property name="text">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic; color:#ff0000;&quot;&gt;*&lt;/span&gt;&lt;span style=&quot; font-style:italic;&quot;&gt; Required field&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
              </widget>
             </item>
