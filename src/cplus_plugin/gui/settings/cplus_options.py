@@ -159,26 +159,39 @@ class DlgSettingsRegister(QtWidgets.QDialog, Ui_TrendsEarthSettingsRegister):
 
         if resp:
             self.close()
+            if resp.get("status", 200) == 200:
+                QtWidgets.QMessageBox.information(
+                    None,
+                    self.tr("Success"),
+                    self.tr(
+                        "User registered. Your password "
+                        f"has been emailed to {self.email.text()}. "
+                        "Enter that password in CPLUS settings "
+                        "to finish setting up the plugin."
+                    ),
+                )
+                # add a new auth conf that have to be completed with pwd
+                authConfigId = auth.init_auth_config(
+                    auth.TE_API_AUTH_SETUP, email=self.email.text()
+                )
+
+                if authConfigId:
+                    self.authConfigInitialised.emit(authConfigId)
+                    return authConfigId
+            else:
+                QtWidgets.QMessageBox.information(
+                    None,
+                    self.tr("Registration failed"),
+                    self.tr(resp.get("detail", "")),
+                )
+        else:
             QtWidgets.QMessageBox.information(
                 None,
-                self.tr("Success"),
+                self.tr("Failed"),
                 self.tr(
-                    "User registered. Your password "
-                    f"has been emailed to {self.email.text()}. "
-                    "Enter that password in CPLUS settings "
-                    "to finish setting up the plugin."
+                    "Failed to register. Please check your internet connection and try again."
                 ),
             )
-
-            # add a new auth conf that have to be completed with pwd
-            authConfigId = auth.init_auth_config(
-                auth.TE_API_AUTH_SETUP, email=self.email.text()
-            )
-
-            if authConfigId:
-                self.authConfigInitialised.emit(authConfigId)
-                return authConfigId
-        else:
             return None
 
 
@@ -302,13 +315,29 @@ class DlgSettingsEditUpdate(QtWidgets.QDialog, Ui_TrendsEarthSettingsEditUpdate)
         )
 
         if resp:
+            if resp.get("status", 200) == 200:
+                QtWidgets.QMessageBox.information(
+                    None,
+                    self.tr("Saved"),
+                    self.tr("Updated information for {}.").format(self.email.text()),
+                )
+                self.close()
+                self.ok = True
+            else:
+                QtWidgets.QMessageBox.information(
+                    None,
+                    self.tr("Failed"),
+                    self.tr(resp.get("detail", "")),
+                )
+                self.close()
+        else:
             QtWidgets.QMessageBox.information(
                 None,
-                self.tr("Saved"),
-                self.tr("Updated information for {}.").format(self.email.text()),
+                self.tr("Failed"),
+                self.tr(
+                    "Failed to update user information. Please check your internet connection and try again."
+                ),
             )
-            self.close()
-            self.ok = True
 
 
 class DlgSettingsEditForgotPassword(
@@ -360,17 +389,33 @@ class DlgSettingsEditForgotPassword(
             resp = self.trends_earth_api_client.recover_pwd(self.email.text())
 
             if resp:
-                self.close()
+                if resp.get("status", 200) == 200:
+                    self.close()
+                    QtWidgets.QMessageBox.information(
+                        None,
+                        self.tr("Success"),
+                        self.tr(
+                            f"The password has been reset for {self.email.text()}. "
+                            "Check your email for the new password, and then "
+                            "return to Trends.Earth to enter it."
+                        ),
+                    )
+                    self.ok = True
+                else:
+                    self.close()
+                    QtWidgets.QMessageBox.information(
+                        None,
+                        self.tr("Failed"),
+                        self.tr(resp.get("detail", "")),
+                    )
+            else:
                 QtWidgets.QMessageBox.information(
                     None,
-                    self.tr("Success"),
+                    self.tr("Failed"),
                     self.tr(
-                        f"The password has been reset for {self.email.text()}. "
-                        "Check your email for the new password, and then "
-                        "return to Trends.Earth to enter it."
+                        "Failed to reset password. Please check your internet connection and try again."
                     ),
                 )
-                self.ok = True
 
 
 class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
@@ -825,8 +870,12 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
                 # remove currently used config (as set in QSettings) and
                 # trigger GUI
                 auth.remove_current_auth_config(auth.TE_API_AUTH_SETUP)
-                # self.reloadAuthConfigurations()
-                # self.authConfigUpdated.emit()
+            else:
+                QtWidgets.QMessageBox.information(
+                    None,
+                    self.tr("Failed"),
+                    self.tr("Failed to delete user."),
+                )
 
     def reloadAuthConfigurations(self):
         authConfigId = settings.value(
