@@ -2487,12 +2487,12 @@
     <Option type="QString" value=""/>
     <Option type="QString" value=""/>
     <Option type="QString" value=""/>
-    <Option type="QString" value="C:\Users\Kahiu\AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins\cplus_plugin\icons\cplus_logo.svg"/>
-    <Option type="QString" value="C:\Users\Kahiu\AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins\cplus_plugin\icons\ci_logo.svg"/>
     <Option type="QString" value=""/>
     <Option type="QString" value=""/>
     <Option type="QString" value=""/>
-    <Option type="QString" value="D:\Frank\Kartoza\Data\cplus\Temp"/>
+    <Option type="QString" value=""/>
+    <Option type="QString" value=""/>
+    <Option type="QString" value=""/>
     <Option type="QString" value="Scenario name will be inserted here"/>
     <Option type="QString" value="Scenario description will be inserted here"/>
     <Option type="QString" value=""/>
