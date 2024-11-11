@@ -160,7 +160,6 @@ class BaseFetchScenarioOutput:
         download_paths = []
         final_output = None
         for output in output_list["results"]:
-            urls_to_download.append(output["url"])
             if output["is_final_output"]:
                 download_path = os.path.join(scenario_directory, output["filename"])
                 final_output_path = download_path
@@ -170,9 +169,14 @@ class BaseFetchScenarioOutput:
                 download_path = os.path.join(
                     scenario_directory, output["group"], output["filename"]
                 )
+            urls_to_download.append(output["url"])
             download_paths.append(download_path)
 
         download_paths_copy = copy.deepcopy(download_paths)
+
+        # configure max number of iteration
+        max_iteration = len(download_paths_copy * 2)
+        iteration = 0
         while len(urls_to_download) > 0:
             with concurrent.futures.ThreadPoolExecutor(
                 max_workers=3 if os.cpu_count() > 3 else 1
@@ -181,8 +185,14 @@ class BaseFetchScenarioOutput:
             if self.is_download_cancelled():
                 return None, None
             is_valid, invalid_indexes = self.__validate_output_paths(download_paths)
-            urls_to_download = [urls_to_download[idx] for idx in invalid_indexes]
-            download_paths_copy = [download_paths_copy[idx] for idx in invalid_indexes]
+            if len(invalid_indexes) <= len(urls_to_download):
+                urls_to_download = [urls_to_download[idx] for idx in invalid_indexes]
+                download_paths_copy = [
+                    download_paths_copy[idx] for idx in invalid_indexes
+                ]
+            if iteration == max_iteration:
+                break
+            iteration += 1
 
         if not self.__validate_output_paths(download_paths):
             return None, None
