@@ -25,10 +25,10 @@ from qgis.core import (
     QgsLayoutItemShape,
     QgsLayoutPoint,
     QgsLayoutSize,
+    QgsLayoutTableColumn,
     QgsMapLayerLegendUtils,
     QgsNumericFormatContext,
     QgsPrintLayout,
-    QgsProcessingFeedback,
     QgsProject,
     QgsRasterLayer,
     QgsReadWriteContext,
@@ -60,9 +60,11 @@ from ...definitions.defaults import (
     PRIORITY_GROUP_WEIGHT_TABLE_ID,
 )
 from .layout_items import BasicScenarioDetailsItem, CplusMapRepeatItem
+from .metrics import create_metrics_expression_context, evaluate_activity_metric
 from ...models.base import Activity, ScenarioResult
 from ...models.helpers import extent_to_project_crs_extent
 from ...models.report import (
+    ActivityContextInfo,
     BaseReportContext,
     RepeatAreaDimension,
     ReportContext,
@@ -1673,30 +1675,85 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             int(value): area for value, area in pixel_area_info.items()
         }
 
+        # Set table columns but first fetch the activity name column
+        columns = parent_table.columns()
+
+        if self._use_custom_metrics:
+            for mc in self._metrics_configuration.metric_columns:
+                columns.append(mc.to_qgs_column())
+        else:
+            # Otherwise just add the area column
+            area_column = QgsLayoutTableColumn(tr("Area (ha)"))
+            area_column.setWidth(0)
+            area_column.setHAlignment(QtCore.Qt.AlignHCenter)
+
+            columns.append(area_column)
+
+        metrics_context = create_metrics_expression_context(self._project)
+
         rows_data = []
         for activity in self._context.scenario.weighted_activities:
+            activity_row_cells = []
+
             # Activity name column
             name_cell = QgsTableCell(activity.name)
             name_cell.setBackgroundColor(QtGui.QColor("#e9e9e9"))
 
-            # Activity area column
+            activity_row_cells.append(name_cell)
+
+            # Activity area
             if activity.style_pixel_value in int_pixel_area_info:
                 area_info = int_pixel_area_info.get(activity.style_pixel_value)
             else:
                 log(f"Pixel value not found in calculation")
                 area_info = tr("<Pixel value not found>")
 
-            area_cell = QgsTableCell(area_info)
-            if isinstance(area_info, Number):
-                number_format = QgsBasicNumericFormat()
-                number_format.setThousandsSeparator(",")
-                number_format.setShowTrailingZeros(True)
-                number_format.setNumberDecimalPlaces(self.AREA_DECIMAL_PLACES)
-                area_cell.setNumericFormat(number_format)
+            if self._use_custom_metrics:
+                activity_area = area_info if isinstance(area_info, Number) else 0
+                activity_context_info = ActivityContextInfo(activity, activity_area)
+                for mc in self._metrics_configuration.metric_columns:
+                    activity_metric = self._metrics_configuration.find(
+                        str(activity.uuid), mc.name
+                    )
+                    if activity_metric is None:
+                        result = tr("Error fetching metric")
+                    else:
+                        result = evaluate_activity_metric(
+                            metrics_context,
+                            activity_context_info,
+                            activity_metric.expression,
+                        )
+                        result = self.format_number(result)
 
-            rows_data.append([name_cell, area_cell])
+                    activity_cell = QgsTableCell(result)
+                    activity_row_cells.append(activity_cell)
+            else:
+                formatted_area = self.format_number(area_info)
+                area_cell = QgsTableCell(formatted_area)
+
+                activity_row_cells.append(area_cell)
+
+            rows_data.append(activity_row_cells)
 
         parent_table.setTableContents(rows_data)
+
+    @classmethod
+    def format_number(cls, value: typing.Any) -> str:
+        """Formats a number to two decimals places.
+
+        :returns: String representation of a number rounded off to
+        two decimal places with a comma thousands' separator.
+        :rtype: str
+        """
+        if not isinstance(value, Number):
+            return value
+
+        number_format = QgsBasicNumericFormat()
+        number_format.setThousandsSeparator(",")
+        number_format.setShowTrailingZeros(True)
+        number_format.setNumberDecimalPlaces(cls.AREA_DECIMAL_PLACES)
+
+        return number_format.formatDouble(value, QgsNumericFormatContext())
 
     def _populate_scenario_weighting_values(self):
         """Populate table with weighting values for priority layer groups."""
