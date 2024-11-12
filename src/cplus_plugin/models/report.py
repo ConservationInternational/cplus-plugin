@@ -122,8 +122,8 @@ class MetricColumn:
     auto_calculated: bool = False
 
     def to_qgs_column(self) -> QgsLayoutTableColumn:
-        """Convert this object to a QgsLayoutTableColumn for use
-        in a QgsLayoutTable.
+        """Convenience function that converts this object to a
+        QgsLayoutTableColumn for use in a QgsLayoutTable.
 
         :returns: A layout column object containing the heading,
         horizontal alignment and width specified.
@@ -265,3 +265,11 @@ class MetricConfiguration:
         match = next(_search_list(self.activity_metrics, activity_id, name_header), -1)
 
         return match if match != -1 else None
+
+
+@dataclasses.dataclass
+class ActivityContextInfo:
+    """Contains information about an activity for use in an expression context."""
+
+    activity: Activity
+    area: float

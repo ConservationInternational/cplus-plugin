@@ -25,6 +25,7 @@ from qgis.core import (
 )
 
 from ...definitions.defaults import BASE_PLUGIN_NAME
+from ...models.report import ActivityContextInfo
 from ...utils import FileUtils, function_help_to_html, log, open_documentation, tr
 
 # Collection of metric expression functions
@@ -35,32 +36,27 @@ VAR_ACTIVITY_AREA = "cplus_activity_area"
 VAR_ACTIVITY_NAME = "cplus_activity_name"
 
 # Function names
-FUNC_FINANCIAL_DUMMY = "dummy_financial_viability"
+FUNC_ACTIVITY_NPV = "activity_npv"
 
 
-class DummyFinancialComputation(QgsScopedExpressionFunction):
-    """Dummy function to set up the metrics framework. Will be removed."""
+class ActivityNpvFunction(QgsScopedExpressionFunction):
+    """Calculates the financial NPV of an activity."""
 
     def __init__(self):
-        params = [
-            QgsExpressionFunction.Parameter("area"),
-            QgsExpressionFunction.Parameter("inflation_coefficient"),
-        ]
-
         help_html = function_help_to_html(
-            FUNC_FINANCIAL_DUMMY,
-            tr("Calculates the sum of the two parameters value1 and value2."),
-            [
-                ("float", "Current inflation rate", False),
-                ("float", "Base lending rate", True),
-            ],
-            [
-                (f"{FUNC_FINANCIAL_DUMMY}(4.3, 11.2)", "56.7"),
-                (f"{FUNC_FINANCIAL_DUMMY}(8.5, 27.9)", "34.1"),
-            ],
+            FUNC_ACTIVITY_NPV,
+            tr(
+                "Calculates the financial NPV of the current "
+                "activity. This takes the area of the current activity and "
+                "multiplies it by the NPV calculated via the NPV "
+                "PWL Manager. If the NPV is not defined then the "
+                "function will return -1. "
+            ),
+            [],
+            [(f"{FUNC_ACTIVITY_NPV}()", "125,000")],
         )
         super().__init__(
-            FUNC_FINANCIAL_DUMMY, params, BASE_PLUGIN_NAME, helpText=help_html
+            FUNC_ACTIVITY_NPV, 0, BASE_PLUGIN_NAME, help_html, isContextual=True
         )
 
     def func(
@@ -87,18 +83,15 @@ class DummyFinancialComputation(QgsScopedExpressionFunction):
         :returns: The result of the function.
         :rtype: typing.Any
         """
-        area = int(values[0])
-        # coefficient = float(values[1])
-
         return 42
 
-    def clone(self) -> "DummyFinancialComputation":
+    def clone(self) -> "ActivityNpvFunction":
         """Gets a clone of this function.
 
         :returns: A clone of this function.
-        :rtype: DummyFinancialComputation
+        :rtype: ActivityNpvFunction
         """
-        return DummyFinancialComputation()
+        return ActivityNpvFunction()
 
 
 def create_metrics_expression_scope() -> QgsExpressionContextScope:
@@ -132,20 +125,21 @@ def create_metrics_expression_scope() -> QgsExpressionContextScope:
     )
 
     # Add functions
-    # expression_scope.addFunction(FUNC_FINANCIAL_DUMMY, DummyFinancialComputation())
+    expression_scope.addFunction(
+        FUNC_ACTIVITY_NPV, metric_function_by_name(FUNC_ACTIVITY_NPV)
+    )
 
     return expression_scope
 
 
 def register_metric_functions():
     """Register our custom functions with the expression engine."""
-    # QgsExpression.registerFunction(DummyFinancialComputation())
+    # Activity NPV
+    activity_npv_function = ActivityNpvFunction()
+    METRICS_LIBRARY.append(activity_npv_function)
 
-    f, name = _temp_get_func()
-    METRICS_LIBRARY.append(f)
-    QgsExpression.registerFunction(f)
-
-    # QgsExpression.unregisterFunction(FUNC_FINANCIAL_DUMMY)
+    for func in METRICS_LIBRARY:
+        QgsExpression.registerFunction(func)
 
 
 def unregister_metric_functions():
@@ -158,11 +152,23 @@ def unregister_metric_functions():
         QgsExpression.unregisterFunction(fn)
 
 
+def metric_function_by_name(name: str) -> typing.Optional[QgsScopedExpressionFunction]:
+    """Gets a metric function in the library based on the name.
+
+    :returns: Corresponding function in the metrics library
+    or None if not found.
+    :rtype: QgsScopedExpressionFunction
+    """
+    matching_func = [func for func in METRICS_LIBRARY if func.name() == name]
+
+    return matching_func[0] if len(matching_func) > 0 else None
+
+
 def create_metrics_expression_context(
     project: QgsProject = None,
 ) -> QgsExpressionContext:
     """Gets the expression context to use in the initial set up (e.g.
-    expression builder) or computation stage of activity metrics.
+    expression builder) as well as computation stage of activity metrics.
 
     It includes the global and project scopes.
 
@@ -178,12 +184,38 @@ def create_metrics_expression_context(
     if project is None:
         project = QgsProject.instance()
 
-    builder_expression_context = QgsExpressionContext()
+    metric_expression_context = QgsExpressionContext()
 
-    builder_expression_context.appendScope(QgsExpressionContextUtils.globalScope())
-    builder_expression_context.appendScope(
+    metric_expression_context.appendScope(QgsExpressionContextUtils.globalScope())
+    metric_expression_context.appendScope(
         QgsExpressionContextUtils.projectScope(project)
     )
-    builder_expression_context.appendScope(create_metrics_expression_scope())
+    metric_expression_context.appendScope(create_metrics_expression_scope())
 
-    return builder_expression_context
+    return metric_expression_context
+
+
+def evaluate_activity_metric(
+    context: QgsExpressionContext, activity_info: ActivityContextInfo, expression: str
+) -> typing.Union[float, str]:
+    """Calculates the metrics for an activity using the information
+    in the expression context and for an activity in the info object.
+
+    The context will first be updated with the latest activity information
+    in the info object before the expression is evaluated.
+
+    :param context: Expression context containing the global, project
+    and metrics scopes respectively.
+    :type context: QgsExpressionContext
+
+    :param activity_info: Contains information about an activity whose
+    attribute values will be used to evaluate the expression.
+    :type activity_info: ActivityContextInfo
+
+    :param expression: Expression to be evaluated.
+    :type expression: str
+
+    :returns: The result of the activity's metric calculation.
+    :rtype: typing.Union[float, str]
+    """
+    return -1
