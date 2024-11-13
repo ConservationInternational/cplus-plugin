@@ -35,7 +35,9 @@ ABOUT_DOCUMENTATION_SITE = (
 )
 REPORT_DOCUMENTATION = "https://conservationinternational.github.io/cplus-plugin/user/guide/#report-generating"
 
-OPTIONS_TITLE = "CPLUS"  # Title in the QGIS settings
+BASE_PLUGIN_NAME = "CPLUS"
+# Title in the QGIS settings. Leave it like this for now incase title needs to change
+OPTIONS_TITLE = BASE_PLUGIN_NAME
 GENERAL_OPTIONS_TITLE = "General"
 REPORT_OPTIONS_TITLE = "Reporting"
 LOG_OPTIONS_TITLE = "Logs"
@@ -137,7 +139,8 @@ CI_LOGO_PATH = str(
 )
 
 # Default template file name
-SCENARIO_ANALYSIS_TEMPLATE_NAME = "scenario_analysis.qpt"
+SCENARIO_ANALYSIS_TEMPLATE_NAME = "scenario_analysis_default.qpt"
+SCENARIO_ANALYSIS_METRICS_TEMPLATE_NAME = "scenario_analysis_metrics.qpt"
 SCENARIO_COMPARISON_TEMPLATE_NAME = "scenario_comparison.qpt"
 
 # Minimum sizes (in mm) for repeat items in the template
