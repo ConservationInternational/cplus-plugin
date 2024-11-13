@@ -1708,6 +1708,8 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
             columns.append(area_column)
 
+        parent_table.setHeaders(columns)
+
         metrics_context = create_metrics_expression_context(self._project)
 
         rows_data = []
@@ -1730,21 +1732,40 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             if self._use_custom_metrics:
                 activity_area = area_info if isinstance(area_info, Number) else 0
                 activity_context_info = ActivityContextInfo(activity, activity_area)
+
+                highlight_error = False
+
                 for mc in self._metrics_configuration.metric_columns:
                     activity_metric = self._metrics_configuration.find(
                         str(activity.uuid), mc.name
                     )
                     if activity_metric is None:
-                        result = tr("Error fetching metric")
+                        cell_value = tr("Error fetching metric")
+                        highlight_error = True
                     else:
                         result = evaluate_activity_metric(
                             metrics_context,
                             activity_context_info,
                             activity_metric.expression,
                         )
-                        result = self.format_number(result)
 
-                    activity_cell = QgsTableCell(result)
+                        if not result.success:
+                            cell_value = tr("Metric eval error")
+                            highlight_error = True
+                        else:
+                            cell_value = self.format_number(result.value)
+
+                    activity_cell = QgsTableCell(cell_value)
+                    # Workaround of fetching from the table column
+                    activity_cell.setHorizontalAlignment(
+                        mc.to_qgs_column().hAlignment()
+                    )
+
+                    if highlight_error:
+                        text_format = activity_cell.textFormat()
+                        text_format.setColor(QtCore.Qt.red)
+                        activity_cell.setTextFormat(text_format)
+
                     activity_row_cells.append(activity_cell)
             else:
                 formatted_area = self.format_number(area_info)

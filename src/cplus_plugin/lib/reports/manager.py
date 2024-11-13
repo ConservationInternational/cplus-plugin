@@ -433,11 +433,11 @@ class ReportManager(QtCore.QObject):
             and metrics_configuration.is_valid()
         ):
             template_path = FileUtils.report_template_path(
-                SCENARIO_ANALYSIS_TEMPLATE_NAME
+                SCENARIO_ANALYSIS_METRICS_TEMPLATE_NAME
             )
         else:
             template_path = FileUtils.report_template_path(
-                SCENARIO_ANALYSIS_METRICS_TEMPLATE_NAME
+                SCENARIO_ANALYSIS_TEMPLATE_NAME
             )
 
         return ReportContext(

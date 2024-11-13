@@ -594,7 +594,7 @@
          </layout>
         </item>
         <item row="2" column="0">
-         <widget class="QgsCollapsibleGroupBox" name="mGroupBox">
+         <widget class="QgsCollapsibleGroupBox" name="gp_report_options">
           <property name="minimumSize">
            <size>
             <width>0</width>

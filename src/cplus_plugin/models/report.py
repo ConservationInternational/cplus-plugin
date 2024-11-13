@@ -273,3 +273,11 @@ class ActivityContextInfo:
 
     activity: Activity
     area: float
+
+
+@dataclasses.dataclass
+class MetricEvalResult:
+    """Result of evaluating a metric."""
+
+    success: bool
+    value: typing.Any
