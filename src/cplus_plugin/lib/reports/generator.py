@@ -569,9 +569,9 @@ class BaseScenarioReportGenerator:
 
 
 class DuplicatableRepeatPageReportGenerator(BaseScenarioReportGenerator):
-    """Incorporates extra functionality duplicating a repeat page.
+    """Incorporates extra functionality for duplicating a repeat page.
 
-    Subclass must have `_repeat_gae` and `_repeat_page_num` members.
+    Subclass must have `_repeat_page` and `_repeat_page_num` members.
     """
 
     def duplicate_repeat_page(self, position: int) -> bool:
@@ -1582,6 +1582,25 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
         return matching_tree_layers[0].layer()
 
+    def _update_main_map_layer(self):
+        """Update the main map to only contain the output scenario layer."""
+        main_map_item: QgsLayoutItemMap = self._layout.itemById("map_one_scenario")
+        if main_map_item is None:
+            tr_msg = tr("Could not find the main map")
+            self._error_messages.append(tr_msg)
+            return
+
+        if self._scenario_layer is None:
+            tr_msg = tr(
+                "Scenario layer is empty. Unable to set layer in the main map item."
+            )
+            self._error_messages.append(tr_msg)
+            return
+
+        main_map_item.setFollowVisibilityPreset(False)
+        main_map_item.setLayers([self._scenario_layer])
+        main_map_item.refresh()
+
     def _update_main_map_legend(self):
         """Textual adjustments to the main map legend."""
         legend_item: QgsLayoutItemLegend = self._layout.itemById("legend_main_map")
@@ -1621,7 +1640,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                     tree_layer, activity_node_indices
                 )
 
-                # Removing the tree layer band title
+                # Remove the tree layer band title
                 QgsLegendRenderer.setNodeLegendStyle(tree_layer, QgsLegendStyle.Hidden)
 
                 model.refreshLayerLegend(tree_layer)
@@ -1839,6 +1858,9 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
         # Populate table with priority weighting values
         self._populate_scenario_weighting_values()
+
+        # Set scenario layer in scenario map item
+        self._update_main_map_layer()
 
         # Update the legend for the main map
         self._update_main_map_legend()

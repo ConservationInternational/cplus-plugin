@@ -282,11 +282,10 @@ class APIClient(QtCore.QObject):
         resp = self.call_api(
             "/auth", method="post", payload={"email": email, "password": password}
         )
-
         if resp:
-            return True
-        else:
-            if not email or not password:
+            if "access_token" in resp:
+                return True
+            else:
                 log(
                     "API unable to login during login test - check " "username/password"
                 )
@@ -299,7 +298,7 @@ class APIClient(QtCore.QObject):
                     ),
                 )
 
-            return False
+        return False
 
     # @backoff.on_predicate(
     #     backoff.expo, lambda x: x is None, max_tries=3, on_backoff=backoff_hdlr
@@ -361,11 +360,7 @@ class APIClient(QtCore.QObject):
             resp = None
 
         if resp is not None:
-            status_code = resp.attribute(
-                QtNetwork.QNetworkRequest.HttpStatusCodeAttribute
-            )
-
-            if status_code == 200:
+            try:
                 if type(resp) is QtNetwork.QNetworkReply:
                     ret = resp.readAll()
                     ret = json.load(io.BytesIO(ret))
@@ -375,15 +370,7 @@ class APIClient(QtCore.QObject):
                 else:
                     err_msg = "Unknown object type: {}.".format(str(resp))
                     log(err_msg)
-            else:
-                desc, status = resp.error(), resp.errorString()
-                err_msg = "Error: {} (status {}).".format(desc, status)
-                log(err_msg)
-                """
-                iface.messageBar().pushCritical(
-                    "Trends.Earth", "Error: {} (status {}).".format(desc, status)
-                )
-                """
+            except json.JSONDecodeError:
                 ret = None
         else:
             ret = None
@@ -440,7 +427,7 @@ class APIClient(QtCore.QObject):
     def delete_user(self, email="me"):
         resp = self.call_api("/api/v1/user/me", "delete", use_token=True)
 
-        if resp:
+        if "data" in resp:
             return True
         else:
             return None

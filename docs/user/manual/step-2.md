@@ -6,6 +6,42 @@
 
 - **NCS pathways**: Natural climate solution (NCS) Pathways which can be added to activities. Multiple pathways can be added to each activity.
 
+- Add NCS Pathways: The user can add the NCS pathways according to their preferences to add the NCS pathways, click on the plus icon to open the NCS pathways add window.
+
+    There are two ways to add the NCS Pathways:
+
+    1. **Add Manually** 
+
+    ![Step 2](img/manual-step2-1.png)
+
+    - Name: Enter the name of the NCS pathway.
+    - Description: Enter the description of the NCS pathway.
+    - Map Layer: Choose the map layer from the downloaded data available in the system.
+    
+    For example add map layer for Agroforestry
+
+    ![Agroforestry](./img/manual-step2-2.png)
+
+    - Carbon Layer: Click on the plus icon and choose the carbon layer from the downloaded data available in the system.
+
+    For example add carbon layer for Agroforestry 
+    
+    ![Carbon layer](./img/manual-step2-3.png)
+
+    After entering all details, click on the OK button to add the NCS pathway.
+
+    2. **Add Online**
+
+    >Note: To use the Online Defaults option, the user needs to have an account on Trends.Earth platform.
+
+    ![Online defaults](./img/manual-step2-4.png)
+
+    The user can add the NCS pathways online by clicking on the `Online Defaults` dropdown and choosing. Name and the description will be filled automatically after choosing the NCS pathway Next, add the carbon layer from the system by selecting it from the available options. Click on the OK button to add the NCS pathway.
+
+    **After choosing from online default**
+
+    ![Online default](./img/manual-step2-5.png)
+
 - **Activities**: Each selected activity will be created in used to perform the analysis.
 
 - **Description**: A description of the activity or pathway selected.

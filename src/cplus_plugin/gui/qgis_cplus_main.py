@@ -1605,6 +1605,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             return
 
+        self.log_text_box.clear()
+
         extent_list = PILOT_AREA_EXTENT["coordinates"]
         default_extent = QgsRectangle(
             extent_list[0], extent_list[2], extent_list[1], extent_list[3]
