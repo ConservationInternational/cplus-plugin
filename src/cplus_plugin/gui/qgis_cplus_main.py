@@ -177,6 +177,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.load_layer_options()
 
+        self.load_report_options()
+
         self.initialize_priority_layers()
 
         self.position_feedback = QgsProcessingFeedback()
@@ -316,6 +318,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.view_status_btn.setEnabled(False)
         else:
             self.view_status_btn.setEnabled(True)
+
+    def load_report_options(self):
+        """Load previously saved report options."""
+        self.chb_metric_builder.setChecked(
+            settings_manager.get_value(
+                Settings.USE_CUSTOM_METRICS, default=False, setting_type=bool
+            )
+        )
 
     def on_log_message_received(self, message, tag, level):
         """Slot to handle log tab updates and processing logs
@@ -1575,6 +1585,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         return True
 
+    def enable_analysis_controls(self, enable: bool):
+        """Enable or disable controls related to running the scenario analysis.
+
+        :param enable: True to enable else False to disable.
+        :type enable: bool
+        """
+        self.run_scenario_btn.setEnabled(enable)
+        self.gp_report_options.setEnabled(enable)
+
     def run_analysis(self):
         """Runs the plugin analysis
         Creates new QgsTask, progress dialog and report manager
@@ -1694,7 +1713,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             ]
         )
         try:
-            self.run_scenario_btn.setEnabled(False)
+            self.enable_analysis_controls(False)
 
             scenario = Scenario(
                 uuid=uuid.uuid4(),
@@ -1768,7 +1787,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     )
                 )
                 self.processing_cancelled = True
-                self.run_scenario_btn.setEnabled(True)
+                self.enable_analysis_controls(True)
 
                 return
 
@@ -2479,6 +2498,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param checked: True to use custom metrics else False.
         :type checked: bool
         """
+        settings_manager.set_value(Settings.USE_CUSTOM_METRICS, checked)
         self.btn_metric_builder.setEnabled(checked)
 
     def on_show_metrics_wizard(self):
@@ -2523,7 +2543,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.reporting_feedback = reporting_feedback
 
         submit_result = report_manager.generate(
-            self.scenario_result, reporting_feedback
+            self.scenario_result,
+            reporting_feedback,
+            self.chb_metric_builder.isChecked(),
         )
         if not submit_result.status:
             msg = self.tr("Unable to submit report request for scenario")
@@ -2561,7 +2583,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
         log(message)
 
-        self.run_scenario_btn.setEnabled(True)
+        self.enable_analysis_controls(True)
 
     def reset_reporting_feedback(self, progress_dialog):
         """Creates a new reporting feedback object and reconnects
@@ -2615,7 +2637,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         progress_dialog.set_report_complete()
         progress_dialog.change_status_message(tr("Report generation complete"))
 
-        self.run_scenario_btn.setEnabled(True)
+        self.enable_analysis_controls(True)
 
     def report_job_is_for_current_scenario(self, scenario_id: str) -> bool:
         """Checks if the given scenario identifier is for the current
@@ -2647,4 +2669,4 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def on_progress_dialog_cancelled(self):
         """Slot raised when analysis has been cancelled in progress dialog."""
         if not self.run_scenario_btn.isEnabled():
-            self.run_scenario_btn.setEnabled(True)
+            self.enable_analysis_controls(True)

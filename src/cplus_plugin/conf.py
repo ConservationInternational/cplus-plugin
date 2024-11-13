@@ -241,6 +241,9 @@ class Settings(enum.Enum):
     # Processing option
     PROCESSING_TYPE = "processing_type"
 
+    # REPORT OPTIONS
+    USE_CUSTOM_METRICS = "use_custom_metrics"
+
     # DEBUG
     DEBUG = "debug"
     BASE_API_URL = "base_api_url"

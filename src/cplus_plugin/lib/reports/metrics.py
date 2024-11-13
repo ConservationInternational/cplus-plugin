@@ -7,26 +7,24 @@ import inspect
 import string
 import traceback
 import typing
+from sre_constants import error
 
 from qgis.PyQt.QtCore import QCoreApplication
 
 from qgis.core import (
-    Qgis,
     QgsExpression,
     QgsExpressionContext,
-    QgsExpressionFunction,
     QgsExpressionContextScope,
     QgsExpressionContextUtils,
     QgsExpressionNodeFunction,
-    QgsFeatureRequest,
-    QgsMessageLog,
     QgsProject,
     QgsScopedExpressionFunction,
 )
 
 from ...definitions.defaults import BASE_PLUGIN_NAME
-from ...models.report import ActivityContextInfo
-from ...utils import FileUtils, function_help_to_html, log, open_documentation, tr
+from ..financials import calculate_activity_npv
+from ...models.report import ActivityContextInfo, MetricEvalResult
+from ...utils import function_help_to_html, log, tr
 
 # Collection of metric expression functions
 METRICS_LIBRARY = []
@@ -34,6 +32,7 @@ METRICS_LIBRARY = []
 # Variables
 VAR_ACTIVITY_AREA = "cplus_activity_area"
 VAR_ACTIVITY_NAME = "cplus_activity_name"
+VAR_ACTIVITY_ID = "cplus_activity_id"
 
 # Function names
 FUNC_ACTIVITY_NPV = "activity_npv"
@@ -48,9 +47,9 @@ class ActivityNpvFunction(QgsScopedExpressionFunction):
             tr(
                 "Calculates the financial NPV of the current "
                 "activity. This takes the area of the current activity and "
-                "multiplies it by the NPV calculated via the NPV "
-                "PWL Manager. If the NPV is not defined then the "
-                "function will return -1. "
+                "multiplies it by the NPV rate for the activity calculated "
+                "via the NPV PWL Manager.<br><b>NOTE: If the NPV is not "
+                "defined then the function will return -1.0.</b>"
             ),
             [],
             [(f"{FUNC_ACTIVITY_NPV}()", "125,000")],
@@ -83,7 +82,18 @@ class ActivityNpvFunction(QgsScopedExpressionFunction):
         :returns: The result of the function.
         :rtype: typing.Any
         """
-        return 42
+        if not context.hasVariable(VAR_ACTIVITY_ID) or not context.hasVariable(
+            VAR_ACTIVITY_AREA
+        ):
+            return -1.0
+
+        activity_id = context.variable(VAR_ACTIVITY_ID)
+        activity_area = context.variable(VAR_ACTIVITY_AREA)
+
+        if not isinstance(activity_area, float):
+            return -1.0
+
+        return calculate_activity_npv(activity_id, activity_area)
 
     def clone(self) -> "ActivityNpvFunction":
         """Gets a clone of this function.
@@ -125,9 +135,7 @@ def create_metrics_expression_scope() -> QgsExpressionContextScope:
     )
 
     # Add functions
-    expression_scope.addFunction(
-        FUNC_ACTIVITY_NPV, metric_function_by_name(FUNC_ACTIVITY_NPV)
-    )
+    expression_scope.addFunction(FUNC_ACTIVITY_NPV, ActivityNpvFunction())
 
     return expression_scope
 
@@ -196,8 +204,10 @@ def create_metrics_expression_context(
 
 
 def evaluate_activity_metric(
-    context: QgsExpressionContext, activity_info: ActivityContextInfo, expression: str
-) -> typing.Union[float, str]:
+    context: QgsExpressionContext,
+    activity_info: ActivityContextInfo,
+    expression_str: str,
+) -> MetricEvalResult:
     """Calculates the metrics for an activity using the information
     in the expression context and for an activity in the info object.
 
@@ -212,10 +222,32 @@ def evaluate_activity_metric(
     attribute values will be used to evaluate the expression.
     :type activity_info: ActivityContextInfo
 
-    :param expression: Expression to be evaluated.
-    :type expression: str
+    :param expression_str: Expression to be evaluated.
+    :type expression_str: str
 
     :returns: The result of the activity's metric calculation.
-    :rtype: typing.Union[float, str]
+    :rtype: MetricEvalResult
     """
-    return -1
+    # Update context with activity information
+    metrics_scope = context.activeScopeForVariable(VAR_ACTIVITY_AREA)
+    if metrics_scope is None:
+        return MetricEvalResult(False, None)
+
+    # Update context
+    metrics_scope.setVariable(VAR_ACTIVITY_ID, str(activity_info.activity.uuid))
+    metrics_scope.setVariable(VAR_ACTIVITY_NAME, activity_info.activity.name)
+    metrics_scope.setVariable(VAR_ACTIVITY_AREA, activity_info.area)
+
+    expression = QgsExpression(expression_str)
+    expression.prepare(context)
+    result = expression.evaluate(context)
+
+    if expression.hasEvalError() or expression.hasParserError():
+        if expression.hasEvalError():
+            exp_error = expression.evalErrorString()
+        else:
+            exp_error = expression.parserErrorString()
+
+        return MetricEvalResult(False, None)
+
+    return MetricEvalResult(True, result)

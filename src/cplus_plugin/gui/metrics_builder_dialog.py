@@ -16,10 +16,11 @@ from qgis.PyQt.uic import loadUiType
 
 from ..conf import Settings, settings_manager
 
-from ..definitions.defaults import METRIC_ACTIVITY_AREA, USER_DOCUMENTATION_SITE
+from ..definitions.defaults import USER_DOCUMENTATION_SITE
 from ..lib.reports.metrics import (
     create_metrics_expression_context,
     create_metrics_expression_scope,
+    VAR_ACTIVITY_AREA,
 )
 from .metrics_builder_model import (
     ActivityColumnMetricItem,
@@ -309,7 +310,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         area_metric_column = MetricColumn(
             self.AREA_COLUMN,
             tr("Area (Ha)"),
-            METRIC_ACTIVITY_AREA,
+            f"@{VAR_ACTIVITY_AREA}",
             auto_calculated=True,
         )
         area_column_item = MetricColumnListItem(area_metric_column)
