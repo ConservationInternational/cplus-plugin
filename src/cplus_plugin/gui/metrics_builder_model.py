@@ -374,6 +374,7 @@ class ActivityNameTableItem(QtGui.QStandardItem):
 
         self.setEditable(False)
         self.setText(activity.name)
+        self.setToolTip(activity.name)
         self.setTextAlignment(QtCore.Qt.AlignCenter)
 
         background = self.background()

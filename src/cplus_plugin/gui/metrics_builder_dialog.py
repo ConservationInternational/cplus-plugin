@@ -213,6 +213,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
     """Wizard for customizing custom activity metrics table."""
 
     AREA_COLUMN = "Area"
+    MAX_COLUMNS = 10
 
     def __init__(self, parent=None, activities=None):
         super().__init__(parent)
@@ -536,6 +537,14 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
 
     def on_add_column(self):
         """Slot raised to add a new column."""
+        if not self.can_add_new_column():
+            QtWidgets.QMessageBox.warning(
+                self,
+                tr("Columns Limit"),
+                tr("Maximum number of columns reached."),
+            )
+            return
+
         label_text = (
             f"{tr('Specify the name of the column.')}<br>"
             f"<i><sup>*</sup>{tr('Any special characters will be removed.')}"
@@ -555,12 +564,21 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
                 QtWidgets.QMessageBox.warning(
                     self,
                     tr("Duplicate Column Name"),
-                    tr("There is an already existing column name"),
+                    tr("There is an already existing column name."),
                 )
                 return
 
             column_item = MetricColumnListItem(clean_column_name)
             self.add_column_item(column_item)
+
+    def can_add_new_column(self) -> bool:
+        """Checks if the maximum limit has been reached.
+
+        :returns: True if the limit has not been reached else
+        False if MAX_COLUMNS has been reached.
+        :rtype: bool
+        """
+        return len(self._column_list_model.column_items) < self.MAX_COLUMNS
 
     def add_column_item(self, item: MetricColumnListItem):
         """Adds a metric column item.
@@ -571,6 +589,11 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         :param item: Metrics column item to be added.
         :type item: MetricColumnListItem
         """
+        # Check if the maximum limit has been reached
+        if not self.can_add_new_column():
+            log("Maximum number of columns reached.", info=False)
+            return
+
         # Check if there are items with a similar name
         if self._column_list_model.column_exists(item.name):
             return
