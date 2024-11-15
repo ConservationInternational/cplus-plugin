@@ -112,7 +112,7 @@ class RepeatAreaDimension:
 class MetricColumn:
     """This class contains information required to create
     custom columns in the activity table in a scenario
-    report.
+    analysis report.
     """
 
     name: str
