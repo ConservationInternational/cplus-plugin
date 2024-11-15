@@ -1875,7 +1875,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
                 # We will also need to change the reference point of the
                 # frame for the table as it is anchored in the middle of
-                # the page. We will maintain this
+                # the page. We will still maintain this
                 anchor_x_position = 297 / 2.0
                 table_position = table_frame.positionWithUnits()
                 table_position.setX(anchor_x_position)
