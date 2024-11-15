@@ -159,6 +159,15 @@ ACTIVITY_AREA_TABLE_ID = "activity_area_table"
 PRIORITY_GROUP_WEIGHT_TABLE_ID = "assigned_weights_table"
 AREA_COMPARISON_TABLE_ID = "comparison_table"
 
+# IDs for items in the metrics report template
+METRICS_HEADER_BACKGROUND = "metrics_header_background"
+METRICS_FOOTER_BACKGROUND = "metrics_footer_background"
+METRICS_TABLE_HEADER = "metrics_table_header"
+METRICS_LOGO = "metrics_ci_logo"
+METRICS_PAGE_NUMBER = "metrics_page_number"
+METRICS_ACCREDITATION = "metrics_accreditation_text"
+
+
 # Initiliazing the plugin default data as found in the data directory
 priority_layer_path = (
     Path(__file__).parent.parent.resolve()

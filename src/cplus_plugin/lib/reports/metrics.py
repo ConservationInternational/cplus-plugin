@@ -248,6 +248,8 @@ def evaluate_activity_metric(
         else:
             exp_error = expression.parserErrorString()
 
+        log(f"Error evaluating activity metric: {exp_error}", info=False)
+
         return MetricEvalResult(False, None)
 
     return MetricEvalResult(True, result)

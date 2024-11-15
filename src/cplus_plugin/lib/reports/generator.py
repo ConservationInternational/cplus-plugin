@@ -55,6 +55,12 @@ from ...definitions.defaults import (
     AREA_COMPARISON_TABLE_ID,
     MAX_ACTIVITY_DESCRIPTION_LENGTH,
     MAX_ACTIVITY_NAME_LENGTH,
+    METRICS_ACCREDITATION,
+    METRICS_FOOTER_BACKGROUND,
+    METRICS_HEADER_BACKGROUND,
+    METRICS_LOGO,
+    METRICS_PAGE_NUMBER,
+    METRICS_TABLE_HEADER,
     MINIMUM_ITEM_HEIGHT,
     MINIMUM_ITEM_WIDTH,
     PRIORITY_GROUP_WEIGHT_TABLE_ID,
@@ -1756,7 +1762,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                             cell_value = self.format_number(result.value)
 
                     activity_cell = QgsTableCell(cell_value)
-                    # Workaround of fetching from the table column
+                    # Workaround of fetching alignment from the table column
                     activity_cell.setHorizontalAlignment(
                         mc.to_qgs_column().hAlignment()
                     )
@@ -1777,12 +1783,15 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
         parent_table.setTableContents(rows_data)
 
+        self._re_orient_area_table_page(parent_table)
+
     @classmethod
     def format_number(cls, value: typing.Any) -> str:
         """Formats a number to two decimals places.
 
         :returns: String representation of a number rounded off to
-        two decimal places with a comma thousands' separator.
+        two decimal places with a comma thousands' separator or
+        just returns the value as passed in if its not a number.
         :rtype: str
         """
         if not isinstance(value, Number):
@@ -1794,6 +1803,92 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         number_format.setNumberDecimalPlaces(cls.AREA_DECIMAL_PLACES)
 
         return number_format.formatDouble(value, QgsNumericFormatContext())
+
+    def _re_orient_area_table_page(self, table: QgsLayoutItemManualTable):
+        """If the width of the activity area table exceeds that of the page
+        then change orientation of the page to landscape. This is just one
+        strategy for trying to accommodate the size of the activity area table.
+
+        :param table: Table whose width is to be evaluated, with its container
+        page being re-oriented.
+        :type table: QgsLayoutItemManualTable
+        """
+        table_width = table.totalWidth()
+
+        for table_frame in table.frames():
+            page_idx = table_frame.page()
+            page = self._layout.pageCollection().page(page_idx)
+            page_width = page.pageSize().width()
+
+            if table_width < page_width:
+                # Move items at the footer of the page otherwise they
+                # will spill to the next page when we change the
+                # page orientation
+                move_up_items = []
+                width_increase_items = []
+                move_right_items = []
+
+                background_item = self._layout.itemById(METRICS_FOOTER_BACKGROUND)
+                if background_item is not None:
+                    move_up_items.append(background_item)
+                    width_increase_items.append(background_item)
+
+                logo_item = self._layout.itemById(METRICS_LOGO)
+                if logo_item is not None:
+                    move_up_items.append(logo_item)
+                    move_right_items.append(logo_item)
+
+                page_number_item = self._layout.itemById(METRICS_PAGE_NUMBER)
+                if page_number_item is not None:
+                    move_up_items.append(page_number_item)
+
+                accreditation_item = self._layout.itemById(METRICS_ACCREDITATION)
+                if accreditation_item is not None:
+                    move_up_items.append(accreditation_item)
+                    width_increase_items.append(accreditation_item)
+
+                header_background_item = self._layout.itemById(
+                    METRICS_HEADER_BACKGROUND
+                )
+                if header_background_item is not None:
+                    width_increase_items.append(header_background_item)
+
+                table_header_item = self._layout.itemById(METRICS_TABLE_HEADER)
+                if table_header_item is not None:
+                    width_increase_items.append(table_header_item)
+
+                delta_pos = 297 - 210
+
+                # Move up and right if applicable
+                for item in move_up_items:
+                    position = item.positionWithUnits()
+                    position.setY(position.y() - delta_pos)
+                    if item in move_right_items:
+                        position.setX(position.x() + delta_pos)
+                    item.attemptMove(position)
+
+                # Increase width for some of the footer items
+                for item in width_increase_items:
+                    size = item.sizeWithUnits()
+                    size.setWidth(size.width() + delta_pos)
+                    item.attemptResize(size)
+
+                # We will also need to change the reference point of the
+                # frame for the table as it is anchored in the middle of
+                # the page. We will maintain this
+                anchor_x_position = 297 / 2.0
+                table_position = table_frame.positionWithUnits()
+                table_position.setX(anchor_x_position)
+                table_frame.attemptMove(table_position)
+
+                # Also change the anchor point for the page number item
+                if page_number_item is not None:
+                    page_number_position = page_number_item.positionWithUnits()
+                    page_number_position.setX(anchor_x_position)
+                    page_number_item.attemptMove(page_number_position)
+
+                # Now we can change orientation
+                page.setPageSize("A4", QgsLayoutItemPage.Orientation.Landscape)
 
     def _populate_scenario_weighting_values(self):
         """Populate table with weighting values for priority layer groups."""
