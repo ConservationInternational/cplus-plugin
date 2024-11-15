@@ -1888,7 +1888,11 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                     page_number_item.attemptMove(page_number_position)
 
                 # Now we can change orientation
+                self._layout.pageCollection().beginPageSizeChange()
                 page.setPageSize("A4", QgsLayoutItemPage.Orientation.Landscape)
+                self._layout.pageCollection().reflow()
+                self._layout.pageCollection().endPageSizeChange()
+                self._layout.refresh()
 
     def _populate_scenario_weighting_values(self):
         """Populate table with weighting values for priority layer groups."""
