@@ -1809,8 +1809,8 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         then change orientation of the page to landscape. This is just one
         strategy for trying to accommodate the size of the activity area table.
 
-        :param table: Table whose width is to be evaluated, with its container
-        page being re-oriented.
+        :param table: Activity metrics table whose width is to be evaluated,
+        with its container page being re-oriented.
         :type table: QgsLayoutItemManualTable
         """
         table_width = table.totalWidth()
@@ -1820,7 +1820,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             page = self._layout.pageCollection().page(page_idx)
             page_width = page.pageSize().width()
 
-            if table_width < page_width:
+            if table_width > page_width:
                 # Move items at the footer of the page otherwise they
                 # will spill to the next page when we change the
                 # page orientation
