@@ -75,20 +75,20 @@ class TestActivityItemModel(TestCase):
     def test_add_implementation_model(self):
         """Assert an activity can be added."""
         activity_item_model = ActivityItemModel(PARENT)
-        result = activity_item_model.append_activity(get_activity())
+        result = activity_item_model.add_activity(get_activity())
         self.assertTrue(result)
 
     def test_model_has_items(self):
         """Assert the item model actually contains items."""
         activity_item_model = ActivityItemModel(PARENT)
-        _ = activity_item_model.append_activity(get_activity())
+        _ = activity_item_model.add_activity(get_activity())
         activities = activity_item_model.activities()
         self.assertEqual(len(activities), 1)
 
     def test_remove_activity(self):
         """Assert an activity can be removed."""
         activity_item_model = ActivityItemModel(PARENT)
-        _ = activity_item_model.append_activity(get_activity())
+        _ = activity_item_model.add_activity(get_activity())
         result = activity_item_model.remove_activity(ACTIVITY_UUID_STR)
         self.assertTrue(result)
 
@@ -97,7 +97,7 @@ class TestActivityItemModel(TestCase):
         activity_item_model = ActivityItemModel(PARENT)
         activity = get_activity()
         layer = get_test_layer()
-        result = activity_item_model.append_activity(activity, layer)
+        result = activity_item_model.add_activity(activity, layer)
         self.assertTrue(result)
 
     def test_remove_activity_with_layer(self):
@@ -105,7 +105,7 @@ class TestActivityItemModel(TestCase):
         activity_item_model = ActivityItemModel(PARENT)
         activity = get_activity()
         layer = get_test_layer()
-        _ = activity_item_model.append_activity(activity, layer)
+        _ = activity_item_model.add_activity(activity, layer)
         result = activity_item_model.remove_activity(ACTIVITY_UUID_STR)
         self.assertTrue(result)
 
