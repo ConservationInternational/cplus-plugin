@@ -600,7 +600,20 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
                     continue
                 priority_layer["path"] = ""
                 new_priority_layers.append(priority_layer)
+
+            mask_uuids = []
+            for mask_path in activity["mask_paths"]:
+                if mask_path.startswith("cplus://"):
+                    names = mask_path.split("/")
+                    mask_path.append(names[-2])
+                elif os.path.exists(mask_path):
+                    if self.path_to_layer_mapping.get(mask_path, None):
+                        mask_uuids.append(
+                            self.path_to_layer_mapping.get(mask_path)["uuid"]
+                        )
             activity["priority_layers"] = new_priority_layers
+            activity["mask_uuids"] = mask_uuids
+            activity["mask_paths"] = []
 
         self.scenario_detail = {
             "scenario_name": old_scenario_dict["name"],
