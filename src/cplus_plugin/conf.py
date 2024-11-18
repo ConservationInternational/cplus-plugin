@@ -1510,6 +1510,7 @@ class SettingsManager(QtCore.QObject):
         """
         metric_configuration_dict = metric_configuration_to_dict(metric_configuration)
         metric_configuration_str = json.dumps(metric_configuration_dict)
+        print(metric_configuration_dict)
         self.set_value(METRIC_CONFIGURATION_PROPERTY, metric_configuration_str)
 
     def save_online_scenario(self, scenario_uuid):
