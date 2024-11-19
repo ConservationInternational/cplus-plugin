@@ -12,7 +12,7 @@ from ..definitions.constants import ACTIVITY_NAME
 from ..models.base import Activity
 from ..models.report import ActivityColumnMetric, MetricColumn, MetricType
 
-from ..utils import FileUtils, log, tr
+from ..utils import FileUtils, tr
 
 
 METRIC_COLUMN_LIST_ITEM_TYPE = QtGui.QStandardItem.UserType + 6
@@ -420,8 +420,6 @@ class ActivityColumnMetricItem(QtGui.QStandardItem):
             self._activity_column_metric.metric_column.alignment
             | QtCore.Qt.AlignVCenter
         )
-
-        # self.setData(self._activity_column_metric.metric_type, QtCore.Qt.EditRole)
 
         self._update_tool_tip()
 

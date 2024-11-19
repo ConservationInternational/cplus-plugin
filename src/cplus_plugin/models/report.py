@@ -111,7 +111,7 @@ class RepeatAreaDimension:
 @dataclasses.dataclass
 class MetricColumn:
     """This class contains information required to create
-    custom columns in the activity table in a scenario
+    custom columns for the activity table in a scenario
     analysis report.
     """
 

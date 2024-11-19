@@ -7,14 +7,12 @@ import os
 import re
 import typing
 
-from qgis.core import Qgis, QgsVectorLayer
+from qgis.core import Qgis
 from qgis.gui import QgsExpressionBuilderDialog, QgsGui, QgsMessageBar
 
 from qgis.PyQt import QtCore, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
-
-from ..conf import Settings, settings_manager
 
 from ..definitions.defaults import USER_DOCUMENTATION_SITE
 from ..lib.reports.metrics import (

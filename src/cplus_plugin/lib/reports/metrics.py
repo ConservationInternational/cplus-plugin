@@ -9,8 +9,6 @@ import traceback
 import typing
 from sre_constants import error
 
-from qgis.PyQt.QtCore import QCoreApplication
-
 from qgis.core import (
     QgsExpression,
     QgsExpressionContext,
