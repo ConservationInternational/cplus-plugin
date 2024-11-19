@@ -1601,7 +1601,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
         if not self.is_metric_configuration_valid():
             log(
-                "Scenario cannot run due to an invalid metrics configuration. See preceding errors."
+                "Scenario cannot run due to an invalid metrics configuration. "
+                "Refer to the preceding errors above."
             )
             return
 
