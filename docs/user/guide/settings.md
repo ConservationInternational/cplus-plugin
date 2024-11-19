@@ -1,3 +1,15 @@
+---
+title: Conservation International
+summary:
+    - Jeremy Prior
+    - Ketan Bamniya
+date:
+some_url:
+copyright:
+contact:
+license: This program is free software; you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
+---
+
 # How to apply CPLUS settings?
 
 The CPLUS settings provide users with a customizable interface to configure various aspects of the platform according to their needs and preferences. Users can access the CPLUS settings through either the QGIS options or the CPLUS toolbar.
