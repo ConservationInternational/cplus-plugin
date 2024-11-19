@@ -33,6 +33,8 @@ This step is crucial for tailoring the outputs to include only the necessary inf
     ![Processing option](./img/step-4-2.png)
 
     1. **Process the scenario online:** By default, this option is unchecked. When the user selects this option, the scenario is processed online using the API. This means that the system sends the scenario data to a remote server or service via the Internet. The remote server performs the necessary computations or analysis based on the provided scenario data. Processing online allows for real-time analysis and can leverage the computing power and resources available on the remote server. This option might be preferred when the user requires quicker results or when the scenario data is too large or complex to be processed efficiently on the user's local device. However, processing online may require a stable internet connection.
+   
+    *If the user has previously selected `Online defaults`, this option will be selected automatically.*
 
 4. **Run Scenario:** 
 
@@ -51,9 +53,18 @@ This step is crucial for tailoring the outputs to include only the necessary inf
         - **Open PDF:** Opens the created PDF.
 
         - **Help:** Takes the user to the User's documentation site.
+  
+    3. **Hide:** This  option hides the Progress Dialog Box.
 
-    3. **Cancel:** Click on the `Cancel` button to terminate the report generation process. Upon clicking this button, it will transform into the `Close` button. Click on the `Close` button to dismiss the pop-up window.
+    4. **Cancel:** Click on the `Cancel` button to terminate the report generation process. Upon clicking this button, it will transform into the `Close` button. Click on the `Close` button to dismiss the pop-up window.
 
-    ![Close action](./img/step-4-4.png)
+    ### View Task Status Online
+    After clicking on the `Hide` button this button will be enabled to view the task status.
+
+    ![View Task Online Button](img/step-4-4.png)
+
+    Click on the `View Task Online button` to view the task status.
+
+    ![Processing Dialog](img/step-4-5.png) 
 
 Click [here](logs.md) to explore the log section.
