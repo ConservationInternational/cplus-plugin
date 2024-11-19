@@ -66,6 +66,8 @@
 
 - **Description**: A detailed description of the activity. This will be used in the report
 
+- **Activity Mask**: Activity Mask can be set to a specific mask to limit the pathways that can be added to the activity.By checking the  box user will be able to apply the activity mask.
+
 - **Style**: Styles used for the activity:
 
     - *Scenario layer*: Colouring which will be used in the Scenario output for this activity
@@ -73,6 +75,74 @@
     - *Output activity layer*: Colour ramp which will be applied to the activity raster output
 
 - **Map layer**: If enabled, a user can provide an existing activity. This has to be a raster
+
+## Activity Mask
+
+Activity Masking enables users to exclude specific areas from analysis. This functionality helps in refining analyses by isolating regions that are not relevant or need to be avoided during operations or planning.
+
+### How Activity Masking works?
+
+Imagine planning a journey or mapping an area, and you want to exclude specific region like restricted zones, private properties, or hazardous locations. This masking tool allows you to mark those areas, ensuring they are excluded from your plans or analysis. It is like instructing the system, avoid these areas, enabling you to focus on relevant zones and create more precise and efficient plans.
+
+* As you can see in the below image, shape 1️⃣, shape 2️⃣, and shape 3️⃣ are masks.
+
+    ![Activity Mask](./img/manual-step2-11.png)
+
+* Here are activities displayed without applying any activity mask. This means all areas are included, and no regions have been excluded or hidden from the analysis.
+
+    ![Without Activity Mask 1](./img/manual-step2-7.png)
+
+    ![Without Activity Mask 2](./img/manual-step2-8.png)
+    
+* After applying the mask, the specified area becomes restricted for any activities or work. This ensures that no operations or tasks are carried out within that area, effectively excluding it from the analysis. As shown in the image below, after applying the mask, the specified area is marked as restricted for that particular activity. This restriction ensures that no operations or tasks related to the specific activity take place within the designated area, effectively excluding it from the further analysis.
+
+    ![With Activity Mask 1](./img/manual-step2-9.png)
+
+    ![With Activity Mask 2](./img/manual-step2-10.png)
+
+### Apply Activity Mask
+
+![Activity Mask](./img/manual-step2-6.png)
+
+1. **✅ Activity Mask**: By checking this user will be able add activity mask.
+
+2. ![add button](img/symbologyAdd.svg): Add new activity mask. Click on this button to add a new activity mask. After clicking on the button, a new window will open from where user can select the shape file.
+
+    ![Activity Mask Selection](./img/manual-step2-12.png)
+
+    **1. File:** Desired activity mask you want to apply.
+
+    **2. Open:** After selecting the file, click the `Open` button to include it in the activity.
+
+    **3. Close:** Click on the `Close` button to close the window.
+
+3. ![edit button](img/mActionToggleEditing.svg):Edit activity mask. Select the file you want to edit and then click on the ![edit button](img/mActionToggleEditing.svg) `Icon`. This will open a new window, allowing you to choose a new activity mask.
+
+    ![Activity Mask Editor](./img/manual-step2-14.png)
+
+    This will open a new window, allowing you to choose a new activity mask.
+
+    ![Activity Mask Selection](./img/manual-step2-12.png)
+
+    **1. File:** Desired activity mask you want to add.
+
+    **2. Open:** After selecting the file, click the `Open` button to include it in the activity.
+
+    **3. Close:** Click on the `Close` button to close the window.
+
+4. ![remove button](img/symbologyRemove.svg): Remove the selected activity mask. Select the activity mask you want to remove and click on the ![remove button](img/symbologyRemove.svg) `Icon`.
+
+    ![Activity Mask Selection](./img/manual-step2-14.png)
+    
+    After clicking on the remove button, a confirmation dialog box will appear, prompting you to confirm the action.
+
+    ![Remove Activity Mask](./img/manual-step2-15.png)
+
+    **No:** Click on the `No` button to cancel the action.
+
+    **Yes:** Click on the `Yes` button to confirm the action and remove the activity mask.
+
+    **x:** Click on the `x` button to close the dialog box.
 
 
 ## Ordering of the pixel values for the scenario output
