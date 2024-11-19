@@ -3,11 +3,7 @@
 Provides variables and functions for custom activity metrics.
 """
 
-import inspect
-import string
-import traceback
 import typing
-from sre_constants import error
 
 from qgis.core import (
     QgsExpression,
@@ -88,7 +84,7 @@ class ActivityNpvFunction(QgsScopedExpressionFunction):
         activity_id = context.variable(VAR_ACTIVITY_ID)
         activity_area = context.variable(VAR_ACTIVITY_AREA)
 
-        if not isinstance(activity_area, float):
+        if not isinstance(activity_area, (float, int)):
             return -1.0
 
         return calculate_activity_npv(activity_id, activity_area)
