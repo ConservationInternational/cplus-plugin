@@ -161,7 +161,11 @@ class ScenarioAnalysisTask(QgsTask):
         masking_layers = masking_layers_paths.split(",") if masking_layers_paths else []
         masking_layers.remove("") if "" in masking_layers else None
         masking_layers.extend(
-            [mask_path for activity in self.analysis_activities for mask_path in activity.mask_paths]
+            [
+                mask_path
+                for activity in self.analysis_activities
+                for mask_path in activity.mask_paths
+            ]
         )
         return masking_layers
 
