@@ -1,3 +1,15 @@
+---
+title: Conservation International
+summary:
+    - Jeremy Prior
+    - Ketan Bamniya
+date:
+some_url:
+copyright:
+contact:
+license: This program is free software; you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
+---
+
 # Step 2: Pathways and activities
 
 This step deals with the **Natural Climate Solution (NCS) pathways** and the **Activities**. An NCS pathway can be defined as a composite spatial layer on specific land use classes and other factors that determine areas ideal for a specific use case (e.g. Animal management). An activity is a combination of NCS pathways represented in an AOI spatial layer. **Figure 1** shows the UI.
@@ -32,19 +44,60 @@ NCS pathways buttons:
 
 ![CPLUS step 2 pathways buttons](img/plugin-step2-pathways-buttons.png)
 
-## NCS Pathway
+## How to add NCS pathway
 
-- Click on the left green plus button to add a new pathway (**Figure 3**).
+Click on the left green plus button ![plus button](./img/plugin-step2-1.png) to add a new pathway (**Figure 3**).
 
-- Provide a **Name** and **Description** for the pathway.
+**You can use two methods to add the NCS pathway**
 
-- Two approaches to selecting a layer: A layer from the **QGIS canvas**, or **Upload from a file**.
+###  Method 1: Manually add NCS pathway
 
-- Add **Carbon layers** as desired. Multiple carbon layers can be provided. These layers will be averaged.
+In this Method, you will create a new NCS pathway by providing a name, description, and selecting relevant map and carbon layers.
 
-- Click **OK**.
+**Step 1 Enter NCS Pathway Details**
 
-- The new **NCS pathway** will be added.
+- In the `Name` field, enter name for your NCS pathway. This name will help you identify the pathway in the system.
+
+- In the `Description` field, enter a brief description of the NCS pathway. This description will provide context and help others understand the purpose of the pathway.
+
+**Step 2 Select Map Layer**
+
+- In the `Map Layer` dropdown menu, select the map layer that is relevant to your NCS pathway. You can choose from the list of available map layers that you have downloaded and imported into the system.
+
+For example, if you are creating an NCS pathway for Agroforestry, you would select the `Agroforestry` map layer.
+
+**Step 3 Select Carbon Layer**
+
+- Click on the plus icon next to the `Carbon Layer` field.
+
+- In the dropdown menu, select the carbon layer that is relevant to your NCS pathway. You can choose from the list of available carbon layers that you have downloaded into the system.
+
+For example, if you are creating an NCS pathway for Agroforestry, you would select the `Agroforestry` carbon layer.
+
+**Step 4 Add NCS Pathway**
+
+Once you have entered all the required details, click on the `OK` button to add the NCS pathway.
+
+### Methode 2 add using online default
+
+In this method, you will add a new NCS pathway using online defaults. This option is available if you have an account on the Trends.Earth platform.
+
+**Step 1 Add Online Defaults**
+
+- Click on the `Online Defaults` dropdown menu.
+
+- Choose the NCS pathway you want to use from the list of available options.
+
+- Once you select the NCS pathway, the name and description fields will be automatically populated.
+
+- To add a carbon layer, select it from the available options in the system.
+
+- Click on the `OK` button to add the NCS pathway.
+
+
+After selecting the online default, the system will automatically fill in the name and description fields for you. You can then add a carbon layer from the available options in the system.
+
+![After online default](./img/plugin-step2-2.png)
 
 <blockquote> If the NCS pathway is broken (e.g. layer or file cannot be found), the pathway text
 will have an exclamation mark next to it. The user will need to rectify the issue before continuing to

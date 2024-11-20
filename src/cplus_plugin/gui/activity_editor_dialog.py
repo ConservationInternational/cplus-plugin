@@ -17,7 +17,7 @@ from qgis.core import (
 )
 from qgis.gui import QgsGui, QgsMessageBar
 
-from qgis.PyQt import QtGui, QtWidgets
+from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
@@ -74,6 +74,7 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self._edit_mode = False
         self._layer = None
+        self._mask_layer = None
 
         self._excluded_names = excluded_names
         if excluded_names is None:
@@ -92,6 +93,32 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         # Hide map layer handling
         self.layer_gb.setVisible(False)
+
+        # Mask layers
+        add_icon = FileUtils.get_icon("symbologyAdd.svg")
+        self.btn_add_mask.setIcon(add_icon)
+        self.btn_add_mask.clicked.connect(self._on_add_mask_layer)
+
+        remove_icon = FileUtils.get_icon("symbologyRemove.svg")
+        self.btn_delete_mask.setIcon(remove_icon)
+        self.btn_delete_mask.setEnabled(False)
+        self.btn_delete_mask.clicked.connect(self._on_remove_mask_layer)
+
+        edit_icon = FileUtils.get_icon("mActionToggleEditing.svg")
+        self.btn_edit_mask.setIcon(edit_icon)
+        self.btn_edit_mask.setEnabled(False)
+        self.btn_edit_mask.clicked.connect(self._on_edit_mask_layer)
+
+        if self._activity is not None:
+            mask_paths_list = self._activity.mask_paths
+
+            for mask_path in mask_paths_list or []:
+                if mask_path == "":
+                    continue
+                item = QtWidgets.QListWidgetItem()
+                item.setData(QtCore.Qt.DisplayRole, mask_path)
+                self.lst_mask_layers.addItem(item)
+            self.mask_layers_changed()
 
     @property
     def activity(self) -> Activity:
@@ -186,6 +213,88 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
         else:
             self.cbo_layer.setCurrentIndex(matching_index)
 
+    def _on_add_mask_layer(self, activated: bool):
+        """Slot raised to add a mask layer."""
+        data_dir = settings_manager.get_value(Settings.LAST_MASK_DIR, default=None)
+
+        if not data_dir:
+            data_dir = os.path.expanduser("~")
+
+        mask_path = self._show_mask_path_selector(data_dir)
+        if not mask_path:
+            return
+
+        item = QtWidgets.QListWidgetItem()
+        item.setData(QtCore.Qt.DisplayRole, mask_path)
+
+        if self.lst_mask_layers.findItems(mask_path, QtCore.Qt.MatchExactly):
+            error_tr = tr("The selected mask layer already exists.")
+            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            return
+
+        self.lst_mask_layers.addItem(item)
+        settings_manager.set_value(Settings.LAST_MASK_DIR, os.path.dirname(mask_path))
+
+        self.mask_layers_changed()
+
+    def _on_edit_mask_layer(self, activated: bool):
+        """Slot raised to edit a mask layer."""
+
+        item = self.lst_mask_layers.currentItem()
+        if not item:
+            error_tr = tr("Select a mask layer first.")
+            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            return
+        mask_path = self._show_mask_path_selector(item.data(QtCore.Qt.DisplayRole))
+        if not mask_path:
+            return
+
+        if self.lst_mask_layers.findItems(mask_path, QtCore.Qt.MatchExactly):
+            error_tr = tr("The selected mask layer already exists.")
+            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            return
+
+        item.setData(QtCore.Qt.DisplayRole, mask_path)
+
+    def _on_remove_mask_layer(self, activated: bool):
+        """Slot raised to remove one or more selected mask layers."""
+        items = self.lst_mask_layers.selectedItems()
+        if not items:
+            error_tr = tr("Select the target mask layer first, before removing it.")
+            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            return
+
+        reply = QtWidgets.QMessageBox.warning(
+            self,
+            tr("QGIS CPLUS PLUGIN | Settings"),
+            tr("Remove the selected mask layer(s)?"),
+            QtWidgets.QMessageBox.Yes,
+            QtWidgets.QMessageBox.No,
+        )
+
+        if reply == QtWidgets.QMessageBox.Yes:
+            for item in items:
+                item_row = self.lst_mask_layers.row(item)
+                self.lst_mask_layers.takeItem(item_row)
+
+            self.mask_layers_changed()
+
+    def _show_mask_path_selector(self, layer_dir: str) -> str:
+        """Show file selector dialog for selecting a mask layer."""
+        filter_tr = tr("Shapefiles")
+
+        layer_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self,
+            self.tr("Select mask Layer"),
+            layer_dir,
+            f"{filter_tr} (*.shp)",
+            options=QtWidgets.QFileDialog.DontResolveSymlinks,
+        )
+        if not layer_path:
+            return ""
+
+        return layer_path
+
     def validate(self) -> bool:
         """Validates if name has been specified.
 
@@ -265,6 +374,15 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._activity.layer_styles[
                 ACTIVITY_LAYER_STYLE_ATTRIBUTE
             ] = color_ramp_info
+
+        # Mask layers settings
+        mask_paths = []
+        for row in range(0, self.lst_mask_layers.count()):
+            item = self.lst_mask_layers.item(row)
+            item_path = item.data(QtCore.Qt.DisplayRole)
+            mask_paths.append(item_path)
+
+        self._activity.mask_paths = mask_paths
 
     def _get_selected_map_layer(self) -> typing.Union[QgsRasterLayer, None]:
         """Returns the currently selected map layer or None if there is
@@ -358,3 +476,9 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self._add_layer_path(layer_path)
         settings_manager.set_value(Settings.LAST_DATA_DIR, os.path.dirname(layer_path))
+
+    def mask_layers_changed(self):
+        contains_items = self.lst_mask_layers.count() > 0
+
+        self.btn_edit_mask.setEnabled(contains_items)
+        self.btn_delete_mask.setEnabled(contains_items)

@@ -1615,6 +1615,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         Creates new QgsTask, progress dialog and report manager
          for each new scenario analysis.
         """
+        self.log_text_box.clear()
 
         extent_list = PILOT_AREA_EXTENT["coordinates"]
         default_extent = QgsRectangle(

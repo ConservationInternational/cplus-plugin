@@ -1,9 +1,20 @@
+---
+title: Conservation International
+summary:
+    - Jeremy Prior
+    - Ketan Bamniya
+date:
+some_url:
+copyright:
+contact:
+license: This program is free software; you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
+---
+
 # Step 3: Priority weighting
 
 The final step deals with the **Weighting priorities** and **Priority groups**. These weights will be applied when the user starts running the scenario. An example is shown in **Figure 1**.
 
 - Weight values range from 0 to 5, and affect how important a PWL is compared to other layers.
-
 - A value of 0 indicates that the PWL has a lower importance.
 
 - A value of 5 means that the PWL has a higher importance
@@ -28,26 +39,45 @@ Select the target layer from the priority weighting layers list from its priorit
 - Click on ![add button](img/symbologyAdd.svg) to add a new custom priority layer, or ![edit button](img/mActionToggleEditing.svg) to edit an existing priority layer.
 
 - This will open the Priority Layer dialog (see **Figure 2**).
+  
+## Methods to create layers
+
+### Method 1: Create manually
 
 - The following parameters need to be set:
     - **Priority layer**: The layer that represents the priority layer.
     - **Priority layer name**: A unique identifier for the priority layer.
     - **Priority layer description**: A detailed description of the priority layer.
-
+ 
 - Click the **Assign activities** button to select activities to be associated with the priority layer (see **Figure 3**)
 
-![Priority layer editing/adding dialog](img/manual-priority-layer-dialog.png)
+![Priority layer editing/adding dialog](img/manual-priority-layer-dialog-1.png)
 
 *Figure 2: Priority layer dialog*
+
 
 - Select the activities you want to be associated with the priority layer.
 
 - Click **OK**.
-
+  
 ![Priority layer editing/adding dialog](img/manual-pwl-selection.png)
 
 *Figure 3: Activity selection for priority layers*
 
+### Method 2: Create Online
+
+![Priority layer editing/adding dialog](img/manual-priority-layer-dialog-2.png)
+
+- After clicking on this option a drop down menu will appear with the available online defaults. 
+  
+![Priority layer editing/adding dialog](img/manual-priority-layer-dialog-3.png)
+
+- Select the desired online default.
+  
+![Priority layer editing/adding dialog](img/manual-priority-layer-dialog-4.png)
+
+- Then click on the 1️⃣ `OK` button, to add the priority layer to PWL.
+       
 - ![remove button](img/symbologyRemove.svg): Remove the selected PWL.
 
 ## Create a new financial priority layer Net Present Value (NPV)

@@ -1,3 +1,15 @@
+---
+title: Conservation International
+summary:
+    - Jeremy Prior
+    - Ketan Bamniya
+date:
+some_url:
+copyright:
+contact:
+license: This program is free software; you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
+---
+
 # Cplus User Guide
 
 Welcome to the Cplus user guide. In this section of the documentation, we aim to show users how to utilise the plugin effectively, customise their settings and so forth. Here is a brief overview of the content provided here:
