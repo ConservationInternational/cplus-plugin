@@ -1415,6 +1415,10 @@ class ScenarioAnalysisTask(QgsTask):
                 masking_layers = activity.mask_paths
 
                 if len(masking_layers) < 1:
+                    self.log_message(
+                        f"Skipping activities masking "
+                        f"No mask layer(s) for activity {activity.name}"
+                    )
                     return False
                 if len(masking_layers) > 1:
                     initial_mask_layer = self.merge_vector_layers(masking_layers)
