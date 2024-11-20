@@ -603,6 +603,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
 
             mask_uuids = []
             for mask_path in activity["mask_paths"]:
+                mask_path = mask_path.replace(".shp", ".zip")
                 if mask_path.startswith("cplus://"):
                     names = mask_path.split("/")
                     mask_path.append(names[-2])
