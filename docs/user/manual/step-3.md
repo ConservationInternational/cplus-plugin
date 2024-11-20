@@ -1,3 +1,15 @@
+---
+title: Conservation International
+summary:
+    - Jeremy Prior
+    - Ketan Bamniya
+date:
+some_url:
+copyright:
+contact:
+license: This program is free software; you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
+---
+
 # Step 3: Weighting priorities
 
 `Step 3` focuses on weighting priorities, which involves assigning importance to different priority groups and weighted layers. This step is critical for determining the relative significance of various factors in the analysis.
@@ -19,6 +31,35 @@
 - ![remove button](img/symbologyRemove.svg): Remove the selected PWL.
 
 - ![edit button](img/mActionToggleEditing.svg): Edit the selected PWL.
+
+## Methods to create layers
+
+### Method 1: Create manually 
+
+- The following parameters need to be set:
+    - **Priority layer**: The layer that represents the priority layer.
+    - **Priority layer name**: A unique identifier for the priority layer.
+    - **Priority layer description**: A detailed description of the priority layer.
+
+- Click the `Assign activities` button to select activities to be associated with the priority layer.
+  
+![Priority Layer Dialog](img/step3-priority-layer-dialog-1.png)
+
+
+- Select the activities you want to be associated with the priority layer.
+
+- Click **OK**.
+
+![Multiple Item Selection](img/step3-multiple-item-selection.png)
+
+
+### Method 2: Create Online
+
+Click on the `Online defaults` to select the default priority layer from the available options.
+
+![Priority Layer Dialog](img/step3-priority-layer-dialog-2.png)
+
+- Then click **OK** to add the priority layer to PWL.
 
 ## Financial Priority Weighted Layer Editor dialog
 
@@ -83,6 +124,8 @@ The primary purpose of the NPV Tool is to help users prioritise activities by pr
 
 - **Priority layer**: Select the priority layer.
 
+- **Online Defaults**: Select priority layers from online defaults.
+
 - **Priority layer name**: A unique name for the priority layer.
 
 - **Priority layer description**: A detailed description for the priority layer.
@@ -110,6 +153,8 @@ The primary purpose of the NPV Tool is to help users prioritise activities by pr
 - **Status**: A status message on the current analysis being performed.
 
 - **View Report**: This button will remain disabled until the processing is done.
+
+- **Hide**: This button will hide the  progress dialog.
 
 - **Cancel**: Clicking this button will stop the processing.
 
