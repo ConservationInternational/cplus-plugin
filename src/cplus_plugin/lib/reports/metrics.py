@@ -8,6 +8,7 @@ import typing
 from qgis.core import (
     QgsExpression,
     QgsExpressionContext,
+    QgsExpressionContextGenerator,
     QgsExpressionContextScope,
     QgsExpressionContextUtils,
     QgsExpressionNodeFunction,
@@ -115,7 +116,9 @@ def create_metrics_expression_scope() -> QgsExpressionContextScope:
         QgsExpressionContextScope.StaticVariable(
             VAR_ACTIVITY_AREA,
             1,
-            description=tr("The total area of the activity being evaluated."),
+            description=tr(
+                "The total area, in hectares, of the activity being evaluated."
+            ),
         )
     )
 
@@ -194,6 +197,9 @@ def create_metrics_expression_context(
     )
     metric_expression_context.appendScope(create_metrics_expression_scope())
 
+    # Highlight some key variables
+    metric_expression_context.setHighlightedVariables([VAR_ACTIVITY_AREA])
+
     return metric_expression_context
 
 
@@ -247,3 +253,18 @@ def evaluate_activity_metric(
         return MetricEvalResult(False, None)
 
     return MetricEvalResult(True, result)
+
+
+class MetricsExpressionContextGenerator(QgsExpressionContextGenerator):
+    """Helper class that generates the metrics expression context for use in
+    QGIS objects that expect an expression context generator.
+    """
+
+    def createExpressionContext(self) -> QgsExpressionContext:
+        """Returns a metrics expression context.
+
+        :returns: Metrics expression context with CPLUS-specific
+        functions and variables.
+        :rtype: QgsExpressionContext
+        """
+        return create_metrics_expression_context()

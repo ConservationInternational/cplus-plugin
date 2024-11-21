@@ -24,6 +24,7 @@ from ..definitions.defaults import USER_DOCUMENTATION_SITE
 from ..lib.reports.metrics import (
     create_metrics_expression_context,
     create_metrics_expression_scope,
+    MetricsExpressionContextGenerator,
     VAR_ACTIVITY_AREA,
 )
 from .metrics_builder_model import (
@@ -285,7 +286,10 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         self.cbo_column_expression.setExpressionDialogTitle(
             tr("Column Expression Builder")
         )
-        self.cbo_column_expression.appendScope(create_metrics_expression_scope())
+        self._metrics_context_generator = MetricsExpressionContextGenerator()
+        self.cbo_column_expression.registerExpressionContextGenerator(
+            self._metrics_context_generator
+        )
 
         self.lst_columns.setModel(self._column_list_model)
         self.lst_columns.selectionModel().selectionChanged.connect(
