@@ -23,8 +23,50 @@ The final step deals with the **Weighting priorities** and **Priority groups**. 
 
 *Figure 1: Step 3 allows the user to set the Weights of each Priority Group*
 
-The priority weighting layers can be selected, added and removed into each priority group by using the 
-arrow buttons. 
+## Priority groups
+
+ The `Priority groups` are used to assign weights to specific activities or layers based on their importance.
+
+## Add priority groups
+
+To add a new priority group, the user must click on the ![add button](img/symbologyAdd.svg) button, as shown  in **Figure 1**.
+
+This will open a `Priority Group Dialog` box, where user required to fill the following information.
+
+* **Group name:** Name of the group.
+* **Group description:** Description of the group.
+* **Group value:** Numeric value that reflect the importance of the priority layer.
+* **Assign priority layers:** Assign Priority Layers allows users to allocate importance values to different geographic layers.
+
+    * To assign a priority layer, click on the `Assign priority layers` and select from the available layers in the list.(see **Figure 3**)
+
+![Priority Dialog](./img/plugin-step3_11.png)
+
+*Figure 2: Priority  Group Dialog*
+
+After filling in the required information, click on the `OK` button to add it to the `Priority groups`.
+
+![Assign Priority Layer](./img/plugin-step3_12.png)
+
+*Figure 3: Assign priority layers*
+
+## Edit group layer
+
+Select the layer and click on the ![edit button](img/mActionToggleEditing.svg) icon. This will open the `Priority Group Dialog`, allowing you to edit the group name, group description, group value, and assign new priority layers. 
+
+![Priority Dialog](./img/plugin-step3_11.png)
+
+*Figure 4: Priority Group Dialog Edit*
+
+Click `OK` to apply the changes.
+
+## Remove group layer
+
+Select the layer and click on the ![remove button](img/symbologyRemove.svg) to remove the layer from the priority group.
+
+## Prority Weighting Layers
+
+The priority weighting layers can be selected, added and removed into each priority group by using the arrow buttons. 
 
 ## Add priority layers
 
@@ -38,7 +80,7 @@ Select the target layer from the priority weighting layers list from its priorit
 
 - Click on ![add button](img/symbologyAdd.svg) to add a new custom priority layer, or ![edit button](img/mActionToggleEditing.svg) to edit an existing priority layer.
 
-- This will open the Priority Layer dialog (see **Figure 2**).
+- This will open the Priority Layer dialog (see **Figure 5**).
   
 ## Methods to create layers
 
@@ -49,12 +91,11 @@ Select the target layer from the priority weighting layers list from its priorit
     - **Priority layer name**: A unique identifier for the priority layer.
     - **Priority layer description**: A detailed description of the priority layer.
  
-- Click the **Assign activities** button to select activities to be associated with the priority layer (see **Figure 3**)
+- Click the **Assign activities** button to select activities to be associated with the priority layer (see **Figure 6**)
 
 ![Priority layer editing/adding dialog](img/manual-priority-layer-dialog-1.png)
 
-*Figure 2: Priority layer dialog*
-
+*Figure 5: Priority layer dialog*
 
 - Select the activities you want to be associated with the priority layer.
 
@@ -62,7 +103,7 @@ Select the target layer from the priority weighting layers list from its priorit
   
 ![Priority layer editing/adding dialog](img/manual-pwl-selection.png)
 
-*Figure 3: Activity selection for priority layers*
+*Figure 6: Activity selection for priority layers*
 
 ### Method 2: Create Online
 
@@ -86,11 +127,11 @@ Select the target layer from the priority weighting layers list from its priorit
 
 - This will open the Financial priority layer dialog. By default, on first-time load, the NPV configurations for all activities are disabled.
 
-    ![NPV dialog](./img/plugin-step3_4.png)
+    ![NPV dialog](./img/plugin-step3_5.png)
 
 - To enable the NPV for an activity, check the NPV Priority Weighting Layer group box.
 
-    ![NPV configuration enable](./img/plugin-step3_5.png)
+    ![NPV configuration enable](./img/plugin-step3_4.png)
 
 - Enter the number of years and discount rate. Then, input the revenue and cost values for the respective years. The greyed out cells (i.e., Year and Discount Value) indicate that these values are automatically populated.
 
