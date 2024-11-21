@@ -549,6 +549,12 @@ class ActivityColumnMetricItem(QtGui.QStandardItem):
         ):
             self._activity_column_metric.metric_type = MetricType.NOT_SET
             self._activity_column_metric.expression = ""
+        elif (
+            self._activity_column_metric.metric_type == MetricType.COLUMN
+            and model.expression
+        ):
+            # Just update the expression
+            self._activity_column_metric.expression = model.expression
 
         self._activity_column_metric.metric_column = model
 
