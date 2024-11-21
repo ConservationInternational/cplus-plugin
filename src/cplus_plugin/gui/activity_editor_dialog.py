@@ -229,7 +229,7 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         if self.lst_mask_layers.findItems(mask_path, QtCore.Qt.MatchExactly):
             error_tr = tr("The selected mask layer already exists.")
-            self._message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            self._message_bar.pushMessage(error_tr, Qgis.MessageLevel.Warning)
             return
 
         self.lst_mask_layers.addItem(item)
@@ -243,7 +243,7 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
         item = self.lst_mask_layers.currentItem()
         if not item:
             error_tr = tr("Select a mask layer first.")
-            self._message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            self._message_bar.pushMessage(error_tr, Qgis.MessageLevel.Warning)
             return
         mask_path = self._show_mask_path_selector(item.data(QtCore.Qt.DisplayRole))
         if not mask_path:
@@ -251,7 +251,7 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         if self.lst_mask_layers.findItems(mask_path, QtCore.Qt.MatchExactly):
             error_tr = tr("The selected mask layer already exists.")
-            self._message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            self._message_bar.pushMessage(error_tr, Qgis.MessageLevel.Warning)
             return
 
         item.setData(QtCore.Qt.DisplayRole, mask_path)
@@ -261,7 +261,7 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
         items = self.lst_mask_layers.selectedItems()
         if not items:
             error_tr = tr("Select the target mask layer first, before removing it.")
-            self._message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            self._message_bar.pushMessage(error_tr, Qgis.MessageLevel.Warning)
             return
 
         reply = QtWidgets.QMessageBox.warning(
