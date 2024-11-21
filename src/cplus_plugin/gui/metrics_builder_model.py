@@ -5,6 +5,7 @@ MVC models for the metrics builder.
 from enum import IntEnum
 import typing
 
+from qgis.core import QgsNumericFormat
 from qgis.PyQt import QtCore, QtGui
 
 from ..definitions.constants import ACTIVITY_NAME
@@ -160,6 +161,51 @@ class MetricColumnListItem(QtGui.QStandardItem):
         :rtype: MetricColumn
         """
         return self._column
+
+    @property
+    def format_as_number(self) -> bool:
+        """Gets whether the result of evaluating the column or
+        cell metric should be formatted as a number.
+
+        :returns: True if the value should be formatted as
+        a number else False.
+        """
+        return self._column.format_as_number
+
+    @format_as_number.setter
+    def format_as_number(self, state: bool):
+        """Specify whether the result of evaluating the column
+        or cell metric should be formatted as a number.
+
+        :param state: True to format the value as a number else
+        False.
+        :type state: bool
+        """
+        self._column.format_as_number = state
+
+    @property
+    def number_formatter(self) -> QgsNumericFormat:
+        """Gets the formatter used for the value of the expression
+        result.
+
+        This is applicable if :py:attr:`~format_as_number` has
+        been set to True.
+
+        :returns: The number formatter to use.
+        :rtype: QgsNumericFormat
+        """
+        return self._column.number_formatter
+
+    @number_formatter.setter
+    def number_formatter(self, formatter: QgsNumericFormat):
+        """Sets the formatter to use for the value of the
+        expression result.
+
+        :param formatter: Object for formatting the value
+        of the expression result.
+        :type formatter: QgsNumericFormat
+        """
+        self._column.number_formatter = formatter
 
     def type(self) -> int:
         """Returns the type of the standard item.

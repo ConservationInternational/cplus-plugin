@@ -6,9 +6,15 @@ Wizard for customizing custom activity metrics table.
 import os
 import re
 import typing
+from tabnanny import check
 
-from qgis.core import Qgis
-from qgis.gui import QgsExpressionBuilderDialog, QgsGui, QgsMessageBar
+from qgis.core import Qgis, QgsFallbackNumericFormat
+from qgis.gui import (
+    QgsExpressionBuilderDialog,
+    QgsGui,
+    QgsMessageBar,
+    QgsNumericFormatSelectorWidget,
+)
 
 from qgis.PyQt import QtCore, QtWidgets
 
@@ -213,7 +219,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
     AREA_COLUMN = "Area"
     MAX_COLUMNS = 10
 
-    def __init__(self, parent=None, activities=None):
+    def __init__(self, parent=None, activities=None, add_default_columns=True):
         super().__init__(parent)
         self.setupUi(self)
 
@@ -294,6 +300,14 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
             self._on_column_expression_changed
         )
 
+        self.column_properties_widget.setDockMode(True)
+        self.column_properties_stack.setMainPanel(self.column_properties_widget)
+
+        self.chk_format_number.toggled.connect(self.on_format_number_checked)
+        self.btn_customize_number.clicked.connect(self.on_customize_number)
+
+        self.chk_format_number.setChecked(False)
+
         # Activity metrics page
         self.tb_activity_metrics.setModel(self._activity_metric_table_model)
 
@@ -305,13 +319,18 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         # Final summary page
         self.tv_summary.setModel(self._summary_model)
 
+        if add_default_columns:
+            self._add_default_columns()
+
+    def _add_default_columns(self):
+        """Add default columns."""
         # Add the default area column
-        area_metric_column = MetricColumn(
-            self.AREA_COLUMN,
-            tr("Area (Ha)"),
-            f"@{VAR_ACTIVITY_AREA}",
-            auto_calculated=True,
+        area_metric_column = MetricColumn.create_default_column(
+            self.AREA_COLUMN, tr("Area (Ha)"), f"@{VAR_ACTIVITY_AREA}"
         )
+        area_metric_column.auto_calculated = True
+        area_metric_column.format_as_number = True
+
         area_column_item = MetricColumnListItem(area_metric_column)
         self.add_column_item(area_column_item)
 
@@ -468,6 +487,50 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         """
         open_documentation(USER_DOCUMENTATION_SITE)
 
+    def on_customize_number(self):
+        """Slot raised to customize number formatting options."""
+        format_selector = QgsNumericFormatSelectorWidget(self.column_properties_widget)
+        format_selector.setPanelTitle(tr("Number Formatter"))
+        format_selector.changed.connect(self._on_number_format_changed)
+
+        # Get current column item
+        current_columns_items = self.selected_column_items()
+        if len(current_columns_items) > 0:
+            number_formatter = current_columns_items[0].number_formatter
+            format_selector.setFormat(number_formatter)
+
+        self.column_properties_widget.openPanel(format_selector)
+
+    def _on_number_format_changed(self):
+        """Slot raised whenever the number format configuration has changed."""
+        format_selector = self.sender()
+        if format_selector is None:
+            return
+
+        selected_columns = self.selected_column_items()
+        if len(selected_columns) == 0:
+            return
+
+        number_formatter = format_selector.format()
+
+        current_column = selected_columns[0]
+        current_column.number_formatter = number_formatter
+
+        # Update column properties in activity metrics table
+        self._activity_metric_table_model.update_column_properties(
+            current_column.row(), current_column.model
+        )
+
+    def on_format_number_checked(self, checked: bool):
+        """Slot raised when the format number checkbox has been
+        checked or unchecked.
+
+        :param checked: True if checked or False if unchecked.
+        :type checked: bool
+        """
+        self.btn_customize_number.setEnabled(checked)
+        self.save_column_properties()
+
     def clear_activities(self):
         """Removes all activities in the activity metrics table."""
         self._activity_metric_table_model.removeRows(
@@ -567,6 +630,8 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
                 return
 
             column_item = MetricColumnListItem(clean_column_name)
+            # Set default number formatter; can always be changed
+            column_item.number_formatter = MetricColumn.default_formatter()
             self.add_column_item(column_item)
 
     def can_add_new_column(self) -> bool:
@@ -791,6 +856,10 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
 
         self.cbo_column_expression.blockSignals(False)
 
+        self.chk_format_number.blockSignals(True)
+        self.chk_format_number.setChecked(column_item.format_as_number)
+        self.chk_format_number.blockSignals(False)
+
     def clear_column_properties(self):
         """Clear widget values for column properties."""
         self.txt_column_name.clear()
@@ -812,6 +881,9 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         self.btn_delete_column.setEnabled(True)
         self.btn_column_up.setEnabled(True)
         self.btn_column_down.setEnabled(True)
+
+        # Close any open panels
+        self.column_properties_stack.acceptAllPanels()
 
         selected_columns = self.selected_column_items()
         if len(selected_columns) != 1:
@@ -876,6 +948,9 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
             self.cbo_column_alignment.currentIndex()
         )
         current_column.expression = self.cbo_column_expression.expression()
+        current_column.format_as_number = self.chk_format_number.isChecked()
+        if not current_column.format_as_number:
+            current_column.number_formatter = QgsFallbackNumericFormat()
 
         # Update column properties in activity metrics table
         self._activity_metric_table_model.update_column_properties(
