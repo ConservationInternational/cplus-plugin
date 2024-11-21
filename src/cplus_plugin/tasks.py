@@ -1415,6 +1415,10 @@ class ScenarioAnalysisTask(QgsTask):
                 masking_layers = activity.mask_paths
 
                 if len(masking_layers) < 1:
+                    self.log_message(
+                        f"Skipping activities masking "
+                        f"No mask layer(s) for activity {activity.name}"
+                    )
                     return False
                 if len(masking_layers) > 1:
                     initial_mask_layer = self.merge_vector_layers(masking_layers)
@@ -1447,6 +1451,21 @@ class ScenarioAnalysisTask(QgsTask):
                     return False
 
                 extent_layer = self.layer_extent(extent)
+
+                if extent_layer.crs() != initial_mask_layer.crs():
+                    self.log_message(
+                        "Skipping masking, the mask layers crs"
+                        " do not match the scenario crs."
+                    )
+                    return False
+
+                if not extent_layer.extent().intersects(initial_mask_layer.extent()):
+                    self.log_message(
+                        "Skipping masking, the mask layers extent"
+                        " and the scenario extent do not overlap."
+                    )
+                    return False
+
                 mask_layer = self.mask_layer_difference(
                     initial_mask_layer, extent_layer
                 )
@@ -1458,7 +1477,7 @@ class ScenarioAnalysisTask(QgsTask):
                     self.log_message(
                         f"Skipping activities masking "
                         f"the created difference mask layer {mask_layer.source()},"
-                        f" not a valid layer."
+                        f"is not a valid layer."
                     )
                     return False
                 if activity.path is None or activity.path == "":
@@ -1500,6 +1519,20 @@ class ScenarioAnalysisTask(QgsTask):
                 )
 
                 activity_layer = QgsRasterLayer(activity.path, "activity_layer")
+
+                if activity_layer.crs() != mask_layer.crs():
+                    self.log_message(
+                        f"Skipping masking, activity layer and"
+                        f" mask layer(s) have different CRS"
+                    )
+                    return False
+
+                if not activity_layer.extent().intersects(mask_layer.extent()):
+                    self.log_message(
+                        "Skipping masking, the extents of the activity layer "
+                        "and mask layers do not overlap."
+                    )
+                    return False
 
                 # Actual processing calculation
                 alg_params = {
