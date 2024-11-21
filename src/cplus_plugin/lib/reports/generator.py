@@ -11,6 +11,7 @@ import typing
 from qgis.core import (
     Qgis,
     QgsBasicNumericFormat,
+    QgsFallbackNumericFormat,
     QgsFeedback,
     QgsFillSymbol,
     QgsLayerTreeNode,
@@ -1759,7 +1760,15 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                             cell_value = tr("Metric eval error")
                             highlight_error = True
                         else:
-                            cell_value = self.format_number(result.value)
+                            # Apply appropriate formatting
+                            if isinstance(result.value, Number):
+                                formatter = mc.number_formatter
+                            else:
+                                formatter = QgsFallbackNumericFormat()
+
+                            cell_value = formatter.formatDouble(
+                                result.value, QgsNumericFormatContext()
+                            )
 
                     activity_cell = QgsTableCell(cell_value)
                     # Workaround of fetching alignment from the table column

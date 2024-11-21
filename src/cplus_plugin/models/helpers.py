@@ -7,10 +7,12 @@ import typing
 import uuid
 
 from qgis.core import (
+    QgsApplication,
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransform,
     QgsProject,
     QgsRasterLayer,
+    QgsReadWriteContext,
     QgsRectangle,
 )
 
@@ -49,6 +51,9 @@ from ..definitions.constants import (
     MULTI_ACTIVITY_IDENTIFIER_PROPERTY,
     NAME_ATTRIBUTE,
     NORMALIZED_NPV_ATTRIBUTE,
+    NUMBER_FORMATTER_ENABLED_ATTRIBUTE,
+    NUMBER_FORMATTER_ID_ATTRIBUTE,
+    NUMBER_FORMATTER_PROPS_ATTRIBUTE,
     PATH_ATTRIBUTE,
     PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
@@ -647,12 +652,22 @@ def metric_column_to_dict(metric_column: MetricColumn) -> dict:
     :returns: A dictionary containing attribute values of a metric column.
     :rtype: dict
     """
+    formatter_props = metric_column.number_formatter.configuration(
+        QgsReadWriteContext()
+    )
+    formatter_id = metric_column.number_formatter.id()
+    if formatter_id == "default":
+        formatter_props = {}
+
     return {
         NAME_ATTRIBUTE: metric_column.name,
         HEADER_ATTRIBUTE: metric_column.header,
         EXPRESSION_ATTRIBUTE: metric_column.expression,
         ALIGNMENT_ATTRIBUTE: metric_column.alignment,
         AUTO_CALCULATED_ATTRIBUTE: metric_column.auto_calculated,
+        NUMBER_FORMATTER_ENABLED_ATTRIBUTE: metric_column.format_as_number,
+        NUMBER_FORMATTER_ID_ATTRIBUTE: formatter_id,
+        NUMBER_FORMATTER_PROPS_ATTRIBUTE: formatter_props,
     }
 
 
@@ -666,12 +681,20 @@ def create_metric_column(metric_column_dict: dict) -> typing.Optional[MetricColu
     :returns: Metric column object or None if the deserialization failed.
     :rtype: MetricColumn
     """
+    number_formatter = QgsApplication.numericFormatRegistry().create(
+        metric_column_dict[NUMBER_FORMATTER_ID_ATTRIBUTE],
+        metric_column_dict[NUMBER_FORMATTER_PROPS_ATTRIBUTE],
+        QgsReadWriteContext(),
+    )
+
     return MetricColumn(
         metric_column_dict[NAME_ATTRIBUTE],
         metric_column_dict[HEADER_ATTRIBUTE],
         metric_column_dict[EXPRESSION_ATTRIBUTE],
         metric_column_dict[ALIGNMENT_ATTRIBUTE],
         metric_column_dict[AUTO_CALCULATED_ATTRIBUTE],
+        metric_column_dict[NUMBER_FORMATTER_ENABLED_ATTRIBUTE],
+        number_formatter,
     )
 
 

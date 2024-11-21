@@ -7,7 +7,13 @@ from enum import IntEnum
 import typing
 from uuid import UUID
 
-from qgis.core import QgsFeedback, QgsLayoutTableColumn
+from qgis.core import (
+    QgsBasicNumericFormat,
+    QgsFallbackNumericFormat,
+    QgsFeedback,
+    QgsLayoutTableColumn,
+    QgsNumericFormat,
+)
 from qgis.PyQt import QtCore
 
 from .base import Activity, Scenario, ScenarioResult
@@ -120,6 +126,8 @@ class MetricColumn:
     expression: str
     alignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignHCenter
     auto_calculated: bool = False
+    format_as_number: bool = True
+    number_formatter: QgsNumericFormat = QgsFallbackNumericFormat
 
     def to_qgs_column(self) -> QgsLayoutTableColumn:
         """Convenience function that converts this object to a
@@ -134,6 +142,53 @@ class MetricColumn:
         layout_column.setWidth(0)
 
         return layout_column
+
+    @staticmethod
+    def create_default_column(
+        name: str, header: str, expression: str = ""
+    ) -> "MetricColumn":
+        """Creates a default metric column.
+
+        :py:attr:`~format_as_number` is set to True and
+        :py:attr:`~number_formatter` is set to two decimals
+        places with a thousands' comma separator.
+
+        :param name: Unique column name.
+        :type name: str
+
+        :param header: Label that will be used in the
+        activity metrics table.
+        :type header: str
+
+        :param expression: Column expression. Default is an
+        empty string.
+        :type expression: str
+
+        :returns: Metric column object.
+        :rtype: MetricColumn
+        """
+        number_formatter = MetricColumn.default_formatter()
+
+        column = MetricColumn(name, header, expression)
+        column.number_formatter = number_formatter
+
+        return column
+
+    @staticmethod
+    def default_formatter() -> QgsNumericFormat:
+        """Returns a default number formatter with two
+        decimals places and a comma for thousands'
+        separator.
+
+        :returns: Basic number formatter.
+        :rtype: QgsNumericFormat
+        """
+        number_formatter = QgsBasicNumericFormat()
+        number_formatter.setThousandsSeparator(",")
+        number_formatter.setShowTrailingZeros(True)
+        number_formatter.setNumberDecimalPlaces(2)
+
+        return number_formatter
 
 
 class MetricType(IntEnum):
