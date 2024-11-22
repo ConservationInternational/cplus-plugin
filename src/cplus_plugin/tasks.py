@@ -1416,7 +1416,7 @@ class ScenarioAnalysisTask(QgsTask):
 
                 if len(masking_layers) < 1:
                     self.log_message(
-                        f"Skipping activity masking, "
+                        f"Skipping activities masking "
                         f"No mask layer(s) for activity {activity.name}"
                     )
                     continue
@@ -1428,10 +1428,10 @@ class ScenarioAnalysisTask(QgsTask):
 
                 if not initial_mask_layer.isValid():
                     self.log_message(
-                        f"Skipping activity masking "
+                        f"Skipping activities masking "
                         f"using layer {mask_layer_path}, not a valid layer."
                     )
-                    return False
+                    continue
 
                 # see https://qgis.org/pyqgis/master/core/Qgis.html#qgis.core.Qgis.GeometryType
                 if Qgis.versionInt() < 33000:
@@ -1445,7 +1445,7 @@ class ScenarioAnalysisTask(QgsTask):
 
                 if not layer_check:
                     self.log_message(
-                        f"Skipping activity masking "
+                        f"Skipping activities masking "
                         f"using layer {mask_layer_path}, not a polygon layer."
                     )
                     continue
@@ -1475,7 +1475,7 @@ class ScenarioAnalysisTask(QgsTask):
 
                 if not mask_layer.isValid():
                     self.log_message(
-                        f"Skipping activity masking "
+                        f"Skipping activities masking "
                         f"the created difference mask layer {mask_layer.source()},"
                         f"is not a valid layer."
                     )
