@@ -1416,10 +1416,10 @@ class ScenarioAnalysisTask(QgsTask):
 
                 if len(masking_layers) < 1:
                     self.log_message(
-                        f"Skipping activity masking, "
+                        f"Skipping activities masking "
                         f"No mask layer(s) for activity {activity.name}"
                     )
-                    continue
+                    return False
                 if len(masking_layers) > 1:
                     initial_mask_layer = self.merge_vector_layers(masking_layers)
                 else:
@@ -1428,7 +1428,7 @@ class ScenarioAnalysisTask(QgsTask):
 
                 if not initial_mask_layer.isValid():
                     self.log_message(
-                        f"Skipping activity masking "
+                        f"Skipping activities masking "
                         f"using layer {mask_layer_path}, not a valid layer."
                     )
                     return False
@@ -1445,10 +1445,10 @@ class ScenarioAnalysisTask(QgsTask):
 
                 if not layer_check:
                     self.log_message(
-                        f"Skipping activity masking "
+                        f"Skipping activities masking "
                         f"using layer {mask_layer_path}, not a polygon layer."
                     )
-                    continue
+                    return False
 
                 extent_layer = self.layer_extent(extent)
 
@@ -1457,14 +1457,14 @@ class ScenarioAnalysisTask(QgsTask):
                         "Skipping masking, the mask layers crs"
                         " do not match the scenario crs."
                     )
-                    continue
+                    return False
 
                 if not extent_layer.extent().intersects(initial_mask_layer.extent()):
                     self.log_message(
                         "Skipping masking, the mask layers extent"
                         " and the scenario extent do not overlap."
                     )
-                    continue
+                    return False
 
                 mask_layer = self.mask_layer_difference(
                     initial_mask_layer, extent_layer
@@ -1475,11 +1475,11 @@ class ScenarioAnalysisTask(QgsTask):
 
                 if not mask_layer.isValid():
                     self.log_message(
-                        f"Skipping activity masking "
+                        f"Skipping activities masking "
                         f"the created difference mask layer {mask_layer.source()},"
                         f"is not a valid layer."
                     )
-                    continue
+                    return False
                 if activity.path is None or activity.path == "":
                     if not self.processing_cancelled:
                         self.set_info_message(
@@ -1501,7 +1501,7 @@ class ScenarioAnalysisTask(QgsTask):
                         )
                         self.log_message(f"Processing has been cancelled by the user.")
 
-                    continue
+                    return False
 
                 masked_activities_directory = os.path.join(
                     self.scenario_directory, "final_masked_activities"
@@ -1525,14 +1525,14 @@ class ScenarioAnalysisTask(QgsTask):
                         f"Skipping masking, activity layer and"
                         f" mask layer(s) have different CRS"
                     )
-                    continue
+                    return False
 
                 if not activity_layer.extent().intersects(mask_layer.extent()):
                     self.log_message(
                         "Skipping masking, the extents of the activity layer "
                         "and mask layers do not overlap."
                     )
-                    continue
+                    return False
 
                 # Actual processing calculation
                 alg_params = {
