@@ -1416,7 +1416,7 @@ class ScenarioAnalysisTask(QgsTask):
 
                 if len(masking_layers) < 1:
                     self.log_message(
-                        f"Skipping activities masking "
+                        f"Skipping activity masking "
                         f"No mask layer(s) for activity {activity.name}"
                     )
                     continue
@@ -1428,7 +1428,7 @@ class ScenarioAnalysisTask(QgsTask):
 
                 if not initial_mask_layer.isValid():
                     self.log_message(
-                        f"Skipping activities masking "
+                        f"Skipping activity masking "
                         f"using layer {mask_layer_path}, not a valid layer."
                     )
                     continue
@@ -1445,7 +1445,7 @@ class ScenarioAnalysisTask(QgsTask):
 
                 if not layer_check:
                     self.log_message(
-                        f"Skipping activities masking "
+                        f"Skipping activity masking "
                         f"using layer {mask_layer_path}, not a polygon layer."
                     )
                     continue
@@ -1475,7 +1475,7 @@ class ScenarioAnalysisTask(QgsTask):
 
                 if not mask_layer.isValid():
                     self.log_message(
-                        f"Skipping activities masking "
+                        f"Skipping activity masking "
                         f"the created difference mask layer {mask_layer.source()},"
                         f"is not a valid layer."
                     )
@@ -1484,13 +1484,13 @@ class ScenarioAnalysisTask(QgsTask):
                     if not self.processing_cancelled:
                         self.set_info_message(
                             tr(
-                                f"Problem when masking activities, "
+                                f"Problem when masking activity, "
                                 f"there is no map layer for the activity {activity.name}"
                             ),
                             level=Qgis.Critical,
                         )
                         self.log_message(
-                            f"Problem when masking activities, "
+                            f"Problem when masking activity, "
                             f"there is no map layer for the activity {activity.name}"
                         )
                     else:
@@ -1546,7 +1546,7 @@ class ScenarioAnalysisTask(QgsTask):
                 }
 
                 self.log_message(
-                    f"Used parameters for masking the activities: {alg_params} \n"
+                    f"Used parameters for masking the activity {activity.name}: {alg_params} \n"
                 )
 
                 feedback = QgsProcessingFeedback()
