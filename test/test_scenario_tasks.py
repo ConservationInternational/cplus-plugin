@@ -7,7 +7,6 @@ import unittest
 
 import os
 import uuid
-import processing
 import datetime
 
 from processing.core.Processing import Processing
@@ -17,6 +16,7 @@ from qgis.core import Qgis, QgsRasterLayer, QgsVectorLayer, QgsWkbTypes
 from cplus_core.analysis import ScenarioAnalysisTask, TaskConfig
 from cplus_core.models.base import Scenario, NcsPathway, Activity
 from cplus_core.utils.helper import BaseFileUtils
+from cplus_plugin.conf import settings_manager, Settings
 
 
 class ScenarioAnalysisTaskTest(unittest.TestCase):
@@ -594,6 +594,18 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         self.assertEqual(stat.minimumValue, 5.0)
         self.assertEqual(stat.maximumValue, 27.0)
 
+    # coding=utf-8
+    """Tests for the plugin processing tasks
+
+    """
+
+    import unittest
+
+    import uuid
+    import processing
+
+    from processing.core.Processing import Processing
+
     def test_scenario_activities_masking(self):
         activities_layer_directory = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "data", "activities", "layers"
@@ -632,15 +644,30 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             weighted_activities=[],
             priority_layer_groups=[],
         )
-
-        analysis_task = ScenarioAnalysisTask(
-            "test_scenario_activities_masking",
-            "test_scenario_activities_masking_description",
-            [test_activity],
-            [],
-            test_extent,
-            scenario,
+        base_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "data",
+            "pathways",
         )
+        scenario_directory = os.path.join(
+            f"{base_dir}",
+            f'scenario_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+            f"{str(uuid.uuid4())[:4]}",
+        )
+        BaseFileUtils.create_new_dir(scenario_directory)
+
+        task_config = TaskConfig(
+            scenario,
+            [],
+            [],
+            [test_activity],
+            [test_activity],
+            pathway_suitability_index=1.0,
+            carbon_coefficient=1.0,
+            base_dir=scenario_directory,
+        )
+
+        analysis_task = ScenarioAnalysisTask(task_config)
 
         extent_string = (
             f"{test_extent.xMinimum()},{test_extent.xMaximum()},"
@@ -652,12 +679,6 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             os.path.dirname(os.path.abspath(__file__)),
             "data",
             "activities",
-        )
-
-        scenario_directory = os.path.join(
-            f"{base_dir}",
-            f'scenario_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
-            f"_{str(uuid.uuid4())[:4]}",
         )
 
         analysis_task.scenario_directory = scenario_directory
@@ -675,6 +696,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             [test_activity], extent_string, temporary_output=True
         )
 
+        print(results)
         self.assertTrue(results)
 
         self.assertIsInstance(results, bool)
