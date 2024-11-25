@@ -78,7 +78,7 @@ For example, if you are creating an NCS pathway for Agroforestry, you would sele
 
 Once you have entered all the required details, click on the `OK` button to add the NCS pathway.
 
-### Methode 2 add using online default
+### Method 2 add using online default
 
 In this method, you will add a new NCS pathway using online defaults. This option is available if you have an account on the Trends.Earth platform.
 
@@ -109,8 +109,6 @@ step 3. </blockquote>
 
 <blockquote> Be sure each NCS pathway's Carbon layers are set up correctly before setting up the activities in the steps that follow. Changes to the Carbon layers afterward will require the user to set up the activities again. </blockquote>
 
-## Activity
-
 Add pathways to an existing activity:
 
 - Select the activity to which a pathway should be added.
@@ -129,15 +127,61 @@ Add pathways to an existing activity:
 
 - Provide a **Name** and **Description**.
 
-- (optional) The user can provide an existing raster for the activity. Enable the **Map layer** to do this.
+- (Optional) **Activity Mask** excludes specific areas, restricting pathways to a targeted activity.
 
 - Click **OK**.
 
 - The new **activity** will be added.
 
-![CPLUS add implementation model](img/plugin-activity.png)
+![Edit Activity Mask](./img/plugin-step2-5.png)
 
 *Figure 4: Activity creator/editor*
+
+### Activity Mask 
+
+Activity Masking enables users to exclude specific areas from pathways. This functionality helps in refining analyses by isolating regions that are not relevant or need to be avoided during operations.
+
+#### How does the Activity Masking work?
+
+Imagine planning a journey or mapping an area, and you want to exclude specific region like restricted zones, private properties, or hazardous locations. This masking tool allows you to mark those areas, ensuring they are excluded from your plans or analysis. It is like instructing the system, avoid these areas, enabling you to focus on relevant zones and create more precise and efficient plans.
+
+* As you can see in the below image, shape 1️⃣, shape 2️⃣, and shape 3️⃣ are masks.
+
+    ![Activity Mask](./img/plugin-step2-6.png)
+
+* Here is the list of activities displayed without applying any mask. This means all areas are included, and no regions have been excluded or hidden from the analysis.
+
+    ![Without Activity Mask 1](./img/plugin-step2-7.png)
+
+    ![Without Activity Mask 2](./img/plugin-step2-8.png)
+    
+* After applying the mask, the specified area becomes restricted for that particular activity. This ensures that no operations or tasks are carried out within that area, effectively excluding it from the analysis. As shown in the image below, after applying the mask, the specified area is marked as restricted for that particular activity. This restriction ensures that no operations or tasks related to the specific activity take place within the designated area, effectively excluding it from the further analysis.
+
+    ![With Activity Mask 1](./img/plugin-step2-9.png)
+
+    ![With Activity Mask 2](./img/plugin-step2-10.png)
+
+#### How to add Activity Mask?
+
+- Click on the **Activity Mask** checkbox. This will allow to add the activity mask.
+
+- To add new activity mask click on the ![plus button](./img/plugin-step2-1.png) icon. This will open a `Select mask layer` pop up window. Select your desired 1️⃣ mask you want to add and then click on the 2️⃣ `Open` button.
+
+    ![Activity Mask Selection](./img/plugin-step2-11.png)
+
+- This process will add the mask on your activity.
+
+#### Edit Activity Mask
+
+- Select the activity mask and click on the ![Change Icon](./img/plugin-step2-rename-icon.png) icon. This will open a `Select mask layer` pop up window from where you choose your desired activity mask.
+
+#### Delete Activity Mask
+
+- Select the activity mask and click on the ![Delete Icon](./img/plugin-step2-delete-icon.png) icon. A confirmation dialog box will appear, allowing you to confirm the deletion of the selected activity mask or you can close the process.
+
+    ![Delete Activity Mask](./img/plugin-step2-12.png)
+
+### Ordering of the pixel values for the scenario output
 
 - Open the Style pixel value editor by clicking on the ![CPLUS add implementation model](img/button_pixels_order.png) button.
 
@@ -150,7 +194,7 @@ Add pathways to an existing activity:
 ![CPLUS style pixel value editor](img/style_pixel_value_editor.png)
 
 - The final step is to select each of the activities a user wants to include in the scenario run.
-- A user can exclude activities if they don't want to include them, even if the activity has pathways.
+- A user can exclude activities if they do not want to include them, even if the activity has pathways.
 
 ![CPLUS selected IMs](img/plugin-selected-activities.png)
 

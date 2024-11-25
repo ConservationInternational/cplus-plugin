@@ -16,9 +16,15 @@ license: This program is free software; you can redistribute it and/or modify it
 
 ![UI Step 3](img/manual-step3.png)
 
-- **Priority groups**: Users can define different priority groups to which Priority Weighted Layers (PWLs) can be assigned. These groups represent different categories or themes that contribute to the overall analysis.
+- **Priority groups**: Users can define different priority groups to which Priority Weighting Layers (PWLs) can be assigned. These groups represent different categories or themes that contribute to the overall analysis.
 
-- **Priority weighted layers (PWL)**: Users can assign importance values to each priority group by associating them with Priority Weighted Layers. These layers represent the spatial data layers or attributes that contribute to the analysis.
+- ![add button](img/symbologyAdd.svg): Add a new Priority group.
+
+- ![edit button](img/mActionToggleEditing.svg): Edit the selected Priority group.
+
+- ![remove button](img/symbologyRemove.svg): Remove the selected Priority group.
+
+- **Priority weighting layers (PWL)**: Users can assign importance values to each priority group by associating them with Priority Weighted Layers. These layers represent the spatial data layers or attributes that contribute to the analysis.
 
 - ![right arrow](img/cplus_right_arrow.svg): Remove the selected PWL from the priority group.
 
@@ -28,38 +34,9 @@ license: This program is free software; you can redistribute it and/or modify it
 
 - ![add button](img/symbologyAdd.svg): Add a new PWL.
 
-- ![remove button](img/symbologyRemove.svg): Remove the selected PWL.
-
 - ![edit button](img/mActionToggleEditing.svg): Edit the selected PWL.
 
-## Methods to create layers
-
-### Method 1: Create manually 
-
-- The following parameters need to be set:
-    - **Priority layer**: The layer that represents the priority layer.
-    - **Priority layer name**: A unique identifier for the priority layer.
-    - **Priority layer description**: A detailed description of the priority layer.
-
-- Click the `Assign activities` button to select activities to be associated with the priority layer.
-  
-![Priority Layer Dialog](img/step3-priority-layer-dialog-1.png)
-
-
-- Select the activities you want to be associated with the priority layer.
-
-- Click **OK**.
-
-![Multiple Item Selection](img/step3-multiple-item-selection.png)
-
-
-### Method 2: Create Online
-
-Click on the `Online defaults` to select the default priority layer from the available options.
-
-![Priority Layer Dialog](img/step3-priority-layer-dialog-2.png)
-
-- Then click **OK** to add the priority layer to PWL.
+- ![remove button](img/symbologyRemove.svg): Remove the selected PWL.
 
 ## Financial Priority Weighted Layer Editor dialog
 
@@ -99,40 +76,53 @@ The primary purpose of the NPV Tool is to help users prioritise activities by pr
 
 5. **Copy icon:** The user can copy the NPV by clicking on the copy icon available next to the net present value per hectare box.
 
-6. **Min/Max Normalization Range:** It is recommended to keep the `Use computed NPVs` check box enabled (default option). This ensures that the minimum and maximum normalisation values are synced and automatically updated based on user input. The min/max values will be based on enabled NPV parameters for activities. Disabled NPV parameters will be excluded from the computation.
+6. **User-defined NPV checkbox:** By enabling this checkbox we can manually set the `Net present value per hectare` value.
 
-7. **Remove Existing WPL Checkbox:** When the `Remove existing PWLs for disabled activity NPVs check box` is enabled, any previously created NPV PWLs will be deleted upon updating the NPVs.
+7. **Min/Max Normalisation Range:** It is recommended to keep the `Use computed NPVs` check box enabled (default option). This ensures that the minimum and maximum normalisation values are synced and automatically updated based on user input. The min/max values will be based on enabled NPV parameters for activities. Disabled NPV parameters will be excluded from the computation.
 
-8. **Update Button:** Click the `Update` button to show a dialog displaying the progress of creating/updating the NPVs.
+8. **Remove Existing WPL Checkbox:** When the `Remove existing PWLs for disabled activity NPVs check box` is enabled, any previously created NPV PWLs will be deleted upon updating the NPVs.
+
+9. **Cancel Button:** Click on the cancel button to cancel the adding NPV.
+
+10. **Update Button:** Click the `Update` button to show a dialog displaying the progress of creating/updating the NPVs.
 
     - When creating NPV PWL rasters, the corresponding PWLs will be created or updated in the list of PWLs.
     - The naming convention for these layers is `[activity name] NPV Norm`.
 
     ![Created NPV PWL](./img/step3-6.png)
 
-- An NPV layer, which is a constant raster containing the normalised value, will be created under the `{BASE_DIR}/priority_layers/npv` directory.
+    * An NPV layer, which is a constant raster containing the normalised value, will be created under the `{BASE_DIR}/priority_layers/npv` directory.
 
-- The extents are based on the user-defined extents specified in Step 1.
+    * The extents are based on the user-defined extents specified in Step 1.
 
 ![NPV directory](./img/step3-7.png)
 
-9. **Cancel Button:** Click on the cancel button to cancel the adding NPV.
+## Add new Priority Weighting Layer (PWL)
 
-## Priority Weighted Layers Editor dialog
+![Add New PWL](./img/step3-8.png)
 
-![UI Priority layer dialog](img/manual-priority-layer-dialog.png)
+1. ![add button](img/symbologyAdd.svg): Allows users to add a new Priority Weighting Layer.
 
-- **Priority layer**: Select the priority layer.
+### Methods to create layers
 
-- **Online Defaults**: Select priority layers from online defaults.
+#### Method 1: Create manually 
 
-- **Priority layer name**: A unique name for the priority layer.
+- The following parameters need to be set:
+    - **Priority layer**: The layer that represents the priority layer.
+    - **Priority layer name**: A unique identifier for the priority layer.
+    - **Priority layer description**: A detailed description of the priority layer.
 
-- **Priority layer description**: A detailed description for the priority layer.
+- Click the `Assign activities` button to select activities to be associated with the priority layer.
+  
+![Priority Layer Dialog](img/step3-priority-layer-dialog-1.png)
 
-- **Assign activities**: Selected activities associated with the priority layer.
 
-![UI Priority layer dialog](img/manual-pwl-selection.png)
+- Select the activities you want to be associated with the priority layer.
+
+- Click **OK**.
+
+![Multiple Item Selection](img/step3-multiple-item-selection.png)
+
 
 - List of activities a user can select. Multiple activities can be selected.
 
@@ -144,6 +134,17 @@ The primary purpose of the NPV Tool is to help users prioritise activities by pr
 
 - **Toggle Selection**: Switches each option from deselected to selected, or selected to deselected.
 
+#### Method 2: Create Online
+
+Click on the `Online defaults` to select the default priority layer from the available options.
+
+![Priority Layer Dialog](img/step3-priority-layer-dialog-2.png)
+
+- Then click **OK** to add the priority layer to PWL.
+
+
+
+<!-- 
 ## Progress dialog
 
 ![Progress dialog](img/manual-processing-dialog.png)
@@ -176,4 +177,4 @@ Overall, Step 3 provides users with tools to assign priorities and weights to di
 
 Click [here](step-4.md) to explore the step 4 section.
 
-Click [here](logs.md) to explore the log section.
+Click [here](logs.md) to explore the log section. -->
