@@ -277,14 +277,18 @@ def get_activity_npv_collection() -> ActivityNpvCollection:
 
 def get_metric_column() -> MetricColumn:
     """Returns a metric column object for testing."""
-    return MetricColumn(METRIC_COLUMN_NAME, "Financials (US$)", "activity_npv()")
+    return MetricColumn.create_default_column(
+        METRIC_COLUMN_NAME, "Financials (US$)", "activity_npv()"
+    )
 
 
 def get_metric_configuration() -> MetricConfiguration:
     """Creates a metric configuration object."""
-    area_metric_column = MetricColumn(
-        "Area", "Area (Ha)", "@cplus_activity_area", 4, True
+    area_metric_column = MetricColumn.create_default_column(
+        "Area", "Area (Ha)", "@cplus_activity_area"
     )
+    area_metric_column.auto_calculated = True
+    area_metric_column.format_as_number = True
 
     return MetricConfiguration(
         [
@@ -329,6 +333,17 @@ METRIC_CONFIGURATION_DICT = {
             "expression": "@cplus_activity_area",
             "alignment": 4,
             "auto_calculated": True,
+            "number_formatter_enabled": True,
+            "number_formatter_type_id": "basic",
+            "number_formatter_props": {
+                "decimal_separator": None,
+                "decimals": 5,
+                "rounding_type": 0,
+                "show_plus": False,
+                "show_thousand_separator": True,
+                "show_trailing_zeros": True,
+                "thousand_separator": None,
+            },
         },
         {
             "name": METRIC_COLUMN_NAME,
@@ -336,6 +351,17 @@ METRIC_CONFIGURATION_DICT = {
             "expression": "activity_npv()",
             "alignment": 4,
             "auto_calculated": False,
+            "number_formatter_enabled": True,
+            "number_formatter_type_id": "basic",
+            "number_formatter_props": {
+                "decimal_separator": None,
+                "decimals": 6,
+                "rounding_type": 0,
+                "show_plus": False,
+                "show_thousand_separator": True,
+                "show_trailing_zeros": True,
+                "thousand_separator": None,
+            },
         },
     ],
     "activity_metrics": [
@@ -348,7 +374,7 @@ METRIC_CONFIGURATION_DICT = {
             },
             {
                 "activity_identifier": ACTIVITY_UUID_STR,
-                "metric_identifier": "Financials",
+                "metric_identifier": METRIC_COLUMN_NAME,
                 "metric_type": 0,
                 "expression": "activity_npv()",
             },
