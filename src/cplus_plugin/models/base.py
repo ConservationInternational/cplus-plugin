@@ -402,6 +402,8 @@ class Activity(LayerModelComponent):
             del pathway["carbon_uuids"]
             pathways.append(NcsPathway(**pathway))
         activity_dict["pathways"] = pathways
+        # delete mask_uuids using pop
+        activity_dict.pop("mask_uuids", None)
         return Activity(**activity_dict)
 
     def __post_init__(self):
