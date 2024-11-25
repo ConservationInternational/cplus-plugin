@@ -21,6 +21,7 @@ from .definitions.constants import (
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
     NPV_COLLECTION_PROPERTY,
+    MASK_PATHS_SEGMENT,
     PATH_ATTRIBUTE,
     PATHWAYS_ATTRIBUTE,
     PIXEL_VALUE_ATTRIBUTE,
@@ -1300,6 +1301,7 @@ class SettingsManager(QtCore.QObject):
             priority_layers = activity.priority_layers
             layer_styles = activity.layer_styles
             style_pixel_value = activity.style_pixel_value
+            mask_paths = activity.mask_paths
 
             ncs_pathways = []
             for ncs in activity.pathways:
@@ -1307,6 +1309,7 @@ class SettingsManager(QtCore.QObject):
 
             activity = layer_component_to_dict(activity)
             activity[PRIORITY_LAYERS_SEGMENT] = priority_layers
+            activity[MASK_PATHS_SEGMENT] = mask_paths
             activity[PATHWAYS_ATTRIBUTE] = ncs_pathways
             activity[STYLE_ATTRIBUTE] = layer_styles
             activity[PIXEL_VALUE_ATTRIBUTE] = style_pixel_value

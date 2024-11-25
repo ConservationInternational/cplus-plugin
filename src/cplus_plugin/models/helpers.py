@@ -44,6 +44,7 @@ from ..definitions.constants import (
     MANUAL_NPV_ATTRIBUTE,
     METRIC_IDENTIFIER_PROPERTY,
     METRIC_TYPE_ATTRIBUTE,
+    MASK_PATHS_SEGMENT,
     NPV_MAPPINGS_ATTRIBUTE,
     MAX_VALUE_ATTRIBUTE,
     MIN_VALUE_ATTRIBUTE,
@@ -212,6 +213,9 @@ def create_activity(source_dict) -> typing.Union[Activity, None]:
     activity = create_layer_component(source_dict, Activity)
     if PRIORITY_LAYERS_SEGMENT in source_dict.keys():
         activity.priority_layers = source_dict[PRIORITY_LAYERS_SEGMENT]
+
+    if MASK_PATHS_SEGMENT in source_dict.keys():
+        activity.mask_paths = source_dict[MASK_PATHS_SEGMENT]
 
     # Set style
     if STYLE_ATTRIBUTE in source_dict.keys():

@@ -1,3 +1,15 @@
+---
+title: Conservation International
+summary:
+    - Jeremy Prior
+    - Ketan Bamniya
+date:
+some_url:
+copyright:
+contact:
+license: This program is free software; you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
+---
+
 # Settings
 
 To go to the settings the user can click on the plugin toolbar icon to reveal the option.
@@ -223,7 +235,7 @@ To go to the settings the user can click on the plugin toolbar icon to reveal th
 
 ![reporting settings](./img/setting-6.png)
 
-- *Organization*: (optional) Organization or institute name.
+- *Organisation*: (optional) Organisation or institute name.
 
 - *Contact email*: (optional) Contact email of the user.
 

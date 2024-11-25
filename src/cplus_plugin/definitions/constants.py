@@ -7,6 +7,7 @@ Definitions for application constants.
 NCS_PATHWAY_SEGMENT = "ncs_pathways"
 NCS_CARBON_SEGMENT = "ncs_carbon"
 PRIORITY_LAYERS_SEGMENT = "priority_layers"
+MASK_PATHS_SEGMENT = "mask_paths"
 NPV_PRIORITY_LAYERS_SEGMENT = "npv"
 COMPARISON_REPORT_SEGMENT = "comparison_reports"
 

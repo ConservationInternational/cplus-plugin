@@ -1,3 +1,15 @@
+---
+title: Conservation International
+summary:
+    - Jeremy Prior
+    - Ketan Bamniya
+date:
+some_url:
+copyright:
+contact:
+license: This program is free software; you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
+---
+
 # How to apply CPLUS settings?
 
 The CPLUS settings provide users with a customizable interface to configure various aspects of the platform according to their needs and preferences. Users can access the CPLUS settings through either the QGIS options or the CPLUS toolbar.
@@ -80,7 +92,7 @@ The `Sieve` function is a tool designed to filter raster data based on a specifi
 
 The sieve function is particularly useful in scenarios where a minimum spatial extent is necessary for practical or meaningful activities. For example:
 
--**Land Management:** Ensuring that only parcels of land larger than a hectare are considered for agricultural projects.
+- **Land Management:** Ensuring that only parcels of land larger than a hectare are considered for agricultural projects.
 
 - **Environmental Studies:** Filtering out small, insignificant areas from raster data to focus on larger, more relevant features.
 
@@ -192,7 +204,7 @@ Are you sure you want to delete the user xyz@gmail.com? All your tasks will be l
 
 Click on the `Reporting` option for reports-related settings. Under the Reporting settings, users can configure the information to be included in the generated reports. These settings include:
 
-- *Organization*: (optional) Organization or institute name.
+- *Organisation*: (optional) Organisation or institute name.
 
 - *Contact email*: (optional) Contact email of the user.
 

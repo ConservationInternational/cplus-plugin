@@ -1,3 +1,15 @@
+---
+title: Conservation International
+summary:
+    - Jeremy Prior
+    - Ketan Bamniya
+date:
+some_url:
+copyright:
+contact:
+license: This program is free software; you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
+---
+
 # CPLUS QGIS plugin
 
 ![CPLUS add implementation model](img/home-plugin-screenshot.png)
@@ -6,21 +18,21 @@
 
 The challenge of mitigating climate change and achieving global and national climate targets requires innovative and
 holistic approaches. In this pursuit, the Climate Positive Land Use Strategy (CPLUS) decision support tool has emerged
-as a crucial resource. CPLUS is a spatially-explicit roadmap designed to guide land-use planning strategies, utilizing
+as a crucial resource. CPLUS is a spatially-explicit roadmap designed to guide land-use planning strategies, utilising
 natural climate solutions to drive meaningful and sustainable change. The CPLUS decision support tool combines
-open-source technology, localized data sets, and modelled products to empower policymakers, land managers,
+open-source technology, localised data sets, and modelled products to empower policymakers, land managers,
 and stakeholders in making informed decisions. By integrating spatial information, such as land cover, carbon stocks,
 and potential for carbon sequestration, CPLUS enables the identification of key areas for intervention and investment.
-By prioritizing these nature-based interventions, CPLUS seeks to harness the power of ecosystems and optimize their
+By prioritising these nature-based interventions, CPLUS seeks to harness the power of ecosystems and optimise their
 climate mitigation potential.
 
 One of the distinguishing features of CPLUS is its ability to address both global and national climate targets.
 While global climate targets provide a broad framework for action, national targets require context-specific strategies
 tailored to the unique characteristics of each country. The CPLUS decision support tool considers these diverse factors
 and assists in designing land-use planning strategies that align with national commitments while contributing to global
-climate goals. Furthermore, CPLUS recognizes that effective land-use planning involves collaboration and engagement
+climate goals. Furthermore, CPLUS recognises that effective land-use planning involves collaboration and engagement
 among various stakeholders. It fosters dialogue and cooperation between governments, local communities, indigenous
-groups, conservation organizations, and private entities, facilitating the development of inclusive and equitable
+groups, conservation organisations, and private entities, facilitating the development of inclusive and equitable
 solutions. By involving diverse perspectives and expertise, CPLUS ensures that the decision-making process is
 participatory and informed by local knowledge.
 
