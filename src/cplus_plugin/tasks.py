@@ -1347,6 +1347,20 @@ class ScenarioAnalysisTask(QgsTask):
 
                 activity_layer = QgsRasterLayer(activity.path, "activity_layer")
 
+                if activity_layer.crs() != mask_layer.crs():
+                    self.log_message(
+                        f"Skipping masking, activity layer and"
+                        f" mask layer(s) have different CRS"
+                    )
+                    continue
+
+                if not activity_layer.extent().intersects(mask_layer.extent()):
+                    self.log_message(
+                        "Skipping masking, the extents of the activity layer "
+                        "and mask layer(s) do not overlap."
+                    )
+                    continue
+
                 # Actual processing calculation
                 alg_params = {
                     "INPUT": activity.path,
@@ -1359,7 +1373,8 @@ class ScenarioAnalysisTask(QgsTask):
                 }
 
                 self.log_message(
-                    f"Used parameters for masking the activities: {alg_params} \n"
+                    f"Used parameters for masking activity {activity.name} "
+                    f"using project mask layers: {alg_params} \n"
                 )
 
                 feedback = QgsProcessingFeedback()
@@ -1546,7 +1561,8 @@ class ScenarioAnalysisTask(QgsTask):
                 }
 
                 self.log_message(
-                    f"Used parameters for masking the activity {activity.name}: {alg_params} \n"
+                    f"Used parameters for masking the activity {activity.name}"
+                    f" using activity respective mask layer(s): {alg_params} \n"
                 )
 
                 feedback = QgsProcessingFeedback()
