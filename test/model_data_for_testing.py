@@ -277,14 +277,22 @@ def get_activity_npv_collection() -> ActivityNpvCollection:
 
 def get_metric_column() -> MetricColumn:
     """Returns a metric column object for testing."""
-    return MetricColumn(METRIC_COLUMN_NAME, "Financials (US$)", "activity_npv()")
+    custom_job_metric_column = MetricColumn.create_default_column(
+        METRIC_COLUMN_NAME, "Custom Job", "@cplus_activity_area * 2"
+    )
+    custom_job_metric_column.auto_calculated = False
+    custom_job_metric_column.format_as_number = True
+
+    return custom_job_metric_column
 
 
 def get_metric_configuration() -> MetricConfiguration:
     """Creates a metric configuration object."""
-    area_metric_column = MetricColumn(
-        "Area", "Area (Ha)", "@cplus_activity_area", 4, True
+    area_metric_column = MetricColumn.create_default_column(
+        "Area", "Area (Ha)", "@cplus_activity_area"
     )
+    area_metric_column.auto_calculated = True
+    area_metric_column.format_as_number = True
 
     return MetricConfiguration(
         [
@@ -303,7 +311,7 @@ def get_metric_configuration() -> MetricConfiguration:
                     get_activity(),
                     get_metric_column(),
                     MetricType.COLUMN,
-                    "activity_npv()",
+                    "@cplus_activity_area * 2",
                 ),
             ]
         ],
