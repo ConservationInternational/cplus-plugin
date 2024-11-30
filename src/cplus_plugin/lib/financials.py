@@ -196,31 +196,3 @@ def create_npv_pwls(
         multi_step_feedback.setCurrentStep(current_step)
 
     return results
-
-
-def calculate_activity_npv(activity_id: str, activity_area: float) -> float:
-    """Calculates the NPV of an activity.
-
-    The NPV per hectare is derived from the saved value
-    in the settings defined through the NPV PWL Manager.
-
-    :param activity_id: The ID of the specific activity. The
-    function will check whether the NPV rate had been defined.
-    :type activity_id: str
-
-    :param activity_area: The area of an activity in hectares.
-    :type activity_area: float
-
-    :returns: Returns the total NPV for an activity
-    or -1.0 if the NPV rate has not yet been specified in settings.
-    :rtype: float
-    """
-    npv_collection = settings_manager.get_npv_collection()
-    if npv_collection is None:
-        return -1.0
-
-    activity_npv = npv_collection.activity_npv(activity_id)
-    if activity_npv is None:
-        return -1.0
-
-    return activity_npv.params.absolute_npv * activity_area
