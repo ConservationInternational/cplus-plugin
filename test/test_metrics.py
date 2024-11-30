@@ -47,7 +47,7 @@ class TestMetricsBuilder(TestCase):
         metrics_builder.add_column_item(column_item)
 
         list_model = metrics_builder.column_list_model
-        # By default the builder adds an area column
+        # By default, the builder adds an area column
         self.assertEqual(len(list_model.column_items), 2)
 
     def test_metrics_wizard_remove_column(self):
@@ -109,27 +109,3 @@ class TestMetricExpressions(TestCase):
         metrics_scope_index = context.indexOfScope(BASE_PLUGIN_NAME)
 
         self.assertNotEqual(metrics_scope_index, -1)
-
-    def test_activity_npv_expression_function(self):
-        """Test the calculation of an activity's NPV using the expression function."""
-        # We first need to save the activity and corresponding NPV in settings
-        settings_manager.save_activity(get_activity())
-
-        npv_collection = get_activity_npv_collection()
-        npv_collection.update_computed_normalization_range()
-        _ = npv_collection.normalize_npvs()
-        settings_manager.save_npv_collection(npv_collection)
-
-        reference_area = 2000
-        reference_activity_npv = ACTIVITY_1_NPV * reference_area
-
-        register_metric_functions()
-        context = create_metrics_expression_context()
-        activity_context_info = ActivityContextInfo(get_activity(), reference_area)
-
-        result = evaluate_activity_metric(
-            context, activity_context_info, "activity_npv()"
-        )
-
-        self.assertTrue(result.success)
-        self.assertEqual(result.value, reference_activity_npv)

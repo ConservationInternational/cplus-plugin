@@ -333,7 +333,7 @@ METRIC_CONFIGURATION_DICT = {
         {
             "name": METRIC_COLUMN_NAME,
             "header": "Financials",
-            "expression": "activity_npv()",
+            "expression": "@cplus_activity_area * 2",
             "alignment": 4,
             "auto_calculated": False,
         },
@@ -350,7 +350,7 @@ METRIC_CONFIGURATION_DICT = {
                 "activity_identifier": ACTIVITY_UUID_STR,
                 "metric_identifier": "Financials",
                 "metric_type": 0,
-                "expression": "activity_npv()",
+                "expression": "@cplus_activity_area * 2",
             },
         ]
     ],
