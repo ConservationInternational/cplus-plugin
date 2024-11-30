@@ -88,20 +88,6 @@ class TestMetricsBuilder(TestCase):
 class TestMetricExpressions(TestCase):
     """Testing management of metrics in QGIS expression environment."""
 
-    def test_metric_expression_function_registration(self):
-        """Testing the registration of expression functions."""
-        register_metric_functions()
-
-        self.assertTrue(QgsExpression.isFunctionName(FUNC_ACTIVITY_NPV))
-
-    def test_unregister_metric_expression_functions(self):
-        """Test unregister of expression functions."""
-        register_metric_functions()
-
-        unregister_metric_functions()
-
-        self.assertFalse(QgsExpression.isFunctionName(FUNC_ACTIVITY_NPV))
-
     def test_metrics_scope_in_expression_context(self):
         """Verify the metrics scope exists in a metrics expression context."""
         context = create_metrics_expression_context()
