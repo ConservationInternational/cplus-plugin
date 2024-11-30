@@ -16,7 +16,6 @@ from cplus_plugin.gui.metrics_builder_model import MetricColumnListItem
 from cplus_plugin.lib.reports.metrics import (
     create_metrics_expression_context,
     evaluate_activity_metric,
-    FUNC_ACTIVITY_NPV,
     register_metric_functions,
     unregister_metric_functions,
 )
