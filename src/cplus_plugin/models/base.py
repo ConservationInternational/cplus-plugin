@@ -277,11 +277,41 @@ class PriorityLayer(BaseModelComponent):
         return self.layer_uuid is not None
 
 
+class NcsPathwayType(IntEnum):
+    """Type of NCS pathway."""
+
+    PROTECTION = 0
+    RESTORATION = 1
+    MANAGEMENT = 2
+    UNDEFINED = 99
+
+    @staticmethod
+    def from_int(int_enum: int) -> "NcsPathwayType":
+        """Creates an enum from the corresponding int equivalent.
+
+        :param int_enum: Integer representing the NCS pathway type.
+        :type int_enum: int
+
+        :returns: NCS pathway type enum corresponding to the given
+        integer else unknown if not found.
+        :rtype: NcsPathwayType
+        """
+        if int_enum == 0:
+            return NcsPathwayType.PROTECTION
+        elif int_enum == 1:
+            return NcsPathwayType.RESTORATION
+        elif int_enum == 2:
+            return NcsPathwayType.MANAGEMENT
+        else:
+            return NcsPathwayType.UNDEFINED
+
+
 @dataclasses.dataclass
 class NcsPathway(LayerModelComponent):
     """Contains information about an NCS pathway layer."""
 
     carbon_paths: typing.List[str] = dataclasses.field(default_factory=list)
+    pathway_type: NcsPathwayType = NcsPathwayType.UNDEFINED
 
     def __eq__(self, other: "NcsPathway") -> bool:
         """Test equality of NcsPathway object with another

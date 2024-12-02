@@ -16,7 +16,7 @@ from qgis.PyQt.uic import loadUiType
 from .carbon_item_model import CarbonLayerItem, CarbonLayerModel
 from ..conf import Settings, settings_manager
 from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
-from ..models.base import LayerType, NcsPathway
+from ..models.base import LayerType, NcsPathway, NcsPathwayType
 from ..utils import FileUtils, open_documentation, tr, log
 
 WidgetUi, _ = loadUiType(
@@ -87,6 +87,17 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             )
             self.btn_add_default_carbon.menu().addAction(action)
 
+        self._pathway_type_group = QtWidgets.QButtonGroup(self)
+        self._pathway_type_group.addButton(
+            self.rb_protection, NcsPathwayType.PROTECTION.value
+        )
+        self._pathway_type_group.addButton(
+            self.rb_restoration, NcsPathwayType.RESTORATION.value
+        )
+        self._pathway_type_group.addButton(
+            self.rb_management, NcsPathwayType.MANAGEMENT.value
+        )
+
         self._excluded_names = excluded_names
         if excluded_names is None:
             self._excluded_names = []
@@ -147,6 +158,13 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self.txt_name.setText(self._ncs_pathway.name)
         self.txt_description.setPlainText(self._ncs_pathway.description)
+
+        if self._ncs_pathway.pathway_type == NcsPathwayType.PROTECTION:
+            self.rb_protection.setChecked(True)
+        if self._ncs_pathway.pathway_type == NcsPathwayType.RESTORATION:
+            self.rb_restoration.setChecked(True)
+        if self._ncs_pathway.pathway_type == NcsPathwayType.MANAGEMENT:
+            self.rb_management.setChecked(True)
 
         if self._layer:
             layer_path = self._layer.source()
@@ -210,6 +228,11 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._show_warning_message(msg)
             status = False
 
+        if self._pathway_type_group.checkedId() == -1:
+            msg = tr("The NCS pathway type is not specified.")
+            self._show_warning_message(msg)
+            status = False
+
         layer = self._get_selected_map_layer()
         default_layer = self._get_selected_default_layer()
         if layer is None and default_layer is None:
@@ -241,6 +264,14 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             # Update mode
             self._ncs_pathway.name = self.txt_name.text()
             self._ncs_pathway.description = self.txt_description.toPlainText()
+
+        selected_pathway_type_id = self._pathway_type_group.checkedId()
+        if selected_pathway_type_id == NcsPathwayType.PROTECTION.value:
+            self._ncs_pathway.pathway_type = NcsPathwayType.PROTECTION
+        elif selected_pathway_type_id == NcsPathwayType.RESTORATION.value:
+            self._ncs_pathway.pathway_type = NcsPathwayType.RESTORATION
+        elif selected_pathway_type_id == NcsPathwayType.MANAGEMENT.value:
+            self._ncs_pathway.pathway_type = NcsPathwayType.MANAGEMENT
 
         self._ncs_pathway.layer_type = LayerType.RASTER
         default_layer = self._get_selected_default_layer()
