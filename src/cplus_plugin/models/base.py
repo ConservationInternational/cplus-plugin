@@ -5,6 +5,7 @@
 
 import dataclasses
 import datetime
+import enum
 from enum import Enum, IntEnum
 import os.path
 import typing
@@ -693,3 +694,29 @@ class ScenarioResult:
     analysis_output: typing.Dict = None
     output_layer_name: str = ""
     scenario_directory: str = ""
+
+
+class DataSourceType(IntEnum):
+    """Specifies whether a data source is from a local or online source."""
+
+    LOCAL = 0
+    ONLINE = 1
+    UNDEFINED = -1
+
+    @staticmethod
+    def from_int(int_enum: int) -> "DataSourceType":
+        """Creates an enum from the corresponding int equivalent.
+
+        :param int_enum: Integer representing the data source type.
+        :type int_enum: int
+
+        :returns: Data source type enum corresponding to the given
+        integer else unknown if not found.
+        :rtype: DataSourceType
+        """
+        if int_enum == 0:
+            return DataSourceType.LOCAL
+        elif int_enum == 1:
+            return DataSourceType.ONLINE
+        else:
+            return DataSourceType.UNDEFINED

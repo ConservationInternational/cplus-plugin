@@ -31,6 +31,7 @@ from ...conf import (
     settings_manager,
     Settings,
 )
+from ...models.base import DataSourceType
 from ...definitions.constants import CPLUS_OPTIONS_KEY
 from ...definitions.defaults import (
     GENERAL_OPTIONS_TITLE,
@@ -508,6 +509,33 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.pushButton_forgot_pwd.clicked.connect(self.forgot_pwd)
         self.pushButton_delete_user.clicked.connect(self.delete)
 
+        # Irrecoverable carbon
+        self.gb_ic_reference_layer.toggled.connect(
+            self._on_irrecoverable_group_box_toggled
+        )
+
+        self._irrecoverable_group = QtWidgets.QButtonGroup(self)
+        self._irrecoverable_group.addButton(self.rb_local, DataSourceType.LOCAL.value)
+        self._irrecoverable_group.addButton(self.rb_online, DataSourceType.ONLINE.value)
+        self._irrecoverable_group.idToggled.connect(
+            self._on_irrecoverable_button_group_toggled
+        )
+
+        self.fw_irrecoverable_carbon.setDialogTitle(
+            tr("Select Irrecoverable Carbon Dataset")
+        )
+        self.fw_irrecoverable_carbon.setRelativeStorage(
+            QgsFileWidget.RelativeStorage.Absolute
+        )
+        self.fw_irrecoverable_carbon.setStorageMode(QgsFileWidget.StorageMode.GetFile)
+
+        self.cbo_irrecoverable_carbon.layerChanged.connect(
+            self._on_irrecoverable_carbon_layer_changed
+        )
+
+        self.lbl_url_tip.setPixmap(FileUtils.get_pixmap("info_green.svg"))
+        self.lbl_url_tip.setScaledContents(True)
+
         # Load gui default value from settings
         auth_id = settings.value("cplusplugin/auth")
         if auth_id is not None:
@@ -645,6 +673,25 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
                 "CPLUS - Base directory not found: ", base_dir_path
             )
 
+        # Irrecoverable carbon
+        if self.rb_local.isChecked():
+            settings_manager.set_value(
+                Settings.IRRECOVERABLE_CARBON_SOURCE_TYPE, DataSourceType.LOCAL.value
+            )
+            settings_manager.set_value(
+                Settings.IRRECOVERABLE_CARBON_SOURCE,
+                self.fw_irrecoverable_carbon.filePath(),
+            )
+        elif self.rb_online.isChecked():
+            settings_manager.set_value(
+                Settings.IRRECOVERABLE_CARBON_SOURCE_TYPE, DataSourceType.ONLINE.value
+            )
+
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_ENABLED,
+            self.gb_ic_reference_layer.isChecked(),
+        )
+
     def load_settings(self) -> None:
         """Loads the settings and displays it in the options UI"""
         # Advanced settings
@@ -713,6 +760,27 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         if len(mask_paths_list) > 0:
             self.mask_layers_changed()
 
+        # Irrecoverable carbon
+        irrecoverable_carbon_enabled = settings_manager.get_value(
+            Settings.IRRECOVERABLE_CARBON_ENABLED, default=False
+        )
+        if irrecoverable_carbon_enabled:
+            self.gb_ic_reference_layer.setChecked(True)
+
+        self.fw_irrecoverable_carbon.setFilePath(
+            settings_manager.get_value(Settings.IRRECOVERABLE_CARBON_SOURCE, default="")
+        )
+
+        source_type_int = settings_manager.get_value(
+            Settings.IRRECOVERABLE_CARBON_SOURCE_TYPE,
+            default=DataSourceType.UNDEFINED.value,
+            setting_type=int,
+        )
+        if source_type_int == DataSourceType.LOCAL.value:
+            self.sw_irrecoverable_carbon.setCurrentIndex(0)
+        elif source_type_int == DataSourceType.ONLINE.value:
+            self.sw_irrecoverable_carbon.setCurrentIndex(1)
+
     def showEvent(self, event: QShowEvent) -> None:
         """Show event being called. This will display the plugin settings.
         The stored/saved settings will be loaded.
@@ -732,6 +800,42 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         """
 
         super().closeEvent(event)
+
+    def _on_irrecoverable_button_group_toggled(self, button_id: int, toggled: bool):
+        """Slot raised when a button in the irrecoverable
+        button group has been toggled.
+
+        :param button_id: Button identifier.
+        :type button_id: int
+
+        :param toggled: True if the button is checked else False
+        if unchecked.
+        :type toggled: bool
+        """
+        if button_id == DataSourceType.LOCAL.value and toggled:
+            self.sw_irrecoverable_carbon.setCurrentIndex(0)
+        elif button_id == DataSourceType.ONLINE.value and toggled:
+            self.sw_irrecoverable_carbon.setCurrentIndex(1)
+
+    def _on_irrecoverable_group_box_toggled(self, toggled: bool):
+        """Slot raised when the irrecoverable group box has
+        been toggled.
+
+        :param toggled: True if the button is checked else
+        False if unchecked.
+        :type toggled: bool
+        """
+        settings_manager.set_value(Settings.IRRECOVERABLE_CARBON_ENABLED, toggled)
+
+    def _on_irrecoverable_carbon_layer_changed(self, layer: qgis.core.QgsMapLayer):
+        """Sets the file path of the currently selected irrecoverable
+        layer in the corresponding file input widget.
+
+        :param layer: Currently selected layer.
+        :type layer: QgsMapLayer
+        """
+        if layer is not None:
+            self.fw_irrecoverable_carbon.setFilePath(layer.source())
 
     def _on_add_mask_layer(self, activated: bool):
         """Slot raised to add a mask layer."""
@@ -806,7 +910,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         layer_path, _ = QFileDialog.getOpenFileName(
             self,
-            self.tr("Select mask Layer"),
+            self.tr("Select Mask Layer"),
             layer_dir,
             f"{filter_tr} (*.*)",
             options=QFileDialog.DontResolveSymlinks,
