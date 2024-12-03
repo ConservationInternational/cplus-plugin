@@ -781,6 +781,38 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         elif source_type_int == DataSourceType.ONLINE.value:
             self.sw_irrecoverable_carbon.setCurrentIndex(1)
 
+        self.validate_current_irrecoverable_data_source()
+
+    def validate_current_irrecoverable_data_source(self):
+        """Checks if the currently selected irrecoverable data source
+        is valid.
+        """
+        self.message_bar.clearWidgets()
+        if self.rb_local.isChecked():
+            local_path = self.fw_irrecoverable_carbon.filePath()
+            if not os.path.exists(local_path):
+                tr_msg = tr("CPLUS - Local irrecoverable carbon dataset not found")
+                self.message_bar.pushWarning(tr_msg, local_path)
+        elif self.rb_online.isChecked():
+            dataset_url = self.txt_ic_url.text()
+            if not dataset_url:
+                self.message_bar.pushWarning(
+                    tr("CPLUS - Irrecoverable carbon dataset"), tr("URL not defined")
+                )
+
+            url_checker = QtCore.QUrl(dataset_url, QtCore.QUrl.StrictMode)
+            if url_checker.isLocalFile():
+                self.message_bar.pushWarning(
+                    tr("CPLUS - Irrecoverable carbon dataset"),
+                    tr("Invalid URL referencing a local file"),
+                )
+            else:
+                if not url_checker.isValid():
+                    self.message_bar.pushWarning(
+                        tr("CPLUS - Irrecoverable carbon dataset"),
+                        tr("URL is invalid."),
+                    )
+
     def showEvent(self, event: QShowEvent) -> None:
         """Show event being called. This will display the plugin settings.
         The stored/saved settings will be loaded.
