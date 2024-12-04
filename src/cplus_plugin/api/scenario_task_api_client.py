@@ -410,10 +410,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
                 }
             )
 
-        self.log_message(f"files_to_upload: {json.dumps(files_to_upload)}")
         files_to_upload.update(self.check_layer_uploaded(items_to_check))
-        self.log_message(f"files_to_upload: {json.dumps(files_to_upload)}")
-
         if self.processing_cancelled:
             return False
 
@@ -611,7 +608,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
                 new_priority_layers.append(priority_layer)
 
             mask_uuids = []
-            self.log_message(json.dumps(activity["mask_paths"]))
             for mask_path in activity["mask_paths"]:
                 mask_path = mask_path.replace(".shp", ".zip")
                 if mask_path.startswith("cplus://"):
@@ -622,9 +618,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
                         mask_uuids.append(
                             self.path_to_layer_mapping.get(mask_path)["uuid"]
                         )
-            self.log_message("====================================")
-            self.log_message(json.dumps(self.path_to_layer_mapping))
-            self.log_message(json.dumps(mask_uuids))
             activity["priority_layers"] = new_priority_layers
             activity["mask_uuids"] = mask_uuids
             activity["mask_paths"] = []
