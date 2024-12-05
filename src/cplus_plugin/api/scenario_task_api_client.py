@@ -319,6 +319,13 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             {"progress_text": "Checking layers to be uploaded", "progress": 0}
         )
         masking_layers = self.get_masking_layers()
+        masking_layers.extend(
+            [
+                mask_path
+                for activity in self.analysis_activities
+                for mask_path in activity.mask_paths
+            ]
+        )
 
         # 2 comes from sieve_mask_layer and snap layer
         check_counts = len(self.analysis_activities) + 2 + len(masking_layers)
@@ -404,7 +411,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             )
 
         files_to_upload.update(self.check_layer_uploaded(items_to_check))
-
         if self.processing_cancelled:
             return False
 
