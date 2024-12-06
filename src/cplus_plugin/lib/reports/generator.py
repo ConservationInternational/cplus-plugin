@@ -1762,13 +1762,11 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                         else:
                             # Apply appropriate formatting
                             if isinstance(result.value, Number):
-                                formatter = mc.number_formatter
+                                cell_value = mc.number_formatter.formatDouble(
+                                    result.value, QgsNumericFormatContext()
+                                )
                             else:
-                                formatter = QgsFallbackNumericFormat()
-
-                            cell_value = formatter.formatDouble(
-                                result.value, QgsNumericFormatContext()
-                            )
+                                cell_value = result.value
 
                     activity_cell = QgsTableCell(cell_value)
                     # Workaround of fetching alignment from the table column
