@@ -1762,8 +1762,12 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                         else:
                             # Apply appropriate formatting
                             if isinstance(result.value, Number):
-                                cell_value = mc.number_formatter.formatDouble(
-                                    result.value, QgsNumericFormatContext()
+                                formatter = mc.number_formatter
+                                if formatter is None:
+                                    formatter = QgsFallbackNumericFormat()
+
+                                cell_value = formatter.formatDouble(
+                                    float(result.value), QgsNumericFormatContext()
                                 )
                             else:
                                 cell_value = result.value
