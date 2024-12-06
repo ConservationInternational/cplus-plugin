@@ -16,7 +16,6 @@ import os.path
 
 from qgis.core import (
     QgsApplication,
-    QgsColorBrewerColorRamp,
     QgsMasterLayoutInterface,
     QgsSettings,
 )
@@ -33,19 +32,6 @@ from qgis.PyQt.QtWidgets import QToolButton
 from qgis.PyQt.QtWidgets import QMenu
 
 from .conf import Settings, settings_manager
-from .definitions.constants import (
-    CARBON_PATHS_ATTRIBUTE,
-    COLOR_RAMP_PROPERTIES_ATTRIBUTE,
-    COLOR_RAMP_TYPE_ATTRIBUTE,
-    ACTIVITY_LAYER_STYLE_ATTRIBUTE,
-    NCS_CARBON_SEGMENT,
-    NCS_PATHWAY_SEGMENT,
-    PATH_ATTRIBUTE,
-    PIXEL_VALUE_ATTRIBUTE,
-    STYLE_ATTRIBUTE,
-    USER_DEFINED_ATTRIBUTE,
-    UUID_ATTRIBUTE,
-)
 from .definitions.defaults import (
     ABOUT_DOCUMENTATION_SITE,
     CI_LOGO_PATH,
@@ -63,6 +49,7 @@ from .definitions.defaults import (
 from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
 from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
 from .lib.reports.manager import report_manager
+from .lib.reports.metrics import register_metric_functions, unregister_metric_functions
 from .gui.settings.cplus_options import CplusOptionsFactory
 from .gui.settings.log_options import LogOptionsFactory
 from .gui.settings.report_options import ReportOptionsFactory
@@ -274,6 +261,10 @@ class QgisCplus:
         # Install report font
         self.install_report_font()
 
+        # Register metric functions. Note that these are
+        # scoped for specific contexts.
+        register_metric_functions()
+
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin widget is closed."""
         self.pluginIsActive = False
@@ -290,6 +281,9 @@ class QgisCplus:
             self.iface.unregisterOptionsWidgetFactory(self.cplus_options_factory)
             self.iface.unregisterOptionsWidgetFactory(self.reports_options_factory)
             self.iface.unregisterOptionsWidgetFactory(self.log_options_factory)
+
+            # Unregister metric functions
+            unregister_metric_functions()
 
         except Exception as e:
             log(str(e), info=False)

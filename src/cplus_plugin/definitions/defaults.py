@@ -35,7 +35,9 @@ ABOUT_DOCUMENTATION_SITE = (
 )
 REPORT_DOCUMENTATION = "https://conservationinternational.github.io/cplus-plugin/user/guide/#report-generating"
 
-OPTIONS_TITLE = "CPLUS"  # Title in the QGIS settings
+BASE_PLUGIN_NAME = "CPLUS"
+# Title in the QGIS settings. Leave it like this for now incase title needs to change
+OPTIONS_TITLE = BASE_PLUGIN_NAME
 GENERAL_OPTIONS_TITLE = "General"
 REPORT_OPTIONS_TITLE = "Reporting"
 LOG_OPTIONS_TITLE = "Logs"
@@ -137,7 +139,8 @@ CI_LOGO_PATH = str(
 )
 
 # Default template file name
-SCENARIO_ANALYSIS_TEMPLATE_NAME = "scenario_analysis.qpt"
+SCENARIO_ANALYSIS_TEMPLATE_NAME = "scenario_analysis_default.qpt"
+SCENARIO_ANALYSIS_METRICS_TEMPLATE_NAME = "scenario_analysis_metrics.qpt"
 SCENARIO_COMPARISON_TEMPLATE_NAME = "scenario_comparison.qpt"
 
 # Minimum sizes (in mm) for repeat items in the template
@@ -155,6 +158,15 @@ MAX_ACTIVITY_DESCRIPTION_LENGTH = 225
 ACTIVITY_AREA_TABLE_ID = "activity_area_table"
 PRIORITY_GROUP_WEIGHT_TABLE_ID = "assigned_weights_table"
 AREA_COMPARISON_TABLE_ID = "comparison_table"
+
+# IDs for items in the metrics report template
+METRICS_HEADER_BACKGROUND = "metrics_header_background"
+METRICS_FOOTER_BACKGROUND = "metrics_footer_background"
+METRICS_TABLE_HEADER = "metrics_table_header"
+METRICS_LOGO = "metrics_ci_logo"
+METRICS_PAGE_NUMBER = "metrics_page_number"
+METRICS_ACCREDITATION = "metrics_accreditation_text"
+
 
 # Initiliazing the plugin default data as found in the data directory
 priority_layer_path = (

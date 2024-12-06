@@ -17,7 +17,7 @@ from qgis.PyQt import QtCore
 from qgis.core import QgsSettings
 
 from .definitions.constants import (
-    STYLE_ATTRIBUTE,
+    METRIC_CONFIGURATION_PROPERTY,
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
     NPV_COLLECTION_PROPERTY,
@@ -26,6 +26,7 @@ from .definitions.constants import (
     PATHWAYS_ATTRIBUTE,
     PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
+    STYLE_ATTRIBUTE,
     UUID_ATTRIBUTE,
 )
 from .definitions.defaults import PRIORITY_LAYERS
@@ -41,10 +42,13 @@ from .models.helpers import (
     activity_npv_collection_to_dict,
     create_activity,
     create_activity_npv_collection,
+    create_metric_configuration,
     create_ncs_pathway,
     layer_component_to_dict,
+    metric_configuration_to_dict,
     ncs_pathway_to_dict,
 )
+from .models.report import MetricConfiguration
 from .utils import log, todict, CustomJsonEncoder
 
 
@@ -237,6 +241,9 @@ class Settings(enum.Enum):
 
     # Processing option
     PROCESSING_TYPE = "processing_type"
+
+    # REPORT OPTIONS
+    USE_CUSTOM_METRICS = "use_custom_metrics"
 
     # DEBUG
     DEBUG = "debug"
@@ -1476,6 +1483,38 @@ class SettingsManager(QtCore.QObject):
         npv_collection_dict = activity_npv_collection_to_dict(npv_collection)
         npv_collection_str = json.dumps(npv_collection_dict)
         self.set_value(NPV_COLLECTION_PROPERTY, npv_collection_str)
+
+    def get_metric_configuration(self) -> typing.Optional[MetricConfiguration]:
+        """Gets the activity metric configuration.
+
+        :returns: The activity metric configuration or None
+        if not defined or if an error occurred when deserializing.
+        :rtype: MetricConfiguration
+        """
+        metric_configuration_str = self.get_value(METRIC_CONFIGURATION_PROPERTY, None)
+        if not metric_configuration_str:
+            return None
+
+        metric_configuration_dict = {}
+        try:
+            metric_configuration_dict = json.loads(metric_configuration_str)
+        except json.JSONDecodeError:
+            log("Metric configuration JSON is invalid.")
+
+        return create_metric_configuration(
+            metric_configuration_dict, self.get_all_activities()
+        )
+
+    def save_metric_configuration(self, metric_configuration: MetricConfiguration):
+        """Serializes the metric configuration in settings as a JSON string.
+
+        :param metric_configuration: Activity NPV collection serialized to a JSON string.
+        :type metric_configuration: ActivityNpvCollection
+        """
+        metric_configuration_dict = metric_configuration_to_dict(metric_configuration)
+        metric_configuration_str = json.dumps(metric_configuration_dict)
+        print(metric_configuration_dict)
+        self.set_value(METRIC_CONFIGURATION_PROPERTY, metric_configuration_str)
 
     def save_online_scenario(self, scenario_uuid):
         """Save the passed scenario settings into the plugin settings as online tasl

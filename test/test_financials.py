@@ -18,11 +18,16 @@ from qgis.core import (
 
 from cplus_plugin.conf import settings_manager, Settings
 from cplus_plugin.gui.qgis_cplus_main import QgisCplusMain
-from cplus_plugin.lib.financials import compute_discount_value, create_npv_pwls
+from cplus_plugin.lib.financials import (
+    compute_discount_value,
+    create_npv_pwls,
+)
 from cplus_plugin.utils import FileUtils
 
 from model_data_for_testing import (
+    ACTIVITY_1_NPV,
     ACTIVITY_UUID_STR,
+    get_activity,
     get_activity_npv_collection,
     get_ncs_pathways,
 )
@@ -47,6 +52,13 @@ class TestFinancialNpv(TestCase):
 
     def setUp(self) -> None:
         Processing.initialize()
+
+        # We need to save at least one activity when retrieving
+        # the NPV collection
+        settings_manager.save_activity(get_activity())
+
+    def tearDown(self):
+        settings_manager.remove_activity(ACTIVITY_UUID_STR)
 
     def test_get_activity_npv_in_collection(self):
         """Test getting the activity NPV in the NPV collection."""

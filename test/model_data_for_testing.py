@@ -33,6 +33,12 @@ from cplus_plugin.models.financial import (
     ActivityNpvCollection,
     NpvParameters,
 )
+from cplus_plugin.models.report import (
+    ActivityColumnMetric,
+    MetricColumn,
+    MetricConfiguration,
+    MetricType,
+)
 
 
 VALID_NCS_UUID_STR = "b5338edf-f3cc-4040-867d-be9651a28b63"
@@ -42,10 +48,13 @@ ACTIVITY_2_UUID_STR = "1fbfb272-0b8d-409e-8cf6-db9f1f63fce2"
 ACTIVITY_3_UUID_STR = "7b5c2ae0-aeea-4006-a3f8-42ee7cd81bcf"
 TEST_RASTER_PATH = os.path.join(os.path.dirname(__file__), "tenbytenraster.tif")
 SCENARIO_UUID_STR = "6cf5b355-f605-4de5-98b1-64936d473f82"
+METRIC_COLUMN_NAME = "Financials"
 
 NCS_UUID_STR_1 = "51f561d1-32eb-4104-9408-d5b66ce6b651"
 NCS_UUID_STR_2 = "424e076e-61b7-4116-a5a9-d2a7b4c2574e"
 NCS_UUID_STR_3 = "5c42b644-3d21-4081-9206-28e872efca73"
+
+ACTIVITY_1_NPV = 40410.23
 
 
 def get_valid_ncs_pathway() -> NcsPathway:
@@ -212,7 +221,7 @@ def get_test_scenario_result() -> ScenarioResult:
 def get_activity_npvs() -> typing.List[ActivityNpv]:
     """Returns a collection of activity NPV mappings."""
     npv_params_1 = NpvParameters(3, 2.0)
-    npv_params_1.absolute_npv = 40410.23
+    npv_params_1.absolute_npv = ACTIVITY_1_NPV
     npv_params_1.yearly_rates = [
         (25000.0, 18000.0, 7000.0),
         (28000.0, 15000.0, 12745.1),
@@ -266,6 +275,49 @@ def get_activity_npv_collection() -> ActivityNpvCollection:
     return npv_collection
 
 
+def get_metric_column() -> MetricColumn:
+    """Returns a metric column object for testing."""
+    custom_job_metric_column = MetricColumn.create_default_column(
+        METRIC_COLUMN_NAME, "Custom Job", "@cplus_activity_area * 2"
+    )
+    custom_job_metric_column.auto_calculated = False
+    custom_job_metric_column.format_as_number = True
+
+    return custom_job_metric_column
+
+
+def get_metric_configuration() -> MetricConfiguration:
+    """Creates a metric configuration object."""
+    area_metric_column = MetricColumn.create_default_column(
+        "Area", "Area (Ha)", "@cplus_activity_area"
+    )
+    area_metric_column.auto_calculated = True
+    area_metric_column.format_as_number = True
+
+    return MetricConfiguration(
+        [
+            area_metric_column,
+            get_metric_column(),
+        ],
+        [
+            [
+                ActivityColumnMetric(
+                    get_activity(),
+                    area_metric_column,
+                    MetricType.COLUMN,
+                    "@cplus_activity_area",
+                ),
+                ActivityColumnMetric(
+                    get_activity(),
+                    get_metric_column(),
+                    MetricType.COLUMN,
+                    "@cplus_activity_area * 2",
+                ),
+            ]
+        ],
+    )
+
+
 NCS_PATHWAY_DICT = {
     UUID_ATTRIBUTE: UUID(VALID_NCS_UUID_STR),
     NAME_ATTRIBUTE: "Valid NCS Pathway",
@@ -274,4 +326,63 @@ NCS_PATHWAY_DICT = {
     LAYER_TYPE_ATTRIBUTE: 0,
     USER_DEFINED_ATTRIBUTE: True,
     CARBON_PATHS_ATTRIBUTE: [],
+}
+
+
+METRIC_CONFIGURATION_DICT = {
+    "metric_columns": [
+        {
+            "name": "Area",
+            "header": "Area (Ha)",
+            "expression": "@cplus_activity_area",
+            "alignment": 4,
+            "auto_calculated": True,
+            "number_formatter_enabled": True,
+            "number_formatter_type_id": "basic",
+            "number_formatter_props": {
+                "decimal_separator": None,
+                "decimals": 5,
+                "rounding_type": 0,
+                "show_plus": False,
+                "show_thousand_separator": True,
+                "show_trailing_zeros": True,
+                "thousand_separator": None,
+            },
+        },
+        {
+            "name": METRIC_COLUMN_NAME,
+            "header": "Financials",
+            "expression": "@cplus_activity_area * 2",
+            "alignment": 4,
+            "auto_calculated": False,
+            "number_formatter_enabled": True,
+            "number_formatter_type_id": "basic",
+            "number_formatter_props": {
+                "decimal_separator": None,
+                "decimals": 6,
+                "rounding_type": 0,
+                "show_plus": False,
+                "show_thousand_separator": True,
+                "show_trailing_zeros": True,
+                "thousand_separator": None,
+            },
+        },
+    ],
+    "activity_metrics": [
+        [
+            {
+                "activity_identifier": ACTIVITY_UUID_STR,
+                "metric_identifier": "Area",
+                "metric_type": 0,
+                "expression": "@cplus_activity_area",
+            },
+            {
+                "activity_identifier": ACTIVITY_UUID_STR,
+                "metric_identifier": METRIC_COLUMN_NAME,
+                "metric_type": 0,
+                "expression": "@cplus_activity_area * 2",
+            },
+        ]
+    ],
+    "activity_identifiers": [ACTIVITY_UUID_STR],
 }

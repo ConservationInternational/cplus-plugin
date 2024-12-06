@@ -18,6 +18,8 @@ ACTIVITY_GROUP_LAYER_NAME = "Activity Maps"
 ACTIVITY_WEIGHTED_GROUP_NAME = "Weighted Activity Maps"
 NCS_PATHWAYS_GROUP_LAYER_NAME = "NCS Pathways Maps"
 
+ACTIVITY_NAME = "Activity"
+
 # Attribute names
 CARBON_COEFFICIENT_ATTRIBUTE = "carbon_coefficient"
 CARBON_PATHS_ATTRIBUTE = "carbon_paths"
@@ -46,9 +48,22 @@ COMPUTED_ATTRIBUTE = "use_computed"
 NPV_MAPPINGS_ATTRIBUTE = "mappings"
 REMOVE_EXISTING_ATTRIBUTE = "remove_existing"
 MANUAL_NPV_ATTRIBUTE = "manual_npv"
+HEADER_ATTRIBUTE = "header"
+EXPRESSION_ATTRIBUTE = "expression"
+ALIGNMENT_ATTRIBUTE = "alignment"
+AUTO_CALCULATED_ATTRIBUTE = "auto_calculated"
+METRIC_TYPE_ATTRIBUTE = "metric_type"
+NUMBER_FORMATTER_ENABLED_ATTRIBUTE = "number_formatter_enabled"
+NUMBER_FORMATTER_ID_ATTRIBUTE = "number_formatter_type_id"
+NUMBER_FORMATTER_PROPS_ATTRIBUTE = "number_formatter_props"
 
 ACTIVITY_IDENTIFIER_PROPERTY = "activity_identifier"
+MULTI_ACTIVITY_IDENTIFIER_PROPERTY = "activity_identifiers"
 NPV_COLLECTION_PROPERTY = "npv_collection"
+METRIC_IDENTIFIER_PROPERTY = "metric_identifier"
+METRIC_COLUMNS_PROPERTY = "metric_columns"
+METRIC_CONFIGURATION_PROPERTY = "metric_configuration"
+ACTIVITY_METRICS_PROPERTY = "activity_metrics"
 
 # Option / settings keys
 CPLUS_OPTIONS_KEY = "cplus_main"
