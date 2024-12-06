@@ -788,6 +788,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         is valid.
         """
         self.message_bar.clearWidgets()
+
         if self.rb_local.isChecked():
             local_path = self.fw_irrecoverable_carbon.filePath()
             if not os.path.exists(local_path):

@@ -36,8 +36,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>555</width>
-        <height>737</height>
+        <width>572</width>
+        <height>732</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -329,6 +329,9 @@
          <layout class="QGridLayout" name="gridLayout_4">
           <item row="0" column="0">
            <widget class="QRadioButton" name="rb_local">
+            <property name="toolTip">
+             <string>Specify a dataset in the local computer or network drive</string>
+            </property>
             <property name="text">
              <string>Local path</string>
             </property>
@@ -339,6 +342,9 @@
           </item>
           <item row="0" column="1">
            <widget class="QRadioButton" name="rb_online">
+            <property name="toolTip">
+             <string>Specify the URL for the fetching the dataset from an online server</string>
+            </property>
             <property name="text">
              <string>Online source</string>
             </property>
@@ -374,13 +380,16 @@
             <widget class="QWidget" name="pg_online_source">
              <layout class="QGridLayout" name="gridLayout_5">
               <property name="leftMargin">
-               <number>3</number>
+               <number>2</number>
               </property>
               <property name="topMargin">
-               <number>3</number>
+               <number>2</number>
               </property>
               <property name="rightMargin">
-               <number>3</number>
+               <number>2</number>
+              </property>
+              <property name="bottomMargin">
+               <number>2</number>
               </property>
               <item row="0" column="0">
                <widget class="QLabel" name="label">
