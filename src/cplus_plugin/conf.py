@@ -253,9 +253,11 @@ class Settings(enum.Enum):
 
     # Irrecoverable carbon
     IRRECOVERABLE_CARBON_SOURCE_TYPE = "carbon/irrecoverable_carbon_source_type"
-    IRRECOVERABLE_CARBON_SOURCE = "carbon/irrecoverable_carbon_source"
+    # Path for local data source
+    IRRECOVERABLE_CARBON_LOCAL_SOURCE = "carbon/irrecoverable_carbon_source"
     IRRECOVERABLE_CARBON_ENABLED = "carbon/irrecoverable_carbon_enabled"
-    IRRECOVERABLE_CARBON_ONLINE_LOCAL_DIR = (
+    # Path where the online data source will be saved locally
+    IRRECOVERABLE_CARBON_ONLINE_LOCAL_SOURCE = (
         "carbon/irrecoverable_carbon_online_local_dir"
     )
 

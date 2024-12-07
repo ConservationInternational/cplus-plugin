@@ -679,7 +679,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
                 Settings.IRRECOVERABLE_CARBON_SOURCE_TYPE, DataSourceType.LOCAL.value
             )
             settings_manager.set_value(
-                Settings.IRRECOVERABLE_CARBON_SOURCE,
+                Settings.IRRECOVERABLE_CARBON_LOCAL_SOURCE,
                 self.fw_irrecoverable_carbon.filePath(),
             )
         elif self.rb_online.isChecked():
@@ -766,9 +766,13 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         )
         if irrecoverable_carbon_enabled:
             self.gb_ic_reference_layer.setChecked(True)
+        else:
+            self.gb_ic_reference_layer.setChecked(False)
 
         self.fw_irrecoverable_carbon.setFilePath(
-            settings_manager.get_value(Settings.IRRECOVERABLE_CARBON_SOURCE, default="")
+            settings_manager.get_value(
+                Settings.IRRECOVERABLE_CARBON_LOCAL_SOURCE, default=""
+            )
         )
 
         source_type_int = settings_manager.get_value(
