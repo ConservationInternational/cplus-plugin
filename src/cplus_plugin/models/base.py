@@ -281,10 +281,10 @@ class PriorityLayer(BaseModelComponent):
 class NcsPathwayType(IntEnum):
     """Type of NCS pathway."""
 
-    PROTECTION = 0
-    RESTORATION = 1
-    MANAGEMENT = 2
-    UNDEFINED = 99
+    PROTECT = 0
+    RESTORE = 1
+    MANAGE = 2
+    UNDEFINED = -1
 
     @staticmethod
     def from_int(int_enum: int) -> "NcsPathwayType":
@@ -298,11 +298,11 @@ class NcsPathwayType(IntEnum):
         :rtype: NcsPathwayType
         """
         if int_enum == 0:
-            return NcsPathwayType.PROTECTION
+            return NcsPathwayType.PROTECT
         elif int_enum == 1:
-            return NcsPathwayType.RESTORATION
+            return NcsPathwayType.RESTORE
         elif int_enum == 2:
-            return NcsPathwayType.MANAGEMENT
+            return NcsPathwayType.MANAGE
         else:
             return NcsPathwayType.UNDEFINED
 

@@ -280,21 +280,21 @@
       <item>
        <widget class="QRadioButton" name="rb_protection">
         <property name="text">
-         <string>Protection</string>
+         <string>Protect</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QRadioButton" name="rb_restoration">
         <property name="text">
-         <string>Restoration</string>
+         <string>Manage</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QRadioButton" name="rb_management">
         <property name="text">
-         <string>Management</string>
+         <string>Restore</string>
         </property>
        </widget>
       </item>

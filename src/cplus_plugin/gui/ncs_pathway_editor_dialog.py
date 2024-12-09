@@ -89,13 +89,13 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self._pathway_type_group = QtWidgets.QButtonGroup(self)
         self._pathway_type_group.addButton(
-            self.rb_protection, NcsPathwayType.PROTECTION.value
+            self.rb_protection, NcsPathwayType.PROTECT.value
         )
         self._pathway_type_group.addButton(
-            self.rb_restoration, NcsPathwayType.RESTORATION.value
+            self.rb_restoration, NcsPathwayType.RESTORE.value
         )
         self._pathway_type_group.addButton(
-            self.rb_management, NcsPathwayType.MANAGEMENT.value
+            self.rb_management, NcsPathwayType.MANAGE.value
         )
 
         self._excluded_names = excluded_names
@@ -159,11 +159,11 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.txt_name.setText(self._ncs_pathway.name)
         self.txt_description.setPlainText(self._ncs_pathway.description)
 
-        if self._ncs_pathway.pathway_type == NcsPathwayType.PROTECTION:
+        if self._ncs_pathway.pathway_type == NcsPathwayType.PROTECT:
             self.rb_protection.setChecked(True)
-        if self._ncs_pathway.pathway_type == NcsPathwayType.RESTORATION:
+        if self._ncs_pathway.pathway_type == NcsPathwayType.RESTORE:
             self.rb_restoration.setChecked(True)
-        if self._ncs_pathway.pathway_type == NcsPathwayType.MANAGEMENT:
+        if self._ncs_pathway.pathway_type == NcsPathwayType.MANAGE:
             self.rb_management.setChecked(True)
 
         if self._layer:
@@ -266,12 +266,12 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._ncs_pathway.description = self.txt_description.toPlainText()
 
         selected_pathway_type_id = self._pathway_type_group.checkedId()
-        if selected_pathway_type_id == NcsPathwayType.PROTECTION.value:
-            self._ncs_pathway.pathway_type = NcsPathwayType.PROTECTION
-        elif selected_pathway_type_id == NcsPathwayType.RESTORATION.value:
-            self._ncs_pathway.pathway_type = NcsPathwayType.RESTORATION
-        elif selected_pathway_type_id == NcsPathwayType.MANAGEMENT.value:
-            self._ncs_pathway.pathway_type = NcsPathwayType.MANAGEMENT
+        if selected_pathway_type_id == NcsPathwayType.PROTECT.value:
+            self._ncs_pathway.pathway_type = NcsPathwayType.PROTECT
+        elif selected_pathway_type_id == NcsPathwayType.RESTORE.value:
+            self._ncs_pathway.pathway_type = NcsPathwayType.RESTORE
+        elif selected_pathway_type_id == NcsPathwayType.MANAGE.value:
+            self._ncs_pathway.pathway_type = NcsPathwayType.MANAGE
 
         self._ncs_pathway.layer_type = LayerType.RASTER
         default_layer = self._get_selected_default_layer()
