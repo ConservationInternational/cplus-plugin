@@ -15,6 +15,7 @@ from qgis.core import (
     QgsProcessingException,
     QgsProcessingFeedback,
     QgsProcessingMultiStepFeedback,
+    QgsRasterBlock,
     QgsRasterIterator,
     QgsRasterLayer,
     QgsRectangle,
@@ -25,7 +26,7 @@ from qgis.PyQt import QtCore
 
 from ..definitions.constants import NPV_PRIORITY_LAYERS_SEGMENT, PRIORITY_LAYERS_SEGMENT
 from ..conf import settings_manager, Settings
-from ..models.base import DataSourceType
+from ..models.base import Activity, DataSourceType, NcsPathwayType
 from ..utils import clean_filename, FileUtils, log, tr
 
 
@@ -38,7 +39,7 @@ MEAN_REFERENCE_LAYER_AREA = 9.0
 def calculate_irrecoverable_carbon_from_mean(
     ncs_pathways_layer: QgsRasterLayer,
 ) -> float:
-    """Calculates the total irrecoverable carbon for protected NCS pathways
+    """Calculates the total irrecoverable carbon in tonnes for protected NCS pathways
     using the reference layer defined in settings that is based on the
     mean value per hectare.
 
@@ -47,11 +48,15 @@ def calculate_irrecoverable_carbon_from_mean(
     of the center point of the reference pixel to determine whether the reference
     pixel will be considered in the computation. The use of these tools results in some
     valid intersecting pixels being excluded from the analysis. This is a known
-    issue that has been raised in the QGIS GitHub repo, hence the reason of
-    adopting this function.
+    issue that has been raised in the QGIS GitHub repo, hence the reason for
+    using this function.
 
     :param ncs_pathways_layer: Layer containing a union of protected NCS pathways.
-    The CRS needs to be WGS84 otherwise the result will be incorrect.
+    The CRS needs to be WGS84 otherwise the result will be incorrect. In addition,
+    the layer needs to be in binary form i.e. a pixel value of 1 represents a
+    valid value and 0 represents a non-valid or nodata value. The raster boolean
+    (AND or OR) tool can be used to normalize the layer before passing it into
+    this function.
     :type ncs_pathways_layer: QgsRasterLayer
 
     :returns: The total irrecoverable carbon for protected NCS pathways
@@ -187,23 +192,26 @@ def calculate_irrecoverable_carbon_from_mean(
                     1, analysis_extent, ncs_cols, ncs_rows
                 )
                 ncs_block_data = ncs_block.data()
-
-                fill_data = QtCore.QByteArray()
-                if ncs_pathways_layer.dataProvider().sourceHasNoDataValue(1):
-                    # If there are no overlaps, the block will contain nodata values
-                    fill_data = ncs_block.valueBytes(
-                        ncs_block.dataType(), ncs_block.noDataValue()
-                    )
+                invalid_data = QgsRasterBlock.valueBytes(ncs_block.dataType(), 0.0)
 
                 # Check if the NCS block within the reference block contains
-                # any other values apart from nodata.
-                ncs_ba_set = set(ncs_block_data[i] for i in range(ncs_block_data.size()))
-                fill_ba_set = set(fill_data[i] for i in range(fill_data.size()))
+                # any other value apart from the invalid value i.e. 0 pixel value.
+                # In future iterations, consider using QGIS 3.40+ which includes
+                # QgsRasterBlock.as_numpy() that provides the ability to work with
+                # the raw binary data in numpy.
+                ncs_ba_set = set(
+                    ncs_block_data[i] for i in range(ncs_block_data.size())
+                )
+                invalid_ba_set = set(
+                    invalid_data[i] for i in range(invalid_data.size())
+                )
 
-                if ncs_ba_set - fill_ba_set:
+                if ncs_ba_set - invalid_ba_set:
                     # we have valid overlapping pixels hence we can pick the value of
-                    # the reference IC layer.
-                    irrecoverable_carbon_intersecting_pixel_values.append(block.value(r, c))
+                    # the corresponding reference IC layer.
+                    irrecoverable_carbon_intersecting_pixel_values.append(
+                        block.value(r, c)
+                    )
 
     reference_layer_iterator.stopRasterRead(1)
 
@@ -213,8 +221,60 @@ def calculate_irrecoverable_carbon_from_mean(
             "No protected NCS pathways were found in the reference layer.",
             info=False,
         )
-        return -1.0
+        return 0.0
 
     ic_mean = sum(irrecoverable_carbon_intersecting_pixel_values) / float(ic_count)
 
     return MEAN_REFERENCE_LAYER_AREA * ic_count * ic_mean
+
+
+class IrrecoverableCarbonCalculator:
+    """Calculates the total irrecoverable carbon of an activity using
+    the mean-based reference carbon layer.
+
+    It specifically searches for protected pathways in the activity.
+    If none is found, it will return 0.
+    """
+
+    def __init__(self, activity: typing.Union[str, Activity]):
+        if isinstance(activity, str):
+            activity = settings_manager.get_activity(activity)
+
+        self._activity = activity
+
+    @property
+    def activity(self) -> Activity:
+        """Gets the activity used to calculate the total
+        irrecoverable carbon.
+
+        :returns: The activity for calculating the total
+        irrecoverable carbon.
+        :rtype: Activity
+        """
+        return self._activity
+
+    def calculate(self) -> float:
+        """Calculates the total irrecoverable carbon of the referenced activity.
+
+        :returns: The total irrecoverable carbon of the activity. If there are
+        no protected NCS pathways in the activity, the function will return 0.0.
+        If there are any errors encountered during the process, the function
+        will return -1.0.
+        :rtype: float
+        """
+        if len(self._activity.pathways) == 0:
+            log(f"There are no pathways in {self._activity.name} activity.")
+            return 0.0
+
+        protected_pathways = [
+            pathway
+            for pathway in self._activity.pathways
+            if pathway.pathway_type == NcsPathwayType.PROTECTION
+        ]
+
+        if len(protected_pathways) == 0:
+            log(
+                f"There are no protection pathways in "
+                f"{self._activity.name} activity."
+            )
+            return 0.0

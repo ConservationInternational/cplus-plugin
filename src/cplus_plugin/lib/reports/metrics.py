@@ -11,11 +11,18 @@ from qgis.core import (
     QgsExpressionContextGenerator,
     QgsExpressionContextScope,
     QgsExpressionContextUtils,
+    QgsExpressionNodeFunction,
     QgsProject,
     QgsScopedExpressionFunction,
 )
 
-from ...definitions.defaults import BASE_PLUGIN_NAME
+from ...definitions.defaults import (
+    BASE_PLUGIN_NAME,
+    MEAN_BASED_IRRECOVERABLE_CARBON_EXPRESSION_DESCRIPTION,
+    NPV_EXPRESSION_DESCRIPTION,
+    PWL_IMPACT_EXPRESSION_DESCRIPTION,
+)
+from ..carbon import IrrecoverableCarbonCalculator
 from ...models.report import ActivityContextInfo, MetricEvalResult
 from ...utils import function_help_to_html, log, tr
 
@@ -26,6 +33,64 @@ METRICS_LIBRARY = []
 VAR_ACTIVITY_AREA = "cplus_activity_area"
 VAR_ACTIVITY_NAME = "cplus_activity_name"
 VAR_ACTIVITY_ID = "cplus_activity_id"
+
+# Function names
+FUNC_MEAN_BASED_IC = "irrecoverable_carbon_by_mean"
+
+
+class ActivityIrrecoverableCarbonFunction(QgsScopedExpressionFunction):
+    """Calculates the total irrecoverable carbon of an activity using the
+    means-based reference carbon layer."""
+
+    def __init__(self):
+        help_html = function_help_to_html(
+            FUNC_MEAN_BASED_IC,
+            tr(MEAN_BASED_IRRECOVERABLE_CARBON_EXPRESSION_DESCRIPTION),
+            examples=[(f"{FUNC_MEAN_BASED_IC}()", "42,500")],
+        )
+        super().__init__(
+            FUNC_MEAN_BASED_IC, 0, BASE_PLUGIN_NAME, help_html, isContextual=True
+        )
+
+    def func(
+        self,
+        values: typing.List[typing.Any],
+        context: QgsExpressionContext,
+        parent: QgsExpression,
+        node: QgsExpressionNodeFunction,
+    ) -> typing.Any:
+        """Returns the result of evaluating the function.
+
+        :param values: List of values passed to the function
+        :type values: typing.Iterable[typing.Any]
+
+        :param context: Context expression is being evaluated against
+        :type context: QgsExpressionContext
+
+        :param parent: Parent expression
+        :type parent: QgsExpression
+
+        :param node: Expression node
+        :type node: QgsExpressionNodeFunction
+
+        :returns: The result of the function.
+        :rtype: typing.Any
+        """
+        if not context.hasVariable(VAR_ACTIVITY_ID):
+            return -1.0
+
+        activity_id = context.variable(VAR_ACTIVITY_ID)
+        irrecoverable_carbon_calculator = IrrecoverableCarbonCalculator(activity_id)
+
+        return irrecoverable_carbon_calculator.calculate()
+
+    def clone(self) -> "ActivityIrrecoverableCarbonFunction":
+        """Gets a clone of this function.
+
+        :returns: A clone of this function.
+        :rtype: ActivityIrrecoverableCarbonFunction
+        """
+        return ActivityIrrecoverableCarbonFunction()
 
 
 def create_metrics_expression_scope() -> QgsExpressionContextScope:
@@ -60,12 +125,19 @@ def create_metrics_expression_scope() -> QgsExpressionContextScope:
         )
     )
 
+    # Add functions
+    expression_scope.addFunction(
+        FUNC_MEAN_BASED_IC, ActivityIrrecoverableCarbonFunction()
+    )
+
     return expression_scope
 
 
 def register_metric_functions():
     """Register our custom functions with the expression engine."""
-    # Add expression functions to be registered here
+    # Irrecoverable carbon
+    mean_based_irrecoverable_carbon_function = ActivityIrrecoverableCarbonFunction()
+    METRICS_LIBRARY.append(mean_based_irrecoverable_carbon_function)
 
     for func in METRICS_LIBRARY:
         QgsExpression.registerFunction(func)
