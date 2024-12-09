@@ -82,7 +82,7 @@ class ActivityIrrecoverableCarbonFunction(QgsScopedExpressionFunction):
         activity_id = context.variable(VAR_ACTIVITY_ID)
         irrecoverable_carbon_calculator = IrrecoverableCarbonCalculator(activity_id)
 
-        return irrecoverable_carbon_calculator.calculate()
+        return irrecoverable_carbon_calculator.run()
 
     def clone(self) -> "ActivityIrrecoverableCarbonFunction":
         """Gets a clone of this function.
