@@ -245,17 +245,19 @@ def calculate_irrecoverable_carbon_from_mean(
 
     reference_layer_iterator.stopRasterRead(1)
 
-    ic_count = len(irrecoverable_carbon_intersecting_pixel_values)
-    if ic_count == 0:
+    ic_pixel_count = len(irrecoverable_carbon_intersecting_pixel_values)
+    if ic_pixel_count == 0:
         log(
             "Irrecoverable Carbon Calculation - No protect NCS pathways were found in the reference layer.",
             info=False,
         )
         return 0.0
 
-    ic_mean = sum(irrecoverable_carbon_intersecting_pixel_values) / float(ic_count)
+    ic_mean = sum(irrecoverable_carbon_intersecting_pixel_values) / float(
+        ic_pixel_count
+    )
 
-    return MEAN_REFERENCE_LAYER_AREA * ic_count * ic_mean
+    return MEAN_REFERENCE_LAYER_AREA * ic_pixel_count * ic_mean
 
 
 class IrrecoverableCarbonCalculator:
@@ -360,8 +362,8 @@ class IrrecoverableCarbonCalculator:
             )
             return -1.0
 
-        aggregate_raster_path = boolean_result["OUTPUT"]
-        aggregate_layer = QgsRasterLayer(aggregate_raster_path, "aggregate_pathways")
+        carbon_calc_layer_path = boolean_result["OUTPUT"]
+        aggregate_layer = QgsRasterLayer(carbon_calc_layer_path, "aggregate_pathways")
         if not aggregate_layer.isValid():
             log(
                 "Irrecoverable Carbon Calculation - Aggregate protect pathways layer is invalid.",
@@ -369,38 +371,39 @@ class IrrecoverableCarbonCalculator:
             )
             return -1.0
 
-        # Reproject the aggregated protect raster
-        reproject_args = {
-            "INPUT": aggregate_raster_path,
-            "SOURCE_CRS": valid_protect_layers[0].crs(),
-            "TARGET_CRS": QgsCoordinateReferenceSystem(
-                "EPSG:4326"
-            ),  # Global IC reference raster
-            "RESAMPLING": 0,
-            "DATA_TYPE": 0,
-            "OPTIONS": "COMPRESS=DEFLATE|PREDICTOR=2|ZLEVEL=9",
-            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            "EXTRA": "--config CHECK_DISK_FREE_SPACE NO",
-        }
-        reproject_result = None
-        try:
-            reproject_result = processing.run(
-                "gdal:warpreproject",
-                reproject_args,
-                context=QgsProcessingContext(),
-            )
-        except QgsProcessingException as ex:
-            log(
-                "Irrecoverable Carbon Calculation - Error re-projecting the "
-                "aggregate protect NCS pathways.",
-                info=False,
-            )
-            return -1.0
+        # Reproject the aggregated protect raster if required
+        if aggregate_layer.crs() != QgsCoordinateReferenceSystem("EPSG:4326"):
+            reproject_args = {
+                "INPUT": carbon_calc_layer_path,
+                "SOURCE_CRS": valid_protect_layers[0].crs(),
+                "TARGET_CRS": QgsCoordinateReferenceSystem(
+                    "EPSG:4326"
+                ),  # Global IC reference raster
+                "RESAMPLING": 0,
+                "DATA_TYPE": 0,
+                "OPTIONS": "COMPRESS=DEFLATE|PREDICTOR=2|ZLEVEL=9",
+                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+                "EXTRA": "--config CHECK_DISK_FREE_SPACE NO",
+            }
+            reproject_result = None
+            try:
+                reproject_result = processing.run(
+                    "gdal:warpreproject",
+                    reproject_args,
+                    context=QgsProcessingContext(),
+                )
+            except QgsProcessingException as ex:
+                log(
+                    "Irrecoverable Carbon Calculation - Error re-projecting the "
+                    "aggregate protect NCS pathways.",
+                    info=False,
+                )
+                return -1.0
 
-        reprojected_raster_path = reproject_result["OUTPUT"]
+            carbon_calc_layer_path = reproject_result["OUTPUT"]
 
         reprojected_protect_layer = QgsRasterLayer(
-            reprojected_raster_path, "reprojected_protect_pathway"
+            carbon_calc_layer_path, "reprojected_protect_pathway"
         )
         if not reprojected_protect_layer.isValid():
             log(

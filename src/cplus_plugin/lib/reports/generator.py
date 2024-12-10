@@ -94,13 +94,16 @@ DEFAULT_AREA_DECIMAL_PLACES = 2
 class BaseScenarioReportGeneratorTask(QgsTask):
     """Base proxy class for initiating the report generation process."""
 
+    status_changed = QtCore.pyqtSignal(str)
+
     def __init__(self, description: str, context: BaseReportContext):
         super().__init__(description)
         self._context = context
         self._result = None
         self._generator = BaseScenarioReportGenerator(
-            self._context, self._context.feedback
+            self, self._context, self._context.feedback
         )
+        self._generator.status_changed.connect(self._on_status_changed)
         self.layout_manager = QgsProject.instance().layoutManager()
         self.layout_manager.layoutAdded.connect(self._on_layout_added)
 
@@ -122,6 +125,14 @@ class BaseScenarioReportGeneratorTask(QgsTask):
         :rtype: ReportResult
         """
         return self._result
+
+    def _on_status_changed(self, message: str):
+        """Slot raised when the status of the generator has changed.
+
+        :param message: Status message.
+        :type message: str
+        """
+        self.status_changed.emit(message)
 
     def cancel(self):
         """Cancel the report generation task."""
@@ -195,8 +206,9 @@ class ScenarioAnalysisReportGeneratorTask(BaseScenarioReportGeneratorTask):
     def __init__(self, description: str, context: ReportContext):
         super().__init__(description, context)
         self._generator = ScenarioAnalysisReportGenerator(
-            context, self._context.feedback
+            self, context, self._context.feedback
         )
+        self._generator.status_changed.connect(self._on_status_changed)
 
     def _zoom_map_items_to_current_extents(self, layout: QgsPrintLayout):
         """Zoom extents of map items in the layout to current map canvas
@@ -307,12 +319,20 @@ class ScenarioComparisonReportGeneratorTask(BaseScenarioReportGeneratorTask):
                 feedback.setProgress(100)
 
 
-class BaseScenarioReportGenerator:
+class BaseScenarioReportGenerator(QtCore.QObject):
     """Base class for generating a scenario report."""
+
+    status_changed = QtCore.pyqtSignal(str)
 
     AREA_DECIMAL_PLACES = DEFAULT_AREA_DECIMAL_PLACES
 
-    def __init__(self, context: BaseReportContext, feedback: QgsFeedback = None):
+    def __init__(
+        self,
+        parent: QtCore.QObject,
+        context: BaseReportContext,
+        feedback: QgsFeedback = None,
+    ):
+        super().__init__(parent)
         self._context = context
         self._feedback = context.feedback or feedback
         if self._feedback:
@@ -376,17 +396,23 @@ class BaseScenarioReportGenerator:
         """
         pass
 
-    def _process_check_cancelled_or_set_progress(self, value: float) -> bool:
+    def _process_check_cancelled_or_set_progress(
+        self, value: float, status_message: str = ""
+    ) -> bool:
         """Check if there is a request to cancel the process
         if a feedback object had been specified.
         """
         if (self._feedback and self._feedback.isCanceled()) or self._error_occurred:
             tr_msg = tr("Report generation cancelled.")
             self._error_messages.append(tr_msg)
+            self.status_changed.emit(tr_msg)
 
             return True
 
         self._feedback.setProgress(value)
+
+        if status_message:
+            self.status_changed.emit(status_message)
 
         return False
 
@@ -713,9 +739,12 @@ class ScenarioComparisonReportGenerator(DuplicatableRepeatPageReportGenerator):
     REPEAT_PAGE_ITEM_ID = "CPLUS Map Repeat Area 2"
 
     def __init__(
-        self, context: ScenarioComparisonReportContext, feedback: QgsFeedback = None
+        self,
+        parent: QtCore.QObject,
+        context: ScenarioComparisonReportContext,
+        feedback: QgsFeedback = None,
     ):
-        super().__init__(context, feedback)
+        super().__init__(parent, context, feedback)
 
         # Repeat item for half page one
         self._page_one_repeat_item = None
@@ -1043,8 +1072,13 @@ class ScenarioComparisonReportGenerator(DuplicatableRepeatPageReportGenerator):
 class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
     """Generator for CPLUS scenario analysis report."""
 
-    def __init__(self, context: ReportContext, feedback: QgsFeedback = None):
-        super().__init__(context, feedback)
+    def __init__(
+        self,
+        parent: QtCore.QObject,
+        context: ReportContext,
+        feedback: QgsFeedback = None,
+    ):
+        super().__init__(parent, context, feedback)
         self._repeat_page = None
         self._repeat_page_num = -1
         self._repeat_item = None
@@ -1075,17 +1109,23 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         """
         return self._repeat_page
 
-    def _process_check_cancelled_or_set_progress(self, value: float) -> bool:
+    def _process_check_cancelled_or_set_progress(
+        self, value: float, status_message: str = ""
+    ) -> bool:
         """Check if there is a request to cancel the process
         if a feedback object had been specified.
         """
         if (self._feedback and self._feedback.isCanceled()) or self._error_occurred:
-            tr_msg = tr("Report generation cancelled")
+            tr_msg = tr("Report generation cancelled.")
             self._error_messages.append(tr_msg)
+            self.status_changed.emit(tr_msg)
 
             return True
 
         self._feedback.setProgress(value)
+
+        if status_message:
+            self.status_changed.emit(status_message)
 
         return False
 
@@ -1742,7 +1782,18 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
                 highlight_error = False
 
-                for mc in self._metrics_configuration.metric_columns:
+                base_overall_progress = 70
+                progress_increment = 15 / (
+                    float(len(self._metrics_configuration.metric_columns))
+                    * num_activities
+                )
+
+                for i, mc in enumerate(self._metrics_configuration.metric_columns):
+                    progress = base_overall_progress + ((i + 1) * progress_increment)
+                    tr_msg = f"{tr('Calculating')} {activity.name} {mc.header} metrics"
+                    if self._process_check_cancelled_or_set_progress(progress, tr_msg):
+                        return self._get_failed_result()
+
                     activity_metric = self._metrics_configuration.find(
                         str(activity.uuid), mc.name
                     )
@@ -1948,22 +1999,28 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         # Set repeat page
         self._set_repeat_page()
 
-        if self._process_check_cancelled_or_set_progress(20):
+        if self._process_check_cancelled_or_set_progress(
+            20, tr("initializing process")
+        ):
             return self._get_failed_result()
 
-        if self._process_check_cancelled_or_set_progress(45):
+        if self._process_check_cancelled_or_set_progress(
+            45, tr("rendering repeat page")
+        ):
             return self._get_failed_result()
 
         # Render repeat items i.e. activities
         self._render_repeat_items()
 
-        if self._process_check_cancelled_or_set_progress(70):
+        if self._process_check_cancelled_or_set_progress(
+            70, tr("populating activity metric table")
+        ):
             return self._get_failed_result()
 
         # Populate activity area table
         self._populate_activity_area_table()
 
-        if self._process_check_cancelled_or_set_progress(80):
+        if self._process_check_cancelled_or_set_progress(85, tr("rendering map items")):
             return self._get_failed_result()
 
         # Populate table with priority weighting values
@@ -1978,14 +2035,18 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         # Add CPLUS report flag
         self._variable_register.set_report_flag(self._layout)
 
-        if self._process_check_cancelled_or_set_progress(85):
+        if self._process_check_cancelled_or_set_progress(
+            88, tr("saving report layout")
+        ):
             return self._get_failed_result()
 
         result = self._save_layout_to_file()
         if not result:
             return self._get_failed_result()
 
-        if self._process_check_cancelled_or_set_progress(90):
+        if self._process_check_cancelled_or_set_progress(
+            90, tr("exporting report to PDF")
+        ):
             return self._get_failed_result()
 
         return ReportResult(
