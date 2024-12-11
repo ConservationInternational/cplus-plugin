@@ -391,6 +391,16 @@
               <property name="bottomMargin">
                <number>2</number>
               </property>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_2">
+                <property name="text">
+                 <string>Save as</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1" colspan="3">
+               <widget class="QgsFileWidget" name="fw_save_online_file"/>
+              </item>
               <item row="0" column="0">
                <widget class="QLabel" name="label">
                 <property name="text">
@@ -398,14 +408,7 @@
                 </property>
                </widget>
               </item>
-              <item row="0" column="1">
-               <widget class="QLineEdit" name="txt_ic_url">
-                <property name="placeholderText">
-                 <string>Specify the URL to fetch the dataset in the CI server</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="2">
+              <item row="0" column="3">
                <widget class="QLabel" name="lbl_url_tip">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -426,7 +429,7 @@
                  </size>
                 </property>
                 <property name="toolTip">
-                 <string>The scenario extent defined in Step 1 will be used to clip the reference layer to be downloaded. The download process will start in the background on applying the settings.</string>
+                 <string/>
                 </property>
                 <property name="frameShape">
                  <enum>QFrame::NoFrame</enum>
@@ -436,15 +439,22 @@
                 </property>
                </widget>
               </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="label_2">
-                <property name="text">
-                 <string>File name</string>
+              <item row="0" column="1">
+               <widget class="QLineEdit" name="txt_ic_url">
+                <property name="placeholderText">
+                 <string>Specify the URL to fetch the dataset in the CI server</string>
                 </property>
                </widget>
               </item>
-              <item row="1" column="1" colspan="2">
-               <widget class="QgsFileWidget" name="fw_save_file"/>
+              <item row="0" column="2">
+               <widget class="QToolButton" name="btn_ic_download">
+                <property name="toolTip">
+                 <string>Initiate new download or refesh previous download</string>
+                </property>
+                <property name="text">
+                 <string>...</string>
+                </property>
+               </widget>
               </item>
              </layout>
             </widget>
