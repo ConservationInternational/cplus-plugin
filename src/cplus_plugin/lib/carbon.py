@@ -87,7 +87,7 @@ def calculate_irrecoverable_carbon_from_mean(
         )
     elif source_type_int == DataSourceType.ONLINE.value:
         reference_source_path = settings_manager.get_value(
-            Settings.IRRECOVERABLE_CARBON_ONLINE_LOCAL_SOURCE, default=""
+            Settings.IRRECOVERABLE_CARBON_ONLINE_LOCAL_PATH, default=""
         )
 
     if not reference_source_path:

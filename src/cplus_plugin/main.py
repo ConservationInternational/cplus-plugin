@@ -40,6 +40,7 @@ from .definitions.defaults import (
     DEFAULT_REPORT_LICENSE,
     DOCUMENTATION_SITE,
     ICON_PATH,
+    IRRECOVERABLE_CARBON_API_URL,
     OPTIONS_TITLE,
     PRIORITY_GROUPS,
     PRIORITY_LAYERS,
@@ -464,6 +465,12 @@ def initialize_api_url():
         settings_manager.set_value(Settings.DEBUG, False)
     if not settings_manager.get_value(Settings.BASE_API_URL, None, str):
         settings_manager.set_value(Settings.BASE_API_URL, BASE_API_URL)
+    if not settings_manager.get_value(
+        Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE, None, str
+    ):
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE, IRRECOVERABLE_CARBON_API_URL
+        )
 
 
 def initialize_report_settings():

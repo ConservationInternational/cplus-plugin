@@ -441,6 +441,9 @@
               </item>
               <item row="0" column="1">
                <widget class="QLineEdit" name="txt_ic_url">
+                <property name="toolTip">
+                 <string>Do not include the bbox PARAM, it will be automatically appended based on the current scenario extent</string>
+                </property>
                 <property name="placeholderText">
                  <string>Specify the URL to fetch the dataset in the CI server</string>
                 </property>
@@ -449,7 +452,7 @@
               <item row="0" column="2">
                <widget class="QToolButton" name="btn_ic_download">
                 <property name="toolTip">
-                 <string>Initiate new download or refesh previous download</string>
+                 <string>Initiate new download or refesh previous download in the background</string>
                 </property>
                 <property name="text">
                  <string>...</string>

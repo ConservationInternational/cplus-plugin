@@ -521,6 +521,8 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             self._on_irrecoverable_button_group_toggled
         )
 
+        tif_file_filter = tr("GeoTIFF (*.tif *.tiff *.TIF *.TIFF)")
+
         self.fw_irrecoverable_carbon.setDialogTitle(
             tr("Select Irrecoverable Carbon Dataset")
         )
@@ -528,10 +530,20 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             QgsFileWidget.RelativeStorage.Absolute
         )
         self.fw_irrecoverable_carbon.setStorageMode(QgsFileWidget.StorageMode.GetFile)
+        self.fw_irrecoverable_carbon.setFilter(tif_file_filter)
 
         self.cbo_irrecoverable_carbon.layerChanged.connect(
             self._on_irrecoverable_carbon_layer_changed
         )
+
+        self.fw_save_online_file.setDialogTitle(
+            tr("Specify Save Location of Irrecoverable Carbon Dataset")
+        )
+        self.fw_save_online_file.setRelativeStorage(
+            QgsFileWidget.RelativeStorage.Absolute
+        )
+        self.fw_save_online_file.setStorageMode(QgsFileWidget.StorageMode.SaveFile)
+        self.fw_save_online_file.setFilter(tif_file_filter)
 
         self.lbl_url_tip.setPixmap(FileUtils.get_pixmap("info_green.svg"))
         self.lbl_url_tip.setScaledContents(True)
@@ -689,6 +701,13 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             settings_manager.set_value(
                 Settings.IRRECOVERABLE_CARBON_SOURCE_TYPE, DataSourceType.ONLINE.value
             )
+            settings_manager.set_value(
+                Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE, self.txt_ic_url.text()
+            )
+            settings_manager.set_value(
+                Settings.IRRECOVERABLE_CARBON_ONLINE_LOCAL_PATH,
+                self.fw_save_online_file.filePath(),
+            )
 
         settings_manager.set_value(
             Settings.IRRECOVERABLE_CARBON_ENABLED,
@@ -772,9 +791,22 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         else:
             self.gb_ic_reference_layer.setChecked(False)
 
+        # Local path
         self.fw_irrecoverable_carbon.setFilePath(
             settings_manager.get_value(
                 Settings.IRRECOVERABLE_CARBON_LOCAL_SOURCE, default=""
+            )
+        )
+
+        # Online config
+        self.txt_ic_url.setText(
+            settings_manager.get_value(
+                Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE, default=""
+            )
+        )
+        self.fw_save_online_file.setFilePath(
+            settings_manager.get_value(
+                Settings.IRRECOVERABLE_CARBON_ONLINE_LOCAL_PATH, default=""
             )
         )
 
@@ -784,8 +816,10 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             setting_type=int,
         )
         if source_type_int == DataSourceType.LOCAL.value:
+            self.rb_local.setChecked(True)
             self.sw_irrecoverable_carbon.setCurrentIndex(0)
         elif source_type_int == DataSourceType.ONLINE.value:
+            self.rb_online.setChecked(True)
             self.sw_irrecoverable_carbon.setCurrentIndex(1)
 
         self.validate_current_irrecoverable_data_source()

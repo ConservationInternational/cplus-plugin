@@ -240,6 +240,7 @@ DEFAULT_REPORT_LICENSE = (
     "Creative Commons Attribution 4.0 International " "License (CC BY 4.0)"
 )
 BASE_API_URL = "https://stage.cplus.earth/api/v1"
+IRRECOVERABLE_CARBON_API_URL = f"{BASE_API_URL}/reference_layer/carbon_calculation/"
 
 DEFAULT_BASE_COMPARISON_REPORT_NAME = "Scenario Comparison Report"
 MAXIMUM_COMPARISON_REPORTS = 10
