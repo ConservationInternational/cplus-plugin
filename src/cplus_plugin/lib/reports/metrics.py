@@ -11,11 +11,13 @@ from qgis.core import (
     QgsExpressionContextGenerator,
     QgsExpressionContextScope,
     QgsExpressionContextUtils,
+    QgsExpressionNodeFunction,
     QgsProject,
     QgsScopedExpressionFunction,
 )
 
-from ...definitions.defaults import BASE_PLUGIN_NAME
+from ...definitions.defaults import BASE_PLUGIN_NAME, NPV_EXPRESSION_DESCRIPTION
+from ..financials import calculate_activity_npv
 from ...models.report import ActivityContextInfo, MetricEvalResult
 from ...utils import function_help_to_html, log, tr
 
@@ -26,6 +28,68 @@ METRICS_LIBRARY = []
 VAR_ACTIVITY_AREA = "cplus_activity_area"
 VAR_ACTIVITY_NAME = "cplus_activity_name"
 VAR_ACTIVITY_ID = "cplus_activity_id"
+
+# Function names
+FUNC_ACTIVITY_NPV = "activity_npv"
+
+
+class ActivityNpvFunction(QgsScopedExpressionFunction):
+    """Calculates the financial NPV of an activity."""
+
+    def __init__(self):
+        help_html = function_help_to_html(
+            FUNC_ACTIVITY_NPV,
+            tr(NPV_EXPRESSION_DESCRIPTION),
+            examples=[(f"{FUNC_ACTIVITY_NPV}()", "125,800")],
+        )
+        super().__init__(
+            FUNC_ACTIVITY_NPV, 0, BASE_PLUGIN_NAME, help_html, isContextual=True
+        )
+
+    def func(
+        self,
+        values: typing.List[typing.Any],
+        context: QgsExpressionContext,
+        parent: QgsExpression,
+        node: QgsExpressionNodeFunction,
+    ) -> typing.Any:
+        """Returns the result of evaluating the function.
+
+        :param values: List of values passed to the function
+        :type values: typing.Iterable[typing.Any]
+
+        :param context: Context expression is being evaluated against
+        :type context: QgsExpressionContext
+
+        :param parent: Parent expression
+        :type parent: QgsExpression
+
+        :param node: Expression node
+        :type node: QgsExpressionNodeFunction
+
+        :returns: The result of the function.
+        :rtype: typing.Any
+        """
+        if not context.hasVariable(VAR_ACTIVITY_ID) or not context.hasVariable(
+            VAR_ACTIVITY_AREA
+        ):
+            return -1.0
+
+        activity_id = context.variable(VAR_ACTIVITY_ID)
+        activity_area = context.variable(VAR_ACTIVITY_AREA)
+
+        if not isinstance(activity_area, (float, int)):
+            return -1.0
+
+        return calculate_activity_npv(activity_id, activity_area)
+
+    def clone(self) -> "ActivityNpvFunction":
+        """Gets a clone of this function.
+
+        :returns: A clone of this function.
+        :rtype: ActivityNpvFunction
+        """
+        return ActivityNpvFunction()
 
 
 def create_metrics_expression_scope() -> QgsExpressionContextScope:
@@ -60,12 +124,19 @@ def create_metrics_expression_scope() -> QgsExpressionContextScope:
         )
     )
 
+    # Add functions
+    expression_scope.addFunction(FUNC_ACTIVITY_NPV, ActivityNpvFunction())
+
     return expression_scope
 
 
 def register_metric_functions():
     """Register our custom functions with the expression engine."""
     # Add expression functions to be registered here
+
+    # Activity NPV
+    activity_npv_function = ActivityNpvFunction()
+    METRICS_LIBRARY.append(activity_npv_function)
 
     for func in METRICS_LIBRARY:
         QgsExpression.registerFunction(func)

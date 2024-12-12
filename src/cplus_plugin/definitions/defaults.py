@@ -243,3 +243,13 @@ BASE_API_URL = "https://stage.cplus.earth/api/v1"
 
 DEFAULT_BASE_COMPARISON_REPORT_NAME = "Scenario Comparison Report"
 MAXIMUM_COMPARISON_REPORTS = 10
+
+NPV_EXPRESSION_DESCRIPTION = (
+    "Calculates the financial NPV of the current "
+    "activity. This returns the equivalent of the "
+    "area of the current activity (in hectares) "
+    "and multiplies it by the NPV rate (US$/ha) "
+    "for the activity calculated via the NPV PWL "
+    "Manager.<br><b>NOTE: If the NPV is not defined "
+    "then the function will return -1.0.</b>"
+)
