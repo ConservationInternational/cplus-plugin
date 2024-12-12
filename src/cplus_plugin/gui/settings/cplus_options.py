@@ -545,8 +545,8 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.fw_save_online_file.setStorageMode(QgsFileWidget.StorageMode.SaveFile)
         self.fw_save_online_file.setFilter(tif_file_filter)
 
-        self.lbl_url_tip.setPixmap(FileUtils.get_pixmap("info_green.svg"))
-        self.lbl_url_tip.setScaledContents(True)
+        # self.lbl_url_tip.setPixmap(FileUtils.get_pixmap("info_green.svg"))
+        # self.lbl_url_tip.setScaledContents(True)
 
         self.btn_ic_download.setIcon(FileUtils.get_icon("downloading_svg.svg"))
         self.btn_ic_download.clicked.connect(self.on_download_irrecoverable_carbon)

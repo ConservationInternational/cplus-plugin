@@ -16,6 +16,8 @@ from qgis.core import (
     QgsRectangle,
 )
 
+from qgis.PyQt import QtCore
+
 from .base import (
     BaseModelComponent,
     BaseModelComponentType,
@@ -432,6 +434,26 @@ def extent_to_qgs_rectangle(
         spatial_extent.bbox[1],
         spatial_extent.bbox[3],
     )
+
+
+def extent_to_url_param(rect_extent: QgsRectangle) -> str:
+    """Converts the bounding box in a QgsRectangle object to the equivalent
+    param for use in a URL. 'bbox' is appended as a prefix in the URL query
+    part.
+
+    :param rect_extent: Spatial extent that defines the AOI.
+    :type rect_extent: QgsRectangle
+
+    :returns: String representing the param defining the extents of the AOI.
+    If the extent is empty, it will return an empty string.
+    :rtype: str
+    """
+    if rect_extent.isEmpty():
+        return ""
+
+    extent_param = f"bbox={rect_extent.xMinimum()!s},{rect_extent.yMinimum()!s},{rect_extent.xMaximum()!s},{rect_extent.yMaximum()!s}"
+
+    return QtCore.QUrl.toPercentEncoding(extent_param).data().decode("utf-8")
 
 
 def extent_to_project_crs_extent(
