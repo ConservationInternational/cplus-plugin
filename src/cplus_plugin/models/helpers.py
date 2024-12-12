@@ -7,10 +7,12 @@ import typing
 import uuid
 
 from qgis.core import (
+    QgsApplication,
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransform,
     QgsProject,
     QgsRasterLayer,
+    QgsReadWriteContext,
     QgsRectangle,
 )
 
@@ -27,25 +29,37 @@ from .base import (
 )
 from ..definitions.constants import (
     ACTIVITY_IDENTIFIER_PROPERTY,
+    ACTIVITY_METRICS_PROPERTY,
     ABSOLUTE_NPV_ATTRIBUTE,
+    ALIGNMENT_ATTRIBUTE,
+    AUTO_CALCULATED_ATTRIBUTE,
     CARBON_PATHS_ATTRIBUTE,
     COMPUTED_ATTRIBUTE,
     DISCOUNT_ATTRIBUTE,
-    ENABLED_ATTRIBUTE,
-    STYLE_ATTRIBUTE,
-    NAME_ATTRIBUTE,
     DESCRIPTION_ATTRIBUTE,
+    ENABLED_ATTRIBUTE,
+    EXPRESSION_ATTRIBUTE,
+    HEADER_ATTRIBUTE,
     LAYER_TYPE_ATTRIBUTE,
     MANUAL_NPV_ATTRIBUTE,
     MASK_PATHS_SEGMENT,
+    METRIC_IDENTIFIER_PROPERTY,
+    METRIC_TYPE_ATTRIBUTE,
     NPV_MAPPINGS_ATTRIBUTE,
     MAX_VALUE_ATTRIBUTE,
     MIN_VALUE_ATTRIBUTE,
+    METRIC_COLUMNS_PROPERTY,
+    MULTI_ACTIVITY_IDENTIFIER_PROPERTY,
+    NAME_ATTRIBUTE,
     NORMALIZED_NPV_ATTRIBUTE,
+    NUMBER_FORMATTER_ENABLED_ATTRIBUTE,
+    NUMBER_FORMATTER_ID_ATTRIBUTE,
+    NUMBER_FORMATTER_PROPS_ATTRIBUTE,
     PATH_ATTRIBUTE,
     PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
     REMOVE_EXISTING_ATTRIBUTE,
+    STYLE_ATTRIBUTE,
     USER_DEFINED_ATTRIBUTE,
     UUID_ATTRIBUTE,
     YEARS_ATTRIBUTE,
@@ -53,6 +67,7 @@ from ..definitions.constants import (
 )
 from ..definitions.defaults import DEFAULT_CRS_ID, QGIS_GDAL_PROVIDER
 from .financial import ActivityNpv, ActivityNpvCollection, NpvParameters
+from .report import ActivityColumnMetric, MetricColumn, MetricConfiguration, MetricType
 
 from ..utils import log
 
@@ -630,3 +645,189 @@ def layer_from_scenario_result(
         return None
 
     return layer
+
+
+def metric_column_to_dict(metric_column: MetricColumn) -> dict:
+    """Converts a metric column object to a dictionary representation.
+
+    :param metric_column: Metric column to be serialized to a dictionary.
+    :type metric_column: MetricColumn
+
+    :returns: A dictionary containing attribute values of a metric column.
+    :rtype: dict
+    """
+    formatter_props = metric_column.number_formatter.configuration(
+        QgsReadWriteContext()
+    )
+    formatter_id = metric_column.number_formatter.id()
+    if formatter_id == "default":
+        formatter_props = {}
+
+    return {
+        NAME_ATTRIBUTE: metric_column.name,
+        HEADER_ATTRIBUTE: metric_column.header,
+        EXPRESSION_ATTRIBUTE: metric_column.expression,
+        ALIGNMENT_ATTRIBUTE: metric_column.alignment,
+        AUTO_CALCULATED_ATTRIBUTE: metric_column.auto_calculated,
+        NUMBER_FORMATTER_ENABLED_ATTRIBUTE: metric_column.format_as_number,
+        NUMBER_FORMATTER_ID_ATTRIBUTE: formatter_id,
+        NUMBER_FORMATTER_PROPS_ATTRIBUTE: formatter_props,
+    }
+
+
+def create_metric_column(metric_column_dict: dict) -> typing.Optional[MetricColumn]:
+    """Creates a metric column from the equivalent dictionary representation.
+
+    :param metric_column_dict: Dictionary containing information for deserializing
+    the dict to a metric column.
+    :type metric_column_dict: dict
+
+    :returns: Metric column object or None if the deserialization failed.
+    :rtype: MetricColumn
+    """
+    number_formatter = QgsApplication.numericFormatRegistry().create(
+        metric_column_dict[NUMBER_FORMATTER_ID_ATTRIBUTE],
+        metric_column_dict[NUMBER_FORMATTER_PROPS_ATTRIBUTE],
+        QgsReadWriteContext(),
+    )
+
+    return MetricColumn(
+        metric_column_dict[NAME_ATTRIBUTE],
+        metric_column_dict[HEADER_ATTRIBUTE],
+        metric_column_dict[EXPRESSION_ATTRIBUTE],
+        metric_column_dict[ALIGNMENT_ATTRIBUTE],
+        metric_column_dict[AUTO_CALCULATED_ATTRIBUTE],
+        metric_column_dict[NUMBER_FORMATTER_ENABLED_ATTRIBUTE],
+        number_formatter,
+    )
+
+
+def activity_metric_to_dict(activity_metric: ActivityColumnMetric) -> dict:
+    """Converts an activity column metric to a dictionary representation.
+
+    :param activity_metric: Activity column metric to be serialized to a dictionary.
+    :type activity_metric: ActivityColumnMetric
+
+    :returns: A dictionary containing attribute values of an
+    activity column metric.
+    :rtype: dict
+    """
+    return {
+        ACTIVITY_IDENTIFIER_PROPERTY: str(activity_metric.activity.uuid),
+        METRIC_IDENTIFIER_PROPERTY: activity_metric.metric_column.name,
+        METRIC_TYPE_ATTRIBUTE: activity_metric.metric_type.value,
+        EXPRESSION_ATTRIBUTE: activity_metric.expression,
+    }
+
+
+def create_activity_metric(
+    activity_metric_dict: dict, activity: Activity, metric_column: MetricColumn
+) -> typing.Optional[ActivityColumnMetric]:
+    """Creates a metric column from the equivalent dictionary representation.
+
+    :param activity_metric_dict: Dictionary containing information for deserializing
+    the dict to a metric column.
+    :type activity_metric_dict: dict
+
+    :param activity: Referenced activity matching the saved UUID.
+    :type activity: str
+
+    :param metric_column: Referenced metric column matching the saved name.
+    :type metric_column: MetricColumn
+
+    :returns: Metric column object or None if the deserialization failed.
+    :rtype: MetricColumn
+    """
+    return ActivityColumnMetric(
+        activity,
+        metric_column,
+        MetricType.from_int(activity_metric_dict[METRIC_TYPE_ATTRIBUTE]),
+        activity_metric_dict[EXPRESSION_ATTRIBUTE],
+    )
+
+
+def metric_configuration_to_dict(metric_configuration: MetricConfiguration) -> dict:
+    """Serializes a metric configuration to dict.
+
+    :param metric_configuration: Metric configuration to tbe serialized.
+    :type metric_configuration: MetricConfiguration
+
+    :returns: A dictionary representing a metric configuration.
+    :rtype: MetricConfiguration
+    """
+    metric_config_dict = {}
+
+    metric_column_dicts = [
+        metric_column_to_dict(mc) for mc in metric_configuration.metric_columns
+    ]
+    metric_config_dict[METRIC_COLUMNS_PROPERTY] = metric_column_dicts
+
+    activity_column_metrics = []
+    for activity_columns in metric_configuration.activity_metrics:
+        column_metrics = []
+        for activity_column_metric in activity_columns:
+            column_metrics.append(activity_metric_to_dict(activity_column_metric))
+        activity_column_metrics.append(column_metrics)
+
+    metric_config_dict[ACTIVITY_METRICS_PROPERTY] = activity_column_metrics
+
+    activity_identifiers = [
+        str(activity.uuid) for activity in metric_configuration.activities
+    ]
+    metric_config_dict[MULTI_ACTIVITY_IDENTIFIER_PROPERTY] = activity_identifiers
+
+    return metric_config_dict
+
+
+def create_metric_configuration(
+    metric_configuration_dict: dict, referenced_activities: typing.List[Activity]
+) -> typing.Optional[MetricConfiguration]:
+    """Creates a metric configuration from the equivalent dictionary representation.
+
+    :param metric_configuration_dict: Dictionary containing information for deserializing
+    a metric configuration object.
+    :type metric_configuration_dict: dict
+
+    :param referenced_activities: Activities which will be used to extract those
+    referenced in the metric configuration.
+    :type referenced_activities: typing.List[Activity]
+
+    :returns: Metric configuration object or None if the deserialization failed.
+    :rtype: MetricConfiguration
+    """
+    if len(metric_configuration_dict) == 0:
+        return None
+
+    metric_column_dicts = metric_configuration_dict[METRIC_COLUMNS_PROPERTY]
+    metric_columns = [create_metric_column(mc_dict) for mc_dict in metric_column_dicts]
+
+    indexed_metric_columns = {mc.name: mc for mc in metric_columns}
+    indexed_activities = {
+        str(activity.uuid): activity for activity in referenced_activities
+    }
+
+    activity_column_metrics = []
+    activity_column_metric_dicts = metric_configuration_dict[ACTIVITY_METRICS_PROPERTY]
+    for activity_row_dict in activity_column_metric_dicts:
+        if len(activity_row_dict) == 0:
+            continue
+
+        # Check if the activity exists
+        activity_id = activity_row_dict[0][ACTIVITY_IDENTIFIER_PROPERTY]
+        if activity_id not in indexed_activities:
+            # Most likely the activity in the metric config has been deleted
+            continue
+
+        activity_row_metrics = []
+        for activity_metric_dict in activity_row_dict:
+            name = activity_metric_dict[METRIC_IDENTIFIER_PROPERTY]
+            activity = indexed_activities[activity_id]
+            metric_column = indexed_metric_columns[name]
+
+            activity_row_metrics.append(
+                create_activity_metric(activity_metric_dict, activity, metric_column)
+            )
+
+        activity_column_metrics.append(activity_row_metrics)
+
+    return MetricConfiguration(metric_columns, activity_column_metrics)
