@@ -261,6 +261,14 @@ class Settings(enum.Enum):
     IRRECOVERABLE_CARBON_ONLINE_LOCAL_PATH = (
         "carbon/irrecoverable_carbon_online_local_dir"
     )
+    # Download status of the IC layer - int enum
+    IRRECOVERABLE_CARBON_ONLINE_DOWNLOAD_STATUS = (
+        "carbon/irrecoverable_carbon_online_download_status"
+    )
+    # Brief description of download status
+    IRRECOVERABLE_CARBON_ONLINE_STATUS_DESCRIPTION = (
+        "carbon/irrecoverable_carbon_online_status_description"
+    )
 
 
 class SettingsManager(QtCore.QObject):

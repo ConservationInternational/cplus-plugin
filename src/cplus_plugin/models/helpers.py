@@ -451,9 +451,13 @@ def extent_to_url_param(rect_extent: QgsRectangle) -> str:
     if rect_extent.isEmpty():
         return ""
 
-    extent_param = f"bbox={rect_extent.xMinimum()!s},{rect_extent.yMinimum()!s},{rect_extent.xMaximum()!s},{rect_extent.yMaximum()!s}"
+    url_query = QtCore.QUrlQuery()
+    url_query.addQueryItem(
+        "bbox",
+        f"{rect_extent.xMinimum()!s},{rect_extent.yMinimum()!s},{rect_extent.xMaximum()!s},{rect_extent.yMaximum()!s}",
+    )
 
-    return QtCore.QUrl.toPercentEncoding(extent_param).data().decode("utf-8")
+    return url_query.toString()
 
 
 def extent_to_project_crs_extent(

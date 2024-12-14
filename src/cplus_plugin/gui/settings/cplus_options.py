@@ -27,6 +27,11 @@ from qgis.utils import iface
 from qgis.PyQt.QtWidgets import QFileDialog, QListWidgetItem, QMessageBox, QWidget
 from qgis.PyQt import QtCore
 
+from ...api.base import ApiRequestStatus
+from ...api.carbon import (
+    start_irrecoverable_carbon_download,
+    get_downloader_task,
+)
 from ...conf import (
     settings_manager,
     Settings,
@@ -551,6 +556,10 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.btn_ic_download.setIcon(FileUtils.get_icon("downloading_svg.svg"))
         self.btn_ic_download.clicked.connect(self.on_download_irrecoverable_carbon)
 
+        # Use the task to get real time updates on the download progress
+        self._irrecoverable_carbon_downloader = None
+        self._configure_irrecoverable_carbon_downloader_updates()
+
         # Load gui default value from settings
         auth_id = settings.value("cplusplugin/auth")
         if auth_id is not None:
@@ -824,6 +833,63 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         self.validate_current_irrecoverable_data_source()
 
+        self.reload_irrecoverable_carbon_download_status()
+
+    def reload_irrecoverable_carbon_download_status(self):
+        """Fetch the latest download status of the irrecoverable carbon
+        dataset from the online source if applicable.
+        """
+        status = settings_manager.get_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_DOWNLOAD_STATUS, None, int
+        )
+        if status is None:
+            return
+
+        # Set notification icon
+        path = ""
+        status_type = ApiRequestStatus.from_int(status)
+        if status_type == ApiRequestStatus.COMPLETED:
+            path = FileUtils.get_icon_path("mIconSuccess.svg")
+        elif status_type == ApiRequestStatus.ERROR:
+            path = FileUtils.get_icon_path("mIconWarning.svg")
+        elif status_type == ApiRequestStatus.NOT_STARTED:
+            path = FileUtils.get_icon_path("mIndicatorTemporal.svg")
+        elif status_type == ApiRequestStatus.IN_PROGRESS:
+            path = FileUtils.get_icon_path("progress-indicator.svg")
+        elif status_type == ApiRequestStatus.CANCELED:
+            path = FileUtils.get_icon_path("mTaskCancel.svg")
+
+        self.lbl_download_status_tip.svg_path = path
+
+        # Set notification description
+        description = settings_manager.get_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_STATUS_DESCRIPTION, "", str
+        )
+        self.lbl_ic_download_status.setText(description)
+
+    def _configure_irrecoverable_carbon_downloader_updates(self):
+        """Get current downloader and connect the signals of the
+        task in order to update the UI.
+        """
+        # Use the task to get real time updates on the download progress
+        self._irrecoverable_carbon_downloader = get_downloader_task()
+
+        if self._irrecoverable_carbon_downloader is None:
+            return
+
+        self._irrecoverable_carbon_downloader.started.connect(
+            self.reload_irrecoverable_carbon_download_status
+        )
+        self._irrecoverable_carbon_downloader.canceled.connect(
+            self.reload_irrecoverable_carbon_download_status
+        )
+        self._irrecoverable_carbon_downloader.completed.connect(
+            self.reload_irrecoverable_carbon_download_status
+        )
+        self._irrecoverable_carbon_downloader.error_occurred.connect(
+            self.reload_irrecoverable_carbon_download_status
+        )
+
     def validate_irrecoverable_carbon_url(self) -> bool:
         """Checks if the irrecoverable data URL is valid.
 
@@ -837,6 +903,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             self.message_bar.pushWarning(
                 tr("CPLUS - Irrecoverable carbon dataset"), tr("URL not defined")
             )
+            return False
 
         url_checker = QtCore.QUrl(dataset_url, QtCore.QUrl.StrictMode)
         if url_checker.isLocalFile():
@@ -844,24 +911,64 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
                 tr("CPLUS - Irrecoverable carbon dataset"),
                 tr("Invalid URL referencing a local file"),
             )
+            return False
         else:
             if not url_checker.isValid():
                 self.message_bar.pushWarning(
                     tr("CPLUS - Irrecoverable carbon dataset"),
                     tr("URL is invalid."),
                 )
+                return False
+
+        return True
 
     def on_download_irrecoverable_carbon(self):
         """Slot raised to check download link and initiate download
         process of the irrecoverable carbon data.
+
+        The function will check and save the currently defined local
+        save as path for the reference dataset as this will be required
+        and fetched by the background download process.
+
         """
         valid_url = self.validate_irrecoverable_carbon_url()
         if not valid_url:
-            log(
-                tr("Link for downloading irrecoverable carbon data is invalid."),
-                info=False,
-            )
+            tr_title = tr("CPLUS - Online irrecoverable carbon dataset")
+            tr_msg = tr("URL for downloading irrecoverable carbon data is invalid.")
+            self.message_bar.pushWarning(tr_title, tr_msg)
+
             return
+
+        if not self.fw_save_online_file.filePath():
+            tr_title = tr("CPLUS - Online irrecoverable carbon dataset")
+            tr_msg = tr(
+                "File path for saving downloaded irrecoverable "
+                "carbon dataset not defined"
+            )
+            self.message_bar.pushWarning(tr_title, tr_msg)
+
+            return
+
+        # Check if the local path has been saved in settings or varies from
+        # what already is saved in settings
+        download_save_path = self.fw_save_online_file.filePath()
+        if (
+            settings_manager.get_value(
+                Settings.IRRECOVERABLE_CARBON_ONLINE_LOCAL_PATH,
+                default="",
+                setting_type=str,
+            )
+            != download_save_path
+        ):
+            settings_manager.set_value(
+                Settings.IRRECOVERABLE_CARBON_ONLINE_LOCAL_PATH, download_save_path
+            )
+
+        # (Re)initiate download
+        start_irrecoverable_carbon_download()
+
+        # Get downloader for UI updates
+        self._configure_irrecoverable_carbon_downloader_updates()
 
     def validate_current_irrecoverable_data_source(self):
         """Checks if the currently selected irrecoverable data source

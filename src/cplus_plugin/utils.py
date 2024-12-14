@@ -448,6 +448,18 @@ class FileUtils:
         return f"{FileUtils.plugin_dir()}/data/fonts"
 
     @staticmethod
+    def get_icon_path(file_name: str) -> str:
+        """Gets the full path of the icon with the given name.
+
+        :param file_name: File name which should include the extension.
+        :type file_name: str
+
+        :returns: The full path to the icon in the plugin.
+        :rtype: str
+        """
+        return os.path.normpath(f"{FileUtils.plugin_dir()}/icons/{file_name}")
+
+    @staticmethod
     def get_icon(file_name: str) -> QtGui.QIcon:
         """Creates an icon based on the icon name in the 'icons' folder.
 
@@ -457,7 +469,7 @@ class FileUtils:
         :returns: Icon object matching the file name.
         :rtype: QtGui.QIcon
         """
-        icon_path = os.path.normpath(f"{FileUtils.plugin_dir()}/icons/{file_name}")
+        icon_path = FileUtils.get_icon_path(file_name)
 
         if not os.path.exists(icon_path):
             return QtGui.QIcon()
