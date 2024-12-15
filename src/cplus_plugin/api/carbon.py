@@ -147,12 +147,11 @@ class IrrecoverableCarbonDownloadTask(QgsTask):
         self._downloader.downloadCompleted.disconnect(self._on_download_completed)
 
     def run(self) -> bool:
-        """Initiates the report generation process and returns
-        a result indicating whether the process succeeded or
-        failed.
+        """Initiates the download of irrecoverable carbon dataset process and
+        returns a result indicating whether the process succeeded or failed.
 
-        :returns: True if the report generation process succeeded
-        or False it if failed.
+        :returns: True if the download process succeeded or False it if
+        failed.
         :rtype: bool
         """
         if self.isCanceled():
@@ -210,7 +209,7 @@ class IrrecoverableCarbonDownloadTask(QgsTask):
             )
             return False
 
-        # Use to block downloader until it finishes or encounters an error
+        # Use to block downloader until it completes or encounters an error
         self._event_loop = QtCore.QEventLoop(self)
 
         self._downloader = QgsFileDownloader(

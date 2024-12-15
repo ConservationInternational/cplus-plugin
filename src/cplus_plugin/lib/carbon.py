@@ -340,6 +340,8 @@ class IrrecoverableCarbonCalculator:
 
         protect_data_sources = [layer.source() for layer in valid_protect_layers]
 
+        # First merge the protect NCS pathways into one raster
+
         boolean_args = {
             "INPUT": protect_data_sources,
             "REF_LAYER": protect_data_sources[0],

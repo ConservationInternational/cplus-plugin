@@ -277,7 +277,7 @@ class ScenarioComparisonReportGeneratorTask(BaseScenarioReportGeneratorTask):
     def __init__(self, description: str, context: ScenarioComparisonReportContext):
         super().__init__(description, context)
         self._generator = ScenarioComparisonReportGenerator(
-            context, self._context.feedback
+            self, context, self._context.feedback
         )
 
     def finished(self, result: bool):

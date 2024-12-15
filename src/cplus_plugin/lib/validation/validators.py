@@ -601,7 +601,7 @@ class NoDataValueValidator(BaseRuleValidator):
 class ResolutionValidator(BaseRuleValidator):
     """Checks if datasets have the same spatial resolution."""
 
-    DECIMAL_PLACES = 6
+    DECIMAL_PLACES = 3
 
     def _validate(self) -> bool:
         """Checks whether input datasets have the same

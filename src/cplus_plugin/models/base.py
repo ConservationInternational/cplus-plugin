@@ -297,14 +297,12 @@ class NcsPathwayType(IntEnum):
         integer else unknown if not found.
         :rtype: NcsPathwayType
         """
-        if int_enum == 0:
-            return NcsPathwayType.PROTECT
-        elif int_enum == 1:
-            return NcsPathwayType.RESTORE
-        elif int_enum == 2:
-            return NcsPathwayType.MANAGE
-        else:
-            return NcsPathwayType.UNDEFINED
+        return {
+            0: NcsPathwayType.PROTECT,
+            1: NcsPathwayType.RESTORE,
+            2: NcsPathwayType.MANAGE,
+            -1: NcsPathwayType.UNDEFINED,
+        }[int_enum]
 
 
 @dataclasses.dataclass
@@ -714,9 +712,8 @@ class DataSourceType(IntEnum):
         integer else unknown if not found.
         :rtype: DataSourceType
         """
-        if int_enum == 0:
-            return DataSourceType.LOCAL
-        elif int_enum == 1:
-            return DataSourceType.ONLINE
-        else:
-            return DataSourceType.UNDEFINED
+        return {
+            0: DataSourceType.LOCAL,
+            1: DataSourceType.ONLINE,
+            -1: DataSourceType.UNDEFINED,
+        }[int_enum]
