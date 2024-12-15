@@ -295,9 +295,11 @@ class IrrecoverableCarbonCalculator:
         will return -1.0.
         :rtype: float
         """
+        log_prefix = "Irrecoverable Carbon Calculation"
+
         if len(self._activity.pathways) == 0:
             log(
-                f"Irrecoverable Carbon Calculation - There are no pathways in "
+                f"{log_prefix} - There are no pathways in "
                 f"{self._activity.name} activity.",
                 info=False,
             )
@@ -311,7 +313,7 @@ class IrrecoverableCarbonCalculator:
 
         if len(protect_pathways) == 0:
             log(
-                f"Irrecoverable Carbon Calculation - There are no protect pathways in "
+                f"{log_prefix} - There are no protect pathways in "
                 f"{self._activity.name} activity.",
                 info=False,
             )
@@ -321,7 +323,7 @@ class IrrecoverableCarbonCalculator:
         valid_protect_layers = [layer for layer in protect_layers if layer.isValid()]
         if len(valid_protect_layers) == 0:
             log(
-                f"Irrecoverable Carbon Calculation - There are no valid protect pathway layers in "
+                f"{log_prefix} - There are no valid protect pathway layers in "
                 f"{self._activity.name} activity.",
                 info=False,
             )
@@ -330,28 +332,61 @@ class IrrecoverableCarbonCalculator:
         if len(valid_protect_layers) != len(protect_layers):
             # Just warn if some layers were excluded
             log(
-                f"Irrecoverable Carbon Calculation - Some protect pathway layers are invalid and will be "
+                f"{log_prefix} - Some protect pathway layers are invalid and will be "
                 f"exclude from the irrecoverable carbon calculation.",
                 info=False,
             )
 
-        # Perform a union of the pathways
         processing_context = QgsProcessingContext()
 
         protect_data_sources = [layer.source() for layer in valid_protect_layers]
 
         # First merge the protect NCS pathways into one raster
-
-        boolean_args = {
+        merge_args = {
             "INPUT": protect_data_sources,
-            "REF_LAYER": protect_data_sources[0],
+            "PCT": False,
+            "SEPARATE": False,
+            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+        }
+        merge_result = None
+        try:
+            log(
+                f"{log_prefix} - Merging protected NCS pathways: {', '.join(protect_data_sources)}..."
+            )
+            merge_result = processing.run(
+                "gdal:merge",
+                merge_args,
+                context=processing_context,
+            )
+        except QgsProcessingException as ex:
+            log(
+                f"{log_prefix} - Error creating a union of protect NCS pathways.",
+                info=False,
+            )
+            return -1.0
+
+        merged_layer_path = merge_result["OUTPUT"]
+        merged_layer = QgsRasterLayer(merged_layer_path, "merged_pathways")
+        if not merged_layer.isValid():
+            log(
+                f"{log_prefix} - Merged protect pathways layer is invalid.",
+                info=False,
+            )
+            return -1.0
+
+        # Perform a binary transformation to get only the valid pixels for analysis
+        boolean_args = {
+            "INPUT": merged_layer_path,
+            "REF_LAYER": merged_layer_path,
             "NODATA_AS_FALSE": True,
-            "NO_DATA": -9999,
             "DATA_TYPE": 11,  # Since we are only dealing wih 0s and 1s, this will help reduce the size of the output file.
             "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
         }
         boolean_result = None
         try:
+            log(
+                f"{log_prefix} - Performing binary conversion of merged protected NCS pathways..."
+            )
             boolean_result = processing.run(
                 "native:rasterlogicalor",
                 boolean_args,
@@ -359,25 +394,29 @@ class IrrecoverableCarbonCalculator:
             )
         except QgsProcessingException as ex:
             log(
-                "Irrecoverable Carbon Calculation - Error creating a union of protect NCS pathways.",
+                f"{log_prefix} - Error creating a binary of merged protect NCS pathways.",
                 info=False,
             )
             return -1.0
 
-        carbon_calc_layer_path = boolean_result["OUTPUT"]
-        aggregate_layer = QgsRasterLayer(carbon_calc_layer_path, "aggregate_pathways")
-        if not aggregate_layer.isValid():
+        binary_layer_path = boolean_result["OUTPUT"]
+        binary_layer = QgsRasterLayer(binary_layer_path, "binary_pathways")
+        if not binary_layer.isValid():
             log(
-                "Irrecoverable Carbon Calculation - Aggregate protect pathways layer is invalid.",
+                f"{log_prefix} - Merged protect pathways layer is invalid.",
                 info=False,
             )
             return -1.0
 
         # Reproject the aggregated protect raster if required
-        if aggregate_layer.crs() != QgsCoordinateReferenceSystem("EPSG:4326"):
+        if binary_layer.crs() != QgsCoordinateReferenceSystem("EPSG:4326"):
+            log(
+                f"{log_prefix} - Binary protected pathways layer has a different CRS from "
+                f"the reference mean irrecoverable carbon dataset."
+            )
             reproject_args = {
-                "INPUT": carbon_calc_layer_path,
-                "SOURCE_CRS": valid_protect_layers[0].crs(),
+                "INPUT": binary_layer_path,
+                "SOURCE_CRS": binary_layer.crs(),
                 "TARGET_CRS": QgsCoordinateReferenceSystem(
                     "EPSG:4326"
                 ),  # Global IC reference raster
@@ -389,6 +428,7 @@ class IrrecoverableCarbonCalculator:
             }
             reproject_result = None
             try:
+                log(f"{log_prefix} - Re-projecting binary protected NCS pathways...")
                 reproject_result = processing.run(
                     "gdal:warpreproject",
                     reproject_args,
@@ -396,21 +436,20 @@ class IrrecoverableCarbonCalculator:
                 )
             except QgsProcessingException as ex:
                 log(
-                    "Irrecoverable Carbon Calculation - Error re-projecting the "
+                    f"{log_prefix} - Error re-projecting the "
                     "aggregate protect NCS pathways.",
                     info=False,
                 )
                 return -1.0
 
-            carbon_calc_layer_path = reproject_result["OUTPUT"]
+            binary_layer_path = reproject_result["OUTPUT"]
 
         reprojected_protect_layer = QgsRasterLayer(
-            carbon_calc_layer_path, "reprojected_protect_pathway"
+            binary_layer_path, "reprojected_protect_pathway"
         )
         if not reprojected_protect_layer.isValid():
             log(
-                "Irrecoverable Carbon Calculation - Reprojected "
-                "protect pathways layer is invalid.",
+                f"{log_prefix} - Reprojected " "protect pathways layer is invalid.",
                 info=False,
             )
             return -1.0
@@ -420,8 +459,9 @@ class IrrecoverableCarbonCalculator:
         )
         if total_irrecoverable_carbon == -1.0:
             log(
-                "Irrecoverable Carbon Calculation - Error occurred in "
-                "calculating the total irrecoverable carbon. See logs for details.",
+                f"{log_prefix} - Error occurred in "
+                "calculating the total irrecoverable carbon. See preceding logs "
+                "for details.",
                 info=False,
             )
 
