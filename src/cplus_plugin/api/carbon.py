@@ -35,6 +35,7 @@ class IrrecoverableCarbonDownloadTask(QgsTask):
         self._downloader = None
         self._event_loop = None
         self._errors = None
+        self._successfully_completed = False
 
     @property
     def errors(self) -> typing.List[str]:
@@ -44,6 +45,16 @@ class IrrecoverableCarbonDownloadTask(QgsTask):
         :rtype: typing.List[str]
         """
         return [] if self._errors is None else self._errors
+
+    @property
+    def has_completed(self) -> bool:
+        """Indicates whether the file was successfully downloaded.
+
+        :returns: True if the file was successfully downloaded, else
+        False.
+        :rtype: bool
+        """
+        return self._successfully_completed
 
     def cancel(self):
         """Cancel the download process."""
@@ -103,6 +114,8 @@ class IrrecoverableCarbonDownloadTask(QgsTask):
         )
 
         self._event_loop.quit()
+
+        self._successfully_completed = True
 
         self.completed.emit()
 
