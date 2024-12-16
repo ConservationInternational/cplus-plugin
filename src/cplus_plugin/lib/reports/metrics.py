@@ -19,8 +19,6 @@ from qgis.core import (
 from ...definitions.defaults import (
     BASE_PLUGIN_NAME,
     MEAN_BASED_IRRECOVERABLE_CARBON_EXPRESSION_DESCRIPTION,
-    NPV_EXPRESSION_DESCRIPTION,
-    PWL_IMPACT_EXPRESSION_DESCRIPTION,
 )
 from ..carbon import IrrecoverableCarbonCalculator
 from ...models.report import ActivityContextInfo, MetricEvalResult

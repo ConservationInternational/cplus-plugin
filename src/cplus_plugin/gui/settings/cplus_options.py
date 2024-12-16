@@ -698,24 +698,25 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             )
 
         # Irrecoverable carbon
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_LOCAL_SOURCE,
+            self.fw_irrecoverable_carbon.filePath(),
+        )
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE, self.txt_ic_url.text()
+        )
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_LOCAL_PATH,
+            self.fw_save_online_file.filePath(),
+        )
+
         if self.rb_local.isChecked():
             settings_manager.set_value(
                 Settings.IRRECOVERABLE_CARBON_SOURCE_TYPE, DataSourceType.LOCAL.value
             )
-            settings_manager.set_value(
-                Settings.IRRECOVERABLE_CARBON_LOCAL_SOURCE,
-                self.fw_irrecoverable_carbon.filePath(),
-            )
         elif self.rb_online.isChecked():
             settings_manager.set_value(
                 Settings.IRRECOVERABLE_CARBON_SOURCE_TYPE, DataSourceType.ONLINE.value
-            )
-            settings_manager.set_value(
-                Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE, self.txt_ic_url.text()
-            )
-            settings_manager.set_value(
-                Settings.IRRECOVERABLE_CARBON_ONLINE_LOCAL_PATH,
-                self.fw_save_online_file.filePath(),
             )
 
         settings_manager.set_value(
