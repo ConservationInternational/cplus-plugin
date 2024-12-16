@@ -6,7 +6,6 @@ Unit tests for data validation module.
 from unittest import TestCase
 
 from qgis.PyQt.QtCore import QCoreApplication
-from qgis.PyQt.QtTest import QSignalSpy
 
 from cplus_plugin.lib.validation.configs import (
     carbon_resolution_validation_config,

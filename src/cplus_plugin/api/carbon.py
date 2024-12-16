@@ -29,13 +29,14 @@ class IrrecoverableCarbonDownloadTask(QgsTask):
     canceled = QtCore.pyqtSignal()
     completed = QtCore.pyqtSignal()
     started = QtCore.pyqtSignal()
+    exited = QtCore.pyqtSignal()
 
     def __init__(self):
         super().__init__(tr("Downloading irrecoverable carbon dataset"))
         self._downloader = None
         self._event_loop = None
         self._errors = None
-        self._successfully_completed = False
+        self._exited = False
 
     @property
     def errors(self) -> typing.List[str]:
@@ -47,14 +48,13 @@ class IrrecoverableCarbonDownloadTask(QgsTask):
         return [] if self._errors is None else self._errors
 
     @property
-    def has_completed(self) -> bool:
-        """Indicates whether the file was successfully downloaded.
+    def has_exited(self) -> bool:
+        """Indicates whether the downloader has exited.
 
-        :returns: True if the file was successfully downloaded, else
-        False.
+        :returns: True if the downloader exited, else False.
         :rtype: bool
         """
-        return self._successfully_completed
+        return self._exited
 
     def cancel(self):
         """Cancel the download process."""
@@ -63,9 +63,10 @@ class IrrecoverableCarbonDownloadTask(QgsTask):
             self._update_download_status(ApiRequestStatus.CANCELED, "Download canceled")
             self.disconnect_receivers()
 
-        self._event_loop.quit()
-
         super().cancel()
+
+        if self._event_loop:
+            self._event_loop.quit()
 
         log("Irrecoverable carbon dataset task canceled.")
 
@@ -95,6 +96,14 @@ class IrrecoverableCarbonDownloadTask(QgsTask):
         self._event_loop.quit()
 
         self.canceled.emit()
+
+    def _on_download_exited(self):
+        """Slot raised when the download has exited."""
+        self._event_loop.quit()
+
+        self._exited = True
+
+        self.exited.emit()
 
     def _on_download_completed(self, url: QtCore.QUrl):
         """Slot raised when the download is complete.
@@ -158,6 +167,7 @@ class IrrecoverableCarbonDownloadTask(QgsTask):
         self._downloader.downloadCanceled.disconnect(self._on_download_canceled)
         self._downloader.downloadProgress.disconnect(self._on_progress_changed)
         self._downloader.downloadCompleted.disconnect(self._on_download_completed)
+        self._downloader.downloadExited.disconnect(self._on_download_exited)
 
     def run(self) -> bool:
         """Initiates the download of irrecoverable carbon dataset process and
@@ -232,6 +242,7 @@ class IrrecoverableCarbonDownloadTask(QgsTask):
         self._downloader.downloadCanceled.connect(self._on_download_canceled)
         self._downloader.downloadProgress.connect(self._on_progress_changed)
         self._downloader.downloadCompleted.connect(self._on_download_completed)
+        self._downloader.downloadExited.connect(self._on_download_exited)
 
         self._update_download_status(
             ApiRequestStatus.NOT_STARTED, tr("Download not started")
