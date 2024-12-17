@@ -17,6 +17,7 @@ from cplus_plugin.lib.reports.metrics import (
     create_metrics_expression_context,
     evaluate_activity_metric,
     FUNC_ACTIVITY_NPV,
+    FUNC_PWL_IMPACT,
     register_metric_functions,
     unregister_metric_functions,
 )
@@ -133,3 +134,21 @@ class TestMetricExpressions(TestCase):
 
         self.assertTrue(result.success)
         self.assertEqual(result.value, reference_activity_npv)
+
+    def test_activity_pwl_impact_expression_function(self):
+        """Test the calculation of the PWL impact of an activity
+        using an expression function.
+        """
+        reference_area = 2000
+        custom_jobs_per_ha = 1.5
+
+        register_metric_functions()
+        context = create_metrics_expression_context()
+        activity_context_info = ActivityContextInfo(get_activity(), reference_area)
+
+        result = evaluate_activity_metric(
+            context, activity_context_info, f"{FUNC_PWL_IMPACT}({custom_jobs_per_ha!s})"
+        )
+
+        self.assertTrue(result.success)
+        self.assertEqual(result.value, reference_area * custom_jobs_per_ha)

@@ -253,3 +253,12 @@ NPV_EXPRESSION_DESCRIPTION = (
     "Manager.<br><b>NOTE: If the NPV is not defined "
     "then the function will return -1.0.</b>"
 )
+
+PWL_IMPACT_EXPRESSION_DESCRIPTION = (
+    "Calculates the impact of the "
+    "current activity by multiplying "
+    "the area of the activity (in hectares) "
+    "by a user-defined number of jobs created per "
+    "hectare. The activity area will be "
+    "automatically populated during the computation."
+)

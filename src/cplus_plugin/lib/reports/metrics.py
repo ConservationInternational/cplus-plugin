@@ -16,7 +16,7 @@ from qgis.core import (
     QgsScopedExpressionFunction,
 )
 
-from ...definitions.defaults import BASE_PLUGIN_NAME, NPV_EXPRESSION_DESCRIPTION
+from ...definitions.defaults import BASE_PLUGIN_NAME, NPV_EXPRESSION_DESCRIPTION, PWL_IMPACT_EXPRESSION_DESCRIPTION
 from ..financials import calculate_activity_npv
 from ...models.report import ActivityContextInfo, MetricEvalResult
 from ...utils import function_help_to_html, log, tr
@@ -31,6 +31,7 @@ VAR_ACTIVITY_ID = "cplus_activity_id"
 
 # Function names
 FUNC_ACTIVITY_NPV = "activity_npv"
+FUNC_PWL_IMPACT = "pwl_impact"
 
 
 class ActivityNpvFunction(QgsScopedExpressionFunction):
@@ -92,6 +93,83 @@ class ActivityNpvFunction(QgsScopedExpressionFunction):
         return ActivityNpvFunction()
 
 
+class ActivityPwlImpactFunction(QgsScopedExpressionFunction):
+    """Calculates the PWL impact an activity."""
+
+    def __init__(self):
+        arg_name = "custom_impact"
+        example_intro = (
+            f"For an activity with an area of 20,000 ha, "
+            f"{FUNC_PWL_IMPACT}(1.5) will return"
+        )
+        help_html = function_help_to_html(
+            FUNC_PWL_IMPACT,
+            tr(PWL_IMPACT_EXPRESSION_DESCRIPTION),
+            [
+                (
+                    arg_name,
+                    tr(
+                        "An integer or float representing the "
+                        "number of jobs created per hectare."
+                    ),
+                    False,
+                )
+            ],
+            [(tr(example_intro), "30,000")],
+        )
+        super().__init__(
+            FUNC_PWL_IMPACT, 1, BASE_PLUGIN_NAME, help_html, isContextual=True
+        )
+
+    def func(
+        self,
+        values: typing.List[typing.Any],
+        context: QgsExpressionContext,
+        parent: QgsExpression,
+        node: QgsExpressionNodeFunction,
+    ) -> typing.Any:
+        """Returns the result of evaluating the function.
+
+        :param values: List of values passed to the function
+        :type values: typing.Iterable[typing.Any]
+
+        :param context: Context expression is being evaluated against
+        :type context: QgsExpressionContext
+
+        :param parent: Parent expression
+        :type parent: QgsExpression
+
+        :param node: Expression node
+        :type node: QgsExpressionNodeFunction
+
+        :returns: The result of the function.
+        :rtype: typing.Any
+        """
+        if len(values) == 0:
+            return -1.0
+
+        if not context.hasVariable(VAR_ACTIVITY_AREA):
+            return -1.0
+
+        num_jobs = values[0]
+        activity_area = context.variable(VAR_ACTIVITY_AREA)
+
+        if not isinstance(activity_area, (float, int)) or not isinstance(
+            num_jobs, (float, int)
+        ):
+            return -1.0
+
+        return activity_area * num_jobs
+
+    def clone(self) -> "ActivityPwlImpactFunction":
+        """Gets a clone of this function.
+
+        :returns: A clone of this function.
+        :rtype: ActivityPwlImpactFunction
+        """
+        return ActivityPwlImpactFunction()
+
+
 def create_metrics_expression_scope() -> QgsExpressionContextScope:
     """Creates the expression context scope for activity metrics.
 
@@ -123,8 +201,8 @@ def create_metrics_expression_scope() -> QgsExpressionContextScope:
             description=tr("The name of the activity being evaluated."),
         )
     )
-
     # Add functions
+    expression_scope.addFunction(FUNC_PWL_IMPACT, ActivityPwlImpactFunction())
     expression_scope.addFunction(FUNC_ACTIVITY_NPV, ActivityNpvFunction())
 
     return expression_scope
@@ -137,6 +215,10 @@ def register_metric_functions():
     # Activity NPV
     activity_npv_function = ActivityNpvFunction()
     METRICS_LIBRARY.append(activity_npv_function)
+
+    # PWL impact
+    activity_pwl_impact_function = ActivityPwlImpactFunction()
+    METRICS_LIBRARY.append(activity_pwl_impact_function)
 
     for func in METRICS_LIBRARY:
         QgsExpression.registerFunction(func)
