@@ -243,3 +243,12 @@ BASE_API_URL = "https://stage.cplus.earth/api/v1"
 
 DEFAULT_BASE_COMPARISON_REPORT_NAME = "Scenario Comparison Report"
 MAXIMUM_COMPARISON_REPORTS = 10
+
+PWL_IMPACT_EXPRESSION_DESCRIPTION = (
+    "Calculates the impact of the "
+    "current activity by multiplying "
+    "the area of the activity (in hectares) "
+    "by a user-defined number of jobs created per "
+    "hectare. The activity area will be "
+    "automatically populated during the computation."
+)
