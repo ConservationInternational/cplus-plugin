@@ -254,6 +254,8 @@ def calculate_irrecoverable_carbon_from_mean(
         ic_pixel_count
     )
 
+    log("Calculating the total irrecoverable carbon...")
+
     return MEAN_REFERENCE_LAYER_AREA * ic_pixel_count * ic_mean
 
 
@@ -346,7 +348,7 @@ class IrrecoverableCarbonCalculator:
         merge_result = None
         try:
             log(
-                f"{LOG_PREFIX} - Merging protected NCS pathways: {', '.join(protect_data_sources)}..."
+                f"{LOG_PREFIX} - Merging protect NCS pathways: {', '.join(protect_data_sources)}..."
             )
             merge_result = processing.run(
                 "gdal:merge",
@@ -381,7 +383,7 @@ class IrrecoverableCarbonCalculator:
         boolean_result = None
         try:
             log(
-                f"{LOG_PREFIX} - Performing binary conversion of merged protected NCS pathways..."
+                f"{LOG_PREFIX} - Performing binary conversion of merged protect NCS pathways..."
             )
             boolean_result = processing.run(
                 "native:rasterlogicalor",
@@ -407,7 +409,7 @@ class IrrecoverableCarbonCalculator:
         # Reproject the aggregated protect raster if required
         if binary_layer.crs() != QgsCoordinateReferenceSystem("EPSG:4326"):
             log(
-                f"{LOG_PREFIX} - Binary protected pathways layer has a different CRS from "
+                f"{LOG_PREFIX} - Binary protect pathways layer has a different CRS from "
                 f"the reference mean irrecoverable carbon dataset."
             )
             reproject_args = {
@@ -460,5 +462,9 @@ class IrrecoverableCarbonCalculator:
                 "for details.",
                 info=False,
             )
+
+        log(
+            f"Finished calculating the total irrecoverable carbon of {self._activity.name} as {total_irrecoverable_carbon!s}"
+        )
 
         return total_irrecoverable_carbon

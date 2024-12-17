@@ -20,7 +20,7 @@ from ...definitions.defaults import (
     BASE_PLUGIN_NAME,
     MEAN_BASED_IRRECOVERABLE_CARBON_EXPRESSION_DESCRIPTION,
     NPV_EXPRESSION_DESCRIPTION,
-    PWL_IMPACT_EXPRESSION_DESCRIPTION
+    PWL_IMPACT_EXPRESSION_DESCRIPTION,
 )
 from ..carbon import IrrecoverableCarbonCalculator
 from ..financials import calculate_activity_npv
