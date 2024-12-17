@@ -70,7 +70,8 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         pathways = settings_manager.get_default_layers("ncs_pathway")
         self.cbo_default_layer.addItem("")
-        self.cbo_default_layer.addItems([p["name"] for p in pathways])
+        items = sorted([p["metadata"].get("name", p["name"]) for p in pathways])
+        self.cbo_default_layer.addItems(items)
         self.cbo_default_layer.setCurrentIndex(0)
         self.cbo_default_layer.currentIndexChanged.connect(
             self._on_default_layer_selection_changed
@@ -307,7 +308,9 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         if layer_name == "":
             return {}
         pathways = settings_manager.get_default_layers("ncs_pathway")
-        layer = [p for p in pathways if p["name"] == layer_name]
+        layer = [
+            p for p in pathways if p["metadata"].get("name", p["name"]) == layer_name
+        ]
         return layer[0] if layer else {}
 
     def selected_carbon_items(self) -> typing.List[CarbonLayerItem]:

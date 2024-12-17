@@ -245,6 +245,15 @@ IRRECOVERABLE_CARBON_API_URL = f"{BASE_API_URL}/reference_layer/carbon_calculati
 DEFAULT_BASE_COMPARISON_REPORT_NAME = "Scenario Comparison Report"
 MAXIMUM_COMPARISON_REPORTS = 10
 
+PWL_IMPACT_EXPRESSION_DESCRIPTION = (
+    "Calculates the impact of the "
+    "current activity by multiplying "
+    "the area of the activity (in hectares) "
+    "by a user-defined number of jobs created per "
+    "hectare. The activity area will be "
+    "automatically populated during the computation."
+)
+
 MEAN_BASED_IRRECOVERABLE_CARBON_EXPRESSION_DESCRIPTION = (
     "Calculates the total irrecoverable carbon (tons C) of "
     "protection NCS pathways in an activity using the mean "
