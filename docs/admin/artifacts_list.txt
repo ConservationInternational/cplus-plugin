@@ -232,3 +232,4 @@ cplus_plugin_main_66fc - https://github.com/ConservationInternational/cplus-plug
 cplus_plugin_main_7a6a - https://github.com/ConservationInternational/cplus-plugin/suites/31700393321/artifacts/2278929582
 cplus_plugin_main_43e8 - https://github.com/ConservationInternational/cplus-plugin/suites/31700437839/artifacts/2278930790
 cplus_plugin_main_4a15 - https://github.com/ConservationInternational/cplus-plugin/suites/31978224169/artifacts/2310967510
+cplus_plugin_main_578e - https://github.com/ConservationInternational/cplus-plugin/suites/32158907219/artifacts/2331304920
