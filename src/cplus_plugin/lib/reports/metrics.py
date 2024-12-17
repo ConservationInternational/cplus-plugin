@@ -19,9 +19,11 @@ from qgis.core import (
 from ...definitions.defaults import (
     BASE_PLUGIN_NAME,
     MEAN_BASED_IRRECOVERABLE_CARBON_EXPRESSION_DESCRIPTION,
+    NPV_EXPRESSION_DESCRIPTION,
     PWL_IMPACT_EXPRESSION_DESCRIPTION
 )
 from ..carbon import IrrecoverableCarbonCalculator
+from ..financials import calculate_activity_npv
 from ...models.report import ActivityContextInfo, MetricEvalResult
 from ...utils import function_help_to_html, log, tr
 
@@ -35,6 +37,7 @@ VAR_ACTIVITY_ID = "cplus_activity_id"
 
 # Function names
 FUNC_MEAN_BASED_IC = "irrecoverable_carbon_by_mean"
+FUNC_ACTIVITY_NPV = "activity_npv"
 FUNC_PWL_IMPACT = "pwl_impact"
 
 
@@ -91,6 +94,65 @@ class ActivityIrrecoverableCarbonFunction(QgsScopedExpressionFunction):
         :rtype: ActivityIrrecoverableCarbonFunction
         """
         return ActivityIrrecoverableCarbonFunction()
+
+
+class ActivityNpvFunction(QgsScopedExpressionFunction):
+    """Calculates the financial NPV of an activity."""
+
+    def __init__(self):
+        help_html = function_help_to_html(
+            FUNC_ACTIVITY_NPV,
+            tr(NPV_EXPRESSION_DESCRIPTION),
+            examples=[(f"{FUNC_ACTIVITY_NPV}()", "125,800")],
+        )
+        super().__init__(
+            FUNC_ACTIVITY_NPV, 0, BASE_PLUGIN_NAME, help_html, isContextual=True
+        )
+
+    def func(
+        self,
+        values: typing.List[typing.Any],
+        context: QgsExpressionContext,
+        parent: QgsExpression,
+        node: QgsExpressionNodeFunction,
+    ) -> typing.Any:
+        """Returns the result of evaluating the function.
+
+        :param values: List of values passed to the function
+        :type values: typing.Iterable[typing.Any]
+
+        :param context: Context expression is being evaluated against
+        :type context: QgsExpressionContext
+
+        :param parent: Parent expression
+        :type parent: QgsExpression
+
+        :param node: Expression node
+        :type node: QgsExpressionNodeFunction
+
+        :returns: The result of the function.
+        :rtype: typing.Any
+        """
+        if not context.hasVariable(VAR_ACTIVITY_ID) or not context.hasVariable(
+            VAR_ACTIVITY_AREA
+        ):
+            return -1.0
+
+        activity_id = context.variable(VAR_ACTIVITY_ID)
+        activity_area = context.variable(VAR_ACTIVITY_AREA)
+
+        if not isinstance(activity_area, (float, int)):
+            return -1.0
+
+        return calculate_activity_npv(activity_id, activity_area)
+
+    def clone(self) -> "ActivityNpvFunction":
+        """Gets a clone of this function.
+
+        :returns: A clone of this function.
+        :rtype: ActivityNpvFunction
+        """
+        return ActivityNpvFunction()
 
 
 class ActivityPwlImpactFunction(QgsScopedExpressionFunction):
@@ -203,7 +265,7 @@ def create_metrics_expression_scope() -> QgsExpressionContextScope:
     )
     # Add functions
     expression_scope.addFunction(FUNC_PWL_IMPACT, ActivityPwlImpactFunction())
-
+    expression_scope.addFunction(FUNC_ACTIVITY_NPV, ActivityNpvFunction())
     expression_scope.addFunction(
         FUNC_MEAN_BASED_IC, ActivityIrrecoverableCarbonFunction()
     )
@@ -216,6 +278,10 @@ def register_metric_functions():
     # Irrecoverable carbon
     mean_based_irrecoverable_carbon_function = ActivityIrrecoverableCarbonFunction()
     METRICS_LIBRARY.append(mean_based_irrecoverable_carbon_function)
+
+    # Activity NPV
+    activity_npv_function = ActivityNpvFunction()
+    METRICS_LIBRARY.append(activity_npv_function)
 
     # PWL impact
     activity_pwl_impact_function = ActivityPwlImpactFunction()

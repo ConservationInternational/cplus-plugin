@@ -369,7 +369,7 @@ def get_metric_configuration() -> MetricConfiguration:
                     get_activity(),
                     get_metric_column(),
                     MetricType.COLUMN,
-                    "@cplus_activity_area * 2",
+                    "activity_npv()",
                 ),
             ]
         ],
@@ -411,7 +411,7 @@ METRIC_CONFIGURATION_DICT = {
         {
             "name": METRIC_COLUMN_NAME,
             "header": "Financials",
-            "expression": "@cplus_activity_area * 2",
+            "expression": "activity_npv()",
             "alignment": 4,
             "auto_calculated": False,
             "number_formatter_enabled": True,
@@ -439,7 +439,7 @@ METRIC_CONFIGURATION_DICT = {
                 "activity_identifier": ACTIVITY_UUID_STR,
                 "metric_identifier": METRIC_COLUMN_NAME,
                 "metric_type": 0,
-                "expression": "@cplus_activity_area * 2",
+                "expression": "activity_npv()",
             },
         ]
     ],
