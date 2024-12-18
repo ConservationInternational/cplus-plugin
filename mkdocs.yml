@@ -48,6 +48,7 @@ nav:
             - Settings: developer/api/core/api_settings.md
             - Utilities: developer/api/core/api_utils.md
             - Financials: developer/api/core/api_financials.md
+            - Carbon: developer/api/core/api_carbon.md
             - Reports:
                 - Comparison Table: developer/api/core/api_report_scenario_comparison_table.md
                 - Generator: developer/api/core/api_reports_generator.md

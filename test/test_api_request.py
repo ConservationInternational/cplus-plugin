@@ -1,8 +1,14 @@
+import os
+import tempfile
+import typing
 import unittest
 import datetime
 from unittest.mock import patch, MagicMock
+
 from PyQt5 import QtCore
-from PyQt5.QtCore import QIODevice, QByteArray
+from PyQt5.QtCore import QCoreApplication, QIODevice, QByteArray
+
+from qgis.core import QgsRasterLayer, QgsTask
 from qgis.PyQt.QtNetwork import QNetworkReply
 from cplus_plugin.api.request import (
     CplusApiRequestError,
@@ -11,8 +17,14 @@ from cplus_plugin.api.request import (
     CplusApiUrl,
     CplusApiRequest,
 )
-from cplus_plugin.conf import Settings
-from cplus_plugin.definitions.defaults import BASE_API_URL
+from cplus_plugin.api.carbon import IrrecoverableCarbonDownloadTask
+from cplus_plugin.conf import settings_manager, Settings
+from cplus_plugin.definitions.defaults import BASE_API_URL, IRRECOVERABLE_CARBON_API_URL
+from cplus_plugin.models.base import DataSourceType
+
+from utilities_for_testing import get_qgis_app
+
+QGIS_APP, CANVAS, IFACE, PARENT = get_qgis_app()
 
 
 def mocked_exec_loop():
@@ -370,3 +382,159 @@ class TestCplusApiRequest(unittest.TestCase):
         mock_get.assert_called_once_with(
             self.api_request.urls.scenario_detail("test-scenario-uuid")
         )
+
+
+class TestIrrecoverableCarbonDownloader(unittest.TestCase):
+    """Tests for the IrrecoverableCarbonDownloadTask."""
+
+    def setUp(self):
+        self.task_manager = QGIS_APP.taskManager()
+
+    def _get_test_extent(self) -> typing.List[float]:
+        """Returns the extent for setting the downloaded dataset's AOI."""
+        return [
+            30.897412864,
+            30.902802731,
+            -24.699751899,
+            -24.694362032,
+        ]
+
+    def test_successful_download(self):
+        """Test the successful download of the reference irrecoverable
+        carbon dataset.
+        """
+        settings_manager.set_value(Settings.SCENARIO_EXTENT, self._get_test_extent())
+
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_SOURCE_TYPE, DataSourceType.ONLINE.value
+        )
+        save_path = tempfile.NamedTemporaryFile(suffix=".tif").name
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_LOCAL_PATH, save_path
+        )
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE, IRRECOVERABLE_CARBON_API_URL
+        )
+
+        download_complete = False
+        download_start = False
+
+        def on_download_start():
+            nonlocal download_start
+            download_start = True
+
+        def on_download_complete():
+            nonlocal download_complete
+            download_complete = True
+
+        downloader = IrrecoverableCarbonDownloadTask()
+        downloader.started.connect(on_download_start)
+        downloader.completed.connect(on_download_complete)
+
+        self.task_manager.addTask(downloader)
+
+        while not downloader.has_exited:
+            QCoreApplication.processEvents()
+
+        self.assertTrue(download_start)
+        self.assertTrue(download_complete)
+        self.assertTrue(os.path.isfile(save_path))
+        self.assertTrue(QgsRasterLayer(save_path, "carbon_layer").isValid())
+
+    def test_invalid_url(self):
+        """Test if the downloader flags that an error has occurred when the
+        URL is invalid.
+        """
+        settings_manager.set_value(Settings.SCENARIO_EXTENT, self._get_test_extent())
+
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_SOURCE_TYPE, DataSourceType.ONLINE.value
+        )
+        save_path = tempfile.NamedTemporaryFile(suffix=".tif").name
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_LOCAL_PATH, save_path
+        )
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE, "https://justtestcplus.com"
+        )
+
+        download_error = False
+
+        def on_download_error():
+            nonlocal download_error
+            download_error = True
+
+        downloader = IrrecoverableCarbonDownloadTask()
+        downloader.error_occurred.connect(on_download_error)
+
+        self.task_manager.addTask(downloader)
+
+        while not downloader.has_exited:
+            QCoreApplication.processEvents()
+
+        self.assertTrue(download_error)
+
+    def test_invalid_save_as_path(self):
+        """Test if the downloader flags that an error has occurred when the
+        path for saving the downloaded path is invalid.
+        """
+        settings_manager.set_value(Settings.SCENARIO_EXTENT, self._get_test_extent())
+
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_SOURCE_TYPE, DataSourceType.ONLINE.value
+        )
+        save_path = "/mnt/cplus-plugin/test"
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_LOCAL_PATH, save_path
+        )
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE, IRRECOVERABLE_CARBON_API_URL
+        )
+
+        download_error = False
+
+        def on_download_error():
+            nonlocal download_error
+            download_error = True
+
+        downloader = IrrecoverableCarbonDownloadTask()
+        downloader.error_occurred.connect(on_download_error)
+
+        self.task_manager.addTask(downloader)
+
+        while not downloader.has_exited:
+            QCoreApplication.processEvents()
+
+        self.assertTrue(download_error)
+
+    def test_download_cancel(self):
+        """Test canceling of the download process."""
+        settings_manager.set_value(Settings.SCENARIO_EXTENT, self._get_test_extent())
+
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_SOURCE_TYPE, DataSourceType.ONLINE.value
+        )
+        save_path = tempfile.NamedTemporaryFile(suffix=".tif").name
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_LOCAL_PATH, save_path
+        )
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE, IRRECOVERABLE_CARBON_API_URL
+        )
+
+        download_canceled = False
+
+        def on_download_canceled():
+            nonlocal download_canceled
+            download_canceled = True
+
+        downloader = IrrecoverableCarbonDownloadTask()
+        downloader.canceled.connect(on_download_canceled)
+        downloader.started.connect(downloader.cancel)
+
+        self.task_manager.addTask(downloader)
+
+        while not downloader.has_exited:
+            QCoreApplication.processEvents()
+
+        self.assertTrue(download_canceled)

@@ -15,6 +15,7 @@ from cplus_plugin.definitions.constants import (
     DESCRIPTION_ATTRIBUTE,
     LAYER_TYPE_ATTRIBUTE,
     PATH_ATTRIBUTE,
+    PATHWAY_TYPE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
     USER_DEFINED_ATTRIBUTE,
     UUID_ATTRIBUTE,
@@ -24,6 +25,7 @@ from cplus_plugin.models.base import (
     Activity,
     LayerType,
     NcsPathway,
+    NcsPathwayType,
     Scenario,
     ScenarioResult,
     SpatialExtent,
@@ -54,6 +56,9 @@ NCS_UUID_STR_1 = "51f561d1-32eb-4104-9408-d5b66ce6b651"
 NCS_UUID_STR_2 = "424e076e-61b7-4116-a5a9-d2a7b4c2574e"
 NCS_UUID_STR_3 = "5c42b644-3d21-4081-9206-28e872efca73"
 
+PROTECTED_NCS_UUID_STR_1 = "2ac8de1d-2181-4f84-83b5-fbe6e600a3ab"
+PROTECTED_NCS_UUID_STR_2 = "f9c7b0a2-dc35-4d40-aa1f-c871f06e7da7"
+
 ACTIVITY_1_NPV = 40410.23
 
 
@@ -67,6 +72,7 @@ def get_valid_ncs_pathway() -> NcsPathway:
         LayerType.RASTER,
         True,
         carbon_paths=[],
+        pathway_type=NcsPathwayType.MANAGE,
     )
 
 
@@ -169,6 +175,58 @@ def get_ncs_pathways(use_projected=False) -> typing.List[NcsPathway]:
     )
 
     return [ncs_pathway1, ncs_pathway2, ncs_pathway3]
+
+
+def get_protected_ncs_pathways() -> typing.List[NcsPathway]:
+    """Returns a list of protected NCS pathways.
+
+    :returns: List of protected NCS pathways.
+    :rtype: list
+    """
+    pathway_layer_directory = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "data", "pathways", "layers"
+    )
+
+    filenames = []
+    for i in range(1, 3):
+        base_name = "protected_test_pathway"
+        filenames.append(f"{base_name}_{i!s}.tif")
+
+    protected_pathway_layer_path1 = os.path.join(pathway_layer_directory, filenames[0])
+    protected_pathway_layer_path2 = os.path.join(pathway_layer_directory, filenames[1])
+
+    protected_ncs_pathway1 = NcsPathway(
+        UUID(PROTECTED_NCS_UUID_STR_1),
+        "Protected NCS One",
+        "Description for Protected NCS one",
+        protected_pathway_layer_path1,
+        LayerType.RASTER,
+        True,
+        pathway_type=NcsPathwayType.PROTECT,
+    )
+
+    protected_ncs_pathway2 = NcsPathway(
+        UUID(PROTECTED_NCS_UUID_STR_2),
+        "Protected NCS Two",
+        "Description for Protected NCS two",
+        protected_pathway_layer_path2,
+        LayerType.RASTER,
+        True,
+        pathway_type=NcsPathwayType.PROTECT,
+    )
+
+    return [protected_ncs_pathway1, protected_ncs_pathway2]
+
+
+def get_reference_irrecoverable_carbon_path() -> str:
+    """Gets the path to the test irrecoverable carbon reference dataset."""
+    return os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "data",
+        "carbon",
+        "layers",
+        "irrecoverable_carbon.tif",
+    )
 
 
 def get_activity() -> Activity:
@@ -326,6 +384,7 @@ NCS_PATHWAY_DICT = {
     LAYER_TYPE_ATTRIBUTE: 0,
     USER_DEFINED_ATTRIBUTE: True,
     CARBON_PATHS_ATTRIBUTE: [],
+    PATHWAY_TYPE_ATTRIBUTE: 2,
 }
 
 

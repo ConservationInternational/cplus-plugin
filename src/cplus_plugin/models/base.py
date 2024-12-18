@@ -5,6 +5,7 @@
 
 import dataclasses
 import datetime
+import enum
 from enum import Enum, IntEnum
 import os.path
 import typing
@@ -277,11 +278,39 @@ class PriorityLayer(BaseModelComponent):
         return self.layer_uuid is not None
 
 
+class NcsPathwayType(IntEnum):
+    """Type of NCS pathway."""
+
+    PROTECT = 0
+    RESTORE = 1
+    MANAGE = 2
+    UNDEFINED = -1
+
+    @staticmethod
+    def from_int(int_enum: int) -> "NcsPathwayType":
+        """Creates an enum from the corresponding int equivalent.
+
+        :param int_enum: Integer representing the NCS pathway type.
+        :type int_enum: int
+
+        :returns: NCS pathway type enum corresponding to the given
+        integer else unknown if not found.
+        :rtype: NcsPathwayType
+        """
+        return {
+            0: NcsPathwayType.PROTECT,
+            1: NcsPathwayType.RESTORE,
+            2: NcsPathwayType.MANAGE,
+            -1: NcsPathwayType.UNDEFINED,
+        }[int_enum]
+
+
 @dataclasses.dataclass
 class NcsPathway(LayerModelComponent):
     """Contains information about an NCS pathway layer."""
 
     carbon_paths: typing.List[str] = dataclasses.field(default_factory=list)
+    pathway_type: NcsPathwayType = NcsPathwayType.UNDEFINED
 
     def __eq__(self, other: "NcsPathway") -> bool:
         """Test equality of NcsPathway object with another
@@ -663,3 +692,28 @@ class ScenarioResult:
     analysis_output: typing.Dict = None
     output_layer_name: str = ""
     scenario_directory: str = ""
+
+
+class DataSourceType(IntEnum):
+    """Specifies whether a data source is from a local or online source."""
+
+    LOCAL = 0
+    ONLINE = 1
+    UNDEFINED = -1
+
+    @staticmethod
+    def from_int(int_enum: int) -> "DataSourceType":
+        """Creates an enum from the corresponding int equivalent.
+
+        :param int_enum: Integer representing the data source type.
+        :type int_enum: int
+
+        :returns: Data source type enum corresponding to the given
+        integer else unknown if not found.
+        :rtype: DataSourceType
+        """
+        return {
+            0: DataSourceType.LOCAL,
+            1: DataSourceType.ONLINE,
+            -1: DataSourceType.UNDEFINED,
+        }[int_enum]

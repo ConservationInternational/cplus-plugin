@@ -2,6 +2,8 @@ import unittest
 
 from utilities_for_testing import get_qgis_app
 
+from cplus_plugin.definitions.defaults import IRRECOVERABLE_CARBON_API_URL
+from cplus_plugin.models.base import DataSourceType
 from cplus_plugin.gui.settings.cplus_options import CplusSettings
 from cplus_plugin.gui.settings.report_options import ReportSettingsWidget
 from cplus_plugin.conf import (
@@ -24,11 +26,25 @@ class CplusPluginSettingsTest(unittest.TestCase):
         carbon_coefficient = 0.1
         pathway_suitability_index = 1.5
 
+        irrecoverable_carbon_local_path = "reference_irrecoverable_carbon_local"
+        irrecoverable_carbon_online_save_as_path = (
+            "reference_irrecoverable_carbon_online_save"
+        )
+
         # Sets the values in the GUI
         settings_dialog.folder_data.setFilePath(save_base_dir)
 
         settings_dialog.carbon_coefficient_box.setValue(carbon_coefficient)
         settings_dialog.suitability_index_box.setValue(pathway_suitability_index)
+
+        settings_dialog.fw_irrecoverable_carbon.setFilePath(
+            irrecoverable_carbon_local_path
+        )
+        settings_dialog.fw_save_online_file.setFilePath(
+            irrecoverable_carbon_online_save_as_path
+        )
+        settings_dialog.txt_ic_url.setText(IRRECOVERABLE_CARBON_API_URL)
+        settings_dialog.sw_irrecoverable_carbon.setCurrentIndex(0)
 
         # Saves the settings set in the GUI
         settings_dialog.save_settings()
@@ -45,6 +61,23 @@ class CplusPluginSettingsTest(unittest.TestCase):
         )
         self.assertEqual(pathway_suitability_index, pathway_suitability_index_val)
 
+        self.assertEqual(
+            settings_manager.get_value(Settings.IRRECOVERABLE_CARBON_LOCAL_SOURCE),
+            irrecoverable_carbon_local_path,
+        )
+        self.assertEqual(
+            settings_manager.get_value(Settings.IRRECOVERABLE_CARBON_ONLINE_LOCAL_PATH),
+            irrecoverable_carbon_online_save_as_path,
+        )
+        self.assertEqual(
+            settings_manager.get_value(Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE),
+            IRRECOVERABLE_CARBON_API_URL,
+        )
+        self.assertEqual(
+            settings_manager.get_value(Settings.IRRECOVERABLE_CARBON_SOURCE_TYPE),
+            DataSourceType.LOCAL.value,
+        )
+
     def test_load(self):
         """A test which will check if the main CPLUS settings are loaded correctly
         into the settings UI when calling the load_settings function.
@@ -55,12 +88,31 @@ class CplusPluginSettingsTest(unittest.TestCase):
         save_carbon_coefficient = 0.1
         save_pathway_suitability_index = 1.5
 
+        irrecoverable_carbon_local_path = "reference_irrecoverable_carbon_local"
+        irrecoverable_carbon_online_save_as_path = (
+            "reference_irrecoverable_carbon_online_save"
+        )
+
         # Set all values for testing
         settings_manager.set_value(Settings.BASE_DIR, save_base_dir)
 
         settings_manager.set_value(Settings.CARBON_COEFFICIENT, save_carbon_coefficient)
         settings_manager.set_value(
             Settings.PATHWAY_SUITABILITY_INDEX, save_pathway_suitability_index
+        )
+
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_LOCAL_SOURCE, irrecoverable_carbon_local_path
+        ),
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_LOCAL_PATH,
+            irrecoverable_carbon_online_save_as_path,
+        )
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE, IRRECOVERABLE_CARBON_API_URL
+        )
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_SOURCE_TYPE, DataSourceType.LOCAL.value
         )
 
         # Loads the values into the GUI
@@ -75,6 +127,19 @@ class CplusPluginSettingsTest(unittest.TestCase):
 
         pathway_suitability_index = settings_dialog.suitability_index_box.value()
         self.assertEqual(save_pathway_suitability_index, pathway_suitability_index)
+
+        self.assertEqual(
+            settings_dialog.fw_irrecoverable_carbon.filePath(),
+            irrecoverable_carbon_local_path,
+        )
+        self.assertEqual(
+            settings_dialog.txt_ic_url.text(), IRRECOVERABLE_CARBON_API_URL
+        )
+        self.assertEqual(
+            settings_dialog.fw_save_online_file.filePath(),
+            irrecoverable_carbon_online_save_as_path,
+        )
+        self.assertTrue(settings_dialog.rb_local.isChecked())
 
     def test_base_dir_exist(self):
         """A test which checks if the base_dir_exists function works

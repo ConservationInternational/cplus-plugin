@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>594</width>
-    <height>719</height>
+    <height>795</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -36,8 +36,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>558</width>
-        <height>732</height>
+        <width>572</width>
+        <height>773</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -76,7 +76,7 @@
           </size>
          </property>
          <property name="title">
-          <string>Scenario Analysis</string>
+          <string>Scenario analysis</string>
          </property>
          <property name="collapsed">
           <bool>false</bool>
@@ -310,6 +310,189 @@
         </widget>
        </item>
        <item>
+        <widget class="QgsCollapsibleGroupBox" name="gb_ic_reference_layer">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="title">
+          <string>Irrecoverable carbon reference layer</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_6">
+          <property name="leftMargin">
+           <number>6</number>
+          </property>
+          <property name="topMargin">
+           <number>6</number>
+          </property>
+          <property name="rightMargin">
+           <number>6</number>
+          </property>
+          <property name="bottomMargin">
+           <number>6</number>
+          </property>
+          <item row="0" column="0">
+           <widget class="QRadioButton" name="rb_local">
+            <property name="toolTip">
+             <string>Specify a dataset in the local computer or network drive</string>
+            </property>
+            <property name="text">
+             <string>Local path</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QRadioButton" name="rb_online">
+            <property name="toolTip">
+             <string>Specify the URL for the fetching the dataset from an online server</string>
+            </property>
+            <property name="text">
+             <string>Online source</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0" colspan="2">
+           <widget class="QStackedWidget" name="sw_irrecoverable_carbon">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="currentIndex">
+             <number>1</number>
+            </property>
+            <widget class="QWidget" name="pg_local_path">
+             <layout class="QHBoxLayout" name="horizontalLayout_7">
+              <property name="leftMargin">
+               <number>3</number>
+              </property>
+              <property name="topMargin">
+               <number>3</number>
+              </property>
+              <property name="rightMargin">
+               <number>3</number>
+              </property>
+              <property name="bottomMargin">
+               <number>3</number>
+              </property>
+              <item>
+               <widget class="QgsFileWidget" name="fw_irrecoverable_carbon"/>
+              </item>
+              <item>
+               <widget class="QgsMapLayerComboBox" name="cbo_irrecoverable_carbon"/>
+              </item>
+             </layout>
+            </widget>
+            <widget class="QWidget" name="pg_online_source">
+             <layout class="QGridLayout" name="gridLayout_4">
+              <property name="leftMargin">
+               <number>5</number>
+              </property>
+              <property name="topMargin">
+               <number>5</number>
+              </property>
+              <property name="rightMargin">
+               <number>5</number>
+              </property>
+              <property name="bottomMargin">
+               <number>5</number>
+              </property>
+              <item row="0" column="0">
+               <widget class="QLabel" name="label">
+                <property name="text">
+                 <string>URL</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1" colspan="2">
+               <widget class="QLineEdit" name="txt_ic_url">
+                <property name="toolTip">
+                 <string>Do not include the bbox PARAM, it will be automatically appended based on the current scenario extent</string>
+                </property>
+                <property name="placeholderText">
+                 <string>Specify the URL to fetch the dataset in the CI server</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_2">
+                <property name="text">
+                 <string>Save as</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1" colspan="2">
+               <widget class="QgsFileWidget" name="fw_save_online_file"/>
+              </item>
+              <item row="2" column="1">
+               <widget class="QPushButton" name="btn_ic_download">
+                <property name="toolTip">
+                 <string>Initiate new download or refesh previous download in the background</string>
+                </property>
+                <property name="text">
+                 <string>Start download</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="2">
+               <layout class="QHBoxLayout" name="horizontalLayout_8">
+                <property name="spacing">
+                 <number>4</number>
+                </property>
+                <item>
+                 <widget class="SvgLabel" name="lbl_download_status_tip">
+                  <property name="minimumSize">
+                   <size>
+                    <width>16</width>
+                    <height>16</height>
+                   </size>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>24</width>
+                    <height>24</height>
+                   </size>
+                  </property>
+                  <property name="frameShape">
+                   <enum>QFrame::NoFrame</enum>
+                  </property>
+                  <property name="text">
+                   <string/>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="lbl_ic_download_status">
+                  <property name="frameShape">
+                   <enum>QFrame::NoFrame</enum>
+                  </property>
+                  <property name="text">
+                   <string/>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </widget>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
         <widget class="QgsCollapsibleGroupBox" name="groupBox">
          <property name="maximumSize">
           <size>
@@ -477,6 +660,11 @@
    <extends>QScrollArea</extends>
    <header location="global">qgis.gui</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>SvgLabel</class>
+   <extends>QLabel</extends>
+   <header>cplus_plugin.gui.components.svg_label</header>
   </customwidget>
  </customwidgets>
  <resources/>

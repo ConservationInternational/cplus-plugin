@@ -9,6 +9,8 @@ from unittest import TestCase
 
 from qgis.core import QgsExpression
 
+from processing.core.Processing import Processing
+
 from cplus_plugin.conf import settings_manager, Settings
 from cplus_plugin.definitions.defaults import BASE_PLUGIN_NAME
 from cplus_plugin.gui.metrics_builder_dialog import ActivityMetricsBuilder
@@ -18,9 +20,11 @@ from cplus_plugin.lib.reports.metrics import (
     evaluate_activity_metric,
     FUNC_ACTIVITY_NPV,
     FUNC_PWL_IMPACT,
+    FUNC_MEAN_BASED_IC,
     register_metric_functions,
     unregister_metric_functions,
 )
+from cplus_plugin.models.base import DataSourceType
 from cplus_plugin.models.helpers import create_metric_configuration
 from cplus_plugin.models.report import ActivityContextInfo
 
@@ -29,6 +33,8 @@ from model_data_for_testing import (
     get_activity,
     get_activity_npv_collection,
     get_metric_column,
+    get_protected_ncs_pathways,
+    get_reference_irrecoverable_carbon_path,
     METRIC_COLUMN_NAME,
     METRIC_CONFIGURATION_DICT,
 )
@@ -89,6 +95,9 @@ class TestMetricsBuilder(TestCase):
 
 class TestMetricExpressions(TestCase):
     """Testing management of metrics in QGIS expression environment."""
+
+    def setUp(self):
+        Processing.initialize()
 
     def test_metrics_scope_in_expression_context(self):
         """Verify the metrics scope exists in a metrics expression context."""
@@ -152,3 +161,44 @@ class TestMetricExpressions(TestCase):
 
         self.assertTrue(result.success)
         self.assertEqual(result.value, reference_area * custom_jobs_per_ha)
+
+    def test_activity_irrecoverable_carbon_expression_function(self):
+        """Test the calculation of an activity's irrecoverable carbon
+        using an expression function.
+        """
+        # We first need to configure and save the activity
+        activity = get_activity()
+        for protected_pathway in get_protected_ncs_pathways():
+            settings_manager.save_ncs_pathway(protected_pathway)
+            activity.add_ncs_pathway(protected_pathway)
+
+        settings_manager.save_activity(activity)
+
+        # Save the project extent for analyzing irrecoverable carbon
+        extent_box = [
+            30.897412864,
+            30.902802731,
+            -24.699751899,
+            -24.694362032,
+        ]
+        settings_manager.set_value(Settings.SCENARIO_EXTENT, extent_box)
+
+        # Save data source type and path to the reference irrecoverable carbon dataset
+        ic_reference_path = get_reference_irrecoverable_carbon_path()
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_SOURCE_TYPE, DataSourceType.LOCAL.value
+        )
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_LOCAL_SOURCE, ic_reference_path
+        )
+
+        register_metric_functions()
+        context = create_metrics_expression_context()
+        activity_context_info = ActivityContextInfo(activity, 3000)
+
+        result = evaluate_activity_metric(
+            context, activity_context_info, f"{FUNC_MEAN_BASED_IC}()"
+        )
+
+        self.assertTrue(result.success)
+        self.assertEqual(result.value, 1224)

@@ -6,6 +6,7 @@
 import concurrent.futures
 import copy
 import datetime
+from enum import IntEnum
 import json
 import os
 
@@ -207,3 +208,28 @@ class BaseFetchScenarioOutput:
             analysis_output=final_output,
         )
         return scenario, scenario_result
+
+
+class ApiRequestStatus(IntEnum):
+    """Status of API request."""
+
+    NOT_STARTED = 0
+    IN_PROGRESS = 1
+    COMPLETED = 2
+    ERROR = 3
+    CANCELED = 4
+
+    @staticmethod
+    def from_int(status: int) -> "ApiRequestStatus":
+        """Gets the status from an int value.
+
+        :returns: The status from an int value.
+        :rtype: int
+        """
+        return {
+            0: ApiRequestStatus.NOT_STARTED,
+            1: ApiRequestStatus.IN_PROGRESS,
+            2: ApiRequestStatus.COMPLETED,
+            3: ApiRequestStatus.ERROR,
+            4: ApiRequestStatus.CANCELED,
+        }[status]

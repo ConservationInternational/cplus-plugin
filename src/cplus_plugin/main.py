@@ -31,6 +31,7 @@ from .gui.qgis_cplus_main import QgisCplusMain
 from qgis.PyQt.QtWidgets import QToolButton
 from qgis.PyQt.QtWidgets import QMenu
 
+from .api.base import ApiRequestStatus
 from .conf import Settings, settings_manager
 from .definitions.defaults import (
     ABOUT_DOCUMENTATION_SITE,
@@ -40,6 +41,7 @@ from .definitions.defaults import (
     DEFAULT_REPORT_LICENSE,
     DOCUMENTATION_SITE,
     ICON_PATH,
+    IRRECOVERABLE_CARBON_API_URL,
     OPTIONS_TITLE,
     PRIORITY_GROUPS,
     PRIORITY_LAYERS,
@@ -61,6 +63,7 @@ from .utils import (
     log,
     open_documentation,
     get_plugin_version,
+    tr,
 )
 
 
@@ -464,6 +467,32 @@ def initialize_api_url():
         settings_manager.set_value(Settings.DEBUG, False)
     if not settings_manager.get_value(Settings.BASE_API_URL, None, str):
         settings_manager.set_value(Settings.BASE_API_URL, BASE_API_URL)
+
+    # Default URL for irrecoverable carbon dataset
+    if not settings_manager.get_value(
+        Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE, None, str
+    ):
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE, IRRECOVERABLE_CARBON_API_URL
+        )
+
+    # Default status of downloading irrecoverable carbon dataset
+    if not settings_manager.get_value(
+        Settings.IRRECOVERABLE_CARBON_ONLINE_DOWNLOAD_STATUS, None, int
+    ):
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_DOWNLOAD_STATUS,
+            ApiRequestStatus.NOT_STARTED.value,
+        )
+
+    # Default description of irrecoverable carbon dataset download status
+    if not settings_manager.get_value(
+        Settings.IRRECOVERABLE_CARBON_ONLINE_STATUS_DESCRIPTION, None, str
+    ):
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_STATUS_DESCRIPTION,
+            tr("Download not started"),
+        )
 
 
 def initialize_report_settings():

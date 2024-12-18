@@ -16,6 +16,8 @@ from qgis.core import (
     QgsRectangle,
 )
 
+from qgis.PyQt import QtCore
+
 from .base import (
     BaseModelComponent,
     BaseModelComponentType,
@@ -24,6 +26,7 @@ from .base import (
     LayerModelComponentType,
     LayerType,
     NcsPathway,
+    NcsPathwayType,
     ScenarioResult,
     SpatialExtent,
 )
@@ -56,6 +59,7 @@ from ..definitions.constants import (
     NUMBER_FORMATTER_ID_ATTRIBUTE,
     NUMBER_FORMATTER_PROPS_ATTRIBUTE,
     PATH_ATTRIBUTE,
+    PATHWAY_TYPE_ATTRIBUTE,
     PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
     REMOVE_EXISTING_ATTRIBUTE,
@@ -196,6 +200,12 @@ def create_ncs_pathway(source_dict) -> typing.Union[NcsPathway, None]:
     if CARBON_PATHS_ATTRIBUTE in source_dict:
         ncs.carbon_paths = source_dict[CARBON_PATHS_ATTRIBUTE]
 
+    if PATHWAY_TYPE_ATTRIBUTE in source_dict:
+        ncs.pathway_type = NcsPathwayType.from_int(source_dict[PATHWAY_TYPE_ATTRIBUTE])
+    else:
+        # Assign undefined
+        ncs.pathway_type = NcsPathwayType.UNDEFINED
+
     return ncs
 
 
@@ -286,6 +296,7 @@ def ncs_pathway_to_dict(ncs_pathway: NcsPathway, uuid_to_str=True) -> dict:
     """
     base_ncs_dict = layer_component_to_dict(ncs_pathway, uuid_to_str)
     base_ncs_dict[CARBON_PATHS_ATTRIBUTE] = ncs_pathway.carbon_paths
+    base_ncs_dict[PATHWAY_TYPE_ATTRIBUTE] = ncs_pathway.pathway_type
 
     return base_ncs_dict
 
@@ -423,6 +434,30 @@ def extent_to_qgs_rectangle(
         spatial_extent.bbox[1],
         spatial_extent.bbox[3],
     )
+
+
+def extent_to_url_param(rect_extent: QgsRectangle) -> str:
+    """Converts the bounding box in a QgsRectangle object to the equivalent
+    param for use in a URL. 'bbox' is appended as a prefix in the URL query
+    part.
+
+    :param rect_extent: Spatial extent that defines the AOI.
+    :type rect_extent: QgsRectangle
+
+    :returns: String representing the param defining the extents of the AOI.
+    If the extent is empty, it will return an empty string.
+    :rtype: str
+    """
+    if rect_extent.isEmpty():
+        return ""
+
+    url_query = QtCore.QUrlQuery()
+    url_query.addQueryItem(
+        "bbox",
+        f"{rect_extent.xMinimum()!s},{rect_extent.yMinimum()!s},{rect_extent.xMaximum()!s},{rect_extent.yMaximum()!s}",
+    )
+
+    return url_query.toString()
 
 
 def extent_to_project_crs_extent(

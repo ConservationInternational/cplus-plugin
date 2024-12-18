@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Dialog for setting the pixel value for styling IMs.
+Dialog for setting the pixel value for styling activities.
 """
 
 from collections import OrderedDict
