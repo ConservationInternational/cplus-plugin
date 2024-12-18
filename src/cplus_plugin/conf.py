@@ -251,6 +251,25 @@ class Settings(enum.Enum):
 
     ACTIVE_ONLINE_TASK = "active_online_task"
 
+    # Irrecoverable carbon
+    IRRECOVERABLE_CARBON_SOURCE_TYPE = "carbon/irrecoverable_carbon_source_type"
+    # Path for local data source
+    IRRECOVERABLE_CARBON_LOCAL_SOURCE = "carbon/irrecoverable_carbon_source"
+    IRRECOVERABLE_CARBON_ONLINE_SOURCE = "carbon/irrecoverable_carbon_online_source"
+    IRRECOVERABLE_CARBON_ENABLED = "carbon/irrecoverable_carbon_enabled"
+    # Path where the online data source will be saved locally
+    IRRECOVERABLE_CARBON_ONLINE_LOCAL_PATH = (
+        "carbon/irrecoverable_carbon_online_local_dir"
+    )
+    # Download status of the IC layer - int enum
+    IRRECOVERABLE_CARBON_ONLINE_DOWNLOAD_STATUS = (
+        "carbon/irrecoverable_carbon_online_download_status"
+    )
+    # Brief description of download status
+    IRRECOVERABLE_CARBON_ONLINE_STATUS_DESCRIPTION = (
+        "carbon/irrecoverable_carbon_online_status_description"
+    )
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""

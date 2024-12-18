@@ -1509,6 +1509,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         progress_dialog.scenario_id = str(scenario.uuid)
 
         report_running = partial(self.on_report_running, progress_dialog)
+        report_status_changed = partial(self.on_report_status_changed, progress_dialog)
         report_error = partial(self.on_report_error, progress_dialog)
         report_finished = partial(self.on_report_finished, progress_dialog)
 
@@ -1516,6 +1517,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         scenario_report_manager = report_manager
 
         scenario_report_manager.generate_started.connect(report_running)
+        scenario_report_manager.status_changed.connect(report_status_changed)
         scenario_report_manager.generate_error.connect(report_error)
         scenario_report_manager.generate_completed.connect(report_finished)
 
@@ -2572,6 +2574,19 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         progress_dialog.change_status_message(
             tr("Generating report for the analysis output")
         )
+
+    def on_report_status_changed(self, progress_dialog, message: str):
+        """Slot raised when report task status has changed.
+
+        :param progress_dialog: Dialog responsible for showing
+         all the analysis operations progress.
+        :type progress_dialog: ProgressDialog
+
+        :param message: Status message.
+        :type message: str
+        """
+        status_message = f"{tr('Report generation')} - {message}..."
+        progress_dialog.change_status_message(status_message)
 
     def on_report_error(self, progress_dialog, message: str):
         """Slot raised when report task error has occured.

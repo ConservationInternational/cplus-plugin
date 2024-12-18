@@ -56,6 +56,7 @@ class ReportManager(QtCore.QObject):
     generate_started = QtCore.pyqtSignal(str)
     generate_error = QtCore.pyqtSignal(str)
     generate_completed = QtCore.pyqtSignal(str)
+    status_changed = QtCore.pyqtSignal(str)
 
     # Max number of comparison report tasks
     COMPARISON_REPORT_LIMIT = 3
@@ -328,6 +329,8 @@ class ReportManager(QtCore.QObject):
         report_task.taskCompleted.connect(report_task_completed)
         report_task.taskTerminated.connect(report_task_completed)
 
+        report_task.status_changed.connect(self.on_analysis_status_changed)
+
         task_id = self.task_manager.addTask(report_task)
 
         self._report_tasks[scenario_id] = task_id
@@ -337,6 +340,17 @@ class ReportManager(QtCore.QObject):
     def report_task_completed(self, task):
         if len(task._result.messages) > 0:
             self.generate_error.emit(",".join(task._result.messages))
+
+    def on_analysis_status_changed(self, message: str):
+        """Slot raised when the status for a scenario analysis changes.
+
+        :param message: Status message.
+        :type message: str
+        """
+        if not message:
+            return
+
+        self.status_changed.emit(message)
 
     def report_result(self, scenario_id: str) -> typing.Union[ReportResult, None]:
         """Gets the report result for the scenario with the given ID.
