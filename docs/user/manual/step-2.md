@@ -28,6 +28,10 @@ license: This program is free software; you can redistribute it and/or modify it
 
     - Name: Enter the name of the NCS pathway.
     - Description: Enter the description of the NCS pathway.
+    - Pathway Type: Select the type of the NCS pathway.
+        - **Protect:** Protect the world’s natural ecosystems from unsustainable practices and degradation.
+        - **Manage:** Farming systems and working lands must shift from net carbon emitters to carbon sinks.
+        - **Restore:** Restore ecosystem types and globally can reduce global greenhouse gas emissions and store additional carbon up to 3 gigatons annually.
     - Map Layer: Choose the map layer from the downloaded data available in the system.
     
     For example add map layer for Agroforestry
@@ -96,21 +100,13 @@ Activity Masking enables users to exclude specific areas from analysis. This fun
 
 Imagine planning a journey or mapping an area, and you want to exclude specific region like restricted zones, private properties, or hazardous locations. This masking tool allows you to mark those areas, ensuring they are excluded from your plans or analysis. It is like instructing the system, avoid these areas, enabling you to focus on relevant zones and create more precise and efficient plans.
 
-* As you can see in the below image, shape 1️⃣, shape 2️⃣, and shape 3️⃣ are masks.
-
-    ![Activity Mask](./img/manual-step2-11.png)
-
 * Here are activities displayed without applying any activity mask. This means all areas are included, and no regions have been excluded or hidden from the analysis.
 
     ![Without Activity Mask 1](./img/manual-step2-7.png)
-
-    ![Without Activity Mask 2](./img/manual-step2-8.png)
     
 * After applying the mask, the specified area becomes restricted for any activities or work. This ensures that no operations or tasks are carried out within that area, effectively excluding it from the analysis. As shown in the image below, after applying the mask, the specified area is marked as restricted for that particular activity. This restriction ensures that no operations or tasks related to the specific activity take place within the designated area, effectively excluding it from the further analysis.
 
     ![With Activity Mask 1](./img/manual-step2-9.png)
-
-    ![With Activity Mask 2](./img/manual-step2-10.png)
 
 ### Apply Activity Mask
 
