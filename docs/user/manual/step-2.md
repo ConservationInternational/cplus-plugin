@@ -58,7 +58,7 @@ license: This program is free software; you can redistribute it and/or modify it
 
     ![Online default](./img/manual-step2-5.png)
 
-- **Activities**: Each selected activity will be created in used to perform the analysis.
+- **Activities**: Each selected activity will be created and used to perform the analysis.
 
 - **Description**: A description of the activity or pathway selected.
 
@@ -112,9 +112,9 @@ Imagine planning a journey or mapping an area, and you want to exclude specific 
 
 ![Activity Mask](./img/manual-step2-6.png)
 
-1. **✅ Activity Mask**: By checking this user will be able add activity mask.
+1. **✅ Activity Mask**: By checking this, the user will be able add an activity mask.
 
-2. ![add button](img/symbologyAdd.svg): Add new activity mask. Click on this button to add a new activity mask. After clicking on the button, a new window will open from where user can select the shape file.
+2. ![add button](img/symbologyAdd.svg): Add new activity mask. Click on this button to add a new activity mask. After clicking on the button, a new window will open from where user can select the shapefile.
 
     ![Activity Mask Selection](./img/manual-step2-12.png)
 
@@ -155,7 +155,7 @@ Imagine planning a journey or mapping an area, and you want to exclude specific 
 
 ## Ordering of the pixel values for the scenario output
 
-A user can order the stack using the **Style pixel value editor**.
+A user can order the stack using the `Style Pixel Value Editor`.
 
 ![UI Step 2](img/style_pixel_value_editor.png)
 

@@ -195,6 +195,7 @@ To go to the settings the user can click on the plugin toolbar icon to reveal th
 
         - If a user inputs their existing password incorrectly three times, the dialog will offer to erase the database.
 
+
         - **Reminder:** Do not forget your master password and store it securely for later use, as it is not retrievable.
 
             ![Set master password](./img/setting-14.png)
