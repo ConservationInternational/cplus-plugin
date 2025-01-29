@@ -461,7 +461,9 @@ def extent_to_url_param(rect_extent: QgsRectangle) -> str:
 
 
 def extent_to_project_crs_extent(
-    spatial_extent: SpatialExtent, project: QgsProject = None
+    spatial_extent: SpatialExtent,
+    project: QgsProject = None,
+    source_crs: QgsCoordinateReferenceSystem = None,
 ) -> typing.Union[QgsRectangle, None]:
     """Transforms SpatialExtent model to an QGIS extent based
     on the CRS of the given project.
@@ -474,6 +476,10 @@ def extent_to_project_crs_extent(
     the values of the output extent.
     :type project: QgsProject
 
+    :param source_crs: Specify a source CRS to use for the transformation
+    otherwise it will revert to the default which is WGS84.
+    :type source_crs: QgsCoordinateReferenceSystem
+
     :returns: Output extent in the project's CRS. If the input extent
     is invalid, this function will return None.
     :rtype: QgsRectangle
@@ -482,7 +488,7 @@ def extent_to_project_crs_extent(
     if input_rect is None:
         return None
 
-    default_crs = QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
+    default_crs = source_crs or QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
     if not default_crs.isValid():
         return None
 

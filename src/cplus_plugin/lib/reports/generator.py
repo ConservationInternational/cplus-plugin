@@ -11,6 +11,7 @@ import typing
 from qgis.core import (
     Qgis,
     QgsBasicNumericFormat,
+    QgsCoordinateReferenceSystem,
     QgsFallbackNumericFormat,
     QgsFeedback,
     QgsFillSymbol,
@@ -214,8 +215,27 @@ class ScenarioAnalysisReportGeneratorTask(BaseScenarioReportGeneratorTask):
         """Zoom extents of map items in the layout to current map canvas
         extents.
         """
+        # Use CRS of one of the pathways to get the source for transforming
+        # to the current project CRS.
+        source_crs = None
+        for activity in self._context.scenario.activities:
+            for pathway in activity.pathways:
+                layer = pathway.to_map_layer()
+                if layer is None or layer.crs() is None:
+                    continue
+                source_crs = layer.crs()
+                break
+            if source_crs is not None:
+                break
+
+        # Else, we will fall back to EPSG:32735 as explicitly defined in
+        # qgis_cplus_main.py. Might to avoid hardcoding this in future
+        # iterations.
+        if source_crs is None:
+            source_crs = QgsCoordinateReferenceSystem("EPSG:32735")
+
         scenario_extent = extent_to_project_crs_extent(
-            self._context.scenario.extent, QgsProject.instance()
+            self._context.scenario.extent, QgsProject.instance(), source_crs
         )
         if scenario_extent is None:
             log("Cannot set extents for map items in the report.")
