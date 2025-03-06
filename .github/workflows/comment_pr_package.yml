@@ -1,4 +1,4 @@
-name: Add package comment on a pull request
+name: Add comment on a pull request about the plugin package
 # Based on work from https://github.com/orgs/community/discussions/51403#discussioncomment-5535167
 on:
   workflow_run:
@@ -12,77 +12,89 @@ jobs:
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
-      - name: Download workflow artifact
-        uses: dawidd6/action-download-artifact@v2.11.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: peek_icons.yml
-          run_id: ${{ github.event.workflow_run.id }}
+      - name: Wait for 10 seconds
+        run: sleep 10
 
-      - name: Read the PR number file
-        id: pr_number_reader
-        uses: juliangruber/read-file-action@v1.0.0
-        with:
-          path: ./pr_number/pr_number.txt
-
-      - name: Read the zip file name
-        id: zip_file_name_reader
-        uses: juliangruber/read-file-action@v1.0.0
-        with:
-          path: ./zip_file_name/zip_file_name.txt
-
-      - name: Get artifact and pull request info
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          WORKFLOW_RUN_EVENT_OBJ: ${{ toJSON(github.event.workflow_run) }}
-          OWNER: ${{ github.repository_owner }}
-          REPO: ${{ github.event.repository.name }}
-          ZIP_FILENAME: ${{ steps.zip_file_name_reader.outputs.content }}
+      - name: List all available artifact
         run: |
-          PREVIOUS_JOB_ID=$(jq -r '.id' <<< "$WORKFLOW_RUN_EVENT_OBJ")
-          
-          echo "Previous Job ID: $PREVIOUS_JOB_ID"
-          echo "PREVIOUS_JOB_ID=$PREVIOUS_JOB_ID" >> "$GITHUB_ENV"
-          
-          SUITE_ID=$(jq -r '.check_suite_id' <<< "$WORKFLOW_RUN_EVENT_OBJ")
-          echo "Previous Suite ID: $SUITE_ID"
-          echo "SUITE_ID=$SUITE_ID" >> "$GITHUB_ENV"
-          
-          echo "ARTIFACT_NAME=$ZIP_FILENAME" >> "$GITHUB_ENV"
-          
-          ARTIFACT_IDS=$(gh api "/repos/$OWNER/$REPO/actions/artifacts" \
-            --jq [".artifacts.[] |
-            select(.workflow_run.id==$PREVIOUS_JOB_ID) |
-            select(.expired==false) | {id, name}"]
-          )
-          echo "ARTIFACT_IDS=$ARTIFACT_IDS" >> "$GITHUB_ENV"
-          
-          echo "Head SHA: ${{ github.event.head_sha }}"
+          echo "Listing all artifacts for the past workflow run"
 
-      - name: Get upload zip artifact id
-        run: |          
-          echo "ARTIFACT_ID=$(python -c "import os, json; 
-          [print(str(art['id'])) for art in json.loads(
-          os.getenv('ARTIFACT_IDS').replace('\'', '\"'))
-          if art['name'] == os.getenv('ARTIFACT_NAME') ]")" >> "$GITHUB_ENV"
+          # Get the past workflow run ID
+          run_id=${{ github.event.workflow_run.id }}
+          repo=${{ github.repository }}
+
+          response=$(curl -s \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/$repo/actions/runs/$run_id/artifacts")
+
+          # Extract artifact names from the response
+          artifact_names=$(echo "$response" | jq -r '.artifacts[].name')
+
+          # Display the artifact names
+          echo "Artifacts:"
+          echo "$artifact_names"
+
+      - name: Download artifacts
+        run: |
+          mkdir -p artifacts
           
-          echo "The ARTIFACT ID: $ARTIFACT_ID"
+          # Get the past workflow run ID
+          run_id=${{ github.event.workflow_run.id }}
+          repo=${{ github.repository }}
+          
+          # Fetch all artifact download URLs
+          ARTIFACT_URLS=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+               "https://api.github.com/repos/$repo/actions/runs/$run_id/artifacts" \
+            | jq -r '.artifacts[] | select(.expired == false) | .archive_download_url')
+          
+          # Download each artifact using artifact ID
+          echo "$ARTIFACT_URLS" | while read -r url; do
+            ARTIFACT_ID=$(echo "$url" | cut -d'/' -f9)  # Extract artifact ID from URL
+            echo "Downloading artifact ID: $ARTIFACT_ID"
+            curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o "artifacts/${ARTIFACT_ID}.zip" "$url"
+          done
+
+          echo "all artifacts: $ARTIFACT_URLS"
+
+      - name: Extract all artifacts
+        run: |
+          for zip in artifacts/*.zip; do
+            unzip -o "$zip" -d artifacts
+          done
+
+      - name: List extracted Files
+        run: ls -lah artifacts
+
+      - name: Read the pr number artifact
+        id: pr_number_reader
+        run: |
+          PR_NUMBER=$(cat artifacts/pr_number.txt)
+          echo "PR number: $PR_NUMBER"
+          echo "::set-output name=pr_number::$PR_NUMBER"
+
+      - name: Read the artifact URL
+        id: artifact_url_reader
+        run: |
+          ARTIFACT_URL=$(cat artifacts/artifact_url.txt)
+          echo "Artifact URL: $ARTIFACT_URL"
+          echo "::set-output name=artifact_url::$ARTIFACT_URL"
 
       - name: Find Comment
         uses: peter-evans/find-comment@v2
         id: find-comment
         with:
-          issue-number: ${{ steps.pr_number_reader.outputs.content }}
+          issue-number: ${{ steps.pr_number_reader.outputs.pr_number }}
           comment-author: 'github-actions[bot]'
       - name: Update Comment
         env:
-          JOB_PATH: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ env.PREVIOUS_JOB_ID }}"
-          ARTIFACT_URL: "${{ github.server_url }}/${{ github.repository }}/suites/${{ env.SUITE_ID }}/artifacts/${{ env.ARTIFACT_ID }}"
+          ARTIFACT_URL: "${{ steps.artifact_url_reader.outputs.artifact_url }}"
           HEAD_SHA: "${{ github.event.head_sha }}"
         uses: peter-evans/create-or-update-comment@v3
         with:
           token: ${{ github.token }}
-          issue-number:  ${{ steps.pr_number_reader.outputs.content }}
+          issue-number:  ${{ steps.pr_number_reader.outputs.pr_number }}
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
           edit-mode: replace
           body: |-
@@ -90,6 +102,6 @@ jobs:
             
             Plugin zip package for the changes in this PR has been successfully built!.
             
-            Download the plugin zip file here ${{ env.ARTIFACT_URL }}
+            Download the plugin zip file from here ${{ env.ARTIFACT_URL }}
             
             [badge]: https://img.shields.io/badge/package_build-success-green
