@@ -47,6 +47,7 @@ jobs:
           echo "::set-output name=ZIP_NAME::$(ls docs/plugin/package)"
 
       - name: Uploading plugin build
+        id: artifact-upload-step
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.get-zip-details.outputs.ZIP_NAME }}
@@ -57,9 +58,17 @@ jobs:
         env:
           PR_NUMBER: ${{ github.event.number }}
           ZIP_FILE_NAME: ${{ steps.get-zip-details.outputs.ZIP_NAME }}
+          ARTIFACT_URL: ${{ steps.artifact-upload-step.outputs.artifact-url }}
         run: |
           echo $PR_NUMBER > pr_number.txt
           echo $ZIP_FILE_NAME > zip_file_name.txt
+          echo $ARTIFACT_URL > artifact_url.txt
+
+      - name: Upload the artifact url
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact_url
+          path: ./artifact_url.txt
 
       - name: Upload the PR number
         uses: actions/upload-artifact@v4
