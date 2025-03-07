@@ -47,7 +47,7 @@ jobs:
           echo "::set-output name=ZIP_NAME::$(ls docs/plugin/package)"
 
       - name: Uploading plugin build
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.get-zip-details.outputs.ZIP_NAME }}
           path: ${{ steps.get-zip-details.outputs.ZIP_PATH }}
@@ -62,13 +62,13 @@ jobs:
           echo $ZIP_FILE_NAME > zip_file_name.txt
 
       - name: Upload the PR number
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pr_number
           path: ./pr_number.txt
 
       - name: Upload the zip file name
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: zip_file_name
           path: ./zip_file_name.txt
