@@ -1786,12 +1786,6 @@ class ScenarioAnalysisTask(QgsTask):
                     },
                 )["OUTPUT"]
 
-                # feedback.pushInfo(f"binary mask {binary_mask}")
-
-                # binary_mask_layer = QgsRasterLayer(binary_mask, 'binary')
-
-                # QgsProject.instance().addMapLayer(binary_mask_layer)
-
                 # Step 2: Run sieve analysis from on the binary mask
                 sieved_mask = processing.run(
                     "gdal:sieve",
@@ -1807,14 +1801,7 @@ class ScenarioAnalysisTask(QgsTask):
                     feedback=self.feedback,
                 )["OUTPUT"]
 
-                # feedback.pushInfo(f"sieved mask {sieved_mask}")
-
-                # sieved_mask_layer = QgsRasterLayer(sieved_mask, 'sieved_mask')
-
-                # QgsProject.instance().addMapLayer(sieved_mask_layer)
-
                 expr = f"({os.path.splitext(os.path.basename(sieved_mask))[0]}@1 > 0) * {os.path.splitext(os.path.basename(sieved_mask))[0]}@1"
-                # feedback.pushInfo(f"used expression {expr}")
 
                 # Step 3: Remove and convert any no data value to 0
                 sieved_mask_clean = processing.run(
@@ -1830,15 +1817,7 @@ class ScenarioAnalysisTask(QgsTask):
                     feedback=self.feedback,
                 )["OUTPUT"]
 
-                # feedback.pushInfo(f"sieved mask clean {sieved_mask_clean}")
-
-                # sieved_mask_clean_layer = QgsRasterLayer(sieved_mask_clean, 'sieved_mask_clean')
-
-                # QgsProject.instance().addMapLayer(sieved_mask_clean_layer)
-
                 expr_2 = f"{input_name}@1 * {os.path.splitext(os.path.basename(sieved_mask_clean))[0]}@1"
-
-                # feedback.pushInfo(f"Used expression 2 {expr_2}")
 
                 # Step 4: Join the sieved mask with the original input layer to filter out the small areas
                 sieve_output = processing.run(
@@ -1853,16 +1832,6 @@ class ScenarioAnalysisTask(QgsTask):
                     context=self.processing_context,
                     feedback=self.feedback,
                 )["OUTPUT"]
-
-                # feedback.pushInfo(f"sieved output joined {sieve_output}")
-
-                # sieve_output_layer = QgsRasterLayer(sieve_output, 'sieve_output')
-
-                # QgsProject.instance().addMapLayer(sieve_output_layer)
-
-                # expr_3 = f'if ( {os.path.splitext(os.path.basename(sieve_output))[0]}@1 <= 0, -9999, {os.path.splitext(os.path.basename(sieve_output))[0]}@1 )'
-
-                # feedback.pushInfo(f"used expression 3 {expr_3}")
 
                 # Step 5. Replace all 0 with -9999 using if ("combined@1" <= 0, -9999, "combined@1")
                 sieve_output_updated = processing.run(
@@ -1883,11 +1852,14 @@ class ScenarioAnalysisTask(QgsTask):
                     feedback=self.feedback,
                 )["OUTPUT"]
 
-                # feedback.pushInfo(f"sieved output updated {sieve_output_updated}")
-
-                # sieve_output_updated_layer = QgsRasterLayer(sieve_output_updated, 'sieve_output_updated')
-
-                # QgsProject.instance().addMapLayer(sieve_output_updated_layer)
+                if not os.path.exists(sieve_output_updated):
+                    self.log_message(
+                        f"Problem running sieve function "
+                        f"on models layers, sieve intermediate layer not found"
+                        f" \n"
+                    )
+                    self.cancel_task()
+                    return False
 
                 # Step 6. Run sum statistics with ignore no data values set to false and no data value of -9999
                 results = processing.run(
@@ -1903,10 +1875,6 @@ class ScenarioAnalysisTask(QgsTask):
                     context=self.processing_context,
                     feedback=self.feedback,
                 )
-
-                # self.log_message(
-                #     f"Used parameters for running sieve function to the models: {alg_params} \n"
-                # )
 
                 feedback = QgsProcessingFeedback()
 
