@@ -97,13 +97,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
         run: |
-          BODY="![badge]
+          BODY="## 🚀 **Plugin Build Successful!** ✅
 
-          Plugin zip package for the changes in this PR has been successfully built!.
+          A new **plugin build** has been successfully generated for the changes in this pull request! 🎉  
 
-          Download the plugin zip file from here ${{ env.ARTIFACT_URL }}
+          🔗 **[Download Plugin Zip](${ARTIFACT_URL}) 📥**  
 
-          [badge]: https://img.shields.io/badge/package_build-success-green"
+          ### 📌 **Next Steps**  
+          - 📥 **Download and test** the plugin built from this pull request.  
+          - 🔄 **Review the changes** and validate functionality.  
+          - 📝 **Provide feedback on this pull request!**  
+
+          ---
+          ### **🛠 Powered by GitHub Actions & gh API**  
+          "
 
           if [ -z "$COMMENT_ID" ]; then
             gh api repos/${{ github.repository }}/issues/${{ steps.pr_number_reader.outputs.pr_number }}/comments \
