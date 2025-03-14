@@ -2417,7 +2417,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param index: Zero-based index position of new current tab
         :type index: int
         """
-        if index == 1:
+        if index == 2:
             self.activity_widget.can_show_error_messages = True
             self.activity_widget.load()
 
