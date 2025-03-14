@@ -156,7 +156,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         # Insert widget for step 2
         self.activity_widget = ActivityContainerWidget(self, self.message_bar)
-        self.tab_widget.insertTab(1, self.activity_widget, self.tr("Step 2"))
+        self.tab_widget.insertTab(2, self.activity_widget, self.tr("Step 3"))
         self.tab_widget.currentChanged.connect(self.on_tab_step_changed)
 
         # Step 3, priority weighting layers initialization
@@ -2421,7 +2421,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.activity_widget.can_show_error_messages = True
             self.activity_widget.load()
 
-        elif index == 2 or index == 3:
+        elif index == 3:
             tab_valid = True
             msg = ""
 
