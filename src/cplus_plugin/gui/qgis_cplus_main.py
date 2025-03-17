@@ -1931,22 +1931,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             log(f"Problem cancelling task, {e}")
         self.processing_cancelled = True
 
-        # # Analysis processing tasks
-        # try:
-        #     if self.task:
-        #         self.task.cancel()
-        # except Exception as e:
-        #     self.on_progress_dialog_cancelled()
-        #     log(f"Problem cancelling task, {e}")
-        #
-        # # Report generating task
-        # try:
-        #     if self.reporting_feedback:
-        #         self.reporting_feedback.cancel()
-        # except Exception as e:
-        #     self.on_progress_dialog_cancelled()
-        #     log(f"Problem cancelling report generating task, {e}")
-
     def scenario_results(self, task, report_manager, progress_dialog):
         """Called when the task ends. Sets the progress bar to 100 if it finished.
 
