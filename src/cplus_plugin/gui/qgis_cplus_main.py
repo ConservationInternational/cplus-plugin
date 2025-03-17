@@ -2458,7 +2458,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             if not tab_valid:
                 self.show_message(msg)
-                self.tab_widget.setCurrentIndex(1)
+                self.tab_widget.setCurrentIndex(2)
 
             else:
                 self.message_bar.clearWidgets()
