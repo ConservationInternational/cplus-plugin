@@ -625,7 +625,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
         self.scenario_detail = {
             "scenario_name": old_scenario_dict["name"],
             "scenario_desc": old_scenario_dict["description"],
-            "snapping_enabled": snapping_enabled if sieve_enabled else False,
+            "snapping_enabled": snapping_enabled,
             "snap_layer": snap_layer_path,
             "snap_layer_uuid": snap_layer_uuid,
             "pathway_suitability_index": suitability_index,
