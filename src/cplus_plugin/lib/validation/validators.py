@@ -373,105 +373,103 @@ class ProjectedCrsValidator(BaseRuleValidator):
         """
         status = True
 
-        # key: Geographic CRS ID or 'undefined', value: list of model/layer names
-        geographic_crs_definitions = {}
+        # Dictionary to store CRS definitions: key is CRS ID or 'undefined', value is list of layer names
+        crs_definitions = {}
         undefined_msg = tr("Undefined")
         invalid_msg = tr("Invalid datasets")
-        has_undefined = False
+        geographic_msg = tr("Geographic CRS")
 
         progress = 0.0
         progress_increment = 100.0 / len(self.model_components)
         self._set_progress(progress)
 
-        crs_type_id = ""
+        crs = None
 
         for model_component in self.model_components:
             if self.feedback.isCanceled():
                 return False
 
-            is_valid = model_component.is_valid()
-            if not is_valid:
-                if status:
-                    status = False
-
-                # Add invalid datasets to the validation messages to make it explicit
-                if invalid_msg in geographic_crs_definitions:
-                    layers = geographic_crs_definitions.get(invalid_msg)
-                    layers.append(model_component.name)
-                else:
-                    geographic_crs_definitions[invalid_msg] = [model_component.name]
-
+            if not model_component.is_valid():
+                status = False
+                crs_definitions.setdefault(invalid_msg, []).append(model_component.name)
             else:
-                if model_component.is_default_layer():
-                    layer_metadata = self.get_default_layer_metadata(
-                        model_component.layer_uuid
-                    )
-                    crs = layer_metadata.get("crs", None)
-                else:
-                    layer = model_component.to_map_layer().clone()
-                    crs = layer.crs()
+                crs, is_geographic = self._get_crs_and_type(model_component)
 
                 if crs is None:
-                    # Flag that there is at least one dataset with an undefined CRS
-                    if not has_undefined:
-                        has_undefined = True
-
-                    if status:
-                        status = False
-
-                    if undefined_msg in geographic_crs_definitions:
-                        layers = geographic_crs_definitions.get(undefined_msg)
-                        layers.append(model_component.name)
-                    else:
-                        geographic_crs_definitions[undefined_msg] = [
-                            model_component.name
-                        ]
-                else:
-                    # Use this to capture the CRS auth ID incase all datasets have
-                    # the same CRS type.
-                    if not crs_type_id:
-                        if model_component.is_default_layer():
-                            crs_type_id = crs
-                            layer_metadata = self.get_default_layer_metadata(
-                                model_component.layer_uuid
-                            )
-                            is_geographic = layer_metadata["is_geographic"]
-                        else:
-                            crs_type_id = crs.authid()
-                            is_geographic = crs.isGeographic()
-
-                    if is_geographic:
-                        if crs_type_id in geographic_crs_definitions:
-                            layers = geographic_crs_definitions.get(crs_type_id)
-                            layers.append(model_component.name)
-                        else:
-                            geographic_crs_definitions[crs_type_id] = [
-                                model_component.name
-                            ]
+                    status = False
+                    crs_definitions.setdefault(undefined_msg, []).append(
+                        model_component.name
+                    )
+                elif is_geographic:
+                    status = False
+                    crs_definitions.setdefault(geographic_msg, []).append(
+                        model_component.name
+                    )
 
             progress += progress_increment
             self._set_progress(progress)
 
-        if len(geographic_crs_definitions) > 0 and status:
-            status = False
-
-        summary = ""
-        validate_info = []
-        if not status:
-            summary = tr("Some datasets have a geographic CRS")
-            for crs_type_str, layers in geographic_crs_definitions.items():
-                validate_info.append((crs_type_str, ", ".join(layers)))
-        else:
-            summary_tr = tr("All datasets have a projected CRS")
-            summary = f"{summary_tr} - {crs_type_id}"
+        summary, validate_info = self._generate_summary_and_info(
+            status, crs, crs_definitions
+        )
 
         self._result = RuleResult(
             self._config, self._config.recommendation, summary, validate_info
         )
-
         self._set_progress(100.0)
 
         return status
+    
+    def _get_crs_and_type(
+        self, model_component
+    ) -> typing.Tuple[typing.Optional[str], bool]:
+        """Retrieve the CRS and its type (geographic or not) for a model component.
+
+        :param model_component: The model component to analyze.
+        :type model_component: LayerModelComponent
+
+        :returns: A tuple containing the CRS ID (or None) and a boolean indicating if it is geographic.
+        :rtype: tuple
+        """
+        if model_component.is_default_layer():
+            layer_metadata = self.get_default_layer_metadata(model_component.layer_uuid)
+            return layer_metadata.get("crs", None), layer_metadata.get(
+                "is_geographic", False
+            )
+        else:
+            layer = model_component.to_map_layer().clone()
+            crs = layer.crs()
+            return crs.authid() if crs else None, crs.isGeographic() if crs else False
+
+    def _generate_summary_and_info(
+        self, status: bool, crs: str, crs_definitions: dict
+    ) -> typing.Tuple[str, list]:
+        """Generate the summary and validation info based on CRS definitions.
+
+        :param status: The validation status.
+        :type status: bool
+
+        :param crs: The CRS Auth ID.
+        :type status: str
+
+        :param crs_definitions: Dictionary of CRS definitions and associated layer names.
+        :type crs_definitions: dict
+
+        :returns: A tuple containing the summary string and validation info list.
+        :rtype: tuple
+        """
+        if not status:
+            summary = tr("Some datasets have a geographic CRS or undefined CRS")
+            validate_info = [
+                (crs_type, ", ".join(layers))
+                for crs_type, layers in crs_definitions.items()
+            ]
+        else:
+            summary_tr = tr("All datasets have a projected CRS")
+            summary = f"{summary_tr} - {crs}"
+            validate_info = []
+
+        return summary, validate_info
 
     @property
     def rule_type(self) -> RuleType:
