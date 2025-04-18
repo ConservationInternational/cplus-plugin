@@ -373,11 +373,10 @@ class ProjectedCrsValidator(BaseRuleValidator):
         """
         status = True
 
-        # Dictionary to store CRS definitions: key is CRS ID or 'undefined', value is list of layer names
+        # Dictionary to store CRS definitions: key is CRS ID or 'undefined', value is list of model/layer names
         crs_definitions = {}
         undefined_msg = tr("Undefined")
         invalid_msg = tr("Invalid datasets")
-        geographic_msg = tr("Geographic CRS")
 
         progress = 0.0
         progress_increment = 100.0 / len(self.model_components)
@@ -402,9 +401,7 @@ class ProjectedCrsValidator(BaseRuleValidator):
                     )
                 elif is_geographic:
                     status = False
-                    crs_definitions.setdefault(geographic_msg, []).append(
-                        model_component.name
-                    )
+                    crs_definitions.setdefault(crs, []).append(model_component.name)
 
             progress += progress_increment
             self._set_progress(progress)
@@ -419,7 +416,7 @@ class ProjectedCrsValidator(BaseRuleValidator):
         self._set_progress(100.0)
 
         return status
-    
+
     def _get_crs_and_type(
         self, model_component
     ) -> typing.Tuple[typing.Optional[str], bool]:
