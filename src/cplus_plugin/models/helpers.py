@@ -206,6 +206,9 @@ def create_ncs_pathway(source_dict) -> typing.Union[NcsPathway, None]:
         # Assign undefined
         ncs.pathway_type = NcsPathwayType.UNDEFINED
 
+    if PRIORITY_LAYERS_SEGMENT in source_dict.keys():
+        ncs.priority_layers = source_dict[PRIORITY_LAYERS_SEGMENT]
+
     return ncs
 
 
@@ -221,8 +224,6 @@ def create_activity(source_dict) -> typing.Union[Activity, None]:
     :rtype: Activity
     """
     activity = create_layer_component(source_dict, Activity)
-    if PRIORITY_LAYERS_SEGMENT in source_dict.keys():
-        activity.priority_layers = source_dict[PRIORITY_LAYERS_SEGMENT]
 
     if MASK_PATHS_SEGMENT in source_dict.keys():
         activity.mask_paths = source_dict[MASK_PATHS_SEGMENT]
@@ -297,6 +298,7 @@ def ncs_pathway_to_dict(ncs_pathway: NcsPathway, uuid_to_str=True) -> dict:
     base_ncs_dict = layer_component_to_dict(ncs_pathway, uuid_to_str)
     base_ncs_dict[CARBON_PATHS_ATTRIBUTE] = ncs_pathway.carbon_paths
     base_ncs_dict[PATHWAY_TYPE_ATTRIBUTE] = ncs_pathway.pathway_type
+    base_ncs_dict[PRIORITY_LAYERS_SEGMENT] = ncs_pathway.priority_layers
 
     return base_ncs_dict
 
