@@ -461,6 +461,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.map_layer_file_widget.setStorageMode(QgsFileWidget.StorageMode.GetFile)
         self.map_layer_file_widget.fileChanged.connect(self.on_snapping_layer_changed)
         self.map_layer_box.layerChanged.connect(self.map_layer_changed)
+        self.map_layer_box.setFilters(qgis.core.QgsMapLayerProxyModel.RasterLayer)
 
         self.mask_layer_widget.setStorageMode(QgsFileWidget.StorageMode.GetFile)
         self.mask_layer_box.layerChanged.connect(self.mask_layer_changed)
