@@ -402,6 +402,17 @@ class ProjectedCrsValidator(BaseRuleValidator):
         undefined_msg = tr("Undefined")
         invalid_msg = tr("Invalid datasets")
 
+        snapping_enabled = settings_manager.get_value(
+            Settings.SNAPPING_ENABLED, default=False, setting_type=bool
+        )
+        snap_layer_path = (
+            settings_manager.get_value(
+                Settings.SNAP_LAYER, default="", setting_type=str
+            )
+            if snapping_enabled
+            else ""
+        )
+
         progress = 0.0
         progress_increment = 100.0 / len(self.model_components)
         self._set_progress(progress)
@@ -434,8 +445,21 @@ class ProjectedCrsValidator(BaseRuleValidator):
             status, crs, crs_definitions
         )
 
+        recommendation_str = self._config.recommendation
+        if not status:
+            if snapping_enabled and snap_layer_path:
+                self._config.category = ValidationCategory.WARNING
+                recommendation_str += tr(
+                    " or the datasets will be reprojected to match the CRS of the reference layer"
+                )
+            else:
+                self._config.category = ValidationCategory.ERROR
+                recommendation_str += tr(
+                    " or specify a reference layer by selecting it through the snapping option in the settings"
+                )
+
         self._result = RuleResult(
-            self._config, self._config.recommendation, summary, validate_info
+            self._config, recommendation_str, summary, validate_info
         )
         self._set_progress(100.0)
 
