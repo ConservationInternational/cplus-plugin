@@ -459,6 +459,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.folder_data.fileChanged.connect(self.base_dir_exists)
 
         self.map_layer_file_widget.setStorageMode(QgsFileWidget.StorageMode.GetFile)
+        self.map_layer_file_widget.fileChanged.connect(self.on_snapping_layer_changed)
         self.map_layer_box.layerChanged.connect(self.map_layer_changed)
 
         self.mask_layer_widget.setStorageMode(QgsFileWidget.StorageMode.GetFile)
@@ -587,6 +588,16 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         self.save_settings()
 
+    def on_snapping_layer_changed(self, layer):
+        if layer is not None:
+            valid, validation_info = self.validate_snapping_layer(layer)
+            if not valid:
+                iface.messageBar().pushMessage(
+                    "CPLUS - Warning",
+                    f"{tr(validation_info)}: {layer}",
+                    level=qgis.core.Qgis.MessageLevel.Warning,
+                )
+
     def map_layer_changed(self, layer):
         """Sets the file path of the selected layer in file path input
 
@@ -594,6 +605,13 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         :type layer: QgsMapLayer
         """
         if layer is not None:
+            valid, validation_info = self.validate_snapping_layer(layer.source())
+            if not valid:
+                iface.messageBar().pushMessage(
+                    "CPLUS - Warning",
+                    f"{tr(validation_info)}: {layer.source()}",
+                    level=qgis.core.Qgis.MessageLevel.Warning,
+                )
             self.map_layer_file_widget.setFilePath(layer.source())
 
     def mask_layer_changed(self, layer):
