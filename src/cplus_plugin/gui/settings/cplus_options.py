@@ -9,6 +9,7 @@ a button on the docking widget, and from the toolbar menu.
 
 import os
 import typing
+import uuid
 
 import qgis.core
 import qgis.gui
@@ -43,6 +44,15 @@ from ...definitions.defaults import (
     ICON_PATH,
     OPTIONS_TITLE,
 )
+from ...lib.validation.configs import (
+    no_data_validation_config,
+    projected_crs_validation_config,
+    raster_validation_config,
+)
+from ...lib.validation.feedback import ValidationFeedback
+from ...lib.validation.validators import DataValidator
+from ...models.validation import RuleInfo, RuleType
+from ...models.base import DataSourceType, LayerModelComponent, LayerType
 from ...trends_earth.constants import API_URL, TIMEOUT
 from ...utils import FileUtils, log, tr
 from ...trends_earth import auth, api, download
@@ -661,6 +671,40 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             Settings.SNAPPING_ENABLED, self.snapping_group_box.isChecked()
         )
         snap_layer_path = self.map_layer_file_widget.filePath()
+
+        if self.snapping_group_box.isChecked():
+            # Check if snap layer is empty
+            if not snap_layer_path or snap_layer_path == "":
+                iface.messageBar().pushMessage(
+                    "CPLUS - Warning",
+                    tr("Snap reference layer is required when snapping is enabled"),
+                    level=qgis.core.Qgis.MessageLevel.Warning,
+                )
+                # Force disable snapping option
+                self.snapping_group_box.setChecked(False)
+                self.snapping_group_box.setCollapsed(True)
+                settings_manager.set_value(Settings.SNAPPING_ENABLED, False)
+                settings_manager.set_value(Settings.SNAP_LAYER, None)
+            else:
+                # Check if the snap reference layer is valid when snap is enabled
+                valid, validation_info = self.validate_snapping_layer(snap_layer_path)
+                if valid:
+                    # Save the snapping settings
+                    settings_manager.set_value(
+                        Settings.SNAPPING_ENABLED, self.snapping_group_box.isChecked()
+                    )
+                    settings_manager.set_value(Settings.SNAP_LAYER, snap_layer_path)
+                else:
+                    iface.messageBar().pushMessage(
+                        "CPLUS - Warning",
+                        f"{tr(validation_info)}: {snap_layer_path}",
+                        level=qgis.core.Qgis.MessageLevel.Warning,
+                    )
+                    self.snapping_group_box.setChecked(False)
+                    self.snapping_group_box.setCollapsed(True)
+                    settings_manager.set_value(Settings.SNAPPING_ENABLED, False)
+                    settings_manager.set_value(Settings.SNAP_LAYER, snap_layer_path)
+
         settings_manager.set_value(Settings.SNAP_LAYER, snap_layer_path)
 
         settings_manager.set_value(
@@ -1134,6 +1178,81 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         self.btn_edit_mask.setEnabled(contains_items)
         self.btn_delete_mask.setEnabled(contains_items)
+
+    def validate_snapping_layer(self, snap_layer_path: str) -> typing.Tuple[bool, str]:
+        """
+        Validates whether the provided file path corresponds to a valid snapping layer.
+        This function ensures the file exists, is a valid raster, uses a projected CRS,
+        and has a valid no-data value.
+
+        Args:
+            snap_layer_path (str): The file path to the snapping layer to be validated.
+
+        Returns:
+            Tuple[bool, str]: A tuple where the first element is a boolean indicating
+            whether the snapping layer is valid, and the second element is a string
+            containing validation information or an error message.
+        """
+        if (
+            not snap_layer_path
+            or not os.path.isfile(snap_layer_path)
+            or not os.path.exists(snap_layer_path)
+        ):
+            return False, "Snap reference dataset path is invalid or does not exist."
+
+        snap_layer_component = [
+            LayerModelComponent(
+                uuid.uuid4(),
+                "Snapping dataset",
+                "Snapping dataset",
+                snap_layer_path,
+                LayerType.RASTER,
+                True,
+            )
+        ]
+
+        feedback = ValidationFeedback()
+
+        # Helper function to run a validation rule
+        # Helper function is tight coupled to this function.
+        def _run_validation(rule_type, config, error_message):
+            rule_info = RuleInfo(rule_type, config.rule_name)
+            feedback.current_rule = rule_info
+            validator = DataValidator.create_rule_validator(rule_type, config, feedback)
+            validator.model_components = snap_layer_component
+            validator.run()
+            if not validator.result.success:
+                return False, validator.result.recommendation or error_message
+            return True, None
+
+        # Validate raster type
+        is_valid, message = _run_validation(
+            RuleType.DATA_TYPE,
+            raster_validation_config,
+            "Snap reference dataset must be a raster.",
+        )
+        if not is_valid:
+            return is_valid, message
+
+        # Validate raster projection
+        is_valid, message = _run_validation(
+            RuleType.PROJECTED_CRS,
+            projected_crs_validation_config,
+            "Snap reference dataset must use a projected CRS.",
+        )
+        if not is_valid:
+            return is_valid, message
+
+        # Validate no-data value
+        is_valid, message = _run_validation(
+            RuleType.NO_DATA_VALUE,
+            no_data_validation_config,
+            "Snap reference dataset must have a valid no-data value.",
+        )
+        if not is_valid:
+            return is_valid, message
+
+        return True, None
 
     def register(self):
         self.dlg_settings_register.exec_()
