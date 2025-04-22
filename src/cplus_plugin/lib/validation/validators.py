@@ -659,6 +659,20 @@ class ResolutionValidator(BaseRuleValidator):
         spatial_resolution_definitions = {}
         invalid_msg = tr("Invalid datasets")
 
+        snapping_enabled = settings_manager.get_value(
+            Settings.SNAPPING_ENABLED, default=False, setting_type=bool
+        )
+        snap_layer_path = (
+            settings_manager.get_value(
+                Settings.SNAP_LAYER, default="", setting_type=str
+            )
+            if snapping_enabled
+            else ""
+        )
+        snap_rescale = settings_manager.get_value(
+            Settings.RESCALE_VALUES, default=False, setting_type=bool
+        )
+
         progress = 0.0
         progress_increment = 100.0 / len(self.model_components)
         self._set_progress(progress)
@@ -714,6 +728,7 @@ class ResolutionValidator(BaseRuleValidator):
         if len(spatial_resolution_definitions) > 1 and status:
             status = False
 
+        recommendation_str = self._config.recommendation
         summary = ""
         validate_info = []
         if not status:
@@ -725,12 +740,22 @@ class ResolutionValidator(BaseRuleValidator):
                         ", ".join(layers),
                     )
                 )
+            if snapping_enabled and snap_layer_path and snap_rescale:
+                self._config.category = ValidationCategory.WARNING
+                recommendation_str += tr(
+                    " or datasets will be resampled to match the spatial resolution of the reference layer"
+                )
+            else:
+                self._config.category = ValidationCategory.ERROR
+                recommendation_str += tr(
+                    " or specify a reference layer by selecting it through the snapping option in the settings"
+                )
         else:
             summary_tr = tr("Datasets have the same spatial resolution")
             summary = f"{summary_tr} {self.resolution_definition_to_str(list(spatial_resolution_definitions.keys())[0])}"
 
         self._result = RuleResult(
-            self._config, self._config.recommendation, summary, validate_info
+            self._config, recommendation_str, summary, validate_info
         )
 
         self._set_progress(100.0)
