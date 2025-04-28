@@ -38,7 +38,7 @@ class TestActivityContainerWidget(TestCase):
     def test_add_ncs_pathway(self):
         """Assert adding an NCS pathway."""
         self.widget.ncs_pathway_view.selected_items = MagicMock(
-            return_value=[MagicMock()]
+            return_value=[NcsPathwayItem(get_valid_ncs_pathway())]
         )
         self.widget.activity_view.add_ncs_pathway_items = MagicMock()
         self.widget._on_add_ncs_pathway()
