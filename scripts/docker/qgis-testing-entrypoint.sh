@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # Docker entrypoint file intended for docker-compose recipe for running unittests
+
 set -e
 
 source /tests_directory/scripts/docker/qgis-cplus-plugin-test-pre-scripts.sh
