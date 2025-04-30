@@ -52,6 +52,7 @@ from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
 from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
 from .lib.reports.manager import report_manager
 from .lib.reports.metrics import register_metric_functions, unregister_metric_functions
+from .models.base import PriorityLayerType
 from .gui.settings.cplus_options import CplusOptionsFactory
 from .gui.settings.log_options import LogOptionsFactory
 from .gui.settings.report_options import ReportOptionsFactory
@@ -103,6 +104,8 @@ class QgisCplus:
         self.actions.append(self.toolBtnAction)
 
         create_priority_layers()
+
+        clean_up_finance_pwl_references()
 
         initialize_model_settings()
 
@@ -418,6 +421,31 @@ def create_priority_layers():
                 settings_manager.delete_priority_layer(layer["uuid"])
 
         settings_manager.set_value(priority_layers_setting, True)
+
+def clean_up_finance_pwl_references():
+    """Check if NPV PWLs are valid i.e. refer to existing NCS pathways.
+
+    This also cleans up those finance PWLs that were previously referring
+    to activities.
+    """
+    ncs_pathway_pwl_ids = list(
+        {
+            pwl.get("uuid")
+            for pathway in settings_manager.get_all_ncs_pathways()
+            for pwl in pathway.priority_layers
+            if pwl.get("uuid") is not None
+        }
+    )
+
+    for layer in settings_manager.get_priority_layers():
+        # Remove finance priority layers that were previously pointing
+        # to activities or also for NCS pathways that have been removed.
+        pwl_type = layer.get("type", PriorityLayerType.DEFAULT.value)
+        if pwl_type != PriorityLayerType.NPV:
+            continue
+
+        if layer["uuid"] not in ncs_pathway_pwl_ids:
+            settings_manager.delete_priority_layer(layer["uuid"])
 
 
 def initialize_model_settings():
