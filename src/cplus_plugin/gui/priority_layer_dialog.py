@@ -164,7 +164,9 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
 
     def open_layer_select_dialog(self):
         """Opens priority layer item selection dialog"""
-        pathway_select_dialog = ItemsSelectionDialog(self, self.layer, self.ncs_pathways)
+        pathway_select_dialog = ItemsSelectionDialog(
+            self, self.layer, self.ncs_pathways
+        )
         pathway_select_dialog.exec_()
 
     def set_selected_items(self, pathways, removed_pathways=None):
@@ -191,9 +193,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         if len(removed_pathways) <= 0:
             all_pathways = settings_manager.get_all_ncs_pathways()
             removed_pathways = [
-                pathway
-                for pathway in all_pathways
-                if pathway.name not in pathway_names
+                pathway for pathway in all_pathways if pathway.name not in pathway_names
             ]
 
         for pathway in pathways:
