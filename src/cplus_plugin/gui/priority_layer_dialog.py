@@ -62,7 +62,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
 
         self._user_defined = True
 
-        self.activities = []
+        self.ncs_pathways = []
         self.initialize_ui()
 
     def map_layer_changed(self, layer):
@@ -99,8 +99,8 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         self.layer_name.setEnabled(False)
         self.map_layer_file_widget.setEnabled(False)
         self.map_layer_box.setEnabled(False)
-        self.selected_models_le.setEnabled(False)
-        self.select_models_btn.setEnabled(False)
+        self.selected_pathways_le.setEnabled(False)
+        self.select_pathways_btn.setEnabled(False)
 
     def initialize_ui(self):
         """Populate UI inputs when loading the dialog"""
@@ -110,7 +110,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
 
         self.map_layer_file_widget.setStorageMode(QgsFileWidget.StorageMode.GetFile)
 
-        self.select_models_btn.clicked.connect(self.open_layer_select_dialog)
+        self.select_pathways_btn.clicked.connect(self.open_layer_select_dialog)
 
         default_priority_layers = settings_manager.get_default_layers("priority_layer")
         self.cbo_default_layer.addItem("")
@@ -147,85 +147,85 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
             self.layer_name.setText(self.layer["name"])
             self.layer_description.setText(self.layer["description"])
 
-            all_activities = settings_manager.get_all_activities()
+            all_pathways = settings_manager.get_all_ncs_pathways()
 
-            for activity in all_activities:
+            for pathway in all_pathways:
                 model_layer_uuids = [
                     layer.get("uuid")
-                    for layer in activity.priority_layers
+                    for layer in pathway.priority_layers
                     if layer is not None
                 ]
                 if str(self.layer.get("uuid")) in model_layer_uuids:
-                    self.activities.append(activity)
+                    self.ncs_pathways.append(pathway)
 
-            self.set_selected_items(self.activities)
+            self.set_selected_items(self.ncs_pathways)
 
             self._user_defined = self.layer.get(USER_DEFINED_ATTRIBUTE, True)
 
     def open_layer_select_dialog(self):
         """Opens priority layer item selection dialog"""
-        activity_select_dialog = ItemsSelectionDialog(self, self.layer, self.activities)
-        activity_select_dialog.exec_()
+        pathway_select_dialog = ItemsSelectionDialog(self, self.layer, self.ncs_pathways)
+        pathway_select_dialog.exec_()
 
-    def set_selected_items(self, activities, removed_activities=[]):
-        """Adds this dialog layer into the passed activities and removes it from the
-        unselected activities passed as removed_activities.
+    def set_selected_items(self, pathways, removed_pathways=None):
+        """Adds this dialog layer into the passed pathways and removes it from the
+        unselected pathways passed as removed_pathways.
 
-        :param activities: Selected activities.
-        :type activities: list
+        :param pathways: Selected pathways.
+        :type pathways: list
 
-        :param removed_activities: Activities that dialog
+        :param removed_pathways: Pathways that dialog
         layer should be removed from.
-        :type removed_activities: list
-
+        :type removed_pathways: list
         """
+        removed_pathways = removed_pathways or []
 
-        self.activities = activities
+        self.ncs_pathways = pathways
 
-        activity_names = [activity.name for activity in activities]
-        self.selected_models_le.setText(" , ".join(activity_names))
+        pathway_names = [pathway.name for pathway in pathways]
+        self.selected_pathways_le.setText(" , ".join(pathway_names))
 
         if not self.layer:
             return
 
-        if len(removed_activities) <= 0:
-            all_activities = settings_manager.get_all_activities()
-            removed_activities = [
-                activity
-                for activity in all_activities
-                if activity.name not in activity_names
+        if len(removed_pathways) <= 0:
+            all_pathways = settings_manager.get_all_ncs_pathways()
+            removed_pathways = [
+                pathway
+                for pathway in all_pathways
+                if pathway.name not in pathway_names
             ]
 
-        for activity in activities:
+        for pathway in pathways:
             models_layer_uuids = [
                 str(layer.get("uuid"))
-                for layer in activity.priority_layers
+                for layer in pathway.priority_layers
                 if layer is not None
             ]
             if (
                 self.layer is not None
                 and str(self.layer.get("uuid")) not in models_layer_uuids
             ):
-                activity.priority_layers.append(self.layer)
-                settings_manager.save_activity(activity)
+                pathway.priority_layers.append(self.layer)
+                settings_manager.save_ncs_pathway(pathway)
 
             # remove redundant priority layers
-            for layer in activity.priority_layers:
+            for layer in pathway.priority_layers:
                 if layer is not None:
                     layer_settings = settings_manager.get_priority_layer(
                         str(layer.get("uuid"))
                     )
                     if layer_settings is None:
-                        activity.priority_layers.remove(layer)
-                        settings_manager.save_activity(activity)
+                        pathway.priority_layers.remove(layer)
+                        settings_manager.save_ncs_pathway(pathway)
 
-        for activity in removed_activities:
-            for layer in activity.priority_layers:
+        for pathway in removed_pathways:
+            for layer in pathway.priority_layers:
                 if layer is None:
                     continue
                 if str(layer.get("uuid")) == str(self.layer.get("uuid")):
-                    activity.priority_layers.remove(layer)
-                    settings_manager.save_activity(activity)
+                    pathway.priority_layers.remove(layer)
+                    settings_manager.save_ncs_pathway(pathway)
 
     def accept(self):
         """Handles logic for adding new priority layer and an edit existing one."""
@@ -255,7 +255,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         settings_manager.save_priority_layer(layer)
 
         self.layer = layer
-        self.set_selected_items(self.activities)
+        self.set_selected_items(self.ncs_pathways)
 
         super().accept()
 
