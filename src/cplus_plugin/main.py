@@ -422,6 +422,7 @@ def create_priority_layers():
 
         settings_manager.set_value(priority_layers_setting, True)
 
+
 def clean_up_finance_pwl_references():
     """Check if NPV PWLs are valid i.e. refer to existing NCS pathways.
 
