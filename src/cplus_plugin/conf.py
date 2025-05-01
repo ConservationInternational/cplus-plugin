@@ -402,7 +402,6 @@ class SettingsManager(QtCore.QObject):
 
         for activity in scenario_settings.activities:
             if isinstance(activity, Activity):
-                priority_layers = activity.priority_layers
                 layer_styles = activity.layer_styles
                 style_pixel_value = activity.style_pixel_value
 
@@ -411,7 +410,6 @@ class SettingsManager(QtCore.QObject):
                     ncs_pathways.append({str(ncs.uuid): ncs.path})
 
                 activity = layer_component_to_dict(activity)
-                activity[PRIORITY_LAYERS_SEGMENT] = priority_layers
                 activity[PATHWAYS_ATTRIBUTE] = ncs_pathways
                 activity[STYLE_ATTRIBUTE] = layer_styles
                 activity[PIXEL_VALUE_ATTRIBUTE] = style_pixel_value
@@ -420,7 +418,6 @@ class SettingsManager(QtCore.QObject):
 
         for activity in scenario_settings.weighted_activities:
             if isinstance(activity, Activity):
-                priority_layers = activity.priority_layers
                 layer_styles = activity.layer_styles
                 style_pixel_value = activity.style_pixel_value
 
@@ -429,7 +426,6 @@ class SettingsManager(QtCore.QObject):
                     ncs_pathways.append({str(ncs.uuid): ncs.path})
 
                 activity = layer_component_to_dict(activity)
-                activity[PRIORITY_LAYERS_SEGMENT] = priority_layers
                 activity[PATHWAYS_ATTRIBUTE] = ncs_pathways
                 activity[STYLE_ATTRIBUTE] = layer_styles
                 activity[PIXEL_VALUE_ATTRIBUTE] = style_pixel_value
@@ -468,23 +464,6 @@ class SettingsManager(QtCore.QObject):
         spatial_key = f"{key}/extent/spatial/"
         with qgis_settings(spatial_key) as settings:
             settings.setValue("bbox", spatial_extent)
-
-    # def get_scenario(self, identifier):
-    #     """Retrieves the scenario that matches the passed identifier.
-    #
-    #     :param identifier: Scenario identifier
-    #     :type identifier: str
-    #
-    #     :returns: Scenario settings instance
-    #     :rtype: ScenarioSettings
-    #     """
-    #
-    #     settings_key = self._get_scenario_settings_base(identifier)
-    #     with qgis_settings(settings_key) as settings:
-    #         scenario_settings = ScenarioSettings.from_qgs_settings(
-    #             str(identifier), settings
-    #         )
-    #     return scenario_settings
 
     def get_scenario(self, scenario_id):
         """Retrieves the first scenario that matched the passed scenario id.
@@ -703,7 +682,7 @@ class SettingsManager(QtCore.QObject):
         :param identifier: Priority layers identifier
         :type identifier: uuid.UUID
 
-        :returns: Priority layer dict
+        :returns: Priority layer dict or None if not found.
         :rtype: dict
         """
         priority_layer = None
@@ -780,11 +759,11 @@ class SettingsManager(QtCore.QObject):
                     priority_layer_list.append(layer)
         return priority_layer_list
 
-    def find_layer_by_name(self, name) -> typing.Dict:
+    def find_layer_by_name(self, name: str) -> typing.Dict:
         """Finds a priority layer setting inside
         the plugin QgsSettings by name.
 
-        :param name: Priority layers identifier
+        :param name: Priority layer name.
         :type name: str
 
         :returns: Priority layers dict
@@ -804,14 +783,14 @@ class SettingsManager(QtCore.QObject):
 
         return self.get_priority_layer(found_id) if found_id is not None else None
 
-    def find_layers_by_group(self, group) -> typing.List:
+    def find_layers_by_group(self, group: str) -> typing.List:
         """Finds priority layers inside the plugin QgsSettings
-         that contain the passed group.
+         that contain the given group name.
 
-        :param group: Priority group name
+        :param group: Priority group name.
         :type group: str
 
-        :returns: Priority layers list
+        :returns: Priority layers list.
         :rtype: list
         """
         layers = []
@@ -865,7 +844,7 @@ class SettingsManager(QtCore.QObject):
 
         self.priority_layers_changed.emit()
 
-    def set_current_priority_layer(self, identifier):
+    def set_current_priority_layer(self, identifier: str):
         """Set current priority layer
 
         :param identifier: Priority layer identifier
@@ -1286,6 +1265,23 @@ class SettingsManager(QtCore.QObject):
 
             ncs_pathway.carbon_paths = abs_carbon_paths
 
+            # PWLs path update
+            updated_pwls = []
+            for layer in ncs_pathway.priority_layers:
+                if layer in PRIORITY_LAYERS and base_dir not in layer.get(
+                    PATH_ATTRIBUTE
+                ):
+                    abs_pwl_path = (
+                        f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/"
+                        f"{layer.get(PATH_ATTRIBUTE)}"
+                    )
+                    abs_pwl_path = str(os.path.normpath(abs_pwl_path))
+                    layer[PATH_ATTRIBUTE] = abs_pwl_path
+
+                updated_pwls.append(layer)
+
+            ncs_pathway.priority_layers = updated_pwls
+
         # Remove then re-insert
         self.remove_ncs_pathway(str(ncs_pathway.uuid))
         self.save_ncs_pathway(ncs_pathway)
@@ -1317,7 +1313,6 @@ class SettingsManager(QtCore.QObject):
         :type activity: Activity, dict
         """
         if isinstance(activity, Activity):
-            priority_layers = activity.priority_layers
             layer_styles = activity.layer_styles
             style_pixel_value = activity.style_pixel_value
             mask_paths = activity.mask_paths
@@ -1327,20 +1322,10 @@ class SettingsManager(QtCore.QObject):
                 ncs_pathways.append(str(ncs.uuid))
 
             activity = layer_component_to_dict(activity)
-            activity[PRIORITY_LAYERS_SEGMENT] = priority_layers
             activity[MASK_PATHS_SEGMENT] = mask_paths
             activity[PATHWAYS_ATTRIBUTE] = ncs_pathways
             activity[STYLE_ATTRIBUTE] = layer_styles
             activity[PIXEL_VALUE_ATTRIBUTE] = style_pixel_value
-
-        if isinstance(activity, dict):
-            priority_layers = []
-            if activity.get("pwls_ids") is not None:
-                for layer_id in activity.get("pwls_ids", []):
-                    layer = self.get_priority_layer(layer_id)
-                    priority_layers.append(layer)
-                if len(priority_layers) > 0:
-                    activity[PRIORITY_LAYERS_SEGMENT] = priority_layers
 
         activity_str = json.dumps(todict(activity), cls=CustomJsonEncoder)
 
@@ -1435,21 +1420,6 @@ class SettingsManager(QtCore.QObject):
         :param activity: Activity object to be updated.
         :type activity: Activity
         """
-        base_dir = self.get_value(Settings.BASE_DIR)
-
-        if base_dir:
-            # PWLs path update
-            for layer in activity.priority_layers:
-                if layer in PRIORITY_LAYERS and base_dir not in layer.get(
-                    PATH_ATTRIBUTE
-                ):
-                    abs_pwl_path = (
-                        f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/"
-                        f"{layer.get(PATH_ATTRIBUTE)}"
-                    )
-                    abs_pwl_path = str(os.path.normpath(abs_pwl_path))
-                    layer[PATH_ATTRIBUTE] = abs_pwl_path
-
         # Remove then re-insert
         self.remove_activity(str(activity.uuid))
         self.save_activity(activity)

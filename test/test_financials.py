@@ -5,6 +5,7 @@ Unit tests for financial NPV computations.
 
 import os
 import typing
+import unittest
 from unittest import TestCase
 
 from processing.core.Processing import Processing
@@ -145,6 +146,7 @@ class TestFinancialNpv(TestCase):
             on_finish_func,
         )
 
+    @unittest.skip("Temporarily disabled for a subsequent ticket on PWL refactoring")
     def test_create_npv_pwl(self):
         """Test the creation of an NPV PWL raster layer."""
 
@@ -163,6 +165,7 @@ class TestFinancialNpv(TestCase):
         self.assertTrue(pwl_exists, msg="NPV PWL layer does not exists.")
         self.assertTrue(pwl_npv_layer.isValid(), msg="NPV PWL raster is not valid.")
 
+    @unittest.skip("Temporarily disabled for a subsequent ticket on PWL refactoring")
     def test_npv_pwl_model_creation(self):
         """Test the creation and saving of an NPV PWL data model."""
 

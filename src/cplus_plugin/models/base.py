@@ -311,6 +311,7 @@ class NcsPathway(LayerModelComponent):
 
     carbon_paths: typing.List[str] = dataclasses.field(default_factory=list)
     pathway_type: NcsPathwayType = NcsPathwayType.UNDEFINED
+    priority_layers: typing.List[typing.Dict] = dataclasses.field(default_factory=list)
 
     def __eq__(self, other: "NcsPathway") -> bool:
         """Test equality of NcsPathway object with another
@@ -406,6 +407,36 @@ class NcsPathway(LayerModelComponent):
 
         return True
 
+    def pw_layers(self) -> typing.List[QgsRasterLayer]:
+        """Returns the list of priority weighting layers defined under
+        the :py:attr:`~priority_layers` attribute.
+
+        :returns: Priority layers for the implementation or an empty list
+        if the path is not defined.
+        :rtype: list
+        """
+        return [
+            QgsRasterLayer(layer.get("path"))
+            for layer in self.priority_layers
+            if layer.get("path")
+        ]
+
+    def is_pwls_valid(self) -> bool:
+        """Checks if the priority layers are valid.
+
+        :returns: True if all priority layers are valid, else False if
+        even one is invalid. If there are no priority layers defined, it will
+        always return True.
+        :rtype: bool
+        """
+        is_valid = True
+        for cl in self.pw_layers():
+            if not cl.isValid():
+                is_valid = False
+                break
+
+        return is_valid
+
 
 @dataclasses.dataclass
 class Activity(LayerModelComponent):
@@ -417,7 +448,6 @@ class Activity(LayerModelComponent):
     """
 
     pathways: typing.List[NcsPathway] = dataclasses.field(default_factory=list)
-    priority_layers: typing.List[typing.Dict] = dataclasses.field(default_factory=list)
     layer_styles: dict = dataclasses.field(default_factory=dict)
     mask_paths: typing.List[str] = dataclasses.field(default_factory=list)
     style_pixel_value: int = -1
@@ -526,36 +556,6 @@ class Activity(LayerModelComponent):
             return None
 
         return pathways[0]
-
-    def pw_layers(self) -> typing.List[QgsRasterLayer]:
-        """Returns the list of priority weighting layers defined under
-        the :py:attr:`~priority_layers` attribute.
-
-        :returns: Priority layers for the implementation or an empty list
-        if the path is not defined.
-        :rtype: list
-        """
-        return [
-            QgsRasterLayer(layer.get("path"))
-            for layer in self.priority_layers
-            if layer.get("path")
-        ]
-
-    def is_pwls_valid(self) -> bool:
-        """Checks if the priority layers are valid.
-
-        :returns: True if all priority layers are valid, else False if
-        even one is invalid. If there are no priority layers defined, it will
-        always return True.
-        :rtype: bool
-        """
-        is_valid = True
-        for cl in self.pw_layers():
-            if not cl.isValid():
-                is_valid = False
-                break
-
-        return is_valid
 
     def is_valid(self) -> bool:
         """Includes an additional check to assert if NCS pathways have
@@ -687,7 +687,7 @@ class Scenario(BaseModelComponent):
 class ScenarioResult:
     """Scenario result details."""
 
-    scenario: Scenario
+    scenario: typing.Optional[Scenario]
     created_date: datetime.datetime = datetime.datetime.now()
     analysis_output: typing.Dict = None
     output_layer_name: str = ""
