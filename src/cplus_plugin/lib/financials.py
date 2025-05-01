@@ -20,7 +20,7 @@ from qgis import processing
 
 from ..definitions.constants import NPV_PRIORITY_LAYERS_SEGMENT, PRIORITY_LAYERS_SEGMENT
 from ..conf import settings_manager, Settings
-from ..models.financial import ActivityNpvCollection
+from ..models.financial import NcsPathwayNpvCollection
 from ..utils import clean_filename, FileUtils, log, tr
 
 
@@ -48,7 +48,7 @@ def compute_discount_value(
 
 
 def create_npv_pwls(
-    npv_collection: ActivityNpvCollection,
+    npv_collection: NcsPathwayNpvCollection,
     context: QgsProcessingContext,
     multi_step_feedback: QgsProcessingMultiStepFeedback,
     feedback: QgsProcessingFeedback,
@@ -63,7 +63,7 @@ def create_npv_pwls(
 
     :param npv_collection: The Activity NPV collection containing the NPV
     parameters for activities.
-    :type npv_collection: ActivityNpvCollection
+    :type npv_collection: NcsPathwayNpvCollection
 
     :param context: Context information for performing the processing.
     :type context: QgsProcessingContext
@@ -115,7 +115,7 @@ def create_npv_pwls(
         if feedback.isCanceled():
             break
 
-        if activity_npv.activity is None or activity_npv.params is None:
+        if activity_npv.pathway is None or activity_npv.params is None:
             log(
                 tr(
                     "Could not create or update activity NPV as activity and NPV parameter information is missing."
@@ -219,7 +219,7 @@ def calculate_activity_npv(activity_id: str, activity_area: float) -> float:
     if npv_collection is None:
         return -1.0
 
-    activity_npv = npv_collection.activity_npv(activity_id)
+    activity_npv = npv_collection.pathway_npv(activity_id)
     if activity_npv is None:
         return -1.0
 

@@ -22,7 +22,7 @@ from ..component_item_model import ActivityItemModel
 from ...conf import settings_manager
 from ...definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
 from ...models.base import Activity
-from ...models.financial import ActivityNpv, ActivityNpvCollection, NpvParameters
+from ...models.financial import NcsPathwayNpv, NcsPathwayNpvCollection, NpvParameters
 from .npv_financial_model import NpvFinancialModel
 from ...lib.financials import compute_discount_value
 from ...utils import FileUtils, open_documentation, tr
@@ -251,7 +251,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
         self._npv_collection = settings_manager.get_npv_collection()
         if self._npv_collection is None:
-            self._npv_collection = ActivityNpvCollection(0.0, 0.0)
+            self._npv_collection = NcsPathwayNpvCollection(0.0, 0.0)
 
         self.sb_min_normalize.setValue(self._npv_collection.minimum_value)
         self.sb_max_normalize.setValue(self._npv_collection.maximum_value)
@@ -274,12 +274,12 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         open_documentation(USER_DOCUMENTATION_SITE)
 
     @property
-    def npv_collection(self) -> ActivityNpvCollection:
+    def npv_collection(self) -> NcsPathwayNpvCollection:
         """Gets the Activity NPV collection as defined by the user.
 
         :returns: The Activity NPV collection containing the NPV
         parameters for activities.
-        :rtype: ActivityNpvCollection
+        :rtype: NcsPathwayNpvCollection
         """
         return self._npv_collection
 
@@ -472,7 +472,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
             if not activity_mapping.enabled:
                 continue
 
-            activity_name = activity_mapping.activity.name
+            activity_name = activity_mapping.pathway.name
 
             if activity_mapping.params.manual_npv:
                 if activity_mapping.params.absolute_npv is None:
@@ -608,31 +608,31 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
             return
 
         activity_item = self._activity_model.itemFromIndex(selected_indexes[0])
-        activity_npv = self._npv_collection.activity_npv(activity_item.uuid)
+        activity_npv = self._npv_collection.pathway_npv(activity_item.uuid)
         if activity_npv is None:
             return
 
         self.load_activity_npv(activity_npv)
 
-    def _get_current_activity_npv(self) -> typing.Optional[ActivityNpv]:
+    def _get_current_activity_npv(self) -> typing.Optional[NcsPathwayNpv]:
         """Gets the current activity NPV model.
 
         :returns: The current activity NPV model or None if the current
         identifier is not set or if no model was found in the collection.
-        :rtype: ActivityNpv
+        :rtype: NcsPathwayNpv
         """
         if self._current_activity_identifier is None:
             return None
 
-        return self._npv_collection.activity_npv(self._current_activity_identifier)
+        return self._npv_collection.pathway_npv(self._current_activity_identifier)
 
-    def load_activity_npv(self, activity_npv: ActivityNpv):
+    def load_activity_npv(self, activity_npv: NcsPathwayNpv):
         """Loads NPV parameters for an activity.
 
         :param activity_npv: Object containing the NPV parameters for an activity.
-        :type activity_npv: ActivityNpv
+        :type activity_npv: NcsPathwayNpv
         """
-        self._current_activity_identifier = activity_npv.activity_id
+        self._current_activity_identifier = activity_npv.pathway_id
         npv_params = activity_npv.params
 
         saved_total_npv = npv_params.absolute_npv
@@ -675,7 +675,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         if self._current_activity_identifier is None:
             return
 
-        activity_npv = self._npv_collection.activity_npv(
+        activity_npv = self._npv_collection.pathway_npv(
             self._current_activity_identifier
         )
 
@@ -726,7 +726,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
         activity_item = self._activity_model.itemFromIndex(selected_indexes[0])
 
-        return activity_item.activity
+        return activity_item.pathway
 
     def _on_activity_npv_groupbox_toggled(self, checked: bool):
         """Slot raised when the NPV PWL groupbox has been enabled or disabled.
@@ -740,7 +740,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
                 npv_params = NpvParameters(
                     self.DEFAULT_YEARS, self.DEFAULT_DISCOUNT_RATE
                 )
-                activity_npv = ActivityNpv(npv_params, True, selected_activity)
+                activity_npv = NcsPathwayNpv(npv_params, True, selected_activity)
                 self._npv_collection.mappings.append(activity_npv)
                 self._current_activity_identifier = str(selected_activity.uuid)
 

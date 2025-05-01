@@ -81,7 +81,7 @@ from ..models.base import (
     Activity,
     PriorityLayerType,
 )
-from ..models.financial import ActivityNpv
+from ..models.financial import NcsPathwayNpv
 from ..conf import settings_manager, Settings
 
 from ..lib.financials import create_npv_pwls
@@ -929,7 +929,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def on_npv_pwl_created(
         self,
-        activity_npv: ActivityNpv,
+        activity_npv: NcsPathwayNpv,
         npv_pwl_path: str,
         algorithm: QgsProcessingAlgorithm,
         context: QgsProcessingContext,
@@ -939,7 +939,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         raster layer has been created.
 
         :param activity_npv: NPV mapping for an activity:
-        :type activity_npv: ActivityNpv
+        :type activity_npv: NcsPathwayNpv
 
         :param npv_pwl_path: Absolute file path of the created NPV PWL.
         :type npv_pwl_path: str
@@ -961,7 +961,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if updated_pwl is None:
             # Create NPV PWL
             desc_tr = tr("Normalized NPV for")
-            pwl_desc = f"{desc_tr} {activity_npv.activity.name}."
+            pwl_desc = f"{desc_tr} {activity_npv.pathway.name}."
             npv_layer_info = {
                 "uuid": str(uuid.uuid4()),
                 "name": activity_npv.base_name,
@@ -974,13 +974,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             settings_manager.save_priority_layer(npv_layer_info)
 
             # Updated the PWL for the activity
-            activity = settings_manager.get_activity(activity_npv.activity_id)
+            activity = settings_manager.get_activity(activity_npv.pathway_id)
             if activity is not None:
                 activity.priority_layers.append(npv_layer_info)
                 settings_manager.update_activity(activity)
             else:
                 msg_tr = tr("activity not found to attach the NPV PWL.")
-                log(f"{activity_npv.activity.name} {msg_tr}", info=False)
+                log(f"{activity_npv.pathway.name} {msg_tr}", info=False)
         else:
             # Just update the path
             updated_pwl["path"] = npv_pwl_path

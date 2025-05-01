@@ -311,7 +311,7 @@ class MetricConfiguration:
                 if isinstance(model, list):
                     yield from _search_list(model, activity_identifier, name)
                 else:
-                    if str(model.activity.uuid) == activity_identifier and (
+                    if str(model.pathway.uuid) == activity_identifier and (
                         model.metric_column.name == name
                         or model.metric_column.name == name
                     ):

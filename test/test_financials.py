@@ -65,7 +65,7 @@ class TestFinancialNpv(TestCase):
     def test_get_activity_npv_in_collection(self):
         """Test getting the activity NPV in the NPV collection."""
         npv_collection = get_activity_npv_collection()
-        activity_npv = npv_collection.activity_npv(ACTIVITY_UUID_STR)
+        activity_npv = npv_collection.pathway_npv(ACTIVITY_UUID_STR)
 
         self.assertIsNotNone(activity_npv)
 
@@ -97,7 +97,7 @@ class TestFinancialNpv(TestCase):
         npv_collection.update_computed_normalization_range()
         _ = npv_collection.normalize_npvs()
 
-        activity_npv_1 = npv_collection.activity_npv(ACTIVITY_UUID_STR)
+        activity_npv_1 = npv_collection.pathway_npv(ACTIVITY_UUID_STR)
         normalized_npv = round(activity_npv_1.params.normalized_npv, 4)
         self.assertEqual(normalized_npv, 0.0259)
 
