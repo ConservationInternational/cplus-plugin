@@ -1442,9 +1442,9 @@ class SettingsManager(QtCore.QObject):
             self.remove(f"{self.ACTIVITY_BASE}/{activity_uuid}")
 
     def get_npv_collection(self) -> typing.Optional[NcsPathwayNpvCollection]:
-        """Gets the collection of NPV mappings of activities.
+        """Gets the collection of NPV mappings of NCS pathways.
 
-        :returns: The collection of activity NPV mappings or None
+        :returns: The collection of NCS pathway NPV mappings or None
         if not defined.
         :rtype: NcsPathwayNpvCollection
         """
@@ -1456,17 +1456,17 @@ class SettingsManager(QtCore.QObject):
         try:
             npv_collection_dict = json.loads(npv_collection_str)
         except json.JSONDecodeError:
-            log("ActivityNPVCollection JSON is invalid.")
+            log("NcsPathwayNPVCollection JSON is invalid.")
 
         return create_ncs_pathway_npv_collection(
-            npv_collection_dict, self.get_all_activities()
+            npv_collection_dict, self.get_all_ncs_pathways()
         )
 
     def save_npv_collection(self, npv_collection: NcsPathwayNpvCollection):
-        """Saves the activity NPV collection in the settings as a serialized
+        """Saves the NCS pathway NPV collection in the settings as a serialized
         JSON string.
 
-        :param npv_collection: Activity NPV collection serialized to a JSON string.
+        :param npv_collection: NCS pathway NPV collection serialized to a JSON string.
         :type npv_collection: NcsPathwayNpvCollection
         """
         npv_collection_dict = ncs_pathway_npv_collection_to_dict(npv_collection)

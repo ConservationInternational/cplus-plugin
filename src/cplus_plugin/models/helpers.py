@@ -661,7 +661,8 @@ def create_ncs_pathway_npv_collection(
             if pathway_npv is None:
                 continue
 
-            # Get the corresponding activity from the unique identifier
+            # Get the corresponding NCS pathway from the unique
+            # identifier
             if NCS_PATHWAY_IDENTIFIER_PROPERTY in md:
                 pathway_id = md[NCS_PATHWAY_IDENTIFIER_PROPERTY]
                 if pathway_id in ref_pathways_by_uuid:

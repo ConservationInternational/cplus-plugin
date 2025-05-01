@@ -858,9 +858,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             # NCS pathways in the collection.
             if len(npv_collection.mappings) == 0:
                 log(
-                    message=tr(
-                        "No NPV mappings to extract the CRS and pixel size."
-                    ),
+                    message=tr("No NPV mappings to extract the CRS and pixel size."),
                     info=False,
                 )
                 return
