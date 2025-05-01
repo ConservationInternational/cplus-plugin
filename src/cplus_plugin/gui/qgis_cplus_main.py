@@ -854,31 +854,25 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 len(npv_collection.mappings), self.npv_feedback
             )
 
-            # Get CRS and pixel size from at least one of the selected
-            # NCS pathways.
-            selected_activities = self.selected_activities()
-            if len(selected_activities) == 0:
+            # Get CRS and pixel size from at least one of the
+            # NCS pathways in the collection.
+            if len(npv_collection.mappings) == 0:
                 log(
                     message=tr(
-                        "No selected activity to extract the CRS and pixel size."
+                        "No NPV mappings to extract the CRS and pixel size."
                     ),
                     info=False,
                 )
                 return
 
-            activity = selected_activities[0]
-            if len(activity.pathways) == 0:
-                log(
-                    message=tr("No NCS pathway to extract the CRS and pixel size."),
-                    info=False,
-                )
-                return
-
             reference_ncs_pathway = None
-            for ncs_pathway in activity.pathways:
-                if ncs_pathway.is_valid():
-                    reference_ncs_pathway = ncs_pathway
-                    break
+            for pathway_npv in npv_collection.mappings:
+                if pathway_npv.pathway is None:
+                    continue
+                else:
+                    if pathway_npv.pathway.is_valid():
+                        reference_ncs_pathway = pathway_npv.pathway
+                        break
 
             if reference_ncs_pathway is None:
                 log(
@@ -929,7 +923,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def on_npv_pwl_created(
         self,
-        activity_npv: NcsPathwayNpv,
+        pathway_npv: NcsPathwayNpv,
         npv_pwl_path: str,
         algorithm: QgsProcessingAlgorithm,
         context: QgsProcessingContext,
@@ -938,8 +932,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Callback that creates an PWL item when the corresponding
         raster layer has been created.
 
-        :param activity_npv: NPV mapping for an activity:
-        :type activity_npv: NcsPathwayNpv
+        :param pathway_npv: NPV mapping for an NCS pathway.
+        :type pathway_npv: NcsPathwayNpv
 
         :param npv_pwl_path: Absolute file path of the created NPV PWL.
         :type npv_pwl_path: str
@@ -957,14 +951,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         # Check if the PWL entry already exists in the settings. If it
         # exists then no further updates required as the filename of the
         # PWL layer is still the same.
-        updated_pwl = settings_manager.find_layer_by_name(activity_npv.base_name)
+        updated_pwl = settings_manager.find_layer_by_name(pathway_npv.base_name)
         if updated_pwl is None:
             # Create NPV PWL
             desc_tr = tr("Normalized NPV for")
-            pwl_desc = f"{desc_tr} {activity_npv.pathway.name}."
+            pwl_desc = f"{desc_tr} {pathway_npv.pathway.name}."
             npv_layer_info = {
                 "uuid": str(uuid.uuid4()),
-                "name": activity_npv.base_name,
+                "name": pathway_npv.base_name,
                 "description": pwl_desc,
                 "groups": [],
                 "path": npv_pwl_path,
@@ -973,14 +967,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             }
             settings_manager.save_priority_layer(npv_layer_info)
 
-            # Updated the PWL for the activity
-            activity = settings_manager.get_activity(activity_npv.pathway_id)
-            if activity is not None:
-                activity.priority_layers.append(npv_layer_info)
-                settings_manager.update_activity(activity)
+            # Updated the PWL for the NCS pathway
+            pathway = settings_manager.get_ncs_pathway(pathway_npv.pathway_id)
+            if pathway is not None:
+                pathway.priority_layers.append(npv_layer_info)
+                settings_manager.update_ncs_pathway(pathway)
             else:
-                msg_tr = tr("activity not found to attach the NPV PWL.")
-                log(f"{activity_npv.pathway.name} {msg_tr}", info=False)
+                msg_tr = tr("ncs pathway not found to attach the NPV PWL.")
+                log(f"{pathway_npv.pathway.name} {msg_tr}", info=False)
         else:
             # Just update the path
             updated_pwl["path"] = npv_pwl_path

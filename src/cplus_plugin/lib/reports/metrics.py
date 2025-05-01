@@ -23,7 +23,7 @@ from ...definitions.defaults import (
     PWL_IMPACT_EXPRESSION_DESCRIPTION,
 )
 from ..carbon import IrrecoverableCarbonCalculator
-from ..financials import calculate_activity_npv
+from ..financials import calculate_ncs_pathway_npv
 from ...models.report import ActivityContextInfo, MetricEvalResult
 from ...utils import function_help_to_html, log, tr
 
@@ -144,7 +144,7 @@ class ActivityNpvFunction(QgsScopedExpressionFunction):
         if not isinstance(activity_area, (float, int)):
             return -1.0
 
-        return calculate_activity_npv(activity_id, activity_area)
+        return calculate_ncs_pathway_npv(activity_id, activity_area)
 
     def clone(self) -> "ActivityNpvFunction":
         """Gets a clone of this function.
