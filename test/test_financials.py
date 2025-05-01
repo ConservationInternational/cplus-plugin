@@ -20,18 +20,17 @@ from qgis.core import (
 from cplus_plugin.conf import settings_manager, Settings
 from cplus_plugin.gui.qgis_cplus_main import QgisCplusMain
 from cplus_plugin.lib.financials import (
-    calculate_activity_npv,
+    calculate_ncs_pathway_npv,
     compute_discount_value,
     create_npv_pwls,
 )
 from cplus_plugin.utils import FileUtils
 
 from model_data_for_testing import (
-    ACTIVITY_1_NPV,
-    ACTIVITY_UUID_STR,
-    get_activity,
-    get_activity_npv_collection,
+    get_ncs_pathway_npv_collection,
     get_ncs_pathways,
+    NCS_PATHWAY_1_NPV,
+    NCS_UUID_STR_1,
 )
 from utilities_for_testing import get_qgis_app
 
@@ -55,19 +54,19 @@ class TestFinancialNpv(TestCase):
     def setUp(self) -> None:
         Processing.initialize()
 
-        # We need to save at least one activity when retrieving
-        # the NPV collection
-        settings_manager.save_activity(get_activity())
+        # We need to save at least one NCS pathway when
+        # retrieving the NPV collection
+        settings_manager.save_ncs_pathway(get_ncs_pathways()[0])
 
     def tearDown(self):
-        settings_manager.remove_activity(ACTIVITY_UUID_STR)
+        settings_manager.remove_ncs_pathway(NCS_UUID_STR_1)
 
-    def test_get_activity_npv_in_collection(self):
-        """Test getting the activity NPV in the NPV collection."""
-        npv_collection = get_activity_npv_collection()
-        activity_npv = npv_collection.pathway_npv(ACTIVITY_UUID_STR)
+    def test_get_ncs_pathway_npv_in_collection(self):
+        """Test getting the NCS pathway NPV in the NPV collection."""
+        npv_collection = get_ncs_pathway_npv_collection()
+        pathway_npv = npv_collection.pathway_npv(NCS_UUID_STR_1)
 
-        self.assertIsNotNone(activity_npv)
+        self.assertIsNotNone(pathway_npv)
 
     def test_discount_rate_calculation(self):
         """Test the computation of the discount rate."""
@@ -77,7 +76,7 @@ class TestFinancialNpv(TestCase):
 
     def test_npv_min_max_calculation(self):
         """Test the computation of min/max NPV values in the collection."""
-        npv_collection = get_activity_npv_collection()
+        npv_collection = get_ncs_pathway_npv_collection()
         npv_collection.update_computed_normalization_range()
 
         self.assertEqual(round(npv_collection.minimum_value, 2), 38767.05)
@@ -85,7 +84,7 @@ class TestFinancialNpv(TestCase):
 
     def test_npv_normalization_status(self):
         """Test the status of NPV normalization."""
-        npv_collection = get_activity_npv_collection()
+        npv_collection = get_ncs_pathway_npv_collection()
         npv_collection.update_computed_normalization_range()
         normalization_status = npv_collection.normalize_npvs()
 
@@ -93,12 +92,12 @@ class TestFinancialNpv(TestCase):
 
     def test_npv_normalization_value(self):
         """Test the status of NPV normalization."""
-        npv_collection = get_activity_npv_collection()
+        npv_collection = get_ncs_pathway_npv_collection()
         npv_collection.update_computed_normalization_range()
         _ = npv_collection.normalize_npvs()
 
-        activity_npv_1 = npv_collection.pathway_npv(ACTIVITY_UUID_STR)
-        normalized_npv = round(activity_npv_1.params.normalized_npv, 4)
+        ncs_pathway_npv_1 = npv_collection.pathway_npv(NCS_UUID_STR_1)
+        normalized_npv = round(ncs_pathway_npv_1.params.normalized_npv, 4)
         self.assertEqual(normalized_npv, 0.0259)
 
     @classmethod
@@ -107,7 +106,7 @@ class TestFinancialNpv(TestCase):
         call back function once the NPV PWL processing function has successfully
         finished.
         """
-        npv_collection = get_activity_npv_collection()
+        npv_collection = get_ncs_pathway_npv_collection()
         npv_collection.update_computed_normalization_range()
         _ = npv_collection.normalize_npvs()
 
@@ -146,13 +145,12 @@ class TestFinancialNpv(TestCase):
             on_finish_func,
         )
 
-    @unittest.skip("Temporarily disabled for a subsequent ticket on PWL refactoring")
     def test_create_npv_pwl(self):
         """Test the creation of an NPV PWL raster layer."""
 
         pwl_layer_path = None
 
-        def on_pwl_layer_created(activity_npv, pwl_path, algorithm, context, feedback):
+        def on_pwl_layer_created(pathway_npv, pwl_path, algorithm, context, feedback):
             nonlocal pwl_layer_path
             assert pwl_path
             pwl_layer_path = pwl_path
@@ -162,49 +160,50 @@ class TestFinancialNpv(TestCase):
         pwl_exists = os.path.exists(pwl_layer_path)
         pwl_npv_layer = QgsRasterLayer(pwl_layer_path, "Test NPV PWL")
 
-        self.assertTrue(pwl_exists, msg="NPV PWL layer does not exists.")
+        self.assertTrue(pwl_exists, msg="NPV PWL layer does not exist.")
         self.assertTrue(pwl_npv_layer.isValid(), msg="NPV PWL raster is not valid.")
 
-    @unittest.skip("Temporarily disabled for a subsequent ticket on PWL refactoring")
     def test_npv_pwl_model_creation(self):
         """Test the creation and saving of an NPV PWL data model."""
 
         main_dock_widget = QgisCplusMain(IFACE, PARENT)
 
-        test_activity_npv = None
+        test_pathway_npv = None
 
-        def proxy_npv_pwl_created(activity_npv, pwl_path, algorithm, context, feedback):
-            nonlocal test_activity_npv
+        def proxy_npv_pwl_created(pathway_npv, pwl_path, algorithm, context, feedback):
+            nonlocal test_pathway_npv
             nonlocal main_dock_widget
-            assert activity_npv
-            if test_activity_npv is None:
-                test_activity_npv = activity_npv
+            assert pathway_npv
+            if test_pathway_npv is None:
+                test_pathway_npv = pathway_npv
 
             main_dock_widget.on_npv_pwl_created(
-                activity_npv, pwl_path, algorithm, context, feedback
+                pathway_npv, pwl_path, algorithm, context, feedback
             )
 
         self._run_npv_pwl_creation(proxy_npv_pwl_created)
 
-        npv_pwl = settings_manager.find_layer_by_name(test_activity_npv.base_name)
+        npv_pwl = settings_manager.find_layer_by_name(test_pathway_npv.base_name)
 
         self.assertIsNotNone(
             npv_pwl, msg="NPV PWL data model was not saved in the settings."
         )
 
-    def test_invalid_activity_npv_calculation(self):
-        """Test the result of a calculating the NPV of an activity which
-        does not exist in the activity NPV collection.
+    def test_invalid_ncs_pathway_npv_calculation(self):
+        """Test the result of a calculating the NPV of an NCS
+        pathway which does not exist in the NCS pathway NPV
+        collection.
         """
-        npv = calculate_activity_npv("4aa9d682-24b5-4014-ab16-f60c0936c39b", 250)
+        npv = calculate_ncs_pathway_npv("4aa9d682-24b5-4014-ab16-f60c0936c39b", 250)
 
         self.assertEqual(npv, -1.0)
 
-    def test_valid_activity_npv_calculation(self):
-        """Test the result of a calculating the NPV of an activity which
-        has been defined in the activity NPV collection.
+    def test_valid_ncs_pathway_npv_calculation(self):
+        """Test the result of a calculating the NPV of an NCS
+        pathway which has been defined in the NCS pathway NPV
+        collection.
         """
-        npv_collection = get_activity_npv_collection()
+        npv_collection = get_ncs_pathway_npv_collection()
         npv_collection.update_computed_normalization_range()
         _ = npv_collection.normalize_npvs()
 
@@ -212,7 +211,7 @@ class TestFinancialNpv(TestCase):
 
         area = 2000
 
-        computed_npv = calculate_activity_npv(ACTIVITY_UUID_STR, area)
-        reference_npv = ACTIVITY_1_NPV * area
+        computed_npv = calculate_ncs_pathway_npv(NCS_UUID_STR_1, area)
+        reference_npv = NCS_PATHWAY_1_NPV * area
 
         self.assertEqual(computed_npv, reference_npv)
