@@ -26,6 +26,7 @@ from cplus_plugin.models.base import (
     LayerType,
     NcsPathway,
     NcsPathwayType,
+    PriorityLayerType,
     Scenario,
     ScenarioResult,
     SpatialExtent,
@@ -61,6 +62,8 @@ PROTECTED_NCS_UUID_STR_2 = "f9c7b0a2-dc35-4d40-aa1f-c871f06e7da7"
 
 ACTIVITY_1_NPV = 40410.23
 
+PWL_UUID_STR = "1f894ea8-32b4-4cac-9b7a-d313db51f816"
+
 
 def get_valid_ncs_pathway() -> NcsPathway:
     """Creates a valid NCS pathway object."""
@@ -73,6 +76,7 @@ def get_valid_ncs_pathway() -> NcsPathway:
         True,
         carbon_paths=[],
         pathway_type=NcsPathwayType.MANAGE,
+        priority_layers=[],
     )
 
 
@@ -374,6 +378,30 @@ def get_metric_configuration() -> MetricConfiguration:
             ]
         ],
     )
+
+
+def get_pwl_test_data_path() -> str:
+    """Get the path to the test PWL dataset."""
+    return os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "data",
+        "priority",
+        "layers",
+        "test_priority_1.tif",
+    )
+
+
+def get_test_pwl() -> dict[str, str]:
+    """Creates a PWL object as a dict."""
+    return {
+        "uuid": PWL_UUID_STR,
+        "name": "Test PW",
+        "description": "Placeholder text for test PWL",
+        "selected": True,
+        "path": get_pwl_test_data_path(),
+        "groups": [],
+        "type": PriorityLayerType.DEFAULT.value,
+    }
 
 
 NCS_PATHWAY_DICT = {

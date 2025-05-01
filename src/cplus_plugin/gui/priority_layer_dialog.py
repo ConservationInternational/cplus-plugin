@@ -185,7 +185,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         self.ncs_pathways = pathways
 
         pathway_names = [pathway.name for pathway in pathways]
-        self.selected_pathways_le.setText(" , ".join(pathway_names))
+        self.selected_pathways_le.setText(", ".join(pathway_names))
 
         if not self.layer:
             return
