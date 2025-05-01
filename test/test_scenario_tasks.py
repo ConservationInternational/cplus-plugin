@@ -20,7 +20,9 @@ from cplus_plugin.tasks import ScenarioAnalysisTask
 from cplus_plugin.models.base import Scenario, NcsPathway, Activity
 
 
-@unittest.skip("Disabled as scenario analysis logic will be refactored in subsequent child tickets.")
+@unittest.skip(
+    "Disabled as scenario analysis logic will be refactored in subsequent child tickets."
+)
 class ScenarioAnalysisTaskTest(unittest.TestCase):
     def setUp(self):
         Processing.initialize()
