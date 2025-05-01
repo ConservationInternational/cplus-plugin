@@ -180,7 +180,7 @@
      <item>
       <widget class="QToolButton" name="select_pathways_btn">
        <property name="toolTip">
-        <string>Click to open selection dialog for the implementation models.</string>
+        <string>Click to open selection dialog for the NCS pathways.</string>
        </property>
        <property name="text">
         <string>...</string>
