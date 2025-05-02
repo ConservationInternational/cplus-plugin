@@ -33,7 +33,7 @@ class TestPriorityWeightingLayerDialog(TestCase):
         self.pwl_path = get_pwl_test_data_path()
 
     def tearDown(self):
-        """Remove test NCS pathway in settings."""
+        """Remove test NCS pathway and PWL in settings."""
         settings_manager.remove_ncs_pathway(VALID_NCS_UUID_STR)
         settings_manager.delete_priority_layers()
 
