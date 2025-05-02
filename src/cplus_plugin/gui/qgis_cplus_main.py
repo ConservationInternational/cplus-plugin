@@ -156,7 +156,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         # Insert widget for step 2
         self.activity_widget = ActivityContainerWidget(self, self.message_bar)
-        self.tab_widget.insertTab(1, self.activity_widget, self.tr("Step 2"))
+        self.tab_widget.insertTab(2, self.activity_widget, self.tr("Step 3"))
         self.tab_widget.currentChanged.connect(self.on_tab_step_changed)
 
         # Step 3, priority weighting layers initialization
@@ -1931,22 +1931,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             log(f"Problem cancelling task, {e}")
         self.processing_cancelled = True
 
-        # # Analysis processing tasks
-        # try:
-        #     if self.task:
-        #         self.task.cancel()
-        # except Exception as e:
-        #     self.on_progress_dialog_cancelled()
-        #     log(f"Problem cancelling task, {e}")
-        #
-        # # Report generating task
-        # try:
-        #     if self.reporting_feedback:
-        #         self.reporting_feedback.cancel()
-        # except Exception as e:
-        #     self.on_progress_dialog_cancelled()
-        #     log(f"Problem cancelling report generating task, {e}")
-
     def scenario_results(self, task, report_manager, progress_dialog):
         """Called when the task ends. Sets the progress bar to 100 if it finished.
 
@@ -2417,11 +2401,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param index: Zero-based index position of new current tab
         :type index: int
         """
-        if index == 1:
+        if index == 2:
             self.activity_widget.can_show_error_messages = True
             self.activity_widget.load()
 
-        elif index == 2 or index == 3:
+        elif index == 3:
             tab_valid = True
             msg = ""
 
@@ -2458,7 +2442,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             if not tab_valid:
                 self.show_message(msg)
-                self.tab_widget.setCurrentIndex(1)
+                self.tab_widget.setCurrentIndex(2)
 
             else:
                 self.message_bar.clearWidgets()
