@@ -675,10 +675,6 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         base_dir_path = self.folder_data.filePath()
         settings_manager.set_value(Settings.BASE_DIR, base_dir_path)
 
-        # Carbon layers coefficient saving
-        coefficient = self.carbon_coefficient_box.value()
-        settings_manager.set_value(Settings.CARBON_COEFFICIENT, coefficient)
-
         # Pathway suitability index
         pathway_suitability_index = self.suitability_index_box.value()
         settings_manager.set_value(
@@ -793,12 +789,6 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         base_dir = settings_manager.get_value(Settings.BASE_DIR, default="")
         self.folder_data.setFilePath(base_dir)
         self.base_dir_exists()
-
-        # Carbon layers coefficient
-        coefficient = settings_manager.get_value(
-            Settings.CARBON_COEFFICIENT, default=0.0
-        )
-        self.carbon_coefficient_box.setValue(float(coefficient))
 
         # Pathway suitability index
         pathway_suitability_index = settings_manager.get_value(
