@@ -25,8 +25,16 @@ from qgis.PyQt.QtGui import (
 )
 from qgis.utils import iface
 
-from qgis.PyQt.QtWidgets import QFileDialog, QListWidgetItem, QMessageBox, QWidget
+from qgis.PyQt.QtWidgets import (
+    QFileDialog,
+    QListWidgetItem,
+    QMessageBox,
+    QWidget,
+    QHeaderView,
+)
 from qgis.PyQt import QtCore
+from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem
+from qgis.PyQt.QtCore import Qt, QSortFilterProxyModel
 
 from ...api.base import ApiRequestStatus
 from ...api.carbon import (
@@ -54,7 +62,7 @@ from ...lib.validation.validators import DataValidator
 from ...models.validation import RuleInfo, RuleType
 from ...models.base import DataSourceType, LayerModelComponent, LayerType
 from ...trends_earth.constants import API_URL, TIMEOUT
-from ...utils import FileUtils, log, tr
+from ...utils import FileUtils, log, tr, convert_size
 from ...trends_earth import auth, api, download
 
 Ui_DlgSettings, _ = uic.loadUiType(
@@ -516,6 +524,18 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.btn_edit_mask.setEnabled(False)
         self.btn_edit_mask.clicked.connect(self._on_edit_mask_layer)
 
+        # Global priority weighted layers
+        self.btn_add_pwl.setIcon(add_icon)
+        self.btn_add_pwl.clicked.connect(self._on_add_pwl_layer)
+
+        self.btn_delete_pwl.setIcon(remove_icon)
+        self.btn_delete_pwl.setEnabled(False)
+        self.btn_delete_pwl.clicked.connect(self._on_remove_pwl_layer)
+
+        self.btn_edit_pwl.setIcon(edit_icon)
+        self.btn_edit_pwl.setEnabled(False)
+        self.btn_edit_pwl.clicked.connect(self._on_edit_pwl_layer)
+
         # Trends.Earth settings
         self.dlg_settings_register = DlgSettingsRegister()
         self.dlg_settings_login = DlgSettingsLogin(main_widget=self.main_widget)
@@ -854,6 +874,47 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         if len(mask_paths_list) > 0:
             self.mask_layers_changed()
+
+        # Global priority weighted layers
+        self.default_priority_layers = settings_manager.get_default_layers(
+            "priority_layer"
+        )
+        self.pwl_model = QStandardItemModel()
+
+        headers = ["ID", "Name", "Type", "Size", "CRS", "Version"]
+        for col, header in enumerate(headers):
+            item = QStandardItem(header)
+            item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+            self.pwl_model.setHorizontalHeaderItem(col, item)
+
+        for pwl in self.default_priority_layers:
+            items = [
+                QStandardItem(str(pwl.get("layer_uuid"))),
+                QStandardItem(str(pwl.get("name"))),
+                QStandardItem(
+                    "Raster"
+                    if pwl.get("layer_type") == LayerType.RASTER.value
+                    else "Vector"
+                ),
+                QStandardItem(str(convert_size(pwl.get("size")))),
+                QStandardItem(str(pwl.get("metadata", {}).get("crs"))),
+                QStandardItem(str(pwl.get("version", ""))),
+            ]
+            self.pwl_model.appendRow(items)
+
+        if len(self.default_priority_layers) > 0:
+            self.priority_layers_changed()
+
+        self.proxy_model = QSortFilterProxyModel()
+        self.proxy_model.setSourceModel(self.pwl_model)
+        self.proxy_model.setSortCaseSensitivity(Qt.CaseInsensitive)
+
+        self.tbl_pwl_layers.setModel(self.proxy_model)
+        self.tbl_pwl_layers.setSortingEnabled(True)
+        self.tbl_pwl_layers.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.tbl_pwl_layers.sortByColumn(0, Qt.AscendingOrder)
+        # Hide the column (ID)
+        self.tbl_pwl_layers.setColumnHidden(0, True)
 
         # Irrecoverable carbon
         irrecoverable_carbon_enabled = settings_manager.get_value(
@@ -1197,6 +1258,57 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         self.btn_edit_mask.setEnabled(contains_items)
         self.btn_delete_mask.setEnabled(contains_items)
+
+    def _on_add_pwl_layer(self, activated: bool):
+        selected_layer = self._get_selected_pwl_layer()
+        if not selected_layer:
+            error_tr = tr("Select a default layer first.")
+            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            return
+        layer_uuid = selected_layer[0]
+
+    def _on_edit_pwl_layer(self, activated: bool):
+        selected_layer = self._get_selected_pwl_layer()
+        if not selected_layer:
+            error_tr = tr("Select a default layer first.")
+            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            return
+        layer_uuid = selected_layer[0]
+
+    def _on_remove_pwl_layer(self, activated: bool):
+        selected_layer = self._get_selected_pwl_layer()
+        if not selected_layer:
+            error_tr = tr("Select a default layer first.")
+            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            return
+        layer_uuid = selected_layer[0]
+
+    def priority_layers_changed(self):
+        contains_items = len(self.default_priority_layers) > 0
+        self.btn_edit_pwl.setEnabled(contains_items)
+        self.btn_delete_pwl.setEnabled(contains_items)
+
+    def _get_selected_pwl_layer(self):
+        """Get the currently selected PWL layer from the table."""
+        selected_indexes = self.tbl_pwl_layers.selectedIndexes()
+        if not selected_indexes:
+            return None
+
+        selected_indexes = self.tbl_pwl_layers.selectionModel().selectedIndexes()
+
+        if not selected_indexes:
+            return None  # No selection
+
+        # Get the first selected row (proxy index)
+        proxy_index = selected_indexes[0]
+        source_index = self.proxy_model.mapToSource(proxy_index)
+
+        row = source_index.row()
+        data = []
+        for column in range(self.pwl_model.columnCount()):
+            index = self.pwl_model.index(row, column)
+            data.append(self.pwl_model.data(index))
+        return data
 
     def validate_snapping_layer(self, snap_layer_path: str) -> typing.Tuple[bool, str]:
         """
