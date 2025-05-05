@@ -613,7 +613,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         if layer is not None:
             valid, validation_info = self.validate_snapping_layer(layer)
             if not valid:
-                iface.messageBar().pushMessage(
+                self.message_bar.pushMessage(
                     "CPLUS - Warning",
                     f"{tr(validation_info)}: {layer}",
                     level=qgis.core.Qgis.MessageLevel.Warning,
@@ -628,7 +628,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         if layer is not None:
             valid, validation_info = self.validate_snapping_layer(layer.source())
             if not valid:
-                iface.messageBar().pushMessage(
+                self.message_bar.pushMessage(
                     "CPLUS - Warning",
                     f"{tr(validation_info)}: {layer.source()}",
                     level=qgis.core.Qgis.MessageLevel.Warning,
@@ -734,6 +734,11 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
                     )
                     settings_manager.set_value(Settings.SNAP_LAYER, snap_layer_path)
                 else:
+                    self.message_bar.pushMessage(
+                        "CPLUS - Warning",
+                        f"{tr(validation_info)}: {snap_layer_path}",
+                        level=qgis.core.Qgis.MessageLevel.Warning,
+                    )
                     iface.messageBar().pushMessage(
                         "CPLUS - Warning",
                         f"{tr(validation_info)}: {snap_layer_path}",
