@@ -5,6 +5,7 @@
 
 import hashlib
 import json
+import math
 import os
 import typing
 import uuid
@@ -772,3 +773,20 @@ def function_help_to_html(
         html_segments.append("</ul>\n</div>\n")
 
     return "".join(html_segments)
+
+
+def convert_size(size_bytes):
+    """Convert byte size to human readable text.
+
+    :param size_bytes: byte sizse
+    :type size_bytes: int
+    :return: human readable text
+    :rtype: str
+    """
+    if size_bytes == 0:
+        return "0B"
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(math.floor(math.log(size_bytes, 1024)))
+    p = math.pow(1024, i)
+    s = round(size_bytes / p, 2)
+    return "%s %s" % (s, size_name[i])
