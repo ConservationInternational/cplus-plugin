@@ -31,6 +31,7 @@ from qgis.PyQt.QtWidgets import (
     QMessageBox,
     QWidget,
     QHeaderView,
+    QFileDialog,
 )
 from qgis.PyQt import QtCore
 from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem
@@ -524,6 +525,10 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.btn_edit_mask.clicked.connect(self._on_edit_mask_layer)
 
         # Global priority weighted layers
+        download_icon = FileUtils.get_icon("downloading_svg.svg")
+        self.btn_download_pwl.setIcon(download_icon)
+        self.btn_download_pwl.clicked.connect(self._on_download_pwl_layer)
+
         self.btn_add_pwl.setIcon(add_icon)
         self.btn_add_pwl.clicked.connect(self._on_add_pwl_layer)
 
@@ -889,6 +894,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
                 QStandardItem(str(pwl.get("version", ""))),
             ]
             self.pwl_model.appendRow(items)
+            print(pwl)
 
         if len(self.default_priority_layers) > 0:
             self.priority_layers_changed()
@@ -900,7 +906,12 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.tbl_pwl_layers.setModel(self.proxy_model)
         self.tbl_pwl_layers.setSortingEnabled(True)
         self.tbl_pwl_layers.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.tbl_pwl_layers.horizontalHeader().setSectionResizeMode(
+            1, QHeaderView.Interactive
+        )
+
         self.tbl_pwl_layers.sortByColumn(0, Qt.AscendingOrder)
+        self.tbl_pwl_layers.setAlternatingRowColors(False)
         # Hide the column (ID)
         self.tbl_pwl_layers.setColumnHidden(0, True)
 
@@ -1270,6 +1281,44 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return
         layer_uuid = selected_layer[0]
+
+    def _on_download_pwl_layer(self, activated: bool):
+        selected_layer = self._get_selected_pwl_layer()
+        if not selected_layer:
+            error_tr = tr("Select a default layer first.")
+            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            return
+        layer_uuid = selected_layer[0]
+
+        default_layer = None
+        for layer in self.default_priority_layers:
+            if layer["layer_uuid"] == layer_uuid:
+                default_layer = layer
+                break
+        if not default_layer:
+            error_tr = tr("Selected layer not found in the default layers.")
+            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            return
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            None, "Save File", self.folder_data.filePath(), "All Files (*)"
+        )
+
+        if file_path:
+            self.message_bar.pushMessage(
+                f"Downloading {default_layer.get('name')} to {file_path}"
+            )
+            if download.download_file(default_layer.get("url"), file_path):
+                self.message_bar.pushMessage(
+                    f"Downloaded {default_layer.get('name')} to {file_path}"
+                )
+                layer = qgis.core.QgsRasterLayer(file_path, default_layer.get("name"))
+                qgis.core.QgsProject.instance().addMapLayer(layer)
+            else:
+                self.message_bar.pushMessage(
+                    f"Failed to download {default_layer.get('name')} to {file_path}",
+                    level=qgis.core.Qgis.MessageLevel.Warning,
+                )
 
     def priority_layers_changed(self):
         contains_items = len(self.default_priority_layers) > 0
