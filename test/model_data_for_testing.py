@@ -32,8 +32,8 @@ from cplus_plugin.models.base import (
     SpatialExtent,
 )
 from cplus_plugin.models.financial import (
-    ActivityNpv,
-    ActivityNpvCollection,
+    NcsPathwayNpv,
+    NcsPathwayNpvCollection,
     NpvParameters,
 )
 from cplus_plugin.models.report import (
@@ -60,7 +60,9 @@ NCS_UUID_STR_3 = "5c42b644-3d21-4081-9206-28e872efca73"
 PROTECTED_NCS_UUID_STR_1 = "2ac8de1d-2181-4f84-83b5-fbe6e600a3ab"
 PROTECTED_NCS_UUID_STR_2 = "f9c7b0a2-dc35-4d40-aa1f-c871f06e7da7"
 
-ACTIVITY_1_NPV = 40410.23
+NCS_PATHWAY_1_NPV = 40410.23
+
+PWL_UUID_STR = "1f894ea8-32b4-4cac-9b7a-d313db51f816"
 
 PWL_UUID_STR = "1f894ea8-32b4-4cac-9b7a-d313db51f816"
 
@@ -280,16 +282,18 @@ def get_test_scenario_result() -> ScenarioResult:
     return ScenarioResult(get_test_scenario(), output_layer_name="Test Scenario Layer")
 
 
-def get_activity_npvs() -> typing.List[ActivityNpv]:
-    """Returns a collection of activity NPV mappings."""
+def get_ncs_pathway_npvs() -> typing.List[NcsPathwayNpv]:
+    """Returns a collection of NCS pathway NPV mappings."""
+    ncs_pathways = get_ncs_pathways()
+
     npv_params_1 = NpvParameters(3, 2.0)
-    npv_params_1.absolute_npv = ACTIVITY_1_NPV
+    npv_params_1.absolute_npv = NCS_PATHWAY_1_NPV
     npv_params_1.yearly_rates = [
         (25000.0, 18000.0, 7000.0),
         (28000.0, 15000.0, 12745.1),
         (35000.0, 13500.0, 20665.13),
     ]
-    activity_npv_1 = ActivityNpv(npv_params_1, True, get_activity())
+    pathway_npv_1 = NcsPathwayNpv(npv_params_1, True, ncs_pathways[0])
 
     npv_params_2 = NpvParameters(2, 4.0)
     npv_params_2.absolute_npv = 102307.69
@@ -297,15 +301,7 @@ def get_activity_npvs() -> typing.List[ActivityNpv]:
         (100000.0, 65000.0, 35000.0),
         (120000.0, 50000.0, 67307.69),
     ]
-    activity_2 = Activity(
-        UUID(ACTIVITY_2_UUID_STR),
-        "Test Activity 2",
-        "Description for test activity 2",
-        TEST_RASTER_PATH,
-        LayerType.RASTER,
-        True,
-    )
-    activity_npv_2 = ActivityNpv(npv_params_2, True, activity_2)
+    pathway_npv_2 = NcsPathwayNpv(npv_params_2, True, ncs_pathways[1])
 
     npv_params_3 = NpvParameters(3, 7.0)
     npv_params_3.absolute_npv = 38767.05
@@ -314,24 +310,16 @@ def get_activity_npvs() -> typing.List[ActivityNpv]:
         (67500.0, 53000.0, 13551.4),
         (70000.0, 48000.0, 19215.65),
     ]
-    activity_3 = Activity(
-        UUID(ACTIVITY_3_UUID_STR),
-        "Test Activity 3",
-        "Description for test activity 3",
-        TEST_RASTER_PATH,
-        LayerType.RASTER,
-        True,
-    )
-    activity_npv_3 = ActivityNpv(npv_params_3, True, activity_3)
+    pathway_npv_3 = NcsPathwayNpv(npv_params_3, True, ncs_pathways[2])
 
-    return [activity_npv_1, activity_npv_2, activity_npv_3]
+    return [pathway_npv_1, pathway_npv_2, pathway_npv_3]
 
 
-def get_activity_npv_collection() -> ActivityNpvCollection:
-    """Returns an activity NPV collection for testing."""
-    npv_collection = ActivityNpvCollection(0.0, 0.0)
+def get_ncs_pathway_npv_collection() -> NcsPathwayNpvCollection:
+    """Returns an NCS pathway NPV collection for testing."""
+    npv_collection = NcsPathwayNpvCollection(0.0, 0.0)
 
-    mappings = get_activity_npvs()
+    mappings = get_ncs_pathway_npvs()
     npv_collection.mappings = mappings
 
     return npv_collection
