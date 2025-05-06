@@ -874,7 +874,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         )
         self.pwl_model = QStandardItemModel()
 
-        headers = ["ID", "Name", "Type", "Size", "CRS", "Version"]
+        headers = ["ID", "Name", "Type", "Size", "CRS", "Version", "Created"]
         for col, header in enumerate(headers):
             item = QStandardItem(header)
             item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
@@ -891,10 +891,10 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
                 ),
                 QStandardItem(str(convert_size(pwl.get("size")))),
                 QStandardItem(str(pwl.get("metadata", {}).get("crs"))),
-                QStandardItem(str(pwl.get("version", ""))),
+                QStandardItem(str(pwl.get("version", "v0.0.1"))),
+                QStandardItem(str(pwl.get("created_on"))),
             ]
             self.pwl_model.appendRow(items)
-            print(pwl)
 
         if len(self.default_priority_layers) > 0:
             self.priority_layers_changed()
