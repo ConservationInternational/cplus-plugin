@@ -229,7 +229,7 @@ class ScenarioAnalysisReportGeneratorTask(BaseScenarioReportGeneratorTask):
                 break
 
         # Else, we will fall back to EPSG:32735 as explicitly defined in
-        # qgis_cplus_main.py. Might to avoid hardcoding this in future
+        # 'qgis_cplus_main.py'. Might to avoid hardcoding this in future
         # iterations.
         if source_crs is None:
             source_crs = QgsCoordinateReferenceSystem("EPSG:32735")

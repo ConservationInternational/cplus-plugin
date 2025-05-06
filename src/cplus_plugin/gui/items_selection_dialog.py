@@ -7,15 +7,11 @@
 import os
 import uuid
 
-from qgis.PyQt import QtCore, QtGui, QtWidgets, QtNetwork
-
+from qgis.PyQt import QtCore, QtWidgets
 from qgis.PyQt.uic import loadUiType
 
-from ..models.base import Activity, PriorityLayer
-
+from ..models.base import NcsPathway, PriorityLayer
 from ..conf import settings_manager
-
-
 from ..utils import log, tr
 
 
@@ -27,7 +23,7 @@ DialogUi, _ = loadUiType(
 class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
     """Dialog for handling items selection"""
 
-    def __init__(self, parent, parent_item=None, items=[], item_type=Activity):
+    def __init__(self, parent, parent_item=None, items=None, item_type=NcsPathway):
         """Constructor"""
         super().__init__()
         self.setupUi(self)
@@ -35,7 +31,7 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
         self.parent_item = parent_item
 
         self.item_type = item_type
-        self.items = items
+        self.items = items or []
 
         select_all_btn = QtWidgets.QPushButton(tr("Select All"))
         select_all_btn.setToolTip(tr("Select the all listed items"))
@@ -61,20 +57,20 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
             item = self.list_widget.item(index)
             item_uuid = item.data(QtCore.Qt.UserRole)
 
-            if self.item_type is Activity:
-                activity = settings_manager.get_activity(str(item_uuid))
+            if self.item_type is NcsPathway:
+                pathway = settings_manager.get_ncs_pathway(str(item_uuid))
 
                 layer_model_uuids = [item.uuid for item in self.items]
-                activity_layer_uuids = [
+                pathway_layer_uuids = [
                     layer.get("uuid")
-                    for layer in activity.priority_layers
+                    for layer in pathway.priority_layers
                     if layer is not None
                 ]
 
                 if (
                     self.parent_item is not None
-                    and str(self.parent_item.get("uuid")) in activity_layer_uuids
-                ) or (activity.uuid in layer_model_uuids):
+                    and str(self.parent_item.get("uuid")) in pathway_layer_uuids
+                ) or (pathway.uuid in layer_model_uuids):
                     item.setCheckState(QtCore.Qt.Checked)
             else:
                 layer = settings_manager.get_priority_layer(str(item_uuid))
@@ -91,8 +87,8 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
 
     def set_items(self):
         """Sets the item list in the dialog"""
-        if self.item_type is Activity:
-            items = settings_manager.get_all_activities()
+        if self.item_type is NcsPathway:
+            items = settings_manager.get_all_ncs_pathways()
         else:
             all_layers = settings_manager.get_priority_layers()
             items = []
@@ -116,8 +112,8 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
 
     def selected_items(self):
         """Returns the selected items from the dialog"""
-        if self.item_type is Activity:
-            items = settings_manager.get_all_activities()
+        if self.item_type is NcsPathway:
+            items = settings_manager.get_all_ncs_pathways()
         else:
             all_layers = settings_manager.get_priority_layers()
             items = []
@@ -148,8 +144,8 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
 
     def unselected_items(self):
         """Returns unselected items from the dialog"""
-        if self.item_type is Activity:
-            items = settings_manager.get_all_activities()
+        if self.item_type is NcsPathway:
+            items = settings_manager.get_all_ncs_pathways()
         else:
             all_layers = settings_manager.get_priority_layers()
             items = []
