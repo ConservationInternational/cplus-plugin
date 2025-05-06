@@ -975,6 +975,9 @@ class CplusApiRequest:
                 "size": layer.get("size"),
                 "layer_type": layer.get("layer_type"),
                 "metadata": layer.get("metadata", {}),
+                "filename": layer.get("filename"),
+                "created_on": layer.get("created_on"),
+                "url": layer.get("url"),
             }
             if component_type in data:
                 data[component_type].append(out_layer)
