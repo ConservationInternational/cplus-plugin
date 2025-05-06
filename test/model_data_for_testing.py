@@ -64,6 +64,8 @@ NCS_PATHWAY_1_NPV = 40410.23
 
 PWL_UUID_STR = "1f894ea8-32b4-4cac-9b7a-d313db51f816"
 
+PWL_UUID_STR = "1f894ea8-32b4-4cac-9b7a-d313db51f816"
+
 
 def get_valid_ncs_pathway() -> NcsPathway:
     """Creates a valid NCS pathway object."""
