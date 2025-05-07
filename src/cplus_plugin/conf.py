@@ -94,12 +94,9 @@ class ScenarioSettings(Scenario):
         """
 
         activities_list = settings.value("activities", [])
-        weighted_activities_list = settings.value("activities", [])
         server_uuid = settings.value("server_uuid", None)
 
         activities = []
-
-        weighted_activities = []
 
         try:
             for activity in activities_list:
@@ -120,25 +117,6 @@ class ScenarioSettings(Scenario):
 
                 saved_activity.path = setting_activity.get("path")
                 activities.append(saved_activity)
-
-            for activity in weighted_activities_list:
-                setting_activity = json.loads(activity)
-
-                saved_activity = settings_manager.get_activity(
-                    setting_activity.get("uuid")
-                )
-                if saved_activity is None:
-                    continue
-
-                for pathways in setting_activity[PATHWAYS_ATTRIBUTE]:
-                    for path_uuid, path in pathways.items():
-                        pathway = settings_manager.get_ncs_pathway(path_uuid)
-                        if pathway:
-                            pathway.path = path
-                            saved_activity.add_ncs_pathway(pathway)
-
-                saved_activity.path = setting_activity.get("path")
-                weighted_activities.append(saved_activity)
         except Exception as e:
             log(f"Problem fetching saved activities, {e}")
 
@@ -148,7 +126,6 @@ class ScenarioSettings(Scenario):
             description=settings.value("description", None),
             extent=[],
             activities=activities,
-            weighted_activities=weighted_activities,
             priority_layer_groups=[],
             server_uuid=uuid.UUID(server_uuid) if server_uuid else None,
         )
@@ -231,6 +208,7 @@ class Settings(enum.Enum):
 
     # Outputs options
     NCS_WITH_CARBON = "ncs_with_carbon"
+    NCS_WEIGHTED = "ncs_weighted"
     LANDUSE_PROJECT = "landuse_project"
     LANDUSE_NORMALIZED = "landuse_normalized"
     LANDUSE_WEIGHTED = "landuse_weighted"
@@ -395,7 +373,6 @@ class SettingsManager(QtCore.QObject):
         self.save_scenario_extent(settings_key, scenario_settings.extent)
 
         activities = []
-        weighted_activities = []
 
         for activity in scenario_settings.activities:
             if isinstance(activity, Activity):
@@ -413,28 +390,11 @@ class SettingsManager(QtCore.QObject):
 
                 activities.append(json.dumps(activity))
 
-        for activity in scenario_settings.weighted_activities:
-            if isinstance(activity, Activity):
-                layer_styles = activity.layer_styles
-                style_pixel_value = activity.style_pixel_value
-
-                ncs_pathways = []
-                for ncs in activity.pathways:
-                    ncs_pathways.append({str(ncs.uuid): ncs.path})
-
-                activity = layer_component_to_dict(activity)
-                activity[PATHWAYS_ATTRIBUTE] = ncs_pathways
-                activity[STYLE_ATTRIBUTE] = layer_styles
-                activity[PIXEL_VALUE_ATTRIBUTE] = style_pixel_value
-
-                weighted_activities.append(json.dumps(activity))
-
         with qgis_settings(settings_key) as settings:
             settings.setValue("uuid", str(scenario_settings.uuid))
             settings.setValue("name", scenario_settings.name)
             settings.setValue("description", scenario_settings.description)
             settings.setValue("activities", activities)
-            settings.setValue("weighted_activities", weighted_activities)
             settings.setValue(
                 "server_uuid",
                 str(scenario_settings.server_uuid)
