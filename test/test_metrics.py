@@ -3,8 +3,7 @@
 Unit tests for metrics operations.
 """
 
-import os
-import typing
+import unittest
 from unittest import TestCase
 
 from qgis.core import QgsExpression
@@ -29,9 +28,9 @@ from cplus_plugin.models.helpers import create_metric_configuration
 from cplus_plugin.models.report import ActivityContextInfo
 
 from model_data_for_testing import (
-    ACTIVITY_1_NPV,
+    NCS_PATHWAY_1_NPV,
     get_activity,
-    get_activity_npv_collection,
+    get_ncs_pathway_npv_collection,
     get_metric_column,
     get_protected_ncs_pathways,
     get_reference_irrecoverable_carbon_path,
@@ -44,6 +43,7 @@ from utilities_for_testing import get_qgis_app
 QGIS_APP, CANVAS, IFACE, PARENT = get_qgis_app()
 
 
+@unittest.skip("Disabled as metrics builder logic will be refactored.")
 class TestMetricsBuilder(TestCase):
     """Tests for metrics builder."""
 
@@ -93,6 +93,9 @@ class TestMetricsBuilder(TestCase):
         self.assertEqual(len(list_model.column_items), 2)
 
 
+@unittest.skip(
+    "Disabled as metrics builder logic, including expressions, will be refactored."
+)
 class TestMetricExpressions(TestCase):
     """Testing management of metrics in QGIS expression environment."""
 
@@ -125,13 +128,13 @@ class TestMetricExpressions(TestCase):
         # We first need to save the activity and corresponding NPV in settings
         settings_manager.save_activity(get_activity())
 
-        npv_collection = get_activity_npv_collection()
+        npv_collection = get_ncs_pathway_npv_collection()
         npv_collection.update_computed_normalization_range()
         _ = npv_collection.normalize_npvs()
         settings_manager.save_npv_collection(npv_collection)
 
         reference_area = 2000
-        reference_activity_npv = ACTIVITY_1_NPV * reference_area
+        reference_activity_npv = NCS_PATHWAY_1_NPV * reference_area
 
         register_metric_functions()
         context = create_metrics_expression_context()

@@ -9,7 +9,6 @@ import pathlib
 import typing
 
 from qgis.core import (
-    QgsFeedback,
     QgsProcessingContext,
     QgsProcessingException,
     QgsProcessingFeedback,
@@ -20,7 +19,7 @@ from qgis import processing
 
 from ..definitions.constants import NPV_PRIORITY_LAYERS_SEGMENT, PRIORITY_LAYERS_SEGMENT
 from ..conf import settings_manager, Settings
-from ..models.financial import ActivityNpvCollection
+from ..models.financial import NcsPathwayNpvCollection
 from ..utils import clean_filename, FileUtils, log, tr
 
 
@@ -48,7 +47,7 @@ def compute_discount_value(
 
 
 def create_npv_pwls(
-    npv_collection: ActivityNpvCollection,
+    npv_collection: NcsPathwayNpvCollection,
     context: QgsProcessingContext,
     multi_step_feedback: QgsProcessingMultiStepFeedback,
     feedback: QgsProcessingFeedback,
@@ -59,11 +58,11 @@ def create_npv_pwls(
     on_removed_func: typing.Callable = None,
 ) -> typing.List:
     """Creates constant raster layers based on the normalized NPV values for
-    the specified activities.
+    the specified NCS pathways.
 
-    :param npv_collection: The Activity NPV collection containing the NPV
-    parameters for activities.
-    :type npv_collection: ActivityNpvCollection
+    :param npv_collection: The NCS pathway NPV collection containing the NPV
+    parameters for NCS pathway.
+    :type npv_collection: NcsPathwayNpvCollection
 
     :param context: Context information for performing the processing.
     :type context: QgsProcessingContext
@@ -111,14 +110,15 @@ def create_npv_pwls(
 
     results = []
 
-    for i, activity_npv in enumerate(npv_collection.mappings):
+    for i, pathway_npv in enumerate(npv_collection.mappings):
         if feedback.isCanceled():
             break
 
-        if activity_npv.activity is None or activity_npv.params is None:
+        if pathway_npv.pathway is None or pathway_npv.params is None:
             log(
                 tr(
-                    "Could not create or update activity NPV as activity and NPV parameter information is missing."
+                    "Could not create or update NCS pathway NPV as NCS "
+                    "pathway and NPV parameter information is missing."
                 ),
                 info=False,
             )
@@ -129,7 +129,7 @@ def create_npv_pwls(
             continue
 
         base_layer_name = clean_filename(
-            activity_npv.base_name.replace(" ", "_").lower()
+            pathway_npv.base_name.replace(" ", "_").lower()
         )
 
         # Delete existing NPV PWLs. Relevant layers will be re-created
@@ -148,10 +148,10 @@ def create_npv_pwls(
                 )
 
         # Delete if PWL previously existed and is now disabled
-        if not activity_npv.enabled:
+        if not pathway_npv.enabled:
             if npv_collection.remove_existing:
                 # Delete corresponding PWL entry in the settings
-                del_pwl = settings_manager.find_layer_by_name(activity_npv.base_name)
+                del_pwl = settings_manager.find_layer_by_name(pathway_npv.base_name)
                 if del_pwl is not None:
                     pwl_id = del_pwl.get("uuid", None)
                     if pwl_id is not None:
@@ -169,7 +169,7 @@ def create_npv_pwls(
         output_post_processing_func = None
         if on_finish_func is not None:
             output_post_processing_func = partial(
-                on_finish_func, activity_npv, npv_pwl_path
+                on_finish_func, pathway_npv, npv_pwl_path
             )
 
         try:
@@ -177,7 +177,7 @@ def create_npv_pwls(
                 "EXTENT": target_extent,
                 "TARGET_CRS": target_crs_id,
                 "PIXEL_SIZE": target_pixel_size,
-                "NUMBER": activity_npv.params.normalized_npv,
+                "NUMBER": pathway_npv.params.normalized_npv,
                 "OUTPUT": npv_pwl_path,
             }
             res = processing.run(
@@ -198,20 +198,20 @@ def create_npv_pwls(
     return results
 
 
-def calculate_activity_npv(activity_id: str, activity_area: float) -> float:
-    """Calculates the NPV of an activity.
+def calculate_ncs_pathway_npv(pathway_id: str, pathway_area: float) -> float:
+    """Calculates the NPV of an NCS pathway.
 
     The NPV per hectare is derived from the saved value
     in the settings defined through the NPV PWL Manager.
 
-    :param activity_id: The ID of the specific activity. The
+    :param pathway_id: The ID of the specific NCS pathway. The
     function will check whether the NPV rate had been defined.
-    :type activity_id: str
+    :type pathway_id: str
 
-    :param activity_area: The area of an activity in hectares.
-    :type activity_area: float
+    :param pathway_area: The area of an NCS pathway in hectares.
+    :type pathway_area: float
 
-    :returns: Returns the total NPV for an activity
+    :returns: Returns the total NPV for an NCS pathway
     or -1.0 if the NPV rate has not yet been specified in settings.
     :rtype: float
     """
@@ -219,8 +219,8 @@ def calculate_activity_npv(activity_id: str, activity_area: float) -> float:
     if npv_collection is None:
         return -1.0
 
-    activity_npv = npv_collection.activity_npv(activity_id)
-    if activity_npv is None:
+    pathway_npv = npv_collection.pathway_npv(pathway_id)
+    if pathway_npv is None:
         return -1.0
 
-    return activity_npv.params.absolute_npv * activity_area
+    return pathway_npv.params.absolute_npv * pathway_area

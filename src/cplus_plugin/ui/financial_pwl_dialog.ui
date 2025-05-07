@@ -19,7 +19,7 @@
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
-     <widget class="QListView" name="lst_activities">
+     <widget class="QListView" name="lst_pathways">
       <property name="editTriggers">
        <set>QAbstractItemView::NoEditTriggers</set>
       </property>
@@ -231,7 +231,7 @@
       <item>
        <widget class="QLabel" name="label_123">
         <property name="text">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Define the parameters for computing the Net Present Value (NPV) of activities and normalizing the corresponding output PWL layers. Click Help for more information.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Define the parameters for calculating the Net Present Value (NPV) of NCS pathways and normalizing the corresponding output PWL layers. Click Help for more information.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="wordWrap">
          <bool>true</bool>
@@ -253,7 +253,7 @@
       </size>
      </property>
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Activities&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;NCS Pathways&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="textFormat">
       <enum>Qt::RichText</enum>
@@ -263,7 +263,7 @@
    <item row="5" column="0" colspan="3">
     <widget class="QCheckBox" name="cb_remove_disabled">
      <property name="text">
-      <string>Remove existing PWLs for disabled activity NPVs</string>
+      <string>Remove existing PWLs for disabled NCS pathway NPVs</string>
      </property>
     </widget>
    </item>

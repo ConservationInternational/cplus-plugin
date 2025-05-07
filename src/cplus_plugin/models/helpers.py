@@ -53,7 +53,9 @@ from ..definitions.constants import (
     MIN_VALUE_ATTRIBUTE,
     METRIC_COLUMNS_PROPERTY,
     MULTI_ACTIVITY_IDENTIFIER_PROPERTY,
+    MULTI_PATHWAY_IDENTIFIER_PROPERTY,
     NAME_ATTRIBUTE,
+    NCS_PATHWAY_IDENTIFIER_PROPERTY,
     NORMALIZED_NPV_ATTRIBUTE,
     NUMBER_FORMATTER_ENABLED_ATTRIBUTE,
     NUMBER_FORMATTER_ID_ATTRIBUTE,
@@ -70,7 +72,7 @@ from ..definitions.constants import (
     YEARLY_RATES_ATTRIBUTE,
 )
 from ..definitions.defaults import DEFAULT_CRS_ID, QGIS_GDAL_PROVIDER
-from .financial import ActivityNpv, ActivityNpvCollection, NpvParameters
+from .financial import NcsPathwayNpv, NcsPathwayNpvCollection, NpvParameters
 from .report import ActivityColumnMetric, MetricColumn, MetricConfiguration, MetricType
 
 from ..utils import log
@@ -511,163 +513,166 @@ def extent_to_project_crs_extent(
     return input_rect
 
 
-def activity_npv_to_dict(activity_npv: ActivityNpv) -> dict:
-    """Converts an ActivityNpv object to a dictionary representation.
+def ncs_pathway_npv_to_dict(pathway_npv: NcsPathwayNpv) -> dict:
+    """Converts an NcsPathwayNpv object to a dictionary representation.
 
     :returns: A dictionary containing attribute name-value pairs.
     :rtype: dict
     """
     return {
-        YEARS_ATTRIBUTE: activity_npv.params.years,
-        DISCOUNT_ATTRIBUTE: activity_npv.params.discount,
-        ABSOLUTE_NPV_ATTRIBUTE: activity_npv.params.absolute_npv,
-        NORMALIZED_NPV_ATTRIBUTE: activity_npv.params.normalized_npv,
-        YEARLY_RATES_ATTRIBUTE: activity_npv.params.yearly_rates,
-        MANUAL_NPV_ATTRIBUTE: activity_npv.params.manual_npv,
-        ENABLED_ATTRIBUTE: activity_npv.enabled,
-        ACTIVITY_IDENTIFIER_PROPERTY: activity_npv.activity_id,
+        YEARS_ATTRIBUTE: pathway_npv.params.years,
+        DISCOUNT_ATTRIBUTE: pathway_npv.params.discount,
+        ABSOLUTE_NPV_ATTRIBUTE: pathway_npv.params.absolute_npv,
+        NORMALIZED_NPV_ATTRIBUTE: pathway_npv.params.normalized_npv,
+        YEARLY_RATES_ATTRIBUTE: pathway_npv.params.yearly_rates,
+        MANUAL_NPV_ATTRIBUTE: pathway_npv.params.manual_npv,
+        ENABLED_ATTRIBUTE: pathway_npv.enabled,
+        NCS_PATHWAY_IDENTIFIER_PROPERTY: pathway_npv.pathway_id,
     }
 
 
-def create_activity_npv(activity_npv_dict: dict) -> typing.Optional[ActivityNpv]:
-    """Creates an ActivityNpv object from the equivalent dictionary
+def create_ncs_pathway_npv(pathway_npv_dict: dict) -> typing.Optional[NcsPathwayNpv]:
+    """Creates an NcsPathwayNpv object from the equivalent dictionary
     representation.
 
-    Please note that the `activity` attribute of the `ActivityNpv` object will be
-    `None` hence, will have to be set manually by extracting the corresponding `Activity`
+    Please note that the `pathway` attribute of the `NcsPathwayNpv` object will be
+    `None` hence, will have to be set manually by extracting the corresponding `NcsPathway`
     from the activity UUID.
 
-    :param activity_npv_dict: Dictionary containing information for deserializing
-    to the ActivityNpv object.
-    :type activity_npv_dict: dict
+    :param pathway_npv_dict: Dictionary containing information for deserializing
+    to the NcsPathwayNpv object.
+    :type pathway_npv_dict: dict
 
-    :returns: ActivityNpv deserialized from the dictionary representation.
-    :rtype: ActivityNpv
+    :returns: NcsPathwayNpv deserialized from the dictionary representation.
+    :rtype: NcsPathwayNpv
     """
     args = []
-    if YEARS_ATTRIBUTE in activity_npv_dict:
-        args.append(activity_npv_dict[YEARS_ATTRIBUTE])
+    if YEARS_ATTRIBUTE in pathway_npv_dict:
+        args.append(pathway_npv_dict[YEARS_ATTRIBUTE])
 
-    if DISCOUNT_ATTRIBUTE in activity_npv_dict:
-        args.append(activity_npv_dict[DISCOUNT_ATTRIBUTE])
+    if DISCOUNT_ATTRIBUTE in pathway_npv_dict:
+        args.append(pathway_npv_dict[DISCOUNT_ATTRIBUTE])
 
     if len(args) < 2:
         return None
 
     kwargs = {}
 
-    if ABSOLUTE_NPV_ATTRIBUTE in activity_npv_dict:
-        kwargs[ABSOLUTE_NPV_ATTRIBUTE] = activity_npv_dict[ABSOLUTE_NPV_ATTRIBUTE]
+    if ABSOLUTE_NPV_ATTRIBUTE in pathway_npv_dict:
+        kwargs[ABSOLUTE_NPV_ATTRIBUTE] = pathway_npv_dict[ABSOLUTE_NPV_ATTRIBUTE]
 
-    if NORMALIZED_NPV_ATTRIBUTE in activity_npv_dict:
-        kwargs[NORMALIZED_NPV_ATTRIBUTE] = activity_npv_dict[NORMALIZED_NPV_ATTRIBUTE]
+    if NORMALIZED_NPV_ATTRIBUTE in pathway_npv_dict:
+        kwargs[NORMALIZED_NPV_ATTRIBUTE] = pathway_npv_dict[NORMALIZED_NPV_ATTRIBUTE]
 
-    if MANUAL_NPV_ATTRIBUTE in activity_npv_dict:
-        kwargs[MANUAL_NPV_ATTRIBUTE] = activity_npv_dict[MANUAL_NPV_ATTRIBUTE]
+    if MANUAL_NPV_ATTRIBUTE in pathway_npv_dict:
+        kwargs[MANUAL_NPV_ATTRIBUTE] = pathway_npv_dict[MANUAL_NPV_ATTRIBUTE]
 
     npv_params = NpvParameters(*args, **kwargs)
 
-    if YEARLY_RATES_ATTRIBUTE in activity_npv_dict:
-        yearly_rates = activity_npv_dict[YEARLY_RATES_ATTRIBUTE]
+    if YEARLY_RATES_ATTRIBUTE in pathway_npv_dict:
+        yearly_rates = pathway_npv_dict[YEARLY_RATES_ATTRIBUTE]
         npv_params.yearly_rates = yearly_rates
 
     npv_enabled = False
-    if ENABLED_ATTRIBUTE in activity_npv_dict:
-        npv_enabled = activity_npv_dict[ENABLED_ATTRIBUTE]
+    if ENABLED_ATTRIBUTE in pathway_npv_dict:
+        npv_enabled = pathway_npv_dict[ENABLED_ATTRIBUTE]
 
-    return ActivityNpv(npv_params, npv_enabled, None)
+    return NcsPathwayNpv(npv_params, npv_enabled, None)
 
 
-def activity_npv_collection_to_dict(activity_collection: ActivityNpvCollection) -> dict:
-    """Converts the activity NPV collection object to the
+def ncs_pathway_npv_collection_to_dict(
+    pathway_collection: NcsPathwayNpvCollection,
+) -> dict:
+    """Converts the NCS pathway NPV collection object to the
     dictionary representation.
 
     :returns: A dictionary containing the attribute name-value pairs
-    of an activity NPV collection object
+    of an NCS pathway NPV collection object
     :rtype: dict
     """
     npv_collection_dict = {
-        MIN_VALUE_ATTRIBUTE: activity_collection.minimum_value,
-        MAX_VALUE_ATTRIBUTE: activity_collection.maximum_value,
-        COMPUTED_ATTRIBUTE: activity_collection.use_computed,
-        REMOVE_EXISTING_ATTRIBUTE: activity_collection.remove_existing,
+        MIN_VALUE_ATTRIBUTE: pathway_collection.minimum_value,
+        MAX_VALUE_ATTRIBUTE: pathway_collection.maximum_value,
+        COMPUTED_ATTRIBUTE: pathway_collection.use_computed,
+        REMOVE_EXISTING_ATTRIBUTE: pathway_collection.remove_existing,
     }
 
-    mapping_dict = list(map(activity_npv_to_dict, activity_collection.mappings))
+    mapping_dict = list(map(ncs_pathway_npv_to_dict, pathway_collection.mappings))
     npv_collection_dict[NPV_MAPPINGS_ATTRIBUTE] = mapping_dict
 
     return npv_collection_dict
 
 
-def create_activity_npv_collection(
-    activity_collection_dict: dict, reference_activities: typing.List[Activity] = None
-) -> typing.Optional[ActivityNpvCollection]:
-    """Creates an activity NPV collection object from the corresponding
+def create_ncs_pathway_npv_collection(
+    pathway_collection_dict: dict, reference_pathways: typing.List[NcsPathway] = None
+) -> typing.Optional[NcsPathwayNpvCollection]:
+    """Creates an NCS pathway NPV collection object from the corresponding
     dictionary representation.
 
-    :param activity_collection_dict: Dictionary representation containing
-    information of an activity NPV collection object.
-    :type activity_collection_dict: dict
+    :param pathway_collection_dict: Dictionary representation containing
+    information of an NCS pathway NPV collection object.
+    :type pathway_collection_dict: dict
 
-    :param reference_activities: Optional list of activities that will be
-    used to lookup  when deserializing the ActivityNpv objects.
-    :type reference_activities: list
+    :param reference_pathways: Optional list of NCS pathways that will be
+    used to lookup  when deserializing the NcsPathwayNpv objects.
+    :type reference_pathways: list
 
-    :returns: Activity NPV collection object from the dictionary representation
-    or None if the source dictionary is invalid.
-    :rtype: ActivityNpvCollection
+    :returns: NCS pathway NPV collection object from the dictionary
+    representation or None if the source dictionary is invalid.
+    :rtype: NcsPathwayNpvCollection
     """
-    if len(activity_collection_dict) == 0:
+    if len(pathway_collection_dict) == 0:
         return None
 
-    ref_activities_by_uuid = {
-        str(activity.uuid): activity for activity in reference_activities
+    ref_pathways_by_uuid = {
+        str(pathway.uuid): pathway for pathway in reference_pathways
     }
 
     args = []
 
     # Minimum value
-    if MIN_VALUE_ATTRIBUTE in activity_collection_dict:
-        args.append(activity_collection_dict[MIN_VALUE_ATTRIBUTE])
+    if MIN_VALUE_ATTRIBUTE in pathway_collection_dict:
+        args.append(pathway_collection_dict[MIN_VALUE_ATTRIBUTE])
 
     # Maximum value
-    if MAX_VALUE_ATTRIBUTE in activity_collection_dict:
-        args.append(activity_collection_dict[MAX_VALUE_ATTRIBUTE])
+    if MAX_VALUE_ATTRIBUTE in pathway_collection_dict:
+        args.append(pathway_collection_dict[MAX_VALUE_ATTRIBUTE])
 
     if len(args) < 2:
         return None
 
-    activity_npv_collection = ActivityNpvCollection(*args)
+    pathway_npv_collection = NcsPathwayNpvCollection(*args)
 
     # Use computed
-    if COMPUTED_ATTRIBUTE in activity_collection_dict:
-        use_computed = activity_collection_dict[COMPUTED_ATTRIBUTE]
-        activity_npv_collection.use_computed = use_computed
+    if COMPUTED_ATTRIBUTE in pathway_collection_dict:
+        use_computed = pathway_collection_dict[COMPUTED_ATTRIBUTE]
+        pathway_npv_collection.use_computed = use_computed
 
     # Remove existing
-    if REMOVE_EXISTING_ATTRIBUTE in activity_collection_dict:
-        remove_existing = activity_collection_dict[REMOVE_EXISTING_ATTRIBUTE]
-        activity_npv_collection.remove_existing = remove_existing
+    if REMOVE_EXISTING_ATTRIBUTE in pathway_collection_dict:
+        remove_existing = pathway_collection_dict[REMOVE_EXISTING_ATTRIBUTE]
+        pathway_npv_collection.remove_existing = remove_existing
 
-    if NPV_MAPPINGS_ATTRIBUTE in activity_collection_dict:
-        mappings_dict = activity_collection_dict[NPV_MAPPINGS_ATTRIBUTE]
+    if NPV_MAPPINGS_ATTRIBUTE in pathway_collection_dict:
+        mappings_dict = pathway_collection_dict[NPV_MAPPINGS_ATTRIBUTE]
         npv_mappings = []
         for md in mappings_dict:
-            activity_npv = create_activity_npv(md)
-            if activity_npv is None:
+            pathway_npv = create_ncs_pathway_npv(md)
+            if pathway_npv is None:
                 continue
 
-            # Get the corresponding activity from the unique identifier
-            if ACTIVITY_IDENTIFIER_PROPERTY in md:
-                activity_id = md[ACTIVITY_IDENTIFIER_PROPERTY]
-                if activity_id in ref_activities_by_uuid:
-                    ref_activity = ref_activities_by_uuid[activity_id]
-                    activity_npv.activity = ref_activity
-                    npv_mappings.append(activity_npv)
+            # Get the corresponding NCS pathway from the unique
+            # identifier
+            if NCS_PATHWAY_IDENTIFIER_PROPERTY in md:
+                pathway_id = md[NCS_PATHWAY_IDENTIFIER_PROPERTY]
+                if pathway_id in ref_pathways_by_uuid:
+                    ref_pathway = ref_pathways_by_uuid[pathway_id]
+                    pathway_npv.pathway = ref_pathway
+                    npv_mappings.append(pathway_npv)
 
-        activity_npv_collection.mappings = npv_mappings
+        pathway_npv_collection.mappings = npv_mappings
 
-    return activity_npv_collection
+    return pathway_npv_collection
 
 
 def layer_from_scenario_result(
