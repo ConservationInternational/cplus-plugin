@@ -1259,30 +1259,32 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.btn_delete_mask.setEnabled(contains_items)
 
     def _on_add_pwl_layer(self, activated: bool):
-        selected_layer = self._get_selected_pwl_layer()
-        if not selected_layer:
-            error_tr = tr("Select a default layer first.")
-            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
-            return
-        layer_uuid = selected_layer[0]
+        """Slot raised to add a new PWL layer."""
+        pass
+        # TODO: Implement add a new layer to the default PWLs
 
     def _on_edit_pwl_layer(self, activated: bool):
+        """Slot raised to edit a selected PWL layer."""
         selected_layer = self._get_selected_pwl_layer()
         if not selected_layer:
             error_tr = tr("Select a default layer first.")
             self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return
         layer_uuid = selected_layer[0]
+        # TODO: Implement edit the selected layer functionality
 
     def _on_remove_pwl_layer(self, activated: bool):
+        """Slot raised to remove a selected PWL layer."""
         selected_layer = self._get_selected_pwl_layer()
         if not selected_layer:
             error_tr = tr("Select a default layer first.")
             self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return
         layer_uuid = selected_layer[0]
+        # TODO: Implement delete the selected layer from the list
 
     def _on_download_pwl_layer(self, activated: bool):
+        """Slot raised to download a selected PWL layer."""
         selected_layer = self._get_selected_pwl_layer()
         if not selected_layer:
             error_tr = tr("Select a default layer first.")
@@ -1326,13 +1328,13 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.btn_delete_pwl.setEnabled(contains_items)
 
     def _get_selected_pwl_layer(self):
-        """Get the currently selected PWL layer from the table."""
-        selected_indexes = self.tbl_pwl_layers.selectedIndexes()
-        if not selected_indexes:
-            return None
+        """Get the currently selected PWL layer from the table.
+        Returns:
+            list: A list containing the selected layer's data in the order of the PWLs table columns.
+            None: If no layer is selected.
+        """
 
         selected_indexes = self.tbl_pwl_layers.selectionModel().selectedIndexes()
-
         if not selected_indexes:
             return None  # No selection
 
