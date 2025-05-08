@@ -65,8 +65,7 @@ from ..api.request import JOB_RUNNING_STATUS, JOB_COMPLETED_STATUS
 from ..definitions.constants import (
     ACTIVITY_GROUP_LAYER_NAME,
     ACTIVITY_IDENTIFIER_PROPERTY,
-    ACTIVITY_WEIGHTED_GROUP_NAME,
-    NCS_PATHWAYS_GROUP_LAYER_NAME,
+    NCS_PATHWAYS_WEIGHTED_GROUP_LAYER_NAME,
     USER_DEFINED_ATTRIBUTE,
 )
 
@@ -2022,7 +2021,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 activity_group = scenario_group.addGroup(tr(ACTIVITY_GROUP_LAYER_NAME))
             if load_weighted_ncs:
                 pathways_group = scenario_group.addGroup(
-                    tr(NCS_PATHWAYS_GROUP_LAYER_NAME)
+                    tr(NCS_PATHWAYS_WEIGHTED_GROUP_LAYER_NAME)
                 )
                 pathways_group.setExpanded(False)
                 pathways_group.setItemVisibilityCheckedRecursive(False)

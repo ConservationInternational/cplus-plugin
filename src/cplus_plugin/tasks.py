@@ -1702,10 +1702,12 @@ class ScenarioAnalysisTask(QgsTask):
 
         self.set_status_message(tr(f"Weighting of pathways"))
 
+        # Get valid pathways
         pathways = []
         activities_paths = []
 
         try:
+            # Validate activities and corresponding pathways
             for activity in activities:
                 if not activity.pathways and (
                     activity.path is None or activity.path == ""
@@ -1724,13 +1726,6 @@ class ScenarioAnalysisTask(QgsTask):
                     return False
 
                 for pathway in activity.pathways:
-                    if pathway.priority_layers is None or pathway.priority_layers is []:
-                        self.log_message(
-                            f"There are no associated "
-                            f"priority weighting layers for pathway {pathway.name}"
-                        )
-                        continue
-
                     if pathway not in pathways:
                         pathways.append(pathway)
 
@@ -1747,17 +1742,27 @@ class ScenarioAnalysisTask(QgsTask):
 
             settings_priority_layers = self.get_priority_layers()
 
+            weighted_pathways_directory = os.path.join(
+                self.scenario_directory, "weighted_pathways"
+            )
+            FileUtils.create_new_dir(weighted_pathways_directory)
+
             for pathway in pathways:
+                # Skip processing if cancelled
+                if self.processing_cancelled:
+                    return False
+
                 base_names = []
                 layers = [pathway.path]
+                run_calculation = False
 
                 # Include suitability index if not zero
+                pathway_basename = Path(pathway.path).stem
                 if suitability_index > 0:
-                    base_names.append(
-                        f'({suitability_index}*"{Path(pathway.path).stem}@1")'
-                    )
+                    base_names.append(f'({suitability_index}*"{pathway_basename}@1")')
+                    run_calculation = True
                 else:
-                    base_names.append(f'("{Path(pathway.path).stem}@1")')
+                    base_names.append(f'("{pathway_basename}@1")')
 
                 for layer in pathway.priority_layers:
                     if not any(priority_layers_groups):
@@ -1806,12 +1811,13 @@ class ScenarioAnalysisTask(QgsTask):
 
                                     pwl_expression = f'({priority_group_coefficient}*"{pwl_path_basename}@1")'
                                     base_names.append(pwl_expression)
+                                    if not run_calculation:
+                                        run_calculation = True
 
-                weighted_pathways_directory = os.path.join(
-                    self.scenario_directory, "weighted_pathways"
-                )
-
-                FileUtils.create_new_dir(weighted_pathways_directory)
+                # No need to run the calculation if suitability index is
+                # zero or there are no PWLs in the activity.
+                if not run_calculation:
+                    continue
 
                 file_name = clean_filename(pathway.name.replace(" ", "_"))
                 output_file = os.path.join(
