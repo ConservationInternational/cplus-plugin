@@ -1844,8 +1844,8 @@ class ScenarioAnalysisTask(QgsTask):
                     f" Used parameters for calculating weighting pathways {alg_params} \n"
                 )
 
-                feedback = QgsProcessingFeedback()
-                feedback.progressChanged.connect(self.update_progress)
+                self.feedback = QgsProcessingFeedback()
+                self.feedback.progressChanged.connect(self.update_progress)
 
                 if self.processing_cancelled:
                     return False
