@@ -1267,30 +1267,23 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         """Slot raised to edit a selected PWL layer."""
         selected_layer = self._get_selected_pwl_layer()
         if not selected_layer:
-            error_tr = tr("Select a default layer first.")
+            error_tr = tr("Select a default layer first to edit.")
             self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return
-        layer_uuid = selected_layer[0]
         # TODO: Implement edit the selected layer functionality
 
     def _on_remove_pwl_layer(self, activated: bool):
         """Slot raised to remove a selected PWL layer."""
-        selected_layer = self._get_selected_pwl_layer()
-        if not selected_layer:
-            error_tr = tr("Select a default layer first.")
-            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+        layer_uuid = self._get_valid_selected_pwl_layer_uuid("remove")
+        if not layer_uuid:
             return
-        layer_uuid = selected_layer[0]
         # TODO: Implement delete the selected layer from the list
 
     def _on_download_pwl_layer(self, activated: bool):
         """Slot raised to download a selected PWL layer."""
-        selected_layer = self._get_selected_pwl_layer()
-        if not selected_layer:
-            error_tr = tr("Select a default layer first.")
-            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+        layer_uuid = self._get_valid_selected_pwl_layer_uuid("download")
+        if not layer_uuid:
             return
-        layer_uuid = selected_layer[0]
 
         default_layer = None
         for layer in self.default_priority_layers:
@@ -1348,6 +1341,20 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             index = self.pwl_model.index(row, column)
             data.append(self.pwl_model.data(index))
         return data
+
+    def _get_valid_selected_pwl_layer_uuid(self, action: str):
+        """Get the UUID of the currently selected PWL layer.
+        Args:
+            action (str): The action being performed (e.g., "edit" "remove", "download").
+        Returns:
+            str: The UUID of the selected layer.
+        """
+        selected_layer = self._get_selected_pwl_layer()
+        if not selected_layer:
+            error_tr = tr(f"Select a default layer first to {action}.")
+            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            return None
+        return selected_layer[0]
 
     def validate_snapping_layer(self, snap_layer_path: str) -> typing.Tuple[bool, str]:
         """
