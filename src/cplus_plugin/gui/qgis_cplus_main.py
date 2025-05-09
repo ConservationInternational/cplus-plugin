@@ -165,7 +165,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         # Step 4
         self.ncs_pwl_weighted.toggled.connect(self.outputs_options_changed)
         self.landuse_project.toggled.connect(self.outputs_options_changed)
-        self.landuse_normalized.toggled.connect(self.outputs_options_changed)
         self.highest_position.toggled.connect(self.outputs_options_changed)
         self.processing_type.toggled.connect(self.processing_options_changed)
         self.chb_metric_builder.toggled.connect(self.on_use_custom_metrics)
@@ -253,9 +252,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             Settings.LANDUSE_PROJECT, self.landuse_project.isChecked()
         )
         settings_manager.set_value(
-            Settings.LANDUSE_NORMALIZED, self.landuse_normalized.isChecked()
-        )
-        settings_manager.set_value(
             Settings.HIGHEST_POSITION, self.highest_position.isChecked()
         )
 
@@ -277,14 +273,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 Settings.NCS_WEIGHTED, default=False, setting_type=bool
             )
         )
+
         self.landuse_project.setChecked(
             settings_manager.get_value(
                 Settings.LANDUSE_PROJECT, default=False, setting_type=bool
-            )
-        )
-        self.landuse_normalized.setChecked(
-            settings_manager.get_value(
-                Settings.LANDUSE_NORMALIZED, default=False, setting_type=bool
             )
         )
 
@@ -1986,10 +1978,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             load_landuse = settings_manager.get_value(
                 Settings.LANDUSE_PROJECT, default=True, setting_type=bool
             )
-            load_landuse_normalized = settings_manager.get_value(
-                Settings.LANDUSE_NORMALIZED, default=True, setting_type=bool
-            )
-
             load_highest_position = settings_manager.get_value(
                 Settings.HIGHEST_POSITION, default=False, setting_type=bool
             )

@@ -474,19 +474,6 @@
             </widget>
            </item>
            <item row="2" column="0">
-            <widget class="QCheckBox" name="landuse_normalized">
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Whether to produce the landuse project normalized outputs.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="text">
-              <string>Landuse Activity Normalized</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="0">
             <widget class="QCheckBox" name="highest_position">
              <property name="toolTip">
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Whether to produce the final highest position analysis outputs, unselecting this option will disable report generation this is because the highest position output is a required output for report generation.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
