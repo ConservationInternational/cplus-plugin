@@ -317,6 +317,93 @@
         </widget>
        </item>
        <item>
+        <widget class="QgsCollapsibleGroupBox" name="pwl_layers_box">
+         <property name="title">
+          <string>Global priority weighted layers (PWLs)</string>
+         </property>
+         <property name="collapsed">
+          <bool>false</bool>
+         </property>
+         <property name="saveCheckedState">
+          <bool>false</bool>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_pwls">
+          <item row="0" column="3">
+           <widget class="QToolButton" name="btn_edit_pwl">
+            <property name="toolTip">
+             <string>Edit layer</string>
+            </property>
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="4">
+           <widget class="QToolButton" name="btn_delete_pwl">
+            <property name="toolTip">
+             <string>Delete layer</string>
+            </property>
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>         
+          <item row="1" column="0" colspan="5">
+           <widget class="QTableView" name="tbl_pwl_layers">
+            <property name="toolTip">
+              <string>Global priority weighted layers (PWLs)</string>
+            </property>
+            <property name="showGrid">
+              <bool>false</bool>
+            </property>
+            <property name="alternatingRowColors">
+              <bool>true</bool>
+            </property>
+            <property name="selectionBehavior">
+              <enum>QAbstractItemView::SelectRows</enum>
+            </property>
+            <property name="selectionMode">
+              <enum>QAbstractItemView::SingleSelection</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>367</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="0" column="2">
+           <widget class="QToolButton" name="btn_add_pwl">
+            <property name="toolTip">
+             <string>Add layer</string>
+            </property>
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QToolButton" name="btn_download_pwl">
+            <property name="toolTip">
+             <string>Download layer</string>
+            </property>
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
         <widget class="QgsCollapsibleGroupBox" name="gb_ic_reference_layer">
          <property name="minimumSize">
           <size>
