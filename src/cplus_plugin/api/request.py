@@ -1007,7 +1007,6 @@ class CplusApiRequest:
             activities=[
                 Activity.from_dict(activity) for activity in detail["activities"]
             ],
-            weighted_activities=[],
             priority_layer_groups=detail["priority_layer_groups"],
         )
         return scenario
@@ -1051,7 +1050,6 @@ class CplusApiRequest:
                         Activity.from_dict(activity)
                         for activity in detail["activities"]
                     ],
-                    weighted_activities=[],
                     priority_layer_groups=detail["priority_layer_groups"],
                 )
             )
