@@ -34,7 +34,6 @@ class TestFetchScenarioHistoryTask(unittest.TestCase):
                 description="Scenario description",
                 activities=[],
                 extent=SpatialExtent([]),
-                weighted_activities=[],
                 priority_layer_groups=[],
                 server_uuid=uuid.uuid4(),
             )
@@ -46,7 +45,6 @@ class TestFetchScenarioHistoryTask(unittest.TestCase):
                 description="Scenario description",
                 activities=[],
                 extent=SpatialExtent([]),
-                weighted_activities=[],
                 priority_layer_groups=[],
                 server_uuid=uuid.uuid4(),
             )
@@ -104,7 +102,6 @@ class TestFetchScenarioOutputTask(unittest.TestCase):
             "submitted_on": "2023-01-01T00:00:00Z",
             "updated_detail": {
                 "activities": [],
-                "weighted_activities": [],
                 "priority_layer_groups": [],
             },
         }
@@ -132,7 +129,6 @@ class TestFetchScenarioOutputTask(unittest.TestCase):
             description="Scenario description",
             activities=[],
             extent=SpatialExtent([]),
-            weighted_activities=[],
             priority_layer_groups=[],
             server_uuid=uuid.uuid4(),
         )
@@ -174,7 +170,6 @@ class TestFetchScenarioOutputTask(unittest.TestCase):
             description="Scenario description",
             activities=[],
             extent=SpatialExtent([]),
-            weighted_activities=[],
             priority_layer_groups=[],
             server_uuid=uuid.uuid4(),
         )

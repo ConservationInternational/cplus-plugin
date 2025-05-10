@@ -677,7 +677,6 @@ class Scenario(BaseModelComponent):
 
     extent: SpatialExtent
     activities: typing.List[Activity]
-    weighted_activities: typing.List[Activity]
     priority_layer_groups: typing.List
     state: ScenarioState = ScenarioState.IDLE
     server_uuid: UUID = None

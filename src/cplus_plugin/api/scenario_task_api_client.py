@@ -516,9 +516,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
         suitability_index = float(
             self.get_settings_value(Settings.PATHWAY_SUITABILITY_INDEX, default=0)
         )
-        carbon_coefficient = float(
-            self.get_settings_value(Settings.CARBON_COEFFICIENT, default=0.0)
-        )
         snap_rescale = self.get_settings_value(
             Settings.RESCALE_VALUES, default=False, setting_type=bool
         )
@@ -629,7 +626,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             "snap_layer": snap_layer_path,
             "snap_layer_uuid": snap_layer_uuid,
             "pathway_suitability_index": suitability_index,
-            "carbon_coefficient": carbon_coefficient,
             "snap_rescale": snap_rescale,
             "snap_method": resampling_method,
             "sieve_enabled": sieve_enabled,
@@ -754,22 +750,15 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             if "_cleaned" in output["filename"]:
                 output_fnames.append(output["filename"])
 
-        weighted_activities = []
         activities = []
 
         download_dict = {os.path.basename(d): d for d in download_paths}
 
         for activity in self.new_scenario_detail["updated_detail"]["activities"]:
             activities.append(self.__create_activity(activity, download_dict))
-        for activity in self.new_scenario_detail["updated_detail"][
-            "weighted_activities"
-        ]:
-            weighted_activities.append(self.__create_activity(activity, download_dict))
 
-        self.analysis_weighted_activities = weighted_activities
         self.analysis_activities = activities
         self.scenario.activities = activities
-        self.scenario.weighted_activities = weighted_activities
         self.scenario.priority_layer_groups = self.new_scenario_detail[
             "updated_detail"
         ]["priority_layer_groups"]
@@ -861,7 +850,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
         self.scenario_result = scenario_result
         self.output = scenario_result.analysis_output
         self.analysis_activities = self.scenario.activities
-        self.analysis_weighted_activities = self.scenario.weighted_activities
         self._update_scenario_status(
             {"progress_text": "Finished downloading output files", "progress": 100}
         )

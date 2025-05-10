@@ -49,7 +49,6 @@ from .comparison_table import ScenarioComparisonTableInfo
 from ...conf import settings_manager
 from ...definitions.constants import (
     ACTIVITY_GROUP_LAYER_NAME,
-    ACTIVITY_WEIGHTED_GROUP_NAME,
     ACTIVITY_IDENTIFIER_PROPERTY,
 )
 from ...definitions.defaults import (
@@ -1257,7 +1256,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
         max_items_page = dimension.rows * dimension.columns
 
-        num_activities = len(self._context.scenario.weighted_activities)
+        num_activities = len(self._context.scenario.activities)
 
         if num_activities == 0:
             tr_msg = "No activities in the scenario"
@@ -1295,7 +1294,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                     if im_count == num_activities:
                         break
 
-                    activity = self._context.scenario.weighted_activities[im_count]
+                    activity = self._context.scenario.activities[im_count]
                     reference_x_pos = repeat_ref_x + (c * dimension.width)
                     self._add_activity_items(
                         reference_x_pos,
@@ -1346,9 +1345,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         map_ref_point = QgsLayoutPoint(pos_x, pos_y, self._layout.units())
         im_map.attemptMove(map_ref_point, True, False, page)
         im_map.attemptResize(QgsLayoutSize(width, map_height, self._layout.units()))
-        im_layer = self._get_activity_layer_in_project(
-            str(activity.uuid), weighted=True
-        )
+        im_layer = self._get_activity_layer_in_project(str(activity.uuid))
         if im_layer is not None:
             ext = im_layer.extent()
             im_map.setLayers([im_layer])
@@ -1594,23 +1591,15 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         )
 
     def _get_activity_layer_in_project(
-        self, activity_identifier: str, weighted: bool = False
+        self, activity_identifier: str
     ) -> typing.Union[QgsRasterLayer, None]:
         """Retrieves the activity raster layer from the activity layer group in
         the project.
 
         :param activity_identifier: Unique identifier of the activity.
         :type activity_identifier: str
-
-        :param weighted: True to search under weighted activity
-        category else under the activities maps.
-        category. Default is False.
-        :type weighted: bool
         """
-        if weighted:
-            category_name = tr(ACTIVITY_WEIGHTED_GROUP_NAME)
-        else:
-            category_name = tr(ACTIVITY_GROUP_LAYER_NAME)
+        category_name = tr(ACTIVITY_GROUP_LAYER_NAME)
 
         if self._project is None:
             tr_msg = tr(
@@ -1780,7 +1769,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         metrics_context = create_metrics_expression_context(self._project)
 
         rows_data = []
-        for activity in self._context.scenario.weighted_activities:
+        for activity in self._context.scenario.activities:
             activity_row_cells = []
 
             # Activity name column

@@ -98,15 +98,12 @@ class BaseFetchScenarioOutput:
             if "_cleaned" in output["filename"]:
                 output_fnames.append(output["filename"])
 
-        weighted_activities = []
         activities = []
 
         download_dict = {os.path.basename(d): d for d in download_paths}
 
         for activity in scenario_detail.get("activities", []):
             activities.append(self.__create_activity(activity, download_dict))
-        for activity in scenario_detail.get("weighted_activities", []):
-            weighted_activities.append(self.__create_activity(activity, download_dict))
 
         scenario = Scenario(
             uuid=original_scenario.uuid,
@@ -114,7 +111,6 @@ class BaseFetchScenarioOutput:
             description=original_scenario.description,
             extent=original_scenario.extent,
             activities=activities,
-            weighted_activities=weighted_activities,
             priority_layer_groups=scenario_detail.get("priority_layer_groups", []),
             server_uuid=original_scenario.server_uuid,
         )
