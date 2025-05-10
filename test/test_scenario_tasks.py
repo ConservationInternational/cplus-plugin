@@ -20,32 +20,51 @@ from cplus_plugin.tasks import ScenarioAnalysisTask
 from cplus_plugin.models.base import Scenario, NcsPathway, Activity
 
 
-@unittest.skip(
-    "Disabled as scenario analysis logic will be refactored in subsequent child tickets."
-)
 class ScenarioAnalysisTaskTest(unittest.TestCase):
     def setUp(self):
         Processing.initialize()
 
-    def test_scenario_pathways_normalization(self):
+    def test_scenario_pathways_weighting(self):
+        """Test the weighting of NCS pathways"""
         pathway_layer_directory = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "data", "pathways", "layers"
         )
 
-        carbon_directory = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "data", "carbon", "layers"
+        pathway_layer_path = os.path.join(pathway_layer_directory, "test_pathway_1.tif")
+
+        priority_layers_directory = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "data", "priority", "layers"
         )
 
-        carbon_layer_path = os.path.join(carbon_directory, "carbon_layer_1.tif")
+        priority_layer_path_1 = os.path.join(
+            priority_layers_directory, "test_priority_1.tif"
+        )
 
-        pathway_layer_path = os.path.join(pathway_layer_directory, "test_pathway_1.tif")
+        test_priority_group = {
+            "uuid": "a4f76e6c-9f83-4a9c-b700-fb1ae04860a4",
+            "name": "test_priority_group",
+            "description": "test_priority_group_description",
+            "value": 1,
+        }
+
+        priority_layer_1 = {
+            "uuid": "c931282f-db2d-4644-9786-6720b3ab206a",
+            "name": "test_priority_layer",
+            "description": "test_priority_layer_description",
+            "selected": False,
+            "path": priority_layer_path_1,
+            "groups": [test_priority_group],
+        }
+
+        settings_manager.save_priority_group(test_priority_group)
+        settings_manager.save_priority_layer(priority_layer_1)
 
         test_pathway = NcsPathway(
             uuid=uuid.uuid4(),
             name="test_pathway",
             description="test_description",
             path=pathway_layer_path,
-            carbon_paths=[carbon_layer_path],
+            priority_layers=[],
         )
 
         test_layer = QgsRasterLayer(test_pathway.path, test_pathway.name)
@@ -69,8 +88,8 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         )
 
         analysis_task = ScenarioAnalysisTask(
-            "test_scenario_pathways_normalization",
-            "test_scenario_pathways_normalization_description",
+            "test_scenario_pathways_weighting",
+            "test_scenario_pathways_weighting_description",
             [test_activity],
             [],
             test_layer.extent(),
@@ -98,16 +117,16 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         analysis_task.scenario_directory = scenario_directory
 
         settings_manager.set_value(Settings.BASE_DIR, base_dir)
-        settings_manager.set_value(Settings.PATHWAY_SUITABILITY_INDEX, 1.0)
-        settings_manager.set_value(Settings.CARBON_COEFFICIENT, 1.0)
+        settings_manager.set_value(Settings.PATHWAY_SUITABILITY_INDEX, 0.5)
 
         past_stat = test_layer.dataProvider().bandStatistics(1)
 
         self.assertEqual(past_stat.minimumValue, 1.0)
         self.assertEqual(past_stat.maximumValue, 10.0)
 
-        results = analysis_task.run_pathways_normalization(
+        results = analysis_task.run_pathways_weighting(
             [test_activity],
+            [test_priority_group],
             extent_string,
             temporary_output=True,
         )
@@ -118,8 +137,8 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         stat = result_layer.dataProvider().bandStatistics(1)
 
-        self.assertEqual(stat.minimumValue, 0.0)
-        self.assertEqual(stat.maximumValue, 2.0)
+        self.assertEqual(stat.minimumValue, 0.5)
+        self.assertEqual(stat.maximumValue, 5.0)
 
     def test_scenario_activities_creation(self):
         pathway_layer_directory = os.path.join(
@@ -206,7 +225,6 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         settings_manager.set_value(Settings.BASE_DIR, base_dir)
         settings_manager.set_value(Settings.PATHWAY_SUITABILITY_INDEX, 1.0)
-        settings_manager.set_value(Settings.CARBON_COEFFICIENT, 1.0)
 
         first_layer_stat = first_test_layer.dataProvider().bandStatistics(1)
         second_layer_stat = second_test_layer.dataProvider().bandStatistics(1)

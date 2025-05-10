@@ -1547,13 +1547,22 @@ class ScenarioAnalysisTask(QgsTask):
         files
         :type temporary_output: bool
 
-        :returns: True if the task operations was successful else False.
+        :returns: True if the task operation was successfully completed else False.
         :rtype: bool
         """
         if self.processing_cancelled:
             return False
 
         self.set_status_message(tr(f"Weighting of pathways"))
+
+        if len(activities) == 0:
+            msg = tr(f"No defined activities for running pathways weighting.")
+            self.set_info_message(
+                msg,
+                level=Qgis.Critical,
+            )
+            self.log_message(msg)
+            return False
 
         # Get valid pathways
         pathways = []
