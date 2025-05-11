@@ -800,7 +800,7 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
         :returns: All activities in the model.
         :rtype: typing.List[Activity]
         """
-        return [self.item(r, 0).pathway for r in range(self.rowCount())]
+        return [self.item(r, 0).activity for r in range(self.rowCount())]
 
     def move_column(
         self, current_index: int, direction: HorizontalMoveDirection

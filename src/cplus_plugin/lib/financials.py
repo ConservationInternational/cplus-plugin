@@ -198,29 +198,50 @@ def create_npv_pwls(
     return results
 
 
-def calculate_ncs_pathway_npv(pathway_id: str, pathway_area: float) -> float:
-    """Calculates the NPV of an NCS pathway.
+def calculate_activity_npv(activity_id: str, pathway_area: float) -> float:
+    """Determines the total NPV of an activity by calculating
+    the individual NPV of the NCS pathways that constitute
+    the activity.
 
-    The NPV per hectare is derived from the saved value
-    in the settings defined through the NPV PWL Manager.
+    The NPV per hectare for an NCS pathway is determined based
+    on the value specified in the NPV PWL Manager.
 
-    :param pathway_id: The ID of the specific NCS pathway. The
-    function will check whether the NPV rate had been defined.
-    :type pathway_id: str
+    :param activity_id: The ID of the specific activity. The
+    function will check whether the NPV rate had been defined
+    for pathways that constitute the activity.
+    :type activity_id: str
 
-    :param pathway_area: The area of an NCS pathway in hectares.
+    :param pathway_area: The area of the activity in hectares.
     :type pathway_area: float
 
-    :returns: Returns the total NPV for an NCS pathway
-    or -1.0 if the NPV rate has not yet been specified in settings.
+    :returns: Returns the total NPV of the activity, or -1.0
+    if the activity does not exist or if found, lacks pathways
+    or if the NPV rate for all pathways has not been specified.
     :rtype: float
     """
+    activity = settings_manager.get_activity(activity_id)
+    if activity is None:
+        return -1.0
+
+    if len(activity.pathways) == 0:
+        return -1.0
+
     npv_collection = settings_manager.get_npv_collection()
     if npv_collection is None:
         return -1.0
 
-    pathway_npv = npv_collection.pathway_npv(pathway_id)
-    if pathway_npv is None:
+    pathway_npv_values = []
+    for pathway in activity.pathways:
+        pathway_npv = npv_collection.pathway_npv(str(pathway.uuid))
+        if pathway_npv is None:
+            continue
+
+        if pathway_npv.params is None or pathway_npv.params.absolute_npv is None:
+            continue
+
+        pathway_npv_values.append(pathway_npv.params.absolute_npv)
+
+    if len(pathway_npv_values) == 0:
         return -1.0
 
-    return pathway_npv.params.absolute_npv * pathway_area
+    return float(sum(pathway_npv_values) * pathway_area)
