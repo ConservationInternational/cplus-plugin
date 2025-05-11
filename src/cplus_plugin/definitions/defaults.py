@@ -250,7 +250,7 @@ NPV_EXPRESSION_DESCRIPTION = (
     "activity. This returns the equivalent of the "
     "area of the current activity (in hectares) "
     "and multiplies it by the NPV rate (US$/ha) "
-    "for each pathway that constitutes an activity. "
+    "for each pathway that constitutes the activity. "
     "The NPV pathways are those defined via the NPV PWL "
     "Manager.<br><b>NOTE: If the NPV is not defined "
     "then the function will return -1.0.</b>"
