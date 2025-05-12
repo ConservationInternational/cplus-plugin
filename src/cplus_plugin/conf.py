@@ -1124,6 +1124,19 @@ class SettingsManager(QtCore.QObject):
         default_layers_root = self._get_default_layers_settings_base()
         self.remove(default_layers_root)
 
+    def remove_default_layer(self, layer: dict):
+        """Remove default layer from settings.
+        :param layer: layer to be removed
+        :type layer: dict
+        """
+        layer_type = layer.get("type")
+        layer_uuid = layer.get("layer_uuid")
+        default_layers = self.get_default_layers(layer_type)
+        layers_to_save = [
+            lyr for lyr in default_layers if lyr["layer_uuid"] != layer_uuid
+        ]
+        self.save_default_layers(layer_type, layers_to_save)
+
     def _get_ncs_pathway_settings_base(self) -> str:
         """Returns the path for NCS pathway settings.
 
