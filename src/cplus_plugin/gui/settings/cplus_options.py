@@ -527,6 +527,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         # Global priority weighted layers
         download_icon = FileUtils.get_icon("downloading_svg.svg")
         self.btn_download_pwl.setIcon(download_icon)
+        self.btn_download_pwl.setEnabled(False)
         self.btn_download_pwl.clicked.connect(self._on_download_pwl_layer)
 
         self.btn_add_pwl.setIcon(add_icon)
@@ -1317,6 +1318,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
     def priority_layers_changed(self):
         contains_items = len(self.default_priority_layers) > 0
+        self.btn_download_pwl.setEnabled(contains_items)
         self.btn_edit_pwl.setEnabled(contains_items)
         self.btn_delete_pwl.setEnabled(contains_items)
 
