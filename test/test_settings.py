@@ -23,7 +23,6 @@ class CplusPluginSettingsTest(unittest.TestCase):
         settings_dialog = CplusSettings(PARENT)
 
         save_base_dir = "base directory"
-        carbon_coefficient = 0.1
         pathway_suitability_index = 1.5
 
         irrecoverable_carbon_local_path = "reference_irrecoverable_carbon_local"
@@ -34,7 +33,6 @@ class CplusPluginSettingsTest(unittest.TestCase):
         # Sets the values in the GUI
         settings_dialog.folder_data.setFilePath(save_base_dir)
 
-        settings_dialog.carbon_coefficient_box.setValue(carbon_coefficient)
         settings_dialog.suitability_index_box.setValue(pathway_suitability_index)
 
         settings_dialog.fw_irrecoverable_carbon.setFilePath(
@@ -52,9 +50,6 @@ class CplusPluginSettingsTest(unittest.TestCase):
         # Checks if the settings were correctly saved
         base_dir = settings_manager.get_value(Settings.BASE_DIR)
         self.assertEqual(save_base_dir, base_dir)
-
-        carbon_coefficient_val = settings_manager.get_value(Settings.CARBON_COEFFICIENT)
-        self.assertEqual(carbon_coefficient, carbon_coefficient_val)
 
         pathway_suitability_index_val = settings_manager.get_value(
             Settings.PATHWAY_SUITABILITY_INDEX
@@ -85,7 +80,6 @@ class CplusPluginSettingsTest(unittest.TestCase):
         settings_dialog = CplusSettings(PARENT)
 
         save_base_dir = "base directory 2"
-        save_carbon_coefficient = 0.1
         save_pathway_suitability_index = 1.5
 
         irrecoverable_carbon_local_path = "reference_irrecoverable_carbon_local"
@@ -96,7 +90,6 @@ class CplusPluginSettingsTest(unittest.TestCase):
         # Set all values for testing
         settings_manager.set_value(Settings.BASE_DIR, save_base_dir)
 
-        settings_manager.set_value(Settings.CARBON_COEFFICIENT, save_carbon_coefficient)
         settings_manager.set_value(
             Settings.PATHWAY_SUITABILITY_INDEX, save_pathway_suitability_index
         )
@@ -121,9 +114,6 @@ class CplusPluginSettingsTest(unittest.TestCase):
         # Tests if the values were loaded correctly
         base_dir_path = settings_dialog.folder_data.filePath()
         self.assertEqual(save_base_dir, base_dir_path)
-
-        carbon_coefficient = settings_dialog.carbon_coefficient_box.value()
-        self.assertEqual(save_carbon_coefficient, carbon_coefficient)
 
         pathway_suitability_index = settings_dialog.suitability_index_box.value()
         self.assertEqual(save_pathway_suitability_index, pathway_suitability_index)
