@@ -50,3 +50,43 @@ class FetchDefaultLayerTask(QgsTask):
         """
         for key, layers in result.items():
             settings_manager.save_default_layers(key, layers)
+
+
+class DeleteDefaultLayerTask(QgsTask):
+    """Qgs task for deleting default layer."""
+
+    task_finished = QtCore.pyqtSignal(object)
+
+    def __init__(self, layer: dict):
+        """Initialize the task with the layer.
+        :param layer: Layer dictionary containing layer details
+        :type layer: dict
+        """
+        super().__init__()
+        self.layer = layer
+        self.request = CplusApiRequest()
+        self.result = {self.layer.get("layer_uuid"): False}
+
+    def run(self):
+        """Execute the task logic.
+        :return: True if task runs successfully
+        :rtype: bool
+        """
+        try:
+            self.result[self.layer.get("layer_uuid")] = self.request.delete_layer(
+                self.layer.get("layer_uuid")
+            )
+            return True
+        except Exception as ex:
+            log(f"Error deleting default layer: {ex}", info=False)
+            return False
+
+    def finished(self, is_success):
+        """Handler when task has been executed.
+        :param is_success: True if task runs successfully.
+        :type is_success: bool
+        """
+        if is_success:
+            settings_manager.remove_default_layer(self.layer)
+
+        self.task_finished.emit(is_success)
