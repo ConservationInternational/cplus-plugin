@@ -172,10 +172,11 @@ def clean_filename(filename):
     return filename
 
 
-def calculate_raster_value_area(
+def calculate_raster_area_by_pixel_value(
     layer: QgsRasterLayer, band_number: int = 1, feedback: QgsProcessingFeedback = None
 ) -> dict:
-    """Calculates the area of value pixels for the given band in a raster layer.
+    """Calculates the area of value pixels for the given band in a raster layer and
+    groups the area by the pixel value.
 
     Please note that this function will run in the main application thread hence
     for best results, it is recommended to execute it in a background process
@@ -243,6 +244,44 @@ def calculate_raster_value_area(
         pixel_areas[pixel_value] = pixel_value_area
 
     return pixel_areas
+
+
+def calculate_raster_area(
+    layer: QgsRasterLayer, band_number: int = 1, feedback: QgsProcessingFeedback = None
+) -> float:
+    """Calculates the area of value pixels for the given band in a raster layer.
+
+    Please note that this function will run in the main application thread hence
+    for best results, it is recommended to execute it in a background process
+    if part of a bigger workflow.
+
+    :param layer: Input layer whose area for value pixels is to be calculated.
+    :type layer: QgsRasterLayer
+
+    :param band_number: Band number to compute area, default is band one.
+    :type band_number: int
+
+    :param feedback: Feedback object for progress during area calculation.
+    :type feedback: QgsProcessingFeedback
+
+    :returns: The total area of value pixels of the raster else -1 if the raster
+    is invalid or if it is empty. Pixels with NoData value are not included
+    in the computation.
+    :rtype: float
+    """
+    area_by_pixel_value = calculate_raster_area_by_pixel_value(
+        layer, band_number, feedback
+    )
+    if len(area_by_pixel_value) == 0:
+        return -1.0
+
+    # Remove NoData pixels from the computation, just in case.
+    if layer.dataProvider().sourceHasNoDataValue(band_number):
+        no_data_value = layer.dataProvider().sourceNoDataValue(band_number)
+        if no_data_value in area_by_pixel_value:
+            del area_by_pixel_value[no_data_value]
+
+    return float(sum(area_by_pixel_value.values()))
 
 
 def generate_random_color() -> QtGui.QColor:

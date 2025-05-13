@@ -259,10 +259,11 @@ NPV_EXPRESSION_DESCRIPTION = (
 PWL_IMPACT_EXPRESSION_DESCRIPTION = (
     "Calculates the impact of the "
     "current activity by multiplying "
-    "the area of the activity (in hectares) "
-    "by a user-defined number of jobs created per "
-    "hectare. The activity area will be "
-    "automatically populated during the computation."
+    "the area of the NCS pathways (in hectares) of "
+    "the current activity by a user-defined number "
+    "of jobs created per hectare. The area of the NCS "
+    "pathways in the activity will be automatically "
+    "populated during the computation."
 )
 
 MEAN_BASED_IRRECOVERABLE_CARBON_EXPRESSION_DESCRIPTION = (

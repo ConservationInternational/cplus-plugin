@@ -198,7 +198,7 @@ def create_npv_pwls(
     return results
 
 
-def calculate_activity_npv(activity_id: str, pathway_area: float) -> float:
+def calculate_activity_npv(activity_id: str, activity_area: float) -> float:
     """Determines the total NPV of an activity by calculating
     the individual NPV of the NCS pathways that constitute
     the activity.
@@ -211,8 +211,8 @@ def calculate_activity_npv(activity_id: str, pathway_area: float) -> float:
     for pathways that constitute the activity.
     :type activity_id: str
 
-    :param pathway_area: The area of the activity in hectares.
-    :type pathway_area: float
+    :param activity_area: The area of the activity in hectares.
+    :type activity_area: float
 
     :returns: Returns the total NPV of the activity, or -1.0
     if the activity does not exist or if found, lacks pathways
@@ -244,4 +244,4 @@ def calculate_activity_npv(activity_id: str, pathway_area: float) -> float:
     if len(pathway_npv_values) == 0:
         return -1.0
 
-    return float(sum(pathway_npv_values) * pathway_area)
+    return float(sum(pathway_npv_values) * activity_area)
