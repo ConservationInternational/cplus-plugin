@@ -251,6 +251,9 @@ def calculate_raster_area(
 ) -> float:
     """Calculates the area of value pixels for the given band in a raster layer.
 
+    This varies from 'calculate_raster_area_by_pixel_value' in that it
+    gives the total area instead of grouping by pixel value.
+
     Please note that this function will run in the main application thread hence
     for best results, it is recommended to execute it in a background process
     if part of a bigger workflow.
@@ -275,7 +278,8 @@ def calculate_raster_area(
     if len(area_by_pixel_value) == 0:
         return -1.0
 
-    # Remove NoData pixels from the computation, just in case.
+    # Remove NoData pixels from the computation, just in case the process
+    # calculation might have sneaked it in.
     if layer.dataProvider().sourceHasNoDataValue(band_number):
         no_data_value = layer.dataProvider().sourceNoDataValue(band_number)
         if no_data_value in area_by_pixel_value:
