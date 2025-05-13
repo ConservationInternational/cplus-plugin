@@ -280,7 +280,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
         )
 
-
         self.highest_position.setChecked(
             settings_manager.get_value(
                 Settings.HIGHEST_POSITION, default=False, setting_type=bool
