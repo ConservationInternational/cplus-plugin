@@ -65,8 +65,7 @@ from ..api.request import JOB_RUNNING_STATUS, JOB_COMPLETED_STATUS
 from ..definitions.constants import (
     ACTIVITY_GROUP_LAYER_NAME,
     ACTIVITY_IDENTIFIER_PROPERTY,
-    ACTIVITY_WEIGHTED_GROUP_NAME,
-    NCS_PATHWAYS_GROUP_LAYER_NAME,
+    NCS_PATHWAYS_WEIGHTED_GROUP_LAYER_NAME,
     USER_DEFINED_ATTRIBUTE,
 )
 
@@ -164,10 +163,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.pwl_item_flags = None
 
         # Step 4
-        self.ncs_with_carbon.toggled.connect(self.outputs_options_changed)
+        self.ncs_pwl_weighted.toggled.connect(self.outputs_options_changed)
         self.landuse_project.toggled.connect(self.outputs_options_changed)
-        self.landuse_normalized.toggled.connect(self.outputs_options_changed)
-        self.landuse_weighted.toggled.connect(self.outputs_options_changed)
         self.highest_position.toggled.connect(self.outputs_options_changed)
         self.processing_type.toggled.connect(self.processing_options_changed)
         self.chb_metric_builder.toggled.connect(self.on_use_custom_metrics)
@@ -249,16 +246,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
 
         settings_manager.set_value(
-            Settings.NCS_WITH_CARBON, self.ncs_with_carbon.isChecked()
+            Settings.NCS_WEIGHTED, self.ncs_pwl_weighted.isChecked()
         )
         settings_manager.set_value(
             Settings.LANDUSE_PROJECT, self.landuse_project.isChecked()
-        )
-        settings_manager.set_value(
-            Settings.LANDUSE_NORMALIZED, self.landuse_normalized.isChecked()
-        )
-        settings_manager.set_value(
-            Settings.LANDUSE_WEIGHTED, self.landuse_weighted.isChecked()
         )
         settings_manager.set_value(
             Settings.HIGHEST_POSITION, self.highest_position.isChecked()
@@ -277,25 +268,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         update the releated ui components
         """
 
-        self.ncs_with_carbon.setChecked(
+        self.ncs_pwl_weighted.setChecked(
             settings_manager.get_value(
-                Settings.NCS_WITH_CARBON, default=False, setting_type=bool
-            )
-        )
-        self.landuse_project.setChecked(
-            settings_manager.get_value(
-                Settings.LANDUSE_PROJECT, default=False, setting_type=bool
-            )
-        )
-        self.landuse_normalized.setChecked(
-            settings_manager.get_value(
-                Settings.LANDUSE_NORMALIZED, default=False, setting_type=bool
+                Settings.NCS_WEIGHTED, default=False, setting_type=bool
             )
         )
 
-        self.landuse_weighted.setChecked(
+        self.landuse_project.setChecked(
             settings_manager.get_value(
-                Settings.LANDUSE_WEIGHTED, default=False, setting_type=bool
+                Settings.LANDUSE_PROJECT, default=False, setting_type=bool
             )
         )
 
@@ -1199,10 +1180,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         activities = []
         priority_layer_groups = []
-        weighted_activities = []
 
         if self.scenario_result:
-            weighted_activities = self.scenario_result.scenario.weighted_activities
             activities = self.scenario_result.scenario.activities
             priority_layer_groups = self.scenario_result.scenario.priority_layer_groups
 
@@ -1212,7 +1191,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             description=scenario_description,
             extent=extent,
             activities=activities,
-            weighted_activities=weighted_activities,
             priority_layer_groups=priority_layer_groups,
             server_uuid=(
                 self.scenario_result.scenario.server_uuid
@@ -1280,13 +1258,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 )
 
         all_activities = sorted(
-            scenario.weighted_activities,
+            scenario.activities,
             key=lambda activity_instance: activity_instance.style_pixel_value,
         )
         for index, activity in enumerate(all_activities):
             activity.style_pixel_value = index + 1
 
-        scenario.weighted_activities = all_activities
+        scenario.activities = all_activities
 
         if scenario and scenario.server_uuid:
             self.analysis_scenario_name = scenario.name
@@ -1301,7 +1279,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 description=self.analysis_scenario_description,
                 extent=self.analysis_extent,
                 activities=self.analysis_activities,
-                weighted_activities=scenario.weighted_activities,
                 priority_layer_groups=self.analysis_priority_layers_groups,
             )
             scenario_obj.server_uuid = scenario.server_uuid
@@ -1402,13 +1379,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 continue
 
             all_activities = sorted(
-                scenario.weighted_activities,
+                scenario.activities,
                 key=lambda activity_instance: activity_instance.style_pixel_value,
             )
             for index, activity in enumerate(all_activities):
                 activity.style_pixel_value = index + 1
 
-            scenario.weighted_activities = all_activities
+            scenario.activities = all_activities
 
             scenario_result.scenario = scenario
             scenario_results.append(scenario_result)
@@ -1718,7 +1695,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 description=self.analysis_scenario_description,
                 extent=self.analysis_extent,
                 activities=self.analysis_activities,
-                weighted_activities=[],
                 priority_layer_groups=self.analysis_priority_layers_groups,
             )
 
@@ -1987,31 +1963,21 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if not self.processing_cancelled and scenario_result is not None:
             list_activities = scenario_result.scenario.activities
             if task is not None:
-                weighted_activities = task.analysis_weighted_activities
+                activities = task.analysis_activities
             elif scenario_result.scenario is not None:
-                weighted_activities = scenario_result.scenario.weighted_activities
+                activities = scenario_result.scenario.activities
             else:
-                weighted_activities = []
+                activities = []
             raster = scenario_result.analysis_output["OUTPUT"]
-            im_weighted_dir = os.path.join(
-                os.path.dirname(raster), "weighted_activities"
-            )
+            activities_dir = os.path.join(os.path.dirname(raster), "activities")
 
             # Layer options
-            load_ncs = settings_manager.get_value(
-                Settings.NCS_WITH_CARBON, default=True, setting_type=bool
+            load_weighted_ncs = settings_manager.get_value(
+                Settings.NCS_WEIGHTED, default=True, setting_type=bool
             )
             load_landuse = settings_manager.get_value(
                 Settings.LANDUSE_PROJECT, default=True, setting_type=bool
             )
-            load_landuse_normalized = settings_manager.get_value(
-                Settings.LANDUSE_NORMALIZED, default=True, setting_type=bool
-            )
-
-            load_landuse_weighted = settings_manager.get_value(
-                Settings.LANDUSE_WEIGHTED, default=False, setting_type=bool
-            )
-
             load_highest_position = settings_manager.get_value(
                 Settings.HIGHEST_POSITION, default=False, setting_type=bool
             )
@@ -2036,29 +2002,20 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             # Groups
             activity_group = None
-            activity_weighted_group = None
+            pathways_group = None
 
             scenario_group = instance_root.insertGroup(0, group_name)
             if load_landuse:
                 activity_group = scenario_group.addGroup(tr(ACTIVITY_GROUP_LAYER_NAME))
-            if load_landuse_weighted:
-                activity_weighted_group = (
-                    scenario_group.addGroup(tr(ACTIVITY_WEIGHTED_GROUP_NAME))
-                    if os.path.exists(im_weighted_dir)
-                    else None
-                )
-            if load_ncs:
+            if load_weighted_ncs:
                 pathways_group = scenario_group.addGroup(
-                    tr(NCS_PATHWAYS_GROUP_LAYER_NAME)
+                    tr(NCS_PATHWAYS_WEIGHTED_GROUP_LAYER_NAME)
                 )
                 pathways_group.setExpanded(False)
                 pathways_group.setItemVisibilityCheckedRecursive(False)
 
             # Group settings
             activity_group.setExpanded(False) if activity_group else None
-            activity_weighted_group.setExpanded(
-                False
-            ) if activity_weighted_group else None
 
             # Add scenario result layer to the canvas with styling
             layer_file = scenario_result.analysis_output.get("OUTPUT")
@@ -2088,7 +2045,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             scenario_layer = qgis_instance.addMapLayer(layer)
 
             # Scenario result layer styling
-            renderer = self.style_activities_layer(layer, weighted_activities)
+            renderer = self.style_activities_layer(layer, activities)
             layer.setRenderer(renderer)
             layer.triggerRepaint()
 
@@ -2119,10 +2076,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                         activity_layer.setRenderer(renderer)
                         activity_layer.triggerRepaint()
+
                     # Add activity pathways
-                    if load_ncs:
+                    if load_weighted_ncs:
                         if len(list_pathways) > 0:
-                            # im_pathway_group = pathways_group.addGroup(im_name)
                             activity_pathway_group = pathways_group.insertGroup(
                                 activity_index, activity_name
                             )
@@ -2163,40 +2120,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                     activity_index = activity_index + 1
 
-            if load_landuse_weighted:
-                for weighted_activity in weighted_activities:
-                    weighted_activity_path = weighted_activity.path
-                    weighted_activity_name = Path(weighted_activity_path).stem
-
-                    if not weighted_activity_path.endswith(".tif"):
-                        continue
-
-                    activity_weighted_layer = QgsRasterLayer(
-                        weighted_activity_path,
-                        weighted_activity_name,
-                        QGIS_GDAL_PROVIDER,
-                    )
-
-                    # Set UUID for easier retrieval
-                    activity_weighted_layer.setCustomProperty(
-                        ACTIVITY_IDENTIFIER_PROPERTY, str(weighted_activity.uuid)
-                    )
-
-                    renderer = self.style_activity_layer(
-                        activity_weighted_layer, weighted_activity
-                    )
-                    activity_weighted_layer.setRenderer(renderer)
-                    activity_weighted_layer.triggerRepaint()
-
-                    added_im_weighted_layer = qgis_instance.addMapLayer(
-                        activity_weighted_layer
-                    )
-                    self.move_layer_to_group(
-                        added_im_weighted_layer, activity_weighted_group
-                    )
-
             # Initiate report generation
-            if load_landuse_weighted and load_highest_position:
+            if load_landuse and load_highest_position:
                 self.run_report(progress_dialog, report_manager) if (
                     progress_dialog is not None and report_manager is not None
                 ) else None

@@ -49,9 +49,7 @@ class ScenarioComparisonTableInfo(QtCore.QObject):
         # pixel value with the corresponding name
         for result in self._scenario_results:
             name_pixel_mapping = {}
-            for pixel_value, activity in enumerate(
-                result.scenario.weighted_activities, 1
-            ):
+            for pixel_value, activity in enumerate(result.scenario.activities, 1):
                 activity_info = (str(activity.uuid), activity.name)
                 name_pixel_mapping[pixel_value] = activity.name
                 if activity_info in self._activity_header_info:
@@ -159,8 +157,7 @@ class ScenarioComparisonTableInfo(QtCore.QObject):
                 msg = "No activity areas from the calculation"
                 log(msg)
 
-            row_data = []
-            row_data.append(QgsTableCell(result.scenario.name))
+            row_data = [QgsTableCell(result.scenario.name)]
             for header_info in self._activity_header_info:
                 activity_name = header_info[1]
                 if activity_name in activity_name_area_info:
