@@ -65,6 +65,8 @@ from ...definitions.defaults import (
     MINIMUM_ITEM_HEIGHT,
     MINIMUM_ITEM_WIDTH,
     PRIORITY_GROUP_WEIGHT_TABLE_ID,
+    REPORT_COLOR_RAINFOREST,
+    REPORT_COLOR_TREEFOG,
 )
 from .layout_items import BasicScenarioDetailsItem, CplusMapRepeatItem
 from .metrics import create_metrics_expression_context, evaluate_activity_metric
@@ -1366,7 +1368,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         im_shape.attemptMove(shape_ref_point, True, False, page)
         im_shape.attemptResize(QgsLayoutSize(width, shape_height, self._layout.units()))
         symbol_props = {
-            "color": "#b2df8a",
+            "color": REPORT_COLOR_TREEFOG,
             "style": "solid",
             "outline_style": "no",
             "line_color": "#000000",
@@ -1393,7 +1395,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             "color": "255,255,255,179",
             "style": "solid",
             "outline_style": "solid",
-            "line_color": "#b2df8a",
+            "line_color": REPORT_COLOR_TREEFOG,
             "outline_width": "1.2",
         }
         symbol = QgsFillSymbol.createSimple(symbol_props_area)
