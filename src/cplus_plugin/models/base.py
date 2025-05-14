@@ -309,7 +309,6 @@ class NcsPathwayType(IntEnum):
 class NcsPathway(LayerModelComponent):
     """Contains information about an NCS pathway layer."""
 
-    carbon_paths: typing.List[str] = dataclasses.field(default_factory=list)
     pathway_type: NcsPathwayType = NcsPathwayType.UNDEFINED
     priority_layers: typing.List[typing.Dict] = dataclasses.field(default_factory=list)
 
@@ -336,73 +335,6 @@ class NcsPathway(LayerModelComponent):
             return False
 
         if self.user_defined != other.user_defined:
-            return False
-
-        return True
-
-    def add_carbon_path(self, carbon_path: str, is_default_layer: bool = False) -> bool:
-        """Add a carbon layer path.
-
-        Checks if the path has already been defined or if it exists
-        in the file system.
-
-        :returns: True if the carbon layer path was successfully
-        added, else False if the path has already been defined
-        or does not exist in the file system.
-        :rtype: bool
-        """
-        if carbon_path in self.carbon_paths:
-            return False
-
-        if not is_default_layer:
-            if not os.path.exists(carbon_path):
-                return False
-
-        self.carbon_paths.append(carbon_path)
-
-        return True
-
-    def carbon_layers(self) -> typing.List[QgsRasterLayer]:
-        """Returns the list of carbon layers whose path is defined under
-        the :py:attr:`~carbon_paths` attribute.
-
-        The caller should check the validity of the layers or use
-        :py:meth:`~is_carbon_valid` function.
-
-        :returns: Carbon layers for the NCS pathway or an empty list
-        if the path is not defined.
-        :rtype: list
-        """
-        return [
-            QgsRasterLayer(carbon_path)
-            for carbon_path in self.carbon_paths
-            if not carbon_path.startswith("cplus://")
-        ]
-
-    def is_carbon_valid(self) -> bool:
-        """Checks if the carbon layers are valid.
-
-        :returns: True if all carbon layers are valid, else False if
-        even one is invalid. If there are no carbon layers defined, it will
-        always return True.
-        :rtype: bool
-        """
-        is_valid = True
-        for cl in self.carbon_layers():
-            if not cl.isValid():
-                is_valid = False
-                break
-
-        return is_valid
-
-    def is_valid(self) -> bool:
-        """Additional check to include validity of carbon layers."""
-        valid = super().is_valid()
-        if not valid:
-            return False
-
-        carbon_valid = self.is_carbon_valid()
-        if not carbon_valid:
             return False
 
         return True
@@ -458,7 +390,6 @@ class Activity(LayerModelComponent):
         pathways = []
         for pathway in activity_dict["pathways"]:
             del pathway["layer_uuid"]
-            del pathway["carbon_uuids"]
             pathways.append(NcsPathway(**pathway))
         activity_dict["pathways"] = pathways
         # delete mask_uuids using pop
