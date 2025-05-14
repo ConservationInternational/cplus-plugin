@@ -2122,11 +2122,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             # Initiate report generation
             if load_landuse and load_highest_position:
-                pass
-                # self.run_report(progress_dialog, report_manager) if (
-                #     progress_dialog is not None and report_manager is not None
-                # ) else None
-            if load_landuse and load_highest_position:
                 self.run_report(progress_dialog, report_manager) if (
                     progress_dialog is not None and report_manager is not None
                 ) else None
