@@ -436,10 +436,7 @@ def calculate_activity_pwl_impact(activity_id: str, number_jobs: float) -> float
     :rtype: float
     """
     activity = settings_manager.get_activity(activity_id)
-    if activity is None:
-        return -1.0
-
-    if len(activity.pathways) == 0:
+    if activity is None or len(activity.pathways) == 0:
         return -1.0
 
     pathway_areas = []

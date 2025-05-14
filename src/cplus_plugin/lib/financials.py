@@ -220,10 +220,7 @@ def calculate_activity_npv(activity_id: str, activity_area: float) -> float:
     :rtype: float
     """
     activity = settings_manager.get_activity(activity_id)
-    if activity is None:
-        return -1.0
-
-    if len(activity.pathways) == 0:
+    if activity is None or len(activity.pathways) == 0:
         return -1.0
 
     npv_collection = settings_manager.get_npv_collection()
