@@ -2372,11 +2372,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     if pathway.path.startswith("cplus://"):
                         is_online_processing = True
                         break
-                    else:
-                        for carbon_path in pathway.carbon_paths:
-                            if carbon_path.startswith("cplus://"):
-                                is_online_processing = True
-                                break
 
             priority_layers = settings_manager.get_priority_layers()
             for priority_layer in priority_layers:

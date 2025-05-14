@@ -201,7 +201,7 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         layer = self._get_selected_map_layer()
         default_layer = self._get_selected_default_layer()
-        if layer is None and default_layer is None:
+        if layer is None and len(default_layer) == 0:
             msg = tr("Map layer not specified.")
             self._show_warning_message(msg)
             status = False
