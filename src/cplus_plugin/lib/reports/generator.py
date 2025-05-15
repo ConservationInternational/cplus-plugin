@@ -65,7 +65,6 @@ from ...definitions.defaults import (
     MINIMUM_ITEM_HEIGHT,
     MINIMUM_ITEM_WIDTH,
     PRIORITY_GROUP_WEIGHT_TABLE_ID,
-    REPORT_COLOR_RAINFOREST,
     REPORT_COLOR_TREEFOG,
 )
 from .layout_items import BasicScenarioDetailsItem, CplusMapRepeatItem
