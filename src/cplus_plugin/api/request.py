@@ -978,6 +978,8 @@ class CplusApiRequest:
                 "filename": layer.get("filename"),
                 "created_on": layer.get("created_on"),
                 "url": layer.get("url"),
+                "version": layer.get("version"),
+                "license": layer.get("license"),
             }
             if component_type in data:
                 data[component_type].append(out_layer)
