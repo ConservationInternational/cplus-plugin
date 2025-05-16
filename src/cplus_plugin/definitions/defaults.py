@@ -148,7 +148,11 @@ MINIMUM_ITEM_WIDTH = 100
 MINIMUM_ITEM_HEIGHT = 100
 
 # Report font
-REPORT_FONT_NAME = "Ubuntu"
+REPORT_FONT_NAME = "Proxima Nova"
+
+# Report colours
+REPORT_COLOR_TREEFOG = "#bad636"
+REPORT_COLOR_RAINFOREST = "#357d57"
 
 # Activity character limits
 MAX_ACTIVITY_NAME_LENGTH = 50
@@ -168,7 +172,7 @@ METRICS_PAGE_NUMBER = "metrics_page_number"
 METRICS_ACCREDITATION = "metrics_accreditation_text"
 
 
-# Initiliazing the plugin default data as found in the data directory
+# Initializing the plugin default data as found in the data directory
 priority_layer_path = (
     Path(__file__).parent.parent.resolve()
     / "data"
