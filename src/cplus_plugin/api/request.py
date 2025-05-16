@@ -550,6 +550,31 @@ class CplusApiRequest:
         self._make_request(reply)
         return self._handle_response(url, reply)
 
+    def patch(
+        self, url: str, data: typing.Union[dict, list], headers: dict = {}
+    ) -> typing.Tuple[dict, int]:
+        """Trigger a PATCH request.
+
+        :param url: Cplus API URL
+        :type url: str
+
+        :param data: API payload
+        :type data: typing.Union[dict, list]
+
+        :param headers: header dictionary, defaults to {}
+        :type headers: dict
+
+        :return: tuple of response dictionary and HTTP status code
+        :rtype: typing.Tuple[dict, int]
+        """
+        nam = QgsNetworkAccessManager.instance()
+        headers = headers or self._default_headers()
+        request = self._generate_request(url, headers)
+        json_data = self._get_request_payload(data)
+        reply = nam.sendCustomRequest(request, b"PATCH", json_data)
+        self._make_request(reply)
+        return self._handle_response(url, reply)
+
     def delete(self, url: str, headers: dict = {}) -> typing.Tuple[dict, int]:
         """Trigger a DELETE request.
 
@@ -862,6 +887,25 @@ class CplusApiRequest:
         if status_code != 204:
             raise CplusApiRequestError(result.get("detail", ""))
         return True
+
+    def update_layer_properties(self, layer_uuid: str, properties: dict):
+        """Update layer properties.
+
+        :param layer_uuid: Layer UUID
+        :type layer_uuid: str
+
+        :param properties: properties to be updated
+        :type properties: dict
+
+        :raises CplusApiRequestError: Raises when server return non-204 code
+
+        :return: No content
+        :rtype: dictionary
+        """
+        result, status_code = self.patch(self.urls.layer_detail(layer_uuid), properties)
+        if status_code != 200:
+            raise CplusApiRequestError(result.get("detail", ""))
+        return result
 
     def submit_scenario_detail(self, scenario_detail: dict) -> str:
         """Submitting scenario JSON to Cplus API.
