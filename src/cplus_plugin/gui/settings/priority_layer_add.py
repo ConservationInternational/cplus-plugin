@@ -110,8 +110,6 @@ class DlgPriorityAddEdit(QtWidgets.QDialog, Ui_PwlDlgAddEdit):
 
         self.prepare_message_bar()
 
-        self.message_bar.hide()
-
     @property
     def privacy_type(self):
         if self.rb_private.isChecked():
@@ -307,7 +305,6 @@ class DlgPriorityAddEdit(QtWidgets.QDialog, Ui_PwlDlgAddEdit):
             log(f"Problem cancelling task, {e}")
 
         self.upload_cancelled = True
-        self.message_bar.hide()
 
     def uploading_finished(self):
         """Post-steps when uploading is finished."""
