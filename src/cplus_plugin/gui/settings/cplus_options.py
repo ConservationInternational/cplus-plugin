@@ -67,6 +67,8 @@ from ...trends_earth.constants import API_URL, TIMEOUT
 from ...utils import FileUtils, log, tr, convert_size
 from ...trends_earth import auth, api, download
 
+from .priority_layer_add import DlgPriorityAddEdit
+
 Ui_DlgSettings, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "../../ui/cplus_settings.ui")
 )
@@ -1260,8 +1262,8 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
     def _on_add_pwl_layer(self, activated: bool):
         """Slot raised to add a new PWL layer."""
-        pass
-        # TODO: Implement add a new layer to the default PWLs
+        dlg_pwl_add = DlgPriorityAddEdit(parent=self)
+        dlg_pwl_add.exec_()
 
     def _on_edit_pwl_layer(self, activated: bool):
         """Slot raised to edit a selected PWL layer."""
@@ -1270,7 +1272,8 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             error_tr = tr("Select a default layer first to edit.")
             self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return
-        # TODO: Implement edit the selected layer functionality
+        dlg_pwl_add = DlgPriorityAddEdit(parent=self, layer=selected_layer)
+        dlg_pwl_add.exec_()
 
     def _on_remove_pwl_layer(self, activated: bool):
         """Slot raised to remove a selected PWL layer."""
