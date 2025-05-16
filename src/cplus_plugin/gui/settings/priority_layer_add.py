@@ -131,29 +131,7 @@ class DlgPriorityAddEdit(QtWidgets.QDialog, Ui_PwlDlgAddEdit):
         self.message_bar.clearWidgets()
 
     def _on_add_edit_pwl(self):
-        if not self.txt_name.text():
-            QtWidgets.QMessageBox.critical(
-                None, self.tr("Error"), self.tr("Enter a name for the layer.")
-            )
-
-            return
-
-        # Only require the file path during the creation of a new layer
-        if (
-            self.layer.get("layer_uuid") is None
-            and not self.map_layer_file_widget.filePath()
-        ):
-            QtWidgets.QMessageBox.critical(
-                None, self.tr("Error"), self.tr("Enter a path to the layer.")
-            )
-
-            return
-
-        if not self.txt_description.toPlainText():
-            QtWidgets.QMessageBox.critical(
-                None, self.tr("Error"), self.tr("Enter a description for the layer.")
-            )
-
+        if not self.is_valid_layer():
             return
 
         self.upload_running = True
@@ -243,6 +221,34 @@ class DlgPriorityAddEdit(QtWidgets.QDialog, Ui_PwlDlgAddEdit):
             )
 
         return metadata
+
+    def is_valid_layer(self) -> bool:
+        """
+        Validates the required fields for adding or editing a priority weighted layer.
+
+        Returns:
+            bool: True if all required fields are valid, False otherwise.
+        """
+        # Check if the layer name is provided
+        if not self.txt_name.text().strip():
+            self.set_status_message(self.tr("Enter a name for the layer."), 1)
+            return False
+
+        # For new layers, ensure a file path is provided
+        if (
+            self.layer.get("layer_uuid") is None
+            and not self.map_layer_file_widget.filePath().strip()
+        ):
+            self.set_status_message(self.tr("Enter a path to the layer."), 1)
+            return False
+
+        # Check if the description is provided
+        if not self.txt_description.toPlainText().strip():
+            self.set_status_message(self.tr("Enter a description for the layer."))
+            return False
+
+        # TODO: Validate the Layer using the validation manager
+        return True
 
     def map_layer_changed(self, layer):
         """Sets the file path of the selected layer in file path input
