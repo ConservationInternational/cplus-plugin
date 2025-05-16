@@ -279,20 +279,28 @@ class CreateUpdateDefaultLayerTask(QgsTask):
             self.handle_upload_cancelled()
             return False
         else:
-            self.request.update_layer_properties(
-                self.layer_uuid,
-                {
-                    "name": self.name,
-                    "description": self.description,
-                    "version": self.version,
-                    "license": self.license,
-                    "component_type": self.component_type,
-                    "privacy_type": self.privacy_type,
-                },
-            )
-            self.progress = 100
-            self.setProgress(self.progress)
-            self.update_progress(100)
+            try:
+                self.request.update_layer_properties(
+                    self.layer_uuid,
+                    {
+                        "name": self.name,
+                        "description": self.description,
+                        "version": self.version,
+                        "license": self.license,
+                        "component_type": self.component_type,
+                        "privacy_type": self.privacy_type,
+                    },
+                )
+                self.progress = 100
+                self.setProgress(self.progress)
+                self.update_progress(100)
+            except Exception as e:
+                self.log_message(traceback.format_exc(), info=False)
+                err = f"Problem updating layer properties in the server: {e}\n"
+                self.log_message(err, info=False)
+                self.set_status_message(err, level=Qgis.Critical)
+                self.cancel_task(e)
+                return False
 
             # Update default layers in the settings
             self.set_status_message("Refreshing layers list")
