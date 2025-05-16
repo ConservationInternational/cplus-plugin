@@ -278,6 +278,7 @@ class DlgSettingsLogin(QtWidgets.QDialog, Ui_TrendsEarthDlgSettingsLogin):
             settings_manager.remove_default_layers()
             self.main_widget.fetch_default_layer_list()
             self.main_widget.fetch_scenario_history_list()
+            self.main_widget.enable_admin_components()
             self.ok = True
             self.close()
 
@@ -535,13 +536,16 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         self.btn_add_pwl.setIcon(add_icon)
         self.btn_add_pwl.clicked.connect(self._on_add_pwl_layer)
+        self.btn_add_pwl.hide()
 
         self.btn_delete_pwl.setIcon(remove_icon)
         self.btn_delete_pwl.setEnabled(False)
+        self.btn_delete_pwl.hide()
         self.btn_delete_pwl.clicked.connect(self._on_remove_pwl_layer)
 
         self.btn_edit_pwl.setIcon(edit_icon)
         self.btn_edit_pwl.setEnabled(False)
+        self.btn_edit_pwl.hide()
         self.btn_edit_pwl.clicked.connect(self._on_edit_pwl_layer)
 
         # Trends.Earth settings
@@ -611,6 +615,8 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         # self.reloadAuthConfigurations()
 
         self.trends_earth_api_client = api.APIClient(API_URL, TIMEOUT)
+
+        self.enable_admin_components()
 
     def apply(self) -> None:
         """This is called on OK click in the QGIS options panel."""
@@ -1551,6 +1557,19 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             QtCore.QSettings().setValue(
                 f"{settings_manager.BASE_GROUP_NAME}/{auth.TE_API_AUTH_SETUP.key}", None
             )
+
+    def enable_admin_components(self):
+        user = self.trends_earth_api_client.get_user()
+        if user:
+            self.pwl_layers_box.show()
+        else:
+            self.pwl_layers_box.hide()
+
+        # TODO: Check the role of the user. Show admin components based on roles
+        # if user.get("role") == "USER":
+        self.btn_add_pwl.show()
+        self.btn_edit_pwl.show()
+        self.btn_delete_pwl.show()
 
 
 class CplusOptionsFactory(QgsOptionsWidgetFactory):
