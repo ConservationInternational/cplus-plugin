@@ -808,7 +808,16 @@ class CplusApiRequest:
         result, _ = self.post(self.urls.layer_check(), payload)
         return result
 
-    def start_upload_layer(self, file_path: str, component_type: str) -> dict:
+    def start_upload_layer(
+        self,
+        file_path: str,
+        component_type: str,
+        privacy_type: str = "private",
+        uuid: str = None,
+        description: str = None,
+        license: str = None,
+        version: str = None,
+    ) -> dict:
         """Request for starting layer upload.
 
         :param file_path: Path of the file to be uploaded
@@ -816,6 +825,22 @@ class CplusApiRequest:
 
         :param component_type: Layer component type, e.g. "ncs_pathway"
         :type component_type: str
+
+        :param privacy_type: Layer privacy type, e.g. "private", "internal",
+            "common", defaults to "private"
+        :type privacy_type: str
+
+        :param uuid: UUID of the layer, optional, defaults to None
+        :type uuid: str
+
+        :param description: Description of the layer, optional, defaults to None
+        :type description: str
+
+        :param version: Version of the layer, optional, defaults to None
+        :type version: str
+
+        :param license: License of the layer, optional, defaults to None
+        :type license: str
 
         :raises CplusApiRequestError: If the request is failing
 
@@ -826,11 +851,23 @@ class CplusApiRequest:
         payload = {
             "layer_type": get_layer_type(file_path),
             "component_type": component_type,
-            "privacy_type": "private",
+            "privacy_type": privacy_type,
             "name": os.path.basename(file_path),
             "size": file_size,
             "number_of_parts": math.ceil(file_size / CHUNK_SIZE),
         }
+
+        # Add optional fields only if they are provided
+        optional_fields = {
+            "uuid": uuid,
+            "description": description,
+            "version": version,
+            "license": license,
+        }
+        for key, value in optional_fields.items():
+            if value:
+                payload[key] = value
+
         result, status_code = self.post(self.urls.layer_upload_start(), payload)
         if status_code != 201:
             raise CplusApiRequestError(result.get("detail", ""))
