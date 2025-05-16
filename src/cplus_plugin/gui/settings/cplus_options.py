@@ -42,6 +42,7 @@ from ...api.carbon import (
     start_irrecoverable_carbon_download,
     get_downloader_task,
 )
+from ...api.layer_tasks import DeleteDefaultLayerTask
 from ...conf import (
     settings_manager,
     Settings,
@@ -527,6 +528,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         # Global priority weighted layers
         download_icon = FileUtils.get_icon("downloading_svg.svg")
         self.btn_download_pwl.setIcon(download_icon)
+        self.btn_download_pwl.setEnabled(False)
         self.btn_download_pwl.clicked.connect(self._on_download_pwl_layer)
 
         self.btn_add_pwl.setIcon(add_icon)
@@ -859,51 +861,8 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             self.mask_layers_changed()
 
         # Global priority weighted layers
-        self.default_priority_layers = settings_manager.get_default_layers(
-            "priority_layer"
-        )
-        self.pwl_model = QStandardItemModel()
-
-        headers = ["ID", "Name", "Type", "Size", "CRS", "Version", "Created"]
-        for col, header in enumerate(headers):
-            item = QStandardItem(header)
-            item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-            self.pwl_model.setHorizontalHeaderItem(col, item)
-
-        for pwl in self.default_priority_layers:
-            items = [
-                QStandardItem(str(pwl.get("layer_uuid"))),
-                QStandardItem(str(pwl.get("name"))),
-                QStandardItem(
-                    "Raster"
-                    if pwl.get("layer_type") == LayerType.RASTER.value
-                    else "Vector"
-                ),
-                QStandardItem(str(convert_size(pwl.get("size")))),
-                QStandardItem(str(pwl.get("metadata", {}).get("crs"))),
-                QStandardItem(str(pwl.get("version", "v0.0.1"))),
-                QStandardItem(str(pwl.get("created_on"))),
-            ]
-            self.pwl_model.appendRow(items)
-
-        if len(self.default_priority_layers) > 0:
-            self.priority_layers_changed()
-
-        self.proxy_model = QSortFilterProxyModel()
-        self.proxy_model.setSourceModel(self.pwl_model)
-        self.proxy_model.setSortCaseSensitivity(Qt.CaseInsensitive)
-
-        self.tbl_pwl_layers.setModel(self.proxy_model)
-        self.tbl_pwl_layers.setSortingEnabled(True)
-        self.tbl_pwl_layers.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.tbl_pwl_layers.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.Interactive
-        )
-
-        self.tbl_pwl_layers.sortByColumn(0, Qt.AscendingOrder)
-        self.tbl_pwl_layers.setAlternatingRowColors(False)
-        # Hide the column (ID)
-        self.tbl_pwl_layers.setColumnHidden(0, True)
+        self.initialize_default_layers_table()
+        self.refresh_default_layers_table()
 
         # Irrecoverable carbon
         irrecoverable_carbon_enabled = settings_manager.get_value(
@@ -1248,6 +1207,57 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.btn_edit_mask.setEnabled(contains_items)
         self.btn_delete_mask.setEnabled(contains_items)
 
+    def initialize_default_layers_table(self):
+        """Initialize the default layers table."""
+        self.pwl_model = QStandardItemModel()
+        headers = ["ID", "Name", "Type", "Size", "CRS", "Version", "Created"]
+
+        for col, header in enumerate(headers):
+            item = QStandardItem(header)
+            item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+            self.pwl_model.setHorizontalHeaderItem(col, item)
+
+        self.proxy_model = QSortFilterProxyModel()
+        self.proxy_model.setSourceModel(self.pwl_model)
+        self.proxy_model.setSortCaseSensitivity(Qt.CaseInsensitive)
+
+        self.tbl_pwl_layers.setModel(self.proxy_model)
+        self.tbl_pwl_layers.setSortingEnabled(True)
+        self.tbl_pwl_layers.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.tbl_pwl_layers.horizontalHeader().setSectionResizeMode(
+            1, QHeaderView.Interactive
+        )
+
+        self.tbl_pwl_layers.sortByColumn(0, Qt.AscendingOrder)
+        self.tbl_pwl_layers.setAlternatingRowColors(False)
+        self.tbl_pwl_layers.setColumnHidden(0, True)  # Hide the column (ID)
+
+    def refresh_default_layers_table(self):
+        """Refresh the default layers table with updated data."""
+        self.pwl_model.removeRows(0, self.pwl_model.rowCount())  # Clear existing rows
+
+        self.default_priority_layers = settings_manager.get_default_layers(
+            "priority_layer"
+        )
+
+        for pwl in self.default_priority_layers:
+            items = [
+                QStandardItem(str(pwl.get("layer_uuid"))),
+                QStandardItem(str(pwl.get("name"))),
+                QStandardItem(
+                    "Raster"
+                    if pwl.get("layer_type") == LayerType.RASTER.value
+                    else "Vector"
+                ),
+                QStandardItem(str(convert_size(pwl.get("size")))),
+                QStandardItem(str(pwl.get("metadata", {}).get("crs"))),
+                QStandardItem(str(pwl.get("version", "v0.0.1"))),
+                QStandardItem(str(pwl.get("created_on"))),
+            ]
+            self.pwl_model.appendRow(items)
+
+        self.priority_layers_changed()
+
     def _on_add_pwl_layer(self, activated: bool):
         """Slot raised to add a new PWL layer."""
         pass
@@ -1264,14 +1274,45 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
     def _on_remove_pwl_layer(self, activated: bool):
         """Slot raised to remove a selected PWL layer."""
-        layer_uuid = self._get_valid_selected_pwl_layer_uuid("remove")
+
+        layer_uuid = self._get_selected_pwl_layer_uuid("remove")
         if not layer_uuid:
             return
-        # TODO: Implement delete the selected layer from the list
+
+        layer = self._get_selected_pwl_layer()
+
+        # Show confirmation dialog
+        reply = QtWidgets.QMessageBox.question(
+            self,
+            tr("Confirm Deletion"),
+            tr("Are you sure you want to remove the selected layer")
+            + f" <b>{layer.get('name')}</b>?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+        )
+
+        if reply == QtWidgets.QMessageBox.No:
+            return
+
+        # Proceed with deletion
+        task = DeleteDefaultLayerTask(layer)
+        task.task_finished.connect(self._on_remove_default_layer_task_finished)
+        qgis.core.QgsApplication.taskManager().addTask(task)
+
+    def _on_remove_default_layer_task_finished(self, status):
+        """Slot raised when the remove default layer task has finished."""
+        if status:
+            self.refresh_default_layers_table()
+            self.message_bar.pushMessage(
+                tr("Default layer removed successfully."),
+                level=qgis.core.Qgis.MessageLevel.Success,
+            )
+        else:
+            error_tr = tr("Failed to remove the default layer.")
+            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
 
     def _on_download_pwl_layer(self, activated: bool):
         """Slot raised to download a selected PWL layer."""
-        layer_uuid = self._get_valid_selected_pwl_layer_uuid("download")
+        layer_uuid = self._get_selected_pwl_layer_uuid("download")
         if not layer_uuid:
             return
 
@@ -1307,14 +1348,15 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
     def priority_layers_changed(self):
         contains_items = len(self.default_priority_layers) > 0
+        self.btn_download_pwl.setEnabled(contains_items)
         self.btn_edit_pwl.setEnabled(contains_items)
         self.btn_delete_pwl.setEnabled(contains_items)
 
-    def _get_selected_pwl_layer(self):
+    def _get_selected_pwl_layer(self) -> typing.Optional[dict]:
         """Get the currently selected PWL layer from the table.
         Returns:
-            list: A list containing the selected layer's data in the order of the PWLs table columns.
-            None: If no layer is selected.
+            dict: A dictionary containing the selected layer's data.
+            None: If no layer is selected or found.
         """
 
         selected_indexes = self.tbl_pwl_layers.selectionModel().selectedIndexes()
@@ -1325,14 +1367,20 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         proxy_index = selected_indexes[0]
         source_index = self.proxy_model.mapToSource(proxy_index)
 
+        # Get the layer from the selected row
+        # The first column is the layer uuid
         row = source_index.row()
-        data = []
-        for column in range(self.pwl_model.columnCount()):
-            index = self.pwl_model.index(row, column)
-            data.append(self.pwl_model.data(index))
-        return data
+        index = self.pwl_model.index(row, 0)
+        layer_uuid = self.pwl_model.data(index)
 
-    def _get_valid_selected_pwl_layer_uuid(self, action: str):
+        layer = None
+        for pwl in self.default_priority_layers:
+            if pwl["layer_uuid"] == layer_uuid:
+                layer = pwl
+                break
+        return layer
+
+    def _get_selected_pwl_layer_uuid(self, action: str):
         """Get the UUID of the currently selected PWL layer.
         Args:
             action (str): The action being performed (e.g., "edit" "remove", "download").
@@ -1344,7 +1392,17 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             error_tr = tr(f"Select a default layer first to {action}.")
             self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return None
-        return selected_layer[0]
+        return selected_layer.get("layer_uuid")
+
+    def _get_selected_pwl_layer_name(self):
+        """Get the name of the currently selected PWL layer.
+        Returns:
+            str: The name of the selected layer or None.
+        """
+        selected_layer = self._get_selected_pwl_layer()
+        if not selected_layer:
+            return None
+        return selected_layer.get("name")
 
     def validate_snapping_layer(self, snap_layer_path: str) -> typing.Tuple[bool, str]:
         """

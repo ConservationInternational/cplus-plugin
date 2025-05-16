@@ -985,6 +985,22 @@ class CplusApiRequest:
                 data[component_type] = [out_layer]
         return data
 
+    def delete_layer(self, layer_uuid):
+        """Delete layer from server.
+
+        :param layer_uuid: Layer UUID
+        :type layer_uuid: str
+
+        :raises CplusApiRequestError: Raises when server return non-204 code
+
+        :return: True if layer is deleted or throws error
+        :rtype: bool
+        """
+        result, status_code = self.delete(self.urls.layer_detail(layer_uuid))
+        if status_code != 204:
+            raise CplusApiRequestError(result.get("detail", ""))
+        return True
+
     def build_scenario_from_scenario_json(self, scenario_json):
         """Build scenario object from scenario JSON.
 
