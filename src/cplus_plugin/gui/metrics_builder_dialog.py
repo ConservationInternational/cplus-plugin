@@ -428,7 +428,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
                 # Fetch the closest match in configuration (based on activity
                 # ID and name or header label)
                 model_match = configuration.find(
-                    str(item.model.pathway.uuid), item.model.metric_column.name
+                    str(item.model.activity.uuid), item.model.metric_column.name
                 )
                 if model_match is None:
                     continue

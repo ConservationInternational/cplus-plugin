@@ -20,13 +20,15 @@ from qgis.core import (
 from cplus_plugin.conf import settings_manager, Settings
 from cplus_plugin.gui.qgis_cplus_main import QgisCplusMain
 from cplus_plugin.lib.financials import (
-    calculate_ncs_pathway_npv,
+    calculate_activity_npv,
     compute_discount_value,
     create_npv_pwls,
 )
 from cplus_plugin.utils import FileUtils
 
 from model_data_for_testing import (
+    ACTIVITY_UUID_STR,
+    get_activity,
     get_ncs_pathway_npv_collection,
     get_ncs_pathways,
     NCS_PATHWAY_1_NPV,
@@ -54,11 +56,15 @@ class TestFinancialNpv(TestCase):
     def setUp(self) -> None:
         Processing.initialize()
 
+        # Required when calculating NPV for pathways in an activity
+        settings_manager.save_activity(get_activity())
+
         # We need to save at least one NCS pathway when
         # retrieving the NPV collection
         settings_manager.save_ncs_pathway(get_ncs_pathways()[0])
 
     def tearDown(self):
+        settings_manager.remove_activity(ACTIVITY_UUID_STR)
         settings_manager.remove_ncs_pathway(NCS_UUID_STR_1)
 
     def test_get_ncs_pathway_npv_in_collection(self):
@@ -190,11 +196,10 @@ class TestFinancialNpv(TestCase):
         )
 
     def test_invalid_ncs_pathway_npv_calculation(self):
-        """Test the result of a calculating the NPV of an NCS
-        pathway which does not exist in the NCS pathway NPV
-        collection.
+        """Test the result of a calculating the NPV of an activity which
+        does not exist.
         """
-        npv = calculate_ncs_pathway_npv("4aa9d682-24b5-4014-ab16-f60c0936c39b", 250)
+        npv = calculate_activity_npv("4aa9d682-24b5-4014-ab16-f60c0936c39b", 250)
 
         self.assertEqual(npv, -1.0)
 
@@ -203,6 +208,15 @@ class TestFinancialNpv(TestCase):
         pathway which has been defined in the NCS pathway NPV
         collection.
         """
+        # Map test pathway to test activity
+        activity = settings_manager.get_activity(ACTIVITY_UUID_STR)
+        self.assertIsNotNone(activity)
+
+        pathway = settings_manager.get_ncs_pathway(NCS_UUID_STR_1)
+
+        activity.add_ncs_pathway(pathway)
+        settings_manager.update_activity(activity)
+
         npv_collection = get_ncs_pathway_npv_collection()
         npv_collection.update_computed_normalization_range()
         _ = npv_collection.normalize_npvs()
@@ -211,7 +225,7 @@ class TestFinancialNpv(TestCase):
 
         area = 2000
 
-        computed_npv = calculate_ncs_pathway_npv(NCS_UUID_STR_1, area)
+        computed_npv = calculate_activity_npv(ACTIVITY_UUID_STR, area)
         reference_npv = NCS_PATHWAY_1_NPV * area
 
         self.assertEqual(computed_npv, reference_npv)

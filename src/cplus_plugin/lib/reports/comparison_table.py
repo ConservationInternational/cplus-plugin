@@ -17,7 +17,7 @@ from qgis.PyQt import QtCore, QtGui
 from ...models.base import ScenarioResult
 from ...models.helpers import layer_from_scenario_result
 from ...models.report import ScenarioAreaInfo
-from ...utils import calculate_raster_value_area, log, tr
+from ...utils import calculate_raster_area_by_pixel_value, log, tr
 
 
 class ScenarioComparisonTableInfo(QtCore.QObject):
@@ -132,7 +132,7 @@ class ScenarioComparisonTableInfo(QtCore.QObject):
                 self._multistep_area_feedback.setCurrentStep(current_step)
                 continue
 
-            area_info = calculate_raster_value_area(
+            area_info = calculate_raster_area_by_pixel_value(
                 layer, feedback=self._multistep_area_feedback
             )
             int_area_info = {

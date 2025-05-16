@@ -79,7 +79,7 @@ from ...models.report import (
     ScenarioComparisonReportContext,
 )
 from ...utils import (
-    calculate_raster_value_area,
+    calculate_raster_area_by_pixel_value,
     clean_filename,
     get_report_font,
     log,
@@ -1280,7 +1280,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             page_pos = self._repeat_page_num + p
             _ = self.duplicate_repeat_page(page_pos)
 
-        self._pixel_area_info = calculate_raster_value_area(
+        self._pixel_area_info = calculate_raster_area_by_pixel_value(
             self._scenario_layer, feedback=self._area_processing_feedback
         )
 
