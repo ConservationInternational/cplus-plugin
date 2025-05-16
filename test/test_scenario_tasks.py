@@ -154,7 +154,6 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             name="first_test_pathway",
             description="first_test_description",
             path=pathway_layer_path_1,
-            carbon_paths=[],
         )
 
         pathway_layer_path_2 = os.path.join(
@@ -166,7 +165,6 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             name="second_test_pathway",
             description="second_test_description",
             path=pathway_layer_path_2,
-            carbon_paths=[],
         )
 
         first_test_layer = QgsRasterLayer(

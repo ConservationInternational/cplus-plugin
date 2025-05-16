@@ -888,11 +888,6 @@ class NcsPathwayItemModel(ComponentItemModel):
             error_icon = FileUtils.get_icon("mIndicatorLayerError.svg")
             item.setIcon(error_icon)
 
-            if not ncs.is_carbon_valid():
-                item.setToolTip(self.tr("Invalid carbon layer data source"))
-            else:
-                item.setToolTip(self.tr("Invalid NCS pathway data source"))
-
     def pathways(self, valid_only: bool = False) -> typing.List[NcsPathway]:
         """Returns NCS pathway objects in the model.
 

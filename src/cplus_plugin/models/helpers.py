@@ -36,7 +36,6 @@ from ..definitions.constants import (
     ABSOLUTE_NPV_ATTRIBUTE,
     ALIGNMENT_ATTRIBUTE,
     AUTO_CALCULATED_ATTRIBUTE,
-    CARBON_PATHS_ATTRIBUTE,
     COMPUTED_ATTRIBUTE,
     DISCOUNT_ATTRIBUTE,
     DESCRIPTION_ATTRIBUTE,
@@ -199,9 +198,6 @@ def create_ncs_pathway(source_dict) -> typing.Union[NcsPathway, None]:
     # We are checking because of the various iterations of the attributes
     # in the NcsPathway class where some of these attributes might
     # be missing.
-    if CARBON_PATHS_ATTRIBUTE in source_dict:
-        ncs.carbon_paths = source_dict[CARBON_PATHS_ATTRIBUTE]
-
     if PATHWAY_TYPE_ATTRIBUTE in source_dict:
         ncs.pathway_type = NcsPathwayType.from_int(source_dict[PATHWAY_TYPE_ATTRIBUTE])
     else:
@@ -298,7 +294,6 @@ def ncs_pathway_to_dict(ncs_pathway: NcsPathway, uuid_to_str=True) -> dict:
     :rtype: dict
     """
     base_ncs_dict = layer_component_to_dict(ncs_pathway, uuid_to_str)
-    base_ncs_dict[CARBON_PATHS_ATTRIBUTE] = ncs_pathway.carbon_paths
     base_ncs_dict[PATHWAY_TYPE_ATTRIBUTE] = ncs_pathway.pathway_type
     base_ncs_dict[PRIORITY_LAYERS_SEGMENT] = ncs_pathway.priority_layers
 

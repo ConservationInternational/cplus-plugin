@@ -9,8 +9,6 @@ from uuid import UUID
 from qgis.core import QgsRasterLayer
 
 from cplus_plugin.definitions.constants import (
-    CARBON_COEFFICIENT_ATTRIBUTE,
-    CARBON_PATHS_ATTRIBUTE,
     NAME_ATTRIBUTE,
     DESCRIPTION_ATTRIBUTE,
     LAYER_TYPE_ATTRIBUTE,
@@ -76,7 +74,6 @@ def get_valid_ncs_pathway() -> NcsPathway:
         TEST_RASTER_PATH,
         LayerType.RASTER,
         True,
-        carbon_paths=[],
         pathway_type=NcsPathwayType.MANAGE,
         priority_layers=[],
     )
@@ -92,34 +89,8 @@ def get_invalid_ncs_pathway() -> NcsPathway:
     )
 
 
-def get_ncs_pathway_with_valid_carbon() -> NcsPathway:
-    """Creates a valid NCS pathway object with a valid carbon layer."""
-    return NcsPathway(
-        UUID(VALID_NCS_UUID_STR),
-        "Valid NCS Pathway",
-        "Description for valid NCS",
-        TEST_RASTER_PATH,
-        LayerType.RASTER,
-        True,
-        carbon_paths=[TEST_RASTER_PATH],
-    )
-
-
-def get_ncs_pathway_with_invalid_carbon() -> NcsPathway:
-    """Creates an NCS pathway object with an invalid carbon layer."""
-    return NcsPathway(
-        UUID(VALID_NCS_UUID_STR),
-        "Invalid NCS Pathway",
-        "Description for invalid NCS",
-        TEST_RASTER_PATH,
-        LayerType.RASTER,
-        True,
-        carbon_paths=["tenbytenraster"],
-    )
-
-
 def get_ncs_pathways(use_projected=False) -> typing.List[NcsPathway]:
-    """Returns a list of NCS pathways with some containing carbon layers.
+    """Returns a list of NCS pathways.
 
     :param use_projected: True to return projected NCS layers else the
     geographic ones.
@@ -131,12 +102,6 @@ def get_ncs_pathways(use_projected=False) -> typing.List[NcsPathway]:
     pathway_layer_directory = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "data", "pathways", "layers"
     )
-
-    carbon_directory = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "data", "carbon", "layers"
-    )
-
-    carbon_layer_path = os.path.join(carbon_directory, "carbon_layer_1.tif")
 
     filenames = []
 
@@ -158,7 +123,6 @@ def get_ncs_pathways(use_projected=False) -> typing.List[NcsPathway]:
         pathway_layer_path1,
         LayerType.RASTER,
         True,
-        carbon_paths=[carbon_layer_path],
     )
 
     ncs_pathway2 = NcsPathway(
@@ -177,7 +141,6 @@ def get_ncs_pathways(use_projected=False) -> typing.List[NcsPathway]:
         pathway_layer_path3,
         LayerType.RASTER,
         True,
-        carbon_paths=[carbon_layer_path],
     )
 
     return [ncs_pathway1, ncs_pathway2, ncs_pathway3]
@@ -399,7 +362,6 @@ NCS_PATHWAY_DICT = {
     PATH_ATTRIBUTE: TEST_RASTER_PATH,
     LAYER_TYPE_ATTRIBUTE: 0,
     USER_DEFINED_ATTRIBUTE: True,
-    CARBON_PATHS_ATTRIBUTE: [],
     PATHWAY_TYPE_ATTRIBUTE: 2,
     PRIORITY_LAYERS_SEGMENT: [],
 }
