@@ -1,3 +1,5 @@
+import os
+
 PRIORITY_LAYERS = [
     [
         {
@@ -94,4 +96,36 @@ PRIORITY_GROUPS = [
         "name": "Finance - Carbon",
         "description": "Placeholder text for finance carbon",
     },
+]
+
+PWL_TEST_DATA_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "data",
+    "priority",
+    "layers",
+    "test_priority_1.tif",
+)
+
+DEFAULT_PRIORITY_LAYERS = [
+    {
+        "type": "priority_layer",
+        "layer_uuid": "7a9f87e6-ac58-4156-994d-b808ad0edf2d",
+        "name": "Carbon Sequestration Potential CP norm",
+        "size": 402164317,
+        "layer_type": 0,
+        "metadata": {
+            "crs": "EPSG:4326",
+            "unit": "degree",
+            "is_raster": True,
+            "resolution": [0.00898315284119522, 0.00898315284119522],
+            "nodata_value": -9999.0,
+            "is_geographic": True,
+            "name": "CPLUS: Carbon Sequestration Potential CP norm",
+            "description": "Carbon Sequestration Potential CP norm",
+        },
+        "filename": "Carbon Sequestration Potential CP norm",
+        "path": PWL_TEST_DATA_PATH,
+        "version": "2.0.0",
+        "license": "Apache 2.0",
+    }
 ]

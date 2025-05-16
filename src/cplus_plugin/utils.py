@@ -13,6 +13,7 @@ import datetime
 from pathlib import Path
 from uuid import UUID
 from enum import Enum
+from zipfile import ZipFile
 
 from qgis.PyQt import QtCore, QtGui
 from qgis.core import (
@@ -833,3 +834,32 @@ def convert_size(size_bytes):
     p = math.pow(1024, i)
     s = round(size_bytes / p, 2)
     return "%s %s" % (s, size_name[i])
+
+
+def zip_shapefile(shapefile_path: str) -> str:
+    """Zip shapefile to an object with same name.
+    For example, the .shp filename is `test_file.shp`, then the zip file
+    name would be `test_file.zip`
+
+    :param shapefile_path: Path of the shapefile
+    :type shapefile_path: str
+
+    :return: Zip file path if the specified `shapefile_path`
+        ends with .shp, return shapefile_path otherwise
+    :rtype: str
+    """
+
+    if shapefile_path.endswith(".shp"):
+        output_dir = os.path.dirname(shapefile_path)
+        filename_without_ext = os.path.splitext(os.path.basename(shapefile_path))[0]
+        zip_name = shapefile_path.replace(".shp", ".zip")
+        with ZipFile(zip_name, "w") as zip:
+            # writing each file one by one
+            for file in [
+                f
+                for f in os.listdir(output_dir)
+                if filename_without_ext in f and not f.endswith("zip")
+            ]:
+                zip.write(os.path.join(output_dir, file), file)
+        return zip_name
+    return shapefile_path
