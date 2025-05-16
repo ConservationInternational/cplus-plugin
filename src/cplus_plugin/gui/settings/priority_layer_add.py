@@ -139,8 +139,6 @@ class DlgPriorityAddEdit(QtWidgets.QDialog, Ui_PwlDlgAddEdit):
         self.btn_save.hide()
         self.message_bar.show()
 
-        request = CplusApiRequest()
-
         layer_properties = {
             "name": self.txt_name.text(),
             "description": self.txt_description.toPlainText(),
@@ -151,14 +149,15 @@ class DlgPriorityAddEdit(QtWidgets.QDialog, Ui_PwlDlgAddEdit):
             "privacy_type": self.privacy_type,
         }
 
-        metadata = self.layer_metadata()
         if self.map_layer_file_widget.filePath() and os.path.exists(
             self.map_layer_file_widget.filePath()
         ):
+            metadata = self.layer_metadata()
             layer_properties["metadata"] = metadata
 
         self.layer.update(layer_properties)
 
+        request = CplusApiRequest()
         self.task = CreateUpdateDefaultLayerTask(
             layer=self.layer, request=request, chunk_size=CHUNK_SIZE
         )
@@ -325,8 +324,7 @@ class DlgPriorityAddEdit(QtWidgets.QDialog, Ui_PwlDlgAddEdit):
         :param message: The message to display.
         :type message: str
         """
-        self.message_bar.clearWidgets()
-        self.message_bar.pushMessage(message, level=qgis.core.Qgis.Info, duration=5)
+        self.set_status_message(message)
         self.progress_dialog.update_status_message(message)
 
     def on_progress_changed(self, progress: float) -> None:
@@ -336,3 +334,7 @@ class DlgPriorityAddEdit(QtWidgets.QDialog, Ui_PwlDlgAddEdit):
         :type progress: float
         """
         self.progress_dialog.update_task_progress(progress)
+
+    def set_status_message(self, message, level=0):
+        self.message_bar.clearWidgets()
+        self.message_bar.pushMessage(message, level=level, duration=5)
