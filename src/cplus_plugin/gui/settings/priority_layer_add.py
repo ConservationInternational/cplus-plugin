@@ -299,7 +299,8 @@ class DlgPriorityAddEdit(QtWidgets.QDialog, Ui_PwlDlgAddEdit):
 
         self.upload_running = False
         self.btn_cancel.setText(tr("Close"))
-        self.parent.refresh_default_layers_table()
+        if self.parent:
+            self.parent.refresh_default_layers_table()
 
     def cancel_upload_task(self):
         try:
@@ -315,7 +316,8 @@ class DlgPriorityAddEdit(QtWidgets.QDialog, Ui_PwlDlgAddEdit):
         """Post-steps when uploading is finished."""
 
         self.upload_running = False
-        self.parent.refresh_default_layers_table()
+        if self.parent:
+            self.parent.refresh_default_layers_table()
         self.close()
 
     def status_message_changed(self, message: str) -> None:
