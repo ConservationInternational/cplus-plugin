@@ -8,7 +8,7 @@ from pathlib import Path
 import traceback
 import typing
 
-from qgis.core import QgsRasterLayer, QgsTask, QgsUnitTypes
+from qgis.core import QgsRasterBandStats, QgsRasterLayer, QgsTask, QgsUnitTypes
 
 from ...definitions.constants import NO_DATA_VALUE
 
@@ -16,6 +16,7 @@ from .configs import (
     carbon_resolution_validation_config,
     crs_validation_config,
     no_data_validation_config,
+    normalized_validation_config,
     projected_crs_validation_config,
     raster_validation_config,
     resolution_validation_config,
@@ -988,6 +989,119 @@ class CarbonLayerResolutionValidator(ResolutionValidator):
         return False
 
 
+class NormalizedValidator(BaseRuleValidator):
+    """Checks if the values of input datasets are between the
+    range 0 - 1.
+    """
+
+    def _validate(self) -> bool:
+        """Checks whether the value range is between 0 and 1
+        for the input raster datasets.
+
+        If a layer is not valid, it will also be included in the list
+        of invalid datasets.
+
+        :returns: True if the validation process succeeded
+        or False if it failed.
+        :rtype: bool
+        """
+        status = True
+        invalid_model_components = []
+        outside_range_model_components = {}
+
+        progress = 0.0
+        progress_increment = 100.0 / len(self.model_components)
+        self._set_progress(progress)
+
+        for model_component in self.model_components:
+            if self.feedback.isCanceled():
+                return False
+
+            is_valid = model_component.is_valid()
+            if not is_valid:
+                if status:
+                    status = False
+                invalid_model_components.append(model_component.name)
+            else:
+                if model_component.is_default_layer():
+                    layer_metadata = self.get_default_layer_metadata(
+                        model_component.layer_uuid
+                    )
+                    # TODO: Proposed attribute in CPLUS API
+                    if "has_range" not in layer_metadata:
+                        continue
+
+                    # TODO: CPLUS API to consider additional
+                    #  attributes to check / get
+                    pass
+                else:
+                    layer = model_component.to_map_layer().clone()
+                    if not isinstance(layer, QgsRasterLayer):
+                        invalid_model_components.append(model_component.name)
+                        continue
+
+                    raster_provider = layer.dataProvider()
+                    raster_stats = raster_provider.bandStatistics(
+                        1, QgsRasterBandStats.Stats.Min | QgsRasterBandStats.Stats.Max
+                    )
+
+                    if (
+                        raster_stats.minimumValue < 0.0
+                        or raster_stats.maximumValue > 1.0
+                    ):
+                        outside_range_model_components[model_component.name] = (
+                            raster_stats.minimumValue,
+                            raster_stats.maximumValue,
+                        )
+
+            progress += progress_increment
+            self._set_progress(progress)
+
+        if len(outside_range_model_components) > 0 and status:
+            status = False
+
+        summary = ""
+        validate_info = []
+        if not status:
+            summary = tr("Datasets value ranges fall outside 0 and 1")
+            for model_name, value_range in outside_range_model_components.items():
+                validate_info.append(
+                    (
+                        f"Min: {value_range[0]:.3f}, max: {value_range[1]:.3f}",
+                        model_name,
+                    )
+                )
+
+            if len(invalid_model_components) > 0:
+                invalid_models_tr = tr("Invalid rasters")
+                validate_info.append(
+                    (tr("Invalid rasters"), ", ".join(invalid_model_components))
+                )
+        else:
+            summary = tr("All datasets have a normalized range of between 0 - 1")
+
+        self._result = RuleResult(
+            self._config, self._config.recommendation, summary, validate_info
+        )
+
+        self._set_progress(100.0)
+
+        return status
+
+    @property
+    def rule_type(self) -> RuleType:
+        """Returns the normalized value rule validator.
+
+        :returns: Normalized value rule validator.
+        :rtype: RuleType
+        """
+        return RuleType.NORMALIZED
+
+    def is_comparative(self) -> bool:
+        """Validator can be used for even one dataset."""
+        return False
+
+
 class DataValidator(QgsTask):
     """Abstract runner for checking a set of datasets against specific
     validation rules.
@@ -1177,6 +1291,7 @@ class DataValidator(QgsTask):
             RuleType.RESOLUTION: ResolutionValidator,
             RuleType.CARBON_RESOLUTION: CarbonLayerResolutionValidator,
             RuleType.PROJECTED_CRS: ProjectedCrsValidator,
+            RuleType.NORMALIZED: NormalizedValidator,
         }
 
     @staticmethod
@@ -1296,3 +1411,9 @@ class NcsDataValidator(DataValidator):
             self.feedback,
         )
         self.add_rule_validator(self._carbon_resolution_validator)
+
+        # Normalized value validator
+        self._normalized_value_validator = DataValidator.create_rule_validator(
+            RuleType.NORMALIZED, normalized_validation_config, self.feedback
+        )
+        self.add_rule_validator(self._normalized_value_validator)
