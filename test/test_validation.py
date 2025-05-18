@@ -11,6 +11,7 @@ from cplus_plugin.lib.validation.configs import (
     carbon_resolution_validation_config,
     crs_validation_config,
     no_data_validation_config,
+    normalized_validation_config,
     projected_crs_validation_config,
     raster_validation_config,
     resolution_validation_config,
@@ -20,7 +21,7 @@ from cplus_plugin.lib.validation.manager import ValidationManager
 from cplus_plugin.lib.validation.validators import DataValidator, RasterValidator
 from cplus_plugin.models.validation import RuleInfo, RuleType
 
-from model_data_for_testing import get_ncs_pathways
+from model_data_for_testing import get_ncs_pathways, get_protected_ncs_pathways
 from utilities_for_testing import get_qgis_app
 
 
@@ -151,3 +152,33 @@ class TestDataValidation(TestCase):
             QCoreApplication.processEvents()
 
         self.assertIsNotNone(validation_result_id)
+
+    def test_normalized_raster_validator_invalid_pathways(self):
+        """Test invalid datasets i.e. those whose values have not
+        been normalized.
+        """
+        normalized_validator = self._setup_normalized_validator(get_ncs_pathways())
+        _ = normalized_validator.run()
+        self.assertFalse(normalized_validator.result.success)
+
+    def test_normalized_raster_validator_valid_pathways(self):
+        """Test valid datasets i.e. those whose values have been
+        normalized.
+        """
+        normalized_validator = self._setup_normalized_validator(
+            get_protected_ncs_pathways()
+        )
+        _ = normalized_validator.run()
+        self.assertTrue(normalized_validator.result.success)
+
+    def _setup_normalized_validator(self, pathways):
+        rule_info = RuleInfo(
+            RuleType.NORMALIZED, normalized_validation_config.rule_name
+        )
+        feedback = ValidationFeedback()
+        feedback.current_rule = rule_info
+        resolution_validator = DataValidator.create_rule_validator(
+            RuleType.NORMALIZED, resolution_validation_config, feedback
+        )
+        resolution_validator.model_components = pathways
+        return resolution_validator
