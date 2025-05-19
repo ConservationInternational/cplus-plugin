@@ -1402,14 +1402,6 @@ class NcsDataValidator(DataValidator):
         )
         self.add_rule_validator(self._spatial_resolution_validator)
 
-        # Carbon resolution
-        self._carbon_resolution_validator = DataValidator.create_rule_validator(
-            RuleType.CARBON_RESOLUTION,
-            carbon_resolution_validation_config,
-            self.feedback,
-        )
-        self.add_rule_validator(self._carbon_resolution_validator)
-
         # Normalized value validator
         self._normalized_value_validator = DataValidator.create_rule_validator(
             RuleType.NORMALIZED, normalized_validation_config, self.feedback
