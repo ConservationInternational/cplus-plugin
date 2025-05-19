@@ -528,11 +528,11 @@ def initialize_report_settings():
     """Sets the default report settings on first time use
     of the plugin.
     """
-
-    log(f"Initializing report settings")
+    plugin_version = get_plugin_version()
+    log(f"Initializing report settings for version: {get_plugin_version()}")
 
     # Check if default report settings have already been set
-    report_setting = f"default_report_settings_set_{get_plugin_version()}"
+    report_setting = f"default_report_settings_set_{plugin_version}"
 
     if settings_manager.get_value(report_setting, default=False, setting_type=bool):
         return
