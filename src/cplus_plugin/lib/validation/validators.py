@@ -1057,7 +1057,7 @@ class NormalizedValidator(BaseRuleValidator):
             progress += progress_increment
             self._set_progress(progress)
 
-        if len(outside_range_model_components) > 0 and status:
+        if (outside_range_model_components or invalid_model_components) and status:
             status = False
 
         summary = ""
