@@ -93,7 +93,7 @@ class TestDefaultPriorityWeightingLayerDialog(TestCase):
         layer_dialog.txt_name.setText(edit_name)
         layer_dialog.txt_description.setPlainText(edit_description)
         layer_dialog.map_layer_file_widget.setFilePath(self.pwl_path)
-        layer_dialog._on_add_edit_pwl()
+        layer_dialog.accept()
 
         saved_pwl = layer_dialog.layer
         self.assertIsNotNone(saved_pwl)
