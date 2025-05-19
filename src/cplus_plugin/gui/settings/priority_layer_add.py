@@ -2,17 +2,25 @@ import os
 
 import qgis.core
 from qgis.gui import QgsFileWidget, QgsMessageBar
-from qgis.PyQt import uic, QtWidgets, QtCore
+from qgis.PyQt import uic, QtWidgets, QtCore, QtGui
 
 from ...api.request import (
     CplusApiRequest,
     CHUNK_SIZE,
 )
 from ...api.layer_tasks import CreateUpdateDefaultLayerTask
+from ...definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
 from ...models.base import LayerType
 from ...trends_earth import api
 from ...trends_earth.constants import API_URL, TIMEOUT
-from ...utils import log, tr, zip_shapefile, get_layer_type
+from ...utils import (
+    FileUtils,
+    log,
+    tr,
+    zip_shapefile,
+    get_layer_type,
+    open_documentation,
+)
 
 Ui_PwlDlgAddEdit, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "../../ui/priority_layer_add_dialog.ui")
@@ -78,9 +86,17 @@ class DlgPriorityAddEdit(QtWidgets.QDialog, Ui_PwlDlgAddEdit):
         self.setupUi(self)
         self.layer = layer
         self.parent = parent
+
+        icon_pixmap = QtGui.QPixmap(ICON_PATH)
+        self.icon_la.setPixmap(icon_pixmap)
+
         self.map_layer_file_widget.setStorageMode(QgsFileWidget.StorageMode.GetFile)
         self.map_layer_box.layerChanged.connect(self.map_layer_changed)
         self.rb_common.setChecked(True)
+
+        help_icon = FileUtils.get_icon("mActionHelpContents_green.svg")
+        self.btn_help.setIcon(help_icon)
+        self.btn_help.clicked.connect(self.open_help)
 
         if self.layer.get("layer_uuid"):
             self.setWindowTitle(tr("Edit Priority Weighted Layer"))
@@ -94,11 +110,11 @@ class DlgPriorityAddEdit(QtWidgets.QDialog, Ui_PwlDlgAddEdit):
         else:
             self.setWindowTitle(tr("Add Priority Weighted Layer"))
 
-        self.buttonBox.accepted.connect(self._on_add_edit_pwl)
+        self.buttonBox.accepted.connect(self.save)
         self.buttonBox.rejected.connect(self.cancel_clicked)
 
         self.btn_cancel = self.buttonBox.button(QtWidgets.QDialogButtonBox.Cancel)
-        self.btn_save = self.buttonBox.button(QtWidgets.QDialogButtonBox.Save)
+        self.btn_save = self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
 
         self.trends_earth_api_client = api.APIClient(API_URL, TIMEOUT)
 
@@ -130,7 +146,7 @@ class DlgPriorityAddEdit(QtWidgets.QDialog, Ui_PwlDlgAddEdit):
         self.mainLayout.insertLayout(0, self.grid_layout)
         self.message_bar.clearWidgets()
 
-    def _on_add_edit_pwl(self):
+    def save(self):
         if not self.is_valid_layer():
             return
 
@@ -340,3 +356,6 @@ class DlgPriorityAddEdit(QtWidgets.QDialog, Ui_PwlDlgAddEdit):
     def set_status_message(self, message, level=0):
         self.message_bar.clearWidgets()
         self.message_bar.pushMessage(message, level=level, duration=5)
+
+    def open_help(self):
+        open_documentation(USER_DOCUMENTATION_SITE)
