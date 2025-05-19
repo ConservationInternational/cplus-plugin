@@ -155,7 +155,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         # Insert widget for step 2
         self.activity_widget = ActivityContainerWidget(self, self.message_bar)
-        self.tab_widget.insertTab(2, self.activity_widget, self.tr("Step 3"))
+        self.tab_widget.insertTab(1, self.activity_widget, self.tr("Step 2"))
         self.tab_widget.currentChanged.connect(self.on_tab_step_changed)
 
         # Step 3, priority weighting layers initialization
@@ -2318,11 +2318,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param index: Zero-based index position of new current tab
         :type index: int
         """
-        if index == 2:
+        activity_tab_index = 1
+        priority_group_tab_index = 2
+
+        if index == activity_tab_index:
             self.activity_widget.can_show_error_messages = True
             self.activity_widget.load()
 
-        elif index == 3:
+        elif index == priority_group_tab_index:
             tab_valid = True
             msg = ""
 
@@ -2359,12 +2362,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             if not tab_valid:
                 self.show_message(msg)
-                self.tab_widget.setCurrentIndex(2)
+                self.tab_widget.setCurrentIndex(activity_tab_index)
 
             else:
                 self.message_bar.clearWidgets()
 
-        if index == 3:
+        if index == priority_group_tab_index:
             analysis_activities = self.selected_activities()
             is_online_processing = False
             for activity in analysis_activities:
