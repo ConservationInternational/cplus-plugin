@@ -13,7 +13,6 @@ from qgis.core import QgsRasterLayer, QgsTask, QgsUnitTypes
 from ...definitions.constants import NO_DATA_VALUE
 
 from .configs import (
-    carbon_resolution_validation_config,
     crs_validation_config,
     no_data_validation_config,
     projected_crs_validation_config,
@@ -819,175 +818,6 @@ class ResolutionValidator(BaseRuleValidator):
         return RuleType.NO_DATA_VALUE
 
 
-class CarbonLayerResolutionValidator(ResolutionValidator):
-    """Checks if the resolution of the carbon layers matches
-    that of the corresponding NCS pathways.
-    """
-
-    def _validate(self) -> bool:
-        """Checks if the resolution of the carbon layers matches
-        that of the corresponding NCS pathways.
-
-        :returns: True if the validation process succeeded
-        or False if it failed.
-        :rtype: bool
-        """
-        status = True
-
-        carbon_resolution_definitions = {}
-        invalid_msg = tr("Invalid datasets")
-        invalid_carbon_msg = tr("Invalid carbon layer")
-
-        progress = 0.0
-        progress_increment = 100.0 / len(self.model_components)
-        self._set_progress(progress)
-
-        for model_component in self.model_components:
-            if self.feedback.isCanceled():
-                return False
-
-            is_valid = model_component.is_valid()
-            if not is_valid:
-                if status:
-                    status = False
-
-                # Add invalid datasets to the validation messages to
-                # make it explicit
-                if invalid_msg in carbon_resolution_definitions:
-                    layers = carbon_resolution_definitions.get(invalid_msg)
-                    layers.append(model_component.name)
-                else:
-                    carbon_resolution_definitions[invalid_msg] = [model_component.name]
-
-            else:
-                if model_component.is_default_layer():
-                    ncs_layer_metadata = self.get_default_layer_metadata(
-                        model_component.layer_uuid
-                    )
-                    if not ncs_layer_metadata.get("is_raster", False):
-                        continue
-                else:
-                    ncs_layer = model_component.to_map_layer().clone()
-                    if not isinstance(ncs_layer, QgsRasterLayer):
-                        continue
-
-                # Check if the model component is an NcsPathway
-                if not isinstance(model_component, NcsPathway):
-                    continue
-
-                if model_component.is_default_layer():
-                    ncs_resolution_definition = (
-                        round(ncs_layer_metadata["resolution"][0], self.DECIMAL_PLACES),
-                        round(ncs_layer_metadata["resolution"][1], self.DECIMAL_PLACES),
-                        ncs_layer_metadata["unit"],
-                    )
-                else:
-                    ncs_resolution_definition = self.create_resolution_definition(
-                        ncs_layer
-                    )
-
-                # Loop through the spatial resolution of each carbon path
-                for carbon_path in model_component.carbon_paths:
-                    if carbon_path.startswith("cplus://"):
-                        layer_uuid = carbon_path.replace("cplus://", "")
-                        carbon_layer_metadata = self.get_default_layer_metadata(
-                            layer_uuid, "ncs_carbon"
-                        )
-                    else:
-                        layer = QgsRasterLayer(carbon_path)
-                        if not layer.isValid():
-                            if model_component.name in carbon_resolution_definitions:
-                                carbon_definitions = carbon_resolution_definitions.get(
-                                    model_component.name
-                                )
-                                carbon_definitions.append(invalid_carbon_msg)
-                            else:
-                                carbon_resolution_definitions[model_component.name] = [
-                                    invalid_carbon_msg
-                                ]
-                            continue
-
-                    if carbon_path.startswith("cplus://"):
-                        carbon_resolution_definition = (
-                            round(
-                                carbon_layer_metadata["resolution"][0],
-                                self.DECIMAL_PLACES,
-                            ),
-                            round(
-                                carbon_layer_metadata["resolution"][1],
-                                self.DECIMAL_PLACES,
-                            ),
-                            carbon_layer_metadata["unit"],
-                        )
-                    else:
-                        carbon_layer = layer.clone()
-                        carbon_resolution_definition = (
-                            self.create_resolution_definition(carbon_layer)
-                        )
-
-                    if carbon_path.startswith("cplus://"):
-                        layer_name = carbon_layer_metadata["name"]
-                    else:
-                        # We will use the file name to represent the layer name
-                        layer_name = Path(carbon_layer.source()).stem
-
-                    if ncs_resolution_definition != carbon_resolution_definition:
-                        if model_component.name in carbon_resolution_definitions:
-                            carbon_definitions = carbon_resolution_definitions.get(
-                                model_component.name
-                            )
-                            carbon_definitions.append(layer_name)
-                        else:
-                            carbon_resolution_definitions[model_component.name] = [
-                                layer_name
-                            ]
-
-            progress += progress_increment
-            self._set_progress(progress)
-
-        if len(carbon_resolution_definitions) > 0 and status:
-            status = False
-
-        summary = ""
-        validate_info = []
-        if not status:
-            summary = tr(
-                "NCS pathways and corresponding carbon layers have different spatial resolutions"
-            )
-            for ncs_name, carbon_layers in carbon_resolution_definitions.items():
-                validate_info.append(
-                    (
-                        ncs_name,
-                        ", ".join(carbon_layers),
-                    )
-                )
-        else:
-            summary = tr(
-                "NCS pathways and corresponding carbon layers have the same spatial resolution"
-            )
-
-        self._result = RuleResult(
-            self._config, self._config.recommendation, summary, validate_info
-        )
-
-        self._set_progress(100.0)
-
-        return status
-
-    @property
-    def rule_type(self) -> RuleType:
-        """Returns the no data value rule validator.
-
-        :returns: No data value rule validator.
-        :rtype: RuleType
-        """
-        return RuleType.CARBON_RESOLUTION
-
-    def is_comparative(self) -> bool:
-        """Validator can be used for even one dataset."""
-        return False
-
-
 class DataValidator(QgsTask):
     """Abstract runner for checking a set of datasets against specific
     validation rules.
@@ -1175,7 +1005,6 @@ class DataValidator(QgsTask):
             RuleType.CRS: CrsValidator,
             RuleType.NO_DATA_VALUE: NoDataValueValidator,
             RuleType.RESOLUTION: ResolutionValidator,
-            RuleType.CARBON_RESOLUTION: CarbonLayerResolutionValidator,
             RuleType.PROJECTED_CRS: ProjectedCrsValidator,
         }
 
@@ -1288,11 +1117,3 @@ class NcsDataValidator(DataValidator):
             RuleType.RESOLUTION, resolution_validation_config, self.feedback
         )
         self.add_rule_validator(self._spatial_resolution_validator)
-
-        # Carbon resolution
-        self._carbon_resolution_validator = DataValidator.create_rule_validator(
-            RuleType.CARBON_RESOLUTION,
-            carbon_resolution_validation_config,
-            self.feedback,
-        )
-        self.add_rule_validator(self._carbon_resolution_validator)
