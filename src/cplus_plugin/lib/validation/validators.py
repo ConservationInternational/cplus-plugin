@@ -13,7 +13,6 @@ from qgis.core import QgsRasterBandStats, QgsRasterLayer, QgsTask, QgsUnitTypes
 from ...definitions.constants import NO_DATA_VALUE
 
 from .configs import (
-    carbon_resolution_validation_config,
     crs_validation_config,
     no_data_validation_config,
     normalized_validation_config,
@@ -1289,7 +1288,6 @@ class DataValidator(QgsTask):
             RuleType.CRS: CrsValidator,
             RuleType.NO_DATA_VALUE: NoDataValueValidator,
             RuleType.RESOLUTION: ResolutionValidator,
-            RuleType.CARBON_RESOLUTION: CarbonLayerResolutionValidator,
             RuleType.PROJECTED_CRS: ProjectedCrsValidator,
             RuleType.NORMALIZED: NormalizedValidator,
         }

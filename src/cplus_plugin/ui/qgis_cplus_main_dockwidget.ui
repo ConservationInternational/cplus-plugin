@@ -179,9 +179,9 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="step_2">
+      <widget class="QWidget" name="step_3">
        <attribute name="title">
-        <string>Step 2</string>
+        <string>Step 3</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout">
         <item row="3" column="2">
