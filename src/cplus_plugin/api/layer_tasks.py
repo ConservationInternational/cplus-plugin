@@ -12,7 +12,15 @@ from qgis.core import Qgis, QgsTask, QgsProcessingFeedback, QgsProcessingContext
 from qgis.PyQt import QtCore
 
 from ..conf import settings_manager
-from ..utils import log, tr, CustomJsonEncoder, todict
+from ..utils import (
+    log,
+    tr,
+    CustomJsonEncoder,
+    todict,
+    compress_raster,
+    get_layer_type,
+    convert_size,
+)
 from .request import CplusApiRequest
 
 
@@ -140,20 +148,34 @@ class CreateUpdateDefaultLayerTask(QgsTask):
             final filename
         :rtype: typing.Dict
         """
-
-        self.set_status_message(f"Uploading layer...{self.file_path}")
         self.uploaded_chunks = 0
         self.total_file_upload_chunks = 0
         self.logs = []
         self.upload_cancelled = False
 
-        self.log_message(f"Uploading {self.file_path}")
+        self.set_status_message(f"Preparing the layer for upload.....{self.file_path}")
 
-        self.total_file_upload_size = os.stat(self.file_path).st_size
+        tmp_file = self.file_path
+        # Attempt to compress the file before upload
+        if get_layer_type(self.file_path) == 0:
+            self.set_status_message(f"Compressing the file.....{self.file_path}")
+            tmp_file = compress_raster(self.file_path, nodata_value=-9999.0)
+            if tmp_file:
+                self.log_message(
+                    f"""Compression completed...... from {convert_size(os.stat(self.file_path).st_size)} 
+                    to {convert_size(os.stat(tmp_file).st_size)}"""
+                )
+            else:
+                tmp_file = self.file_path
+                self.log_message(f"Compressing the layer failed......")
+
+        self.total_file_upload_size = os.stat(tmp_file).st_size
         self.total_file_upload_chunks = self.total_file_upload_size / self.chunk_size
 
+        self.set_status_message(f"Uploading layer...{self.file_path}")
+        self.log_message(f"Uploading {self.file_path}")
         upload_params = self.request.start_upload_layer(
-            self.file_path,
+            tmp_file,
             self.component_type,
             privacy_type=self.privacy_type,
             uuid=self.layer_uuid,
@@ -169,16 +191,16 @@ class CreateUpdateDefaultLayerTask(QgsTask):
         # store temporary layer
         temp_layer = {
             "uuid": self.layer_uuid,
-            "size": os.stat(self.file_path).st_size,
-            "name": os.path.basename(self.file_path),
+            "size": os.stat(tmp_file).st_size,
+            "name": os.path.basename(tmp_file),
             "upload_id": self.upload_id,
-            "path": self.file_path,
+            "path": tmp_file,
         }
         settings_manager.save_layer_mapping(temp_layer)
 
         # do upload by chunks
         self.upload_items = []
-        with open(self.file_path, "rb") as f:
+        with open(tmp_file, "rb") as f:
             idx = 0
             while True:
                 if self.upload_cancelled:
