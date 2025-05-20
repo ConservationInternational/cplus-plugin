@@ -67,6 +67,8 @@ from ...trends_earth.constants import API_URL, TIMEOUT
 from ...utils import FileUtils, log, tr, convert_size
 from ...trends_earth import auth, api, download
 
+from .priority_layer_add import DlgPriorityAddEdit
+
 Ui_DlgSettings, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "../../ui/cplus_settings.ui")
 )
@@ -276,6 +278,7 @@ class DlgSettingsLogin(QtWidgets.QDialog, Ui_TrendsEarthDlgSettingsLogin):
             settings_manager.remove_default_layers()
             self.main_widget.fetch_default_layer_list()
             self.main_widget.fetch_scenario_history_list()
+            self.main_widget.enable_admin_components()
             self.ok = True
             self.close()
 
@@ -533,13 +536,16 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         self.btn_add_pwl.setIcon(add_icon)
         self.btn_add_pwl.clicked.connect(self._on_add_pwl_layer)
+        self.btn_add_pwl.hide()
 
         self.btn_delete_pwl.setIcon(remove_icon)
         self.btn_delete_pwl.setEnabled(False)
+        self.btn_delete_pwl.hide()
         self.btn_delete_pwl.clicked.connect(self._on_remove_pwl_layer)
 
         self.btn_edit_pwl.setIcon(edit_icon)
         self.btn_edit_pwl.setEnabled(False)
+        self.btn_edit_pwl.hide()
         self.btn_edit_pwl.clicked.connect(self._on_edit_pwl_layer)
 
         # Trends.Earth settings
@@ -609,6 +615,8 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         # self.reloadAuthConfigurations()
 
         self.trends_earth_api_client = api.APIClient(API_URL, TIMEOUT)
+
+        self.enable_admin_components()
 
     def apply(self) -> None:
         """This is called on OK click in the QGIS options panel."""
@@ -1260,8 +1268,8 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
     def _on_add_pwl_layer(self, activated: bool):
         """Slot raised to add a new PWL layer."""
-        pass
-        # TODO: Implement add a new layer to the default PWLs
+        dlg_pwl_add = DlgPriorityAddEdit(parent=self)
+        dlg_pwl_add.exec_()
 
     def _on_edit_pwl_layer(self, activated: bool):
         """Slot raised to edit a selected PWL layer."""
@@ -1270,7 +1278,8 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             error_tr = tr("Select a default layer first to edit.")
             self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return
-        # TODO: Implement edit the selected layer functionality
+        dlg_pwl_add = DlgPriorityAddEdit(parent=self, layer=selected_layer)
+        dlg_pwl_add.exec_()
 
     def _on_remove_pwl_layer(self, activated: bool):
         """Slot raised to remove a selected PWL layer."""
@@ -1548,6 +1557,19 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             QtCore.QSettings().setValue(
                 f"{settings_manager.BASE_GROUP_NAME}/{auth.TE_API_AUTH_SETUP.key}", None
             )
+
+    def enable_admin_components(self):
+        user = self.trends_earth_api_client.get_user()
+        if user:
+            self.pwl_layers_box.show()
+        else:
+            self.pwl_layers_box.hide()
+
+        # TODO: Check the role of the user. Show admin components based on roles
+        # if user.get("role") == "USER":
+        self.btn_add_pwl.show()
+        self.btn_edit_pwl.show()
+        self.btn_delete_pwl.show()
 
 
 class CplusOptionsFactory(QgsOptionsWidgetFactory):
