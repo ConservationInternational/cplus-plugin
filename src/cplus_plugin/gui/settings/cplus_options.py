@@ -280,7 +280,9 @@ class DlgSettingsLogin(QtWidgets.QDialog, Ui_TrendsEarthDlgSettingsLogin):
             self.main_widget.fetch_default_layer_list()
 
             self.parent.enable_admin_components()
-            self.parent.refresh_default_layers_table()
+            self.main_widget.fetch_default_layer_task.task_finished.connect(
+                self.parent.refresh_default_layers_table
+            )
 
             self.main_widget.fetch_scenario_history_list()
 
