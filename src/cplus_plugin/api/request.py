@@ -190,6 +190,9 @@ class CplusApiUrl:
         else:
             return BASE_API_URL
 
+    def user_profile(self):
+        return f"{self.base_url}/user/me"
+
     def layer_detail(self, layer_uuid) -> str:
         """Cplus API URL to get layer detail.
 
@@ -782,6 +785,14 @@ class CplusApiRequest:
         self._api_token = access_token
         self.token_exp = datetime.datetime.now() + datetime.timedelta(days=1)
         return access_token
+
+    def get_user_profile(self) -> dict:
+        """Request for getting user profile.
+        :return: User profile
+        :rtype: dict
+        """
+        result, _ = self.get(self.urls.user_profile())
+        return result
 
     def get_layer_detail(self, layer_uuid) -> dict:
         """Request for getting layer detail.
