@@ -278,8 +278,12 @@ class DlgSettingsLogin(QtWidgets.QDialog, Ui_TrendsEarthDlgSettingsLogin):
             settings_manager.delete_online_scenario()
             settings_manager.remove_default_layers()
             self.main_widget.fetch_default_layer_list()
-            self.main_widget.fetch_scenario_history_list()
+
             self.parent.enable_admin_components()
+            self.parent.refresh_default_layers_table()
+
+            self.main_widget.fetch_scenario_history_list()
+
             self.ok = True
             self.close()
 
