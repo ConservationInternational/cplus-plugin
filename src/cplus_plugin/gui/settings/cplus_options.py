@@ -1589,8 +1589,9 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             try:
                 # Fetch user profile using Cplus API
                 user = self.request.get_user_profile()
+                print(user)
                 # Currently allow only internal users to manage default PWLs
-                if user and user.get("Internal"):
+                if user and user.get("role") == "Internal":
                     self.btn_add_pwl.show()
                     self.btn_edit_pwl.show()
                     self.btn_delete_pwl.show()
