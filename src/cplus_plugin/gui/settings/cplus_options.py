@@ -66,6 +66,7 @@ from ...models.base import DataSourceType, LayerModelComponent, LayerType
 from ...trends_earth.constants import API_URL, TIMEOUT
 from ...utils import FileUtils, log, tr, convert_size
 from ...trends_earth import auth, api, download
+from ...api.request import CplusApiRequest
 
 from .priority_layer_add import DlgPriorityAddEdit
 
@@ -624,6 +625,8 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         # self.reloadAuthConfigurations()
 
         self.trends_earth_api_client = api.APIClient(API_URL, TIMEOUT)
+
+        self.request = CplusApiRequest()
 
         self.enable_admin_components()
 
@@ -1568,17 +1571,35 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             )
 
     def enable_admin_components(self):
-        user = self.trends_earth_api_client.get_user()
-        # TODO: Check the role of the user. Show admin components based on roles
-        # if user.get("role") == "USER":
-        if user:
-            self.btn_add_pwl.show()
-            self.btn_edit_pwl.show()
-            self.btn_delete_pwl.show()
-        else:
-            self.btn_add_pwl.hide()
-            self.btn_edit_pwl.hide()
-            self.btn_delete_pwl.hide()
+        """
+        Enables or disables admin-related UI components based on the user's profile.
+
+        This method checks if the current user exists in the Trends Earth system. If the user exists,
+        it attempts to fetch the user's profile using the Cplus API. Only users marked as "Internal"
+        in their profile are allowed to manage default PWLs (Project Work Layers), and the corresponding
+        buttons (add, edit, delete) are shown. For all other users, these buttons are hidden.
+
+        If an error occurs while fetching the user profile, the error is logged.
+
+        Raises:
+            Exception: If there is an error fetching the user profile.
+        """
+        # Check that the user exist in trends earth
+        if self.trends_earth_api_client.get_user():
+            try:
+                # Fetch user profile using Cplus API
+                user = self.request.get_user_profile()
+                # Currently allow only internal users to manage default PWLs
+                if user and user.get("Internal"):
+                    self.btn_add_pwl.show()
+                    self.btn_edit_pwl.show()
+                    self.btn_delete_pwl.show()
+                else:
+                    self.btn_add_pwl.hide()
+                    self.btn_edit_pwl.hide()
+                    self.btn_delete_pwl.hide()
+            except Exception as ex:
+                log(f"Error when fetching user profile {ex}", info=False)
 
 
 class CplusOptionsFactory(QgsOptionsWidgetFactory):
