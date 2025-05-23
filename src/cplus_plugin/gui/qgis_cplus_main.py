@@ -143,6 +143,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.task = None
         self.processing_cancelled = False
         self.current_analysis_task = None
+        self.fetch_default_layer_task = None
 
         # Set icons for buttons
         help_icon = FileUtils.get_icon("mActionHelpContents_green.svg")
@@ -1133,8 +1134,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Fetch default layer list from API."""
         if not self.has_trends_auth():
             return
-        task = FetchDefaultLayerTask()
-        QgsApplication.taskManager().addTask(task)
+        self.fetch_default_layer_task = FetchDefaultLayerTask()
+        QgsApplication.taskManager().addTask(self.fetch_default_layer_task)
 
     def update_scenario_list(self):
         """Fetches scenarios from plugin settings and updates the
