@@ -9,6 +9,7 @@ a button on the docking widget, and from the toolbar menu.
 
 import os
 import typing
+import uuid
 
 import qgis.core
 import qgis.gui
@@ -24,14 +25,24 @@ from qgis.PyQt.QtGui import (
 )
 from qgis.utils import iface
 
-from qgis.PyQt.QtWidgets import QFileDialog, QListWidgetItem, QMessageBox, QWidget
+from qgis.PyQt.QtWidgets import (
+    QFileDialog,
+    QListWidgetItem,
+    QMessageBox,
+    QWidget,
+    QHeaderView,
+    QFileDialog,
+)
 from qgis.PyQt import QtCore
+from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem
+from qgis.PyQt.QtCore import Qt, QSortFilterProxyModel
 
 from ...api.base import ApiRequestStatus
 from ...api.carbon import (
     start_irrecoverable_carbon_download,
     get_downloader_task,
 )
+from ...api.layer_tasks import DeleteDefaultLayerTask
 from ...conf import (
     settings_manager,
     Settings,
@@ -43,9 +54,21 @@ from ...definitions.defaults import (
     ICON_PATH,
     OPTIONS_TITLE,
 )
+from ...lib.validation.configs import (
+    no_data_validation_config,
+    projected_crs_validation_config,
+    raster_validation_config,
+)
+from ...lib.validation.feedback import ValidationFeedback
+from ...lib.validation.validators import DataValidator
+from ...models.validation import RuleInfo, RuleType
+from ...models.base import DataSourceType, LayerModelComponent, LayerType
 from ...trends_earth.constants import API_URL, TIMEOUT
-from ...utils import FileUtils, log, tr
+from ...utils import FileUtils, log, tr, convert_size
 from ...trends_earth import auth, api, download
+from ...api.request import CplusApiRequest
+
+from .priority_layer_add import DlgPriorityAddEdit
 
 Ui_DlgSettings, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "../../ui/cplus_settings.ui")
@@ -213,6 +236,7 @@ class DlgSettingsLogin(QtWidgets.QDialog, Ui_TrendsEarthDlgSettingsLogin):
         self.ok = False
         self.trends_earth_api_client = api.APIClient(API_URL, TIMEOUT)
         self.main_widget = main_widget
+        self.parent = parent
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -255,7 +279,14 @@ class DlgSettingsLogin(QtWidgets.QDialog, Ui_TrendsEarthDlgSettingsLogin):
             settings_manager.delete_online_scenario()
             settings_manager.remove_default_layers()
             self.main_widget.fetch_default_layer_list()
+
+            self.parent.enable_admin_components()
+            self.main_widget.fetch_default_layer_task.task_finished.connect(
+                self.parent.refresh_default_layers_table
+            )
+
             self.main_widget.fetch_scenario_history_list()
+
             self.ok = True
             self.close()
 
@@ -449,7 +480,8 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.folder_data.fileChanged.connect(self.base_dir_exists)
 
         self.map_layer_file_widget.setStorageMode(QgsFileWidget.StorageMode.GetFile)
-        self.map_layer_box.layerChanged.connect(self.map_layer_changed)
+        self.map_layer_file_widget.fileChanged.connect(self.on_snapping_layer_changed)
+        self.map_layer_box.setFilters(qgis.core.QgsMapLayerProxyModel.RasterLayer)
 
         self.mask_layer_widget.setStorageMode(QgsFileWidget.StorageMode.GetFile)
         self.mask_layer_box.layerChanged.connect(self.mask_layer_changed)
@@ -504,9 +536,31 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.btn_edit_mask.setEnabled(False)
         self.btn_edit_mask.clicked.connect(self._on_edit_mask_layer)
 
+        # Global priority weighted layers
+        download_icon = FileUtils.get_icon("downloading_svg.svg")
+        self.btn_download_pwl.setIcon(download_icon)
+        self.btn_download_pwl.setEnabled(False)
+        self.btn_download_pwl.clicked.connect(self._on_download_pwl_layer)
+
+        self.btn_add_pwl.setIcon(add_icon)
+        self.btn_add_pwl.clicked.connect(self._on_add_pwl_layer)
+        self.btn_add_pwl.hide()
+
+        self.btn_delete_pwl.setIcon(remove_icon)
+        self.btn_delete_pwl.setEnabled(False)
+        self.btn_delete_pwl.hide()
+        self.btn_delete_pwl.clicked.connect(self._on_remove_pwl_layer)
+
+        self.btn_edit_pwl.setIcon(edit_icon)
+        self.btn_edit_pwl.setEnabled(False)
+        self.btn_edit_pwl.hide()
+        self.btn_edit_pwl.clicked.connect(self._on_edit_pwl_layer)
+
         # Trends.Earth settings
         self.dlg_settings_register = DlgSettingsRegister()
-        self.dlg_settings_login = DlgSettingsLogin(main_widget=self.main_widget)
+        self.dlg_settings_login = DlgSettingsLogin(
+            parent=self, main_widget=self.main_widget
+        )
 
         self.pushButton_register.clicked.connect(self.register)
         self.pushButton_login.clicked.connect(self.login)
@@ -572,19 +626,24 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         self.trends_earth_api_client = api.APIClient(API_URL, TIMEOUT)
 
+        self.request = CplusApiRequest()
+
+        self.enable_admin_components()
+
     def apply(self) -> None:
         """This is called on OK click in the QGIS options panel."""
 
         self.save_settings()
 
-    def map_layer_changed(self, layer):
-        """Sets the file path of the selected layer in file path input
-
-        :param layer: Qgis map layer
-        :type layer: QgsMapLayer
-        """
+    def on_snapping_layer_changed(self, layer):
         if layer is not None:
-            self.map_layer_file_widget.setFilePath(layer.source())
+            valid, validation_info = self.validate_snapping_layer(layer)
+            if not valid:
+                self.message_bar.pushMessage(
+                    "CPLUS - Warning",
+                    f"{tr(validation_info)}: {layer}",
+                    level=qgis.core.Qgis.MessageLevel.Warning,
+                )
 
     def mask_layer_changed(self, layer):
         """Sets the file path of the selected mask layer in file path input
@@ -646,10 +705,6 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         base_dir_path = self.folder_data.filePath()
         settings_manager.set_value(Settings.BASE_DIR, base_dir_path)
 
-        # Carbon layers coefficient saving
-        coefficient = self.carbon_coefficient_box.value()
-        settings_manager.set_value(Settings.CARBON_COEFFICIENT, coefficient)
-
         # Pathway suitability index
         pathway_suitability_index = self.suitability_index_box.value()
         settings_manager.set_value(
@@ -661,6 +716,45 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             Settings.SNAPPING_ENABLED, self.snapping_group_box.isChecked()
         )
         snap_layer_path = self.map_layer_file_widget.filePath()
+
+        if self.snapping_group_box.isChecked():
+            # Check if snap layer is empty
+            if not snap_layer_path or snap_layer_path == "":
+                iface.messageBar().pushMessage(
+                    "CPLUS - Warning",
+                    tr("Snap reference layer is required when snapping is enabled"),
+                    level=qgis.core.Qgis.MessageLevel.Warning,
+                )
+                # Force disable snapping option
+                self.snapping_group_box.setChecked(False)
+                self.snapping_group_box.setCollapsed(True)
+                settings_manager.set_value(Settings.SNAPPING_ENABLED, False)
+                settings_manager.set_value(Settings.SNAP_LAYER, None)
+            else:
+                # Check if the snap reference layer is valid when snap is enabled
+                valid, validation_info = self.validate_snapping_layer(snap_layer_path)
+                if valid:
+                    # Save the snapping settings
+                    settings_manager.set_value(
+                        Settings.SNAPPING_ENABLED, self.snapping_group_box.isChecked()
+                    )
+                    settings_manager.set_value(Settings.SNAP_LAYER, snap_layer_path)
+                else:
+                    self.message_bar.pushMessage(
+                        "CPLUS - Warning",
+                        f"{tr(validation_info)}: {snap_layer_path}",
+                        level=qgis.core.Qgis.MessageLevel.Warning,
+                    )
+                    iface.messageBar().pushMessage(
+                        "CPLUS - Warning",
+                        f"{tr(validation_info)}: {snap_layer_path}",
+                        level=qgis.core.Qgis.MessageLevel.Warning,
+                    )
+                    self.snapping_group_box.setChecked(False)
+                    self.snapping_group_box.setCollapsed(True)
+                    settings_manager.set_value(Settings.SNAPPING_ENABLED, False)
+                    settings_manager.set_value(Settings.SNAP_LAYER, snap_layer_path)
+
         settings_manager.set_value(Settings.SNAP_LAYER, snap_layer_path)
 
         settings_manager.set_value(
@@ -731,12 +825,6 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.folder_data.setFilePath(base_dir)
         self.base_dir_exists()
 
-        # Carbon layers coefficient
-        coefficient = settings_manager.get_value(
-            Settings.CARBON_COEFFICIENT, default=0.0
-        )
-        self.carbon_coefficient_box.setValue(float(coefficient))
-
         # Pathway suitability index
         pathway_suitability_index = settings_manager.get_value(
             Settings.PATHWAY_SUITABILITY_INDEX, default=0
@@ -791,6 +879,10 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         if len(mask_paths_list) > 0:
             self.mask_layers_changed()
+
+        # Global priority weighted layers
+        self.initialize_default_layers_table()
+        self.refresh_default_layers_table()
 
         # Irrecoverable carbon
         irrecoverable_carbon_enabled = settings_manager.get_value(
@@ -1135,6 +1227,279 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.btn_edit_mask.setEnabled(contains_items)
         self.btn_delete_mask.setEnabled(contains_items)
 
+    def initialize_default_layers_table(self):
+        """Initialize the default layers table."""
+        self.pwl_model = QStandardItemModel()
+        headers = ["ID", "Name", "Type", "Size", "CRS", "Version", "Created"]
+
+        for col, header in enumerate(headers):
+            item = QStandardItem(header)
+            item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+            self.pwl_model.setHorizontalHeaderItem(col, item)
+
+        self.proxy_model = QSortFilterProxyModel()
+        self.proxy_model.setSourceModel(self.pwl_model)
+        self.proxy_model.setSortCaseSensitivity(Qt.CaseInsensitive)
+
+        self.tbl_pwl_layers.setModel(self.proxy_model)
+        self.tbl_pwl_layers.setSortingEnabled(True)
+        self.tbl_pwl_layers.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.tbl_pwl_layers.horizontalHeader().setSectionResizeMode(
+            1, QHeaderView.Interactive
+        )
+
+        self.tbl_pwl_layers.sortByColumn(0, Qt.AscendingOrder)
+        self.tbl_pwl_layers.setAlternatingRowColors(False)
+        self.tbl_pwl_layers.setColumnHidden(0, True)  # Hide the column (ID)
+
+    def refresh_default_layers_table(self):
+        """Refresh the default layers table with updated data."""
+        self.pwl_model.removeRows(0, self.pwl_model.rowCount())  # Clear existing rows
+
+        self.default_priority_layers = settings_manager.get_default_layers(
+            "priority_layer"
+        )
+
+        for pwl in self.default_priority_layers:
+            items = [
+                QStandardItem(str(pwl.get("layer_uuid"))),
+                QStandardItem(str(pwl.get("name"))),
+                QStandardItem(
+                    "Raster"
+                    if pwl.get("layer_type") == LayerType.RASTER.value
+                    else "Vector"
+                ),
+                QStandardItem(str(convert_size(pwl.get("size")))),
+                QStandardItem(str(pwl.get("metadata", {}).get("crs"))),
+                QStandardItem(str(pwl.get("version", "v0.0.1"))),
+                QStandardItem(str(pwl.get("created_on"))),
+            ]
+            self.pwl_model.appendRow(items)
+
+        self.priority_layers_changed()
+
+    def _on_add_pwl_layer(self, activated: bool):
+        """Slot raised to add a new PWL layer."""
+        dlg_pwl_add = DlgPriorityAddEdit(parent=self)
+        dlg_pwl_add.exec_()
+
+    def _on_edit_pwl_layer(self, activated: bool):
+        """Slot raised to edit a selected PWL layer."""
+        selected_layer = self._get_selected_pwl_layer()
+        if not selected_layer:
+            error_tr = tr("Select a default layer first to edit.")
+            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            return
+        dlg_pwl_add = DlgPriorityAddEdit(parent=self, layer=selected_layer)
+        dlg_pwl_add.exec_()
+
+    def _on_remove_pwl_layer(self, activated: bool):
+        """Slot raised to remove a selected PWL layer."""
+
+        layer_uuid = self._get_selected_pwl_layer_uuid("remove")
+        if not layer_uuid:
+            return
+
+        layer = self._get_selected_pwl_layer()
+
+        # Show confirmation dialog
+        reply = QtWidgets.QMessageBox.question(
+            self,
+            tr("Confirm Deletion"),
+            tr("Are you sure you want to remove the selected layer")
+            + f" <b>{layer.get('name')}</b>?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+        )
+
+        if reply == QtWidgets.QMessageBox.No:
+            return
+
+        # Proceed with deletion
+        task = DeleteDefaultLayerTask(layer)
+        task.task_finished.connect(self._on_remove_default_layer_task_finished)
+        qgis.core.QgsApplication.taskManager().addTask(task)
+
+    def _on_remove_default_layer_task_finished(self, status):
+        """Slot raised when the remove default layer task has finished."""
+        if status:
+            self.refresh_default_layers_table()
+            self.message_bar.pushMessage(
+                tr("Default layer removed successfully."),
+                level=qgis.core.Qgis.MessageLevel.Success,
+            )
+        else:
+            error_tr = tr("Failed to remove the default layer.")
+            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+
+    def _on_download_pwl_layer(self, activated: bool):
+        """Slot raised to download a selected PWL layer."""
+        layer_uuid = self._get_selected_pwl_layer_uuid("download")
+        if not layer_uuid:
+            return
+
+        default_layer = None
+        for layer in self.default_priority_layers:
+            if layer["layer_uuid"] == layer_uuid:
+                default_layer = layer
+                break
+        if not default_layer:
+            error_tr = tr("Selected layer not found in the default layers.")
+            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            return
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            None, "Save File", self.folder_data.filePath(), "All Files (*)"
+        )
+
+        if file_path:
+            self.message_bar.pushMessage(
+                f"Downloading {default_layer.get('name')} to {file_path}"
+            )
+            if download.download_file(default_layer.get("url"), file_path):
+                self.message_bar.pushMessage(
+                    f"Downloaded {default_layer.get('name')} to {file_path}"
+                )
+                layer = qgis.core.QgsRasterLayer(file_path, default_layer.get("name"))
+                qgis.core.QgsProject.instance().addMapLayer(layer)
+            else:
+                self.message_bar.pushMessage(
+                    f"Failed to download {default_layer.get('name')} to {file_path}",
+                    level=qgis.core.Qgis.MessageLevel.Warning,
+                )
+
+    def priority_layers_changed(self):
+        contains_items = len(self.default_priority_layers) > 0
+        self.btn_download_pwl.setEnabled(contains_items)
+        self.btn_edit_pwl.setEnabled(contains_items)
+        self.btn_delete_pwl.setEnabled(contains_items)
+
+    def _get_selected_pwl_layer(self) -> typing.Optional[dict]:
+        """Get the currently selected PWL layer from the table.
+        Returns:
+            dict: A dictionary containing the selected layer's data.
+            None: If no layer is selected or found.
+        """
+
+        selected_indexes = self.tbl_pwl_layers.selectionModel().selectedIndexes()
+        if not selected_indexes:
+            return None  # No selection
+
+        # Get the first selected row (proxy index)
+        proxy_index = selected_indexes[0]
+        source_index = self.proxy_model.mapToSource(proxy_index)
+
+        # Get the layer from the selected row
+        # The first column is the layer uuid
+        row = source_index.row()
+        index = self.pwl_model.index(row, 0)
+        layer_uuid = self.pwl_model.data(index)
+
+        layer = None
+        for pwl in self.default_priority_layers:
+            if pwl["layer_uuid"] == layer_uuid:
+                layer = pwl
+                break
+        return layer
+
+    def _get_selected_pwl_layer_uuid(self, action: str):
+        """Get the UUID of the currently selected PWL layer.
+        Args:
+            action (str): The action being performed (e.g., "edit" "remove", "download").
+        Returns:
+            str: The UUID of the selected layer.
+        """
+        selected_layer = self._get_selected_pwl_layer()
+        if not selected_layer:
+            error_tr = tr(f"Select a default layer first to {action}.")
+            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            return None
+        return selected_layer.get("layer_uuid")
+
+    def _get_selected_pwl_layer_name(self):
+        """Get the name of the currently selected PWL layer.
+        Returns:
+            str: The name of the selected layer or None.
+        """
+        selected_layer = self._get_selected_pwl_layer()
+        if not selected_layer:
+            return None
+        return selected_layer.get("name")
+
+    def validate_snapping_layer(self, snap_layer_path: str) -> typing.Tuple[bool, str]:
+        """
+        Validates whether the provided file path corresponds to a valid snapping layer.
+        This function ensures the file exists, is a valid raster, uses a projected CRS,
+        and has a valid no-data value.
+
+        Args:
+            snap_layer_path (str): The file path to the snapping layer to be validated.
+
+        Returns:
+            Tuple[bool, str]: A tuple where the first element is a boolean indicating
+            whether the snapping layer is valid, and the second element is a string
+            containing validation information or an error message.
+        """
+        if (
+            not snap_layer_path
+            or not os.path.isfile(snap_layer_path)
+            or not os.path.exists(snap_layer_path)
+        ):
+            return False, "Snap reference dataset path is invalid or does not exist."
+
+        snap_layer_component = [
+            LayerModelComponent(
+                uuid.uuid4(),
+                "Snapping dataset",
+                "Snapping dataset",
+                snap_layer_path,
+                LayerType.RASTER,
+                True,
+            )
+        ]
+
+        feedback = ValidationFeedback()
+
+        # Helper function to run a validation rule
+        # Helper function is tight coupled to this function.
+        def _run_validation(rule_type, config, error_message):
+            rule_info = RuleInfo(rule_type, config.rule_name)
+            feedback.current_rule = rule_info
+            validator = DataValidator.create_rule_validator(rule_type, config, feedback)
+            validator.model_components = snap_layer_component
+            validator.run()
+            if not validator.result.success:
+                return False, validator.result.recommendation or error_message
+            return True, None
+
+        # Validate raster type
+        is_valid, message = _run_validation(
+            RuleType.DATA_TYPE,
+            raster_validation_config,
+            "Snap reference dataset must be a raster.",
+        )
+        if not is_valid:
+            return is_valid, message
+
+        # Validate raster projection
+        is_valid, message = _run_validation(
+            RuleType.PROJECTED_CRS,
+            projected_crs_validation_config,
+            "Snap reference dataset must use a projected CRS.",
+        )
+        if not is_valid:
+            return is_valid, message
+
+        # Validate no-data value
+        is_valid, message = _run_validation(
+            RuleType.NO_DATA_VALUE,
+            no_data_validation_config,
+            "Snap reference dataset must have a valid no-data value.",
+        )
+        if not is_valid:
+            return is_valid, message
+
+        return True, None
+
     def register(self):
         self.dlg_settings_register.exec_()
 
@@ -1204,6 +1569,37 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             QtCore.QSettings().setValue(
                 f"{settings_manager.BASE_GROUP_NAME}/{auth.TE_API_AUTH_SETUP.key}", None
             )
+
+    def enable_admin_components(self):
+        """
+        Enables or disables admin-related UI components based on the user's profile.
+
+        This method checks if the current user exists in the Trends Earth system. If the user exists,
+        it attempts to fetch the user's profile using the Cplus API. Only users marked as "Internal"
+        in their profile are allowed to manage default PWLs (Project Work Layers), and the corresponding
+        buttons (add, edit, delete) are shown. For all other users, these buttons are hidden.
+
+        If an error occurs while fetching the user profile, the error is logged.
+
+        Raises:
+            Exception: If there is an error fetching the user profile.
+        """
+        # Check that the user exist in trends earth
+        if self.trends_earth_api_client.get_user():
+            try:
+                # Fetch user profile using Cplus API
+                user = self.request.get_user_profile()
+                # Currently allow only internal users to manage default PWLs
+                if user and user.get("role") == "Internal":
+                    self.btn_add_pwl.show()
+                    self.btn_edit_pwl.show()
+                    self.btn_delete_pwl.show()
+                else:
+                    self.btn_add_pwl.hide()
+                    self.btn_edit_pwl.hide()
+                    self.btn_delete_pwl.hide()
+            except Exception as ex:
+                log(f"Error when fetching user profile {ex}", info=False)
 
 
 class CplusOptionsFactory(QgsOptionsWidgetFactory):

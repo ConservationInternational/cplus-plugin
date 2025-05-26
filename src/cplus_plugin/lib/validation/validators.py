@@ -8,14 +8,14 @@ from pathlib import Path
 import traceback
 import typing
 
-from qgis.core import QgsRasterLayer, QgsTask, QgsUnitTypes
+from qgis.core import QgsRasterBandStats, QgsRasterLayer, QgsTask, QgsUnitTypes
 
 from ...definitions.constants import NO_DATA_VALUE
 
 from .configs import (
-    carbon_resolution_validation_config,
     crs_validation_config,
     no_data_validation_config,
+    normalized_validation_config,
     projected_crs_validation_config,
     raster_validation_config,
     resolution_validation_config,
@@ -28,9 +28,10 @@ from ...models.validation import (
     RuleResult,
     RuleType,
     ValidationResult,
+    ValidationCategory,
 )
 from ...utils import log, tr
-from ...conf import settings_manager
+from ...conf import settings_manager, Settings
 
 
 class BaseRuleValidator:
@@ -273,6 +274,17 @@ class CrsValidator(BaseRuleValidator):
         invalid_msg = tr("Invalid datasets")
         has_undefined = False
 
+        snapping_enabled = settings_manager.get_value(
+            Settings.SNAPPING_ENABLED, default=False, setting_type=bool
+        )
+        snap_layer_path = (
+            settings_manager.get_value(
+                Settings.SNAP_LAYER, default="", setting_type=str
+            )
+            if snapping_enabled
+            else ""
+        )
+
         progress = 0.0
         progress_increment = 100.0 / len(self.model_components)
         self._set_progress(progress)
@@ -333,18 +345,30 @@ class CrsValidator(BaseRuleValidator):
         if len(crs_definitions) > 1 and status:
             status = False
 
+        recommendation_str = self._config.recommendation
         summary = ""
         validate_info = []
         if not status:
             summary = tr("Datasets have different CRS definitions")
             for crs_str, layers in crs_definitions.items():
                 validate_info.append((crs_str, ", ".join(layers)))
+
+            if snapping_enabled and snap_layer_path and Path(snap_layer_path).exists():
+                self._config.category = ValidationCategory.WARNING
+                recommendation_str += tr(
+                    " or the datasets will be reprojected to match the CRS of the reference layer"
+                )
+            else:
+                self._config.category = ValidationCategory.ERROR
+                recommendation_str += tr(
+                    " or specify a reference layer by selecting it through the snapping option in the settings"
+                )
         else:
             summary_tr = tr("All datasets have the same CRS")
             summary = f"{summary_tr} - {list(crs_definitions.keys())[0]}"
 
         self._result = RuleResult(
-            self._config, self._config.recommendation, summary, validate_info
+            self._config, recommendation_str, summary, validate_info
         )
 
         self._set_progress(100.0)
@@ -373,105 +397,124 @@ class ProjectedCrsValidator(BaseRuleValidator):
         """
         status = True
 
-        # key: Geographic CRS ID or 'undefined', value: list of model/layer names
-        geographic_crs_definitions = {}
+        # Dictionary to store CRS definitions: key is CRS ID or 'undefined', value is list of model/layer names
+        crs_definitions = {}
         undefined_msg = tr("Undefined")
         invalid_msg = tr("Invalid datasets")
-        has_undefined = False
+
+        snapping_enabled = settings_manager.get_value(
+            Settings.SNAPPING_ENABLED, default=False, setting_type=bool
+        )
+        snap_layer_path = (
+            settings_manager.get_value(
+                Settings.SNAP_LAYER, default="", setting_type=str
+            )
+            if snapping_enabled
+            else ""
+        )
 
         progress = 0.0
         progress_increment = 100.0 / len(self.model_components)
         self._set_progress(progress)
 
-        crs_type_id = ""
+        crs = None
 
         for model_component in self.model_components:
             if self.feedback.isCanceled():
                 return False
 
-            is_valid = model_component.is_valid()
-            if not is_valid:
-                if status:
-                    status = False
-
-                # Add invalid datasets to the validation messages to make it explicit
-                if invalid_msg in geographic_crs_definitions:
-                    layers = geographic_crs_definitions.get(invalid_msg)
-                    layers.append(model_component.name)
-                else:
-                    geographic_crs_definitions[invalid_msg] = [model_component.name]
-
+            if not model_component.is_valid():
+                status = False
+                crs_definitions.setdefault(invalid_msg, []).append(model_component.name)
             else:
-                if model_component.is_default_layer():
-                    layer_metadata = self.get_default_layer_metadata(
-                        model_component.layer_uuid
-                    )
-                    crs = layer_metadata.get("crs", None)
-                else:
-                    layer = model_component.to_map_layer().clone()
-                    crs = layer.crs()
+                crs, is_geographic = self._get_crs_and_type(model_component)
 
                 if crs is None:
-                    # Flag that there is at least one dataset with an undefined CRS
-                    if not has_undefined:
-                        has_undefined = True
-
-                    if status:
-                        status = False
-
-                    if undefined_msg in geographic_crs_definitions:
-                        layers = geographic_crs_definitions.get(undefined_msg)
-                        layers.append(model_component.name)
-                    else:
-                        geographic_crs_definitions[undefined_msg] = [
-                            model_component.name
-                        ]
-                else:
-                    # Use this to capture the CRS auth ID incase all datasets have
-                    # the same CRS type.
-                    if not crs_type_id:
-                        if model_component.is_default_layer():
-                            crs_type_id = crs
-                            layer_metadata = self.get_default_layer_metadata(
-                                model_component.layer_uuid
-                            )
-                            is_geographic = layer_metadata["is_geographic"]
-                        else:
-                            crs_type_id = crs.authid()
-                            is_geographic = crs.isGeographic()
-
-                    if is_geographic:
-                        if crs_type_id in geographic_crs_definitions:
-                            layers = geographic_crs_definitions.get(crs_type_id)
-                            layers.append(model_component.name)
-                        else:
-                            geographic_crs_definitions[crs_type_id] = [
-                                model_component.name
-                            ]
+                    status = False
+                    crs_definitions.setdefault(undefined_msg, []).append(
+                        model_component.name
+                    )
+                elif is_geographic:
+                    status = False
+                    crs_definitions.setdefault(crs, []).append(model_component.name)
 
             progress += progress_increment
             self._set_progress(progress)
 
-        if len(geographic_crs_definitions) > 0 and status:
-            status = False
-
-        summary = ""
-        validate_info = []
-        if not status:
-            summary = tr("Some datasets have a geographic CRS")
-            for crs_type_str, layers in geographic_crs_definitions.items():
-                validate_info.append((crs_type_str, ", ".join(layers)))
-        else:
-            summary_tr = tr("All datasets have a projected CRS")
-            summary = f"{summary_tr} - {crs_type_id}"
-
-        self._result = RuleResult(
-            self._config, self._config.recommendation, summary, validate_info
+        summary, validate_info = self._generate_summary_and_info(
+            status, crs, crs_definitions
         )
 
+        recommendation_str = self._config.recommendation
+        if not status:
+            if snapping_enabled and snap_layer_path:
+                self._config.category = ValidationCategory.WARNING
+                recommendation_str += tr(
+                    " or the datasets will be reprojected to match the CRS of the reference layer"
+                )
+            else:
+                self._config.category = ValidationCategory.ERROR
+                recommendation_str += tr(
+                    " or specify a reference layer by selecting it through the snapping option in the settings"
+                )
+
+        self._result = RuleResult(
+            self._config, recommendation_str, summary, validate_info
+        )
         self._set_progress(100.0)
 
         return status
+
+    def _get_crs_and_type(
+        self, model_component
+    ) -> typing.Tuple[typing.Optional[str], bool]:
+        """Retrieve the CRS and its type (geographic or not) for a model component.
+
+        :param model_component: The model component to analyze.
+        :type model_component: LayerModelComponent
+
+        :returns: A tuple containing the CRS ID (or None) and a boolean indicating if it is geographic.
+        :rtype: tuple
+        """
+        if model_component.is_default_layer():
+            layer_metadata = self.get_default_layer_metadata(model_component.layer_uuid)
+            return layer_metadata.get("crs", None), layer_metadata.get(
+                "is_geographic", False
+            )
+        else:
+            layer = model_component.to_map_layer().clone()
+            crs = layer.crs()
+            return crs.authid() if crs else None, crs.isGeographic() if crs else False
+
+    def _generate_summary_and_info(
+        self, status: bool, crs: str, crs_definitions: dict
+    ) -> typing.Tuple[str, list]:
+        """Generate the summary and validation info based on CRS definitions.
+
+        :param status: The validation status.
+        :type status: bool
+
+        :param crs: The CRS Auth ID.
+        :type status: str
+
+        :param crs_definitions: Dictionary of CRS definitions and associated layer names.
+        :type crs_definitions: dict
+
+        :returns: A tuple containing the summary string and validation info list.
+        :rtype: tuple
+        """
+        if not status:
+            summary = tr("Some datasets have a geographic CRS or undefined CRS")
+            validate_info = [
+                (crs_type, ", ".join(layers))
+                for crs_type, layers in crs_definitions.items()
+            ]
+        else:
+            summary_tr = tr("All datasets have a projected CRS")
+            summary = f"{summary_tr} - {crs}"
+            validate_info = []
+
+        return summary, validate_info
 
     @property
     def rule_type(self) -> RuleType:
@@ -616,6 +659,20 @@ class ResolutionValidator(BaseRuleValidator):
         spatial_resolution_definitions = {}
         invalid_msg = tr("Invalid datasets")
 
+        snapping_enabled = settings_manager.get_value(
+            Settings.SNAPPING_ENABLED, default=False, setting_type=bool
+        )
+        snap_layer_path = (
+            settings_manager.get_value(
+                Settings.SNAP_LAYER, default="", setting_type=str
+            )
+            if snapping_enabled
+            else ""
+        )
+        snap_rescale = settings_manager.get_value(
+            Settings.RESCALE_VALUES, default=False, setting_type=bool
+        )
+
         progress = 0.0
         progress_increment = 100.0 / len(self.model_components)
         self._set_progress(progress)
@@ -671,6 +728,7 @@ class ResolutionValidator(BaseRuleValidator):
         if len(spatial_resolution_definitions) > 1 and status:
             status = False
 
+        recommendation_str = self._config.recommendation
         summary = ""
         validate_info = []
         if not status:
@@ -682,12 +740,22 @@ class ResolutionValidator(BaseRuleValidator):
                         ", ".join(layers),
                     )
                 )
+            if snapping_enabled and snap_layer_path and snap_rescale:
+                self._config.category = ValidationCategory.WARNING
+                recommendation_str += tr(
+                    " or datasets will be resampled to match the spatial resolution of the reference layer"
+                )
+            else:
+                self._config.category = ValidationCategory.ERROR
+                recommendation_str += tr(
+                    " or specify a reference layer by selecting it through the snapping option in the settings"
+                )
         else:
             summary_tr = tr("Datasets have the same spatial resolution")
             summary = f"{summary_tr} {self.resolution_definition_to_str(list(spatial_resolution_definitions.keys())[0])}"
 
         self._result = RuleResult(
-            self._config, self._config.recommendation, summary, validate_info
+            self._config, recommendation_str, summary, validate_info
         )
 
         self._set_progress(100.0)
@@ -920,6 +988,119 @@ class CarbonLayerResolutionValidator(ResolutionValidator):
         return False
 
 
+class NormalizedValidator(BaseRuleValidator):
+    """Checks if the values of input datasets are between the
+    range 0 - 1.
+    """
+
+    def _validate(self) -> bool:
+        """Checks whether the value range is between 0 and 1
+        for the input raster datasets.
+
+        If a layer is not valid, it will also be included in the list
+        of invalid datasets.
+
+        :returns: True if the validation process succeeded
+        or False if it failed.
+        :rtype: bool
+        """
+        status = True
+        invalid_model_components = []
+        outside_range_model_components = {}
+
+        progress = 0.0
+        progress_increment = 100.0 / len(self.model_components)
+        self._set_progress(progress)
+
+        for model_component in self.model_components:
+            if self.feedback.isCanceled():
+                return False
+
+            is_valid = model_component.is_valid()
+            if not is_valid:
+                if status:
+                    status = False
+                invalid_model_components.append(model_component.name)
+            else:
+                if model_component.is_default_layer():
+                    layer_metadata = self.get_default_layer_metadata(
+                        model_component.layer_uuid
+                    )
+                    # TODO: Proposed attribute in CPLUS API
+                    if "has_range" not in layer_metadata:
+                        continue
+
+                    # TODO: CPLUS API to consider additional
+                    #  attributes to check / get
+                    pass
+                else:
+                    layer = model_component.to_map_layer().clone()
+                    if not isinstance(layer, QgsRasterLayer):
+                        invalid_model_components.append(model_component.name)
+                        continue
+
+                    raster_provider = layer.dataProvider()
+                    raster_stats = raster_provider.bandStatistics(
+                        1, QgsRasterBandStats.Stats.Min | QgsRasterBandStats.Stats.Max
+                    )
+
+                    if (
+                        raster_stats.minimumValue < 0.0
+                        or raster_stats.maximumValue > 1.0
+                    ):
+                        outside_range_model_components[model_component.name] = (
+                            raster_stats.minimumValue,
+                            raster_stats.maximumValue,
+                        )
+
+            progress += progress_increment
+            self._set_progress(progress)
+
+        if (outside_range_model_components or invalid_model_components) and status:
+            status = False
+
+        summary = ""
+        validate_info = []
+        if not status:
+            summary = tr("Datasets value ranges fall outside 0 and 1")
+            for model_name, value_range in outside_range_model_components.items():
+                validate_info.append(
+                    (
+                        f"Min: {value_range[0]:.3f}, max: {value_range[1]:.3f}",
+                        model_name,
+                    )
+                )
+
+            if len(invalid_model_components) > 0:
+                invalid_models_tr = tr("Invalid rasters")
+                validate_info.append(
+                    (tr("Invalid rasters"), ", ".join(invalid_model_components))
+                )
+        else:
+            summary = tr("All datasets have a normalized range of between 0 - 1")
+
+        self._result = RuleResult(
+            self._config, self._config.recommendation, summary, validate_info
+        )
+
+        self._set_progress(100.0)
+
+        return status
+
+    @property
+    def rule_type(self) -> RuleType:
+        """Returns the normalized value rule validator.
+
+        :returns: Normalized value rule validator.
+        :rtype: RuleType
+        """
+        return RuleType.NORMALIZED
+
+    def is_comparative(self) -> bool:
+        """Validator can be used for even one dataset."""
+        return False
+
+
 class DataValidator(QgsTask):
     """Abstract runner for checking a set of datasets against specific
     validation rules.
@@ -1107,8 +1288,8 @@ class DataValidator(QgsTask):
             RuleType.CRS: CrsValidator,
             RuleType.NO_DATA_VALUE: NoDataValueValidator,
             RuleType.RESOLUTION: ResolutionValidator,
-            RuleType.CARBON_RESOLUTION: CarbonLayerResolutionValidator,
             RuleType.PROJECTED_CRS: ProjectedCrsValidator,
+            RuleType.NORMALIZED: NormalizedValidator,
         }
 
     @staticmethod
@@ -1221,10 +1402,8 @@ class NcsDataValidator(DataValidator):
         )
         self.add_rule_validator(self._spatial_resolution_validator)
 
-        # Carbon resolution
-        self._carbon_resolution_validator = DataValidator.create_rule_validator(
-            RuleType.CARBON_RESOLUTION,
-            carbon_resolution_validation_config,
-            self.feedback,
+        # Normalized value validator
+        self._normalized_value_validator = DataValidator.create_rule_validator(
+            RuleType.NORMALIZED, normalized_validation_config, self.feedback
         )
-        self.add_rule_validator(self._carbon_resolution_validator)
+        self.add_rule_validator(self._normalized_value_validator)

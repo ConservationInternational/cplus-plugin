@@ -3,8 +3,7 @@
 Unit tests for metrics operations.
 """
 
-import os
-import typing
+import unittest
 from unittest import TestCase
 
 from qgis.core import QgsExpression
@@ -29,14 +28,17 @@ from cplus_plugin.models.helpers import create_metric_configuration
 from cplus_plugin.models.report import ActivityContextInfo
 
 from model_data_for_testing import (
-    ACTIVITY_1_NPV,
+    ACTIVITY_UUID_STR,
+    NCS_PATHWAY_1_NPV,
     get_activity,
-    get_activity_npv_collection,
+    get_ncs_pathways,
+    get_ncs_pathway_npv_collection,
     get_metric_column,
     get_protected_ncs_pathways,
     get_reference_irrecoverable_carbon_path,
     METRIC_COLUMN_NAME,
     METRIC_CONFIGURATION_DICT,
+    NCS_UUID_STR_1,
 )
 from utilities_for_testing import get_qgis_app
 
@@ -99,6 +101,22 @@ class TestMetricExpressions(TestCase):
     def setUp(self):
         Processing.initialize()
 
+        # Required when calculating NPV for pathways in an activity
+        self.activity = get_activity()
+        settings_manager.save_activity(self.activity)
+
+        # We need to save at least one NCS pathway when
+        # retrieving the NPV collection
+        pathway = get_ncs_pathways(use_projected=True)[0]
+        settings_manager.save_ncs_pathway(pathway)
+
+        self.activity.add_ncs_pathway(pathway)
+        settings_manager.update_activity(self.activity)
+
+    def tearDown(self):
+        settings_manager.remove_activity(ACTIVITY_UUID_STR)
+        settings_manager.remove_ncs_pathway(NCS_UUID_STR_1)
+
     def test_metrics_scope_in_expression_context(self):
         """Verify the metrics scope exists in a metrics expression context."""
         context = create_metrics_expression_context()
@@ -122,16 +140,13 @@ class TestMetricExpressions(TestCase):
 
     def test_activity_npv_expression_function(self):
         """Test the calculation of an activity's NPV using the expression function."""
-        # We first need to save the activity and corresponding NPV in settings
-        settings_manager.save_activity(get_activity())
-
-        npv_collection = get_activity_npv_collection()
+        npv_collection = get_ncs_pathway_npv_collection()
         npv_collection.update_computed_normalization_range()
         _ = npv_collection.normalize_npvs()
         settings_manager.save_npv_collection(npv_collection)
 
-        reference_area = 2000
-        reference_activity_npv = ACTIVITY_1_NPV * reference_area
+        reference_area = 200
+        reference_activity_npv = NCS_PATHWAY_1_NPV * reference_area
 
         register_metric_functions()
         context = create_metrics_expression_context()
@@ -148,19 +163,24 @@ class TestMetricExpressions(TestCase):
         """Test the calculation of the PWL impact of an activity
         using an expression function.
         """
-        reference_area = 2000
+        # Activity area is arbitrary as required in the ActivityContextInfo
+        # constructor but not used in the actual PWL impact calculation.
+        activity_reference_area = 2000
+        pathway_test_area = 1348.22
         custom_jobs_per_ha = 1.5
 
         register_metric_functions()
         context = create_metrics_expression_context()
-        activity_context_info = ActivityContextInfo(get_activity(), reference_area)
+        activity_context_info = ActivityContextInfo(
+            self.activity, activity_reference_area
+        )
 
         result = evaluate_activity_metric(
             context, activity_context_info, f"{FUNC_PWL_IMPACT}({custom_jobs_per_ha!s})"
         )
 
         self.assertTrue(result.success)
-        self.assertEqual(result.value, reference_area * custom_jobs_per_ha)
+        self.assertAlmostEqual(result.value, pathway_test_area * custom_jobs_per_ha, 1)
 
     def test_activity_irrecoverable_carbon_expression_function(self):
         """Test the calculation of an activity's irrecoverable carbon

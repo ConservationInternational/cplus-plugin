@@ -81,27 +81,42 @@ jobs:
           echo "Artifact URL: $ARTIFACT_URL"
           echo "::set-output name=artifact_url::$ARTIFACT_URL"
 
-      - name: Find Comment
-        uses: peter-evans/find-comment@v2
+      - name: Find Existing Comment
         id: find-comment
-        with:
-          issue-number: ${{ steps.pr_number_reader.outputs.pr_number }}
-          comment-author: 'github-actions[bot]'
-      - name: Update Comment
+        run: |
+          COMMENT_ID=$(gh api repos/${{ github.repository }}/issues/${{ steps.pr_number_reader.outputs.pr_number }}/comments --jq '.[] | select(.user.login=="github-actions[bot]") | .id')
+          echo "comment-id=$COMMENT_ID" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update or Create Comment
         env:
           ARTIFACT_URL: "${{ steps.artifact_url_reader.outputs.artifact_url }}"
           HEAD_SHA: "${{ github.event.head_sha }}"
-        uses: peter-evans/create-or-update-comment@v3
-        with:
-          token: ${{ github.token }}
-          issue-number:  ${{ steps.pr_number_reader.outputs.pr_number }}
-          comment-id: ${{ steps.find-comment.outputs.comment-id }}
-          edit-mode: replace
-          body: |-
-            ![badge]
-            
-            Plugin zip package for the changes in this PR has been successfully built!.
-            
-            Download the plugin zip file from here ${{ env.ARTIFACT_URL }}
-            
-            [badge]: https://img.shields.io/badge/package_build-success-green
+          COMMENT_ID: "${{ env.comment-id }}"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+        run: |
+          BODY="## 🚀 **Plugin Build Successful!** ✅
+
+          A new **plugin build** has been successfully generated for the changes in this pull request! 🎉  
+
+          🔗 **[Download Plugin Zip](${ARTIFACT_URL}) 📥**  
+
+          ### 📌 **Next Steps**  
+          - 📥 **Download and test** the plugin built from this pull request.  
+          - 🔄 **Review the changes** and validate functionality.  
+          - 📝 **Provide feedback on this pull request!**  
+
+          ---
+          ### **🛠 Powered by GitHub Actions & gh API**  
+          "
+
+          if [ -z "$COMMENT_ID" ]; then
+            gh api repos/${{ github.repository }}/issues/${{ steps.pr_number_reader.outputs.pr_number }}/comments \
+              -f body="$BODY"
+          else
+            gh api repos/${{ github.repository }}/issues/comments/$COMMENT_ID \
+              --method PATCH \
+              -f body="$BODY"
+          fi

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>527</width>
-    <height>442</height>
+    <height>457</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -168,19 +168,19 @@
    <item>
     <widget class="QLabel" name="label_3">
      <property name="text">
-      <string>Assign activities</string>
+      <string>Assign NCS pathways</string>
      </property>
     </widget>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_4">
      <item>
-      <widget class="QLineEdit" name="selected_models_le"/>
+      <widget class="QLineEdit" name="selected_pathways_le"/>
      </item>
      <item>
-      <widget class="QToolButton" name="select_models_btn">
+      <widget class="QToolButton" name="select_pathways_btn">
        <property name="toolTip">
-        <string>Click to open selection dialog for the implementation models.</string>
+        <string>Click to open selection dialog for the NCS pathways.</string>
        </property>
        <property name="text">
         <string>...</string>

@@ -69,6 +69,16 @@ class ActivityContainerWidget(QtWidgets.QWidget, WidgetUi):
 
         self.load()
 
+    @property
+    def items_loaded(self) -> True:
+        """Check if ncs pathway and activity items have been loaded in
+        their respective views.
+        :returns: True if NCS pathway and activity items have been
+        successfully loaded in the views.
+        :rtype: bool
+        """
+        return self._items_loaded
+
     def load(self):
         """Load NCS pathways and activities to the views.
 

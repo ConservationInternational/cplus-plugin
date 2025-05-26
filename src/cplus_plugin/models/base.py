@@ -309,8 +309,8 @@ class NcsPathwayType(IntEnum):
 class NcsPathway(LayerModelComponent):
     """Contains information about an NCS pathway layer."""
 
-    carbon_paths: typing.List[str] = dataclasses.field(default_factory=list)
     pathway_type: NcsPathwayType = NcsPathwayType.UNDEFINED
+    priority_layers: typing.List[typing.Dict] = dataclasses.field(default_factory=list)
 
     def __eq__(self, other: "NcsPathway") -> bool:
         """Test equality of NcsPathway object with another
@@ -339,72 +339,35 @@ class NcsPathway(LayerModelComponent):
 
         return True
 
-    def add_carbon_path(self, carbon_path: str, is_default_layer: bool = False) -> bool:
-        """Add a carbon layer path.
+    def pw_layers(self) -> typing.List[QgsRasterLayer]:
+        """Returns the list of priority weighting layers defined under
+        the :py:attr:`~priority_layers` attribute.
 
-        Checks if the path has already been defined or if it exists
-        in the file system.
-
-        :returns: True if the carbon layer path was successfully
-        added, else False if the path has already been defined
-        or does not exist in the file system.
-        :rtype: bool
-        """
-        if carbon_path in self.carbon_paths:
-            return False
-
-        if not is_default_layer:
-            if not os.path.exists(carbon_path):
-                return False
-
-        self.carbon_paths.append(carbon_path)
-
-        return True
-
-    def carbon_layers(self) -> typing.List[QgsRasterLayer]:
-        """Returns the list of carbon layers whose path is defined under
-        the :py:attr:`~carbon_paths` attribute.
-
-        The caller should check the validity of the layers or use
-        :py:meth:`~is_carbon_valid` function.
-
-        :returns: Carbon layers for the NCS pathway or an empty list
+        :returns: Priority layers for the implementation or an empty list
         if the path is not defined.
         :rtype: list
         """
         return [
-            QgsRasterLayer(carbon_path)
-            for carbon_path in self.carbon_paths
-            if not carbon_path.startswith("cplus://")
+            QgsRasterLayer(layer.get("path"))
+            for layer in self.priority_layers
+            if layer.get("path")
         ]
 
-    def is_carbon_valid(self) -> bool:
-        """Checks if the carbon layers are valid.
+    def is_pwls_valid(self) -> bool:
+        """Checks if the priority layers are valid.
 
-        :returns: True if all carbon layers are valid, else False if
-        even one is invalid. If there are no carbon layers defined, it will
+        :returns: True if all priority layers are valid, else False if
+        even one is invalid. If there are no priority layers defined, it will
         always return True.
         :rtype: bool
         """
         is_valid = True
-        for cl in self.carbon_layers():
+        for cl in self.pw_layers():
             if not cl.isValid():
                 is_valid = False
                 break
 
         return is_valid
-
-    def is_valid(self) -> bool:
-        """Additional check to include validity of carbon layers."""
-        valid = super().is_valid()
-        if not valid:
-            return False
-
-        carbon_valid = self.is_carbon_valid()
-        if not carbon_valid:
-            return False
-
-        return True
 
 
 @dataclasses.dataclass
@@ -417,7 +380,6 @@ class Activity(LayerModelComponent):
     """
 
     pathways: typing.List[NcsPathway] = dataclasses.field(default_factory=list)
-    priority_layers: typing.List[typing.Dict] = dataclasses.field(default_factory=list)
     layer_styles: dict = dataclasses.field(default_factory=dict)
     mask_paths: typing.List[str] = dataclasses.field(default_factory=list)
     style_pixel_value: int = -1
@@ -428,7 +390,6 @@ class Activity(LayerModelComponent):
         pathways = []
         for pathway in activity_dict["pathways"]:
             del pathway["layer_uuid"]
-            del pathway["carbon_uuids"]
             pathways.append(NcsPathway(**pathway))
         activity_dict["pathways"] = pathways
         # delete mask_uuids using pop
@@ -526,36 +487,6 @@ class Activity(LayerModelComponent):
             return None
 
         return pathways[0]
-
-    def pw_layers(self) -> typing.List[QgsRasterLayer]:
-        """Returns the list of priority weighting layers defined under
-        the :py:attr:`~priority_layers` attribute.
-
-        :returns: Priority layers for the implementation or an empty list
-        if the path is not defined.
-        :rtype: list
-        """
-        return [
-            QgsRasterLayer(layer.get("path"))
-            for layer in self.priority_layers
-            if layer.get("path")
-        ]
-
-    def is_pwls_valid(self) -> bool:
-        """Checks if the priority layers are valid.
-
-        :returns: True if all priority layers are valid, else False if
-        even one is invalid. If there are no priority layers defined, it will
-        always return True.
-        :rtype: bool
-        """
-        is_valid = True
-        for cl in self.pw_layers():
-            if not cl.isValid():
-                is_valid = False
-                break
-
-        return is_valid
 
     def is_valid(self) -> bool:
         """Includes an additional check to assert if NCS pathways have
@@ -677,7 +608,6 @@ class Scenario(BaseModelComponent):
 
     extent: SpatialExtent
     activities: typing.List[Activity]
-    weighted_activities: typing.List[Activity]
     priority_layer_groups: typing.List
     state: ScenarioState = ScenarioState.IDLE
     server_uuid: UUID = None
@@ -687,7 +617,7 @@ class Scenario(BaseModelComponent):
 class ScenarioResult:
     """Scenario result details."""
 
-    scenario: Scenario
+    scenario: typing.Optional[Scenario]
     created_date: datetime.datetime = datetime.datetime.now()
     analysis_output: typing.Dict = None
     output_layer_name: str = ""

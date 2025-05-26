@@ -37,11 +37,11 @@ from .models.base import (
     ScenarioResult,
     SpatialExtent,
 )
-from .models.financial import ActivityNpvCollection
+from .models.financial import NcsPathwayNpvCollection
 from .models.helpers import (
-    activity_npv_collection_to_dict,
+    ncs_pathway_npv_collection_to_dict,
     create_activity,
-    create_activity_npv_collection,
+    create_ncs_pathway_npv_collection,
     create_metric_configuration,
     create_ncs_pathway,
     layer_component_to_dict,
@@ -94,12 +94,9 @@ class ScenarioSettings(Scenario):
         """
 
         activities_list = settings.value("activities", [])
-        weighted_activities_list = settings.value("activities", [])
         server_uuid = settings.value("server_uuid", None)
 
         activities = []
-
-        weighted_activities = []
 
         try:
             for activity in activities_list:
@@ -120,25 +117,6 @@ class ScenarioSettings(Scenario):
 
                 saved_activity.path = setting_activity.get("path")
                 activities.append(saved_activity)
-
-            for activity in weighted_activities_list:
-                setting_activity = json.loads(activity)
-
-                saved_activity = settings_manager.get_activity(
-                    setting_activity.get("uuid")
-                )
-                if saved_activity is None:
-                    continue
-
-                for pathways in setting_activity[PATHWAYS_ATTRIBUTE]:
-                    for path_uuid, path in pathways.items():
-                        pathway = settings_manager.get_ncs_pathway(path_uuid)
-                        if pathway:
-                            pathway.path = path
-                            saved_activity.add_ncs_pathway(pathway)
-
-                saved_activity.path = setting_activity.get("path")
-                weighted_activities.append(saved_activity)
         except Exception as e:
             log(f"Problem fetching saved activities, {e}")
 
@@ -148,7 +126,6 @@ class ScenarioSettings(Scenario):
             description=settings.value("description", None),
             extent=[],
             activities=activities,
-            weighted_activities=weighted_activities,
             priority_layer_groups=[],
             server_uuid=uuid.UUID(server_uuid) if server_uuid else None,
         )
@@ -210,9 +187,6 @@ class Settings(enum.Enum):
     SCENARIO_DESCRIPTION = "scenario_description"
     SCENARIO_EXTENT = "scenario_extent"
 
-    # Coefficient for carbon layers
-    CARBON_COEFFICIENT = "carbon_coefficient"
-
     # Pathway suitability index value
     PATHWAY_SUITABILITY_INDEX = "pathway_suitability_index"
 
@@ -234,6 +208,7 @@ class Settings(enum.Enum):
 
     # Outputs options
     NCS_WITH_CARBON = "ncs_with_carbon"
+    NCS_WEIGHTED = "ncs_weighted"
     LANDUSE_PROJECT = "landuse_project"
     LANDUSE_NORMALIZED = "landuse_normalized"
     LANDUSE_WEIGHTED = "landuse_weighted"
@@ -398,11 +373,9 @@ class SettingsManager(QtCore.QObject):
         self.save_scenario_extent(settings_key, scenario_settings.extent)
 
         activities = []
-        weighted_activities = []
 
         for activity in scenario_settings.activities:
             if isinstance(activity, Activity):
-                priority_layers = activity.priority_layers
                 layer_styles = activity.layer_styles
                 style_pixel_value = activity.style_pixel_value
 
@@ -411,37 +384,17 @@ class SettingsManager(QtCore.QObject):
                     ncs_pathways.append({str(ncs.uuid): ncs.path})
 
                 activity = layer_component_to_dict(activity)
-                activity[PRIORITY_LAYERS_SEGMENT] = priority_layers
                 activity[PATHWAYS_ATTRIBUTE] = ncs_pathways
                 activity[STYLE_ATTRIBUTE] = layer_styles
                 activity[PIXEL_VALUE_ATTRIBUTE] = style_pixel_value
 
                 activities.append(json.dumps(activity))
 
-        for activity in scenario_settings.weighted_activities:
-            if isinstance(activity, Activity):
-                priority_layers = activity.priority_layers
-                layer_styles = activity.layer_styles
-                style_pixel_value = activity.style_pixel_value
-
-                ncs_pathways = []
-                for ncs in activity.pathways:
-                    ncs_pathways.append({str(ncs.uuid): ncs.path})
-
-                activity = layer_component_to_dict(activity)
-                activity[PRIORITY_LAYERS_SEGMENT] = priority_layers
-                activity[PATHWAYS_ATTRIBUTE] = ncs_pathways
-                activity[STYLE_ATTRIBUTE] = layer_styles
-                activity[PIXEL_VALUE_ATTRIBUTE] = style_pixel_value
-
-                weighted_activities.append(json.dumps(activity))
-
         with qgis_settings(settings_key) as settings:
             settings.setValue("uuid", str(scenario_settings.uuid))
             settings.setValue("name", scenario_settings.name)
             settings.setValue("description", scenario_settings.description)
             settings.setValue("activities", activities)
-            settings.setValue("weighted_activities", weighted_activities)
             settings.setValue(
                 "server_uuid",
                 str(scenario_settings.server_uuid)
@@ -468,23 +421,6 @@ class SettingsManager(QtCore.QObject):
         spatial_key = f"{key}/extent/spatial/"
         with qgis_settings(spatial_key) as settings:
             settings.setValue("bbox", spatial_extent)
-
-    # def get_scenario(self, identifier):
-    #     """Retrieves the scenario that matches the passed identifier.
-    #
-    #     :param identifier: Scenario identifier
-    #     :type identifier: str
-    #
-    #     :returns: Scenario settings instance
-    #     :rtype: ScenarioSettings
-    #     """
-    #
-    #     settings_key = self._get_scenario_settings_base(identifier)
-    #     with qgis_settings(settings_key) as settings:
-    #         scenario_settings = ScenarioSettings.from_qgs_settings(
-    #             str(identifier), settings
-    #         )
-    #     return scenario_settings
 
     def get_scenario(self, scenario_id):
         """Retrieves the first scenario that matched the passed scenario id.
@@ -703,7 +639,7 @@ class SettingsManager(QtCore.QObject):
         :param identifier: Priority layers identifier
         :type identifier: uuid.UUID
 
-        :returns: Priority layer dict
+        :returns: Priority layer dict or None if not found.
         :rtype: dict
         """
         priority_layer = None
@@ -780,11 +716,11 @@ class SettingsManager(QtCore.QObject):
                     priority_layer_list.append(layer)
         return priority_layer_list
 
-    def find_layer_by_name(self, name) -> typing.Dict:
+    def find_layer_by_name(self, name: str) -> typing.Dict:
         """Finds a priority layer setting inside
         the plugin QgsSettings by name.
 
-        :param name: Priority layers identifier
+        :param name: Priority layer name.
         :type name: str
 
         :returns: Priority layers dict
@@ -804,14 +740,14 @@ class SettingsManager(QtCore.QObject):
 
         return self.get_priority_layer(found_id) if found_id is not None else None
 
-    def find_layers_by_group(self, group) -> typing.List:
+    def find_layers_by_group(self, group: str) -> typing.List:
         """Finds priority layers inside the plugin QgsSettings
-         that contain the passed group.
+         that contain the given group name.
 
-        :param group: Priority group name
+        :param group: Priority group name.
         :type group: str
 
-        :returns: Priority layers list
+        :returns: Priority layers list.
         :rtype: list
         """
         layers = []
@@ -865,7 +801,7 @@ class SettingsManager(QtCore.QObject):
 
         self.priority_layers_changed.emit()
 
-    def set_current_priority_layer(self, identifier):
+    def set_current_priority_layer(self, identifier: str):
         """Set current priority layer
 
         :param identifier: Priority layer identifier
@@ -1145,6 +1081,19 @@ class SettingsManager(QtCore.QObject):
         default_layers_root = self._get_default_layers_settings_base()
         self.remove(default_layers_root)
 
+    def remove_default_layer(self, layer: dict):
+        """Remove default layer from settings.
+        :param layer: layer to be removed
+        :type layer: dict
+        """
+        layer_type = layer.get("type")
+        layer_uuid = layer.get("layer_uuid")
+        default_layers = self.get_default_layers(layer_type)
+        layers_to_save = [
+            lyr for lyr in default_layers if lyr["layer_uuid"] != layer_uuid
+        ]
+        self.save_default_layers(layer_type, layers_to_save)
+
     def _get_ncs_pathway_settings_base(self) -> str:
         """Returns the path for NCS pathway settings.
 
@@ -1286,6 +1235,23 @@ class SettingsManager(QtCore.QObject):
 
             ncs_pathway.carbon_paths = abs_carbon_paths
 
+            # PWLs path update
+            updated_pwls = []
+            for layer in ncs_pathway.priority_layers:
+                if layer in PRIORITY_LAYERS and base_dir not in layer.get(
+                    PATH_ATTRIBUTE
+                ):
+                    abs_pwl_path = (
+                        f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/"
+                        f"{layer.get(PATH_ATTRIBUTE)}"
+                    )
+                    abs_pwl_path = str(os.path.normpath(abs_pwl_path))
+                    layer[PATH_ATTRIBUTE] = abs_pwl_path
+
+                updated_pwls.append(layer)
+
+            ncs_pathway.priority_layers = updated_pwls
+
         # Remove then re-insert
         self.remove_ncs_pathway(str(ncs_pathway.uuid))
         self.save_ncs_pathway(ncs_pathway)
@@ -1317,7 +1283,6 @@ class SettingsManager(QtCore.QObject):
         :type activity: Activity, dict
         """
         if isinstance(activity, Activity):
-            priority_layers = activity.priority_layers
             layer_styles = activity.layer_styles
             style_pixel_value = activity.style_pixel_value
             mask_paths = activity.mask_paths
@@ -1327,20 +1292,10 @@ class SettingsManager(QtCore.QObject):
                 ncs_pathways.append(str(ncs.uuid))
 
             activity = layer_component_to_dict(activity)
-            activity[PRIORITY_LAYERS_SEGMENT] = priority_layers
             activity[MASK_PATHS_SEGMENT] = mask_paths
             activity[PATHWAYS_ATTRIBUTE] = ncs_pathways
             activity[STYLE_ATTRIBUTE] = layer_styles
             activity[PIXEL_VALUE_ATTRIBUTE] = style_pixel_value
-
-        if isinstance(activity, dict):
-            priority_layers = []
-            if activity.get("pwls_ids") is not None:
-                for layer_id in activity.get("pwls_ids", []):
-                    layer = self.get_priority_layer(layer_id)
-                    priority_layers.append(layer)
-                if len(priority_layers) > 0:
-                    activity[PRIORITY_LAYERS_SEGMENT] = priority_layers
 
         activity_str = json.dumps(todict(activity), cls=CustomJsonEncoder)
 
@@ -1435,21 +1390,6 @@ class SettingsManager(QtCore.QObject):
         :param activity: Activity object to be updated.
         :type activity: Activity
         """
-        base_dir = self.get_value(Settings.BASE_DIR)
-
-        if base_dir:
-            # PWLs path update
-            for layer in activity.priority_layers:
-                if layer in PRIORITY_LAYERS and base_dir not in layer.get(
-                    PATH_ATTRIBUTE
-                ):
-                    abs_pwl_path = (
-                        f"{base_dir}/{PRIORITY_LAYERS_SEGMENT}/"
-                        f"{layer.get(PATH_ATTRIBUTE)}"
-                    )
-                    abs_pwl_path = str(os.path.normpath(abs_pwl_path))
-                    layer[PATH_ATTRIBUTE] = abs_pwl_path
-
         # Remove then re-insert
         self.remove_activity(str(activity.uuid))
         self.save_activity(activity)
@@ -1471,12 +1411,12 @@ class SettingsManager(QtCore.QObject):
         if self.get_activity(activity_uuid) is not None:
             self.remove(f"{self.ACTIVITY_BASE}/{activity_uuid}")
 
-    def get_npv_collection(self) -> typing.Optional[ActivityNpvCollection]:
-        """Gets the collection of NPV mappings of activities.
+    def get_npv_collection(self) -> typing.Optional[NcsPathwayNpvCollection]:
+        """Gets the collection of NPV mappings of NCS pathways.
 
-        :returns: The collection of activity NPV mappings or None
+        :returns: The collection of NCS pathway NPV mappings or None
         if not defined.
-        :rtype: ActivityNpvCollection
+        :rtype: NcsPathwayNpvCollection
         """
         npv_collection_str = self.get_value(NPV_COLLECTION_PROPERTY, None)
         if not npv_collection_str:
@@ -1486,20 +1426,20 @@ class SettingsManager(QtCore.QObject):
         try:
             npv_collection_dict = json.loads(npv_collection_str)
         except json.JSONDecodeError:
-            log("ActivityNPVCollection JSON is invalid.")
+            log("NcsPathwayNPVCollection JSON is invalid.")
 
-        return create_activity_npv_collection(
-            npv_collection_dict, self.get_all_activities()
+        return create_ncs_pathway_npv_collection(
+            npv_collection_dict, self.get_all_ncs_pathways()
         )
 
-    def save_npv_collection(self, npv_collection: ActivityNpvCollection):
-        """Saves the activity NPV collection in the settings as a serialized
+    def save_npv_collection(self, npv_collection: NcsPathwayNpvCollection):
+        """Saves the NCS pathway NPV collection in the settings as a serialized
         JSON string.
 
-        :param npv_collection: Activity NPV collection serialized to a JSON string.
-        :type npv_collection: ActivityNpvCollection
+        :param npv_collection: NCS pathway NPV collection serialized to a JSON string.
+        :type npv_collection: NcsPathwayNpvCollection
         """
-        npv_collection_dict = activity_npv_collection_to_dict(npv_collection)
+        npv_collection_dict = ncs_pathway_npv_collection_to_dict(npv_collection)
         npv_collection_str = json.dumps(npv_collection_dict)
         self.set_value(NPV_COLLECTION_PROPERTY, npv_collection_str)
 
@@ -1528,7 +1468,7 @@ class SettingsManager(QtCore.QObject):
         """Serializes the metric configuration in settings as a JSON string.
 
         :param metric_configuration: Activity NPV collection serialized to a JSON string.
-        :type metric_configuration: ActivityNpvCollection
+        :type metric_configuration: NcsPathwayNpvCollection
         """
         metric_configuration_dict = metric_configuration_to_dict(metric_configuration)
         metric_configuration_str = json.dumps(metric_configuration_dict)

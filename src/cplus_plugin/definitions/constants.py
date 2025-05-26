@@ -17,6 +17,7 @@ OUTPUTS_SEGMENT = "outputs"
 ACTIVITY_GROUP_LAYER_NAME = "Activity Maps"
 ACTIVITY_WEIGHTED_GROUP_NAME = "Weighted Activity Maps"
 NCS_PATHWAYS_GROUP_LAYER_NAME = "NCS Pathways Maps"
+NCS_PATHWAYS_WEIGHTED_GROUP_LAYER_NAME = "Weighted NCS Pathways Maps"
 
 ACTIVITY_NAME = "Activity"
 
@@ -59,7 +60,9 @@ NUMBER_FORMATTER_ID_ATTRIBUTE = "number_formatter_type_id"
 NUMBER_FORMATTER_PROPS_ATTRIBUTE = "number_formatter_props"
 
 ACTIVITY_IDENTIFIER_PROPERTY = "activity_identifier"
+NCS_PATHWAY_IDENTIFIER_PROPERTY = "pathway_identifier"
 MULTI_ACTIVITY_IDENTIFIER_PROPERTY = "activity_identifiers"
+MULTI_PATHWAY_IDENTIFIER_PROPERTY = "pathway_identifiers"
 NPV_COLLECTION_PROPERTY = "npv_collection"
 METRIC_IDENTIFIER_PROPERTY = "metric_identifier"
 METRIC_COLUMNS_PROPERTY = "metric_columns"

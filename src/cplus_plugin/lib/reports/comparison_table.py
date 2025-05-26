@@ -17,7 +17,7 @@ from qgis.PyQt import QtCore, QtGui
 from ...models.base import ScenarioResult
 from ...models.helpers import layer_from_scenario_result
 from ...models.report import ScenarioAreaInfo
-from ...utils import calculate_raster_value_area, log, tr
+from ...utils import calculate_raster_area_by_pixel_value, log, tr
 
 
 class ScenarioComparisonTableInfo(QtCore.QObject):
@@ -49,9 +49,7 @@ class ScenarioComparisonTableInfo(QtCore.QObject):
         # pixel value with the corresponding name
         for result in self._scenario_results:
             name_pixel_mapping = {}
-            for pixel_value, activity in enumerate(
-                result.scenario.weighted_activities, 1
-            ):
+            for pixel_value, activity in enumerate(result.scenario.activities, 1):
                 activity_info = (str(activity.uuid), activity.name)
                 name_pixel_mapping[pixel_value] = activity.name
                 if activity_info in self._activity_header_info:
@@ -134,7 +132,7 @@ class ScenarioComparisonTableInfo(QtCore.QObject):
                 self._multistep_area_feedback.setCurrentStep(current_step)
                 continue
 
-            area_info = calculate_raster_value_area(
+            area_info = calculate_raster_area_by_pixel_value(
                 layer, feedback=self._multistep_area_feedback
             )
             int_area_info = {
@@ -159,8 +157,7 @@ class ScenarioComparisonTableInfo(QtCore.QObject):
                 msg = "No activity areas from the calculation"
                 log(msg)
 
-            row_data = []
-            row_data.append(QgsTableCell(result.scenario.name))
+            row_data = [QgsTableCell(result.scenario.name)]
             for header_info in self._activity_header_info:
                 activity_name = header_info[1]
                 if activity_name in activity_name_area_info:

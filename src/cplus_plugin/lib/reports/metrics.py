@@ -16,6 +16,7 @@ from qgis.core import (
     QgsScopedExpressionFunction,
 )
 
+from ...conf import settings_manager
 from ...definitions.defaults import (
     BASE_PLUGIN_NAME,
     MEAN_BASED_IRRECOVERABLE_CARBON_EXPRESSION_DESCRIPTION,
@@ -25,7 +26,7 @@ from ...definitions.defaults import (
 from ..carbon import IrrecoverableCarbonCalculator
 from ..financials import calculate_activity_npv
 from ...models.report import ActivityContextInfo, MetricEvalResult
-from ...utils import function_help_to_html, log, tr
+from ...utils import calculate_raster_area, function_help_to_html, log, tr
 
 # Collection of metric expression functions
 METRICS_LIBRARY = []
@@ -97,7 +98,9 @@ class ActivityIrrecoverableCarbonFunction(QgsScopedExpressionFunction):
 
 
 class ActivityNpvFunction(QgsScopedExpressionFunction):
-    """Calculates the financial NPV of an activity."""
+    """Calculates the financial NPV of an activity by extracting the
+    individual NPV values of the pathways in the activity.
+    """
 
     def __init__(self):
         help_html = function_help_to_html(
@@ -210,18 +213,18 @@ class ActivityPwlImpactFunction(QgsScopedExpressionFunction):
         if len(values) == 0:
             return -1.0
 
-        if not context.hasVariable(VAR_ACTIVITY_AREA):
-            return -1.0
-
-        num_jobs = values[0]
-        activity_area = context.variable(VAR_ACTIVITY_AREA)
-
-        if not isinstance(activity_area, (float, int)) or not isinstance(
-            num_jobs, (float, int)
+        if not context.hasVariable(VAR_ACTIVITY_ID) or not context.hasVariable(
+            VAR_ACTIVITY_AREA
         ):
             return -1.0
 
-        return activity_area * num_jobs
+        activity_id = context.variable(VAR_ACTIVITY_ID)
+        num_jobs = values[0]
+
+        if not isinstance(num_jobs, (float, int)):
+            return -1.0
+
+        return calculate_activity_pwl_impact(activity_id, num_jobs)
 
     def clone(self) -> "ActivityPwlImpactFunction":
         """Gets a clone of this function.
@@ -412,3 +415,49 @@ class MetricsExpressionContextGenerator(QgsExpressionContextGenerator):
         :rtype: QgsExpressionContext
         """
         return create_metrics_expression_context()
+
+
+def calculate_activity_pwl_impact(activity_id: str, number_jobs: float) -> float:
+    """Calculates the PWL impact an activity.
+
+    It sums up the result of the number of jobs multiplied
+    by the area of each NCS pathway that constitutes the
+    activity.
+
+    :param activity_id: The ID of the specific activity.
+    :type activity_id: str
+
+    :param number_jobs: Number of jobs for the activity.
+    :type number_jobs: float
+
+    :returns: Returns the total pwl impact of the activity, or -1.0
+    if the activity does not exist or if found, lacks pathways
+    or if the area of all pathways could not be computed.
+    :rtype: float
+    """
+    activity = settings_manager.get_activity(activity_id)
+    if activity is None or len(activity.pathways) == 0:
+        return -1.0
+
+    pathway_areas = []
+    for pathway in activity.pathways:
+        pathway_layer = pathway.to_map_layer()
+        if pathway_layer is None:
+            continue
+
+        area = calculate_raster_area(pathway_layer, 1)
+        if area == -1.0:
+            log(
+                f"Could not compute the area for {pathway.name} "
+                f"pathway in PWL impact assessment for {activity.name} "
+                f"activity.",
+                info=False,
+            )
+            continue
+
+        pathway_areas.append(area)
+
+    if len(pathway_areas) == 0:
+        return -1.0
+
+    return float(sum(pathway_areas)) * number_jobs
