@@ -37,6 +37,7 @@ from ..definitions.constants import (
     ALIGNMENT_ATTRIBUTE,
     AUTO_CALCULATED_ATTRIBUTE,
     COMPUTED_ATTRIBUTE,
+    CURRENT_PROFILE_PROPERTY,
     DISCOUNT_ATTRIBUTE,
     DESCRIPTION_ATTRIBUTE,
     ENABLED_ATTRIBUTE,
@@ -45,7 +46,10 @@ from ..definitions.constants import (
     LAYER_TYPE_ATTRIBUTE,
     MANUAL_NPV_ATTRIBUTE,
     MASK_PATHS_SEGMENT,
+    METRIC_COLLECTION_PROPERTY,
+    METRIC_CONFIGURATION_PROPERTY,
     METRIC_IDENTIFIER_PROPERTY,
+    METRIC_PROFILE_PROPERTY,
     METRIC_TYPE_ATTRIBUTE,
     NPV_MAPPINGS_ATTRIBUTE,
     MAX_VALUE_ATTRIBUTE,
@@ -63,6 +67,7 @@ from ..definitions.constants import (
     PATHWAY_TYPE_ATTRIBUTE,
     PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
+    PROFILES_ATTRIBUTE,
     REMOVE_EXISTING_ATTRIBUTE,
     STYLE_ATTRIBUTE,
     USER_DEFINED_ATTRIBUTE,
@@ -72,7 +77,14 @@ from ..definitions.constants import (
 )
 from ..definitions.defaults import DEFAULT_CRS_ID, QGIS_GDAL_PROVIDER
 from .financial import NcsPathwayNpv, NcsPathwayNpvCollection, NpvParameters
-from .report import ActivityColumnMetric, MetricColumn, MetricConfiguration, MetricType
+from .report import (
+    ActivityColumnMetric,
+    MetricColumn,
+    MetricConfiguration,
+    MetricConfigurationProfile,
+    MetricProfileCollection,
+    MetricType,
+)
 
 from ..utils import log
 
@@ -796,7 +808,7 @@ def metric_configuration_to_dict(metric_configuration: MetricConfiguration) -> d
     :type metric_configuration: MetricConfiguration
 
     :returns: A dictionary representing a metric configuration.
-    :rtype: MetricConfiguration
+    :rtype: dict
     """
     metric_config_dict = {}
 
@@ -874,3 +886,126 @@ def create_metric_configuration(
         activity_column_metrics.append(activity_row_metrics)
 
     return MetricConfiguration(metric_columns, activity_column_metrics)
+
+
+def metric_configuration_profile_to_dict(
+    metric_config_profile: MetricConfigurationProfile,
+) -> dict:
+    """Serializes a metric configuration profile to a dictionary.
+
+    :param metric_config_profile: Metric configuration profile to be
+    serialized.
+    :type metric_config_profile: MetricConfigurationProfile
+
+    :returns: A dictionary representing a metric configuration profile.
+    :rtype: dict
+    """
+    return {
+        NAME_ATTRIBUTE: metric_config_profile.name,
+        METRIC_CONFIGURATION_PROPERTY: metric_configuration_to_dict(
+            metric_config_profile.config
+        ),
+    }
+
+
+def create_metric_configuration_profile(
+    metric_configuration_profile_dict: dict,
+    referenced_activities: typing.List[Activity],
+) -> typing.Optional[MetricConfigurationProfile]:
+    """Creates a metric configuration profile from the equivalent
+    dictionary representation.
+
+    :param metric_configuration_profile_dict: Dictionary
+    containing information for deserializing a metric
+    configuration profile.
+    :type metric_configuration_profile_dict: dict
+
+    :param referenced_activities: Activities which will be used
+    to extract those referenced in the metric configuration
+    profile.
+    :type referenced_activities: typing.List[Activity]
+
+    :returns: Metric configuration profile
+    object or None if the deserialization failed.
+    :rtype: MetricConfiguration
+    """
+    if not metric_configuration_profile_dict:
+        return None
+
+    if NAME_ATTRIBUTE not in metric_configuration_profile_dict:
+        return None
+
+    if METRIC_CONFIGURATION_PROPERTY not in metric_configuration_profile_dict:
+        return None
+
+    name = metric_configuration_profile_dict[NAME_ATTRIBUTE]
+    config = create_metric_configuration(
+        metric_configuration_profile_dict[METRIC_CONFIGURATION_PROPERTY],
+        referenced_activities,
+    )
+
+    if config is None:
+        return None
+
+    return MetricConfigurationProfile(name, config)
+
+
+def metric_profile_collection_to_dict(
+    metric_profile_collection: MetricProfileCollection,
+) -> dict:
+    """Serializes a metric configuration profile to a dictionary.
+
+    :param metric_profile_collection: Metric profile collection to be
+    serialized.
+    :type metric_profile_collection: MetricProfileCollection
+
+    :returns: A dictionary representing a metric profile collection.
+    :rtype: dict
+    """
+    return {
+        CURRENT_PROFILE_PROPERTY: metric_profile_collection.current_profile,
+        PROFILES_ATTRIBUTE: [
+            metric_configuration_profile_to_dict(mp)
+            for mp in metric_profile_collection.profiles
+        ],
+    }
+
+
+def create_metrics_profile_collection(
+    metric_profile_collection_dict, referenced_activities: typing.List[Activity]
+) -> typing.Optional[MetricProfileCollection]:
+    """Deserialized a metric profile collection from the equivalent
+    dictionary representation.
+
+    :param metric_profile_collection_dict: Dictionary containing
+    information about the profile collection.
+    :type metric_profile_collection_dict: dict
+
+    :param referenced_activities: Activities which will be used
+    to extract those referenced in the metric configuration
+    objects that correspond to the respective profiles.
+    :type referenced_activities: typing.List[Activity]
+
+    :returns: Metric profile configuration object or None if
+    the deserialization failed.
+    :rtype: MetricProfileCollection
+    """
+    if not metric_profile_collection_dict:
+        return None
+
+    if PROFILES_ATTRIBUTE not in metric_profile_collection_dict:
+        return None
+
+    current_profile_id = metric_profile_collection_dict.get(
+        CURRENT_PROFILE_PROPERTY, ""
+    )
+    metric_profiles = []
+    for profile_dict in metric_profile_collection_dict[PROFILES_ATTRIBUTE]:
+        profile = create_metric_configuration_profile(
+            profile_dict, referenced_activities
+        )
+        if profile is None:
+            continue
+        metric_profiles.append(profile)
+
+    return MetricProfileCollection(current_profile_id, metric_profiles)

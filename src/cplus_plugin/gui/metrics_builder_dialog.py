@@ -39,7 +39,14 @@ from .metrics_builder_model import (
 )
 from ..models.base import Activity
 from ..models.helpers import clone_activity
-from ..models.report import MetricColumn, MetricConfiguration, MetricType
+from ..models.report import (
+    ActivityColumnMetric,
+    MetricColumn,
+    MetricConfiguration,
+    MetricConfigurationProfile,
+    MetricProfileCollection,
+    MetricType,
+)
 from ..utils import FileUtils, log, open_documentation, tr
 
 WidgetUi, _ = loadUiType(
@@ -220,7 +227,13 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
     AREA_COLUMN = "Area"
     MAX_COLUMNS = 10
 
-    def __init__(self, parent=None, activities=None, add_default_columns=True):
+    def __init__(
+        self,
+        parent=None,
+        activities=None,
+        add_default_columns=True,
+        profile_collection=None,
+    ):
         super().__init__(parent)
         self.setupUi(self)
 
@@ -229,6 +242,10 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         self._activities = []
         if activities is not None:
             self._activities = [clone_activity(activity) for activity in activities]
+
+        self._profile_collection = None
+        if self._profile_collection is None:
+            self.initialize_collection()
 
         # Setup notification bars
         self._column_message_bar = QgsMessageBar()
@@ -278,6 +295,21 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         self.btn_column_down.setEnabled(False)
         self.btn_column_down.clicked.connect(self.on_move_down_column)
 
+        # Profile management
+        self.btn_add_profile.setIcon(add_icon)
+        self.btn_add_profile.clicked.connect(self.on_add_profile)
+
+        edit_icon = FileUtils.get_icon("mActionToggleEditing.svg")
+        self.btn_rename_profile.setIcon(edit_icon)
+        self.btn_rename_profile.clicked.connect(self.on_rename_profile)
+
+        copy_icon = FileUtils.get_icon("mActionEditCopy.svg")
+        self.btn_copy_profile.setIcon(copy_icon)
+        self.btn_copy_profile.clicked.connect(self.on_copy_profile)
+
+        self.btn_delete_profile.setIcon(remove_icon)
+        self.btn_delete_profile.clicked.connect(self.on_delete_profile)
+
         self.splitter.setStretchFactor(0, 20)
         self.splitter.setStretchFactor(1, 80)
 
@@ -323,20 +355,111 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         # Final summary page
         self.tv_summary.setModel(self._summary_model)
 
-        if add_default_columns:
-            self._add_default_columns()
+    @property
+    def profile_collection(self) -> MetricProfileCollection:
+        """Gets the profile collection used in the wizard.
 
-    def _add_default_columns(self):
-        """Add default columns."""
-        # Add the default area column
+        :returns: The profile collection used in the wizard.
+        :rtype: MetricProfileCollection
+        """
+        return self._profile_collection
+
+    @profile_collection.setter
+    def profile_collection(self, collection: MetricProfileCollection):
+        """Set the profile collection to use in the wizard.
+
+        :param collection: Metric profile collection.
+        :type collection: MetricProfileCollection
+        """
+        if not collection.profiles:
+            return
+
+        self.clear_views()
+
+        self._profile_collection = collection
+        current_profile = collection.get_current_profile()
+        if current_profile is None:
+            # Try to use another profile
+            for profile in collection.profiles:
+                if profile.is_valid():
+                    self.set_current_profile(profile.id)
+                    break
+        else:
+            self.set_current_profile(current_profile.id)
+
+    def clear_views(self):
+        """Removes items in item views i.e. combobox, list and table items."""
+        self.cbo_profile.clear()
+
+        # Remove columns
+        while self._column_list_model.rowCount > 0:
+            column_name = self._column_list_model.column_items[0].name
+            self.remove_column(column_name)
+
+    def initialize_collection(self):
+        """Creates an initial profile collection. Use this if None is
+        specified.
+        """
+        # Add a default area column
         area_metric_column = MetricColumn.create_default_column(
             self.AREA_COLUMN, tr("Area (Ha)"), f"@{VAR_ACTIVITY_AREA}"
         )
         area_metric_column.auto_calculated = True
         area_metric_column.format_as_number = True
 
-        area_column_item = MetricColumnListItem(area_metric_column)
-        self.add_column_item(area_column_item)
+        column_metrics = []
+        for activity in self._activities:
+            activity_column_metric = ActivityColumnMetric(
+                activity,
+                area_metric_column,
+                MetricType.COLUMN
+                if area_metric_column.expression
+                else MetricType.NOT_SET,
+                area_metric_column if area_metric_column.expression else "",
+            )
+            column_metrics.append([activity_column_metric])
+
+        default_configuration = MetricConfiguration(
+            [area_metric_column], column_metrics
+        )
+
+        # Create a default profile
+        default_metric_profile = MetricConfigurationProfile(
+            tr("Default"), default_configuration
+        )
+
+        self._profile_collection = MetricProfileCollection()
+        self._profile_collection.add_profile(default_metric_profile)
+        self.set_current_profile(default_metric_profile.id)
+
+    def set_current_profile(self, profile: str):
+        """Updates the UI to set the current metric profile.
+
+        :param profile: Profile or profile IDto be set. It must
+        exist in the profile collection.
+        :type profile: str
+        """
+        if self._profile_collection is None:
+            return
+
+        if not self._profile_collection.profile_exists(profile):
+            return
+
+        metric_profile = self._profile_collection.get_profile(profile)
+        if metric_profile is None:
+            return
+
+        # Update combobox
+        item_index = self.cbo_profile.findData(profile)
+        if item_index == -1:
+            return
+        self.cbo_profile.setCurrentIndex(item_index)
+
+        # Load configuration in the view
+        self.load_configuration(metric_profile.config)
+
+        # Set the current profile
+        self._profile_collection.current_profile = profile
 
     @property
     def column_list_model(self) -> MetricColumnListModel:
@@ -796,6 +919,22 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         self._move_activity_metric_column(
             reference_index, HorizontalMoveDirection.RIGHT
         )
+
+    def on_add_profile(self):
+        """Slot to add a new profile."""
+        pass
+
+    def on_rename_profile(self):
+        """Slot to rename the current profile."""
+        pass
+
+    def on_delete_profile(self):
+        """Slot to delete the current profile."""
+        pass
+
+    def on_copy_profile(self):
+        """Slot to copy the current profile."""
+        pass
 
     def select_column(self, row: int):
         """Select the column item in the specified row.

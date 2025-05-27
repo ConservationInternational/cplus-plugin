@@ -501,9 +501,6 @@ class Activity(LayerModelComponent):
             if len(self.pathways) == 0:
                 return False
 
-            if not self.is_pwls_valid():
-                return False
-
             return True
 
     def scenario_layer_style_info(self) -> dict:
