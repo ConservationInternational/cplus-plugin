@@ -1514,7 +1514,7 @@ class SettingsManager(QtCore.QObject):
         self.set_value(METRIC_COLLECTION_PROPERTY, metric_profile_collection_str)
 
     def save_online_scenario(self, scenario_uuid):
-        """Save the passed scenario settings into the plugin settings as online tasl
+        """Save the passed scenario settings into the plugin settings as online task
 
         :param scenario_uuid: Scenario UUID
         :type scenario_uuid: str
