@@ -50,3 +50,11 @@ no_data_validation_config = RuleConfiguration(
     "NoData Value Check",
     tr("Use the 'Fill nodata' or 'Translate' tool to change the NoData value"),
 )
+
+# Normalized values (0 - 1) validation
+normalized_validation_config = RuleConfiguration(
+    ValidationCategory.ERROR,
+    tr("Raster values must be normalized between 0 - 1"),
+    "Normalization Check",
+    tr("Use the raster calculator to normalize the raster values"),
+)

@@ -66,6 +66,9 @@ from ...models.base import DataSourceType, LayerModelComponent, LayerType
 from ...trends_earth.constants import API_URL, TIMEOUT
 from ...utils import FileUtils, log, tr, convert_size
 from ...trends_earth import auth, api, download
+from ...api.request import CplusApiRequest
+
+from .priority_layer_add import DlgPriorityAddEdit
 
 Ui_DlgSettings, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "../../ui/cplus_settings.ui")
@@ -233,6 +236,7 @@ class DlgSettingsLogin(QtWidgets.QDialog, Ui_TrendsEarthDlgSettingsLogin):
         self.ok = False
         self.trends_earth_api_client = api.APIClient(API_URL, TIMEOUT)
         self.main_widget = main_widget
+        self.parent = parent
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -275,7 +279,14 @@ class DlgSettingsLogin(QtWidgets.QDialog, Ui_TrendsEarthDlgSettingsLogin):
             settings_manager.delete_online_scenario()
             settings_manager.remove_default_layers()
             self.main_widget.fetch_default_layer_list()
+
+            self.parent.enable_admin_components()
+            self.main_widget.fetch_default_layer_task.task_finished.connect(
+                self.parent.refresh_default_layers_table
+            )
+
             self.main_widget.fetch_scenario_history_list()
+
             self.ok = True
             self.close()
 
@@ -533,18 +544,23 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         self.btn_add_pwl.setIcon(add_icon)
         self.btn_add_pwl.clicked.connect(self._on_add_pwl_layer)
+        self.btn_add_pwl.hide()
 
         self.btn_delete_pwl.setIcon(remove_icon)
         self.btn_delete_pwl.setEnabled(False)
+        self.btn_delete_pwl.hide()
         self.btn_delete_pwl.clicked.connect(self._on_remove_pwl_layer)
 
         self.btn_edit_pwl.setIcon(edit_icon)
         self.btn_edit_pwl.setEnabled(False)
+        self.btn_edit_pwl.hide()
         self.btn_edit_pwl.clicked.connect(self._on_edit_pwl_layer)
 
         # Trends.Earth settings
         self.dlg_settings_register = DlgSettingsRegister()
-        self.dlg_settings_login = DlgSettingsLogin(main_widget=self.main_widget)
+        self.dlg_settings_login = DlgSettingsLogin(
+            parent=self, main_widget=self.main_widget
+        )
 
         self.pushButton_register.clicked.connect(self.register)
         self.pushButton_login.clicked.connect(self.login)
@@ -609,6 +625,10 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         # self.reloadAuthConfigurations()
 
         self.trends_earth_api_client = api.APIClient(API_URL, TIMEOUT)
+
+        self.request = CplusApiRequest()
+
+        self.enable_admin_components()
 
     def apply(self) -> None:
         """This is called on OK click in the QGIS options panel."""
@@ -1260,8 +1280,8 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
     def _on_add_pwl_layer(self, activated: bool):
         """Slot raised to add a new PWL layer."""
-        pass
-        # TODO: Implement add a new layer to the default PWLs
+        dlg_pwl_add = DlgPriorityAddEdit(parent=self)
+        dlg_pwl_add.exec_()
 
     def _on_edit_pwl_layer(self, activated: bool):
         """Slot raised to edit a selected PWL layer."""
@@ -1270,7 +1290,8 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             error_tr = tr("Select a default layer first to edit.")
             self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return
-        # TODO: Implement edit the selected layer functionality
+        dlg_pwl_add = DlgPriorityAddEdit(parent=self, layer=selected_layer)
+        dlg_pwl_add.exec_()
 
     def _on_remove_pwl_layer(self, activated: bool):
         """Slot raised to remove a selected PWL layer."""
@@ -1548,6 +1569,37 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             QtCore.QSettings().setValue(
                 f"{settings_manager.BASE_GROUP_NAME}/{auth.TE_API_AUTH_SETUP.key}", None
             )
+
+    def enable_admin_components(self):
+        """
+        Enables or disables admin-related UI components based on the user's profile.
+
+        This method checks if the current user exists in the Trends Earth system. If the user exists,
+        it attempts to fetch the user's profile using the Cplus API. Only users marked as "Internal"
+        in their profile are allowed to manage default PWLs (Project Work Layers), and the corresponding
+        buttons (add, edit, delete) are shown. For all other users, these buttons are hidden.
+
+        If an error occurs while fetching the user profile, the error is logged.
+
+        Raises:
+            Exception: If there is an error fetching the user profile.
+        """
+        # Check that the user exist in trends earth
+        if self.trends_earth_api_client.get_user():
+            try:
+                # Fetch user profile using Cplus API
+                user = self.request.get_user_profile()
+                # Currently allow only internal users to manage default PWLs
+                if user and user.get("role") == "Internal":
+                    self.btn_add_pwl.show()
+                    self.btn_edit_pwl.show()
+                    self.btn_delete_pwl.show()
+                else:
+                    self.btn_add_pwl.hide()
+                    self.btn_edit_pwl.hide()
+                    self.btn_delete_pwl.hide()
+            except Exception as ex:
+                log(f"Error when fetching user profile {ex}", info=False)
 
 
 class CplusOptionsFactory(QgsOptionsWidgetFactory):

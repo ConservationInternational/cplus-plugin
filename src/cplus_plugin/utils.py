@@ -13,6 +13,10 @@ import datetime
 from pathlib import Path
 from uuid import UUID
 from enum import Enum
+from zipfile import ZipFile
+
+import numpy as np
+from osgeo import gdal
 
 from qgis.PyQt import QtCore, QtGui
 from qgis.core import (
@@ -26,7 +30,6 @@ from qgis.core import (
     QgsProject,
     QgsProcessing,
     QgsRasterLayer,
-    QgsRectangle,
     QgsUnitTypes,
 )
 
@@ -833,3 +836,154 @@ def convert_size(size_bytes):
     p = math.pow(1024, i)
     s = round(size_bytes / p, 2)
     return "%s %s" % (s, size_name[i])
+
+
+def zip_shapefile(shapefile_path: str) -> str:
+    """Zip shapefile to an object with same name.
+    For example, the .shp filename is `test_file.shp`, then the zip file
+    name would be `test_file.zip`
+
+    :param shapefile_path: Path of the shapefile
+    :type shapefile_path: str
+
+    :return: Zip file path if the specified `shapefile_path`
+        ends with .shp, return shapefile_path otherwise
+    :rtype: str
+    """
+
+    if shapefile_path.endswith(".shp"):
+        output_dir = os.path.dirname(shapefile_path)
+        filename_without_ext = os.path.splitext(os.path.basename(shapefile_path))[0]
+        zip_name = shapefile_path.replace(".shp", ".zip")
+        with ZipFile(zip_name, "w") as zip:
+            # writing each file one by one
+            for file in [
+                f
+                for f in os.listdir(output_dir)
+                if filename_without_ext in f and not f.endswith("zip")
+            ]:
+                zip.write(os.path.join(output_dir, file), file)
+        return zip_name
+    return shapefile_path
+
+
+def compress_raster(
+    input_path: str,
+    output_path: str = None,
+    compression_type: str = "DEFLATE",
+    compress_level: int = 6,
+    nodata_value: float = None,
+    output_format: str = "GTiff",
+    create_options: list = None,
+    additional_options: list = None,
+):
+    """
+    Compresses a raster file using GDAL and optionally replace old NoData pixel values with a new one.
+
+    :param input_path: Path to the input raster file
+    :type input_path: str
+
+    :param output_path: Path to the input raster file. If none the ouput will saved to a temporary file
+    :type output_path: str
+
+    :param compression_type: Compression algorithm (e.g., 'DEFLATE', 'LZW', 'PACKBITS', 'JPEG', 'NONE')
+    :type compression_type: str
+
+    :param compress_level: Compression level (1-9 for DEFLATE/LZW, 1-100 for JPEG)
+    :type compress_level: int
+
+    :param nodata_value: Value to set as nodata (default: None). If None, retain the input nodatavalue
+    :type nodata_value: float
+
+    :param output_format: Output format (default: 'GTiff' for GeoTIFF)
+    :type output_format: str
+
+    :param create_options: Additional GDAL creation options as a list
+    :type create_options: list
+
+    :param additional_options: dditional GDAL options as a list
+    :type additional_options: list
+
+    :return: Path to the temporary file if successful, None if failed
+    :rtype: str or None
+    """
+    if not os.path.isfile(input_path):
+        raise FileNotFoundError(f"Input raster file not found: {input_path}")
+
+    # Create a temporary file if output_path is None:
+    if not output_path:
+        unique_id = str(uuid.uuid4())[:8]
+        temp_file = QtCore.QTemporaryFile(
+            os.path.join(
+                QgsProject.instance().homePath(), f"temp_compressed_{unique_id}.tif"
+            )
+        )
+        if not temp_file.open():
+            log("Error: Could not create temporary file")
+            return None
+
+        base, ext = os.path.splitext(input_path)
+        output_path = temp_file.fileName() + ext or ".tif"
+        temp_file.close()
+
+    try:
+        # Load the input raster layer using GDAL
+        src_ds = gdal.Open(input_path, gdal.GA_ReadOnly)
+        if src_ds is None:
+            raise ValueError("Unable to open raster with GDAL")
+
+        band_count = src_ds.RasterCount
+        xsize = src_ds.RasterXSize
+        ysize = src_ds.RasterYSize
+        dtype = src_ds.GetRasterBand(1).DataType
+
+        # Add any additional create options
+        if not create_options:
+            create_options = []
+
+        # Ensure standard options are included
+        create_options.extend(
+            [
+                f"COMPRESS={compression_type}",
+                f"ZLEVEL={compress_level}",
+                f"JPEG_QUALITY={compress_level}",
+                f"NUM_THREADS=ALL_CPUS",
+                "BIGTIFF=IF_SAFER",
+                "TILED=YES",
+            ]
+        )
+
+        # Set additional options if provided
+        if additional_options:
+            create_options.extend(additional_options)
+
+        # Create compressed output raster
+        driver = gdal.GetDriverByName(output_format)
+        out_ds = driver.Create(
+            output_path, xsize, ysize, band_count, dtype, create_options
+        )
+        out_ds.SetGeoTransform(src_ds.GetGeoTransform())
+        out_ds.SetProjection(src_ds.GetProjection())
+
+        for i in range(1, band_count + 1):
+            band = src_ds.GetRasterBand(i)
+            data = band.ReadAsArray()
+            old_nodata = band.GetNoDataValue()
+
+            # Replace pixel values if old NoData exists
+            if nodata_value is not None and old_nodata is not None:
+                data = np.where(data == old_nodata, nodata_value, data)
+
+            out_band = out_ds.GetRasterBand(i)
+            out_band.WriteArray(data)
+            out_band.SetNoDataValue(nodata_value)
+            out_band.FlushCache()
+
+        # Close datasets
+        src_ds = None
+        # if os.path.exists(output_path):
+        log(f"Successfully compressed raster saved to temporary file: {output_path}")
+        return output_path
+    except Exception as error:
+        log(f"Error occurred during raster compression. Error code: {error}")
+        return None

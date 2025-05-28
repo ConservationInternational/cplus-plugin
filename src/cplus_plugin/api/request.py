@@ -190,6 +190,9 @@ class CplusApiUrl:
         else:
             return BASE_API_URL
 
+    def user_profile(self):
+        return f"{self.base_url}/user/me"
+
     def layer_detail(self, layer_uuid) -> str:
         """Cplus API URL to get layer detail.
 
@@ -550,6 +553,31 @@ class CplusApiRequest:
         self._make_request(reply)
         return self._handle_response(url, reply)
 
+    def patch(
+        self, url: str, data: typing.Union[dict, list], headers: dict = {}
+    ) -> typing.Tuple[dict, int]:
+        """Trigger a PATCH request.
+
+        :param url: Cplus API URL
+        :type url: str
+
+        :param data: API payload
+        :type data: typing.Union[dict, list]
+
+        :param headers: header dictionary, defaults to {}
+        :type headers: dict
+
+        :return: tuple of response dictionary and HTTP status code
+        :rtype: typing.Tuple[dict, int]
+        """
+        nam = QgsNetworkAccessManager.instance()
+        headers = headers or self._default_headers()
+        request = self._generate_request(url, headers)
+        json_data = self._get_request_payload(data)
+        reply = nam.sendCustomRequest(request, b"PATCH", json_data)
+        self._make_request(reply)
+        return self._handle_response(url, reply)
+
     def delete(self, url: str, headers: dict = {}) -> typing.Tuple[dict, int]:
         """Trigger a DELETE request.
 
@@ -758,6 +786,14 @@ class CplusApiRequest:
         self.token_exp = datetime.datetime.now() + datetime.timedelta(days=1)
         return access_token
 
+    def get_user_profile(self) -> dict:
+        """Request for getting user profile.
+        :return: User profile
+        :rtype: dict
+        """
+        result, _ = self.get(self.urls.user_profile())
+        return result
+
     def get_layer_detail(self, layer_uuid) -> dict:
         """Request for getting layer detail.
 
@@ -783,7 +819,16 @@ class CplusApiRequest:
         result, _ = self.post(self.urls.layer_check(), payload)
         return result
 
-    def start_upload_layer(self, file_path: str, component_type: str) -> dict:
+    def start_upload_layer(
+        self,
+        file_path: str,
+        component_type: str,
+        privacy_type: str = "private",
+        uuid: str = None,
+        description: str = None,
+        license: str = None,
+        version: str = None,
+    ) -> dict:
         """Request for starting layer upload.
 
         :param file_path: Path of the file to be uploaded
@@ -791,6 +836,22 @@ class CplusApiRequest:
 
         :param component_type: Layer component type, e.g. "ncs_pathway"
         :type component_type: str
+
+        :param privacy_type: Layer privacy type, e.g. "private", "internal",
+            "common", defaults to "private"
+        :type privacy_type: str
+
+        :param uuid: UUID of the layer, optional, defaults to None
+        :type uuid: str
+
+        :param description: Description of the layer, optional, defaults to None
+        :type description: str
+
+        :param version: Version of the layer, optional, defaults to None
+        :type version: str
+
+        :param license: License of the layer, optional, defaults to None
+        :type license: str
 
         :raises CplusApiRequestError: If the request is failing
 
@@ -801,11 +862,23 @@ class CplusApiRequest:
         payload = {
             "layer_type": get_layer_type(file_path),
             "component_type": component_type,
-            "privacy_type": "private",
+            "privacy_type": privacy_type,
             "name": os.path.basename(file_path),
             "size": file_size,
             "number_of_parts": math.ceil(file_size / CHUNK_SIZE),
         }
+
+        # Add optional fields only if they are provided
+        optional_fields = {
+            "uuid": uuid,
+            "description": description,
+            "version": version,
+            "license": license,
+        }
+        for key, value in optional_fields.items():
+            if value:
+                payload[key] = value
+
         result, status_code = self.post(self.urls.layer_upload_start(), payload)
         if status_code != 201:
             raise CplusApiRequestError(result.get("detail", ""))
@@ -862,6 +935,25 @@ class CplusApiRequest:
         if status_code != 204:
             raise CplusApiRequestError(result.get("detail", ""))
         return True
+
+    def update_layer_properties(self, layer_uuid: str, properties: dict):
+        """Update layer properties.
+
+        :param layer_uuid: Layer UUID
+        :type layer_uuid: str
+
+        :param properties: properties to be updated
+        :type properties: dict
+
+        :raises CplusApiRequestError: Raises when server return non-204 code
+
+        :return: No content
+        :rtype: dictionary
+        """
+        result, status_code = self.patch(self.urls.layer_detail(layer_uuid), properties)
+        if status_code != 200:
+            raise CplusApiRequestError(result.get("detail", ""))
+        return result
 
     def submit_scenario_detail(self, scenario_detail: dict) -> str:
         """Submitting scenario JSON to Cplus API.
@@ -978,6 +1070,8 @@ class CplusApiRequest:
                 "filename": layer.get("filename"),
                 "created_on": layer.get("created_on"),
                 "url": layer.get("url"),
+                "version": layer.get("version"),
+                "license": layer.get("license"),
             }
             if component_type in data:
                 data[component_type].append(out_layer)
