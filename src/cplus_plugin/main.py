@@ -465,14 +465,14 @@ def upgrade_metric_configuration_to_profile_collection():
     # if not None then no need to upgrade since its assumed
     # that this was already automatically done before.
     if metric_profile_collection:
-        log("Metric profile collection is upto date.")
+        log("Metric profile collection is upto date")
         return
 
     metric_configuration = settings_manager.get_metric_configuration()
     if metric_configuration is None:
         log(
             "Metric configuration not found, skipping "
-            "upgrade to a default metric configuration profile."
+            "upgrade to a default metric configuration profile"
         )
         return
 
@@ -486,8 +486,8 @@ def upgrade_metric_configuration_to_profile_collection():
     )
     settings_manager.save_metric_profile_collection(upgraded_profile_collection)
     log(
-        "Successfully upgrade the metric configuration settings "
-        "to be the default metric configuration profile."
+        "Successfully upgraded the metric configuration settings "
+        "to be the default metric configuration profile"
     )
 
 

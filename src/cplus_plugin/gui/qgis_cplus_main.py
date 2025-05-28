@@ -1515,7 +1515,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.dock_widget_contents.layout().insertLayout(0, self.grid_layout)
 
     def is_metric_configuration_valid(self) -> bool:
-        """Checks if the setup of the metrics configuration for the scenario analysis report is correct.
+        """Checks if the setup of the metric configuration for the scenario
+        analysis report is correct.
 
         :returns: True if the configuration is correct else False.
         :rtype: bool
@@ -1524,12 +1525,27 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             # Not applicable so just return True
             return True
         else:
-            metric_configuration = settings_manager.get_metric_configuration()
-            if metric_configuration is None or not metric_configuration.is_valid():
+            profile_collection = settings_manager.get_metric_profile_collection()
+            if profile_collection is None:
                 self.show_message(
                     tr(
-                        f"Metrics configuration is invalid or not yet defined. "
-                        f"Use the metrics builder to verify."
+                        f"No metric profiles found. Use the metric "
+                        f"builder to specify one or more metric "
+                        f"profiles."
+                    )
+                )
+                return False
+
+            metric_profile = profile_collection.get_current_profile()
+            if (
+                metric_profile is None
+                or metric_profile.config is None
+                or not metric_profile.config.is_valid()
+            ):
+                self.show_message(
+                    tr(
+                        f"Metric configuration is invalid or not yet defined. "
+                        f"Use the metric builder to check and re-run the wizard."
                     )
                 )
                 return False
@@ -1539,7 +1555,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 [str(activity.uuid) for activity in self.selected_activities()]
             )
             metric_activity_ids = set(
-                [str(activity.uuid) for activity in metric_configuration.activities]
+                [str(activity.uuid) for activity in metric_profile.config.activities]
             )
             if selected_activities_ids == metric_activity_ids:
                 return True
@@ -1549,7 +1565,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.show_message(
                     tr(
                         f"There are activities whose metrics has not not been "
-                        f"defined. Use the metrics builder to update."
+                        f"defined. Use the metric builder to update."
                     )
                 )
                 return False
@@ -1574,8 +1590,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         if not self.is_metric_configuration_valid():
             log(
-                "Scenario cannot run due to an invalid metrics configuration. "
-                "Refer to the preceding errors above."
+                "Scenario cannot run due to an invalid metric configuration "
+                "for the selected profile. Refer to the preceding "
+                "errors above."
             )
             return
 
@@ -2407,19 +2424,21 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def on_show_metrics_wizard(self):
         """Slot raised to show the metric customization
-        wizard for the scenario analysis report.
+        wizard for creating the scenario analysis report.
         """
         metrics_builder = ActivityMetricsBuilder(self)
         metrics_builder.activities = self.selected_activities()
 
-        # Load previously saved configuration
-        metric_configuration = settings_manager.get_metric_configuration()
-        if metric_configuration is not None:
-            metrics_builder.load_configuration(metric_configuration)
+        # Load previously saved profile collection
+        metric_profile_collection = settings_manager.get_metric_profile_collection()
+        if metric_profile_collection is not None:
+            metrics_builder.profile_collection = metric_profile_collection
+        else:
+            metrics_builder.initialize_collection()
 
         if metrics_builder.exec_() == QtWidgets.QDialog.Accepted:
-            metric_configuration = metrics_builder.metric_configuration
-            settings_manager.save_metric_configuration(metric_configuration)
+            metric_profile_collection = metrics_builder.profile_collection
+            settings_manager.save_metric_profile_collection(metric_profile_collection)
 
     def run_report(self, progress_dialog, report_manager):
         """Run report generation. This should be called after the
