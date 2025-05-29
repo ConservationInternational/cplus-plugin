@@ -14,7 +14,7 @@ license: This program is free software; you can redistribute it and/or modify it
 
 ## Pilot area data
 
-This section deals with making updates to the data of the pilot study area (Bushback Ridge). This needs
+This section deals with making updates to the data of the pilot study area (Bushbuck Ridge). This needs
 to be done in the GitHub repository, or locally on the repository clone, and then pushed into the repository. The change can be made as follows:
 
 The following JSON files needs to be considered when doing this, all of which are stored in
@@ -121,6 +121,49 @@ Remove this text to remove a PWL:
 
 ![PWL example](img/pwl-remove.png)
 
+## Default Global Priority Weighted Layers (PWLs)
+
+This section relates to the set of default global datasets within the plugin. There are Default Global PWLs so that users can use high-quality baseline data without needing to manually upload their own layers. Administrative users can manage (add, delete, edit, or download) Global Priority Weighted Layers (PWLs) in the plugin settings.
+
+To access the Default Global PWLs, administrative users can click on the `dropdown arrow` on the plugin icon.
+
+![GPWL Icon Dropdown](./img/gpwl_icon_dropdown.png)
+
+Then they can click on `Settings`.
+
+![GPWL Dropdown Settings](./img/gpwl_dropdown_settings.png)
+
+In the window that pops up, administrative users should scroll down to the `Global priority weighted layers (PWLs)` Section where there is a list of Default Global Priority Weighted Layers (PWLs).
+
+![GPWL Section](./img/gpwl_section.png)
+
+There are buttons that allow users to:
+- `Download` a Global PWL ![GPWL Download PWL](./img/gpwl_download_pwl.png)
+- `Add` a new Global PWL ![GPWL Add PWL](./img/gpwl_add_pwl.png)
+- `Edit` a Global PWL ![GPWL Edit PWL](./img/gpwl_edit_pwl.png)
+- `Delete` a Global PWL ![GPWL Delete PWL](./img/gpwl_delete_pwl.png)
+
+### Adding or Editing a Priority Weighted Layer (PWL)
+
+If an administrative user clicks on the `Add` or `Edit` buttons, a window appears that allows them to add/edit the information related to the PWL. Administrative users need to provide a `Name`, provide a `Description`, choose the `Map layer` from a local file, choose the `Privacy type`, provide `License` information, and provide a `Version` for the PWL. Once everything is filled in, administrative users can click on the `OK` button. If at any point, the administrative user wants to leave the window without saving their current state, they can click on `Cancel`.
+
+![GPWL Add/Edit](./img/gpwl_add_edit.png)
+
+Once an administrative user clicks on `OK`, the plugin begins the process of uploading the layer.
+
+![GPWL Upload Process](./img/gpwl_upload_process.png)
+
+> Note: If any of the provided information is not correct, when the user clicks on `OK` an error message will appear in the window (it will provide information on where the issue occurred in the form). E.g. no layer name has been provided:
+![GPWL Add/Edit Error](./img/gpwl_add_edit_error.png)
+
+If the administrative user clicks on the `Delete` button, a window pops up asking them to confirm their decision.
+
+![GPWL Confirm Delete](./img/gpwl_confirm_delete.png)
+
+Once an administrative user is done managing the Default Global PWLs, the can click on the `OK` button to close the Settings window. If they do not want to keep their changes, they can click on the `Cancel` button.
+
+![GPWL Close Settings](./img/gpwl_close_settings.png)
+
 ## Bugs and suggestions
 
 This section relates to creating an issue for when a bug is found in the plugin, or
@@ -158,7 +201,6 @@ if the user has a suggested improvement for the plugin.
 - Click **Submit new issue**
 
 The issue will now be submitted to the GitHub repository and be available to the developers.
-
 
 ## Staging version of the plugin
 
