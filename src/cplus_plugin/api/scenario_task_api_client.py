@@ -151,6 +151,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             self.log_message(str(e))
             err = f"Problem uploading layer to the server: {e}\n"
             self.log_message(err, info=False)
+            self.log_message(str(traceback.format_exc()))
             self.set_info_message(err, level=Qgis.Critical)
             self.cancel_task(e)
             return False
