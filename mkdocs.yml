@@ -55,6 +55,7 @@ nav:
                 - Layout items: developer/api/core/api_reports_layout_items.md
                 - Manager: developer/api/core/api_reports_manager.md
                 - Variables: developer/api/core/api_reports_variables.md
+                - Metrics: developer/api/core/api_reports_metrics.md
             - Validation:
                 - Configurations: developer/api/core/api_validation_configs.md
                 - Feedback: developer/api/core/api_validation_feedback.md
@@ -88,6 +89,9 @@ nav:
                 - Inspector dialog: developer/api/gui/api_validation_inspector_dialog.md
                 - Progress dialog: developer/api/gui/api_validation_progress_dialog.md
                 - Tree items: developer/api/gui/api_validation_result_items.md
+            - Metrics:
+                - Builder Dialogue: developer/api/gui/api_metrics_builder_dialog.md
+                - Builder Model: developer/api/gui/api_metrics_builder_model.md
   - About:
       - Conservation International: about/ci.md
       - Kartoza: about/kartoza.md
