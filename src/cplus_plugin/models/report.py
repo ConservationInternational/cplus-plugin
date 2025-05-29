@@ -276,6 +276,15 @@ class MetricConfiguration:
 
         return len(self.metric_columns) == column_metrics_len
 
+    @staticmethod
+    def create() -> "MetricConfiguration":
+        """Creates an empty metric configuration.
+
+        :returns: An empty metric configuration.
+        :rtype: MetricConfiguration
+        """
+        return MetricConfiguration([], [[]])
+
     @property
     def activities(self) -> typing.List[Activity]:
         """Gets the activity models in the configuration.
@@ -425,7 +434,9 @@ class MetricProfileCollection:
         if not self.profile_exists(profile_id):
             return False
 
-        self.profiles = [profile for profile in self.profiles if profile.id != profile]
+        self.profiles = [
+            profile for profile in self.profiles if profile.id != profile_id
+        ]
 
         return True
 
