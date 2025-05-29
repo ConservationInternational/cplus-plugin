@@ -948,6 +948,39 @@ def create_metric_configuration_profile(
     return MetricConfigurationProfile(name, config)
 
 
+def clone_metric_configuration_profile(
+    metric_config_profile: MetricConfigurationProfile,
+    referenced_activities: typing.List[Activity],
+) -> typing.Optional[MetricConfigurationProfile]:
+    """Creates a deep copy version of the specified
+    metric configuration profile.
+
+    :param metric_config_profile: Metric configuration profile to be cloned.
+    :type metric_config_profile: MetricConfigurationProfile
+
+    :param referenced_activities: Activities which will be used
+    to extract those referenced in the metric configuration
+    profile.
+    :type referenced_activities: typing.List[Activity]
+
+    :returns: Cloned metric configuration profile or None if the
+    input metric configuration profile was invalid.
+    :rtype: MetricConfigurationProfile
+    """
+    if not metric_config_profile.is_valid():
+        return None
+
+    metric_profile_config_dict = metric_configuration_profile_to_dict(
+        metric_config_profile
+    )
+    if not metric_profile_config_dict:
+        return None
+
+    return create_metric_configuration_profile(
+        metric_profile_config_dict, referenced_activities
+    )
+
+
 def metric_profile_collection_to_dict(
     metric_profile_collection: MetricProfileCollection,
 ) -> dict:

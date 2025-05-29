@@ -6,9 +6,7 @@ Wizard for customizing custom activity metrics table.
 import os
 import re
 import typing
-from tabnanny import check
 
-from plugins.db_manager.db_plugins.postgis.plugins import current_dir
 from qgis.core import Qgis, QgsFallbackNumericFormat
 from qgis.gui import (
     QgsExpressionBuilderDialog,
@@ -39,7 +37,7 @@ from .metrics_builder_model import (
     MetricColumnListModel,
 )
 from ..models.base import Activity
-from ..models.helpers import clone_activity
+from ..models.helpers import clone_activity, clone_metric_configuration_profile
 from ..models.report import (
     ActivityColumnMetric,
     MetricColumn,
@@ -1029,9 +1027,11 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         """
         profile_name, ok = self._profile_name_dialog(dialog_title, initial_text)
 
-        if not (ok and profile_name):
+        # Cancelled
+        if not ok:
             return None
 
+        # No text provided
         if ok and not profile_name:
             QtWidgets.QMessageBox.warning(
                 self,
@@ -1133,7 +1133,59 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
 
     def on_copy_profile(self):
         """Slot to copy the current profile."""
-        pass
+        current_profile = self._profile_collection.get_current_profile()
+        if current_profile is None:
+            QtWidgets.QMessageBox.warning(
+                self,
+                tr("Copy Profile"),
+                tr("Please select a profile to copy"),
+            )
+            return
+
+        # Check validity
+        if not current_profile.is_valid():
+            QtWidgets.QMessageBox.warning(
+                self,
+                tr("Copy Profile"),
+                tr("The current profile cannot be copied as it is invalid"),
+            )
+            return
+
+        clean_profile_name = self._get_validated_profile_name(
+            tr("Copy Profile"), f"{current_profile.name} {tr('Copy')}"
+        )
+        if clean_profile_name is None:
+            return
+
+        # Save any changes before cloning
+        self.save_current_profile()
+
+        cloned_profile = clone_metric_configuration_profile(
+            current_profile, self._activities
+        )
+        if cloned_profile is None:
+            QtWidgets.QMessageBox.warning(
+                self,
+                tr("Copy Profile"),
+                tr("Unable to copy the current profile"),
+            )
+            return
+
+        # Update the name then add it to the collection
+        cloned_profile.name = clean_profile_name
+        if not self._profile_collection.add_profile(cloned_profile):
+            QtWidgets.QMessageBox.warning(
+                self,
+                tr("Copy Profile"),
+                tr(
+                    "Copied profile could not be added. Check for a "
+                    "duplicate name or an invalid profile"
+                ),
+            )
+            return
+
+        self.cbo_profile.addItem(clean_profile_name, cloned_profile.id)
+        self.set_current_profile(cloned_profile.id)
 
     def select_column(self, row: int):
         """Select the column item in the specified row.
