@@ -45,39 +45,45 @@ A short description of each available setting a user can change. Most are option
 
 ### Overview of Available Settings
 
-**Configure Analysis**:
+**Configure Analysis:**
 
 - Settings will be added as the plugin development continues.
 
-*Click on the Cplus to view the setting options*
+#### Click on the CPLUS Tab to view the setting options
 
-Once you click on the Cplus you will see the all available setting options. Click on the arrow to expand the setting options.
+Once you click on the CPLUS Tab you will see the all available setting options. Click on the arrow to expand the setting options.
 
-![Cplus setting options](./img/settings-1.png)
+![CPLUS setting options](./img/settings-1.png)
 
-**General:**
+#### General
 
 ![General setting options](./img/settings-2.png)
 
 Click on the 1️⃣ `Three dots` to select a file from your system to set as the base directory.
 
-**Scenario Analysis:**
+#### Scenario Analysis
 
 ![Scenario setting options](./img/settings-3.png)
 
 Enter the 1️⃣ `Coefficient for carbon layers` which will be applied to carbon layers during processing. Enter the 2️⃣ `Pathway suitability index` the index multiplied to the pathways. Lower values means the pathway is less important, and higher means it's more important.
 
-#### Snaping
+##### Snapping
 
 Snapping will set rasters to match the cell alignment of a reference layer.
 
 Resampling performed on pixel values. You can choose the method of your choice from the dropdown. Click on the 3️⃣ `Resample method dropdown` to choose the method. The reference layer to which the cell alignment will be applied. You can select a file from the system, by clicking on the 4️⃣ `Three dots`. Rescale values according to cell size. You can check or uncheck the 5️⃣ `CheckBox`.
 
-**Sieve Function:** 
+##### Naturebase CRS Snapping
+
+The Naturebase dataset should be automatically reprojected so that it can be used properly in analysis within the plugin. This automatic reprojection happens as when the user activates the `Snapping` option. When a user attempts to run an analysis the plugin verifies CRS compatibility before allowing the analysis. If there is a non-compatibility issue the user receives a notification that the CRS needs to be adjusted in the Validation Inspector window that appears when a user starts an analysis.
+
+![Naturebase CRS Snapping](./img/settings-21.png)
+
+#### Sieve Function
 
 The `Sieve` function is a tool designed to filter raster data based on a specified pixel size. This function allows users to define a minimum area threshold, ensuring that any contiguous area in the raster dataset smaller than the specified size will be removed or filtered out. This feature is particularly useful for projects requiring a minimum spatial extent to be meaningful or practical.
 
-#### Steps to Use the Sieve Function
+##### Steps to Use the Sieve Function
 
 ![Sieve function](./img/settings-20.png)
 
@@ -86,9 +92,9 @@ The `Sieve` function is a tool designed to filter raster data based on a specifi
 - Enter the desired threshold value in the 2️⃣ `Threshold` field. This value represents the minimum number of connected pixels that should be preserved when sieving. Any contiguous area smaller than this threshold will be filtered out.
 - Select the 3️⃣ `Reference Layer` from the system to which the sieve function will be applied.
 - Click on the 4️⃣ `OK` button to apply the sieve function settings. This will filter the raster data based on the specified pixel size and reference layer.
-- Click on the Cancel button to close the dialog without applying any changes.
+- Click on the Cancel button to close the dialogue without applying any changes.
 
-##### Practical Use Cases
+###### Practical Use Cases
 
 The sieve function is particularly useful in scenarios where a minimum spatial extent is necessary for practical or meaningful activities. For example:
 
@@ -98,7 +104,7 @@ The sieve function is particularly useful in scenarios where a minimum spatial e
 
 By setting the desired pixel size, users can streamline their data analysis, ensuring that only relevant spatial entities are considered for further processing or analysis.
 
-**Mask Layer:**
+#### Mask Layer
 
 Masking layers are used to specify areas that should be excluded from further analysis. You can use the available buttons to add, edit and remove the layers.
 
@@ -108,13 +114,13 @@ Masking layers are used to specify areas that should be excluded from further an
 - Click on the `Edit` icon to edit the layer.
 - Click on the `Minus` icon to remove the layer.
 
-**Trends.Earth Account Information:**
+#### Trends.Earth Account Information
 
 >NOTE: User need to register and login with a Trends.Earth account to use the online API for processing with CPLUS.
 
 ![Trends.Earth setting options](./img/settings-5.png)
 
-#### Trends.Earth Registration
+##### Trends.Earth Registration
 
 Click on the `Register for Trends.Earth (Step 1)` button to initiate the registration process for Trends.Earth. Upon clicking, a registration form will open. Enter the required details and click on the `OK` button to submit the form.
 
@@ -128,7 +134,7 @@ You will receive an email at the email address entered in the form. This email w
 
 ![Password email](./img/settings-8.png)
 
-##### Set Master Authentication Password
+###### Set Master Authentication Password
 
 After successful registration, a pop-up will prompt you to set a new master authentication password.
 
@@ -148,7 +154,7 @@ After successful registration, a pop-up will prompt you to set a new master auth
 
 - Enter the password in the `Required` field and again in the `Verify password` field for confirmation. Enable the Store/Update master password in your Wallet/KeyRing checkbox to save the password securely in your computer's Wallet/KeyRing. Click the `OK` button to submit and set the master password.
 
-#### Trends.Earth Login
+##### Trends.Earth Login
 
 Click on the `Enter username and password (step 2)` button to log in to Trends.Earth account. Upon clicking on this button the Trends.Earth login form will open. To log in enter the email and password in the respective fields. Click on the `OK` button to log in to the Trends.Earth account.
 
@@ -158,7 +164,7 @@ After successful submission, the success message will pop up.
 
 ![Message pop up](./img/settings-11.png)
 
-#### Update profile
+##### Update profile
 
 Click on the `Update profile` button to update the profile. Upon clicking the update profile form will open.
 
@@ -168,7 +174,7 @@ You can update the fields you want to change by editing the respective fields. C
 
 ![Message pop up](./img/settings-13.png)
 
-#### Reset password
+##### Reset password
 
 Click on the `Reset Password` button to reset the password. Upon clicking the reset password form will open.
 
@@ -190,7 +196,7 @@ Are you sure you want to reset your password for xyz@gmail.com? Your new passwor
 
 ![New password email](./img/settings-17.png)
 
-#### Delete user
+##### Delete user
 
 Click on the `Delete user` button to delete the user. Upon clicking the delete user confirmation pop up will open.
 
@@ -220,7 +226,7 @@ Click on the `Reporting` option for reports-related settings. Under the Reportin
 
 - *License*: Change as desired, otherwise use the default license description.
 
-- *List of stakeholders and relationships*: Enter the stakeholder's name and a brief description of the relationship separated by a dash i.e. 
+- *List of stakeholders and relationships*: Enter the stakeholder's name and a brief description of the relationship separated by a dash i.e.
 
     `Stakeholder's name - Relationship description`
 
@@ -239,7 +245,7 @@ Click on the `Reporting` option for reports-related settings. Under the Reportin
     Each entry should be in a new line.
 
 - To apply the settings user needs to click on the `OK` button.
-    
-- Click on `Cancel` will close the dialog without applying any changes.
+
+- Click on `Cancel` will close the dialogue without applying any changes.
 
 Overall, the CPLUS settings offer users the flexibility to tailor the platform to their specific requirements and optimise their workflow for conducting analyses and generating reports.
