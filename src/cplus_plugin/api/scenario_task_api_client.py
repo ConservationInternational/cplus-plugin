@@ -582,21 +582,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
                         pathway["layer_uuid"] = pathway["uuid"]
                         pathway["layer_type"] = 0
 
-                carbon_uuids = []
-                for carbon_path in pathway["carbon_paths"]:
-                    if carbon_path.startswith("cplus://"):
-                        names = carbon_path.split("/")
-                        carbon_uuids.append(names[-2])
-                    elif os.path.exists(carbon_path):
-                        if self.path_to_layer_mapping.get(carbon_path, None):
-                            carbon_uuids.append(
-                                self.path_to_layer_mapping.get(carbon_path)["uuid"]
-                            )
-                pathway["carbon_paths"] = []
-                pathway["carbon_uuids"] = carbon_uuids
                 pathway["path"] = ""
             new_priority_layers = []
-            for priority_layer in activity["priority_layers"]:
+            for priority_layer in activity.get("priority_layers", []):
                 if priority_layer is None:
                     continue
                 priority_layer["path"] = ""
