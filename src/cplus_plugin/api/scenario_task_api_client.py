@@ -338,13 +338,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
                     if pathway.path and os.path.exists(pathway.path):
                         items_to_check[pathway.path] = "ncs_pathway"
 
-                    for carbon_path in pathway.carbon_paths:
-                        if os.path.exists(carbon_path):
-                            items_to_check[carbon_path] = "ncs_carbon"
-
-            for priority_layer in activity.priority_layers:
-                if priority_layer:
-                    activity_pwl_uuids.add(priority_layer.get("uuid", ""))
+            if hasattr(activity, "priority_layers"):
+                for priority_layer in activity.priority_layers:
+                    if priority_layer:
+                        priority_layer.get()
+                        activity_pwl_uuids.add(priority_layer.get("uuid", ""))
 
             self._update_scenario_status(
                 {
