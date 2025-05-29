@@ -77,7 +77,7 @@ Resampling performed on pixel values. You can choose the method of your choice f
 
 The Naturebase dataset should be automatically reprojected so that it can be used properly in analysis within the plugin. This automatic reprojection happens as when the user activates the `Snapping` option. When a user attempts to run an analysis the plugin verifies CRS compatibility before allowing the analysis. If there is a non-compatibility issue the user receives a notification that the CRS needs to be adjusted in the Validation Inspector window that appears when a user starts an analysis.
 
-![Naturebase CRS Snapping](./img/settings-21.png)
+![Naturebase CRS Snapping](./img/settings-X.png)
 
 #### Sieve Function
 
