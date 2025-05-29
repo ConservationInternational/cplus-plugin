@@ -611,6 +611,8 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         """
         # Columns page
         if self.currentId() == 1:
+            # Save latest changes in current profile
+            self.save_current_profile()
             return self.is_columns_page_valid()
 
         elif self.currentId() == 2:
@@ -1368,8 +1370,20 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
             )
             return False
 
-        is_valid = True
+        else:
+            # Check other profiles
+            zero_column_profiles = []
+            for profile in self._profile_collection.profiles:
+                if not profile.config.metric_columns:
+                    zero_column_profiles.append(profile.name)
 
+            if zero_column_profiles:
+                msg_tr = tr("At least one column is required in the following profiles")
+                self.push_column_message(f"{msg_tr}: {', '.join(zero_column_profiles)}")
+                return False
+
+        # Check column headers start with current profile then other profiles
+        is_valid = True
         for item in self._column_list_model.column_items:
             if not item.is_valid:
                 if is_valid:
@@ -1379,7 +1393,23 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
                 msg = f"'{item.name}' {tr_msg}."
                 self.push_column_message(msg)
 
-        return is_valid
+        if not is_valid:
+            return False
+
+        # Try other profiles if current profile is valid
+        null_header_profiles = []
+        for profile in self._profile_collection.profiles:
+            for metric_column in profile.config.metric_columns:
+                if not metric_column.header or not metric_column.name:
+                    if profile.name not in null_header_profiles:
+                        null_header_profiles.append(profile.name)
+
+        if null_header_profiles:
+            msg_tr = tr("The following profiles have one or more empty column headers")
+            self.push_column_message(f"{msg_tr}: {', '.join(null_header_profiles)}")
+            return False
+
+        return True
 
     def is_activity_metrics_page_valid(self) -> bool:
         """Validates the activity metrics page.
