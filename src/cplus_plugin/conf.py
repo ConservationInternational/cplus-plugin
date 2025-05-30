@@ -17,6 +17,7 @@ from qgis.PyQt import QtCore
 from qgis.core import QgsSettings
 
 from .definitions.constants import (
+    METRIC_COLLECTION_PROPERTY,
     METRIC_CONFIGURATION_PROPERTY,
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
@@ -39,6 +40,7 @@ from .models.base import (
 )
 from .models.financial import NcsPathwayNpvCollection
 from .models.helpers import (
+    create_metrics_profile_collection,
     ncs_pathway_npv_collection_to_dict,
     create_activity,
     create_ncs_pathway_npv_collection,
@@ -46,9 +48,10 @@ from .models.helpers import (
     create_ncs_pathway,
     layer_component_to_dict,
     metric_configuration_to_dict,
+    metric_profile_collection_to_dict,
     ncs_pathway_to_dict,
 )
-from .models.report import MetricConfiguration
+from .models.report import MetricConfiguration, MetricProfileCollection
 from .utils import log, todict, CustomJsonEncoder
 
 
@@ -1472,11 +1475,46 @@ class SettingsManager(QtCore.QObject):
         """
         metric_configuration_dict = metric_configuration_to_dict(metric_configuration)
         metric_configuration_str = json.dumps(metric_configuration_dict)
-        print(metric_configuration_dict)
         self.set_value(METRIC_CONFIGURATION_PROPERTY, metric_configuration_str)
 
+    def get_metric_profile_collection(self) -> typing.Optional[MetricProfileCollection]:
+        """Gets the metric profile collection.
+
+        :returns: A metric profile collection or None if not
+        defined or an error occurred when deserializing.
+        :rtype: MetricProfileCollection
+        """
+        metric_profile_collection_str = self.get_value(METRIC_COLLECTION_PROPERTY, None)
+        if not metric_profile_collection_str:
+            return None
+
+        metric_profile_collection_dict = {}
+        try:
+            metric_profile_collection_dict = json.loads(metric_profile_collection_str)
+        except json.JSONDecodeError:
+            log("Metric profile collection JSON is invalid.")
+
+        return create_metrics_profile_collection(
+            metric_profile_collection_dict, self.get_all_activities()
+        )
+
+    def save_metric_profile_collection(
+        self, metric_profile_collection: MetricProfileCollection
+    ):
+        """Serializes a metric profile collection in settings as a JSON string.
+
+        :param metric_profile_collection: Collection of metric profile
+        configurations to be serialized.
+        :type metric_profile_collection: MetricProfileCollection
+        """
+        metric_profile_collection_dict = metric_profile_collection_to_dict(
+            metric_profile_collection
+        )
+        metric_profile_collection_str = json.dumps(metric_profile_collection_dict)
+        self.set_value(METRIC_COLLECTION_PROPERTY, metric_profile_collection_str)
+
     def save_online_scenario(self, scenario_uuid):
-        """Save the passed scenario settings into the plugin settings as online tasl
+        """Save the passed scenario settings into the plugin settings as online task
 
         :param scenario_uuid: Scenario UUID
         :type scenario_uuid: str

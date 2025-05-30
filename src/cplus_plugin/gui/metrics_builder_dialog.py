@@ -6,7 +6,6 @@ Wizard for customizing custom activity metrics table.
 import os
 import re
 import typing
-from tabnanny import check
 
 from qgis.core import Qgis, QgsFallbackNumericFormat
 from qgis.gui import (
@@ -38,8 +37,15 @@ from .metrics_builder_model import (
     MetricColumnListModel,
 )
 from ..models.base import Activity
-from ..models.helpers import clone_activity
-from ..models.report import MetricColumn, MetricConfiguration, MetricType
+from ..models.helpers import clone_activity, clone_metric_configuration_profile
+from ..models.report import (
+    ActivityColumnMetric,
+    MetricColumn,
+    MetricConfiguration,
+    MetricConfigurationProfile,
+    MetricProfileCollection,
+    MetricType,
+)
 from ..utils import FileUtils, log, open_documentation, tr
 
 WidgetUi, _ = loadUiType(
@@ -220,7 +226,12 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
     AREA_COLUMN = "Area"
     MAX_COLUMNS = 10
 
-    def __init__(self, parent=None, activities=None, add_default_columns=True):
+    def __init__(
+        self,
+        parent=None,
+        activities=None,
+        profile_collection=None,
+    ):
         super().__init__(parent)
         self.setupUi(self)
 
@@ -229,6 +240,10 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         self._activities = []
         if activities is not None:
             self._activities = [clone_activity(activity) for activity in activities]
+
+        self._profile_collection = None
+        if self._profile_collection is None:
+            self.initialize_collection()
 
         # Setup notification bars
         self._column_message_bar = QgsMessageBar()
@@ -252,6 +267,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
 
         self.currentIdChanged.connect(self.on_page_id_changed)
         self.helpRequested.connect(self.on_help_requested)
+        self.accepted.connect(self.on_accepted)
 
         # Intro page
         banner = FileUtils.get_pixmap("metrics_illustration.svg")
@@ -277,6 +293,23 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         self.btn_column_down.setIcon(move_down_icon)
         self.btn_column_down.setEnabled(False)
         self.btn_column_down.clicked.connect(self.on_move_down_column)
+
+        # Profile management
+        self.cbo_profile.currentIndexChanged.connect(self.on_profile_changed)
+
+        self.btn_add_profile.setIcon(add_icon)
+        self.btn_add_profile.clicked.connect(self.on_add_profile)
+
+        edit_icon = FileUtils.get_icon("mActionToggleEditing.svg")
+        self.btn_rename_profile.setIcon(edit_icon)
+        self.btn_rename_profile.clicked.connect(self.on_rename_profile)
+
+        copy_icon = FileUtils.get_icon("mActionEditCopy.svg")
+        self.btn_copy_profile.setIcon(copy_icon)
+        self.btn_copy_profile.clicked.connect(self.on_copy_profile)
+
+        self.btn_delete_profile.setIcon(remove_icon)
+        self.btn_delete_profile.clicked.connect(self.on_delete_profile)
 
         self.splitter.setStretchFactor(0, 20)
         self.splitter.setStretchFactor(1, 80)
@@ -323,20 +356,132 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         # Final summary page
         self.tv_summary.setModel(self._summary_model)
 
-        if add_default_columns:
-            self._add_default_columns()
+    @property
+    def profile_collection(self) -> MetricProfileCollection:
+        """Gets the profile collection used in the wizard.
 
-    def _add_default_columns(self):
-        """Add default columns."""
-        # Add the default area column
+        :returns: The profile collection used in the wizard.
+        :rtype: MetricProfileCollection
+        """
+        return self._profile_collection
+
+    @profile_collection.setter
+    def profile_collection(self, collection: MetricProfileCollection):
+        """Set the profile collection to use in the wizard.
+
+        :param collection: Metric profile collection.
+        :type collection: MetricProfileCollection
+        """
+        if not collection.profiles:
+            # Initialize defaults
+            self.initialize_collection()
+            return
+
+        self.clear_views()
+
+        self._profile_collection = collection
+
+        self.cbo_profile.blockSignals(True)
+        current_profile = self._profile_collection.get_current_profile()
+        for profile in self._profile_collection.profiles:
+            self.cbo_profile.addItem(profile.name, profile.id)
+            if current_profile is None:
+                current_profile = profile
+
+        self.cbo_profile.blockSignals(False)
+
+        if current_profile is not None:
+            self.set_current_profile(current_profile.id)
+
+    def clear_views(self):
+        """Removes items in item views i.e. combobox, list and table items."""
+        self.cbo_profile.clear()
+
+        self.clear_columns()
+
+    def clear_columns(self):
+        """Remove columns from the UI list model."""
+        # Remove columns
+        while self._column_list_model.rowCount() > 0:
+            column_name = self._column_list_model.column_items[0].name
+            self.remove_column(column_name)
+
+    def initialize_collection(self):
+        """Creates an initial profile collection. Use this if None is
+        specified.
+        """
+        # Add a default area column
         area_metric_column = MetricColumn.create_default_column(
             self.AREA_COLUMN, tr("Area (Ha)"), f"@{VAR_ACTIVITY_AREA}"
         )
         area_metric_column.auto_calculated = True
         area_metric_column.format_as_number = True
 
-        area_column_item = MetricColumnListItem(area_metric_column)
-        self.add_column_item(area_column_item)
+        column_metrics = []
+        for activity in self._activities:
+            activity_column_metric = ActivityColumnMetric(
+                activity,
+                area_metric_column,
+                MetricType.COLUMN
+                if area_metric_column.expression
+                else MetricType.NOT_SET,
+                area_metric_column if area_metric_column.expression else "",
+            )
+            column_metrics.append([activity_column_metric])
+
+        default_configuration = MetricConfiguration(
+            [area_metric_column], column_metrics
+        )
+
+        # Create a default profile
+        default_metric_profile = MetricConfigurationProfile(
+            tr("Default"), default_configuration
+        )
+
+        self._profile_collection = MetricProfileCollection()
+        self._profile_collection.add_profile(default_metric_profile)
+        self.set_current_profile(default_metric_profile.id)
+
+    def set_current_profile(
+        self, profile: typing.Union[str, MetricConfigurationProfile]
+    ):
+        """Updates the UI to set the current metric profile.
+
+        :param profile: Profile or profile ID to be set. It must
+        exist in the profile collection.
+        :type profile: typing.Union[str, MetricConfigurationProfile]
+        """
+        if self._profile_collection is None:
+            return
+
+        # Convert profile to corresponding ID
+        if isinstance(profile, MetricConfigurationProfile):
+            profile = profile.id
+
+        if not self._profile_collection.profile_exists(profile):
+            return
+
+        metric_profile = self._profile_collection.get_profile(profile)
+        if metric_profile is None:
+            return
+
+        # Update combobox
+        item_index = self.cbo_profile.findData(profile)
+        if item_index == -1:
+            return
+
+        self.cbo_profile.blockSignals(True)
+        self.cbo_profile.setCurrentIndex(item_index)
+        self.cbo_profile.blockSignals(False)
+
+        # Clear columns
+        self.clear_columns()
+
+        # Load configuration in the view
+        self.load_configuration(metric_profile.config)
+
+        # Set the current profile
+        self._profile_collection.current_profile = profile
 
     @property
     def column_list_model(self) -> MetricColumnListModel:
@@ -408,9 +553,6 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
             log("Metric configuration is invalid and cannot be loaded.")
             return
 
-        # Remove the default area
-        self.remove_column(self.AREA_COLUMN)
-
         # Add metric columns
         for mc in configuration.metric_columns:
             # Do not add a column with a similar name
@@ -477,6 +619,8 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         """
         # Columns page
         if self.currentId() == 1:
+            # Save latest changes in current profile
+            self.update_current_profile()
             return self.is_columns_page_valid()
 
         elif self.currentId() == 2:
@@ -797,6 +941,262 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
             reference_index, HorizontalMoveDirection.RIGHT
         )
 
+    def on_profile_changed(self, index: int):
+        """Slot raised when the profile has changed.
+
+        :param index: Index of the current profile.
+        :type index: int
+        """
+        if index == -1:
+            return
+
+        profile_id = self.cbo_profile.itemData(index)
+        if not profile_id:
+            return
+
+        self.update_current_profile()
+
+        self.set_current_profile(profile_id)
+
+    def update_current_profile(self):
+        """Saves the current profile to the profile collection."""
+        current_profile = self._profile_collection.get_current_profile()
+        if current_profile is None:
+            return
+
+        # Update metric config as per setup in the UI
+        current_profile.config = self.metric_configuration
+
+    def _profile_name_dialog(
+        self, dialog_title, initial_text: str = ""
+    ) -> typing.Tuple[str, bool]:
+        """Creates a dialog for specifying the profile name with
+        an optional initial value.
+
+        :param dialog_title: Dialog title.
+        :type dialog_title: str
+
+        :param initial_text: Optional text to include in
+        the dialog when shown.
+        :type initial_text: str
+
+        :returns: A tuple containing the specified input text and True or
+        False if the dialog was accepted or rejected respectively.
+        :rtype: typing.Tuple[str, bool]
+        """
+        label_text = (
+            f"{tr('Specify the name of the profile.')}<br>"
+            f"<i><sup>*</sup>{tr('Any special characters will be removed.')}"
+            f"</i>"
+        )
+        return QtWidgets.QInputDialog.getText(
+            self, dialog_title, label_text, text=initial_text
+        )
+
+    @staticmethod
+    def clean_profile_name(profile_name: str) -> str:
+        """Remove special characters from profile name.
+
+        :param profile_name: The raw profile name
+        :type profile_name: str
+        :returns: Cleaned profile name with special characters removed
+        :rtype: str
+        """
+        return re.sub(r"\W+", " ", profile_name)
+
+    def check_duplicate_profile_name(self, clean_profile_name: str) -> bool:
+        """Check if a profile name already exists.
+
+        :param clean_profile_name: The cleaned profile name to check
+        :type clean_profile_name: str
+        :returns: True if duplicate exists, False otherwise
+        :rtype: bool
+        """
+        if clean_profile_name in self.profile_collection.identifiers.values():
+            QtWidgets.QMessageBox.warning(
+                self,
+                tr("Duplicate Profile Name"),
+                tr("There is an already existing profile with the " "specified name."),
+            )
+            return True
+
+        return False
+
+    def _get_validated_profile_name(
+        self, dialog_title, initial_text: str = ""
+    ) -> typing.Optional[str]:
+        """Get a validated profile name from user input.
+
+        :param dialog_title: Dialog title.
+        :type dialog_title: str
+
+        :param initial_text: Optional initial text for the dialog
+        :type initial_text: str
+        :returns: Clean profile name if valid, None if cancelled or duplicate
+        :rtype: typing.Optional[str]
+        """
+        profile_name, ok = self._profile_name_dialog(dialog_title, initial_text)
+
+        # Cancelled
+        if not ok:
+            return None
+
+        # No text provided
+        if ok and not profile_name:
+            QtWidgets.QMessageBox.warning(
+                self,
+                dialog_title,
+                tr("Profile name cannot be empty"),
+            )
+            return None
+
+        clean_profile_name = self.clean_profile_name(profile_name)
+
+        if self.check_duplicate_profile_name(clean_profile_name):
+            return None
+
+        return clean_profile_name
+
+    def on_add_profile(self):
+        """Slot to add a new profile."""
+        clean_profile_name = self._get_validated_profile_name(tr("Add New Profile"))
+
+        if clean_profile_name is None:
+            return
+
+        metric_profile = MetricConfigurationProfile(
+            clean_profile_name, MetricConfiguration.create()
+        )
+
+        if not self._profile_collection.add_profile(metric_profile):
+            QtWidgets.QMessageBox.warning(
+                self,
+                tr("Add New Profile"),
+                tr(
+                    "Profile could not be added. Check for a "
+                    "duplicate name or an invalid profile"
+                ),
+            )
+            return
+
+        self.cbo_profile.addItem(clean_profile_name, metric_profile.id)
+        self.set_current_profile(metric_profile.id)
+
+    def on_rename_profile(self):
+        """Slot to rename the current profile."""
+        current_profile = self._profile_collection.get_current_profile()
+        if current_profile is None:
+            QtWidgets.QMessageBox.warning(
+                self,
+                tr("Rename Profile"),
+                tr("Please select a profile to rename."),
+            )
+            return
+
+        clean_profile_name = self._get_validated_profile_name(
+            tr("Rename Profile"), current_profile.name
+        )
+        if clean_profile_name is None:
+            return
+
+        # Update UI
+        current_index = self.cbo_profile.currentIndex()
+        self.cbo_profile.setItemText(current_index, clean_profile_name)
+
+        # Update profile name
+        current_profile.name = clean_profile_name
+        self.cbo_profile.setItemData(current_index, current_profile.id)
+
+        # Update profile collection
+        self._profile_collection.current_profile = current_profile.id
+        self.update_current_profile()
+
+    def on_delete_profile(self):
+        """Slot to delete the current profile."""
+        # Check to ensure that at least one profile
+        # exists in the collection
+        if len(self._profile_collection.profiles) == 1:
+            QtWidgets.QMessageBox.warning(
+                self,
+                tr("Delete Profile"),
+                tr("Cannot delete as at least one metric profile must exist."),
+            )
+            return
+
+        current_index = self.cbo_profile.currentIndex()
+        current_profile_id = self.cbo_profile.itemData(current_index)
+        if not current_profile_id or not self._profile_collection.remove_profile(
+            current_profile_id
+        ):
+            QtWidgets.QMessageBox.warning(
+                self,
+                tr("Delete Profile"),
+                tr("An error occurred in attempting to delete the current profile."),
+            )
+            return
+
+        self.cbo_profile.removeItem(current_index)
+
+        # Set last profile in the collection as the current profile
+        last_profile_id = self._profile_collection.profiles[-1].id
+        self.set_current_profile(last_profile_id)
+
+    def on_copy_profile(self):
+        """Slot to copy the current profile."""
+        current_profile = self._profile_collection.get_current_profile()
+        if current_profile is None:
+            QtWidgets.QMessageBox.warning(
+                self,
+                tr("Copy Profile"),
+                tr("Please select a profile to copy"),
+            )
+            return
+
+        # Check validity
+        if not current_profile.is_valid():
+            QtWidgets.QMessageBox.warning(
+                self,
+                tr("Copy Profile"),
+                tr("The current profile cannot be copied as it is invalid"),
+            )
+            return
+
+        clean_profile_name = self._get_validated_profile_name(
+            tr("Copy Profile"), f"{current_profile.name} {tr('Copy')}"
+        )
+        if clean_profile_name is None:
+            return
+
+        # Save any changes before cloning
+        self.update_current_profile()
+
+        cloned_profile = clone_metric_configuration_profile(
+            current_profile, self._activities
+        )
+        if cloned_profile is None:
+            QtWidgets.QMessageBox.warning(
+                self,
+                tr("Copy Profile"),
+                tr("Unable to copy the current profile"),
+            )
+            return
+
+        # Update the name then add it to the collection
+        cloned_profile.name = clean_profile_name
+        if not self._profile_collection.add_profile(cloned_profile):
+            QtWidgets.QMessageBox.warning(
+                self,
+                tr("Copy Profile"),
+                tr(
+                    "Copied profile could not be added. Check for a "
+                    "duplicate name or an invalid profile"
+                ),
+            )
+            return
+
+        self.cbo_profile.addItem(clean_profile_name, cloned_profile.id)
+        self.set_current_profile(cloned_profile.id)
+
     def select_column(self, row: int):
         """Select the column item in the specified row.
 
@@ -978,8 +1378,20 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
             )
             return False
 
-        is_valid = True
+        else:
+            # Check other profiles
+            zero_column_profiles = []
+            for profile in self._profile_collection.profiles:
+                if not profile.config.metric_columns:
+                    zero_column_profiles.append(profile.name)
 
+            if zero_column_profiles:
+                msg_tr = tr("At least one column is required in the following profiles")
+                self.push_column_message(f"{msg_tr}: {', '.join(zero_column_profiles)}")
+                return False
+
+        # Check column headers start with current profile then other profiles
+        is_valid = True
         for item in self._column_list_model.column_items:
             if not item.is_valid:
                 if is_valid:
@@ -989,7 +1401,23 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
                 msg = f"'{item.name}' {tr_msg}."
                 self.push_column_message(msg)
 
-        return is_valid
+        if not is_valid:
+            return False
+
+        # Try other profiles if current profile is valid
+        null_header_profiles = []
+        for profile in self._profile_collection.profiles:
+            for metric_column in profile.config.metric_columns:
+                if not metric_column.header or not metric_column.name:
+                    if profile.name not in null_header_profiles:
+                        null_header_profiles.append(profile.name)
+
+        if null_header_profiles:
+            msg_tr = tr("The following profiles have one or more empty column headers")
+            self.push_column_message(f"{msg_tr}: {', '.join(null_header_profiles)}")
+            return False
+
+        return True
 
     def is_activity_metrics_page_valid(self) -> bool:
         """Validates the activity metrics page.
@@ -1045,3 +1473,11 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         activity_column_metric_models = self._activity_metric_table_model.models
         self._summary_model.set_summary_models(activity_column_metric_models)
         self.tv_summary.expandAll()
+
+    def on_accepted(self):
+        """Slot raised when the wizard has been accepted by the user.
+
+        Used to save any changes for the current metric configuration
+        profile.
+        """
+        self.update_current_profile()
