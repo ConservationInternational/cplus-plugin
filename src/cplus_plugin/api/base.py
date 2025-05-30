@@ -64,11 +64,15 @@ class BaseFetchScenarioOutput:
             pathway_filename = os.path.basename(pathway["path"])
             if pathway_filename in download_dict:
                 pathway["path"] = download_dict[pathway_filename]
+                pathway.pop("carbon_paths", None)
+                pathway.pop("carbon_uuids", None)
                 ncs_pathways.append(NcsPathway(**pathway))
         activity["pathways"] = ncs_pathways
         activity_filename = os.path.basename(activity["path"])
         if activity_filename in download_dict:
             activity["path"] = download_dict[activity_filename]
+
+        activity.pop("priority_layers", None)
         activity_obj = Activity(**activity)
         activity_obj.pathways = ncs_pathways
         return activity_obj
