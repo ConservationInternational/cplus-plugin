@@ -161,6 +161,24 @@ class ScenarioAnalysisTask(QgsTask):
         masking_layers.remove("") if "" in masking_layers else None
         return masking_layers
 
+    def get_reference_layer(self):
+        """Get the path of the reference layer
+
+        Returns:
+            str|None: Return the path of the reference layer or None is it doesn't exist
+        """
+        snapping_enabled = self.get_settings_value(
+            Settings.SNAPPING_ENABLED, default=False, setting_type=bool
+        )
+        reference_layer = self.get_settings_value(Settings.SNAP_LAYER, default="")
+        reference_layer_path = Path(reference_layer)
+        if (
+            snapping_enabled
+            and os.path.exists(reference_layer)
+            and reference_layer_path.is_file()
+        ):
+            return reference_layer
+
     def cancel_task(self, exception=None):
         """Cancel current task.
 
@@ -265,13 +283,8 @@ class ScenarioAnalysisTask(QgsTask):
         snapping_enabled = self.get_settings_value(
             Settings.SNAPPING_ENABLED, default=False, setting_type=bool
         )
-        reference_layer = self.get_settings_value(Settings.SNAP_LAYER, default="")
-        reference_layer_path = Path(reference_layer)
-        if (
-            snapping_enabled
-            and os.path.exists(reference_layer)
-            and reference_layer_path.is_file()
-        ):
+        reference_layer = self.get_reference_layer()
+        if snapping_enabled and reference_layer:
             self.snap_analysis_data(
                 self.analysis_activities,
                 extent_string,
@@ -438,24 +451,25 @@ class ScenarioAnalysisTask(QgsTask):
 
         return target_extent
 
-    def replace_nodata(self, layer_path, output_path, nodata_value):
+    def replace_nodata(
+        self, layer_path: str, output_path: str, nodata_value: float = -9999.0
+    ):
         """Adds nodata value info into the layer available
-        in the passed layer_path and save the layer in the passed output_path
-        path.
+        in the passed layer_path and saves the layer in the passed output_path.
 
         The addition will replace any current nodata value available in
         the input layer.
 
-        :param layer_path: Input layer path
+        :param layer_path: Input layer path. Must be a valid file path to a raster layer.
         :type layer_path: str
 
-        :param output_path: Output layer path
+        :param output_path: Output layer path. Must be a valid file path where the modified raster will be saved.
         :type output_path: str
 
-        :param nodata_value: Nodata value to be used
-        :type output_path: int
+        :param nodata_value: No data value to be set in the output layer. Defaults to -9999.0
+        :type nodata_value: float
 
-        :returns: Whether the task operations was successful
+        :returns: Whether the task operations were successful
         :rtype: bool
 
         """
@@ -486,7 +500,7 @@ class ScenarioAnalysisTask(QgsTask):
                 "EXTRA": "",
                 "INPUT": translate_output["OUTPUT"],
                 "MULTITHREADING": False,
-                "NODATA": -9999,
+                "NODATA": nodata_value,
                 "OPTIONS": "",
                 "RESAMPLING": 0,  # Nearest Neighbour
                 "SOURCE_CRS": None,
@@ -827,13 +841,19 @@ class ScenarioAnalysisTask(QgsTask):
                     QgsProcessing.TEMPORARY_OUTPUT if temporary_output else output_file
                 )
 
+                reference_layer = self.get_reference_layer()
+                if (reference_layer is None or reference_layer == "") and len(
+                    layers
+                ) > 0:
+                    reference_layer = layers[0]
+
                 # Actual processing calculation
                 alg_params = {
                     "IGNORE_NODATA": True,
                     "INPUT": layers,
                     "EXTENT": extent,
                     "OUTPUT_NODATA_VALUE": -9999,
-                    "REFERENCE_LAYER": layers[0] if len(layers) > 0 else None,
+                    "REFERENCE_LAYER": reference_layer,
                     "STATISTIC": 0,  # Sum
                     "OUTPUT": output,
                 }
@@ -1772,11 +1792,13 @@ class ScenarioAnalysisTask(QgsTask):
 
                 file_name = clean_filename(activity.name.replace(" ", "_"))
 
-                output_file = os.path.join(
-                    self.scenario_directory, "weighted_activities"
+                weighted_pathways_dir = os.path.join(
+                    self.scenario_directory, "weighted_pathways"
                 )
+                FileUtils.create_new_dir(weighted_pathways_dir)
                 output_file = os.path.join(
-                    output_file, f"{file_name}_{str(uuid.uuid4())[:4]}_cleaned.tif"
+                    weighted_pathways_dir,
+                    f"{file_name}_{str(uuid.uuid4())[:4]}_cleaned.tif",
                 )
 
                 # Actual processing calculation

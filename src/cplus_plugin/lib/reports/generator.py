@@ -1109,11 +1109,23 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         self._pixel_area_info = {}
         self._use_custom_metrics = context.custom_metrics
         self._metrics_configuration = None
-        if self._use_custom_metrics:
-            self._metrics_configuration = settings_manager.get_metric_configuration()
+        self._setup_metrics_configuration()
 
         if self._feedback:
             self._feedback.canceled.connect(self._on_feedback_cancelled)
+
+    def _setup_metrics_configuration(self):
+        # Setup metrics configuration object
+        if not self._use_custom_metrics:
+            return
+
+        metric_profile_collection = settings_manager.get_metric_profile_collection()
+        if not metric_profile_collection:
+            return
+
+        current_metric_profile = metric_profile_collection.get_current_profile()
+        if current_metric_profile:
+            self._metrics_configuration = current_metric_profile.config
 
     @property
     def repeat_page(self) -> typing.Union[QgsLayoutItemPage, None]:

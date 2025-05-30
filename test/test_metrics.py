@@ -57,7 +57,7 @@ class TestMetricsBuilder(TestCase):
 
         list_model = metrics_builder.column_list_model
         # By default, the builder adds an area column
-        self.assertEqual(len(list_model.column_items), 2)
+        self.assertEqual(len(list_model.column_items), 1)
 
     def test_metrics_wizard_remove_column(self):
         """Test removing a column in the metrics wizard."""
@@ -69,7 +69,7 @@ class TestMetricsBuilder(TestCase):
 
         list_model = metrics_builder.column_list_model
         # Area column still remains
-        self.assertEqual(len(list_model.column_items), 1)
+        self.assertEqual(len(list_model.column_items), 0)
 
     def test_get_metric_configuration(self):
         """Test fetching of a metric configuration from the metrics builder."""

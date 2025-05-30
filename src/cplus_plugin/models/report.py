@@ -4,6 +4,7 @@
 
 import dataclasses
 from enum import IntEnum
+import re
 import typing
 from uuid import UUID
 
@@ -275,6 +276,15 @@ class MetricConfiguration:
 
         return len(self.metric_columns) == column_metrics_len
 
+    @staticmethod
+    def create() -> "MetricConfiguration":
+        """Creates an empty metric configuration.
+
+        :returns: An empty metric configuration.
+        :rtype: MetricConfiguration
+        """
+        return MetricConfiguration([], [[]])
+
     @property
     def activities(self) -> typing.List[Activity]:
         """Gets the activity models in the configuration.
@@ -320,6 +330,144 @@ class MetricConfiguration:
         match = next(_search_list(self.activity_metrics, activity_id, name_header), -1)
 
         return match if match != -1 else None
+
+
+@dataclasses.dataclass
+class MetricConfigurationProfile:
+    """Profile with unique identifiers for a metrics configuration."""
+
+    name: str
+    config: MetricConfiguration
+
+    @property
+    def id(self) -> str:
+        """Gets a cleaned profile name that has been stripped of spaces, special
+        characters and in lower case.
+
+        :returns: Cleaned version of the `name` attribute.
+        :rtype: str
+        """
+        if not self.name.strip():
+            return ""
+
+        return (
+            re.sub(r"[ %:/,\\\[\]<>*?]", "_", self.name.strip())
+            .replace(" ", "")
+            .lower()
+        )
+
+    def is_valid(self) -> bool:
+        """Checks if the profile is valid.
+
+        Checks if the name is specified or if the metric
+        configuration is valid.
+
+        :returns: True if the profile is valid else False.
+        :rtype: bool
+        """
+        if not self.name.strip() or not self.config.is_valid():
+            return False
+
+        return True
+
+
+@dataclasses.dataclass
+class MetricProfileCollection:
+    """Collection of `MetricConfigurationProfile` objects."""
+
+    # Uses pofile ID
+    current_profile: str = ""
+    profiles: typing.List[MetricConfigurationProfile] = dataclasses.field(
+        default_factory=list
+    )
+
+    @property
+    def identifiers(self) -> typing.Dict[str, str]:
+        """Gets a collection of profile IDs and corresponding names.
+
+        Invalid profiles are excluded from the collection.
+
+        :returns: A collection of profile IDs and corresponding names.
+        :rtype: dict
+        """
+        return {
+            profile.id: profile.name for profile in self.profiles if profile.is_valid()
+        }
+
+    def profile_exists(self, profile_id: str) -> bool:
+        """Checks if a profile with the given ID exists in the collection.
+
+        :returns: True if the profile ID exists else False.
+        :rtype: bool
+        """
+        return profile_id in self.identifiers
+
+    def add_profile(self, profile: MetricConfigurationProfile) -> bool:
+        """Add a metric profile to the collection.
+
+        It checks if there is an existing profile with a
+        similar ID and if the profile is valid.
+
+        :param profile: Metric profile to be added to the collection.
+        :type profile: MetricConfigurationProfile
+
+        :returns: True if the metric profile was successfully added else
+        False if the profile is invalid or there exists one with a
+        similar ID in the collection.
+        :rtype: bool
+        """
+        if not profile.is_valid() or self.profile_exists(profile.id):
+            return False
+
+        self.profiles.append(profile)
+
+        return True
+
+    def remove_profile(self, profile_id: str) -> bool:
+        """Remove a metric profile from the collection.
+
+        :returns: True if the profile was successfully removed else
+        False if the profile with the given ID does not exist in
+        the collection.
+        :rtype: bool
+        """
+        if not self.profile_exists(profile_id):
+            return False
+
+        self.profiles = [
+            profile for profile in self.profiles if profile.id != profile_id
+        ]
+
+        return True
+
+    def get_profile(
+        self, profile_id: str
+    ) -> typing.Optional[MetricConfigurationProfile]:
+        """Gets a metric profile with the given ID.
+
+        :param profile_id: ID of the metric profile to retrieve.
+        :type profile_id: str
+
+        :returns: Metric profile matching the given ID or None if
+        not found.
+        :rtype: MetricConfigurationProfile
+        """
+        profiles = [profile for profile in self.profiles if profile.id == profile_id]
+
+        return profiles[0] if profiles else None
+
+    def get_current_profile(self) -> typing.Optional[MetricConfigurationProfile]:
+        """Helper function that retrieves the current metric profile if it has
+        been specified in the attribute.
+
+        :returns: Current metric profile object or None if not specified
+        or not found in the collection.
+        :rtype: MetricConfigurationProfile
+        """
+        if not self.current_profile:
+            return None
+
+        return self.get_profile(self.current_profile)
 
 
 @dataclasses.dataclass

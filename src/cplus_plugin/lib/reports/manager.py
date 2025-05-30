@@ -293,8 +293,9 @@ class ReportManager(QtCore.QObject):
         :type feedback: QgsFeedback
 
         :param use_custom_metrics: True to use custom metrics else False. If
-        True and the metrics configuration is empty or undefined, then the
-        default activity table in the scenario analysis report will be used.
+        True and there is no active profile or if the metrics configuration
+        profile is empty or undefined, then the default activity table in
+        the scenario analysis report will be used.
         :type use_custom_metrics: bool
 
         :returns: True if the report generation process was successfully
@@ -439,17 +440,24 @@ class ReportManager(QtCore.QObject):
                 break
             counter += 1
 
-        metrics_configuration = settings_manager.get_metric_configuration()
+        metrics_configuration = None
+        metric_collection = settings_manager.get_metric_profile_collection()
+        if metric_collection:
+            current_metric_profile = metric_collection.get_current_profile()
+            if current_metric_profile:
+                metrics_configuration = current_metric_profile.config
 
         if (
             use_custom_metrics
             and metrics_configuration is not None
             and metrics_configuration.is_valid()
         ):
+            # Metrics template
             template_path = FileUtils.report_template_path(
                 SCENARIO_ANALYSIS_METRICS_TEMPLATE_NAME
             )
         else:
+            # Default template
             template_path = FileUtils.report_template_path(
                 SCENARIO_ANALYSIS_TEMPLATE_NAME
             )

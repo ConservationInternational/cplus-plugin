@@ -151,6 +151,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             self.log_message(str(e))
             err = f"Problem uploading layer to the server: {e}\n"
             self.log_message(err, info=False)
+            self.log_message(str(traceback.format_exc()))
             self.set_info_message(err, level=Qgis.Critical)
             self.cancel_task(e)
             return False
@@ -338,13 +339,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
                     if pathway.path and os.path.exists(pathway.path):
                         items_to_check[pathway.path] = "ncs_pathway"
 
-                    for carbon_path in pathway.carbon_paths:
-                        if os.path.exists(carbon_path):
-                            items_to_check[carbon_path] = "ncs_carbon"
-
-            for priority_layer in activity.priority_layers:
-                if priority_layer:
-                    activity_pwl_uuids.add(priority_layer.get("uuid", ""))
+            if hasattr(activity, "priority_layers"):
+                for priority_layer in activity.priority_layers:
+                    if priority_layer:
+                        priority_layer.get()
+                        activity_pwl_uuids.add(priority_layer.get("uuid", ""))
 
             self._update_scenario_status(
                 {
@@ -584,21 +583,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
                         pathway["layer_uuid"] = pathway["uuid"]
                         pathway["layer_type"] = 0
 
-                carbon_uuids = []
-                for carbon_path in pathway["carbon_paths"]:
-                    if carbon_path.startswith("cplus://"):
-                        names = carbon_path.split("/")
-                        carbon_uuids.append(names[-2])
-                    elif os.path.exists(carbon_path):
-                        if self.path_to_layer_mapping.get(carbon_path, None):
-                            carbon_uuids.append(
-                                self.path_to_layer_mapping.get(carbon_path)["uuid"]
-                            )
-                pathway["carbon_paths"] = []
-                pathway["carbon_uuids"] = carbon_uuids
                 pathway["path"] = ""
             new_priority_layers = []
-            for priority_layer in activity["priority_layers"]:
+            for priority_layer in activity.get("priority_layers", []):
                 if priority_layer is None:
                     continue
                 priority_layer["path"] = ""

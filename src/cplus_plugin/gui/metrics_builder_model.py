@@ -736,7 +736,7 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
         """
         model_index = index + 1
         if model_index == 0 or model_index >= self.columnCount():
-            return False
+            return
 
         # Update header
         self.setHeaderData(

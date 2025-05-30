@@ -53,6 +53,7 @@ from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
 from .lib.reports.manager import report_manager
 from .lib.reports.metrics import register_metric_functions, unregister_metric_functions
 from .models.base import PriorityLayerType
+from .models.report import MetricConfigurationProfile, MetricProfileCollection
 from .gui.settings.cplus_options import CplusOptionsFactory
 from .gui.settings.log_options import LogOptionsFactory
 from .gui.settings.report_options import ReportOptionsFactory
@@ -113,6 +114,9 @@ class QgisCplus:
         initialize_report_settings()
 
         initialize_api_url()
+
+        # Upgrade metric configuration to profile collection
+        upgrade_metric_configuration_to_profile_collection()
 
         self.main_widget = QgisCplusMain(
             iface=self.iface, parent=self.iface.mainWindow()
@@ -447,6 +451,44 @@ def clean_up_finance_pwl_references():
 
         if layer["uuid"] not in ncs_pathway_pwl_ids:
             settings_manager.delete_priority_layer(layer["uuid"])
+
+
+def upgrade_metric_configuration_to_profile_collection():
+    """Due to changes introduced in v1.17dev, where metrics are
+    now managed in a collection of profiles, this function will
+    attempt to automatically update the previous single metric
+    configuration to a 'Default' metric configuration profile.
+    """
+    metric_profile_collection = settings_manager.get_metric_profile_collection()
+    # We assume that since the collection is None then it was
+    # from an older version of managing metric configuration however
+    # if not None then no need to upgrade since its assumed
+    # that this was already automatically done before.
+    if metric_profile_collection:
+        log("Metric profile collection is upto date")
+        return
+
+    metric_configuration = settings_manager.get_metric_configuration()
+    if metric_configuration is None:
+        log(
+            "Metric configuration not found, skipping "
+            "upgrade to a default metric configuration profile"
+        )
+        return
+
+    # Group previous metric configuration as "Default"
+    default_profile_name = tr("Default")
+    default_metric_config_profile = MetricConfigurationProfile(
+        default_profile_name, metric_configuration
+    )
+    upgraded_profile_collection = MetricProfileCollection(
+        default_profile_name, [default_metric_config_profile]
+    )
+    settings_manager.save_metric_profile_collection(upgraded_profile_collection)
+    log(
+        "Successfully upgraded the metric configuration settings "
+        "to be the default metric configuration profile"
+    )
 
 
 def initialize_model_settings():
