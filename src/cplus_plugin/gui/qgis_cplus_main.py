@@ -196,6 +196,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         # Fetch default layers
         self.fetch_default_layer_list()
 
+        # Update metric button with metric profiles
+        self.update_metric_button_profiles()
+
     def on_view_status_button_clicked(self):
         """Handler when view status report button in tab 4 is clicked."""
         log("View status button")
@@ -2439,6 +2442,70 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         if metrics_builder.exec_() == QtWidgets.QDialog.Accepted:
             metric_profile_collection = metrics_builder.profile_collection
+            settings_manager.save_metric_profile_collection(metric_profile_collection)
+            self.update_metric_button_profiles()
+
+    def update_metric_button_profiles(self):
+        """Updates the profiles in the metric button menu based on the
+        existing metric configuration profiles.
+        """
+        metric_profile_collection = settings_manager.get_metric_profile_collection()
+        if metric_profile_collection is None:
+            log("Metric profile collection does not contain any profiles.")
+            return
+
+        # Update tooltip
+        current_profile = metric_profile_collection.get_current_profile()
+        if current_profile:
+            self.btn_metric_builder.setToolTip(
+                f"{tr('Active profile')}: <b>{current_profile.name}</b>"
+            )
+        else:
+            self.btn_metric_builder.setToolTip(f"{tr('No active profile specified')}")
+
+        # Update menu
+        if not metric_profile_collection.profiles:
+            return
+
+        profiles_menu = QtWidgets.QMenu()
+        self.profiles_action_group = QtWidgets.QActionGroup(self)
+        self.profiles_action_group.setExclusive(True)
+        self.profiles_action_group.triggered.connect(
+            self.on_profile_action_group_triggered
+        )
+        for profile in metric_profile_collection.profiles:
+            action = profiles_menu.addAction(profile.name)
+            action.setCheckable(True)
+            if profile.id == metric_profile_collection.current_profile:
+                action.setChecked(True)
+            # Disable invalid profiles
+            if not profile.is_valid():
+                action.setEnabled(False)
+            self.profiles_action_group.addAction(action)
+
+        self.btn_metric_builder.setMenu(profiles_menu)
+        self.btn_metric_builder.setPopupMode(QtWidgets.QToolButton.MenuButtonPopup)
+
+    def on_profile_action_group_triggered(self, action: QtWidgets.QAction):
+        """Slot raised when the action group for profiles
+        has been triggered.
+
+        :param action: Action in the group that has been triggered.
+        :type action: QtWidgets.QAction
+        """
+        metric_profile_collection = settings_manager.get_metric_profile_collection()
+        if metric_profile_collection is None:
+            return
+
+        # Set current profile
+        current_profile = ""
+        for profile in metric_profile_collection.profiles:
+            if profile.name == action.text():
+                current_profile = profile.id
+                break
+
+        if current_profile:
+            metric_profile_collection.current_profile = current_profile
             settings_manager.save_metric_profile_collection(metric_profile_collection)
 
     def run_report(self, progress_dialog, report_manager):
