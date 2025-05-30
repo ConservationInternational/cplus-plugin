@@ -230,6 +230,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         self,
         parent=None,
         activities=None,
+        profile_collection=None,
     ):
         super().__init__(parent)
         self.setupUi(self)
@@ -241,6 +242,8 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
             self._activities = [clone_activity(activity) for activity in activities]
 
         self._profile_collection = None
+        if self._profile_collection is None:
+            self.initialize_collection()
 
         # Setup notification bars
         self._column_message_bar = QgsMessageBar()
@@ -419,8 +422,10 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
             activity_column_metric = ActivityColumnMetric(
                 activity,
                 area_metric_column,
-                MetricType.COLUMN,
-                area_metric_column.expression,
+                MetricType.COLUMN
+                if area_metric_column.expression
+                else MetricType.NOT_SET,
+                area_metric_column if area_metric_column.expression else "",
             )
             column_metrics.append([activity_column_metric])
 
@@ -435,9 +440,6 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
 
         self._profile_collection = MetricProfileCollection()
         self._profile_collection.add_profile(default_metric_profile)
-        self.cbo_profile.blockSignals(True)
-        self.cbo_profile.addItem(default_metric_profile.name, default_metric_profile.id)
-        self.cbo_profile.blockSignals(False)
         self.set_current_profile(default_metric_profile.id)
 
     def set_current_profile(
@@ -1010,12 +1012,11 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         :returns: True if duplicate exists, False otherwise
         :rtype: bool
         """
-        tr_msg = tr("There is an already existing profile with the name")
         if clean_profile_name in self.profile_collection.identifiers.values():
             QtWidgets.QMessageBox.warning(
                 self,
                 tr("Duplicate Profile Name"),
-                f"{tr_msg} '{clean_profile_name}'",
+                tr("There is an already existing profile with the " "specified name."),
             )
             return True
 
@@ -1077,9 +1078,6 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
                 ),
             )
             return
-
-        # Save any changes to the profile the user was working
-        self.update_current_profile()
 
         self.cbo_profile.addItem(clean_profile_name, metric_profile.id)
         self.set_current_profile(metric_profile.id)
