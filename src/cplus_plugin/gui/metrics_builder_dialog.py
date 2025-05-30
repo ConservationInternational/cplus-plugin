@@ -230,7 +230,6 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         self,
         parent=None,
         activities=None,
-        add_default_columns=True,
         profile_collection=None,
     ):
         super().__init__(parent)
@@ -268,6 +267,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
 
         self.currentIdChanged.connect(self.on_page_id_changed)
         self.helpRequested.connect(self.on_help_requested)
+        self.accepted.connect(self.on_accepted)
 
         # Intro page
         banner = FileUtils.get_pixmap("metrics_illustration.svg")
@@ -373,17 +373,22 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         :type collection: MetricProfileCollection
         """
         if not collection.profiles:
+            # Initialize defaults
+            self.initialize_collection()
             return
 
         self.clear_views()
 
         self._profile_collection = collection
 
-        current_profile = collection.get_current_profile()
-        for profile in collection.profiles:
+        self.cbo_profile.blockSignals(True)
+        current_profile = self._profile_collection.get_current_profile()
+        for profile in self._profile_collection.profiles:
             self.cbo_profile.addItem(profile.name, profile.id)
             if current_profile is None:
                 current_profile = profile
+
+        self.cbo_profile.blockSignals(False)
 
         if current_profile is not None:
             self.set_current_profile(current_profile.id)
@@ -464,7 +469,10 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         item_index = self.cbo_profile.findData(profile)
         if item_index == -1:
             return
+
+        self.cbo_profile.blockSignals(True)
         self.cbo_profile.setCurrentIndex(item_index)
+        self.cbo_profile.blockSignals(False)
 
         # Clear columns
         self.clear_columns()
@@ -612,7 +620,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         # Columns page
         if self.currentId() == 1:
             # Save latest changes in current profile
-            self.save_current_profile()
+            self.update_current_profile()
             return self.is_columns_page_valid()
 
         elif self.currentId() == 2:
@@ -946,11 +954,11 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         if not profile_id:
             return
 
-        self.save_current_profile()
+        self.update_current_profile()
 
         self.set_current_profile(profile_id)
 
-    def save_current_profile(self):
+    def update_current_profile(self):
         """Saves the current profile to the profile collection."""
         current_profile = self._profile_collection.get_current_profile()
         if current_profile is None:
@@ -1101,7 +1109,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
 
         # Update profile collection
         self._profile_collection.current_profile = current_profile.id
-        self.save_current_profile()
+        self.update_current_profile()
 
     def on_delete_profile(self):
         """Slot to delete the current profile."""
@@ -1160,7 +1168,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
             return
 
         # Save any changes before cloning
-        self.save_current_profile()
+        self.update_current_profile()
 
         cloned_profile = clone_metric_configuration_profile(
             current_profile, self._activities
@@ -1465,3 +1473,11 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         activity_column_metric_models = self._activity_metric_table_model.models
         self._summary_model.set_summary_models(activity_column_metric_models)
         self.tv_summary.expandAll()
+
+    def on_accepted(self):
+        """Slot raised when the wizard has been accepted by the user.
+
+        Used to save any changes for the current metric configuration
+        profile.
+        """
+        self.update_current_profile()
