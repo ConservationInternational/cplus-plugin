@@ -438,24 +438,25 @@ class ScenarioAnalysisTask(QgsTask):
 
         return target_extent
 
-    def replace_nodata(self, layer_path, output_path, nodata_value):
+    def replace_nodata(
+        self, layer_path: str, output_path: str, nodata_value: float = -9999.0
+    ):
         """Adds nodata value info into the layer available
-        in the passed layer_path and save the layer in the passed output_path
-        path.
+        in the passed layer_path and saves the layer in the passed output_path.
 
         The addition will replace any current nodata value available in
         the input layer.
 
-        :param layer_path: Input layer path
+        :param layer_path: Input layer path. Must be a valid file path to a raster layer.
         :type layer_path: str
 
-        :param output_path: Output layer path
+        :param output_path: Output layer path. Must be a valid file path where the modified raster will be saved.
         :type output_path: str
 
-        :param nodata_value: Nodata value to be used
-        :type output_path: int
+        :param nodata_value: No data value to be set in the output layer. Defaults to -9999.0
+        :type nodata_value: float
 
-        :returns: Whether the task operations was successful
+        :returns: Whether the task operations were successful
         :rtype: bool
 
         """
@@ -486,7 +487,7 @@ class ScenarioAnalysisTask(QgsTask):
                 "EXTRA": "",
                 "INPUT": translate_output["OUTPUT"],
                 "MULTITHREADING": False,
-                "NODATA": -9999,
+                "NODATA": nodata_value,
                 "OPTIONS": "",
                 "RESAMPLING": 0,  # Nearest Neighbour
                 "SOURCE_CRS": None,
