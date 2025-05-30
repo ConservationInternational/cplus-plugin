@@ -841,13 +841,19 @@ class ScenarioAnalysisTask(QgsTask):
                     QgsProcessing.TEMPORARY_OUTPUT if temporary_output else output_file
                 )
 
+                reference_layer = self.get_reference_layer()
+                if (reference_layer is None or reference_layer == "") and len(
+                    layers
+                ) > 0:
+                    reference_layer = layers[0]
+
                 # Actual processing calculation
                 alg_params = {
                     "IGNORE_NODATA": True,
                     "INPUT": layers,
                     "EXTENT": extent,
                     "OUTPUT_NODATA_VALUE": -9999,
-                    "REFERENCE_LAYER": layers[0] if len(layers) > 0 else None,
+                    "REFERENCE_LAYER": reference_layer,
                     "STATISTIC": 0,  # Sum
                     "OUTPUT": output,
                 }
