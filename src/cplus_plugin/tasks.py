@@ -1792,11 +1792,13 @@ class ScenarioAnalysisTask(QgsTask):
 
                 file_name = clean_filename(activity.name.replace(" ", "_"))
 
-                output_file = os.path.join(
-                    self.scenario_directory, "weighted_activities"
+                weighted_pathways_dir = os.path.join(
+                    self.scenario_directory, "weighted_pathways"
                 )
+                FileUtils.create_new_dir(weighted_pathways_dir)
                 output_file = os.path.join(
-                    output_file, f"{file_name}_{str(uuid.uuid4())[:4]}_cleaned.tif"
+                    weighted_pathways_dir,
+                    f"{file_name}_{str(uuid.uuid4())[:4]}_cleaned.tif",
                 )
 
                 # Actual processing calculation
