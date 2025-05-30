@@ -390,10 +390,15 @@ class Activity(LayerModelComponent):
         pathways = []
         for pathway in activity_dict["pathways"]:
             del pathway["layer_uuid"]
+            if "carbon_paths" in pathway:
+                del pathway["carbon_paths"]
+            if "carbon_uuids" in pathway:
+                del pathway["carbon_uuids"]
             pathways.append(NcsPathway(**pathway))
         activity_dict["pathways"] = pathways
         # delete mask_uuids using pop
         activity_dict.pop("mask_uuids", None)
+        activity_dict.pop("priority_layers", None)
         return Activity(**activity_dict)
 
     def __post_init__(self):
