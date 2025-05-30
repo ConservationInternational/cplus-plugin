@@ -161,6 +161,24 @@ class ScenarioAnalysisTask(QgsTask):
         masking_layers.remove("") if "" in masking_layers else None
         return masking_layers
 
+    def get_reference_layer(self):
+        """Get the path of the reference layer
+
+        Returns:
+            str|None: Return the path of the reference layer or None is it doesn't exist
+        """
+        snapping_enabled = self.get_settings_value(
+            Settings.SNAPPING_ENABLED, default=False, setting_type=bool
+        )
+        reference_layer = self.get_settings_value(Settings.SNAP_LAYER, default="")
+        reference_layer_path = Path(reference_layer)
+        if (
+            snapping_enabled
+            and os.path.exists(reference_layer)
+            and reference_layer_path.is_file()
+        ):
+            return reference_layer
+
     def cancel_task(self, exception=None):
         """Cancel current task.
 
@@ -265,13 +283,8 @@ class ScenarioAnalysisTask(QgsTask):
         snapping_enabled = self.get_settings_value(
             Settings.SNAPPING_ENABLED, default=False, setting_type=bool
         )
-        reference_layer = self.get_settings_value(Settings.SNAP_LAYER, default="")
-        reference_layer_path = Path(reference_layer)
-        if (
-            snapping_enabled
-            and os.path.exists(reference_layer)
-            and reference_layer_path.is_file()
-        ):
+        reference_layer = self.get_reference_layer()
+        if snapping_enabled and reference_layer:
             self.snap_analysis_data(
                 self.analysis_activities,
                 extent_string,
