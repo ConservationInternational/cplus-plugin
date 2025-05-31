@@ -106,10 +106,10 @@
   </widget>
   <widget class="QWizardPage" name="pg_columns">
    <property name="title">
-    <string>Activity Metrics Columns</string>
+    <string>Metric Configuration Profiles</string>
    </property>
    <property name="subTitle">
-    <string>Specify the columns to be included in the activity table</string>
+    <string>Specify the profiles and corresponding columns to be included in the activity table</string>
    </property>
    <attribute name="pageId">
     <string notr="true">1</string>
@@ -549,7 +549,7 @@
     <string>Activity Metric</string>
    </property>
    <property name="subTitle">
-    <string>Customize the metric for each selected activity. </string>
+    <string>Customize the metric for each selected activity in the current profile. </string>
    </property>
    <attribute name="pageId">
     <string notr="true">2</string>
