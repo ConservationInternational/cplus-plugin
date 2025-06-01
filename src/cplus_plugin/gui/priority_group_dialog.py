@@ -73,7 +73,7 @@ class PriorityGroupDialog(QtWidgets.QDialog, DialogUi):
     def initialize_ui(self):
         """Populate UI inputs when loading the dialog"""
 
-        self.btn_help.setIcon(FileUtils.get_icon("mActionHelpContents.svg"))
+        self.btn_help.setIcon(FileUtils.get_icon("mActionHelpContents_green.svg"))
         self.btn_help.clicked.connect(self.open_help)
 
         self.select_layers_btn.clicked.connect(self.open_layer_select_dialog)
