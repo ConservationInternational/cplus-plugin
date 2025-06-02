@@ -73,7 +73,7 @@ class PriorityGroupDialog(QtWidgets.QDialog, DialogUi):
     def initialize_ui(self):
         """Populate UI inputs when loading the dialog"""
 
-        self.btn_help.setIcon(FileUtils.get_icon("mActionHelpContents.svg"))
+        self.btn_help.setIcon(FileUtils.get_icon("mActionHelpContents_green.svg"))
         self.btn_help.clicked.connect(self.open_help)
 
         self.select_layers_btn.clicked.connect(self.open_layer_select_dialog)
@@ -115,7 +115,6 @@ class PriorityGroupDialog(QtWidgets.QDialog, DialogUi):
         :type removed_items: list
 
         """
-
         self.layers = items
 
         if len(items) > 0 and isinstance(items[0], dict):
@@ -166,26 +165,12 @@ class PriorityGroupDialog(QtWidgets.QDialog, DialogUi):
         group["name"] = self.group_name.text()
         group["description"] = self.group_description.toPlainText()
         group["value"] = self.group_spin_box.value()
+        group[USER_DEFINED_ATTRIBUTE] = self._user_defined
+
+        self.group = group
 
         self.set_selected_items(self.layers)
 
-        # layers_uuid = [str(layer.get('uuid')) for layer in self.layers]
-        #
-        # all_layers = settings_manager.get_priority_layers()
-        #
-        # for layer in all_layers:
-        #     if layer.get('uuid') in layers_uuid:
-        #         group_uuids = [str(group.get('uuid')) for group in layer.get('groups') if group is not None]
-        #         if self.group.get('uuid') not in group_uuids:
-        #             layer['groups'] = layer.get('groups').append(self.group)
-        #             settings_manager.save_priority_layer(layer)
-        #     else:
-        #         group_uuids = [str(group.get('uuid')) for group in layer.get('groups') if group is not None]
-        #         if self.group.get('uuid') in group_uuids:
-        #             layer['groups'] = layer.get('groups').remove(self.group)
-        #             settings_manager.save_priority_layer(layer)
-
-        group[USER_DEFINED_ATTRIBUTE] = self._user_defined
         settings_manager.save_priority_group(group)
 
         super().accept()

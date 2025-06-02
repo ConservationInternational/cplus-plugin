@@ -82,7 +82,10 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
                     if group is not None:
                         group_uuids.append(str(group.get("uuid")))
 
-                if self.parent_item.get("uuid") in group_uuids:
+                if (
+                    self.parent_item is not None
+                    and self.parent_item.get("uuid") in group_uuids
+                ):
                     item.setCheckState(QtCore.Qt.Checked)
 
     def set_items(self):

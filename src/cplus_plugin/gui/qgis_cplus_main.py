@@ -437,6 +437,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.priority_groups_list.child_dragged_dropped.connect(
             self.priority_groups_update
         )
+        self.priority_groups_list.itemDoubleClicked.connect(
+            self._on_double_click_priority_group
+        )
 
         layout = QtWidgets.QVBoxLayout()
         layout.setSpacing(0)
@@ -973,6 +976,22 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         group_dialog.exec_()
         self.update_priority_groups()
 
+    def _on_double_click_priority_group(self, tree_item: QtWidgets.QTreeWidgetItem):
+        """Slot raised when a priority group item has been
+        double clicked.
+        """
+        group_id = tree_item.data(0, QtCore.Qt.UserRole)
+        self._show_priority_group_editor(group_id)
+
+    def _show_priority_group_editor(self, group_identifier: str):
+        """Shows the dialog for editing the properties of
+        a priority group.
+        """
+        group = settings_manager.get_priority_group(group_identifier)
+        group_dialog = PriorityGroupDialog(group)
+        group_dialog.exec_()
+        self.update_priority_groups()
+
     def edit_priority_group(self):
         """Edits the current selected priority group
         and updates the group box list."""
@@ -998,10 +1017,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             return
 
-        group = settings_manager.get_priority_group(group_identifier)
-        group_dialog = PriorityGroupDialog(group)
-        group_dialog.exec_()
-        self.update_priority_groups()
+        self._show_priority_group_editor(group_identifier)
 
     def remove_priority_group(self):
         """Removes the current active priority group."""
@@ -1080,8 +1096,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def _on_double_click_priority_layer(self, list_item: QtWidgets.QListWidgetItem):
         """Slot raised when a priority list item has been double clicked."""
-        layer_name = list_item.data(QtCore.Qt.UserRole)
-        self._show_priority_layer_editor(layer_name)
+        layer_id = list_item.data(QtCore.Qt.UserRole)
+        self._show_priority_layer_editor(layer_id)
 
     def _show_priority_layer_editor(self, layer_identifier: str):
         """Shows the dialog for editing a priority layer."""
@@ -1091,35 +1107,57 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         layer_dialog.exec_()
 
     def remove_priority_layer(self):
-        """Removes the current active priority layer."""
+        """Removes one or more of the selected priority layers."""
         if self.priority_layers_list.currentItem() is None:
             self.show_message(
+                tr("Select first the priority weighting layer from the layers list."),
+                Qgis.Critical,
+            )
+            return
+
+        selected_pwl_items = self.priority_layers_list.selectedItems()
+        if not selected_pwl_items:
+            self.show_message(
                 tr(
-                    "Select first the priority " "weighting layer from the layers list."
+                    "Select one or more priority weighting layers to be removed "
+                    "from the layers list."
                 ),
                 Qgis.Critical,
             )
             return
-        current_text = self.priority_layers_list.currentItem().data(
-            QtCore.Qt.DisplayRole
-        )
-        if current_text == "":
-            self.show_message(
-                tr("Could not fetch and remove the selected priority layer."),
-                Qgis.Critical,
-            )
-            return
-        layer = settings_manager.find_layer_by_name(current_text)
+
+        pwls = [item.data(QtCore.Qt.DisplayRole) for item in selected_pwl_items]
+        if len(pwls) == 1:
+            tr_layer = tr("layer")
+        else:
+            tr_layer = tr("layers")
+        tr_msg = tr("Remove the priority weighting")
+        msg = f"{tr_msg} {tr_layer}: {', '.join(pwls)}?"
         reply = QtWidgets.QMessageBox.warning(
             self,
-            tr("QGIS CPLUS PLUGIN"),
-            tr('Remove the priority layer "{}"?').format(current_text),
+            tr("Remove PWLs"),
+            msg,
             QtWidgets.QMessageBox.Yes,
             QtWidgets.QMessageBox.No,
         )
         if reply == QtWidgets.QMessageBox.Yes:
-            settings_manager.delete_priority_layer(layer.get("uuid"))
-            self.update_priority_layers(update_groups=False)
+            for pwl in pwls:
+                layer = settings_manager.find_layer_by_name(pwl)
+                if not layer:
+                    continue
+                settings_manager.delete_priority_layer(layer.get("uuid"))
+                self.update_priority_layers(update_groups=False)
+
+                # Remove PWL in priority groups
+                for index in range(self.priority_groups_list.topLevelItemCount()):
+                    group = self.priority_groups_list.topLevelItem(index)
+                    group_children = group.takeChildren()
+                    children = []
+                    for child in group_children:
+                        if child.text(0) == layer.get("name"):
+                            continue
+                        children.append(child)
+                    group.addChildren(children)
 
     def has_trends_auth(self):
         """Check if plugin has user Trends.Earth authentication.
