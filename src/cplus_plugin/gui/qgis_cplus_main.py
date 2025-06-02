@@ -437,6 +437,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.priority_groups_list.child_dragged_dropped.connect(
             self.priority_groups_update
         )
+        self.priority_groups_list.itemDoubleClicked.connect(
+            self._on_double_click_priority_group
+        )
 
         layout = QtWidgets.QVBoxLayout()
         layout.setSpacing(0)
@@ -973,6 +976,22 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         group_dialog.exec_()
         self.update_priority_groups()
 
+    def _on_double_click_priority_group(self, tree_item: QtWidgets.QTreeWidgetItem):
+        """Slot raised when a priority group item has been
+        double clicked.
+        """
+        group_id = tree_item.data(0, QtCore.Qt.UserRole)
+        self._show_priority_group_editor(group_id)
+
+    def _show_priority_group_editor(self, group_identifier: str):
+        """Shows the dialog for editing the properties of
+        a priority group.
+        """
+        group = settings_manager.get_priority_group(group_identifier)
+        group_dialog = PriorityGroupDialog(group)
+        group_dialog.exec_()
+        self.update_priority_groups()
+
     def edit_priority_group(self):
         """Edits the current selected priority group
         and updates the group box list."""
@@ -998,10 +1017,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             return
 
-        group = settings_manager.get_priority_group(group_identifier)
-        group_dialog = PriorityGroupDialog(group)
-        group_dialog.exec_()
-        self.update_priority_groups()
+        self._show_priority_group_editor(group_identifier)
 
     def remove_priority_group(self):
         """Removes the current active priority group."""
@@ -1080,8 +1096,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def _on_double_click_priority_layer(self, list_item: QtWidgets.QListWidgetItem):
         """Slot raised when a priority list item has been double clicked."""
-        layer_name = list_item.data(QtCore.Qt.UserRole)
-        self._show_priority_layer_editor(layer_name)
+        layer_id = list_item.data(QtCore.Qt.UserRole)
+        self._show_priority_layer_editor(layer_id)
 
     def _show_priority_layer_editor(self, layer_identifier: str):
         """Shows the dialog for editing a priority layer."""
