@@ -26,7 +26,7 @@ Activities buttons:
 
 - **Editing**: Edit an existing activity.
 
-- **Ordering pixel value:** Edit activity order.
+- **Ordering pixel value:** Edit activity order in the scenario analysis and output layer.
 
 ![CPLUS step 2 buttons](img/plugin-step2-buttons.png)
 
@@ -40,7 +40,7 @@ NCS pathways buttons:
 
 - **Refresh view**: Checks the base directory for data.
 
-- **Validation inspector:** Checks the validations.
+- **Validation inspector:** Checks the validation of NCS pathways against a predefined set of rules.
 
 ![CPLUS step 2 pathways buttons](img/plugin-step2-pathways-buttons.png)
 
@@ -52,7 +52,11 @@ Click on the left green plus button ![plus button](./img/plugin-step2-1.png) to 
 
 ###  Method 1: Manually add NCS pathway
 
-In this Method, you will create a new NCS pathway by providing a name, description, and selecting relevant map and carbon layers.
+In this method, you will create a new NCS pathway by providing a name, description, and selecting the applicable map layer as shown in Figure 2 below.
+
+![CPLUS step 1](img/ncs_pathway_editor_local_layer.png)
+
+*Figure 2: Input fields in the NCS Pathway Editor when using a local map layer*
 
 **Step 1 Enter NCS Pathway Details**
 
@@ -60,7 +64,7 @@ In this Method, you will create a new NCS pathway by providing a name, descripti
 
 - In the `Description` field, enter a brief description of the NCS pathway. This description will provide context and help others understand the purpose of the pathway.
 
-**Step 2 Select Pathways Type**
+**Step 2 Select Pathway Type**
 
 * Pathway Type: Select the type of the NCS pathway.
     - **Protect:** Protect the world’s natural ecosystems from unsustainable practices and degradation.
@@ -68,18 +72,12 @@ In this Method, you will create a new NCS pathway by providing a name, descripti
     - **Restore:** Restore ecosystem types and globally can reduce global greenhouse gas emissions and store additional carbon up to 3 gigatons annually.
 
 **Step 3 Select Map Layer**
-
-- In the `Map Layer` dropdown menu, select the map layer that is relevant to your NCS pathway. You can choose from the list of available map layers that you have downloaded and imported into the system.
+- Click the `Local map layer` radio button to load the widgets for specifying a map layer in your computer.
+- In the `Map Layer` dropdown menu, select the map layer that is relevant to your NCS pathway. You can choose 
+- from the list of available map layers that you have downloaded and imported into the system, or 
+- from the layers in the QGIS map canvas.
 
 For example, if you are creating an NCS pathway for Agroforestry, you would select the `Agroforestry` map layer.
-
-**Step 4 Select Carbon Layer**
-
-- Click on the plus icon next to the `Carbon Layer` field.
-
-- In the dropdown menu, select the carbon layer that is relevant to your NCS pathway. You can choose from the list of available carbon layers that you have downloaded into the system.
-
-For example, if you are creating an NCS pathway for Agroforestry, you would select the `Agroforestry` carbon layer.
 
 **Step 4 Add NCS Pathway**
 
@@ -91,30 +89,23 @@ In this method, you will add a new NCS pathway using online defaults. This optio
 
 **Step 1 Add Online Defaults**
 
-- Click on the `Online Defaults` dropdown menu.
+- Click the `Online defaults` radio button to load the layers in the online server.
 
 - Choose the NCS pathway you want to use from the list of available options.
 
 - Once you select the NCS pathway, the name and description fields will be automatically populated.
 
-- To add a carbon layer, select it from the available options in the system.
+- Select the pathway type.
 
 - Click on the `OK` button to add the NCS pathway.
 
-
-After selecting the online default, the system will automatically fill in the name and description fields for you. You can then add a carbon layer from the available options in the system.
-
 ![After online default](./img/plugin-step2-13.png)
+
+*Figure 3: Input fields in the NCS Pathway Editor when using an online layer*
 
 <blockquote> If the NCS pathway is broken (e.g. layer or file cannot be found), the pathway text
 will have an exclamation mark next to it. The user will need to rectify the issue before continuing to
 step 3. </blockquote>
-
-![CPLUS add pathway](img/plugin-step2-2.png)
-
-*Figure 3: NCS Pathway creator/editor*
-
-<blockquote> Be sure each NCS pathway's Carbon layers are set up correctly before setting up the activities in the steps that follow. Changes to the Carbon layers afterward will require the user to set up the activities again. </blockquote>
 
 Add pathways to an existing activity:
 

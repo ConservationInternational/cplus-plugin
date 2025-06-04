@@ -18,15 +18,15 @@ Data preparation is an important step before performing data analysis. This is e
 
 - Coordinate systems are very important when it comes to the accuracy of your spatial analysis.
 
-For most analysis, a projected coordinate system (e.g. UTM, Albers Equal Area Conic, South African LO-system, etc) is preferred above a geographic coordinate system (WGS84, Hartebeesthoek84, etc). This is because calculating distances and areas is much more accurate with projected coordinate systems.
+For most analysis, a projected coordinate system (e.g. UTM, Albers Equal Area Conic, South African LO-system, etc) is preferred, but also mandatory for the input raster datasets, above a geographic coordinate system (WGS84, Hartebeesthoek84, etc). This is because calculating distances and areas is much more accurate with projected coordinate systems.
 
 - The best practice will be to make use of the same coordinate system for each layer. Having a geographic coordinate
 for some layers, and projected coordinate systems for others, can have negative impacts on your results.
 
 - When working with rasters, be sure that the nodata value is set correctly, otherwise, the nodata value
-will be unknown during analysis and will be considered as a normal pixel value.
+will be unknown during analysis and will be considered as a normal pixel value. This value should be -9999.
 
-- The plugin can only work with raster layers. If you have data in vector format, convert it to raster.
+- The plugin can only work with raster layers. If you have data in vector format, convert it to raster. The only applied vector datasets are the masking layers.
 
 - Any outlier values need to be removed from the spatial data before performing analysis.
 
@@ -36,9 +36,9 @@ Taking into account the above can greatly improve the analysis and the results p
 
 - The toolbox will be used for each section.
 
-## Carbon and Priority weighted layers
+## Priority weighted layers
 
-Both Carbon and Priority weighted layers (PWL) should not contain any nodata values. If the nodata pixels
+Priority weighted layers (PWL) should not contain any nodata values. If the nodata pixels
 are not removed from the rasters, the user's analysis will be less efficient and likely result in a reduction in
 results (e.g. all nodata pixels will end up as nodata). **Figure 1** shows a Carbon raster with nodata pixels.
 
@@ -146,7 +146,7 @@ How to check if a raster's nodata is set correctly?
 - Select **Properties**.
 - Select the **Information** tab.
 - Scroll down to the **Bands** section.
-- Under **No-data** there should be a value.
+- Under **No-data** there should be a value i.e. -9999
 - If there is no value, this means that the nodata is not set correctly and therefore needs to be fixed.
 
 ![QGIS raster nodata](img/qgis-raster-nodata.png)
