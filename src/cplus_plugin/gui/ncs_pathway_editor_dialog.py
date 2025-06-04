@@ -7,15 +7,19 @@ import os
 import typing
 import uuid
 
-from qgis.core import Qgis, QgsRasterLayer
+from qgis.core import Qgis, QgsMapLayerProxyModel, QgsRasterLayer
 from qgis.gui import QgsGui, QgsMessageBar
 
 from qgis.PyQt import QtCore, QtGui, QtWidgets
 from qgis.PyQt.uic import loadUiType
 
 from ..conf import Settings, settings_manager
-from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
-from ..models.base import LayerType, NcsPathway, NcsPathwayType
+from ..definitions.defaults import (
+    ONLINE_DEFAULT_PREFIX,
+    ICON_PATH,
+    USER_DOCUMENTATION_SITE,
+)
+from ..models.base import DataSourceType, LayerType, NcsPathway, NcsPathwayType
 from ..utils import FileUtils, open_documentation, tr, log
 
 WidgetUi, _ = loadUiType(
@@ -56,6 +60,7 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._on_default_layer_selection_changed
         )
 
+        # Pathway type
         self._pathway_type_group = QtWidgets.QButtonGroup(self)
         self._pathway_type_group.addButton(
             self.rb_protection, NcsPathwayType.PROTECT.value
@@ -66,6 +71,22 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         self._pathway_type_group.addButton(
             self.rb_management, NcsPathwayType.MANAGE.value
         )
+
+        # Data source type
+        self._data_source_type_group = QtWidgets.QButtonGroup(self)
+        self._data_source_type_group.setExclusive(True)
+        self._data_source_type_group.addButton(
+            self.rb_local, DataSourceType.LOCAL.value
+        )
+        self._data_source_type_group.addButton(
+            self.rb_online, DataSourceType.ONLINE.value
+        )
+        self._data_source_type_group.idToggled.connect(self._on_data_source_changed)
+        self.rb_local.setChecked(True)
+
+        # Configure map combobox
+        self.cbo_layer.setAllowEmptyLayer(True, tr("<Layer not set>"))
+        self.cbo_layer.setFilters(QgsMapLayerProxyModel.Filter.RasterLayer)
 
         self._excluded_names = excluded_names
         if excluded_names is None:
@@ -135,6 +156,11 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         if self._ncs_pathway.pathway_type == NcsPathwayType.MANAGE:
             self.rb_management.setChecked(True)
 
+        if self._ncs_pathway.path.startswith(ONLINE_DEFAULT_PREFIX):
+            self.rb_online.setChecked(True)
+        else:
+            self.rb_local.setChecked(True)
+
         if self._layer:
             layer_path = self._layer.source()
             self._add_layer_path(layer_path)
@@ -144,6 +170,18 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
                 if layer["layer_uuid"] == self._ncs_pathway.layer_uuid:
                     self.cbo_default_layer.setCurrentIndex(i + 1)
                     break
+
+    def _on_data_source_changed(self, button_id: int, toggled: bool):
+        """Slot raised when the data source type button group has
+        been toggled.
+        """
+        if not toggled:
+            return
+
+        if button_id == DataSourceType.LOCAL.value:
+            self.data_source_stacked_widget.setCurrentIndex(0)
+        elif button_id == DataSourceType.ONLINE.value:
+            self.data_source_stacked_widget.setCurrentIndex(1)
 
     def _add_layer_path(self, layer_path: str):
         """Select or add layer path to the map layer combobox."""
@@ -201,13 +239,26 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         layer = self._get_selected_map_layer()
         default_layer = self._get_selected_default_layer()
-        if layer is None and len(default_layer) == 0:
-            msg = tr("Map layer not specified.")
+        data_source_type_id = self._data_source_type_group.checkedId()
+
+        if data_source_type_id == DataSourceType.LOCAL.value and layer is None:
+            msg = tr("Local map layer not specified.")
+            self._show_warning_message(msg)
+            status = False
+        elif (
+            data_source_type_id == DataSourceType.ONLINE.value
+            and len(default_layer) == 0
+        ):
+            msg = tr("Online default layer not specified.")
             self._show_warning_message(msg)
             status = False
 
-        if layer and not layer.isValid():
-            msg = tr("Map layer is not valid.")
+        if (
+            data_source_type_id == DataSourceType.LOCAL.value
+            and layer
+            and not layer.isValid()
+        ):
+            msg = tr("Local map layer is not valid.")
             self._show_warning_message(msg)
             status = False
 
@@ -240,12 +291,15 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._ncs_pathway.pathway_type = NcsPathwayType.MANAGE
 
         self._ncs_pathway.layer_type = LayerType.RASTER
-        default_layer = self._get_selected_default_layer()
 
-        if default_layer:
-            self._ncs_pathway.path = "cplus://" + default_layer.get("layer_uuid")
-        else:
+        data_source_type_id = self._data_source_type_group.checkedId()
+        if data_source_type_id == DataSourceType.LOCAL.value:
             self._ncs_pathway.path = self._layer.source()
+        elif data_source_type_id == DataSourceType.ONLINE.value:
+            default_layer = self._get_selected_default_layer()
+            self._ncs_pathway.path = ONLINE_DEFAULT_PREFIX + default_layer.get(
+                "layer_uuid"
+            )
 
     def _get_selected_map_layer(self) -> QgsRasterLayer:
         """Returns the currently selected map layer or None if there is

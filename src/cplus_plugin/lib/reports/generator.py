@@ -1997,6 +1997,11 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             if group_name in groups:
                 continue
 
+            # If group has no layers then exclude it from the table
+            layers = settings_manager.find_layers_by_group(group_name)
+            if not layers:
+                continue
+
             # If value is less than or equal to zero then do not include in the table.
             value = -1
             try:
