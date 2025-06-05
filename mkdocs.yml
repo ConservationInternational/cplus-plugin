@@ -99,6 +99,7 @@ nav:
 
 plugins:
   - search
+  - autorefs
   - git-revision-date-localized
   - mkdocs-video
   - mkdocstrings:
