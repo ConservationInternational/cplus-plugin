@@ -5,113 +5,84 @@
         "name": "Agroforestry",
         "description": "Provides additional carbon sequestration in agricultural systems by strategically planting trees in croplands.",
         "path": "Final_Agroforestry_Priority_norm.tif",
-        "layer_type": 0,
-        "carbon_paths": ["bou_SOC_carbonsum_norm_inverse_null_con_clip.tif"]
+        "layer_type": 0
     },
     {
         "uuid": "5fe775ba-0e80-4b70-a53a-1ed874b72da3",
         "name": "Alien Plant Removal",
         "description": "Alien Plant Class.",
         "path": "Final_Alien_Invasive_Plant_priority_norm.tif",
-        "layer_type": 0,
-        "carbon_paths": []
+        "layer_type": 0
     },
     {
         "uuid": "bd381140-64f0-43d0-be6c-50120dd6c174",
         "name": "Animal Management",
         "description": "Provides additional soil carbon sequestration, reduces methane emissions from ruminants, and improves feed efficiency.",
         "path": "Final_Animal_Management_Priority_norm.tif",
-        "layer_type": 0,
-        "carbon_paths": [
-            "bou_SOC_carbonsum_norm_null_con_clip.tif",
-            "SOC_trend_30m_4_scaled_clip_norm_inverse_null_con_clip.tif"
-        ]
+        "layer_type": 0
     },
     {
         "uuid": "fc36dd06-aea3-4067-9626-2d73916d79b0",
         "name": "Avoided Deforestation",
         "description": "Avoids carbon emissions by preventing forest conversion in areas with a high risk of deforestation. Forest is defined as indigenous forest regions with tree density exceeding 75% with a canopy over 6m.",
         "path": "Final_Avoided_Indigenous_Forest_priority_norm.tif",
-        "layer_type": 0,
-        "carbon_paths": ["bou_SOC_carbonsum_norm_null_con_clip.tif"]
+        "layer_type": 0
     },
     {
         "uuid": "f7084946-6617-4c5d-97e8-de21059ca0d2",
         "name": "Avoided Grassland Conversion",
         "description": "Avoids carbon emissions by preventing the conversion of grasslands in areas with a high risk of grassland loss. Grassland is defined as regions with vegetation density less than 10%.",
         "path": "Final_Avoided_Grassland_priority_norm.tif",
-        "layer_type": 0,
-        "carbon_paths": ["bou_SOC_carbonsum_norm_null_con_clip.tif"]
+        "layer_type": 0
     },
     {
         "uuid": "00db44cf-a2e7-428a-86bb-0afedb9719ec",
         "name": "Avoided Savanna Woodland Conversion",
         "description": "Avoids carbon emissions by preventing the conversion of open woodland in areas with a high risk of open woodland loss. Savanna woodland is defined as savanna regions with open woodlands (vegetation density less than 35% and a tree canopy greater than 2.5m) and natural wooded lands (vegetation density greater than 35% and a tree canopy between 2.5m and 6m).",
         "path": "Final_Avoided_OpenWoodland_NaturalWoodedland_priority_norm.tif",
-        "layer_type": 0,
-        "carbon_paths": ["bou_SOC_carbonsum_norm_null_con_clip.tif"]
+        "layer_type": 0
     },
     {
         "uuid": "7228ecae-8759-448d-b7ea-19366f74ee02",
         "name": "Avoided Wetland Conversion",
         "description": "Avoids carbon emissions by preventing the conversion of wetlands in areas with a high risk of wetland loss. Wetlands are defined as natural or semi-natural wetlands covered in permanent or seasonal herbaceous vegetation.",
         "path": "Final_Avoided_Wetland_priority_norm.tif",
-        "layer_type": 0,
-        "carbon_paths": ["bou_SOC_carbonsum_norm_null_con_clip.tif"]
+        "layer_type": 0
     },
     {
         "uuid": "5475dd4a-5efc-4fb4-ae90-68ff4102591e",
         "name": "Fire Management",
         "description": "Provides additional sequestration and avoids carbon emissions by increasing resilience to catastrophic fire.",
         "path": "Final_Fire_Management_Priority_norm.tif",
-        "layer_type": 0,
-        "carbon_paths": [
-            "bou_SOC_carbonsum_norm_null_con_clip.tif",
-            "SOC_trend_30m_4_scaled_clip_norm_inverse_null_con_clip.tif"
-        ]
+        "layer_type": 0
     },
     {
         "uuid": "bede344c-9317-4c3f-801c-3117cc76be2c",
         "name": "Restoration - Forest",
         "description": "Provides additional carbon sequestration by converting non-forest into forest in areas where forests are the native cover type. This pathway excludes afforestation, where native non-forest areas are converted to forest. Forest is defined as indigenous forest regions with tree density exceeding 75% with a canopy over 6m.",
         "path": "Final_Forest_Restoration_priority_norm.tif",
-        "layer_type": 0,
-        "carbon_paths": [
-            "bou_SOC_carbonsum_norm_inverse_null_con_clip.tif",
-            "SOC_trend_30m_4_scaled_clip_norm_inverse_null_con_clip.tif"
-        ]
+        "layer_type": 0
     },
     {
         "uuid": "384863e3-08d1-453b-ac5f-94ad6a6aa1fd",
         "name": "Restoration - Savanna",
         "description": "Sequesters carbon through the restoration of native grassland and open woodland habitat. This pathway excludes the opportunity to convert non-native savanna regions to savannas. Savanna in this context contains grasslands (vegetation density less than 10%), open woodlands (vegetation density less than 35% and a tree canopy greater than 2.5m), and natural wooded lands (vegetation density greater than 75% and a tree canopy between 2.5m and 6m).",
         "path": "Final_Sananna_Restoration_priority_norm.tif",
-        "layer_type": 0,
-        "carbon_paths": [
-            "bou_SOC_carbonsum_norm_inverse_null_con_clip.tif",
-            "SOC_trend_30m_4_scaled_clip_norm_inverse_null_con_clip.tif"
-        ]
+        "layer_type": 0
     },
     {
         "uuid": "540470c7-0ed8-48af-8d91-63c15e6d69d7",
         "name": "Restoration - Wetland",
         "description": "Sequesters carbon through the restoration of wetland habitat. This pathway excludes the opportunity to convert non-native wetland regions to wetlands. Wetlands are defined as natural or semi-natural wetlands covered in permanent or seasonal herbaceous vegetation.",
         "path": "Final_Wetland_Restoration_priority_norm.tif",
-        "layer_type": 0,
-        "carbon_paths": [
-            "bou_SOC_carbonsum_norm_inverse_null_con_clip.tif",
-            "SOC_trend_30m_4_scaled_clip_norm_inverse_null_con_clip.tif"
-        ]
+        "layer_type": 0
     },
     {
         "uuid": "e6d7d4cd-dd6b-4ad5-b8a6-eab5436a89f1",
         "name": "Sustainable Agriculture Crop Farming",
         "description": "Change from natural grassland, woodland, forest in 1990 into cropland.",
         "path": "Final_Sustinable_Ag_Crop_Farming_priority_norm.tif",
-        "layer_type": 0,
-        "carbon_paths": [
-            "bou_SOC_carbonsum_norm_null_con_clip.tif"
-        ]
+        "layer_type": 0
     },
     {
         "uuid": "71de0448-46c4-4163-a124-3d88cdcbba42",
