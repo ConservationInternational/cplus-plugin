@@ -10,7 +10,7 @@ contact:
 license: This program is free software; you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
 ---
 
-# Step4: Select outputs and Processing options
+# Step 4: Select outputs and Processing options
 
 Click on the 1️⃣ `Step 4` option, to go to Step 4.
 
@@ -20,9 +20,11 @@ Click on the 1️⃣ `Step 4` option, to go to Step 4.
 
 ## Saving outputs
 
-**Saving Outputs:** In `Step 4`, choose which results you want to save. Each option represents data for your report. Select an option to save it to your computer for later use. Not selecting an option means it is only available for your current session. This helps optimise memory usage. Choose wisely to make your computer run more efficiently!
+**Saving Outputs:** In `Step 4`, choose which results you want to save. Each option represents a group of output layers that will be loaded in the map canvas as well as those layers that will be used in the output report. Select an option to save it to your computer for later use. Not selecting an option means it is only available for your current session. This helps optimise memory usage. Choose wisely to make your computer run more efficiently!
 
 ![Saving Outputs](./img/step4-2.png)
+
+>NOTE: For the output report to be generated, the `Landuse activity` and `Scenario highest position analysis` checkboxes need to be selected as the map layers are required
 
 ## Processing options
 
