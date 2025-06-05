@@ -937,6 +937,11 @@ def compress_raster(
         ysize = src_ds.RasterYSize
         dtype = src_ds.GetRasterBand(1).DataType
 
+        compression = src_ds.GetMetadataItem("COMPRESSION", "IMAGE_STRUCTURE")
+        if compression.lower() == "deflate":
+            log(f"Raster {input_path} is already compressed with DEFLATE.")
+            return input_path
+
         # Add any additional create options
         if not create_options:
             create_options = []
