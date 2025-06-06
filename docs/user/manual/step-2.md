@@ -112,7 +112,7 @@ Imagine planning a journey or mapping an area, and you want to exclude specific 
 
 ![Activity Mask](./img/manual-step2-6.png)
 
-1. **✅ Activity Mask**: By checking this, the user will be able add an activity mask.
+1. **✅ Activity Mask**: By checking this, the user will be able to add an activity mask.
 
 2. ![add button](img/symbologyAdd.svg): Add new activity mask. Click on this button to add a new activity mask. After clicking on the button, a new window will open from where user can select the shapefile.
 
@@ -165,7 +165,7 @@ Overall, Step 2 provides users with comprehensive tools for defining and configu
 
 ![Error model](./img/manual-step3-validation-1.png)
 
-1. **Error Model:** Whenever an error occurs the user will see the `Error Model` at the top. In this model, the user gets a basic idea about where to check for the detailed error logs. 
+1. **Error Model:** Whenever an error occurs the user will see the `Error Model` at the top. In this model, the user gets a basic idea about where to check for the detailed error logs.
 
     **Message:** NCS pathways are not valid or there is an ongoing validation process. Use the validation inspector to see more details.
 
@@ -183,7 +183,7 @@ Overall, Step 2 provides users with comprehensive tools for defining and configu
 
     3. **Collapse All:** Click on the `Collapse All` button, to collapse all the messages.
 
-    4. **Revalidate:** Click on the `Revalidate` button, to revalidate. Upon clicking it will rerun the validations.
+    4. **Revalidate:** Click on the `Revalidate` button, to revalidate. Upon clicking the button, it will rerun the validations.
 
         ![Revalidate](./img/manual-step3-validation-7.png)
 

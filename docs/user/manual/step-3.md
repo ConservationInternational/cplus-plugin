@@ -132,7 +132,7 @@ The primary purpose of the NPV Tool is to help users prioritise activities by pr
 
 - **Clear Selection**: Deselects each of the selected activities.
 
-- **Toggle Selection**: Switches each option from deselected to selected, or selected to deselected.
+- **Toggle Selection**: Switches each option from deselected to selected, or selected to de-selected.
 
 #### Method 2: Create Online
 
@@ -141,8 +141,6 @@ Click on the `Online defaults` to select the default priority layer from the ava
 ![Priority Layer Dialog](img/step3-priority-layer-dialog-2.png)
 
 - Then click **OK** to add the priority layer to PWL.
-
-
 
 <!-- 
 ## Progress dialog

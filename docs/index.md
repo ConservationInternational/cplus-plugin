@@ -31,7 +31,7 @@ While global climate targets provide a broad framework for action, national targ
 tailored to the unique characteristics of each country. The CPLUS decision support tool considers these diverse factors
 and assists in designing land-use planning strategies that align with national commitments while contributing to global
 climate goals. Furthermore, CPLUS recognises that effective land-use planning involves collaboration and engagement
-among various stakeholders. It fosters dialogue and cooperation between governments, local communities, indigenous
+among various stakeholders. It fosters dialog and cooperation between governments, local communities, indigenous
 groups, conservation organisations, and private entities, facilitating the development of inclusive and equitable
 solutions. By involving diverse perspectives and expertise, CPLUS ensures that the decision-making process is
 participatory and informed by local knowledge.
@@ -66,7 +66,7 @@ Shown in **Figure 2** is the algorithms applied by the CPLUS model analysis mode
 ## Site contents
 
 The aim of this is site is to provide details on the models and algorithms used by the CPLUS plugin,
-help a user on using the plugin, guide administrators on testings and providing feedback for the plugin,
+help a user on using the plugin, guide administrators on testing and providing feedback for the plugin,
 and provide guidance to developers who want to contribute to the plugin.
 
 Here is a quick introduction on the sections on the site:
@@ -79,7 +79,7 @@ Here is a quick introduction on the sections on the site:
     * *[Guide](administrator/guide/index.md)*: Detailed guide for administrative requirements
     * *[Repository](administrator/repository/index.md)*: Downloadable versions of the plugin
 - **[Developers](developer/index.md)**: People who want to contribute towards improving the plugin
-    * *[Setup](developer/setup/index.md)*: How to set up the developers environment for the plugin
+    * *[Setup](developer/setup/index.md)*: How to set up the developer's environment for the plugin
     * *[Architecture](developer/architecture/index.md)*:
     * *[Documentation](developer/documentation/index.md)*: Help on adding towards the API documentation for a developer
     * *[API](developer/index.md)*: Application programming interface for the plugin

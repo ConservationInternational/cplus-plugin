@@ -77,7 +77,7 @@ An example of output results in QGIS is detailed in **Figure 5**
 
 - **Figure 7** shows an example of a report opened in the layout designer.
 
-![Report layout designer](img/report-layout-designer.png) 
+![Report layout designer](img/report-layout-designer.png)
 
 *Figure 7: Report opened in the QGIS layout designer*
 

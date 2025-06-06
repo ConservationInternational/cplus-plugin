@@ -50,7 +50,7 @@ Click on the left green plus button ![plus button](./img/plugin-step2-1.png) to 
 
 **You can use two methods to add the NCS pathway**
 
-###  Method 1: Manually add NCS pathway
+### Method 1: Manually add NCS pathway
 
 In this method, you will create a new NCS pathway by providing a name, description, and selecting the applicable map layer as shown in Figure 2 below.
 
@@ -103,9 +103,7 @@ In this method, you will add a new NCS pathway using online defaults. This optio
 
 *Figure 3: Input fields in the NCS Pathway Editor when using an online layer*
 
-<blockquote> If the NCS pathway is broken (e.g. layer or file cannot be found), the pathway text
-will have an exclamation mark next to it. The user will need to rectify the issue before continuing to
-step 3. </blockquote>
+> If the NCS pathway is broken (e.g. layer or file cannot be found), the pathway text will have an exclamation mark next to it. The user will need to rectify the issue before continuing to step 3.
 
 Add pathways to an existing activity:
 
@@ -135,7 +133,7 @@ Add pathways to an existing activity:
 
 *Figure 4: Activity creator/editor*
 
-### Activity Mask 
+### Activity Mask
 
 Activity Masking enables users to exclude specific areas from pathways. This functionality helps in refining analyses by isolating regions that are not relevant or need to be avoided during operations.
 
@@ -147,7 +145,7 @@ Imagine planning a journey or mapping an area, and you want to exclude specific 
 
     ![Without Activity Mask 1](./img/plugin-step2-7.png)
 
-    
+
 * After applying the mask, the specified area becomes restricted for that particular activity. This ensures that no operations or tasks are carried out within that area, effectively excluding it from the analysis. As shown in the image below, after applying the mask, the specified area is marked as restricted for that particular activity. This restriction ensures that no operations or tasks related to the specific activity take place within the designated area, effectively excluding it from the further analysis.
 
     ![With Activity Mask 1](./img/plugin-step2-9.png)
