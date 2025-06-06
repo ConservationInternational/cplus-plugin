@@ -168,6 +168,8 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.mark
   - attr_list
+  - toc:
+      permalink: true
 
 extra_javascript:
   - javascripts/mathjax.js
