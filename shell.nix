@@ -32,6 +32,7 @@ in pkgs.mkShell rec {
     python3Packages.httpx
     python3Packages.toml
     python3Packages.typer
+    python3Packages.pyqt5
     # For autocompletion in vscode
     python3Packages.pyqt5-stubs
 
