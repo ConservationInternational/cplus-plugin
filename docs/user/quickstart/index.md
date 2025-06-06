@@ -56,7 +56,7 @@ in a user-friendly UI. Advantages of using this installer:
 
 ### Plugin repository
 
-During the development phase, the plugin is available to install via 
+During the development phase, the plugin is available to install via
 a dedicated plugin repository. This link should be used:
 [https://raw.githubusercontent.com/ConservationInternational/cplus-plugin/release/docs/repository/plugins.xml](https://raw.githubusercontent.com/ConservationInternational/cplus-plugin/release/docs/repository/plugins.xml)
 
@@ -126,7 +126,7 @@ Current repository: [https://raw.githubusercontent.com/ConservationInternational
 
 *Figure 3: Custom repository installation*
 
-- Click **Add** button on the **Plugin Repositories** group box and use the above url to create the new plugin repository.
+- Click **Add** button on the **Plugin Repositories** group box and use the above URL to create the new plugin repository.
 - The plugin should now be available from the list of all plugins that can be installed.
 
 Disable QGIS official plugin repository in order to not fetch plugins from it.
