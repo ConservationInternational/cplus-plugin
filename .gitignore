@@ -136,3 +136,6 @@ cplus_scenario_output.*
 reports
 
 ext-libs/
+src/cplus_plugin/gui/settings/cplus_options.py
+.vscode
+.vscode-extensions
