@@ -1251,6 +1251,17 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.tbl_pwl_layers.sortByColumn(0, Qt.AscendingOrder)
         self.tbl_pwl_layers.setAlternatingRowColors(False)
         self.tbl_pwl_layers.setColumnHidden(0, True)  # Hide the column (ID)
+        # Set minimum height of the table to accommodate 10 rows or the number of rows, whichever is smaller
+        row_height = self.tbl_pwl_layers.verticalHeader().defaultSectionSize()
+        min_height = 10 * row_height
+        self.tbl_pwl_layers.setMinimumHeight(min_height)
+        # Resize the parent container to avoid scrollbars
+        self.pwl_layers_box.setMinimumHeight(
+            min_height
+            + self.tbl_pwl_layers.horizontalHeader().height()
+            + self.btn_add_mask.height()
+            + 20
+        )
 
     def refresh_default_layers_table(self):
         """Refresh the default layers table with updated data."""

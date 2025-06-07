@@ -136,3 +136,5 @@ cplus_scenario_output.*
 reports
 
 ext-libs/
+.vscode
+.vscode-extensions
