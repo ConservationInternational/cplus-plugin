@@ -10,7 +10,7 @@ contact:
 license: This program is free software; you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
 ---
 
-# Step4: Select outputs and Processing options
+# Step 4: Select outputs and Processing options
 
 Click on the 1️⃣ `Step 4` option, to go to Step 4.
 
@@ -20,9 +20,11 @@ Click on the 1️⃣ `Step 4` option, to go to Step 4.
 
 ## Saving outputs
 
-**Saving Outputs:** In `Step 4`, choose which results you want to save. Each option represents data for your report. Select an option to save it to your computer for later use. Not selecting an option means it is only available for your current session. This helps optimise memory usage. Choose wisely to make your computer run more efficiently!
+**Saving Outputs:** In `Step 4`, choose which results you want to save. Each option represents a group of output layers that will be loaded in the map canvas as well as those layers that will be used in the output report. Select an option to save it to your computer for later use. Not selecting an option means it is only available for your current session. This helps optimise memory usage. Choose wisely to make your computer run more efficiently!
 
 ![Saving Outputs](./img/step4-2.png)
+
+>NOTE: For the output report to be generated, the `Landuse activity` and `Scenario highest position analysis` checkboxes need to be selected as the map layers are required
 
 ## Processing options
 
@@ -30,9 +32,9 @@ Click on the 1️⃣ `Step 4` option, to go to Step 4.
 
 ![Processing Options](./img/step4-3.png)
 
-If `Online defaults` is choosen previously then this option will be automatically selected.
+If `Online defaults` is chosen previously then this option will be automatically selected.
 
-## Scenario report  options
+## Scenario report options
 
 Benefits of custom activity metrics table:
 
@@ -111,7 +113,7 @@ The first step in creating the custom metrics table provides an 1️⃣ `example
             
             ![Invalid Expression](./img/step4-22.png)
 
-        * After defining your expression, click on the `OK` button to save it otherwise click on the `Cancel` button to cancel the process. This wil open a confirmation dialog box.
+        * After defining your expression, click on the `OK` button to save it otherwise click on the `Cancel` button to cancel the process. This will open a confirmation dialog box.
 
         * Check the 1️⃣ ✅ `checkbox` to save your preference and prevent this message from appearing again in the future. Click 2️⃣ `No` to cancel the current process or 3️⃣ `Discard changes` to finalise the cancellation process. Clicking on the 3️⃣ `Discard changes` will remove all the changes you made in the current process.
 
@@ -128,7 +130,7 @@ The first step in creating the custom metrics table provides an 1️⃣ `example
 
 #### Step 3:
 
-* Click on the 1️⃣ `Customise activity metric` to define the different metric for particular cell. Double click on the 2️⃣ `Cell` this will convert it into the dropdown menu.
+* Click on the 1️⃣ `Customise activity metric` to define the different metric for particular cell. Double-click on the 2️⃣ `Cell` this will convert it into the dropdown menu.
 
     ![Activity Metrics Wizard 3](./img/step4-25.png)
 
@@ -136,7 +138,7 @@ The first step in creating the custom metrics table provides an 1️⃣ `example
 
     ![Area](./img/step4-26.png)
 
-    After choosing the `<Cell metric>`  the `Activity Column Expression Builder` window will open. Please checkout the [Step 2](#step-2) to know how to use `Activity Column Expression Builder`.
+    After choosing the `<Cell metric>` the `Activity Column Expression Builder` window will open. Please look at the [Step 2](#step-2) documentation to know how to use `Activity Column Expression Builder`.
 
 * If you select `<Cell metric>` and do not define a metric for the cell, you will encounter the following 1️⃣ `error`.
 
@@ -150,7 +152,7 @@ This step allows you to review and save the metrics configuration to be used in 
 
 ## Run Scenario
 
-**Run Scenario:** Click on the `Run Scenario` button to execute the scenario and generate the report.A  progress bar will appear, showing the status of the processing.
+**Run Scenario:** Click on the `Run Scenario` button to execute the scenario and generate the report.A progress bar will appear, showing the status of the processing.
 
 ![Run Scenario](./img/step4-4.png)
 
@@ -159,11 +161,11 @@ This step allows you to review and save the metrics configuration to be used in 
 ![Scenario-progress-dialog](img/scenario-progress-dialog.png)
 - **Hide** - Hide the dialog box.
 
-After hiding the  dialog box, the `View Online Task Status` button will be enabled to check the status of the task.
+After hiding the dialog box, the `View Online Task Status` button will be enabled to check the status of the task.
 
 ![Processing Option](img/step4-5.png)
 
-Click on the  `View Online Task Status` button to check the status of the task.
+Click on the `View Online Task Status` button to check the status of the task.
 
 ![Processing Option](img/step4-6.png)
 

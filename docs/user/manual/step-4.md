@@ -95,11 +95,11 @@ license: This program is free software; you can redistribute it and/or modify it
 
             ![Column Table 1](./img/step-4-14.png)
         
-        * If users fill the column name which is already available in the table then the users will encountered with the error `There is already existing column name`.
+        * If users fill in a column name which is already available in the table then the users will encounter the error `There is already existing column name`.
 
             ![Duplicate Column Error](./img/step-4-13.png)
 
-    * **![Remove Column](./img/step-4-15.png):** Allows users to remove column from the table. Users are required to select the column which they want to remove from the table and then click on this button to remove it from the table.
+    * **![Remove Column](./img/step-4-15.png):** Allows users to remove a column from the table. Users are required to select the column which they want to remove from the table and then click on this button to remove it from the table.
 
         ![Column Table 2](./img/step-4-16.png)
 
@@ -119,7 +119,7 @@ license: This program is free software; you can redistribute it and/or modify it
 
         ![Metric Dropdown](./img/step-4-22.png) 
 
-    * **Create Custom Metric:** Users can create their own custom metric by clicking on the `ε epsilon` button located at the right side of the `Metric` input field.
+    * **Create Custom Metric:** Users can create their own custom metric by clicking on the `ε epsilon` button located on the right side of the `Metric` input field.
 
         ![Epsilon button](./img/step-4-23.png) 
 
@@ -151,7 +151,7 @@ license: This program is free software; you can redistribute it and/or modify it
 
         * After filling all the details users are required to click on the `OK` button to complete the process or they can click on the `Cancel` button to cancel the process.
 
-        * When users click on the `Cancel` button a pop up dialog box will appear asking for confirmation to cancel the process.
+        * When users click on the `Cancel` button a popup dialog box will appear asking for confirmation to cancel the process.
 
             ![Expression Edited](./img/step-4-36.png)
 
@@ -191,7 +191,7 @@ license: This program is free software; you can redistribute it and/or modify it
 
     1 **Customise activity metric:** Checking this checkbox allows users to customise the metric of a specific cell.
 
-    2 **Customise cell metric:** Double-clicking on a cell converts it into a dropdown menu. Users can then select the `<Cell metrics>` option from the menu, enabling them to customise the cell metric. 
+    2 **Customise cell metric:** Double-clicking on a cell converts it into a dropdown menu. Users can then select the `<Cell metrics>` option from the menu, enabling them to customise the cell metric.
 
     ![Cell Metric Dropdown Menu](./img/step-4-30.png)
 
@@ -201,7 +201,7 @@ license: This program is free software; you can redistribute it and/or modify it
 
     Please check the `Step 2` to know more about how to customise the metric.
 
-    * If users try to proceed without defining the `<Cell-metric>` then users will encountered with an error message.
+    * If users try to proceed without defining the `<Cell-metric>` then users will encounter an error message.
 
         ![Undefined Error](./img/step-4-32.png)
 

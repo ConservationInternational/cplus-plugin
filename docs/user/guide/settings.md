@@ -65,11 +65,11 @@ Click on the 1️⃣ `Three dots` to select a file from your system to set as th
 
 ![Scenario setting options](./img/settings-3.png)
 
-Enter the 1️⃣ `Coefficient for carbon layers` which will be applied to carbon layers during processing. Enter the 2️⃣ `Pathway suitability index` the index multiplied to the pathways. Lower values means the pathway is less important, and higher means it's more important.
+Enter the 1️⃣ `Coefficient for carbon layers` which will be applied to carbon layers during processing. Enter the 2️⃣ `Pathway suitability index` the index multiplied to the pathways. Lower values mean the pathway is less important, and higher values mean it's more important.
 
 ##### Snapping
 
-Snapping will set rasters to match the cell alignment of a reference layer.
+Snapping will set the rasters to match the cell alignment of a reference layer.
 
 Resampling performed on pixel values. You can choose the method of your choice from the dropdown. Click on the 3️⃣ `Resample method dropdown` to choose the method. The reference layer to which the cell alignment will be applied. You can select a file from the system, by clicking on the 4️⃣ `Three dots`. Rescale values according to cell size. You can check or uncheck the 5️⃣ `CheckBox`.
 
@@ -92,7 +92,7 @@ The `Sieve` function is a tool designed to filter raster data based on a specifi
 - Enter the desired threshold value in the 2️⃣ `Threshold` field. This value represents the minimum number of connected pixels that should be preserved when sieving. Any contiguous area smaller than this threshold will be filtered out.
 - Select the 3️⃣ `Reference Layer` from the system to which the sieve function will be applied.
 - Click on the 4️⃣ `OK` button to apply the sieve function settings. This will filter the raster data based on the specified pixel size and reference layer.
-- Click on the Cancel button to close the dialogue without applying any changes.
+- Click on the Cancel button to close the dialog without applying any changes.
 
 ###### Practical Use Cases
 
@@ -116,7 +116,7 @@ Masking layers are used to specify areas that should be excluded from further an
 
 #### Irrecoverable Carbon Reference Layer
 
-The `Irrecoverable Carbon` layer is used in a calculation with the protect pathways to calculate the total irrecoverable carbon per activity.
+The `Irrecoverable Carbon` layer is used in a calculation with the protected pathways to calculate the total irrecoverable carbon per activity. <!-- This behaviour needs to be confirmed -->
 
 **Local Path**
 
@@ -130,7 +130,7 @@ To use the `Online source`, you are required to click on the 1️⃣ `Online sou
 
 ![Irrecoverable Carbon 2](./img/settings-22.png)
 
-If the `Irrecoverable Carbon` is not fount then you will receive the following error.
+If the `Irrecoverable Carbon` is not found then you will receive the following error.
 
 ![Error](./img/settings-24.png)
 
@@ -164,7 +164,7 @@ After successful registration, a pop-up will prompt you to set a new master auth
 
 ![Master password](./img/settings-9.png)
 
-- Always enable the Store/Update master password in your Wallet/KeyRing option to save the password securely in the Wallet/Keyring of your computer.
+- Always enable the Store/Update master password in your Wallet/Keyring option to save the password securely in the Wallet/Keyring of your computer.
 
 - Once set, the master password can be reset; however, the current master password will be needed prior to resetting.
 
@@ -222,11 +222,12 @@ Are you sure you want to reset your password for xyz@gmail.com? Your new passwor
 
 ##### Delete user
 
-Click on the `Delete user` button to delete the user. Upon clicking the delete user confirmation pop up will open.
+Click on the `Delete user` button to delete the user. Upon clicking the button, the Delete user confirmation pop up will open.
 
 ![Delete user form](./img/settings-18.png)
 
-Are you sure you want to delete the user xyz@gmail.com? All your tasks will be lost and you will no longer be able to process data online using Trends.Earth. Click the `No` button to cancel the deletion and close the form. Click the `Yes` button to confirm the deletion of the user. This will permanently delete your account and all associated tasks.
+The pop up will have text saying, "Are you sure you want to delete the user xyz@gmail.com? All your tasks will be lost and you will no longer be able to process data online using Trends.Earth."
+Click the `No` button to cancel the deletion and close the form. Click the `Yes` button to confirm the deletion of the user. This will permanently delete your account and all associated tasks.
 
 ## Reports
 
@@ -270,6 +271,6 @@ Click on the `Reporting` option for reports-related settings. Under the Reportin
 
 - To apply the settings user needs to click on the `OK` button.
 
-- Click on `Cancel` will close the dialogue without applying any changes.
+- Click on `Cancel` will close the dialog without applying any changes.
 
 Overall, the CPLUS settings offer users the flexibility to tailor the platform to their specific requirements and optimise their workflow for conducting analyses and generating reports.

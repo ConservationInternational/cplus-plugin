@@ -261,7 +261,7 @@ for (const commit_artifact of commits_artifacts){
 }
 
 const response = await fetch(
-"https://raw.githubusercontent.com/ConservationInternational/cplus-plugin/docs/docs/admin/artifacts_list.txt"
+"https://raw.githubusercontent.com/ConservationInternational/cplus-plugin/docs/docs/administrator/repository/artifacts_list.txt"
 );
 
 const file_text_promise = response.text();

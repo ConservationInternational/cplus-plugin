@@ -34,7 +34,7 @@ This section displays a record of past scenarios executed within the system.
 
 - In this scenario, reports are generated and stored on the server.
 
-- To view the online report, the user has to select the report and then click on the  `refresh` button, this will load the scenario.
+- To view the online report, the user has to select the report and then click on the `refresh` button, this will load the scenario.
   
 ![Scenario History](./img/logs-12.png)
 

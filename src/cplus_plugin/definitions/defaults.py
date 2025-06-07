@@ -171,6 +171,8 @@ METRICS_LOGO = "metrics_ci_logo"
 METRICS_PAGE_NUMBER = "metrics_page_number"
 METRICS_ACCREDITATION = "metrics_accreditation_text"
 
+ONLINE_DEFAULT_PREFIX = "cplus://"
+
 
 # Initializing the plugin default data as found in the data directory
 priority_layer_path = (

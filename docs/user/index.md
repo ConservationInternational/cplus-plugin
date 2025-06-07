@@ -12,7 +12,7 @@ license: This program is free software; you can redistribute it and/or modify it
 
 # Users
 
-The following sections aims at guiding and helping a user on how to use the plugin. This is split into three sections:
+The following sections aim to guide and help a user on how to use the plugin. This is split into three sections:
 
 * The [quickstart tutorial](quickstart/index.md) shows how to install the plugin and help the user to get familiar with the platform.
 * The [user guide](guide/index.md) details common workflows in a tutorial format.

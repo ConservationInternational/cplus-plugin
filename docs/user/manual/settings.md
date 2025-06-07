@@ -20,7 +20,7 @@ To go to the settings the user can click on the plugin toolbar icon to reveal th
 
 ![Toolbar Icon](./img/setting-2.png)
 
-1. **CPLUS Dropdown:** Click on the dropdown icon to reveal the Cplus setting options. Click on the `CPLUS` to view the options like general, snapping, sieve, mask layer and trends earth login.
+1. **CPLUS Dropdown:** Click on the dropdown icon to reveal the CPLUS setting options. Click on the `CPLUS` to view the options like general, snapping, sieve, mask layer and trends earth login.
 
     ![CPLUS options](./img/setting-10.png)
 
@@ -36,7 +36,7 @@ To go to the settings the user can click on the plugin toolbar icon to reveal th
 
     **Coefficient for carbon layers:** Applied to carbon layers during processing.
 
-    **Pathway suitability index:** Index multiplied to the pathways. Lower values means the pathway is less important, and higher means it's more important.
+    **Pathway suitability index:** Index multiplied to the pathways. Lower values mean the pathway is less important, and higher values mean it's more important.
 
     ## Snapping
 
@@ -56,7 +56,7 @@ To go to the settings the user can click on the plugin toolbar icon to reveal th
 
     - *Lanczos*: Lanczos windowed sinc interpolation (6x6 kernel).
 
-    - *Average*: Computes the average of all non-nodata contributing pixels.
+    - *Average*: Computes the average of all non-`nodata` contributing pixels.
 
     - *Mode*: Select the value that appears most often of all the sampled pixels.
 
@@ -122,11 +122,11 @@ To go to the settings the user can click on the plugin toolbar icon to reveal th
 
         3. **Minus Icon:** Select the added layer and click on the `Minus` icon, to remove that layer.
 
-        4. **Ok:**  After adding the layer/layers to the mask layer, click on the `OK` button to save the layers in the mask layer and skip them from further analysis.
+        4. **Ok:** After adding the layer/layers to the mask layer, click on the `OK` button to save the layers in the mask layer and skip them from further analysis.
 
     4 **Irrecoverable Carbon Reference Layer:**
 
-    The `Irrecoverable Carbon` layer is used in a calculation with the protect pathways to calculate the total irrecoverable carbon per activity.
+    The `Irrecoverable Carbon` layer is used in a calculation with the protected pathways to calculate the total irrecoverable carbon per activity.
 
     ![Irrecoverable Carbon Reference](./img/setting-25.png)
 
@@ -144,7 +144,7 @@ To go to the settings the user can click on the plugin toolbar icon to reveal th
 
     1 **Online source:** Users are required to click on this radio button if they want to use the online source for the `Irrecoverable Carbon` layer.
 
-    2 **URL:**  this field contains the url to down the `Irrecoverable Carbon` layer from the online source.
+    2 **URL:** this field contains the url to down the `Irrecoverable Carbon` layer from the online source.
 
     3 **Save as:** Specify the location and name for saving the downloaded `Irrecoverable Carbon` layer in the system.
 
@@ -152,7 +152,7 @@ To go to the settings the user can click on the plugin toolbar icon to reveal th
 
     5 **Download not started:** Current status of the downloading process. There are three types of statuses : `Download Not started`, `Download ongoing`, and `Download successful`.
 
-    * If any how the download fails, the system will show an error message.
+    * If the download fails, the system will show an error message.
 
         ![Download Error](./img/settings-30.png)
     
@@ -185,7 +185,7 @@ To go to the settings the user can click on the plugin toolbar icon to reveal th
 
         **Setting the Master Password:**
 
-        - Always enable the Store/Update master password in your Wallet/KeyRing option to save the password securely in the Wallet/Keyring of your computer.
+        - Always enable the Store/Update master password in your Wallet/Keyring option to save the password securely in the Wallet/Keyring of your computer.
 
         - Once set, the master password can be reset; however, the current master password will be needed prior to resetting.
 
@@ -204,7 +204,7 @@ To go to the settings the user can click on the plugin toolbar icon to reveal th
 
             2. **Verify Password Field:** Re-enter the new master password in the verify password field to confirm it.
 
-            3. **Store/Update Master Password in your Wallet/KeyRing Checkbox:** Enable the Store/Update master password in your Wallet/KeyRing checkbox to save the password securely in your computer's Wallet/KeyRing.
+            3. **Store/Update Master Password in your Wallet/KeyRing Checkbox:** Enable the Store/Update master password in your Wallet/Keyring checkbox to save the password securely in your computer's Wallet/Keyring.
 
             4. **OK Button:** Click the `OK` button to submit and set the new master password.
 
@@ -225,10 +225,10 @@ To go to the settings the user can click on the plugin toolbar icon to reveal th
             *The user can update the fields they want to update.*
                 - Email: Enter the email address to update the email.
                 - Name: Enter the name to update the name.
-                - Organisation: Enter the name of organisation to update the Organisation.
+                - Organisation: Enter the name of organisation to update the organisation.
                 - Country: Select the country from the dropdown list to update the country.
             
-            Click on the `Save` button to save the changes. After successful updation, a success message will pop up.
+            Click on the `Save` button to save the changes. After a successful update, a success message will pop up.
 
             ![Message pop up](./img/setting-19.png)
 
