@@ -1081,8 +1081,7 @@ class SettingsManager(QtCore.QObject):
 
     def remove_default_layers(self):
         """Remove default layers from settings."""
-        default_layers_root = self._get_default_layers_settings_base()
-        self.remove(default_layers_root)
+        self.remove(self.SERVER_DEFAULT_LAYERS)
 
     def remove_default_layer(self, layer: dict):
         """Remove default layer from settings.

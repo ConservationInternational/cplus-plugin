@@ -121,7 +121,10 @@ def worker_killed(result, thread, worker, iface, message_bar_item):
 
 def worker_finished(result, thread, worker, iface, message_bar_item):
     message_bar = iface.messageBar()
-    message_bar.popWidget(message_bar_item)
+    for item in message_bar.items():
+        if item.widget() == message_bar_item:
+            message_bar.popWidget(message_bar_item)
+            break
     if result is not None:
         worker.successfully_finished.emit(result)
 

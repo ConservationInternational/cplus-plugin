@@ -52,6 +52,7 @@ class FetchDefaultLayerTask(QgsTask):
         :type is_success: bool
         """
         if is_success:
+            settings_manager.remove_default_layers()
             self.store_default_layers(self.result)
         self.task_finished.emit(is_success)
 
