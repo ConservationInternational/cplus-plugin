@@ -1357,24 +1357,23 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             error_tr = tr("Selected layer not found in the default layers.")
             self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return
-
+        name = default_layer.get("name")
         file_path, _ = QFileDialog.getSaveFileName(
-            None, "Save File", self.folder_data.filePath(), "All Files (*)"
+            self,
+            "Save File",
+            self.folder_data.filePath() + os.path.sep + name.replace(" ", "-") + ".tif",
+            "Raster files (*.tif *.tiff *.TIF *.TIFF)",
         )
 
         if file_path:
-            self.message_bar.pushMessage(
-                f"Downloading {default_layer.get('name')} to {file_path}"
-            )
+            self.message_bar.pushMessage(f"Downloading {name} to {file_path}")
             if download.download_file(default_layer.get("url"), file_path):
-                self.message_bar.pushMessage(
-                    f"Downloaded {default_layer.get('name')} to {file_path}"
-                )
-                layer = qgis.core.QgsRasterLayer(file_path, default_layer.get("name"))
+                self.message_bar.pushMessage(f"Downloaded {name} to {file_path}")
+                layer = qgis.core.QgsRasterLayer(file_path, name)
                 qgis.core.QgsProject.instance().addMapLayer(layer)
             else:
                 self.message_bar.pushMessage(
-                    f"Failed to download {default_layer.get('name')} to {file_path}",
+                    f"Failed to download {name} to {file_path}",
                     level=qgis.core.Qgis.MessageLevel.Warning,
                 )
 
