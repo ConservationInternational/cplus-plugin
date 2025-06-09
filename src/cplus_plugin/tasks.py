@@ -1769,7 +1769,7 @@ class ScenarioAnalysisTask(QgsTask):
         if self.processing_cancelled:
             return False
 
-        self.set_status_message(tr("Updating weighted activity values"))
+        self.set_status_message(tr("Updating activity values"))
 
         try:
             for activity in activities:
@@ -1821,7 +1821,7 @@ class ScenarioAnalysisTask(QgsTask):
 
                 self.log_message(
                     f"Used parameters for "
-                    f"updates on the weighted activities: {alg_params} \n"
+                    f"updates on the cleaned activities: {alg_params} \n"
                 )
 
                 feedback = QgsProcessingFeedback()

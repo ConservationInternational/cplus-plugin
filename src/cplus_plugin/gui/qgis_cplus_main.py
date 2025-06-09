@@ -2237,19 +2237,32 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :returns: Renderer for the symbology.
         :rtype: QgsSingleBandPseudoColorRenderer
         """
-
         # Retrieves a build-in QGIS color ramp
         color_ramp = activity.color_ramp()
 
         stats = layer.dataProvider().bandStatistics(1)
-        renderer = QgsSingleBandPseudoColorRenderer(layer.dataProvider(), 1)
+        min_value = stats.minimumValue
+        max_value = stats.maximumValue
 
-        renderer.setClassificationMin(stats.minimumValue)
-        renderer.setClassificationMax(stats.maximumValue)
-
-        renderer.createShader(
-            color_ramp, QgsColorRampShader.Interpolated, QgsColorRampShader.Continuous
-        )
+        if stats.minimumValue == stats.maximumValue:
+            # Create one class for the min/max value
+            color = color_ramp.color(min_value)
+            color_ramp_shader = QgsColorRampShader.ColorRampItem(
+                float(min_value), color, str(min_value)
+            )
+            class_data = QgsPalettedRasterRenderer.colorTableToClassData(
+                [color_ramp_shader]
+            )
+            renderer = QgsPalettedRasterRenderer(layer.dataProvider(), 1, class_data)
+        else:
+            renderer = QgsSingleBandPseudoColorRenderer(layer.dataProvider(), 1)
+            renderer.setClassificationMin(min_value)
+            renderer.setClassificationMax(max_value)
+            renderer.createShader(
+                color_ramp,
+                QgsColorRampShader.Interpolated,
+                QgsColorRampShader.Continuous,
+            )
 
         return renderer
 
