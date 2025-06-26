@@ -16,7 +16,7 @@ from qgis.core import (
     QgsProcessingFeedback,
 )
 
-from ..models.base import Scenario, SpatialExtent, Activity
+from ..models.base import Scenario, SpatialExtent, Activity, LayerSource
 from ..conf import settings_manager, Settings
 from ..definitions.defaults import BASE_API_URL
 from ..trends_earth import auth
@@ -1060,18 +1060,28 @@ class CplusApiRequest:
         data = {}
         for layer in result:
             component_type = layer.get("component_type", "")
+            metadata = layer.get("metadata", {})
+            source = layer.get("source", "")
+            if not source:
+                # If source is not provided, extract source from metadata name
+                if metadata.get("name", "").startswith("Naturebase:"):
+                    source = LayerSource.NATUREBASE.value
+                else:
+                    source = LayerSource.CPLUS.value
+
             out_layer = {
                 "type": component_type,
                 "layer_uuid": layer.get("uuid"),
                 "name": layer.get("filename"),
                 "size": layer.get("size"),
                 "layer_type": layer.get("layer_type"),
-                "metadata": layer.get("metadata", {}),
+                "metadata": metadata,
                 "filename": layer.get("filename"),
                 "created_on": layer.get("created_on"),
                 "url": layer.get("url"),
                 "version": layer.get("version"),
                 "license": layer.get("license"),
+                "source": source,
             }
             if component_type in data:
                 data[component_type].append(out_layer)

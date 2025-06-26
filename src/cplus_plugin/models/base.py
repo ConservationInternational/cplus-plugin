@@ -649,3 +649,10 @@ class DataSourceType(IntEnum):
             1: DataSourceType.ONLINE,
             -1: DataSourceType.UNDEFINED,
         }[int_enum]
+
+
+class LayerSource(Enum):
+    """Specify if a layer source is cplus or naturebase."""
+
+    CPLUS = "CPLUS"
+    NATUREBASE = "Naturebase"
