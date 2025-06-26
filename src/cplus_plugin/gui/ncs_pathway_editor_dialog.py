@@ -76,7 +76,7 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             elif source == LayerSource.NATUREBASE.value.lower():
                 self.naturebase_list.append(pathway)
 
-        items = sorted([p["metadata"].get("name", p["name"]) for p in self.cplus_list])
+        items = sorted([p["name"] for p in self.cplus_list])
         self.cbo_default_layer.addItems(items)
         self.cbo_default_layer.setCurrentIndex(0)
         self.cbo_default_layer.currentIndexChanged.connect(
@@ -354,9 +354,7 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         if layer_name == "":
             return {}
         pathways = settings_manager.get_default_layers("ncs_pathway")
-        layer = [
-            p for p in pathways if p["metadata"].get("name", p["name"]) == layer_name
-        ]
+        layer = [p for p in pathways if p["name"] == layer_name]
         return layer[0] if layer else {}
 
     def open_help(self, activated: bool):
@@ -416,13 +414,9 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         """Event raised when online layer source selection is changed."""
         source = self.cbo_default_layer_source.currentText()
         if source.lower() == LayerSource.CPLUS.value.lower():
-            items = sorted(
-                [p["metadata"].get("name", p["name"]) for p in self.cplus_list]
-            )
+            items = sorted([p["name"] for p in self.cplus_list])
         elif source == LayerSource.NATUREBASE.value:
-            items = sorted(
-                [p["metadata"].get("name", p["name"]) for p in self.naturebase_list]
-            )
+            items = sorted([p["name"] for p in self.naturebase_list])
         self.cbo_default_layer.clear()
         self.cbo_default_layer.addItem("")
         self.cbo_default_layer.addItems(items)
