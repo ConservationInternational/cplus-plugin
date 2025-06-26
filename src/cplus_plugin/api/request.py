@@ -16,7 +16,7 @@ from qgis.core import (
     QgsProcessingFeedback,
 )
 
-from ..models.base import Scenario, SpatialExtent, Activity
+from ..models.base import Scenario, SpatialExtent, Activity, LayerSource
 from ..conf import settings_manager, Settings
 from ..definitions.defaults import BASE_API_URL
 from ..trends_earth import auth
@@ -1064,12 +1064,10 @@ class CplusApiRequest:
             source = layer.get("source", "")
             if not source:
                 # If source is not provided, extract source from metadata name
-                if metadata.get("name", "").startswith("CPLUS:"):
-                    source = "cplus"
-                elif metadata.get("name", "").startswith("Naturebase:"):
-                    source = "naturebase"
+                if metadata.get("name", "").startswith("Naturebase:"):
+                    source = LayerSource.NATUREBASE.value
                 else:
-                    source = "cplus"
+                    source = LayerSource.CPLUS.value
 
             out_layer = {
                 "type": component_type,

@@ -19,7 +19,13 @@ from ..definitions.defaults import (
     ICON_PATH,
     USER_DOCUMENTATION_SITE,
 )
-from ..models.base import DataSourceType, LayerType, NcsPathway, NcsPathwayType
+from ..models.base import (
+    DataSourceType,
+    LayerType,
+    NcsPathway,
+    NcsPathwayType,
+    LayerSource,
+)
 from ..utils import FileUtils, open_documentation, tr, log
 
 WidgetUi, _ = loadUiType(
@@ -51,9 +57,26 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.btn_help.setIcon(help_icon)
         self.btn_help.clicked.connect(self.open_help)
 
+        self.cbo_default_layer_source.addItems(
+            [LayerSource.CPLUS.value, LayerSource.NATUREBASE.value]
+        )
+        self.cbo_default_layer_source.currentIndexChanged.connect(
+            self._on_default_layer_source_selection_changed
+        )
+        self.naturebase_list = []
+        self.cplus_list = []
+
         pathways = settings_manager.get_default_layers("ncs_pathway")
         self.cbo_default_layer.addItem("")
-        items = sorted([p["metadata"].get("name", p["name"]) for p in pathways])
+        # Populate the default layer combobox with available pathways
+        for pathway in pathways:
+            source = pathway.get("source", "").lower()
+            if source == LayerSource.CPLUS.value.lower():
+                self.cplus_list.append(pathway)
+            elif source == LayerSource.NATUREBASE.value.lower():
+                self.naturebase_list.append(pathway)
+
+        items = sorted([p["metadata"].get("name", p["name"]) for p in self.cplus_list])
         self.cbo_default_layer.addItems(items)
         self.cbo_default_layer.setCurrentIndex(0)
         self.cbo_default_layer.currentIndexChanged.connect(
@@ -167,6 +190,11 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         if self._ncs_pathway.layer_uuid:
             pathways = settings_manager.get_default_layers("ncs_pathway")
             for i, layer in enumerate(pathways):
+                if layer["source"].lower() == LayerSource.NATUREBASE.value.lower():
+                    self.cbo_default_layer_source.setCurrentIndex(1)
+                else:
+                    self.cbo_default_layer_source.setCurrentIndex(0)
+
                 if layer["layer_uuid"] == self._ncs_pathway.layer_uuid:
                     self.cbo_default_layer.setCurrentIndex(i + 1)
                     break
@@ -383,3 +411,18 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.txt_description.setPlainText(metadata.get("description", ""))
         # remove selection from cbo_layer
         self.cbo_layer.setAdditionalItems([])
+
+    def _on_default_layer_source_selection_changed(self):
+        """Event raised when online layer source selection is changed."""
+        source = self.cbo_default_layer_source.currentText()
+        if source.lower() == LayerSource.CPLUS.value.lower():
+            items = sorted(
+                [p["metadata"].get("name", p["name"]) for p in self.cplus_list]
+            )
+        elif source == LayerSource.NATUREBASE.value:
+            items = sorted(
+                [p["metadata"].get("name", p["name"]) for p in self.naturebase_list]
+            )
+        self.cbo_default_layer.clear()
+        self.cbo_default_layer.addItem("")
+        self.cbo_default_layer.addItems(items)
