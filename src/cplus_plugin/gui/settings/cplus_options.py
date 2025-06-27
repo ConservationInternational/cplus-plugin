@@ -42,7 +42,7 @@ from ...api.carbon import (
     start_irrecoverable_carbon_download,
     get_downloader_task,
 )
-from ...api.layer_tasks import DeleteDefaultLayerTask
+from ...api.layer_tasks import DeleteDefaultLayerTask, DefaultPriorityLayerDownloadTask
 from ...conf import (
     settings_manager,
     Settings,
@@ -1263,6 +1263,25 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             + 20
         )
 
+    def get_pwl_downloader_task(
+        self,
+    ) -> typing.Optional[DefaultPriorityLayerDownloadTask]:
+        """Gets the priority layer task downloader in the QgsTaskManager.
+
+        :returns: The priority layer task downloader in the QgsTaskManager
+        or None if not found.
+        :rtype: DefaultPriorityLayerDownloadTask
+        """
+        ic_tasks = [
+            task
+            for task in qgis.core.QgsApplication.taskManager().tasks()
+            if isinstance(task, DefaultPriorityLayerDownloadTask)
+        ]
+        if len(ic_tasks) == 0:
+            return None
+
+        return ic_tasks[0]
+
     def refresh_default_layers_table(self):
         """Refresh the default layers table with updated data."""
         self.pwl_model.removeRows(0, self.pwl_model.rowCount())  # Clear existing rows
@@ -1366,16 +1385,33 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         )
 
         if file_path:
-            self.message_bar.pushMessage(f"Downloading {name} to {file_path}")
-            if download.download_file(default_layer.get("url"), file_path):
-                self.message_bar.pushMessage(f"Downloaded {name} to {file_path}")
-                layer = qgis.core.QgsRasterLayer(file_path, name)
-                qgis.core.QgsProject.instance().addMapLayer(layer)
-            else:
-                self.message_bar.pushMessage(
-                    f"Failed to download {name} to {file_path}",
-                    level=qgis.core.Qgis.MessageLevel.Warning,
-                )
+            self.show_message(
+                f"Downloading {name} to {file_path}", qgis.core.Qgis.MessageLevel.Info
+            )
+            existing_download_task = self.get_pwl_downloader_task()
+            if existing_download_task:
+                existing_download_task.cancel()
+
+            download_task = DefaultPriorityLayerDownloadTask(default_layer, file_path)
+            qgis.core.QgsApplication.taskManager().addTask(download_task)
+            download_task.status_message_changed.connect(
+                self._on_update_pwl_download_status
+            )
+            download_task.completed.connect(self._on_pwl_download_completed)
+
+    def _on_update_pwl_download_status(
+        self, status: ApiRequestStatus, description: str
+    ):
+        self.show_message(f"{status.name}: {description}")
+
+    def _on_pwl_download_completed(self, layer_name: str, saved_path: str):
+        if os.path.exists(saved_path):
+            self.show_message(
+                tr(f"Download successful. Saved to: {saved_path}"),
+                qgis.core.Qgis.MessageLevel.Info,
+            )
+            layer = qgis.core.QgsRasterLayer(saved_path, layer_name)
+            qgis.core.QgsProject.instance().addMapLayer(layer)
 
     def priority_layers_changed(self):
         contains_items = len(self.default_priority_layers) > 0
