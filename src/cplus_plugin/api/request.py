@@ -246,6 +246,9 @@ class CplusApiUrl:
     def layer_default_list(self):
         return f"{self.base_url}/layer/default/"
 
+    def priority_layer_download(self, layer_uuid):
+        return f"{self.base_url}/priority_layer/{layer_uuid}/download/"
+
     def scenario_submit(self, plugin_version=None) -> str:
         """Cplus API URL for submitting scenario JSON.
 
