@@ -30,7 +30,7 @@ are subsequently applied during the weighting of NCS pathways when creating a sc
 
 ## Add priority groups
 
-To add a new priority group, the user must click on the ![add button](img/symbologyAdd.svg) button, as shown  in **Figure 1**.
+To add a new priority group, the user must click on the ![add button](img/symbologyAdd.svg) button, as shown in **Figure 1**.
 
 This will open a `Priority Group Dialog` box, where user required to fill the following information.
 

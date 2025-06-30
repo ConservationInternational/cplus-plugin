@@ -94,8 +94,7 @@ where *NcsWeightedCarbon* is a pathway set up by the user; and
 &emsp;&emsp;&nbsp;&nbsp;&nbsp; *n* is the number of pathways.
 
 - Now that the pathways have been summed for the activity, the result needs to be normalised
-- The Suitability index and the Carbon coefficient then needs to be taken into account after the normalised raster
-has been created
+- The Suitability index and the Carbon coefficient then needs to be taken into account after the normalised raster has been created
 - This calculation is shown in **Equation 4**
 
 $$
@@ -134,7 +133,7 @@ $$
 
 The <a href="https://docs.qgis.org/3.28/en/docs/user_manual/processing_algs/qgis/rasteranalysis.html#qgishighestpositioninrasterstack">Highest position</a>
 tool determines the raster in a stack with the highest value at a given pixel. Essentially the result
-is a classification, where each class represents a specific activity. If multiple rasters has the highest
+is a classification, where each class represents a specific activity. If multiple rasters have the highest
 pixel value at a given pixel, the first raster with that pixel value in the stack will be used.
 Figure 2 shows an example from the QGIS description of the Highest position tool.
 
@@ -142,9 +141,9 @@ Figure 2 shows an example from the QGIS description of the Highest position tool
 
 *Figure 2: Highest position example*
 
-In the plugin, the nodata values are ignored. This means that if at least one raster has a pixel value
+In the plugin, the `nodata` values are ignored. This means that if at least one raster has a pixel value
 at that cell there will be a raster stack value. If none of the rasters in the stack has a pixel value
-at that cell (e.g. each raster pixel is nodata) the output will be nodata at that pixel.
+at that cell (e.g. each raster pixel is `nodata`) the output will be `nodata` at that pixel.
 
 Here is an explanation of how to use the **Highest position** tool:
 
@@ -168,7 +167,7 @@ Here is an explanation of how to use the **Highest position** tool:
 
 *Figure 5: Highest position result*
 
-This concludes the section on how the calculations are done 
+This concludes the section on how the calculations are done.
 
 ### References
 

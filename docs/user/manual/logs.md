@@ -20,13 +20,13 @@ license: This program is free software; you can redistribute it and/or modify it
 
 - **Offline Scenarios :** In this scenario, reports are stored locally and can be accessed even when the system is offline. To view the offline scenario, the user has to select the report and then click on `refresh` button, this will load the scenario and display on the map canvas.
 
-- **Online Scenarios :** The stored online scenarios in the log help users load and analyse scenarios they have run online. To view the online scenario, the user has to select the report and then click on the  `refresh` button, this will load the scenario and display on the map canvas.
+- **Online Scenarios :** The stored online scenarios in the log help users load and analyse scenarios they have run online. To view the online scenario, the user has to select the report and then click on the `refresh` button, this will load the scenario and display on the map canvas.
 
     Benefits of storing logs of online scenarios:
 
     - Keep track of executed scenarios.
 
-    - Allow users to review and analyze previously run scenarios.
+    - Allow users to review and analyse previously run scenarios.
 
     - Provide a record for troubleshooting and auditing purposes.
 

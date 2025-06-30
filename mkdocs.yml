@@ -90,7 +90,7 @@ nav:
                 - Progress dialog: developer/api/gui/api_validation_progress_dialog.md
                 - Tree items: developer/api/gui/api_validation_result_items.md
             - Metrics:
-                - Builder Dialogue: developer/api/gui/api_metrics_builder_dialog.md
+                - Builder Dialog: developer/api/gui/api_metrics_builder_dialog.md
                 - Builder Model: developer/api/gui/api_metrics_builder_model.md
   - About:
       - Conservation International: about/ci.md
@@ -99,6 +99,7 @@ nav:
 
 plugins:
   - search
+  - autorefs
   - git-revision-date-localized
   - mkdocs-video
   - mkdocstrings:
@@ -167,6 +168,8 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.mark
   - attr_list
+  - toc:
+      permalink: true
 
 extra_javascript:
   - javascripts/mathjax.js

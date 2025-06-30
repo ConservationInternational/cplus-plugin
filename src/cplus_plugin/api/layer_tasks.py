@@ -52,6 +52,7 @@ class FetchDefaultLayerTask(QgsTask):
         :type is_success: bool
         """
         if is_success:
+            settings_manager.remove_default_layers()
             self.store_default_layers(self.result)
         self.task_finished.emit(is_success)
 
@@ -293,7 +294,7 @@ class CreateUpdateDefaultLayerTask(QgsTask):
                 self.log_message(traceback.format_exc(), info=False)
                 err = f"Problem uploading layer file to the server: {e}\n"
                 self.log_message(err, info=False)
-                self.set_status_message(err, level=Qgis.Critical)
+                self.set_status_message(err)
                 self.cancel_task(e)
                 return False
         if self.upload_cancelled:
@@ -320,7 +321,7 @@ class CreateUpdateDefaultLayerTask(QgsTask):
                 self.log_message(traceback.format_exc(), info=False)
                 err = f"Problem updating layer properties in the server: {e}\n"
                 self.log_message(err, info=False)
-                self.set_status_message(err, level=Qgis.Critical)
+                self.set_status_message(err)
                 self.cancel_task(e)
                 return False
 

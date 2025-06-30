@@ -12,7 +12,7 @@ license: This program is free software; you can redistribute it and/or modify it
 
 # User Manual
 
-Welcome to the Cplus-plugins user manual. This section of the documentation describes every step in the plugin and what the various steps of that plugin do. You may prefer to work through our [user guide](../guide/index.md). Here is a brief overview of the content provided here:
+Welcome to the CPLUS plugin's user manual. This section of the documentation describes every step in the plugin and what the various steps of that plugin do. You may prefer to work through our [user guide](../guide/index.md). Here is a brief overview of the content provided here:
 
 * **[Calculations and Formulas:](calculation-and-formula.md)** This section provides details about the calculations and formulas used within the platform.
 

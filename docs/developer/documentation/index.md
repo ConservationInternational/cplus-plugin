@@ -43,7 +43,7 @@ Other options, such as the themes, plugins and extensions, should require no cha
 Here is an explanation on how the **nav** should be updated:
 
 - It is important to keep to the structure of the mkdocs
-- Each section focusses on a particular aspect, for example **User** will provide information on installing
+- Each section focuses on a particular aspect, for example **User** will provide information on installing
   the plugin, a guide on how to use the plugin, etc.
 - The order in which the **nav** is structured will determine the tabs order on the site, as shown in **Figure 2**
 
@@ -71,7 +71,7 @@ needs to make the changes in the code (comments) for this to happen.
 
 The comments for mkdocstrings is three sections:
 
-- Description: A description on what the function does. A destailed description are welcome
+- Description: A description on what the function does. A detailed description are welcome
 - param: List of parameters for the function. Type and description should be included
 - returns: A list of values which the function would return. Type should be included, with a description
 
