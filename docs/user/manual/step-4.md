@@ -55,163 +55,217 @@ license: This program is free software; you can redistribute it and/or modify it
     * The tool leverages the full functionality of the expression builder, allowing users to create fully customised expressions based on the available project variables.
 
     * The Expression Builder within the Metrics Generator has been enhanced with a CPLUS library, which offers automated calculations for irrecoverable carbon, PWL measures, and NPV. These features come with helpful guidance for their use. It is also important to reference the variables list when creating custom options.
+   
+    * The Metrics Generator introduces the concept of a metric profile that represents a collection of columns grouped according to user-defined criteria. The grouping options are entirely flexible, depending on how the user wishes to organize the columns and their associated properties. The primary benefit of profiles is 
+   that they enable users to configure column groupings and easily select which profiles to apply in different scenario analysis reports.
 
     >Note: Please note that expressions can be applied on a column-by-column basis or can be cell-specific, providing full granularity for the measures and metrics associated with each activity.
 
-    ![Scenario Reports Options](./img/step-4-7.png)
+  ![Scenario Reports Options](./img/step-4-7.png)
 
-    1 **Use custom activity metrics table:** Users must check the checkbox to enable this option. After doing so, they need to click on the ![Builder Icon](./img/step-4-8.png) icon to access the metrics table. 
+  1 **Use custom activity metrics table:** Users must check the checkbox to enable this option. After doing so, they need to click on the ![Builder Icon](./img/step-4-8.png) icon to access the metrics table. 
 
-    Users are required to follow these steps to create a custom activity metrics table.
+  Users are required to follow these steps to create a custom activity metrics table.
 
-     **Step 1:**
+   **Step 1:**
 
-    ![Activity Metrics Wizard](./img/step-4-9.png)
+  ![Activity Metrics Wizard](./img/step-4-9.png)
 
-    1 **x:** Close the wizard.
+  1 **x:** Close the wizard.
 
-    2 **Help:** Provides the qgis help documentation.
+  2 **Help:** Provides the qgis help documentation.
 
-    3 **Back:** Go back to the previous step (Disabled in the first step).
+  3 **Back:** Go back to the previous step (Disabled in the first step).
 
-    4 **Next:** Proceed to the next step.
+  4 **Next:** Proceed to the next step.
 
-    5 **Cancel:** Cancel the current operation.
+  5 **Cancel:** Cancel the current operation.
 
-    **Step 2:**
+  **Step 2:**
 
-    ![Activity Metrics Wizard 2](./img/step-4-10.png)
+  ![Activity Metrics Wizard 2](./img/step-4-10.png)
 
-    1 **Columns:** Users can add or remove columns from the table.
+  1 **Profiles:** Users can specify profiles for managing column groupings by selecting the current metric profile.
+  
+ * Add Profile 
 
-    * **![Add Column](./img/step-4-11.png):** Allows users to add column to the table.
+     - ![Add Icon](./img/step4-13.png) allows users to add a new profile. This opens a `Add New Profile` dialog box where a user can enter the name of the profile.
 
-        ![Set Column Name](./img/step-4-12.png)
+     - A user can enter the profile name to add it to the list of profiles and set it as the current profile.
 
-        * **x:** Close the dialog box.
-        * **Input Field:** Users are required to enter the column name in this input field.
-        * **Cancel:** Cancel the process.
-        * **OK:** Users can complete the add column process by clicking on this button. If users click on this button without filling the column name then the process will be complete without any column being added.
+         ![Set Profile Name](./img/add_new_profile.png)
 
-            ![Column Table 1](./img/step-4-14.png)
+     - If the profile name already exists, the following error message will be shown:
+
+         ![Duplicate Profile Name](./img/duplicate_profile_name.png)
+
+ * Rename Profile
+   - ![Rename Icon](./img/edit.png) allows users to rename the current profile. This opens a `Rename Profile` dialog box where a user can enter the name of the profile.
+      
+   - A user can enter the updated profile name.
+      
+       ![Rename Profile](./img/rename_profile.png)
+      
+   - If the profile name already exists, the following error message will be shown:
+            
+       ![Duplicate Profile ReName](./img/duplicate_profile_rename.png)
+      
+ * Copy Profile
+   - ![Copy Profile Icon](./img/mActionEditCopy.png) allows users to copy the current profile. This will open a `Copy Profile` dialog which allows a user to specify a new name for the copied profile.
+       
+   - A user can enter the name of the copied profile to add it to the list of profiles and set it as the current profile. A `Copy` suffix is, by default, appended to the name 
+   of the source profile.
+
+       ![Copy Profile Name](./img/copy_profile.png)
+
+   - If the profile name already exists, the following error message will be shown:
+
+       ![Duplicate Profile Name](./img/duplicate_profile_rename.png)
+      
+ * Delete Profile
+
+     - ![Remove Icon](./img/step4-16.png) allows users to remove the current profile.
+  
+  2 **Columns:** Users can add or remove columns from the table.
+
+  * **![Add Column](./img/step-4-11.png):** Allows users to add column to the table.
+
+      ![Set Column Name](./img/step-4-12.png)
+
+      * **x:** Close the dialog box.
+      * **Input Field:** Users are required to enter the column name in this input field.
+      * **Cancel:** Cancel the process.
+      * **OK:** Users can complete the add column process by clicking on this button. If users click on this button without filling the column name then the process will be complete without any column being added.
+
+          ![Column Table 1](./img/step-4-14.png)
         
-        * If users fill in a column name which is already available in the table then the users will encounter the error `There is already existing column name`.
+      * If users fill in a column name which is already available in the table then the users will encounter the error `There is already existing column name`.
 
-            ![Duplicate Column Error](./img/step-4-13.png)
+          ![Duplicate Column Error](./img/step-4-13.png)
 
-    * **![Remove Column](./img/step-4-15.png):** Allows users to remove a column from the table. Users are required to select the column which they want to remove from the table and then click on this button to remove it from the table.
+  * **![Remove Column](./img/step-4-15.png):** Allows users to remove a column from the table. Users are required to select the column which they want to remove from the table and then click on this button to remove it from the table.
 
-        ![Column Table 2](./img/step-4-16.png)
+      ![Column Table 2](./img/step-4-16.png)
 
-    * **![Up](./img/step-4-17.png) and ![Down](./img/step-4-18.png):** Allows users to reorder the columns in the table. Select the column from the table and then click on the either any option to reorder the column.
+  * **![Up](./img/step-4-17.png) and ![Down](./img/step-4-18.png):** Allows users to reorder the columns in the table. Select the column from the table and then click on the either any option to reorder the column.
 
-    ![Reorder Column](./img/step-4-19.png)
+  ![Reorder Column](./img/step-4-19.png)
 
-    2 **Properties:** This contains the properties of the column.
+  3 **Properties:** This contains the properties of the column.
     
-    ![Properties](./img/step-4-20.png) 
+  ![Properties](./img/step-4-20.png) 
 
-    * **Header label:** The default header name is based on the selected column. Users can change it to any name they prefer, but the field must be filled in. If the `Header label` is empty then the users will encounter with the error `header label is empty`.
+  * **Header label:** The default header name is based on the selected column. Users can change it to any name they prefer, but the field must be filled in. If the `Header label` is empty then the users will encounter with the error `header label is empty`.
 
-        ![Empty Header Label Error](./img/step-4-21.png) 
+      ![Empty Header Label Error](./img/step-4-21.png) 
     
-    * **Metric:** Users can select the metric from the dropdown list. User can clear the metric filed by clicking on the `x` mark available inside the input field and can add their own custom metric.
+  * **Metric:** Users can select the metric from the dropdown list. User can clear the metric filed by clicking on the `x` mark available inside the input field and can add their own custom metric.
 
-        ![Metric Dropdown](./img/step-4-22.png) 
+      ![Metric Dropdown](./img/step-4-22.png) 
 
-    * **Create Custom Metric:** Users can create their own custom metric by clicking on the `ε epsilon` button located on the right side of the `Metric` input field.
+  * **Create Custom Metric:** Users can create their own custom metric by clicking on the `ε epsilon` button located on the right side of the `Metric` input field.
 
-        ![Epsilon button](./img/step-4-23.png) 
+      ![Epsilon button](./img/step-4-23.png) 
 
-        * This will open the `Column Expression Builder` dialog box.
+      * This will open the `Column Expression Builder` dialog box.
 
-        ![Column Expression Builder](./img/step-4-24.png)
+      ![Column Expression Builder](./img/step-4-24.png)
 
-        1 **Expression:** Users can access the expression tab by clicking here.
+      1 **Expression:** Users can access the expression tab by clicking here.
 
-        2 **Input Area:** User can enter the expression in this input area.
+      2 **Input Area:** User can enter the expression in this input area.
 
-        3 **Operators and symbols:** Users can access the operators and symbols from here.
+      3 **Operators and symbols:** Users can access the operators and symbols from here.
 
-        4 **Functions:** Users can choose the function that their expression is related to.
+      4 **Functions:** Users can choose the function that their expression is related to.
 
-        5 **Details Section:** This section shows the details of the expression like how users can fill the expression, what are the available arguments and operators etc.
+      5 **Details Section:** This section shows the details of the expression like how users can fill the expression, what are the available arguments and operators etc.
 
-        * For Example:
+      * For Example:
 
-            ![Column Expression Builder 1](./img/step-4-25.png)
+          ![Column Expression Builder 1](./img/step-4-25.png)
 
-            1 **Input Area:** Contains the expression we have entered.
+          1 **Input Area:** Contains the expression we have entered.
 
-            2 **Functions:** For example, we have selected the `CASE` from `Conditionals`.
+          2 **Functions:** For example, we have selected the `CASE` from `Conditionals`.
 
-            3 **Details Section:** This section shows the details of the expression like how users can fill the expression, what are the available arguments and operators etc.
+          3 **Details Section:** This section shows the details of the expression like how users can fill the expression, what are the available arguments and operators etc.
 
-            4 **Preview:** This section displays the feature details. In our case, we have entered the incorrect input without following the proper syntax, resulting in an error in the preview.
+          4 **Preview:** This section displays the feature details. In our case, we have entered the incorrect input without following the proper syntax, resulting in an error in the preview.
 
-        * After filling all the details users are required to click on the `OK` button to complete the process or they can click on the `Cancel` button to cancel the process.
+      * After filling all the details users are required to click on the `OK` button to complete the process or they can click on the `Cancel` button to cancel the process.
 
-        * When users click on the `Cancel` button a popup dialog box will appear asking for confirmation to cancel the process.
+      * When users click on the `Cancel` button a popup dialog box will appear asking for confirmation to cancel the process.
 
-            ![Expression Edited](./img/step-4-36.png)
+          ![Expression Edited](./img/step-4-36.png)
 
-            * **✅:** Users can check this checkbox to remember their choice and avoid showing this message again in the future.
+          * **✅:** Users can check this checkbox to remember their choice and avoid showing this message again in the future.
 
-            * **No:** Users can click on the `No` button to go back to the editing the process.
+          * **No:** Users can click on the `No` button to go back to the editing the process.
 
-            * **Discard changes:** Users can click on this button to complete the cancel process. This will discard the changes and close the window.
+          * **Discard changes:** Users can click on this button to complete the cancel process. This will discard the changes and close the window.
 
-    3 **Formatting:** This contains the formatting options for the column.
+  4 **Formatting:** This contains the formatting options for the column.
 
-    ![Formatting](./img/step-4-26.png)
+  ![Formatting](./img/step-4-26.png)
 
-    * **Horizontal alignment:** Users can select the horizontal alignment of the column from the dropdown list, choosing between left, center, right, or justify alignment.
+  * **Horizontal alignment:** Users can select the horizontal alignment of the column from the dropdown list, choosing between left, center, right, or justify alignment.
 
-    * **Format as number:** Users are required to check the checkbox to use this option, then users will be use the `Customise...` button to customise the number format.
+  * **Format as number:** Users are required to check the checkbox to use this option, then users will be use the `Customise...` button to customise the number format.
 
-        ![Number Formatter ](./img/step-4-27.png)
+      ![Number Formatter ](./img/step-4-27.png)
 
-        1 **Number Format:** Users can use this button to go back to the previous window.
+      1 **Number Format:** Users can use this button to go back to the previous window.
 
-        2 **Category:** Users can select the category of the number format from the dropdown list.
+      2 **Category:** Users can select the category of the number format from the dropdown list.
 
-        ![Formatting Category](./img/step-4-28.png)
+      ![Formatting Category](./img/step-4-28.png)
 
-        3 **Format:** Users can select the format of the number from the dropdown list. (This field varies depending on the selected category.)
+      3 **Format:** Users can select the format of the number from the dropdown list. (This field varies depending on the selected category.)
 
-        4 **Decimal places:** Users can enter the number of decimal places to be displayed. (This field varies depending on the selected category.)
+      4 **Decimal places:** Users can enter the number of decimal places to be displayed. (This field varies depending on the selected category.)
 
-        5 Show trailing zeros: Users can select this checkbox to display trailing zeros. (This field varies depending on the selected category.)
+      5 Show trailing zeros: Users can select this checkbox to display trailing zeros. (This field varies depending on the selected category.)
 
-        6 **Sample:** Users can see the sample of the number format selected.
+      6 **Sample:** Users can see the sample of the number format selected.
 
-    **Step 3:**
+  **Step 3:**
     
-    ![Activity Metrics Wizard 3](./img/step-4-29.png)
+  ![Activity Metrics Wizard 3](./img/step-4-29.png)
 
-    1 **Customise activity metric:** Checking this checkbox allows users to customise the metric of a specific cell.
+  1 **Customise activity metric:** Checking this checkbox allows users to customise the metric of a specific cell.
 
-    2 **Customise cell metric:** Double-clicking on a cell converts it into a dropdown menu. Users can then select the `<Cell metrics>` option from the menu, enabling them to customise the cell metric.
+  2 **Customise cell metric:** Double-clicking on a cell converts it into a dropdown menu. Users can then select the `<Cell metrics>` option from the menu, enabling them to customise the cell metric.
 
-    ![Cell Metric Dropdown Menu](./img/step-4-30.png)
+  ![Cell Metric Dropdown Menu](./img/step-4-30.png)
 
-    * This will open the `Activity Expression Builder` window.
+  * This will open the `Activity Expression Builder` window.
 
-        ![Activity Expression Builder](./img/step-4-31.png)
+      ![Activity Expression Builder](./img/step-4-31.png)
 
-    Please check the `Step 2` to know more about how to customise the metric.
+  Please check the `Step 2` to know more about how to customise the metric.
 
-    * If users try to proceed without defining the `<Cell-metric>` then users will encounter an error message.
+  * If users try to proceed without defining the `<Cell-metric>` then users will encounter an error message.
 
-        ![Undefined Error](./img/step-4-32.png)
+      ![Undefined Error](./img/step-4-32.png)
 
-    **Step 4:**
+  **Step 4:**
 
-    This is the last step where user review all the columns and metrics they have defined. After clicking on the `Finish` button will complete the process and redirected to the `Qgis plugin Step 4` from where users can generate the report with the `custom activity metrics table`.
+  This is the last step where a user review all the columns and metrics they have defined. After clicking on the `Finish` button will complete the process, with the current profile set as the active profile, and redirected to the `Qgis plugin Step 4` from where users can generate the report with the `custom activity metrics table`.
 
-    ![Activity Metrics Wizard 4](./img/step-4-33.png)
+  ![Activity Metrics Wizard 4](./img/step-4-33.png)
 
-5. **Run Scenario:** 
+5. **Active Metric Profile:**
+
+A user can select the desired profile for the custom activity table in the scenario analysis report by using the dropdown menu as shown below:
+
+![Select Active Profile](./img/select_active_profile.png)
+
+Hovering over the metric builder button displays the currently active profile selected by the user.
+
+![Show Active Profile](./img/show_active_profile.png)
+
+6. **Run Scenario:** 
 
     After checking or unchecking the checkbox, click on the `Run Scenario` button to execute the scenario and generate the report. 
 
