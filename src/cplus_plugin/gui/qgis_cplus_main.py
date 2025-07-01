@@ -1773,7 +1773,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 passed_extent.yMinimum(),
                 passed_extent.yMaximum(),
             ],
-            crs=passed_extent_crs.authid() if passed_extent_crs else None,
+            crs=settings_manager.get_value(
+                Settings.SCENARIO_CRS,
+                passed_extent_crs.authid() if passed_extent_crs else "EPSG:4326",
+            ),
         )
         try:
             self.enable_analysis_controls(False)
@@ -1854,7 +1857,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 return
 
             source_crs = passed_extent_crs or QgsCoordinateReferenceSystem("EPSG:4326")
-            destination_crs = self.analysis_extent.crs
+            destination_crs = QgsCoordinateReferenceSystem(self.analysis_extent.crs)
 
             if selected_pathway:
                 selected_pathway_layer = QgsRasterLayer(
@@ -1862,7 +1865,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 )
                 if selected_pathway_layer.crs() is not None and destination_crs is None:
                     destination_crs = selected_pathway_layer.crs()
-                else:
+                elif destination_crs is None:
                     destination_crs = QgsProject.instance().crs()
 
             if source_crs != destination_crs:
