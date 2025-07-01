@@ -627,6 +627,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             "mask_path": ", ".join(masking_layers),
             "mask_layer_uuids": mask_layer_uuids,
             "extent": old_scenario_dict["extent"]["bbox"],
+            "analysis_crs": old_scenario_dict["extent"]["crs"],
             "priority_layer_groups": (
                 old_scenario_dict.get("priority_layer_groups", [])
             ),

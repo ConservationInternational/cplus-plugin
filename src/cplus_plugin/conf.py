@@ -128,6 +128,7 @@ class ScenarioSettings(Scenario):
             name=settings.value("name", None),
             description=settings.value("description", None),
             extent=[],
+            crs=settings.value("crs", None),
             activities=activities,
             priority_layer_groups=[],
             server_uuid=uuid.UUID(server_uuid) if server_uuid else None,
@@ -149,7 +150,9 @@ class ScenarioSettings(Scenario):
         with qgis_settings(spatial_key) as settings:
             bbox = settings.value("bbox", None)
             bbox = [float(b) for b in bbox]
-            spatial_extent = SpatialExtent(bbox=bbox)
+
+            crs = settings.value("crs", None)
+            spatial_extent = SpatialExtent(bbox=bbox, crs=crs)
 
         return spatial_extent
 
@@ -421,10 +424,12 @@ class SettingsManager(QtCore.QObject):
             key (str): QgsSettings group key
         """
         spatial_extent = extent.bbox
+        spatial_crs = extent.crs
 
         spatial_key = f"{key}/extent/spatial/"
         with qgis_settings(spatial_key) as settings:
             settings.setValue("bbox", spatial_extent)
+            settings.setValue("crs", spatial_crs)
 
     def get_scenario(self, scenario_id):
         """Retrieves the first scenario that matched the passed scenario id.

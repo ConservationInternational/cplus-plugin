@@ -94,7 +94,7 @@
         <string>Step 1</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_8">
-        <item row="10" column="0" colspan="2">
+        <item row="12" column="0" colspan="2">
          <spacer name="verticalSpacer_3">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
@@ -169,6 +169,16 @@
            <string>Zoom to Pilot Area</string>
           </property>
          </widget>
+        </item>
+        <item row="10" column="0">
+         <widget class="QLabel" name="lblCrsdescription">
+          <property name="text">
+           <string>Scenario CRS for analysis (Must be projected CRS)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="11" column="0">
+          <widget class="QgsProjectionSelectionWidget" name="crs_selector" native="true"/>
         </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_64">
