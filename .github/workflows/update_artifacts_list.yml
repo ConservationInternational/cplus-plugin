@@ -5,6 +5,11 @@ on:
       - completed
     workflows:
       - 'Creating plugin package in main branch'
+  # Add these for testing
+  push:
+    branches:
+      - test-workflow-fix
+  workflow_dispatch:  # Allows manual triggering
 
 jobs:
   comment:
