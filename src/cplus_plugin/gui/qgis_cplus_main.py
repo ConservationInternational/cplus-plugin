@@ -474,6 +474,28 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.on_scenario_list_selection_changed
         )
 
+        self.lblCrsdescription.setText(
+            tr("Scenario CRS for analysis (Must be projected CRS)")
+        )
+
+        project_crs = QgsProject.instance().crs()
+        crs = settings_manager.get_value(Settings.SCENARIO_CRS, default=None)
+        if crs is not None:
+            project_crs = QgsCoordinateReferenceSystem(crs)
+
+        if not project_crs.isGeographic():
+            self.crs_selector.setCrs(project_crs)
+
+        self.crs_selector.crsChanged.connect(self.on_crs_changed)
+
+    def on_crs_changed(self):
+        current_crs = self.crs_selector.crs()
+        if current_crs.isValid() and not current_crs.isGeographic():
+            authid = current_crs.authid()
+            settings_manager.set_value(Settings.SCENARIO_CRS, authid)
+        else:
+            self.show_message(tr("Invalid CRS selected. Must be projected CRS."))
+
     def priority_groups_update(self, target_item, selected_items):
         """Updates the priority groups list item with the passed
          selected layer items.
