@@ -9,6 +9,7 @@ on:
       - synchronize
     branches:
       - main
+      - test-update-artifacts
 
 jobs:
   create-package:
