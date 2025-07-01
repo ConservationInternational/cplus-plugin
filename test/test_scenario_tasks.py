@@ -71,6 +71,16 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         test_extent = test_layer.extent()
 
+        spatial_extent = SpatialExtent(
+            bbox=[
+                test_extent.xMinimum(),
+                test_extent.xMaximum(),
+                test_extent.yMinimum(),
+                test_extent.yMaximum(),
+            ],
+            crs=test_layer.crs().authid(),
+        )
+
         test_activity = Activity(
             uuid=uuid.uuid4(),
             name="test_activity",
@@ -83,7 +93,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             name="Scenario",
             description="Scenario description",
             activities=[test_activity],
-            extent=test_extent,
+            extent=spatial_extent,
             priority_layer_groups=[],
         )
 
@@ -176,6 +186,16 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         test_extent = first_test_layer.extent()
 
+        spatial_extent = SpatialExtent(
+            bbox=[
+                test_extent.xMinimum(),
+                test_extent.xMaximum(),
+                test_extent.yMinimum(),
+                test_extent.yMaximum(),
+            ],
+            crs=first_test_layer.crs().authid(),
+        )
+
         test_activity = Activity(
             uuid=uuid.uuid4(),
             name="test_activity",
@@ -188,7 +208,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             name="Scenario",
             description="Scenario description",
             activities=[test_activity],
-            extent=test_extent,
+            extent=spatial_extent,
             priority_layer_groups=[],
         )
 
@@ -277,12 +297,22 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         test_extent = activity_layer.extent()
 
+        spatial_extent = SpatialExtent(
+            bbox=[
+                test_extent.xMinimum(),
+                test_extent.xMaximum(),
+                test_extent.yMinimum(),
+                test_extent.yMaximum(),
+            ],
+            crs=activity_layer.crs().authid(),
+        )
+
         scenario = Scenario(
             uuid=uuid.uuid4(),
             name="Scenario",
             description="Scenario description",
             activities=[test_activity],
-            extent=test_extent,
+            extent=spatial_extent,
             priority_layer_groups=[],
         )
 
