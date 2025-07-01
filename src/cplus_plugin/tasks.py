@@ -30,8 +30,7 @@ from .conf import settings_manager, Settings
 from .definitions.defaults import (
     SCENARIO_OUTPUT_FILE_NAME,
 )
-from .models.base import ScenarioResult, SpatialExtent, Activity
-from .models.helpers import clone_activity
+from .models.base import ScenarioResult, Activity, NcsPathway
 from .resources import *
 from .utils import (
     align_rasters,
@@ -251,11 +250,19 @@ class ScenarioAnalysisTask(QgsTask):
 
         target_layer = QgsRasterLayer(selected_pathway.path, selected_pathway.name)
 
-        dest_crs = (
-            target_layer.crs()
-            if selected_pathway and selected_pathway.path
-            else QgsCoordinateReferenceSystem("EPSG:4326")
-        )
+        self.analysis_crs = self.analysis_extent.crs
+
+        if self.analysis_crs is not None:
+            # Use the CRS of the analysis if it is provided
+            dest_crs = QgsCoordinateReferenceSystem(self.analysis_crs)
+        else:
+            # Use the CRS of the target layer if it exists
+            # or use EPSG:4326 as a default CRS
+            dest_crs = (
+                target_layer.crs()
+                if selected_pathway and selected_pathway.path
+                else QgsCoordinateReferenceSystem("EPSG:4326")
+            )
 
         processing_extent = QgsRectangle(
             float(self.analysis_extent.bbox[0]),
@@ -288,6 +295,15 @@ class ScenarioAnalysisTask(QgsTask):
             self.snap_analysis_data(
                 self.analysis_activities,
                 extent_string,
+            )
+
+        # Reproject the pathways and priority layers to the
+        # scenario CRS if it is not the same as the pathways CRS
+
+        if self.analysis_crs is not None:
+            self.reproject_pathways(
+                target_extent=extent_string,
+                target_crs=QgsCoordinateReferenceSystem(self.analysis_crs),
             )
 
         # Weight the pathways using the pathway suitability index
@@ -772,6 +788,227 @@ class ScenarioAnalysisTask(QgsTask):
             self.replace_nodata(input_result_path, output_path, nodata_value)
 
         return output_path
+
+    def reproject_layer(
+        self,
+        input_path: str,
+        target_crs: QgsCoordinateReferenceSystem,
+        output_directory: str = None,
+        target_extent: str = None,
+    ) -> str:
+        """Reprojects the input layer to the target CRS and saves it in the
+        specified output directory.
+        :param input_path: Input layer path
+        :type input_path: str
+        :param target_crs: Target CRS to reproject the layer to
+        :type target_crs: QgsCoordinateReferenceSystem
+        :param output_directory: Directory to save the reprojected layer, defaults to None
+        :type output_directory: str, optional
+        :param target_extent: Target extent, defaults to None
+        :type target_extent: str, optional
+        :returns: Path to the reprojected layer
+        :rtype: str
+        """
+        if not os.path.exists(input_path):
+            self.log_message(
+                f"Input layer {input_path} does not exist, "
+                f"skipping the layer reprojection."
+            )
+            return None
+
+        if output_directory is None:
+            output_directory = Path(input_path).parent
+
+        output_file = os.path.join(
+            output_directory,
+            f"{Path(input_path).stem}_{str(self.scenario.uuid)[:4]}.tif",
+        )
+
+        alg_params = {
+            "INPUT": input_path,
+            "TARGET_CRS": target_crs,
+            "OUTPUT": output_file,
+        }
+
+        if target_extent is not None and target_extent != "":
+            alg_params["TARGET_EXTENT"] = target_extent
+
+        self.log_message(f"Used parameters for layer reprojection: " f"{alg_params} \n")
+
+        feedback = QgsProcessingFeedback()
+        feedback.progressChanged.connect(self.update_progress)
+
+        if self.processing_cancelled:
+            return None
+
+        results = processing.run(
+            "gdal:warpreproject",
+            alg_params,
+            context=self.processing_context,
+            feedback=self.feedback,
+        )
+        return results["OUTPUT"]
+
+    def reproject_pathways(
+        self,
+        target_crs: QgsCoordinateReferenceSystem,
+        target_extent: str = None,
+    ):
+        """
+        Reprojects the activity pathways and priority layers to the target CRS.
+        :param target_crs: Target CRS to reproject the layers to
+        :type target_crs: QgsCoordinateReferenceSystem
+        :param target_extent: Target extent, defaults to None
+        :type target_extent: str, optional
+        :returns: True if the task operation was successfully completed else False.
+        :rtype: bool
+        """
+        if self.processing_cancelled:
+            return False
+
+        if target_crs is None or not target_crs.isValid():
+            self.set_info_message(
+                tr("Invalid target CRS for reprojecting pathways."),
+                level=Qgis.Critical,
+            )
+            self.log_message("Invalid target CRS for reprojecting pathways.")
+            return False
+
+        self.set_status_message(
+            tr("Reprojecting the activity pathways and priority layers")
+        )
+
+        pathways: typing.List[NcsPathway] = []
+
+        try:
+            for activity in self.analysis_activities:
+                if not activity.pathways and (
+                    activity.path is None or activity.path == ""
+                ):
+                    self.set_info_message(
+                        tr(
+                            f"No defined activity pathways or a"
+                            f" activity layer for the activity {activity.name}"
+                        ),
+                        level=Qgis.Critical,
+                    )
+                    self.log_message(
+                        f"No defined activity pathways or a "
+                        f"activity layer for the activity {activity.name}"
+                    )
+                    return False
+
+                for pathway in activity.pathways:
+                    if not (pathway in pathways):
+                        pathways.append(pathway)
+
+            if pathways is not None and len(pathways) > 0:
+                reprojected_pathways_directory = os.path.join(
+                    self.scenario_directory, "reprojected_pathways"
+                )
+
+                FileUtils.create_new_dir(reprojected_pathways_directory)
+
+                for pathway in pathways:
+                    pathway_layer = QgsRasterLayer(pathway.path, pathway.name)
+
+                    if self.processing_cancelled:
+                        return False
+                    if not pathway_layer.isValid():
+                        self.log_message(
+                            f"Pathway layer {pathway.name} is not valid, "
+                            f"skipping layer reprojection."
+                        )
+                        continue
+
+                    if pathway_layer.crs() == target_crs:
+                        self.log_message(
+                            f"Pathway layer {pathway.name} is already in the target CRS "
+                            f"{target_crs.authid()}, skipping layer reprojection."
+                        )
+                    else:
+                        self.log_message(
+                            f"Reprojecting {pathway.name} pathway layer to {target_crs.authid()}\n"
+                        )
+
+                        output_path = self.reproject_layer(
+                            pathway.path,
+                            target_crs,
+                            reprojected_pathways_directory,
+                            target_extent,
+                        )
+                        if output_path:
+                            pathway.path = output_path
+
+                    self.log_message(
+                        f"Reprojecting {len(pathway.priority_layers)} "
+                        f"priority weighting layers from pathway {pathway.name}\n"
+                    )
+
+                    if (
+                        pathway.priority_layers is not None
+                        and len(pathway.priority_layers) > 0
+                    ):
+                        reprojected_priority_directory = os.path.join(
+                            self.scenario_directory, "reprojected_priority_layers"
+                        )
+
+                        FileUtils.create_new_dir(reprojected_priority_directory)
+
+                        priority_layers = []
+                        for priority_layer in pathway.priority_layers:
+                            if priority_layer is None:
+                                continue
+
+                            priority_layer_settings = self.get_priority_layer(
+                                priority_layer.get("uuid")
+                            )
+                            if priority_layer_settings is None:
+                                continue
+
+                            priority_layer_path = priority_layer_settings.get("path")
+
+                            if not Path(priority_layer_path).exists():
+                                priority_layers.append(priority_layer)
+                                continue
+
+                            layer = QgsRasterLayer(
+                                priority_layer_path, f"{str(uuid.uuid4())[:4]}"
+                            )
+                            if not layer.isValid():
+                                self.log_message(
+                                    f"Priority layer {priority_layer.get('name')} "
+                                    f"from pathway {pathway.name} is not valid, "
+                                    f"skipping layer reprojection."
+                                )
+                                continue
+
+                            if layer.crs() == target_crs:
+                                self.log_message(
+                                    f"Priority layer {priority_layer.get('name')} "
+                                    f"from pathway {pathway.name} is already in the target CRS "
+                                    f"{target_crs.authid()}, skipping layer reprojection."
+                                )
+                            else:
+                                output_path = self.reproject_layer(
+                                    priority_layer_path,
+                                    target_crs,
+                                    reprojected_priority_directory,
+                                    target_extent,
+                                )
+                                if output_path:
+                                    priority_layer["path"] = output_path
+
+                            priority_layers.append(priority_layer)
+
+                        pathway.priority_layers = priority_layers
+
+        except Exception as e:
+            self.log_message(f"Problem reprojecting layers, {e} \n")
+            self.cancel_task(e)
+            return False
+
+        return True
 
     def run_activities_analysis(self, activities, extent, temporary_output=False):
         """Runs the required activity analysis on the passed
