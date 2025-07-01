@@ -490,6 +490,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def on_crs_changed(self):
         current_crs = self.crs_selector.crs()
+        self.message_bar.clearWidgets()
         if current_crs.isValid() and not current_crs.isGeographic():
             authid = current_crs.authid()
             settings_manager.set_value(Settings.SCENARIO_CRS, authid)
