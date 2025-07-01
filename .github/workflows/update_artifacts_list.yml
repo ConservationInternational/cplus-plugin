@@ -8,7 +8,7 @@ on:
   # Add these for testing
   push:
     branches:
-      - test-workflow-fix
+      - update-artifacts-list
   workflow_dispatch:  # Allows manual triggering
 
 jobs:
