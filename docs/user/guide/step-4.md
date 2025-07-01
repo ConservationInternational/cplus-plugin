@@ -66,9 +66,54 @@ The first step in creating the custom metrics table provides an 1️⃣ `example
 
 #### Step 2:
 
-* This step allow you to add 1️⃣ `Columns` and specify their corresponding 2️⃣ `Properties`.
+* This step allows you to define a metric profile by selecting a 1️⃣ `Profile`, then adding 2️⃣ `Columns` and specifying their corresponding 3️⃣ `Properties`. 
+* A metric profile represents a collection of columns grouped according to user-defined criteria - for example, by climate, finance, or forestation themes. The grouping options are entirely flexible, depending on how the user wishes to organize the columns and their associated properties. 
+* The primary benefit of profiles is that they enable users to configure column groupings and easily select which profiles to apply in different scenario analysis reports.
+* A `Default` profile is automatically created when the plugin is used for the first time.
 
 ![Activity Metrics Wizard 2](./img/step4-12.png)
+
+* Profiles
+    * Click on the drop-down menu to select the current profile.
+  
+    * Add Profile 
+
+        - Click on the ![Add Icon](./img/step4-13.png) icon to add a new profile. This will open a `Add New Profile` dialog box where you can enter the name of the profile.
+
+        - Enter the profile name and click on the `OK` button to add it to the list of profiles and set it as the current profile.
+
+            ![Set Profile Name](./img/add_new_profile.png)
+
+        - If the profile name already exists you will receive the following error.
+
+            ![Duplicate Profile Name](./img/duplicate_profile_name.png)
+
+    * Rename Profile
+      - Click on the ![Rename Icon](./img/edit.png) icon to rename the current profile. This will open a `Rename Profile` dialog box where you can enter the name of the profile.
+      
+      - Enter the profile name and click on the `OK` button to update the name.
+      
+          ![Rename Profile](./img/rename_profile.png)
+      
+      - If the profile name already exists you will receive the following error.
+            
+          ![Duplicate Profile ReName](./img/duplicate_profile_rename.png)
+      
+    * Copy Profile
+      - Click on the ![Copy Profile Icon](./img/mActionEditCopy.png) icon to copy the current profile. This will open a `Copy Profile` dialog which allows one to specify a new name for the copied profile.
+       
+      - Enter the name of the copied profile and click on the `OK` button to add it to the list of profiles and set it as the current profile. A `Copy` suffix will, by default, be appended to the name 
+      of the source profile.
+
+          ![Copy Profile Name](./img/copy_profile.png)
+
+      - If the profile name already exists you will receive the following error.
+
+          ![Duplicate Profile Name](./img/duplicate_profile_rename.png)
+      
+    * Delete Profile
+
+        - Click on the ![Remove Icon](./img/step4-16.png) icon to remove the current profile.
 
 * Columns
     * Add Column 
@@ -149,6 +194,18 @@ The first step in creating the custom metrics table provides an 1️⃣ `example
 This step allows you to review and save the metrics configuration to be used in the scenario analysis report. After verifying the 1️⃣ `metrics configuration`, click on the 2️⃣ `Finish` button to save the configuration.
 
 ![Activity Metrics Wizard 4](./img/step4-28.png)
+
+The profile specified in `Step 2` is set as the default for the scenario analysis report when the activity metrics table option is selected.
+
+## Metric Profile for the Scenario Analysis Report
+
+You can select the desired profile for the activity table in the scenario analysis report by using the dropdown menu as shown below:
+
+![Select Active Profile](./img/select_active_profile.png)
+
+Hovering over the metric builder button displays the currently active profile selected by the user.
+
+![Show Active Profile](./img/show_active_profile.png)
 
 ## Run Scenario
 
