@@ -128,7 +128,6 @@ class ScenarioSettings(Scenario):
             name=settings.value("name", None),
             description=settings.value("description", None),
             extent=[],
-            crs=settings.value("crs", None),
             activities=activities,
             priority_layer_groups=[],
             server_uuid=uuid.UUID(server_uuid) if server_uuid else None,
