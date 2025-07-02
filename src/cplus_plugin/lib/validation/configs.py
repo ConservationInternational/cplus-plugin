@@ -5,7 +5,8 @@ Configurations for validation rules.
 
 from ...models.validation import RuleConfiguration, ValidationCategory
 from ...utils import tr
-
+from ...conf import settings_manager, Settings
+from ...definitions.constants import NO_DATA_VALUE
 
 # Same CRS validation
 crs_validation_config = RuleConfiguration(
@@ -46,7 +47,9 @@ resolution_validation_config = RuleConfiguration(
 # NoData validation check
 no_data_validation_config = RuleConfiguration(
     ValidationCategory.ERROR,
-    tr("NoData value must be -9999"),
+    tr(
+        f"NoData value must be {settings_manager.get_value(Settings.NCS_NO_DATA_VALUE, NO_DATA_VALUE)}"
+    ),
     "NoData Value Check",
     tr("Use the 'Fill nodata' or 'Translate' tool to change the NoData value"),
 )
