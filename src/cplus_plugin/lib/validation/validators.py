@@ -553,6 +553,10 @@ class NoDataValueValidator(BaseRuleValidator):
         progress_increment = 100.0 / len(self.model_components)
         self._set_progress(progress)
 
+        analysis_nodata_value = settings_manager.get_value(
+            Settings.NCS_NO_DATA_VALUE, default=NO_DATA_VALUE, setting_type=float
+        )
+
         for model_component in self.model_components:
             if self.feedback.isCanceled():
                 return False
@@ -588,19 +592,20 @@ class NoDataValueValidator(BaseRuleValidator):
                         continue
                 else:
                     raster_provider = layer.dataProvider()
-                    if not raster_provider.sourceHasNoDataValue(self.BAND_NUMBER):
+                    if not raster_provider.sourceHasNoDataValue(1):
                         continue
 
                 if model_component.is_default_layer():
                     no_data_value = layer_metadata["nodata_value"]
                 else:
-                    no_data_value = raster_provider.sourceNoDataValue(self.BAND_NUMBER)
-                if no_data_value != NO_DATA_VALUE:
+                    no_data_value = raster_provider.sourceNoDataValue(1)
+                if no_data_value != analysis_nodata_value:
                     if no_data_value in no_data_definitions:
                         layers = no_data_definitions.get(no_data_value)
                         layers.append(model_component.name)
                     else:
                         no_data_definitions[no_data_value] = [model_component.name]
+                    status = False
 
             progress += progress_increment
             self._set_progress(progress)
@@ -609,18 +614,29 @@ class NoDataValueValidator(BaseRuleValidator):
             status = False
 
         summary = ""
+        recommendation_str = self._config.recommendation
         validate_info = []
         if not status:
             summary_tr = tr("Datasets have a NoData value different from")
-            summary = f"{summary_tr} {str(NO_DATA_VALUE)}"
+            summary = f"{summary_tr} {str(analysis_nodata_value)}"
+            if analysis_nodata_value is not None:
+                self._config.category = ValidationCategory.WARNING
+                recommendation_str = tr(
+                    f"""The NoData value of the layers will be adjusted to {analysis_nodata_value} defined in the settings"""
+                )
+            else:
+                self._config.category = ValidationCategory.ERROR
+                recommendation_str += tr(
+                    """ or specify the NoData value for analysis in the settings"""
+                )
             for no_data, layers in no_data_definitions.items():
                 validate_info.append((str(no_data), ", ".join(layers)))
         else:
             summary_tr = tr("Datasets have the same NoData value")
-            summary = f"{summary_tr} {str(NO_DATA_VALUE)}"
+            summary = f"{summary_tr} {str(analysis_nodata_value)}"
 
         self._result = RuleResult(
-            self._config, self._config.recommendation, summary, validate_info
+            self._config, recommendation_str, summary, validate_info
         )
 
         self._set_progress(100.0)
