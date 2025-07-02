@@ -373,8 +373,8 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         self.assertEqual(result_stat.maximumValue, 18.0)
 
         self.assertTrue(result_layer.isValid())
-        
- def test_scenario_layers_reprojection(self):
+
+    def test_scenario_layers_reprojection(self):
         """Test the reprojection of NCS pathways and priority layers"""
         pathway_layer_directory = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "data", "pathways", "layers"
@@ -484,7 +484,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             self.assertNotEqual(raster.extent(), test_layer.extent())
             os.remove(result)
 
- def test_scenario_replace_nodata_value(self):
+    def test_scenario_replace_nodata_value(self):
         """Test replacing nodata value functionality."""
         pathway_layer_directory = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "data", "pathways", "layers"
