@@ -306,7 +306,7 @@ class ScenarioAnalysisTask(QgsTask):
                 target_extent=extent_string,
                 target_crs=QgsCoordinateReferenceSystem(self.analysis_crs),
             )
-            
+
         # Replace no data value for the pathways and priority layers
         nodata_value = float(
             self.get_settings_value(
