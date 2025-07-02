@@ -48,7 +48,7 @@ from ...conf import (
     Settings,
 )
 from ...models.base import DataSourceType
-from ...definitions.constants import CPLUS_OPTIONS_KEY
+from ...definitions.constants import CPLUS_OPTIONS_KEY, NO_DATA_VALUE
 from ...definitions.defaults import (
     GENERAL_OPTIONS_TITLE,
     ICON_PATH,
@@ -711,6 +711,10 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             Settings.PATHWAY_SUITABILITY_INDEX, pathway_suitability_index
         )
 
+        # NoData value
+        no_data_value = self.nodata_value_box.value()
+        settings_manager.set_value(Settings.NCS_NO_DATA_VALUE, no_data_value)
+
         # Snapping settings saving
         settings_manager.set_value(
             Settings.SNAPPING_ENABLED, self.snapping_group_box.isChecked()
@@ -830,6 +834,12 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             Settings.PATHWAY_SUITABILITY_INDEX, default=0
         )
         self.suitability_index_box.setValue(float(pathway_suitability_index))
+
+        # NoData value
+        no_data_value = settings_manager.get_value(
+            Settings.NCS_NO_DATA_VALUE, default=NO_DATA_VALUE, setting_type=float
+        )
+        self.nodata_value_box.setValue(no_data_value)
 
         # Snapping settings
         self.snapping_group_box.setChecked(
