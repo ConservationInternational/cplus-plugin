@@ -27,10 +27,11 @@ from qgis.core import (
 from qgis.core import QgsTask
 
 from .conf import settings_manager, Settings
+from .definitions.constants import NO_DATA_VALUE
 from .definitions.defaults import (
     SCENARIO_OUTPUT_FILE_NAME,
 )
-from .models.base import ScenarioResult, SpatialExtent, Activity
+from .models.base import ScenarioResult, SpatialExtent, Activity, NcsPathway
 from .models.helpers import clone_activity
 from .resources import *
 from .utils import (
@@ -290,6 +291,17 @@ class ScenarioAnalysisTask(QgsTask):
                 extent_string,
             )
 
+        # Replace no data value for the pathways and priority layers
+        nodata_value = float(
+            self.get_settings_value(
+                Settings.NCS_NO_DATA_VALUE, default=NO_DATA_VALUE, setting_type=float
+            )
+        )
+        self.log_message(
+            f"Replacing nodata value for the pathways and priority layers to {nodata_value}"
+        )
+        self.run_pathways_replace_nodata(nodata_value=nodata_value)
+
         # Weight the pathways using the pathway suitability index
         # and priority group coefficients for the PWLs
         save_output = self.get_settings_value(
@@ -523,6 +535,166 @@ class ScenarioAnalysisTask(QgsTask):
             log(f"Problem replacing no data value from a snapping output, {e}")
 
         return False
+
+    def run_pathways_replace_nodata(self, nodata_value: float = -9999.0) -> bool:
+        """Replace the nodata value for activity pathways and priority layers.
+        :param nodata_value: The nodata value to replace in the pathways and priority layers
+        :type nodata_value: float
+        :returns: True if the task operation was successfully completed else False.
+        :rtype: bool
+        """
+        if self.processing_cancelled:
+            return False
+
+        self.set_status_message(
+            tr(
+                "Replacing the nodata value for the activity pathways and priority layers"
+            )
+        )
+
+        pathways: typing.List[NcsPathway] = []
+
+        try:
+            for activity in self.analysis_activities:
+                if not activity.pathways and (
+                    activity.path is None or activity.path == ""
+                ):
+                    self.set_info_message(
+                        tr(
+                            f"No defined activity pathways or "
+                            f" activity layers for the activity {activity.name}"
+                        ),
+                        level=Qgis.Critical,
+                    )
+                    self.log_message(
+                        f"No defined activity pathways or "
+                        f"activity layers for the activity {activity.name}"
+                    )
+                    return False
+
+                for pathway in activity.pathways:
+                    if not (pathway in pathways):
+                        pathways.append(pathway)
+
+            if pathways is not None and len(pathways) > 0:
+                replaced_nodata_pathways_directory = os.path.join(
+                    self.scenario_directory, "replaced_nodata_pathways"
+                )
+
+                FileUtils.create_new_dir(replaced_nodata_pathways_directory)
+
+                for pathway in pathways:
+                    pathway_layer = QgsRasterLayer(pathway.path, pathway.name)
+
+                    if self.processing_cancelled:
+                        return False
+                    if not pathway_layer.isValid():
+                        self.log_message(
+                            f"Pathway layer {pathway.name} is not valid, "
+                            f"skipping replacing nodata value for layer."
+                        )
+                        continue
+                    raster_provider = pathway_layer.dataProvider()
+                    raster_no_data_value = raster_provider.sourceNoDataValue(1)
+                    if raster_no_data_value == nodata_value:
+                        self.log_message(
+                            f"Pathway layer {pathway.name} already has the nodata value "
+                            f"{nodata_value}, skipping replacing nodata value for layer."
+                        )
+                    else:
+                        self.log_message(
+                            f"Replacing nodata value for {pathway.name} pathway layer "
+                            f"to {nodata_value}\n"
+                        )
+
+                        output_file = os.path.join(
+                            replaced_nodata_pathways_directory,
+                            f"{Path(pathway.path).stem}_{str(self.scenario.uuid)[:4]}.tif",
+                        )
+
+                        result = self.replace_nodata(
+                            pathway.path, output_file, nodata_value
+                        )
+                        if result:
+                            pathway.path = output_file
+
+                    self.log_message(
+                        f"Replacing nodata value for {len(pathway.priority_layers)} "
+                        f"priority weighting layers from pathway {pathway.name}\n"
+                    )
+
+                    if (
+                        pathway.priority_layers is not None
+                        and len(pathway.priority_layers) > 0
+                    ):
+                        replaced_nodata_priority_directory = os.path.join(
+                            self.scenario_directory, "replaced_nodata_priority_layers"
+                        )
+
+                        FileUtils.create_new_dir(replaced_nodata_priority_directory)
+
+                        priority_layers = []
+                        for priority_layer in pathway.priority_layers:
+                            if priority_layer is None:
+                                continue
+
+                            priority_layer_settings = self.get_priority_layer(
+                                priority_layer.get("uuid")
+                            )
+                            if priority_layer_settings is None:
+                                continue
+
+                            priority_layer_path = priority_layer_settings.get("path")
+
+                            if not Path(priority_layer_path).exists():
+                                priority_layers.append(priority_layer)
+                                continue
+
+                            layer = QgsRasterLayer(
+                                priority_layer_path, f"{str(uuid.uuid4())[:4]}"
+                            )
+                            if not layer.isValid():
+                                self.log_message(
+                                    f"Priority layer {priority_layer.get('name')} "
+                                    f"from pathway {pathway.name} is not valid, "
+                                    f"skipping replacing nodata value for layer."
+                                )
+                                continue
+
+                            raster_provider = layer.dataProvider()
+                            raster_no_data_value = raster_provider.sourceNoDataValue(1)
+                            if raster_no_data_value == nodata_value:
+                                self.log_message(
+                                    f"Priority layer {priority_layer.get('name')} already has the nodata value "
+                                    f"{nodata_value}, skipping replacing nodata value for layer."
+                                )
+                            else:
+                                self.log_message(
+                                    f"Replacing nodata value for {pathway.name} priority layer "
+                                    f"to {nodata_value}\n"
+                                )
+
+                                output_file = os.path.join(
+                                    replaced_nodata_priority_directory,
+                                    f"{Path(pathway.path).stem}_{str(self.scenario.uuid)[:4]}.tif",
+                                )
+
+                                result = self.replace_nodata(
+                                    priority_layer_path, output_file, nodata_value
+                                )
+                                if result:
+                                    priority_layer["path"] = output_file
+
+                            priority_layers.append(priority_layer)
+
+                        pathway.priority_layers = priority_layers
+
+        except Exception as e:
+            self.log_message(f"Problem replacing nodata value for layers, {e} \n")
+            self.cancel_task(e)
+            return False
+
+        return True
 
     def snap_analysis_data(self, activities, extent):
         """Snaps the passed activities pathways, carbon layers and priority layers
