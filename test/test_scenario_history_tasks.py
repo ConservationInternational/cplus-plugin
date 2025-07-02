@@ -134,7 +134,9 @@ class TestFetchScenarioOutputTask(unittest.TestCase):
         )
         analysis_scenario_name = scenario.name
         analysis_scenario_description = scenario.description
-        analysis_extent = SpatialExtent(bbox=scenario.extent.bbox)
+        analysis_extent = SpatialExtent(
+            bbox=scenario.extent.bbox, crs=scenario.extent.crs
+        )
         analysis_activities = scenario.activities
         analysis_priority_layers_groups = scenario.priority_layer_groups
         task = FetchScenarioOutputTask(
@@ -175,7 +177,9 @@ class TestFetchScenarioOutputTask(unittest.TestCase):
         )
         analysis_scenario_name = scenario.name
         analysis_scenario_description = scenario.description
-        analysis_extent = SpatialExtent(bbox=scenario.extent.bbox)
+        analysis_extent = SpatialExtent(
+            bbox=scenario.extent.bbox, crs=scenario.extent.crs
+        )
         analysis_activities = scenario.activities
         analysis_priority_layers_groups = scenario.priority_layer_groups
         task = FetchScenarioOutputTask(

@@ -219,7 +219,8 @@ def get_test_scenario() -> Scenario:
     """Returns the test Scenario object."""
     extent_list = PILOT_AREA_EXTENT["coordinates"]
     sp_extent = SpatialExtent(
-        bbox=[extent_list[3], extent_list[2], extent_list[1], extent_list[0]]
+        bbox=[extent_list[3], extent_list[2], extent_list[1], extent_list[0]],
+        crs="EPSG:4326",
     )
     return Scenario(
         UUID(SCENARIO_UUID_STR),
