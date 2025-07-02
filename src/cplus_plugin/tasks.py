@@ -1024,7 +1024,9 @@ class ScenarioAnalysisTask(QgsTask):
                     "IGNORE_NODATA": True,
                     "INPUT": layers,
                     "EXTENT": extent,
-                    "OUTPUT_NODATA_VALUE": -9999,
+                    "OUTPUT_NODATA_VALUE": settings_manager.get_value(
+                        Settings.NCS_NO_DATA_VALUE, NO_DATA_VALUE
+                    ),
                     "REFERENCE_LAYER": reference_layer,
                     "STATISTIC": 0,  # Sum
                     "OUTPUT": output,
@@ -1193,7 +1195,9 @@ class ScenarioAnalysisTask(QgsTask):
                     "DESTINATION_CRS": activity_layer.crs(),
                     "TARGET_EXTENT": extent,
                     "OUTPUT": output,
-                    "NO_DATA": -9999,
+                    "NO_DATA": settings_manager.get_value(
+                        Settings.NCS_NO_DATA_VALUE, NO_DATA_VALUE
+                    ),
                 }
 
                 self.log_message(
@@ -1381,7 +1385,9 @@ class ScenarioAnalysisTask(QgsTask):
                     "DESTINATION_CRS": activity_layer.crs(),
                     "TARGET_EXTENT": extent,
                     "OUTPUT": output,
-                    "NO_DATA": -9999,
+                    "NO_DATA": settings_manager.get_value(
+                        Settings.NCS_NO_DATA_VALUE, NO_DATA_VALUE
+                    ),
                 }
 
                 self.log_message(
@@ -1685,7 +1691,7 @@ class ScenarioAnalysisTask(QgsTask):
                     self.cancel_task()
                     return False
 
-                # Step 6. Run sum statistics with ignore no data values set to false and no data value of -9999
+                # Step 6. Run sum statistics with ignore no data values set to false and no data value
                 results = processing.run(
                     "native:cellstatistics",
                     {
@@ -1693,7 +1699,9 @@ class ScenarioAnalysisTask(QgsTask):
                         "STATISTIC": 0,
                         "IGNORE_NODATA": False,
                         "REFERENCE_LAYER": sieve_output_updated,
-                        "OUTPUT_NODATA_VALUE": -9999,
+                        "OUTPUT_NODATA_VALUE": settings_manager.get_value(
+                            Settings.NCS_NO_DATA_VALUE, NO_DATA_VALUE
+                        ),
                         "OUTPUT": output,
                     },
                     context=self.processing_context,
@@ -2109,7 +2117,9 @@ class ScenarioAnalysisTask(QgsTask):
                 "IGNORE_NODATA": True,
                 "INPUT_RASTERS": sources,
                 "EXTENT": extent_string,
-                "OUTPUT_NODATA_VALUE": -9999,
+                "OUTPUT_NODATA_VALUE": settings_manager.get_value(
+                    Settings.NCS_NO_DATA_VALUE, NO_DATA_VALUE
+                ),
                 "REFERENCE_LAYER": list(layers.values())[0]
                 if len(layers) >= 1
                 else None,
