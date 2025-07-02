@@ -12,13 +12,13 @@ import datetime
 
 from processing.core.Processing import Processing
 
-from qgis.core import Qgis, QgsRasterLayer, QgsVectorLayer, QgsWkbTypes
+from qgis.core import QgsRasterLayer
 
 from cplus_plugin.conf import settings_manager, Settings
 
 from cplus_plugin.tasks import ScenarioAnalysisTask
-from cplus_plugin.models.base import Scenario, NcsPathway, Activity
 from cplus_plugin.utils import FileUtils
+from cplus_plugin.models.base import Scenario, NcsPathway, Activity, SpatialExtent
 
 
 class ScenarioAnalysisTaskTest(unittest.TestCase):
@@ -72,6 +72,16 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         test_extent = test_layer.extent()
 
+        spatial_extent = SpatialExtent(
+            bbox=[
+                test_extent.xMinimum(),
+                test_extent.xMaximum(),
+                test_extent.yMinimum(),
+                test_extent.yMaximum(),
+            ],
+            crs=test_layer.crs().authid(),
+        )
+
         test_activity = Activity(
             uuid=uuid.uuid4(),
             name="test_activity",
@@ -84,7 +94,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             name="Scenario",
             description="Scenario description",
             activities=[test_activity],
-            extent=test_extent,
+            extent=spatial_extent,
             priority_layer_groups=[],
         )
 
@@ -177,6 +187,16 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         test_extent = first_test_layer.extent()
 
+        spatial_extent = SpatialExtent(
+            bbox=[
+                test_extent.xMinimum(),
+                test_extent.xMaximum(),
+                test_extent.yMinimum(),
+                test_extent.yMaximum(),
+            ],
+            crs=first_test_layer.crs().authid(),
+        )
+
         test_activity = Activity(
             uuid=uuid.uuid4(),
             name="test_activity",
@@ -189,7 +209,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             name="Scenario",
             description="Scenario description",
             activities=[test_activity],
-            extent=test_extent,
+            extent=spatial_extent,
             priority_layer_groups=[],
         )
 
@@ -278,12 +298,22 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         test_extent = activity_layer.extent()
 
+        spatial_extent = SpatialExtent(
+            bbox=[
+                test_extent.xMinimum(),
+                test_extent.xMaximum(),
+                test_extent.yMinimum(),
+                test_extent.yMaximum(),
+            ],
+            crs=activity_layer.crs().authid(),
+        )
+
         scenario = Scenario(
             uuid=uuid.uuid4(),
             name="Scenario",
             description="Scenario description",
             activities=[test_activity],
-            extent=test_extent,
+            extent=spatial_extent,
             priority_layer_groups=[],
         )
 
@@ -343,8 +373,118 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         self.assertEqual(result_stat.maximumValue, 18.0)
 
         self.assertTrue(result_layer.isValid())
+        
+ def test_scenario_layers_reprojection(self):
+        """Test the reprojection of NCS pathways and priority layers"""
+        pathway_layer_directory = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "data", "pathways", "layers"
+        )
 
-    def test_scenario_replace_nodata_value(self):
+        pathway_layer_path = os.path.join(pathway_layer_directory, "test_pathway_1.tif")
+
+        priority_layers_directory = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "data", "priority", "layers"
+        )
+
+        priority_layer_path_1 = os.path.join(
+            priority_layers_directory, "test_priority_1.tif"
+        )
+
+        test_priority_group = {
+            "uuid": "a4f76e6c-9f83-4a9c-b700-fb1ae04860a4",
+            "name": "test_priority_group",
+            "description": "test_priority_group_description",
+            "value": 1,
+        }
+
+        priority_layer_1 = {
+            "uuid": "c931282f-db2d-4644-9786-6720b3ab206a",
+            "name": "test_priority_layer",
+            "description": "test_priority_layer_description",
+            "selected": False,
+            "path": priority_layer_path_1,
+            "groups": [test_priority_group],
+        }
+
+        settings_manager.save_priority_group(test_priority_group)
+        settings_manager.save_priority_layer(priority_layer_1)
+
+        test_pathway = NcsPathway(
+            uuid=uuid.uuid4(),
+            name="test_pathway",
+            description="test_description",
+            path=pathway_layer_path,
+            priority_layers=[],
+        )
+
+        test_layer = QgsRasterLayer(test_pathway.path, test_pathway.name)
+
+        test_extent = test_layer.extent()
+
+        spatial_extent = SpatialExtent(
+            bbox=[
+                test_extent.xMinimum(),
+                test_extent.xMaximum(),
+                test_extent.yMinimum(),
+                test_extent.yMaximum(),
+            ],
+            crs=test_layer.crs().authid(),
+        )
+
+        test_activity = Activity(
+            uuid=uuid.uuid4(),
+            name="test_activity",
+            description="test_description",
+            pathways=[test_pathway],
+        )
+
+        scenario = Scenario(
+            uuid=uuid.uuid4(),
+            name="Scenario",
+            description="Scenario description",
+            activities=[test_activity],
+            extent=spatial_extent,
+            priority_layer_groups=[],
+        )
+
+        analysis_task = ScenarioAnalysisTask(
+            "test_scenario_layers_reprojection",
+            "test_scenario_pathways_reprojection_description",
+            [test_activity],
+            [],
+            test_layer.extent(),
+            scenario,
+        )
+
+        base_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "data",
+            "pathways",
+        )
+
+        scenario_directory = os.path.join(
+            f"{base_dir}",
+            f'scenario_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+            f"_{str(uuid.uuid4())[:4]}",
+        )
+
+        analysis_task.scenario_directory = scenario_directory
+
+        result = analysis_task.reproject_layer(
+            input_path=test_pathway.path, target_crs="EPSG:3857"
+        )
+
+        self.assertTrue(result)
+
+        self.assertTrue(os.path.exists(result))
+        if os.path.exists(result):
+            raster = QgsRasterLayer(result, "reprojected_layer")
+            self.assertTrue(raster.isValid())
+            self.assertEqual(raster.crs().authid(), "EPSG:3857")
+            self.assertNotEqual(raster.extent(), test_layer.extent())
+            os.remove(result)
+
+ def test_scenario_replace_nodata_value(self):
         """Test replacing nodata value functionality."""
         pathway_layer_directory = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "data", "pathways", "layers"

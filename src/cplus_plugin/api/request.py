@@ -1121,11 +1121,13 @@ class CplusApiRequest:
         else:
             extent = detail.get("extent", [])
 
+        analysis_crs = detail.get("analysis_crs", None)
+
         scenario = Scenario(
             uuid=uuid.uuid4(),
             name=detail.get("scenario_name", ""),
             description=detail.get("scenario_desc", ""),
-            extent=SpatialExtent(bbox=extent),
+            extent=SpatialExtent(bbox=extent, crs=analysis_crs),
             server_uuid=uuid.UUID(scenario_json["uuid"]),
             activities=[
                 Activity.from_dict(activity) for activity in detail["activities"]
@@ -1162,12 +1164,15 @@ class CplusApiRequest:
                 extent = detail.get("extent_project", [])
             else:
                 extent = detail.get("extent", [])
+
+            analysis_crs = detail.get("analysis_crs", None)
+
             scenario_results.append(
                 Scenario(
                     uuid=uuid.uuid4(),
                     name=detail.get("scenario_name", ""),
                     description=detail.get("scenario_desc", ""),
-                    extent=SpatialExtent(bbox=extent),
+                    extent=SpatialExtent(bbox=extent, crs=analysis_crs),
                     server_uuid=uuid.UUID(item["uuid"]),
                     activities=[
                         Activity.from_dict(activity)

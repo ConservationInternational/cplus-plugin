@@ -148,7 +148,7 @@ class FetchScenarioOutputTask(ScenarioAnalysisTaskApiClient):
             analysis_priority_layers_groups,
             analysis_extent,
             scenario,
-            SpatialExtent(scenario.extent.bbox),
+            SpatialExtent(bbox=scenario.extent.bbox, crs=scenario.extent.crs),
         )
         self.request = CplusApiRequest()
         self.status_pooling = None

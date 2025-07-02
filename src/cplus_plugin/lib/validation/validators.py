@@ -8,7 +8,13 @@ from pathlib import Path
 import traceback
 import typing
 
-from qgis.core import QgsRasterBandStats, QgsRasterLayer, QgsTask, QgsUnitTypes
+from qgis.core import (
+    QgsRasterBandStats,
+    QgsRasterLayer,
+    QgsTask,
+    QgsUnitTypes,
+    QgsCoordinateReferenceSystem,
+)
 
 from ...definitions.constants import NO_DATA_VALUE
 
@@ -353,15 +359,35 @@ class CrsValidator(BaseRuleValidator):
             for crs_str, layers in crs_definitions.items():
                 validate_info.append((crs_str, ", ".join(layers)))
 
-            if snapping_enabled and snap_layer_path and Path(snap_layer_path).exists():
+            analysis_crs = None
+            saved_crs_str = settings_manager.get_value(
+                Settings.SCENARIO_CRS, default=None, setting_type=str
+            )
+            can_use_saved_crs = False
+            if saved_crs_str is not None:
+                analysis_crs = QgsCoordinateReferenceSystem(saved_crs_str)
+                if analysis_crs.isValid() and not analysis_crs.isGeographic():
+                    can_use_saved_crs = True
+
+            if can_use_saved_crs is False:
+                if (
+                    snapping_enabled
+                    and snap_layer_path
+                    and Path(snap_layer_path).exists()
+                ):
+                    self._config.category = ValidationCategory.WARNING
+                    recommendation_str += tr(
+                        " or the datasets will be reprojected to match the CRS of the reference layer"
+                    )
+                else:
+                    self._config.category = ValidationCategory.ERROR
+                    recommendation_str += tr(
+                        " or specify a scenario CRS by selecting it in the first step"
+                    )
+            else:
                 self._config.category = ValidationCategory.WARNING
                 recommendation_str += tr(
-                    " or the datasets will be reprojected to match the CRS of the reference layer"
-                )
-            else:
-                self._config.category = ValidationCategory.ERROR
-                recommendation_str += tr(
-                    " or specify a reference layer by selecting it through the snapping option in the settings"
+                    f" or the datasets will be reprojected to match the scenario CRS ({saved_crs_str})"
                 )
         else:
             summary_tr = tr("All datasets have the same CRS")
@@ -447,17 +473,32 @@ class ProjectedCrsValidator(BaseRuleValidator):
 
         recommendation_str = self._config.recommendation
         if not status:
-            if snapping_enabled and snap_layer_path:
+            analysis_crs = None
+            saved_crs_str = settings_manager.get_value(
+                Settings.SCENARIO_CRS, default=None, setting_type=str
+            )
+            can_use_saved_crs = False
+            if saved_crs_str is not None:
+                analysis_crs = QgsCoordinateReferenceSystem(saved_crs_str)
+                if analysis_crs.isValid() and not analysis_crs.isGeographic():
+                    can_use_saved_crs = True
+
+            if can_use_saved_crs is False:
+                if snapping_enabled and snap_layer_path:
+                    self._config.category = ValidationCategory.WARNING
+                    recommendation_str += tr(
+                        " or the datasets will be reprojected to match the CRS of the reference layer"
+                    )
+                else:
+                    self._config.category = ValidationCategory.ERROR
+                    recommendation_str += tr(
+                        " or specify a scenario CRS by selecting it in the first step"
+                    )
+            else:
                 self._config.category = ValidationCategory.WARNING
                 recommendation_str += tr(
-                    " or the datasets will be reprojected to match the CRS of the reference layer"
+                    f" or the datasets will be reprojected to match the scenario CRS ({saved_crs_str})"
                 )
-            else:
-                self._config.category = ValidationCategory.ERROR
-                recommendation_str += tr(
-                    " or specify a reference layer by selecting it through the snapping option in the settings"
-                )
-
         self._result = RuleResult(
             self._config, recommendation_str, summary, validate_info
         )
