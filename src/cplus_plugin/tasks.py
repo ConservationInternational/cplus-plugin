@@ -686,7 +686,7 @@ class ScenarioAnalysisTask(QgsTask):
                                 )
                             else:
                                 self.log_message(
-                                    f"Replacing nodata value for {pathway.name} priority layer "
+                                    f"Replacing nodata value for {priority_layer.get('name')} priority layer "
                                     f"to {nodata_value}\n"
                                 )
 
