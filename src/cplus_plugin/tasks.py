@@ -654,6 +654,9 @@ class ScenarioAnalysisTask(QgsTask):
                             if priority_layer is None:
                                 continue
 
+                            if self.processing_cancelled:
+                                return False
+
                             priority_layer_settings = self.get_priority_layer(
                                 priority_layer.get("uuid")
                             )
