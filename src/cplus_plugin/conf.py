@@ -196,6 +196,9 @@ class Settings(enum.Enum):
     # Pathway suitability index value
     PATHWAY_SUITABILITY_INDEX = "pathway_suitability_index"
 
+    # NoData value
+    NCS_NO_DATA_VALUE = "ncs_no_data_value"
+
     # Snapping values
     SNAPPING_ENABLED = "snapping_enabled"
     SNAP_LAYER = "snap_layer"

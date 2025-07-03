@@ -18,8 +18,9 @@ from qgis.core import (
 )
 from qgis.PyQt import QtCore
 
-from .base import ApiRequestStatus
 from ..conf import settings_manager, Settings
+from ..definitions.constants import NO_DATA_VALUE
+from .base import ApiRequestStatus
 from ..models.helpers import extent_to_url_param
 from ..utils import (
     log,
@@ -169,7 +170,12 @@ class CreateUpdateDefaultLayerTask(QgsTask):
         # Attempt to compress the file before upload
         if get_layer_type(self.file_path) == 0:
             self.set_status_message(f"Compressing the file.....{self.file_path}")
-            tmp_file = compress_raster(self.file_path, nodata_value=-9999.0)
+            tmp_file = compress_raster(
+                self.file_path,
+                nodata_value=settings_manager.get_value(
+                    Settings.NCS_NO_DATA_VALUE, NO_DATA_VALUE
+                ),
+            )
             if tmp_file:
                 self.log_message(
                     f"""Compression completed...... from {convert_size(os.stat(self.file_path).st_size)} 

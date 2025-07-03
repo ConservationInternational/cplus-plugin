@@ -18,6 +18,7 @@ from ..conf import settings_manager, Settings
 from ..models.base import Activity, NcsPathway, Scenario
 from ..tasks import ScenarioAnalysisTask
 from ..utils import FileUtils, CustomJsonEncoder, todict
+from ..definitions.constants import NO_DATA_VALUE
 
 
 def clean_filename(filename):
@@ -638,6 +639,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
                 json.dumps(old_scenario_dict["activities"], cls=CustomJsonEncoder)
             ),
             "extent_project": self.extent_box.bbox,
+            "nodata_value": settings_manager.get_value(
+                Settings.NCS_NO_DATA_VALUE, NO_DATA_VALUE
+            ),
         }
 
     def __execute_scenario_analysis(self) -> None:
