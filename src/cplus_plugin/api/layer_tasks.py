@@ -3,16 +3,25 @@
  Plugin tasks related to the layer
 """
 
+from datetime import datetime
 import os
 import json
 import traceback
 import typing
 
-from qgis.core import Qgis, QgsTask, QgsProcessingFeedback, QgsProcessingContext
+from qgis.core import (
+    QgsRectangle,
+    QgsTask,
+    QgsProcessingFeedback,
+    QgsProcessingContext,
+    QgsFileDownloader,
+)
 from qgis.PyQt import QtCore
 
 from ..conf import settings_manager, Settings
 from ..definitions.constants import NO_DATA_VALUE
+from .base import ApiRequestStatus
+from ..models.helpers import extent_to_url_param
 from ..utils import (
     log,
     tr,
@@ -22,7 +31,7 @@ from ..utils import (
     get_layer_type,
     convert_size,
 )
-from .request import CplusApiRequest
+from .request import CplusApiRequest, CplusApiUrl
 
 
 class FetchDefaultLayerTask(QgsTask):
@@ -459,3 +468,250 @@ class CreateUpdateDefaultLayerTask(QgsTask):
                     info=False,
                 )
             return
+
+
+class DefaultPriorityLayerDownloadTask(QgsTask):
+    """Task for downloading the default PWL from the
+    online server.
+
+    The required information include download URL, file path for saving
+    the downloaded file and extents for clipping the dataset.
+    """
+
+    status_message_changed = QtCore.pyqtSignal(ApiRequestStatus, str)
+    error_occurred = QtCore.pyqtSignal()
+    canceled = QtCore.pyqtSignal()
+    completed = QtCore.pyqtSignal(str, str)
+    started = QtCore.pyqtSignal()
+    exited = QtCore.pyqtSignal()
+
+    def __init__(self, priority_layer, save_file_path):
+        super().__init__(tr("Downloading default priority layer"))
+        self._downloader = None
+        self._event_loop = None
+        self._errors = None
+        self._exited = False
+
+        self.priority_layer = priority_layer
+        self.save_file_path = save_file_path
+
+        self.cplus_api_url = CplusApiUrl()
+
+    @property
+    def errors(self) -> typing.List[str]:
+        """Gets any errors encountered during the download process.
+
+        :returns: Download errors.
+        :rtype: typing.List[str]
+        """
+        return [] if self._errors is None else self._errors
+
+    @property
+    def has_exited(self) -> bool:
+        """Indicates whether the downloader has exited.
+
+        :returns: True if the downloader exited, else False.
+        :rtype: bool
+        """
+        return self._exited
+
+    def cancel(self):
+        """Cancel the download process."""
+        if self._downloader:
+            self._downloader.cancelDownload()
+            self._update_download_status(ApiRequestStatus.CANCELED, "Download canceled")
+            self.disconnect_receivers()
+
+        super().cancel()
+
+        if self._event_loop:
+            self._event_loop.quit()
+
+        log("Downloading priority layer task canceled.")
+
+    def _on_error_occurred(self, error_messages: typing.List[str]):
+        """Slot raised when the downloader encounters an error.
+
+        :param error_messages: Error messages.
+        :type error_messages: typing.List[str]
+        """
+        self._errors = error_messages
+
+        err_msg = ", ".join(error_messages)
+        log(f"Error in downloading priority layer dataset: {err_msg}", info=False)
+
+        self._update_download_status(
+            ApiRequestStatus.ERROR, tr("Download error. See logs for details.")
+        )
+
+        self._event_loop.quit()
+
+        self.error_occurred.emit()
+
+    def _on_download_canceled(self):
+        """Slot raised when the download has been canceled."""
+        log(f"Download of priority layer {self.priority_layer.get('name')} canceled.")
+
+        self._event_loop.quit()
+
+        self.canceled.emit()
+
+    def _on_download_exited(self):
+        """Slot raised when the download has exited."""
+        self._event_loop.quit()
+
+        self._exited = True
+
+        self.exited.emit()
+
+    def _on_download_completed(self, url: QtCore.QUrl):
+        """Slot raised when the download is complete.
+
+        :param url: Url of the file resource.
+        :type url: QtCore.QUrl
+        """
+        completion_datetime_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        log(
+            f"Download of {self.priority_layer.get('name')} successfully completed "
+            f"on {completion_datetime_str}."
+        )
+
+        self._update_download_status(
+            ApiRequestStatus.COMPLETED, tr("Download successful")
+        )
+
+        self._event_loop.quit()
+
+        self._successfully_completed = True
+
+        self.completed.emit(self.priority_layer.get("name"), self.save_file_path)
+
+    def _on_progress_changed(self, received: int, total: int):
+        """Slot raised indicating progress made by the downloader.
+
+        :param received: Bytes received.
+        :type received: int
+
+        :param total: Total size of the file in bytes.
+        :type total: int
+        """
+        total_float = float(total)
+        if total_float == 0.0:
+            self.setProgress(total_float)
+        else:
+            self.setProgress(received / total_float * 100)
+
+    def _update_download_status(self, status: ApiRequestStatus, description: str):
+        """Updates the settings with the online download status.
+
+        :param status: Download status to save.
+        :type status: ApiRequestStatus
+
+        :param description: Brief description of the status.
+        :type description: str
+        """
+        self.status_message_changed.emit(status, description)
+
+    def disconnect_receivers(self):
+        """Disconnects all custom signals related to the downloader. This is
+        recommended prior to canceling the task.
+        """
+        self._downloader.downloadError.disconnect(self._on_error_occurred)
+        self._downloader.downloadCanceled.disconnect(self._on_download_canceled)
+        self._downloader.downloadProgress.disconnect(self._on_progress_changed)
+        self._downloader.downloadCompleted.disconnect(self._on_download_completed)
+        self._downloader.downloadExited.disconnect(self._on_download_exited)
+
+    def run(self) -> bool:
+        """Initiates the download of default priority layer process and
+        returns a result indicating whether the process succeeded or failed.
+
+        :returns: True if the download process succeeded or False it if
+        failed.
+        :rtype: bool
+        """
+        if self.isCanceled():
+            return False
+
+        # Get extents, URL and local path
+        extent = settings_manager.get_value(Settings.SCENARIO_EXTENT, default=None)
+        if extent is None:
+            log(
+                f"Scenario extent not defined for downloading {self.priority_layer.get('name')}.",
+                info=False,
+            )
+            return False
+
+        if len(extent) < 4:
+            log(
+                "Definition of scenario extent is incorrect. Consists of "
+                "less than 4 segments.",
+                info=False,
+            )
+            return False
+
+        extent_rectangle = QgsRectangle(
+            float(extent[0]), float(extent[2]), float(extent[1]), float(extent[3])
+        )
+        url_bbox_part = extent_to_url_param(extent_rectangle)
+        if not url_bbox_part:
+            log(
+                "Unable to create the bbox query part of the default "
+                "priotity layer download URL.",
+                info=False,
+            )
+            return False
+
+        download_url_path = self.cplus_api_url.priority_layer_download(
+            self.priority_layer.get("layer_uuid")
+        )
+        if not download_url_path:
+            log(
+                f"Source URL for priority layer {self.priority_layer.get('name')} not found.",
+                info=False,
+            )
+            return False
+
+        full_download_url = QtCore.QUrl(download_url_path)
+        full_download_url.setQuery(url_bbox_part)
+
+        if not self.save_file_path:
+            log(
+                "Save location for priority layer not specified.",
+                info=False,
+            )
+            return False
+
+        # Use to block downloader until it completes or encounters an error
+        self._event_loop = QtCore.QEventLoop(self)
+
+        self._downloader = QgsFileDownloader(
+            full_download_url, self.save_file_path, delayStart=True
+        )
+        self._downloader.downloadError.connect(self._on_error_occurred)
+        self._downloader.downloadCanceled.connect(self._on_download_canceled)
+        self._downloader.downloadProgress.connect(self._on_progress_changed)
+        self._downloader.downloadCompleted.connect(self._on_download_completed)
+        self._downloader.downloadExited.connect(self._on_download_exited)
+
+        self._update_download_status(
+            ApiRequestStatus.NOT_STARTED, tr("Download not started")
+        )
+
+        self._downloader.startDownload()
+
+        self.started.emit()
+
+        self._update_download_status(
+            ApiRequestStatus.IN_PROGRESS, tr("Download ongoing")
+        )
+
+        log(
+            f"Started download of {self.priority_layer.get('name')} - {full_download_url.toString()} - "
+            f"on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
+
+        self._event_loop.exec_()
+
+        return True

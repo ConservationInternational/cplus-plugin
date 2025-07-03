@@ -42,7 +42,7 @@ from ...api.carbon import (
     start_irrecoverable_carbon_download,
     get_downloader_task,
 )
-from ...api.layer_tasks import DeleteDefaultLayerTask
+from ...api.layer_tasks import DeleteDefaultLayerTask, DefaultPriorityLayerDownloadTask
 from ...conf import (
     settings_manager,
     Settings,
@@ -639,8 +639,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         if layer is not None:
             valid, validation_info = self.validate_snapping_layer(layer)
             if not valid:
-                self.message_bar.pushMessage(
-                    "CPLUS - Warning",
+                self.show_message(
                     f"{tr(validation_info)}: {layer}",
                     level=qgis.core.Qgis.MessageLevel.Warning,
                 )
@@ -744,11 +743,11 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
                     )
                     settings_manager.set_value(Settings.SNAP_LAYER, snap_layer_path)
                 else:
-                    self.message_bar.pushMessage(
-                        "CPLUS - Warning",
+                    self.show_message(
                         f"{tr(validation_info)}: {snap_layer_path}",
                         level=qgis.core.Qgis.MessageLevel.Warning,
                     )
+                    iface.messageBar().clearWidgets()
                     iface.messageBar().pushMessage(
                         "CPLUS - Warning",
                         f"{tr(validation_info)}: {snap_layer_path}",
@@ -937,6 +936,21 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.validate_current_irrecoverable_data_source()
 
         self.reload_irrecoverable_carbon_download_status()
+
+    def show_message(self, message, level=qgis.core.Qgis.Info, duration: int = 0):
+        """Shows message on the main widget message bar.
+
+        :param message: Text message
+        :type message: str
+
+        :param level: Message level type
+        :type level: Qgis.MessageLevel
+
+        :param duration: Duration of the shown message
+        :type level: int
+        """
+        self.message_bar.clearWidgets()
+        self.message_bar.pushMessage(message, level=level, duration=duration)
 
     def reload_irrecoverable_carbon_download_status(self):
         """Fetch the latest download status of the irrecoverable carbon
@@ -1164,7 +1178,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         if self.lst_mask_layers.findItems(mask_path, QtCore.Qt.MatchExactly):
             error_tr = tr("The selected mask layer already exists.")
-            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            self.show_message(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return
 
         self.lst_mask_layers.addItem(item)
@@ -1178,7 +1192,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         item = self.lst_mask_layers.currentItem()
         if not item:
             error_tr = tr("Select a mask layer first.")
-            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            self.show_message(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return
         mask_path = self._show_mask_path_selector(item.data(QtCore.Qt.DisplayRole))
         if not mask_path:
@@ -1186,7 +1200,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         if self.lst_mask_layers.findItems(mask_path, QtCore.Qt.MatchExactly):
             error_tr = tr("The selected mask layer already exists.")
-            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            self.show_message(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return
 
         item.setData(QtCore.Qt.DisplayRole, mask_path)
@@ -1196,7 +1210,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         item = self.lst_mask_layers.currentItem()
         if not item:
             error_tr = tr("Select the target mask layer first, before removing it.")
-            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            self.show_message(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return
 
         reply = QMessageBox.warning(
@@ -1273,6 +1287,25 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             + 20
         )
 
+    def get_pwl_downloader_task(
+        self,
+    ) -> typing.Optional[DefaultPriorityLayerDownloadTask]:
+        """Gets the priority layer task downloader in the QgsTaskManager.
+
+        :returns: The priority layer task downloader in the QgsTaskManager
+        or None if not found.
+        :rtype: DefaultPriorityLayerDownloadTask
+        """
+        ic_tasks = [
+            task
+            for task in qgis.core.QgsApplication.taskManager().tasks()
+            if isinstance(task, DefaultPriorityLayerDownloadTask)
+        ]
+        if len(ic_tasks) == 0:
+            return None
+
+        return ic_tasks[0]
+
     def refresh_default_layers_table(self):
         """Refresh the default layers table with updated data."""
         self.pwl_model.removeRows(0, self.pwl_model.rowCount())  # Clear existing rows
@@ -1309,7 +1342,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         selected_layer = self._get_selected_pwl_layer()
         if not selected_layer:
             error_tr = tr("Select a default layer first to edit.")
-            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            self.show_message(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return
         dlg_pwl_add = DlgPriorityAddEdit(parent=self, layer=selected_layer)
         dlg_pwl_add.exec_()
@@ -1344,13 +1377,13 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         """Slot raised when the remove default layer task has finished."""
         if status:
             self.refresh_default_layers_table()
-            self.message_bar.pushMessage(
+            self.show_message(
                 tr("Default layer removed successfully."),
                 level=qgis.core.Qgis.MessageLevel.Success,
             )
         else:
             error_tr = tr("Failed to remove the default layer.")
-            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            self.show_message(error_tr, qgis.core.Qgis.MessageLevel.Warning)
 
     def _on_download_pwl_layer(self, activated: bool):
         """Slot raised to download a selected PWL layer."""
@@ -1365,7 +1398,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
                 break
         if not default_layer:
             error_tr = tr("Selected layer not found in the default layers.")
-            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            self.show_message(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return
         name = default_layer.get("name")
         file_path, _ = QFileDialog.getSaveFileName(
@@ -1376,16 +1409,33 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         )
 
         if file_path:
-            self.message_bar.pushMessage(f"Downloading {name} to {file_path}")
-            if download.download_file(default_layer.get("url"), file_path):
-                self.message_bar.pushMessage(f"Downloaded {name} to {file_path}")
-                layer = qgis.core.QgsRasterLayer(file_path, name)
-                qgis.core.QgsProject.instance().addMapLayer(layer)
-            else:
-                self.message_bar.pushMessage(
-                    f"Failed to download {name} to {file_path}",
-                    level=qgis.core.Qgis.MessageLevel.Warning,
-                )
+            self.show_message(
+                f"Downloading {name} to {file_path}", qgis.core.Qgis.MessageLevel.Info
+            )
+            existing_download_task = self.get_pwl_downloader_task()
+            if existing_download_task:
+                existing_download_task.cancel()
+
+            download_task = DefaultPriorityLayerDownloadTask(default_layer, file_path)
+            qgis.core.QgsApplication.taskManager().addTask(download_task)
+            download_task.status_message_changed.connect(
+                self._on_update_pwl_download_status
+            )
+            download_task.completed.connect(self._on_pwl_download_completed)
+
+    def _on_update_pwl_download_status(
+        self, status: ApiRequestStatus, description: str
+    ):
+        self.show_message(f"{status.name}: {description}")
+
+    def _on_pwl_download_completed(self, layer_name: str, saved_path: str):
+        if os.path.exists(saved_path):
+            self.show_message(
+                tr(f"Download successful. Saved to: {saved_path}"),
+                qgis.core.Qgis.MessageLevel.Info,
+            )
+            layer = qgis.core.QgsRasterLayer(saved_path, layer_name)
+            qgis.core.QgsProject.instance().addMapLayer(layer)
 
     def priority_layers_changed(self):
         contains_items = len(self.default_priority_layers) > 0
@@ -1431,7 +1481,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         selected_layer = self._get_selected_pwl_layer()
         if not selected_layer:
             error_tr = tr(f"Select a default layer first to {action}.")
-            self.message_bar.pushMessage(error_tr, qgis.core.Qgis.MessageLevel.Warning)
+            self.show_message(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return None
         return selected_layer.get("layer_uuid")
 
