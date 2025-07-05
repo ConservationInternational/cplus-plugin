@@ -428,6 +428,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.priority_groups_list.setHeaderHidden(True)
 
+        self.priority_groups_list.setSelectionMode(
+            QtWidgets.QAbstractItemView.ExtendedSelection
+        )
+
         self.priority_groups_list.setDragEnabled(True)
         self.priority_groups_list.setDragDropOverwriteMode(True)
         self.priority_groups_list.viewport().setAcceptDrops(True)
@@ -1021,46 +1025,42 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def remove_priority_group(self):
         """Removes the current active priority group."""
-        if self.priority_groups_list.currentItem() is None:
+        selected_groups = self.priority_groups_list.selectedItems()
+        if not selected_groups:
             self.show_message(
-                tr("Select first the priority group from the groups list"),
+                tr("Select the priority groups to be deleted from the groups list."),
                 Qgis.Critical,
             )
             return
-        group_identifier = self.priority_groups_list.currentItem().data(
-            0, QtCore.Qt.UserRole
+
+        num_items = len(selected_groups)
+        item_tr = self.tr("groups") if num_items > 1 else self.tr("group")
+        msg = self.tr(
+            f"Remove {num_items!s} selected priority {item_tr}?\nClick Yes to proceed or No to cancel."
         )
-
-        group = settings_manager.get_priority_group(group_identifier)
-        current_text = group.get("name")
-
-        if current_text is None:
-            self.show_message(
-                tr(
-                    "Couldn't find the priority group,"
-                    " make sure you select the priority group root item."
-                ),
-                Qgis.Critical,
-            )
-            return
-
-        if group_identifier is None or group_identifier == "":
-            self.show_message(
-                tr("Could not fetch the selected priority group for editing."),
-                Qgis.Critical,
-            )
-            return
-
         reply = QtWidgets.QMessageBox.warning(
             self,
-            tr("QGIS CPLUS PLUGIN"),
-            tr('Remove the priority group "{}"?').format(current_text),
+            tr("Remove Priority Groups"),
+            msg,
             QtWidgets.QMessageBox.Yes,
             QtWidgets.QMessageBox.No,
         )
         if reply == QtWidgets.QMessageBox.Yes:
-            settings_manager.delete_priority_group(group_identifier)
-            self.update_priority_groups()
+            group_ids = [
+                group_item.data(0, QtCore.Qt.UserRole) for group_item in selected_groups
+            ]
+            for group_id in group_ids:
+                if not group_id:
+                    log(f"Priority group identifier could not be determined.")
+                    continue
+
+                group = settings_manager.get_priority_group(group_id)
+                if not group:
+                    log(f"Priority group for {group_id} not found in settings.")
+                    continue
+
+                settings_manager.delete_priority_group(group_id)
+                self.update_priority_groups()
 
     def add_priority_layer(self):
         """Adds a new priority layer into the plugin, then updates
