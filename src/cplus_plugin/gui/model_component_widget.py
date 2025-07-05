@@ -854,70 +854,58 @@ class ActivityComponentWidget(ModelComponentWidget):
             self._update_ui_on_selection_changed()
 
     def _save_item(self, item: ActivityItem):
-        """Update the underlying IM in the item in settings."""
+        """Update the underlying activity in the item in settings."""
         cloned_activity_item = item.clone()
         cloned_activity = cloned_activity_item.activity
         settings_manager.update_activity(cloned_activity)
 
     def _on_remove_item(self):
-        """Delete activity object."""
+        """Delete selected NcsPathway and Activity items."""
         selected_items = self.selected_items()
-        if len(selected_items) == 0 or len(selected_items) > 1:
+        if not selected_items:
             return
 
-        item = selected_items[0]
-        model_component = None
-        if isinstance(item, ModelComponentItem):
-            is_model_component_item = True
-            model_component = item.model_component
-        else:
-            is_model_component_item = False
+        item_tr = self.tr("items") if len(selected_items) > 1 else self.tr("item")
 
-        additional_note = ""
-
-        if is_model_component_item:
-            if item.type() == ACTIVITY_TYPE:
-                additional_note = self.tr("and its children")
-
-            msg = self.tr(
-                f"Do you want to remove '{model_component.name}' {additional_note}?"
-                f"\nClick Yes to proceed or No to cancel."
-            )
-        else:
-            msg = self.tr(
-                "Do you want to remove the layer for the activity?"
-                "\nClick Yes to proceed or No to cancel"
-            )
-
+        msg = self.tr(
+            f"Do yo want to remove the selected {item_tr}?\nClick Yes to proceed or No to cancel."
+        )
         if (
             QtWidgets.QMessageBox.question(
                 self,
-                self.tr("Remove Activity Item"),
+                self.tr("Remove Selection"),
                 msg,
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
             )
             == QtWidgets.QMessageBox.Yes
         ):
-            if is_model_component_item:
-                # NCS pathway item
-                if item.type() == NCS_PATHWAY_TYPE:
-                    parent = item.parent
-                    self.item_model.remove_ncs_pathway_item(item.uuid, parent)
-                else:
-                    # Activity item
-                    activity_uuid = str(model_component.uuid)
-                    result = self.item_model.remove_activity(activity_uuid)
-                    if result:
-                        ref_pixel_value = model_component.style_pixel_value
-                        settings_manager.remove_activity(activity_uuid)
+            activity_id_pixel_values = {
+                item.uuid: item.activity.style_pixel_value
+                for item in selected_items
+                if item.type() == ACTIVITY_TYPE
+            }
+            # Get selected NCS pathways which do not have a selected activity
+            # item so that they can also be deleted separately.
+            orphan_ncs_id_parents = {}
+            for ncs_item in selected_items:
+                if ncs_item.type() != NCS_PATHWAY_TYPE:
+                    continue
+                parent = ncs_item.parent
+                if parent is not None and parent.uuid not in activity_id_pixel_values:
+                    orphan_ncs_id_parents[ncs_item.uuid] = parent
 
-                        # Reassign pixel values
-                        self.reassign_pixel_values(ref_pixel_value)
-            else:
-                activity_item = item.data()
-                if activity_item:
-                    self.item_model.remove_layer(activity_item)
-                    self._save_item(activity_item)
+            # Remove NCS pathway items whose activity/parent item had not
+            # been selected.
+            for ncs_id, parent in orphan_ncs_id_parents.items():
+                self.item_model.remove_ncs_pathway_item(ncs_id, parent)
+
+            # Then remove activities and any corresponding children NCS pathways.
+            for activity_id, pixel_value in activity_id_pixel_values.items():
+                result = self.item_model.remove_activity(activity_id)
+                if result:
+                    settings_manager.remove_activity(activity_id)
+                    # Reassign pixel values
+                    self.reassign_pixel_values(pixel_value)
 
             self.clear_description()
 
@@ -998,19 +986,22 @@ class ActivityComponentWidget(ModelComponentWidget):
         return self.item_model.add_activity(activity, layer)
 
     def _update_ui_on_selection_changed(self):
-        """Check type of item selected and update UI
+        """Check type and number of selected items and update UI
         controls accordingly.
         """
         super()._update_ui_on_selection_changed()
 
-        selected_items = self.selected_items()
-        if len(selected_items) == 0:
-            return
-
-        item = selected_items[0]
         self.btn_edit.setEnabled(False)
         self.btn_edit_description.setEnabled(False)
-        if item.type() == ACTIVITY_TYPE:
+        self.btn_remove.setEnabled(False)
+
+        selected_items = self.selected_items()
+        if not selected_items:
+            return
+
+        self.btn_remove.setEnabled(True)
+
+        if len(selected_items) == 1 and selected_items[0].type() == ACTIVITY_TYPE:
             self.btn_edit.setEnabled(True)
             self.btn_edit_description.setEnabled(True)
 
