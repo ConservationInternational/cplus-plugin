@@ -865,10 +865,12 @@ class ActivityComponentWidget(ModelComponentWidget):
         if not selected_items:
             return
 
-        item_tr = self.tr("items") if len(selected_items) > 1 else self.tr("item")
+        num_items = len(selected_items)
+
+        item_tr = self.tr("items") if num_items > 1 else self.tr("item")
 
         msg = self.tr(
-            f"Do yo want to remove the selected {item_tr}?\nClick Yes to proceed or No to cancel."
+            f"Remove {num_items!s} selected {item_tr}?\nClick Yes to proceed or No to cancel."
         )
         if (
             QtWidgets.QMessageBox.question(
