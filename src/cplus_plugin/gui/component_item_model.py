@@ -1167,6 +1167,7 @@ class ActivityItemModel(ComponentItemModel):
         :rtype: bool
         """
         status = parent.remove_ncs_pathway_item(ncs_uuid)
+
         if not status:
             return False
 
