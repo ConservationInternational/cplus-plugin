@@ -11,7 +11,6 @@ import typing
 import uuid
 from dateutil import tz
 from functools import partial
-from pathlib import Path
 
 from qgis.PyQt import (
     QtCore,
@@ -85,7 +84,11 @@ from ..conf import settings_manager, Settings
 
 from ..lib.financials import create_npv_pwls
 
-from .components.custom_tree_widget import CustomTreeWidget
+from .components.custom_tree_widget import (
+    CustomTreeWidget,
+    SortableTreeWidgetItem,
+    SORT_ROLE,
+)
 
 from ..resources import *
 
@@ -105,7 +108,6 @@ from ..definitions.defaults import (
 )
 from ..lib.reports.manager import report_manager, ReportManager
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
-from ..models.report import MetricConfiguration
 from ..tasks import ScenarioAnalysisTask
 from ..utils import (
     open_documentation,
@@ -113,8 +115,6 @@ from ..utils import (
     log,
     FileUtils,
     write_to_file,
-    todict,
-    CustomJsonEncoder,
 )
 
 
@@ -428,6 +428,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.priority_groups_list.setHeaderHidden(True)
 
+        self.priority_groups_list.setSortingEnabled(True)
+
         self.priority_groups_list.setDragEnabled(True)
         self.priority_groups_list.setDragDropOverwriteMode(True)
         self.priority_groups_list.viewport().setAcceptDrops(True)
@@ -619,10 +621,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             pw_layers = settings_manager.find_layers_by_group(group["name"])
 
-            item = QtWidgets.QTreeWidgetItem()
+            item = SortableTreeWidgetItem()
             item.setSizeHint(0, group_widget.sizeHint())
             item.setExpanded(True)
             item.setData(0, QtCore.Qt.UserRole, group.get("uuid"))
+            item.setData(0, SORT_ROLE, group.get("name"))
 
             # Add priority layers into the group as a child items.
 
@@ -640,6 +643,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             items_only.append(item)
 
         self.priority_groups_list.addTopLevelItems(items_only)
+        self.priority_groups_list.sortItems(0, QtCore.Qt.AscendingOrder)
         for item in list_items:
             self.priority_groups_list.setItemWidget(item[0], 0, item[1])
 
@@ -688,10 +692,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             pw_layers = settings_manager.find_layers_by_group(group["name"])
 
-            item = QtWidgets.QTreeWidgetItem()
+            item = SortableTreeWidgetItem()
             item.setSizeHint(0, group_widget.sizeHint())
             item.setExpanded(True)
             item.setData(0, QtCore.Qt.UserRole, group.get("uuid"))
+            item.setData(0, SORT_ROLE, group.get("name"))
 
             # Add priority layers into the group as a child items.
 
@@ -709,6 +714,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             items_only.append(item)
 
         self.priority_groups_list.addTopLevelItems(items_only)
+        self.priority_groups_list.sortItems(0, QtCore.Qt.AscendingOrder)
         for item in list_items:
             self.priority_groups_list.setItemWidget(item[0], 0, item[1])
 
