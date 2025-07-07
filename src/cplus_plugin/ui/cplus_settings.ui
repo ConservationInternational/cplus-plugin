@@ -102,7 +102,30 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="0" colspan="2">
+          <item row="1" column="0">
+           <widget class="QLabel" name="lbl_nodata_value">
+            <property name="text">
+             <string>NoData Value</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QDoubleSpinBox" name="nodata_value_box">                       
+            <property name="singleStep">
+             <double>1.000000000000000</double>
+            </property>
+            <property name="decimals">
+             <number>1</number>
+            </property>
+            <property name="minimum">
+             <double>-3.4028235e+38</double>
+            </property>
+            <property name="maximum">
+             <double>3.4028235e+38</double>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0" colspan="2">
            <widget class="QgsCollapsibleGroupBox" name="snapping_group_box">
             <property name="title">
              <string>Snapping</string>

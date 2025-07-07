@@ -246,6 +246,9 @@ class CplusApiUrl:
     def layer_default_list(self):
         return f"{self.base_url}/layer/default/"
 
+    def priority_layer_download(self, layer_uuid):
+        return f"{self.base_url}/priority_layer/{layer_uuid}/download/"
+
     def scenario_submit(self, plugin_version=None) -> str:
         """Cplus API URL for submitting scenario JSON.
 
@@ -1121,11 +1124,13 @@ class CplusApiRequest:
         else:
             extent = detail.get("extent", [])
 
+        analysis_crs = detail.get("analysis_crs", None)
+
         scenario = Scenario(
             uuid=uuid.uuid4(),
             name=detail.get("scenario_name", ""),
             description=detail.get("scenario_desc", ""),
-            extent=SpatialExtent(bbox=extent),
+            extent=SpatialExtent(bbox=extent, crs=analysis_crs),
             server_uuid=uuid.UUID(scenario_json["uuid"]),
             activities=[
                 Activity.from_dict(activity) for activity in detail["activities"]
@@ -1162,12 +1167,15 @@ class CplusApiRequest:
                 extent = detail.get("extent_project", [])
             else:
                 extent = detail.get("extent", [])
+
+            analysis_crs = detail.get("analysis_crs", None)
+
             scenario_results.append(
                 Scenario(
                     uuid=uuid.uuid4(),
                     name=detail.get("scenario_name", ""),
                     description=detail.get("scenario_desc", ""),
-                    extent=SpatialExtent(bbox=extent),
+                    extent=SpatialExtent(bbox=extent, crs=analysis_crs),
                     server_uuid=uuid.UUID(item["uuid"]),
                     activities=[
                         Activity.from_dict(activity)

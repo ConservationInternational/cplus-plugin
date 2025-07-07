@@ -11,7 +11,6 @@ import typing
 import uuid
 from dateutil import tz
 from functools import partial
-from pathlib import Path
 
 from qgis.PyQt import (
     QtCore,
@@ -85,7 +84,11 @@ from ..conf import settings_manager, Settings
 
 from ..lib.financials import create_npv_pwls
 
-from .components.custom_tree_widget import CustomTreeWidget
+from .components.custom_tree_widget import (
+    CustomTreeWidget,
+    SortableTreeWidgetItem,
+    SORT_ROLE,
+)
 
 from ..resources import *
 
@@ -105,7 +108,6 @@ from ..definitions.defaults import (
 )
 from ..lib.reports.manager import report_manager, ReportManager
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
-from ..models.report import MetricConfiguration
 from ..tasks import ScenarioAnalysisTask
 from ..utils import (
     open_documentation,
@@ -113,8 +115,6 @@ from ..utils import (
     log,
     FileUtils,
     write_to_file,
-    todict,
-    CustomJsonEncoder,
 )
 
 
@@ -432,6 +432,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             QtWidgets.QAbstractItemView.ExtendedSelection
         )
 
+        self.priority_groups_list.setSortingEnabled(True)
+
         self.priority_groups_list.setDragEnabled(True)
         self.priority_groups_list.setDragDropOverwriteMode(True)
         self.priority_groups_list.viewport().setAcceptDrops(True)
@@ -477,6 +479,29 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.scenario_list.itemSelectionChanged.connect(
             self.on_scenario_list_selection_changed
         )
+
+        self.lblCrsdescription.setText(
+            tr("Scenario CRS for analysis (Must be projected CRS)")
+        )
+
+        project_crs = QgsProject.instance().crs()
+        crs = settings_manager.get_value(Settings.SCENARIO_CRS, default=None)
+        if crs is not None:
+            project_crs = QgsCoordinateReferenceSystem(crs)
+
+        if not project_crs.isGeographic():
+            self.crs_selector.setCrs(project_crs)
+
+        self.crs_selector.crsChanged.connect(self.on_crs_changed)
+
+    def on_crs_changed(self):
+        current_crs = self.crs_selector.crs()
+        self.message_bar.clearWidgets()
+        if current_crs.isValid() and not current_crs.isGeographic():
+            authid = current_crs.authid()
+            settings_manager.set_value(Settings.SCENARIO_CRS, authid)
+        else:
+            self.show_message(tr("Invalid CRS selected. Must be projected CRS."))
 
     def priority_groups_update(self, target_item, selected_items):
         """Updates the priority groups list item with the passed
@@ -529,6 +554,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         settings_manager.set_value(Settings.SCENARIO_NAME, scenario_name)
         settings_manager.set_value(Settings.SCENARIO_DESCRIPTION, scenario_description)
         settings_manager.set_value(Settings.SCENARIO_EXTENT, extent_box)
+        settings_manager.set_value(
+            Settings.SCENARIO_CRS, self.crs_selector.crs().authid()
+        )
 
     def restore_scenario(self):
         """Update the first tab input with the last scenario details"""
@@ -597,10 +625,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             pw_layers = settings_manager.find_layers_by_group(group["name"])
 
-            item = QtWidgets.QTreeWidgetItem()
+            item = SortableTreeWidgetItem()
             item.setSizeHint(0, group_widget.sizeHint())
             item.setExpanded(True)
             item.setData(0, QtCore.Qt.UserRole, group.get("uuid"))
+            item.setData(0, SORT_ROLE, group.get("name"))
 
             # Add priority layers into the group as a child items.
 
@@ -618,6 +647,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             items_only.append(item)
 
         self.priority_groups_list.addTopLevelItems(items_only)
+        self.priority_groups_list.sortItems(0, QtCore.Qt.AscendingOrder)
         for item in list_items:
             self.priority_groups_list.setItemWidget(item[0], 0, item[1])
 
@@ -666,10 +696,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             pw_layers = settings_manager.find_layers_by_group(group["name"])
 
-            item = QtWidgets.QTreeWidgetItem()
+            item = SortableTreeWidgetItem()
             item.setSizeHint(0, group_widget.sizeHint())
             item.setExpanded(True)
             item.setData(0, QtCore.Qt.UserRole, group.get("uuid"))
+            item.setData(0, SORT_ROLE, group.get("name"))
 
             # Add priority layers into the group as a child items.
 
@@ -687,6 +718,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             items_only.append(item)
 
         self.priority_groups_list.addTopLevelItems(items_only)
+        self.priority_groups_list.sortItems(0, QtCore.Qt.AscendingOrder)
         for item in list_items:
             self.priority_groups_list.setItemWidget(item[0], 0, item[1])
 
@@ -1217,7 +1249,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             extent.yMaximum(),
         ]
 
-        extent = SpatialExtent(bbox=extent_box)
+        extent = SpatialExtent(bbox=extent_box, crs=self.crs_selector.crs().authid())
         scenario_id = uuid.uuid4()
 
         activities = []
@@ -1298,6 +1330,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     default_extent,
                     QgsCoordinateReferenceSystem("EPSG:4326"),
                 )
+            analysis_crs = scenario.extent.crs
 
         all_activities = sorted(
             scenario.activities,
@@ -1311,7 +1344,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if scenario and scenario.server_uuid:
             self.analysis_scenario_name = scenario.name
             self.analysis_scenario_description = scenario.description
-            self.analysis_extent = SpatialExtent(bbox=extent_list)
+            self.analysis_extent = SpatialExtent(bbox=extent_list, crs=analysis_crs)
             self.analysis_activities = scenario.activities
             self.analysis_priority_layers_groups = scenario.priority_layer_groups
 
@@ -1643,6 +1676,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             extent_list[0], extent_list[2], extent_list[1], extent_list[3]
         )
         passed_extent = self.extent_box.outputExtent()
+        passed_extent_crs = self.extent_box.outputCrs()
+
         contains = default_extent == passed_extent or default_extent.contains(
             passed_extent
         )
@@ -1743,7 +1778,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 passed_extent.xMaximum(),
                 passed_extent.yMinimum(),
                 passed_extent.yMaximum(),
-            ]
+            ],
+            crs=settings_manager.get_value(
+                Settings.SCENARIO_CRS,
+                passed_extent_crs.authid() if passed_extent_crs else "EPSG:4326",
+            ),
         )
         try:
             self.enable_analysis_controls(False)
@@ -1823,28 +1862,31 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                 return
 
-            source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
-            destination_crs = QgsProject.instance().crs()
+            source_crs = passed_extent_crs or QgsCoordinateReferenceSystem("EPSG:4326")
+            destination_crs = QgsCoordinateReferenceSystem(self.analysis_extent.crs)
 
             if selected_pathway:
                 selected_pathway_layer = QgsRasterLayer(
                     selected_pathway.path, selected_pathway.name
                 )
-                if selected_pathway_layer.crs() is not None:
+                if selected_pathway_layer.crs() is not None and destination_crs is None:
                     destination_crs = selected_pathway_layer.crs()
-            elif use_default_layer:
-                destination_crs = QgsCoordinateReferenceSystem("EPSG:32735")
+                elif destination_crs is None:
+                    destination_crs = QgsProject.instance().crs()
 
-            transformed_extent = self.transform_extent(
-                extent_box, source_crs, destination_crs
-            )
+            if source_crs != destination_crs:
+                transformed_extent = self.transform_extent(
+                    extent_box, source_crs, destination_crs
+                )
 
-            self.analysis_extent.bbox = [
-                transformed_extent.xMinimum(),
-                transformed_extent.xMaximum(),
-                transformed_extent.yMinimum(),
-                transformed_extent.yMaximum(),
-            ]
+                self.analysis_extent.bbox = [
+                    transformed_extent.xMinimum(),
+                    transformed_extent.xMaximum(),
+                    transformed_extent.yMinimum(),
+                    transformed_extent.yMaximum(),
+                ]
+            self.analysis_extent.crs = destination_crs.authid()
+
             if self.processing_type.isChecked():
                 analysis_task = ScenarioAnalysisTaskApiClient(
                     self.analysis_scenario_name,
@@ -1859,7 +1901,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                             passed_extent.xMaximum(),
                             passed_extent.yMinimum(),
                             passed_extent.yMaximum(),
-                        ]
+                        ],
+                        crs=passed_extent_crs.authid() if passed_extent_crs else None,
                     ),
                 )
             else:

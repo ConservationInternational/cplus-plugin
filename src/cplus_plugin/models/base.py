@@ -36,10 +36,12 @@ from ..definitions.constants import (
 @dataclasses.dataclass
 class SpatialExtent:
     """Extent object that stores
-    the coordinates of the area of interest
+    the coordinates of the area of interest and the analysis
+    coordinate reference system (CRS).
     """
 
     bbox: typing.List[float]
+    crs: typing.Optional[str] = None
 
 
 class PRIORITY_GROUP(Enum):

@@ -634,7 +634,7 @@ class FileUtils:
         p = Path(directory)
         if not p.exists():
             try:
-                p.mkdir()
+                p.mkdir(parents=True, exist_ok=True)
             except (FileNotFoundError, OSError):
                 log(log_message)
 
