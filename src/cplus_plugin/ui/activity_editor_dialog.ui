@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>477</width>
-    <height>588</height>
+    <height>594</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -333,6 +333,15 @@
  </customwidgets>
  <tabstops>
   <tabstop>txt_name</tabstop>
+  <tabstop>txt_description</tabstop>
+  <tabstop>mask_box</tabstop>
+  <tabstop>lst_mask_layers</tabstop>
+  <tabstop>btn_add_mask</tabstop>
+  <tabstop>btn_edit_mask</tabstop>
+  <tabstop>btn_delete_mask</tabstop>
+  <tabstop>mGroupBox</tabstop>
+  <tabstop>style_btn</tabstop>
+  <tabstop>btn_color_ramp</tabstop>
   <tabstop>layer_gb</tabstop>
   <tabstop>btn_help</tabstop>
  </tabstops>
