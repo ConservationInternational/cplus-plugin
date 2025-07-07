@@ -9,6 +9,17 @@ from qgis.PyQt.QtGui import QDropEvent
 from qgis.PyQt import QtCore
 
 
+SORT_ROLE = QtCore.Qt.UserRole + 2
+
+
+class SortableTreeWidgetItem(QTreeWidgetItem):
+    """Tree item that allows the use of a custom SORT_ROLE to sort items."""
+
+    def __lt__(self, other) -> bool:
+        column = self.treeWidget().sortColumn()
+        return self.data(column, SORT_ROLE) < other.data(column, SORT_ROLE)
+
+
 class CustomTreeWidget(QTreeWidget):
     """Class for the custom tree widget object, extending the QTreeWidget class
     and overriding the drag and drop behaviour.
@@ -27,7 +38,6 @@ class CustomTreeWidget(QTreeWidget):
         :param event: Drop event object
         :type event: QDropEvent
         """
-
         current_index = self.indexAt(event.pos())
         target_item = self.itemFromIndex(current_index)
 
