@@ -106,9 +106,8 @@ from ..definitions.defaults import (
     SCENARIO_LOG_FILE_NAME,
     USER_DOCUMENTATION_SITE,
 )
-from ..lib.reports.manager import report_manager, ReportManager
+from ..lib.reports.manager import report_manager
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
-from ..models.report import MetricConfiguration
 from ..tasks import ScenarioAnalysisTask
 from ..utils import (
     open_documentation,
@@ -116,8 +115,6 @@ from ..utils import (
     log,
     FileUtils,
     write_to_file,
-    todict,
-    CustomJsonEncoder,
 )
 
 
