@@ -60,6 +60,7 @@ class ScenarioAnalysisTask(QgsTask):
         analysis_priority_layers_groups,
         analysis_extent,
         scenario,
+        clip_to_studyarea: bool = False,
     ):
         super().__init__()
         self.analysis_scenario_name = analysis_scenario_name
@@ -69,6 +70,8 @@ class ScenarioAnalysisTask(QgsTask):
         self.analysis_priority_layers_groups = analysis_priority_layers_groups
         self.analysis_extent = analysis_extent
         self.analysis_extent_string = None
+
+        self.clip_to_studyarea = clip_to_studyarea
 
         self.scenario_result = None
         self.scenario_directory = None
@@ -297,6 +300,11 @@ class ScenarioAnalysisTask(QgsTask):
                 self.analysis_activities,
                 extent_string,
             )
+
+        # Clip to StudyArea
+        studyarea_path = self.get_settings_value(Settings.STUDYAREA_PATH, default="")
+        if self.clip_to_studyarea and os.path.exists(studyarea_path):
+            self.clip_analysis_data(studyarea_path)
 
         # Reproject the pathways and priority layers to the
         # scenario CRS if it is not the same as the pathways CRS
@@ -710,6 +718,225 @@ class ScenarioAnalysisTask(QgsTask):
 
         except Exception as e:
             self.log_message(f"Problem replacing nodata value for layers, {e} \n")
+            self.cancel_task(e)
+            return False
+
+        return True
+
+    def clip_raster_by_mask(
+        self, input_raster_path: str, mask_layer_path: str, output_path: str
+    ) -> bool:
+        """Clip a given raster by the specified mask layer.
+        :param input_raster_path: Input raster path
+        :type input_raster_path: str
+
+        :param mask_layer_path: Path to the masking layer
+        :type mask_layer_path: str
+
+        :param output_path: Output layer path
+        :type output_path: str
+
+        :returns: True if the task operation was successfully completed else False.
+        :rtype: bool
+        """
+        raster_layer = QgsRasterLayer(input_raster_path, "raster_layer")
+        mask_layer = QgsVectorLayer(mask_layer_path, "mask_layer")
+
+        if not raster_layer.isValid():
+            self.log_message(f"Invalid raster layer: {input_raster_path}\n")
+            return False
+
+        if not mask_layer.isValid():
+            self.log_message(f"Invalid mask layer: {mask_layer_path}\n")
+            return False
+
+        try:
+            alg_params = {
+                "INPUT": input_raster_path,
+                "MASK": mask_layer,
+                "SOURCE_CRS": raster_layer.crs(),
+                "DESTINATION_CRS": raster_layer.crs(),
+                "OUTPUT": output_path,
+                "NO_DATA": settings_manager.get_value(
+                    Settings.NCS_NO_DATA_VALUE, NO_DATA_VALUE
+                ),
+                "CROP_TO_CUTLINE": True,
+            }
+
+            self.log_message(
+                f"Used parameters for clipping the raster: {input_raster_path} "
+                f" using mask layer: {alg_params} \n"
+            )
+
+            feedback = QgsProcessingFeedback()
+
+            feedback.progressChanged.connect(self.update_progress)
+
+            if self.processing_cancelled:
+                return False
+
+            result = processing.run(
+                "gdal:cliprasterbymasklayer",
+                alg_params,
+                context=self.processing_context,
+                feedback=self.feedback,
+            )
+            if result.get("OUTPUT"):
+                return True
+
+        except Exception as e:
+            self.log_message(f"Problem clipping the layer {e} \n")
+        return False
+
+    def clip_analysis_data(self, studyarea_path: str) -> bool:
+        """Clips the activity pathways and priority layers by the given study area.
+        :param studyarea_path: The path to the study area layer
+        :type studyarea_path: str
+        :returns: True if the task operation was successfully completed else False.
+        :rtype: bool
+        """
+        if self.processing_cancelled:
+            return False
+
+        mask_layer = QgsVectorLayer(studyarea_path, "mask_layer")
+
+        if not mask_layer.isValid():
+            self.log_message(
+                f"Invalid mask layer: {studyarea_path} "
+                f"Skipping clipping of activity pathways and priority layers\n"
+            )
+            return False
+
+        self.set_status_message(
+            tr(
+                "Clipping the activity pathways and priority layers by the study area layer"
+            )
+        )
+
+        clipped_pathways_directory = os.path.join(
+            self.scenario_directory, "clipped_pathways"
+        )
+        FileUtils.create_new_dir(clipped_pathways_directory)
+
+        clipped_priority_directory = os.path.join(
+            self.scenario_directory, "clipped_priority_layers"
+        )
+        FileUtils.create_new_dir(clipped_priority_directory)
+
+        pathways: typing.List[NcsPathway] = []
+
+        try:
+            for activity in self.analysis_activities:
+                if not activity.pathways and (
+                    activity.path is None or activity.path == ""
+                ):
+                    self.set_info_message(
+                        tr(
+                            f"No defined activity pathways or "
+                            f" activity layers for the activity {activity.name}"
+                        ),
+                        level=Qgis.Critical,
+                    )
+                    self.log_message(
+                        f"No defined activity pathways or "
+                        f"activity layers for the activity {activity.name}"
+                    )
+                    return False
+
+                for pathway in activity.pathways:
+                    if not (pathway in pathways):
+                        pathways.append(pathway)
+
+            if pathways is not None and len(pathways) > 0:
+                for pathway in pathways:
+                    pathway_layer = QgsRasterLayer(pathway.path, pathway.name)
+
+                    if self.processing_cancelled:
+                        return False
+                    if not pathway_layer.isValid():
+                        self.log_message(
+                            f"Pathway layer {pathway.name} is not valid, "
+                            f"skipping clipping the layer."
+                        )
+                        continue
+                    self.log_message(
+                        f"Clipping the {pathway.name} pathway layer by "
+                        f"the study area layer\n"
+                    )
+
+                    output_file = os.path.join(
+                        clipped_pathways_directory,
+                        f"{Path(pathway.path).stem}_{str(self.scenario.uuid)[:4]}.tif",
+                    )
+
+                    result = self.clip_raster_by_mask(
+                        pathway.path, studyarea_path, output_file
+                    )
+                    if result:
+                        pathway.path = output_file
+
+                    self.log_message(
+                        f"Clipping the {pathway.name} pathway's {len(pathway.priority_layers)} "
+                        f"priority weighting layers by study area\n"
+                    )
+
+                    if (
+                        pathway.priority_layers is not None
+                        and len(pathway.priority_layers) > 0
+                    ):
+                        priority_layers = []
+                        for priority_layer in pathway.priority_layers:
+                            if priority_layer is None:
+                                continue
+
+                            if self.processing_cancelled:
+                                return False
+
+                            priority_layer_settings = self.get_priority_layer(
+                                priority_layer.get("uuid")
+                            )
+                            if priority_layer_settings is None:
+                                continue
+
+                            priority_layer_path = priority_layer_settings.get("path")
+
+                            if not Path(priority_layer_path).exists():
+                                priority_layers.append(priority_layer)
+                                continue
+
+                            layer = QgsRasterLayer(
+                                priority_layer_path, f"{str(uuid.uuid4())[:4]}"
+                            )
+                            if not layer.isValid():
+                                self.log_message(
+                                    f"Priority layer {priority_layer.get('name')} "
+                                    f"from pathway {pathway.name} is not valid, "
+                                    f"skipping clipping the layer."
+                                )
+                                continue
+
+                            self.log_message(
+                                f"Clipping the {priority_layer.get('name')} priority layer "
+                                f"by study area layer\n"
+                            )
+
+                            output_file = os.path.join(
+                                clipped_priority_directory,
+                                f"{Path(pathway.path).stem}_{str(self.scenario.uuid)[:4]}.tif",
+                            )
+
+                            result = self.clip_raster_by_mask(
+                                priority_layer_path, studyarea_path, output_file
+                            )
+                            if result:
+                                priority_layer["path"] = output_file
+
+                            priority_layers.append(priority_layer)
+
+                        pathway.priority_layers = priority_layers
+
+        except Exception as e:
+            self.log_message(f"Problem clipping the layers, {e} \n")
             self.cancel_task(e)
             return False
 
