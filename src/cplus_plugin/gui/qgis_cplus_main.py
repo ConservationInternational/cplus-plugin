@@ -27,12 +27,14 @@ from qgis.core import (
     QgsCoordinateTransform,
     QgsFeedback,
     QgsProject,
+    QgsGeometry,
     QgsProcessingAlgorithm,
     QgsProcessingContext,
     QgsProcessingFeedback,
     QgsProcessingMultiStepFeedback,
     QgsRasterLayer,
     QgsRectangle,
+    QgsWkbTypes,
     QgsColorRampShader,
     QgsSingleBandPseudoColorRenderer,
     QgsPalettedRasterRenderer,
@@ -42,6 +44,7 @@ from qgis.core import (
 from qgis.gui import (
     QgsGui,
     QgsMessageBar,
+    QgsRubberBand,
 )
 
 from qgis.utils import iface
@@ -2465,31 +2468,30 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def zoom_pilot_area(self):
         """Zoom the current main map canvas to the pilot area extent."""
         map_canvas = iface.mapCanvas()
-        extent_list = PILOT_AREA_EXTENT["coordinates"]
-        default_extent = QgsRectangle(
-            extent_list[0], extent_list[2], extent_list[1], extent_list[3]
-        )
-        zoom_extent = QgsRectangle(
-            extent_list[0] - 0.5, extent_list[2], extent_list[1] + 0.5, extent_list[3]
-        )
+
+        zoom_extent = self.extent_box.outputExtent()
+        original_crs = self.extent_box.outputCrs()
+
+        if (
+            self._aoi_source_group.checkedId() == AreaOfInterestSource.LAYER.value
+            and self._aoi_layer
+        ):
+            zoom_extent = self._aoi_layer.extent()
+            original_crs = self._aoi_layer.crs()
 
         canvas_crs = map_canvas.mapSettings().destinationCrs()
-        original_crs = QgsCoordinateReferenceSystem("EPSG:4326")
 
         if canvas_crs.authid() != original_crs.authid():
             zoom_extent = self.transform_extent(zoom_extent, original_crs, canvas_crs)
-            default_extent = self.transform_extent(
-                default_extent, original_crs, canvas_crs
-            )
 
         aoi = QgsRubberBand(iface.mapCanvas(), QgsWkbTypes.PolygonGeometry)
 
         aoi.setFillColor(QtGui.QColor(0, 0, 0, 0))
         aoi.setStrokeColor(QtGui.QColor(88, 128, 8))
-        aoi.setWidth(3)
+        aoi.setWidth(2)
         aoi.setLineStyle(QtCore.Qt.DashLine)
 
-        geom = QgsGeometry.fromRect(default_extent)
+        geom = QgsGeometry.fromRect(zoom_extent)
 
         aoi.setToGeometry(geom, canvas_crs)
 
