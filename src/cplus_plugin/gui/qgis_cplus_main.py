@@ -513,11 +513,20 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.crs_selector.crsChanged.connect(self.on_crs_changed)
 
     def on_crs_changed(self):
-        current_crs = self.crs_selector.crs()
         self.message_bar.clearWidgets()
-        if current_crs.isValid() and not current_crs.isGeographic():
+        current_crs = self.crs_selector.crs()
+        self.extent_box.setOutputCrs(current_crs)
+
+        self.extent_box.setOutputExtentFromUser(
+            self.extent_box.outputExtent(),
+            current_crs,
+        )
+
+        if current_crs.isValid():
             authid = current_crs.authid()
             settings_manager.set_value(Settings.SCENARIO_CRS, authid)
+            if current_crs.isGeographic():
+                self.show_message(tr("Must be projected CRS."))
         else:
             self.show_message(tr("Invalid CRS selected."))
 
