@@ -768,9 +768,8 @@ class ScenarioAnalysisTask(QgsTask):
                 f" using mask layer: {alg_params} \n"
             )
 
-            feedback = QgsProcessingFeedback()
-
-            feedback.progressChanged.connect(self.update_progress)
+            self.feedback = QgsProcessingFeedback()
+            self.feedback.progressChanged.connect(self.update_progress)
 
             if self.processing_cancelled:
                 return False
@@ -1237,8 +1236,8 @@ class ScenarioAnalysisTask(QgsTask):
 
         self.log_message(f"Used parameters for layer reprojection: " f"{alg_params} \n")
 
-        feedback = QgsProcessingFeedback()
-        feedback.progressChanged.connect(self.update_progress)
+        self.feedback = QgsProcessingFeedback()
+        self.feedback.progressChanged.connect(self.update_progress)
 
         if self.processing_cancelled:
             return None
@@ -1503,9 +1502,8 @@ class ScenarioAnalysisTask(QgsTask):
                     f"Used parameters for " f"activities generation: {alg_params} \n"
                 )
 
-                feedback = QgsProcessingFeedback()
-
-                feedback.progressChanged.connect(self.update_progress)
+                self.feedback = QgsProcessingFeedback()
+                self.feedback.progressChanged.connect(self.update_progress)
 
                 if self.processing_cancelled:
                     return False
@@ -1672,9 +1670,8 @@ class ScenarioAnalysisTask(QgsTask):
                     f"using project mask layers: {alg_params} \n"
                 )
 
-                feedback = QgsProcessingFeedback()
-
-                feedback.progressChanged.connect(self.update_progress)
+                self.feedback = QgsProcessingFeedback()
+                self.feedback.progressChanged.connect(self.update_progress)
 
                 if self.processing_cancelled:
                     return False
@@ -1862,9 +1859,8 @@ class ScenarioAnalysisTask(QgsTask):
                     f" using activity respective mask layer(s): {alg_params} \n"
                 )
 
-                feedback = QgsProcessingFeedback()
-
-                feedback.progressChanged.connect(self.update_progress)
+                self.feedback = QgsProcessingFeedback()
+                self.feedback.progressChanged.connect(self.update_progress)
 
                 if self.processing_cancelled:
                     return False
@@ -2158,6 +2154,12 @@ class ScenarioAnalysisTask(QgsTask):
                     self.cancel_task()
                     return False
 
+                self.feedback = QgsProcessingFeedback()
+                self.feedback.progressChanged.connect(self.update_progress)
+
+                if self.processing_cancelled:
+                    return False
+
                 # Step 6. Run sum statistics with ignore no data values set to false and no data value
                 results = processing.run(
                     "native:cellstatistics",
@@ -2174,13 +2176,6 @@ class ScenarioAnalysisTask(QgsTask):
                     context=self.processing_context,
                     feedback=self.feedback,
                 )
-
-                feedback = QgsProcessingFeedback()
-
-                feedback.progressChanged.connect(self.update_progress)
-
-                if self.processing_cancelled:
-                    return False
 
                 model.path = results["OUTPUT"]
 
@@ -2471,9 +2466,8 @@ class ScenarioAnalysisTask(QgsTask):
                     f"updates on the cleaned activities: {alg_params} \n"
                 )
 
-                feedback = QgsProcessingFeedback()
-
-                feedback.progressChanged.connect(self.update_progress)
+                self.feedback = QgsProcessingFeedback()
+                self.feedback.progressChanged.connect(self.update_progress)
 
                 if self.processing_cancelled:
                     return False
@@ -2598,7 +2592,6 @@ class ScenarioAnalysisTask(QgsTask):
             )
 
             self.feedback = QgsProcessingFeedback()
-
             self.feedback.progressChanged.connect(self.update_progress)
 
             if self.processing_cancelled:
