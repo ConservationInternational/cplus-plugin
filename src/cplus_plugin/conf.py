@@ -254,6 +254,9 @@ class Settings(enum.Enum):
         "carbon/irrecoverable_carbon_online_status_description"
     )
 
+    # Study Area Path
+    STUDYAREA_PATH = "studyarea_path"
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""
