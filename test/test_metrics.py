@@ -23,7 +23,7 @@ from cplus_plugin.lib.reports.metrics import (
     register_metric_functions,
     unregister_metric_functions,
 )
-from cplus_plugin.models.base import DataSourceType
+from cplus_plugin.models.source import DataSourceType
 from cplus_plugin.models.helpers import create_metric_configuration
 from cplus_plugin.models.report import ActivityContextInfo
 

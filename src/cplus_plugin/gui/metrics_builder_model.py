@@ -10,7 +10,7 @@ from qgis.PyQt import QtCore, QtGui
 
 from ..definitions.constants import ACTIVITY_NAME
 
-from ..models.base import Activity
+from cplus_core.models.base import Activity
 from ..models.report import ActivityColumnMetric, MetricColumn, MetricType
 
 from ..utils import FileUtils, tr

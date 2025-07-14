@@ -20,7 +20,7 @@ from cplus_plugin.api.request import (
 from cplus_plugin.api.carbon import IrrecoverableCarbonDownloadTask
 from cplus_plugin.conf import settings_manager, Settings
 from cplus_plugin.definitions.defaults import BASE_API_URL, IRRECOVERABLE_CARBON_API_URL
-from cplus_plugin.models.base import DataSourceType
+from cplus_plugin.models.source import DataSourceType
 
 from utilities_for_testing import get_qgis_app
 
