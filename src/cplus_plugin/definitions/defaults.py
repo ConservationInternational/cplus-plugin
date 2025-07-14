@@ -35,7 +35,9 @@ ABOUT_DOCUMENTATION_SITE = (
 )
 REPORT_DOCUMENTATION = "https://conservationinternational.github.io/cplus-plugin/user/guide/#report-generating"
 
-OPTIONS_TITLE = "CPLUS"  # Title in the QGIS settings
+BASE_PLUGIN_NAME = "CPLUS"
+# Title in the QGIS settings. Leave it like this for now incase title needs to change
+OPTIONS_TITLE = BASE_PLUGIN_NAME
 GENERAL_OPTIONS_TITLE = "General"
 REPORT_OPTIONS_TITLE = "Reporting"
 LOG_OPTIONS_TITLE = "Logs"
@@ -137,7 +139,8 @@ CI_LOGO_PATH = str(
 )
 
 # Default template file name
-SCENARIO_ANALYSIS_TEMPLATE_NAME = "scenario_analysis.qpt"
+SCENARIO_ANALYSIS_TEMPLATE_NAME = "scenario_analysis_default.qpt"
+SCENARIO_ANALYSIS_METRICS_TEMPLATE_NAME = "scenario_analysis_metrics.qpt"
 SCENARIO_COMPARISON_TEMPLATE_NAME = "scenario_comparison.qpt"
 
 # Minimum sizes (in mm) for repeat items in the template
@@ -145,7 +148,11 @@ MINIMUM_ITEM_WIDTH = 100
 MINIMUM_ITEM_HEIGHT = 100
 
 # Report font
-REPORT_FONT_NAME = "Ubuntu"
+REPORT_FONT_NAME = "Proxima Nova"
+
+# Report colours
+REPORT_COLOR_TREEFOG = "#bad636"
+REPORT_COLOR_RAINFOREST = "#357d57"
 
 # Activity character limits
 MAX_ACTIVITY_NAME_LENGTH = 50
@@ -156,7 +163,18 @@ ACTIVITY_AREA_TABLE_ID = "activity_area_table"
 PRIORITY_GROUP_WEIGHT_TABLE_ID = "assigned_weights_table"
 AREA_COMPARISON_TABLE_ID = "comparison_table"
 
-# Initiliazing the plugin default data as found in the data directory
+# IDs for items in the metrics report template
+METRICS_HEADER_BACKGROUND = "metrics_header_background"
+METRICS_FOOTER_BACKGROUND = "metrics_footer_background"
+METRICS_TABLE_HEADER = "metrics_table_header"
+METRICS_LOGO = "metrics_ci_logo"
+METRICS_PAGE_NUMBER = "metrics_page_number"
+METRICS_ACCREDITATION = "metrics_accreditation_text"
+
+ONLINE_DEFAULT_PREFIX = "cplus://"
+
+
+# Initializing the plugin default data as found in the data directory
 priority_layer_path = (
     Path(__file__).parent.parent.resolve()
     / "data"
@@ -173,47 +191,17 @@ PRIORITY_GROUPS = [
     {
         "uuid": "dcfb3214-4877-441c-b3ef-8228ab6dfad3",
         "name": "Biodiversity",
-        "description": "Placeholder text for bio diversity",
-    },
-    {
-        "uuid": "8b9fb419-b6b8-40e8-9438-c82901d18cd9",
-        "name": "Livelihood",
-        "description": "Placeholder text for livelihood",
+        "description": "Placeholder text for biodiversity",
     },
     {
         "uuid": "21a30a80-eb49-4c5e-aff6-558123688e09",
-        "name": "Climate Resilience",
-        "description": "Placeholder text for climate resilience ",
-    },
-    {
-        "uuid": "ae1791c3-93fd-4e8a-8bdf-8f5fced11ade",
-        "name": "Ecological infrastructure",
-        "description": "Placeholder text for ecological infrastructure",
-    },
-    {
-        "uuid": "8cac9e25-98a8-4eae-a257-14a4ef8995d0",
-        "name": "Policy",
-        "description": "Placeholder text for policy",
+        "name": "Climate",
+        "description": "Placeholder text for climate",
     },
     {
         "uuid": "3a66c845-2f9b-482c-b9a9-bcfca8395ad5",
-        "name": "Finance - Years Experience",
-        "description": "Placeholder text for years of experience",
-    },
-    {
-        "uuid": "c6dbfe09-b05c-4cfc-8fc0-fb63cfe0ceee",
-        "name": "Finance - Market Trends",
-        "description": "Placeholder text for market trends",
-    },
-    {
-        "uuid": "3038cce0-3470-4b09-bb2a-f82071fe57fd",
-        "name": "Finance - Net Present value",
-        "description": "Placeholder text for net present value",
-    },
-    {
-        "uuid": "3b2c7421-f879-48ef-a973-2aa3b1390694",
-        "name": "Finance - Carbon",
-        "description": "Placeholder text for finance carbon",
+        "name": "Finance",
+        "description": "Placeholder text for finance",
     },
 ]
 
@@ -228,6 +216,40 @@ DEFAULT_REPORT_LICENSE = (
     "Creative Commons Attribution 4.0 International " "License (CC BY 4.0)"
 )
 BASE_API_URL = "https://stage.cplus.earth/api/v1"
+IRRECOVERABLE_CARBON_API_URL = f"{BASE_API_URL}/reference_layer/carbon_calculation/"
 
 DEFAULT_BASE_COMPARISON_REPORT_NAME = "Scenario Comparison Report"
 MAXIMUM_COMPARISON_REPORTS = 10
+
+NPV_EXPRESSION_DESCRIPTION = (
+    "Calculates the financial NPV of the current "
+    "activity. This returns the equivalent of the "
+    "area of the current activity (in hectares) "
+    "and multiplies it by the NPV rate (US$/ha) "
+    "for each pathway that constitutes the activity. "
+    "The NPV pathways are those defined via the NPV PWL "
+    "Manager.<br><b>NOTE: If the NPV is not defined "
+    "then the function will return -1.0.</b>"
+)
+
+PWL_IMPACT_EXPRESSION_DESCRIPTION = (
+    "Calculates the impact of the "
+    "current activity by multiplying "
+    "the area of the NCS pathways (in hectares) of "
+    "the current activity by a user-defined number "
+    "of jobs created per hectare. The area of the NCS "
+    "pathways in the activity will be automatically "
+    "populated during the computation."
+)
+
+MEAN_BASED_IRRECOVERABLE_CARBON_EXPRESSION_DESCRIPTION = (
+    "Calculates the total irrecoverable carbon (tons C) of "
+    "protect NCS pathways in an activity using the mean "
+    "reference irrecoverable carbon dataset. This dataset "
+    "needs to be defined in the CPLUS settings for this "
+    "expression to be evaluated.<br><b>NOTE: A value of -1.0 "
+    "will be returned if an error is encountered, or 0.0 if "
+    "there are no protect NCS pathways in the activity or "
+    "no overlapping pixels with the reference layer in the "
+    "area of interest.</b>"
+)

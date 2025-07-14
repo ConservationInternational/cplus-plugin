@@ -10,9 +10,9 @@ contact:
 license: This program is free software; you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
 ---
 
-# Cplus User Guide
+# CPLUS User Guide
 
-Welcome to the Cplus user guide. In this section of the documentation, we aim to show users how to utilise the plugin effectively, customise their settings and so forth. Here is a brief overview of the content provided here:
+Welcome to the CPLUS user guide. In this section of the documentation, we aim to show users how to utilise the plugin effectively, customise their settings and so forth. Here is a brief overview of the content provided here:
 
 * **[Complete Steps and Report:](complete-steps-and-report.md)** This section guides users on completing the steps of the analysis process and generating a comprehensive report based on the results.
 

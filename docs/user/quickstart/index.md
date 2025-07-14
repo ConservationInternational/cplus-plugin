@@ -18,7 +18,7 @@ short tutorial accompanied by a video to show the user how to use the plugin.
 
 ## QGIS version
 
-The CPLUS plugin might have issues with older versions of QGIS. QGIS 3.32 or higher has thoroughly
+The CPLUS plugin might have issues with older versions of QGIS. QGIS 3.22 or higher has thoroughly
 been tested with no major known issues. Here is a list of possible issues which may occur if using an
 outdated version of QGIS are being used:
 
@@ -30,7 +30,7 @@ Best will be to update QGIS to the latest version, even for other plugins, as bu
 be available for those versions. To update QGIS, a user can do the following:
 
 - Go to the [QGIS download webpage](https://www.qgis.org/en/site/forusers/download.html)
-- Download or follow the instructions for the OS on which QGIS needs to be installed
+- Download or follow the instructions for the operating system (OS) on which QGIS needs to be installed
 - If a specific version (not the latest version) of QGIS needs to be installed, click on the **All releases** tab
 
 ![QGIS site](img/qgis-site.png)
@@ -45,10 +45,10 @@ in a user-friendly UI. Advantages of using this installer:
 - Option to include (or not include) GRASS and SAGA
 - Extensions for QGIS
 - If a user wants to update an existing QGIS installation, simply run the osgeo.exe in the installation directory
-- Simply run the osgeo.exe to update already installed libraries, or install new libraries
+- Simply run the ```osgeo.exe``` to update already installed libraries, or install new libraries
 - Easy to remove libraries or extensions
 - Python modules
-- And much more
+- And much more...
 
 ![QGIS online download](img/qgis-download.png)
 
@@ -56,12 +56,12 @@ in a user-friendly UI. Advantages of using this installer:
 
 ### Plugin repository
 
-During the development phase the plugin is available to install via 
+During the development phase, the plugin is available to install via
 a dedicated plugin repository. This link should be used:
 [https://raw.githubusercontent.com/ConservationInternational/cplus-plugin/release/docs/repository/plugins.xml](https://raw.githubusercontent.com/ConservationInternational/cplus-plugin/release/docs/repository/plugins.xml)
 
-- Open QGIS application and open plugin manager.
-- Click on **Plugins** -> **Manage and Install Plugins** (see **Figure 1**)
+- Open the QGIS application
+- Click on **Plugins** -> **Manage and Install Plugins** (see **Figure 1**) to open the plugin manager
 
 ![QGIS plugin manager](img/install-qgis-plugins.png)
 
@@ -83,8 +83,8 @@ a dedicated plugin repository. This link should be used:
 
 ### Install from QGIS plugin repository
 
-- Open QGIS application and open plugin manager.
-- Click on **Plugins** -> **Manage and Install Plugins** (see **Figure 1**)
+- Open QGIS application
+- Click on **Plugins** -> **Manage and Install Plugins** (see **Figure 1**) to open the plugin manager
 
 ![QGIS plugin manager](img/install-qgis-plugins.png)
 
@@ -126,7 +126,7 @@ Current repository: [https://raw.githubusercontent.com/ConservationInternational
 
 *Figure 3: Custom repository installation*
 
-- Click **Add** button on the **Plugin Repositories** group box and use the above url to create the new plugin repository.
+- Click **Add** button on the **Plugin Repositories** group box and use the above URL to create the new plugin repository.
 - The plugin should now be available from the list of all plugins that can be installed.
 
 Disable QGIS official plugin repository in order to not fetch plugins from it.

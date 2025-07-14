@@ -48,12 +48,14 @@ nav:
             - Settings: developer/api/core/api_settings.md
             - Utilities: developer/api/core/api_utils.md
             - Financials: developer/api/core/api_financials.md
+            - Carbon: developer/api/core/api_carbon.md
             - Reports:
                 - Comparison Table: developer/api/core/api_report_scenario_comparison_table.md
                 - Generator: developer/api/core/api_reports_generator.md
                 - Layout items: developer/api/core/api_reports_layout_items.md
                 - Manager: developer/api/core/api_reports_manager.md
                 - Variables: developer/api/core/api_reports_variables.md
+                - Metrics: developer/api/core/api_reports_metrics.md
             - Validation:
                 - Configurations: developer/api/core/api_validation_configs.md
                 - Feedback: developer/api/core/api_validation_feedback.md
@@ -87,6 +89,9 @@ nav:
                 - Inspector dialog: developer/api/gui/api_validation_inspector_dialog.md
                 - Progress dialog: developer/api/gui/api_validation_progress_dialog.md
                 - Tree items: developer/api/gui/api_validation_result_items.md
+            - Metrics:
+                - Builder Dialog: developer/api/gui/api_metrics_builder_dialog.md
+                - Builder Model: developer/api/gui/api_metrics_builder_model.md
   - About:
       - Conservation International: about/ci.md
       - Kartoza: about/kartoza.md
@@ -94,6 +99,7 @@ nav:
 
 plugins:
   - search
+  - autorefs
   - git-revision-date-localized
   - mkdocs-video
   - mkdocstrings:
@@ -162,6 +168,8 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.mark
   - attr_list
+  - toc:
+      permalink: true
 
 extra_javascript:
   - javascripts/mathjax.js

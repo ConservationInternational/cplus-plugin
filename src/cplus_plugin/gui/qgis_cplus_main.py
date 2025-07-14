@@ -27,8 +27,8 @@ from qgis.core import (
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransform,
     QgsFeedback,
-    QgsGeometry,
     QgsProject,
+    QgsGeometry,
     QgsProcessingAlgorithm,
     QgsProcessingContext,
     QgsProcessingFeedback,
@@ -39,6 +39,8 @@ from qgis.core import (
     QgsColorRampShader,
     QgsSingleBandPseudoColorRenderer,
     QgsPalettedRasterRenderer,
+    QgsMapLayerProxyModel,
+    QgsVectorLayer,
 )
 from qgis.gui import (
     QgsGui,
@@ -49,6 +51,7 @@ from qgis.gui import (
 from qgis.utils import iface
 
 from .activity_widget import ActivityContainerWidget
+from .metrics_builder_dialog import ActivityMetricsBuilder
 from .priority_group_widget import PriorityGroupWidget
 from .scenario_item_widget import ScenarioItemWidget
 from .progress_dialog import OnlineProgressDialog, ReportProgressDialog, ProgressDialog
@@ -65,9 +68,9 @@ from ..api.request import JOB_RUNNING_STATUS, JOB_COMPLETED_STATUS
 from ..definitions.constants import (
     ACTIVITY_GROUP_LAYER_NAME,
     ACTIVITY_IDENTIFIER_PROPERTY,
-    ACTIVITY_WEIGHTED_GROUP_NAME,
-    NCS_PATHWAYS_GROUP_LAYER_NAME,
+    NCS_PATHWAYS_WEIGHTED_GROUP_LAYER_NAME,
     USER_DEFINED_ATTRIBUTE,
+    NO_DATA_VALUE,
 )
 
 from .financials.npv_manager_dialog import NpvPwlManagerDialog
@@ -77,15 +80,18 @@ from .priority_group_dialog import PriorityGroupDialog
 
 from .scenario_dialog import ScenarioDialog
 
-from cplus_core.models.base import (
-    PriorityLayerType,
-)
-from ..models.financial import ActivityNpv
+from cplus_core.models.base import Activity, PriorityLayerType
+from ..models.source import AreaOfInterestSource
+from ..models.financial import NcsPathwayNpv
 from ..conf import settings_manager, Settings
 
 from ..lib.financials import create_npv_pwls
 
-from .components.custom_tree_widget import CustomTreeWidget
+from .components.custom_tree_widget import (
+    CustomTreeWidget,
+    SortableTreeWidgetItem,
+    SORT_ROLE,
+)
 
 from ..resources import *
 
@@ -139,6 +145,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.task = None
         self.processing_cancelled = False
         self.current_analysis_task = None
+        self.fetch_default_layer_task = None
 
         # Set icons for buttons
         help_icon = FileUtils.get_icon("mActionHelpContents_green.svg")
@@ -159,14 +166,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.pwl_item_flags = None
 
         # Step 4
-        self.ncs_with_carbon.toggled.connect(self.outputs_options_changed)
+        self.ncs_pwl_weighted.toggled.connect(self.outputs_options_changed)
         self.landuse_project.toggled.connect(self.outputs_options_changed)
-        self.landuse_normalized.toggled.connect(self.outputs_options_changed)
-        self.landuse_weighted.toggled.connect(self.outputs_options_changed)
         self.highest_position.toggled.connect(self.outputs_options_changed)
         self.processing_type.toggled.connect(self.processing_options_changed)
+        self.chb_metric_builder.toggled.connect(self.on_use_custom_metrics)
+        self.btn_metric_builder.clicked.connect(self.on_show_metrics_wizard)
+        edit_table_icon = FileUtils.get_icon("mActionEditTable.svg")
+        self.btn_metric_builder.setIcon(edit_table_icon)
 
         self.load_layer_options()
+
+        self.load_report_options()
 
         self.initialize_priority_layers()
 
@@ -186,6 +197,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.fetch_scenario_history_list()
         # Fetch default layers
         self.fetch_default_layer_list()
+
+        # Update metric button with metric profiles
+        self.update_metric_button_profiles()
 
     def on_view_status_button_clicked(self):
         """Handler when view status report button in tab 4 is clicked."""
@@ -238,16 +252,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
 
         settings_manager.set_value(
-            Settings.NCS_WITH_CARBON, self.ncs_with_carbon.isChecked()
+            Settings.NCS_WEIGHTED, self.ncs_pwl_weighted.isChecked()
         )
         settings_manager.set_value(
             Settings.LANDUSE_PROJECT, self.landuse_project.isChecked()
-        )
-        settings_manager.set_value(
-            Settings.LANDUSE_NORMALIZED, self.landuse_normalized.isChecked()
-        )
-        settings_manager.set_value(
-            Settings.LANDUSE_WEIGHTED, self.landuse_weighted.isChecked()
         )
         settings_manager.set_value(
             Settings.HIGHEST_POSITION, self.highest_position.isChecked()
@@ -266,25 +274,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         update the releated ui components
         """
 
-        self.ncs_with_carbon.setChecked(
+        self.ncs_pwl_weighted.setChecked(
             settings_manager.get_value(
-                Settings.NCS_WITH_CARBON, default=False, setting_type=bool
-            )
-        )
-        self.landuse_project.setChecked(
-            settings_manager.get_value(
-                Settings.LANDUSE_PROJECT, default=False, setting_type=bool
-            )
-        )
-        self.landuse_normalized.setChecked(
-            settings_manager.get_value(
-                Settings.LANDUSE_NORMALIZED, default=False, setting_type=bool
+                Settings.NCS_WEIGHTED, default=False, setting_type=bool
             )
         )
 
-        self.landuse_weighted.setChecked(
+        self.landuse_project.setChecked(
             settings_manager.get_value(
-                Settings.LANDUSE_WEIGHTED, default=False, setting_type=bool
+                Settings.LANDUSE_PROJECT, default=False, setting_type=bool
             )
         )
 
@@ -307,6 +305,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.view_status_btn.setEnabled(False)
         else:
             self.view_status_btn.setEnabled(True)
+
+    def load_report_options(self):
+        """Load previously saved report options."""
+        self.chb_metric_builder.setChecked(
+            settings_manager.get_value(
+                Settings.USE_CUSTOM_METRICS, default=False, setting_type=bool
+            )
+        )
 
     def on_log_message_received(self, message, tag, level):
         """Slot to handle log tab updates and processing logs
@@ -424,6 +430,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.priority_groups_list.setHeaderHidden(True)
 
+        self.priority_groups_list.setSelectionMode(
+            QtWidgets.QAbstractItemView.ExtendedSelection
+        )
+
+        self.priority_groups_list.setSortingEnabled(True)
+
         self.priority_groups_list.setDragEnabled(True)
         self.priority_groups_list.setDragDropOverwriteMode(True)
         self.priority_groups_list.viewport().setAcceptDrops(True)
@@ -432,6 +444,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.priority_groups_list.child_dragged_dropped.connect(
             self.priority_groups_update
+        )
+        self.priority_groups_list.itemDoubleClicked.connect(
+            self._on_double_click_priority_group
         )
 
         layout = QtWidgets.QVBoxLayout()
@@ -466,6 +481,134 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.scenario_list.itemSelectionChanged.connect(
             self.on_scenario_list_selection_changed
         )
+
+        # Area of Interest
+        self._aoi_layer = None
+        self._aoi_source_group = QtWidgets.QButtonGroup(self)
+        self._aoi_source_group.setExclusive(True)
+        self._aoi_source_group.addButton(
+            self.rb_studyarea, AreaOfInterestSource.LAYER.value
+        )
+        self._aoi_source_group.addButton(
+            self.rb_extent, AreaOfInterestSource.EXTENT.value
+        )
+        self._aoi_source_group.idToggled.connect(self.on_aoi_source_changed)
+        self.rb_studyarea.setChecked(True)
+
+        self.cbo_studyarea.layerChanged.connect(self._on_studyarea_layer_changed)
+        self.cbo_studyarea.setFilters(QgsMapLayerProxyModel.PolygonLayer)
+
+        self.btn_choose_studyarea_file.setToolTip(tr("Select area of interest file"))
+        self.btn_choose_studyarea_file.clicked.connect(self._on_select_aoi_file)
+
+        # Coordinate System
+
+        self.lblCrsdescription.setText(
+            tr("Scenario CRS for analysis (Must be projected CRS)")
+        )
+
+        project_crs = QgsProject.instance().crs()
+        crs = settings_manager.get_value(Settings.SCENARIO_CRS, default=None)
+        if crs is not None:
+            project_crs = QgsCoordinateReferenceSystem(crs)
+
+        if not project_crs.isGeographic():
+            self.crs_selector.setCrs(project_crs)
+
+        self.crs_selector.crsChanged.connect(self.on_crs_changed)
+
+    def on_crs_changed(self):
+        self.message_bar.clearWidgets()
+        current_crs = self.crs_selector.crs()
+        self.extent_box.setOutputCrs(current_crs)
+
+        self.extent_box.setOutputExtentFromUser(
+            self.extent_box.outputExtent(),
+            current_crs,
+        )
+
+        if current_crs.isValid():
+            authid = current_crs.authid()
+            settings_manager.set_value(Settings.SCENARIO_CRS, authid)
+            if current_crs.isGeographic():
+                self.show_message(tr("Must be projected CRS."))
+        else:
+            self.show_message(tr("Invalid CRS selected."))
+
+    def on_aoi_source_changed(self, button_id: int, toggled: bool):
+        """Slot raised when the area of interest source button group has
+        been toggled.
+        """
+        if not toggled:
+            return
+
+        if button_id == AreaOfInterestSource.LAYER.value:
+            self.studyarea_stacked_widget.setCurrentIndex(0)
+        elif button_id == AreaOfInterestSource.EXTENT.value:
+            self.studyarea_stacked_widget.setCurrentIndex(1)
+
+    def _on_select_aoi_file(self, activated: bool):
+        """Slot raised to upload a study area layer."""
+        data_dir = settings_manager.get_value(Settings.LAST_DATA_DIR, "")
+        if not data_dir and self._aoi_layer:
+            data_path = self._aoi_layer.source()
+            if os.path.exists(data_path):
+                data_dir = os.path.dirname(data_path)
+
+        if not data_dir:
+            data_dir = "/home"
+
+        filter_tr = tr("All files")
+
+        layer_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self,
+            self.tr("Select Study Area Layer"),
+            data_dir,
+            f"{filter_tr} (*.*)",
+            options=QtWidgets.QFileDialog.DontResolveSymlinks,
+        )
+        if not layer_path:
+            return
+
+        existing_paths = self.cbo_studyarea.additionalItems()
+        if layer_path in existing_paths:
+            return
+
+        layer = QgsVectorLayer(layer_path, "studyarea")
+        if not layer.isValid():
+            self.show_message(tr("Invalid study area layer : ") + layer_path)
+            return
+
+        self.cbo_studyarea.setAdditionalItems([])
+
+        self._add_layer_path(layer_path)
+        settings_manager.set_value(Settings.LAST_DATA_DIR, os.path.dirname(layer_path))
+        settings_manager.set_value(Settings.STUDYAREA_PATH, layer_path)
+
+    def _add_layer_path(self, layer_path: str):
+        """Select or add layer path to the map layer combobox."""
+        matching_index = -1
+        num_layers = self.cbo_studyarea.count()
+        for index in range(num_layers):
+            layer = self.cbo_studyarea.layer(index)
+            if layer is None:
+                continue
+            if os.path.normpath(layer.source()) == os.path.normpath(layer_path):
+                matching_index = index
+                break
+
+        if matching_index == -1:
+            self.cbo_studyarea.setAdditionalItems([layer_path])
+            self.cbo_studyarea.setCurrentIndex(num_layers)
+        else:
+            self.cbo_studyarea.setCurrentIndex(matching_index)
+
+        self._aoi_layer = QgsVectorLayer(layer_path, Path(layer_path).stem)
+
+    def _on_studyarea_layer_changed(self, layer):
+        if layer is not None:
+            self._aoi_layer = layer
+            settings_manager.set_value(Settings.STUDYAREA_PATH, layer.source())
 
     def priority_groups_update(self, target_item, selected_items):
         """Updates the priority groups list item with the passed
@@ -518,12 +661,20 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         settings_manager.set_value(Settings.SCENARIO_NAME, scenario_name)
         settings_manager.set_value(Settings.SCENARIO_DESCRIPTION, scenario_description)
         settings_manager.set_value(Settings.SCENARIO_EXTENT, extent_box)
+        settings_manager.set_value(
+            Settings.SCENARIO_CRS, self.crs_selector.crs().authid()
+        )
+
+        if self._aoi_layer:
+            studyarea_path = self._aoi_layer.source()
+            settings_manager.set_value(Settings.STUDYAREA_PATH, studyarea_path)
 
     def restore_scenario(self):
         """Update the first tab input with the last scenario details"""
         scenario_name = settings_manager.get_value(Settings.SCENARIO_NAME)
         scenario_description = settings_manager.get_value(Settings.SCENARIO_DESCRIPTION)
         extent = settings_manager.get_value(Settings.SCENARIO_EXTENT)
+        studyarea_path = settings_manager.get_value(Settings.STUDYAREA_PATH)
 
         self.scenario_name.setText(scenario_name) if scenario_name is not None else None
         self.scenario_description.setText(
@@ -538,6 +689,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 extent_rectangle,
                 QgsCoordinateReferenceSystem("EPSG:4326"),
             )
+
+        if studyarea_path:
+            self._add_layer_path(studyarea_path)
 
     def initialize_priority_layers(self):
         """Prepares the priority weighted layers UI with the defaults.
@@ -586,10 +740,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             pw_layers = settings_manager.find_layers_by_group(group["name"])
 
-            item = QtWidgets.QTreeWidgetItem()
+            item = SortableTreeWidgetItem()
             item.setSizeHint(0, group_widget.sizeHint())
             item.setExpanded(True)
             item.setData(0, QtCore.Qt.UserRole, group.get("uuid"))
+            item.setData(0, SORT_ROLE, group.get("name"))
 
             # Add priority layers into the group as a child items.
 
@@ -607,6 +762,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             items_only.append(item)
 
         self.priority_groups_list.addTopLevelItems(items_only)
+        self.priority_groups_list.sortItems(0, QtCore.Qt.AscendingOrder)
         for item in list_items:
             self.priority_groups_list.setItemWidget(item[0], 0, item[1])
 
@@ -655,10 +811,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             pw_layers = settings_manager.find_layers_by_group(group["name"])
 
-            item = QtWidgets.QTreeWidgetItem()
+            item = SortableTreeWidgetItem()
             item.setSizeHint(0, group_widget.sizeHint())
             item.setExpanded(True)
             item.setData(0, QtCore.Qt.UserRole, group.get("uuid"))
+            item.setData(0, SORT_ROLE, group.get("name"))
 
             # Add priority layers into the group as a child items.
 
@@ -676,6 +833,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             items_only.append(item)
 
         self.priority_groups_list.addTopLevelItems(items_only)
+        self.priority_groups_list.sortItems(0, QtCore.Qt.AscendingOrder)
         for item in list_items:
             self.priority_groups_list.setItemWidget(item[0], 0, item[1])
 
@@ -835,35 +993,23 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 len(npv_collection.mappings), self.npv_feedback
             )
 
-            # Get CRS and pixel size from at least one of the selected
-            # NCS pathways.
-            selected_activities = [
-                item.activity
-                for item in self.activity_widget.selected_activity_items()
-                if item.isEnabled()
-            ]
-            if len(selected_activities) == 0:
+            # Get CRS and pixel size from at least one of the
+            # NCS pathways in the collection.
+            if len(npv_collection.mappings) == 0:
                 log(
-                    message=tr(
-                        "No selected activity to extract the CRS and pixel size."
-                    ),
-                    info=False,
-                )
-                return
-
-            activity = selected_activities[0]
-            if len(activity.pathways) == 0:
-                log(
-                    message=tr("No NCS pathway to extract the CRS and pixel size."),
+                    message=tr("No NPV mappings to extract the CRS and pixel size."),
                     info=False,
                 )
                 return
 
             reference_ncs_pathway = None
-            for ncs_pathway in activity.pathways:
-                if ncs_pathway.is_valid():
-                    reference_ncs_pathway = ncs_pathway
-                    break
+            for pathway_npv in npv_collection.mappings:
+                if pathway_npv.pathway is None:
+                    continue
+                else:
+                    if pathway_npv.pathway.is_valid():
+                        reference_ncs_pathway = pathway_npv.pathway
+                        break
 
             if reference_ncs_pathway is None:
                 log(
@@ -914,7 +1060,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def on_npv_pwl_created(
         self,
-        activity_npv: ActivityNpv,
+        pathway_npv: NcsPathwayNpv,
         npv_pwl_path: str,
         algorithm: QgsProcessingAlgorithm,
         context: QgsProcessingContext,
@@ -923,8 +1069,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Callback that creates an PWL item when the corresponding
         raster layer has been created.
 
-        :param activity_npv: NPV mapping for an activity:
-        :type activity_npv: ActivityNpv
+        :param pathway_npv: NPV mapping for an NCS pathway.
+        :type pathway_npv: NcsPathwayNpv
 
         :param npv_pwl_path: Absolute file path of the created NPV PWL.
         :type npv_pwl_path: str
@@ -942,14 +1088,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         # Check if the PWL entry already exists in the settings. If it
         # exists then no further updates required as the filename of the
         # PWL layer is still the same.
-        updated_pwl = settings_manager.find_layer_by_name(activity_npv.base_name)
+        updated_pwl = settings_manager.find_layer_by_name(pathway_npv.base_name)
         if updated_pwl is None:
             # Create NPV PWL
             desc_tr = tr("Normalized NPV for")
-            pwl_desc = f"{desc_tr} {activity_npv.activity.name}."
+            pwl_desc = f"{desc_tr} {pathway_npv.pathway.name}."
             npv_layer_info = {
                 "uuid": str(uuid.uuid4()),
-                "name": activity_npv.base_name,
+                "name": pathway_npv.base_name,
                 "description": pwl_desc,
                 "groups": [],
                 "path": npv_pwl_path,
@@ -958,14 +1104,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             }
             settings_manager.save_priority_layer(npv_layer_info)
 
-            # Updated the PWL for the activity
-            activity = settings_manager.get_activity(activity_npv.activity_id)
-            if activity is not None:
-                activity.priority_layers.append(npv_layer_info)
-                settings_manager.update_activity(activity)
+            # Updated the PWL for the NCS pathway
+            pathway = settings_manager.get_ncs_pathway(pathway_npv.pathway_id)
+            if pathway is not None:
+                pathway.priority_layers.append(npv_layer_info)
+                settings_manager.update_ncs_pathway(pathway)
             else:
-                msg_tr = tr("activity not found to attach the NPV PWL.")
-                log(f"{activity_npv.activity.name} {msg_tr}", info=False)
+                msg_tr = tr("ncs pathway not found to attach the NPV PWL.")
+                log(f"{pathway_npv.pathway.name} {msg_tr}", info=False)
         else:
             # Just update the path
             updated_pwl["path"] = npv_pwl_path
@@ -978,6 +1124,22 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         the priority list to show the new added priority group.
         """
         group_dialog = PriorityGroupDialog()
+        group_dialog.exec_()
+        self.update_priority_groups()
+
+    def _on_double_click_priority_group(self, tree_item: QtWidgets.QTreeWidgetItem):
+        """Slot raised when a priority group item has been
+        double clicked.
+        """
+        group_id = tree_item.data(0, QtCore.Qt.UserRole)
+        self._show_priority_group_editor(group_id)
+
+    def _show_priority_group_editor(self, group_identifier: str):
+        """Shows the dialog for editing the properties of
+        a priority group.
+        """
+        group = settings_manager.get_priority_group(group_identifier)
+        group_dialog = PriorityGroupDialog(group)
         group_dialog.exec_()
         self.update_priority_groups()
 
@@ -1006,53 +1168,46 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             return
 
-        group = settings_manager.get_priority_group(group_identifier)
-        group_dialog = PriorityGroupDialog(group)
-        group_dialog.exec_()
-        self.update_priority_groups()
+        self._show_priority_group_editor(group_identifier)
 
     def remove_priority_group(self):
         """Removes the current active priority group."""
-        if self.priority_groups_list.currentItem() is None:
+        selected_groups = self.priority_groups_list.selectedItems()
+        if not selected_groups:
             self.show_message(
-                tr("Select first the priority group from the groups list"),
+                tr("Select the priority groups to be deleted from the groups list."),
                 Qgis.Critical,
             )
             return
-        group_identifier = self.priority_groups_list.currentItem().data(
-            0, QtCore.Qt.UserRole
+
+        num_items = len(selected_groups)
+        item_tr = self.tr("groups") if num_items > 1 else self.tr("group")
+        msg = self.tr(
+            f"Remove {num_items!s} selected priority {item_tr}?\nClick Yes to proceed or No to cancel."
         )
-
-        group = settings_manager.get_priority_group(group_identifier)
-        current_text = group.get("name")
-
-        if current_text is None:
-            self.show_message(
-                tr(
-                    "Couldn't find the priority group,"
-                    " make sure you select the priority group root item."
-                ),
-                Qgis.Critical,
-            )
-            return
-
-        if group_identifier is None or group_identifier == "":
-            self.show_message(
-                tr("Could not fetch the selected priority group for editing."),
-                Qgis.Critical,
-            )
-            return
-
         reply = QtWidgets.QMessageBox.warning(
             self,
-            tr("QGIS CPLUS PLUGIN"),
-            tr('Remove the priority group "{}"?').format(current_text),
+            tr("Remove Priority Groups"),
+            msg,
             QtWidgets.QMessageBox.Yes,
             QtWidgets.QMessageBox.No,
         )
         if reply == QtWidgets.QMessageBox.Yes:
-            settings_manager.delete_priority_group(group_identifier)
-            self.update_priority_groups()
+            group_ids = [
+                group_item.data(0, QtCore.Qt.UserRole) for group_item in selected_groups
+            ]
+            for group_id in group_ids:
+                if not group_id:
+                    log(f"Priority group identifier could not be determined.")
+                    continue
+
+                group = settings_manager.get_priority_group(group_id)
+                if not group:
+                    log(f"Priority group for {group_id} not found in settings.")
+                    continue
+
+                settings_manager.delete_priority_group(group_id)
+                self.update_priority_groups()
 
     def add_priority_layer(self):
         """Adds a new priority layer into the plugin, then updates
@@ -1088,8 +1243,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def _on_double_click_priority_layer(self, list_item: QtWidgets.QListWidgetItem):
         """Slot raised when a priority list item has been double clicked."""
-        layer_name = list_item.data(QtCore.Qt.UserRole)
-        self._show_priority_layer_editor(layer_name)
+        layer_id = list_item.data(QtCore.Qt.UserRole)
+        self._show_priority_layer_editor(layer_id)
 
     def _show_priority_layer_editor(self, layer_identifier: str):
         """Shows the dialog for editing a priority layer."""
@@ -1099,35 +1254,57 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         layer_dialog.exec_()
 
     def remove_priority_layer(self):
-        """Removes the current active priority layer."""
+        """Removes one or more of the selected priority layers."""
         if self.priority_layers_list.currentItem() is None:
             self.show_message(
+                tr("Select first the priority weighting layer from the layers list."),
+                Qgis.Critical,
+            )
+            return
+
+        selected_pwl_items = self.priority_layers_list.selectedItems()
+        if not selected_pwl_items:
+            self.show_message(
                 tr(
-                    "Select first the priority " "weighting layer from the layers list."
+                    "Select one or more priority weighting layers to be removed "
+                    "from the layers list."
                 ),
                 Qgis.Critical,
             )
             return
-        current_text = self.priority_layers_list.currentItem().data(
-            QtCore.Qt.DisplayRole
-        )
-        if current_text == "":
-            self.show_message(
-                tr("Could not fetch and remove the selected priority layer."),
-                Qgis.Critical,
-            )
-            return
-        layer = settings_manager.find_layer_by_name(current_text)
+
+        pwls = [item.data(QtCore.Qt.DisplayRole) for item in selected_pwl_items]
+        if len(pwls) == 1:
+            tr_layer = tr("layer")
+        else:
+            tr_layer = tr("layers")
+        tr_msg = tr("Remove the priority weighting")
+        msg = f"{tr_msg} {tr_layer}: {', '.join(pwls)}?"
         reply = QtWidgets.QMessageBox.warning(
             self,
-            tr("QGIS CPLUS PLUGIN"),
-            tr('Remove the priority layer "{}"?').format(current_text),
+            tr("Remove PWLs"),
+            msg,
             QtWidgets.QMessageBox.Yes,
             QtWidgets.QMessageBox.No,
         )
         if reply == QtWidgets.QMessageBox.Yes:
-            settings_manager.delete_priority_layer(layer.get("uuid"))
-            self.update_priority_layers(update_groups=False)
+            for pwl in pwls:
+                layer = settings_manager.find_layer_by_name(pwl)
+                if not layer:
+                    continue
+                settings_manager.delete_priority_layer(layer.get("uuid"))
+                self.update_priority_layers(update_groups=False)
+
+                # Remove PWL in priority groups
+                for index in range(self.priority_groups_list.topLevelItemCount()):
+                    group = self.priority_groups_list.topLevelItem(index)
+                    group_children = group.takeChildren()
+                    children = []
+                    for child in group_children:
+                        if child.text(0) == layer.get("name"):
+                            continue
+                        children.append(child)
+                    group.addChildren(children)
 
     def has_trends_auth(self):
         """Check if plugin has user Trends.Earth authentication.
@@ -1145,8 +1322,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Fetch default layer list from API."""
         if not self.has_trends_auth():
             return
-        task = FetchDefaultLayerTask()
-        QgsApplication.taskManager().addTask(task)
+        self.fetch_default_layer_task = FetchDefaultLayerTask()
+        QgsApplication.taskManager().addTask(self.fetch_default_layer_task)
 
     def update_scenario_list(self):
         """Fetches scenarios from plugin settings and updates the
@@ -1187,15 +1364,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             extent.yMaximum(),
         ]
 
-        extent = SpatialExtent(bbox=extent_box)
+        extent = SpatialExtent(bbox=extent_box, crs=self.crs_selector.crs().authid())
         scenario_id = uuid.uuid4()
 
         activities = []
         priority_layer_groups = []
-        weighted_activities = []
 
         if self.scenario_result:
-            weighted_activities = self.scenario_result.scenario.weighted_activities
             activities = self.scenario_result.scenario.activities
             priority_layer_groups = self.scenario_result.scenario.priority_layer_groups
 
@@ -1205,7 +1380,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             description=scenario_description,
             extent=extent,
             activities=activities,
-            weighted_activities=weighted_activities,
             priority_layer_groups=priority_layer_groups,
             server_uuid=(
                 self.scenario_result.scenario.server_uuid
@@ -1271,20 +1445,21 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     default_extent,
                     QgsCoordinateReferenceSystem("EPSG:4326"),
                 )
+            analysis_crs = scenario.extent.crs
 
         all_activities = sorted(
-            scenario.weighted_activities,
+            scenario.activities,
             key=lambda activity_instance: activity_instance.style_pixel_value,
         )
         for index, activity in enumerate(all_activities):
             activity.style_pixel_value = index + 1
 
-        scenario.weighted_activities = all_activities
+        scenario.activities = all_activities
 
         if scenario and scenario.server_uuid:
             self.analysis_scenario_name = scenario.name
             self.analysis_scenario_description = scenario.description
-            self.analysis_extent = SpatialExtent(bbox=extent_list)
+            self.analysis_extent = SpatialExtent(bbox=extent_list, crs=analysis_crs)
             self.analysis_activities = scenario.activities
             self.analysis_priority_layers_groups = scenario.priority_layer_groups
 
@@ -1294,7 +1469,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 description=self.analysis_scenario_description,
                 extent=self.analysis_extent,
                 activities=self.analysis_activities,
-                weighted_activities=scenario.weighted_activities,
                 priority_layer_groups=self.analysis_priority_layers_groups,
             )
             scenario_obj.server_uuid = scenario.server_uuid
@@ -1391,13 +1565,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 continue
 
             all_activities = sorted(
-                scenario.weighted_activities,
+                scenario.activities,
                 key=lambda activity_instance: activity_instance.style_pixel_value,
             )
             for index, activity in enumerate(all_activities):
                 activity.style_pixel_value = index + 1
 
-            scenario.weighted_activities = all_activities
+            scenario.activities = all_activities
 
             scenario_result.scenario = scenario
             scenario_results.append(scenario_result)
@@ -1492,6 +1666,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         progress_dialog.scenario_id = str(scenario.uuid)
 
         report_running = partial(self.on_report_running, progress_dialog)
+        report_status_changed = partial(self.on_report_status_changed, progress_dialog)
         report_error = partial(self.on_report_error, progress_dialog)
         report_finished = partial(self.on_report_finished, progress_dialog)
 
@@ -1499,6 +1674,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         scenario_report_manager = report_manager
 
         scenario_report_manager.generate_started.connect(report_running)
+        scenario_report_manager.status_changed.connect(report_status_changed)
         scenario_report_manager.generate_error.connect(report_error)
         scenario_report_manager.generate_completed.connect(report_finished)
 
@@ -1538,11 +1714,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             "scenario_" f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}',
         )
 
-    def create_task_config(self, scenario: Scenario) -> TaskConfig:
+    def create_task_config(
+        self, scenario: Scenario, clip_to_studyarea: bool
+    ) -> TaskConfig:
         """Create task config from scenario and settings_manager.
 
         :param scenario: Scenario object
         :type scenario: Scenario
+        :param clip_to_studyarea: True if clip to study area
+        :type clip_to_studyarea: bool
 
         :return: config for scenario analysis task
         :rtype: TaskConfig
@@ -1556,12 +1736,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             settings_manager.get_value(
                 Settings.SNAPPING_ENABLED, default=False, setting_type=bool
             ),
-            settings_manager.get_value(Settings.RESAMPLING_METHOD, default=0),
+            settings_manager.get_value(
+                Settings.SNAP_LAYER, default="", setting_type=str
+            ),
+            settings_manager.get_value(
+                Settings.MASK_LAYERS_PATHS, default="", setting_type=str
+            ),
             settings_manager.get_value(
                 Settings.RESCALE_VALUES, default=False, setting_type=bool
             ),
+            settings_manager.get_value(Settings.RESAMPLING_METHOD, default=0),
             settings_manager.get_value(Settings.PATHWAY_SUITABILITY_INDEX, default=0),
-            settings_manager.get_value(Settings.CARBON_COEFFICIENT, default=0.0),
+            0.0,
             settings_manager.get_value(
                 Settings.SIEVE_ENABLED, default=False, setting_type=bool
             ),
@@ -1582,6 +1768,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 Settings.HIGHEST_POSITION, default=True, setting_type=bool
             ),
             self.get_scenario_directory(),
+            settings_manager.get_value(
+                Settings.NCS_NO_DATA_VALUE, default=NO_DATA_VALUE, setting_type=float
+            ),
+            settings_manager.get_value(
+                Settings.STUDYAREA_PATH, default="", setting_type=str
+            ),
+            clip_to_studyarea,
         )
 
     def on_log_message(
@@ -1610,6 +1803,73 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
         log(message, name=name, info=info, notify=notify)
 
+    def is_metric_configuration_valid(self) -> bool:
+        """Checks if the setup of the metric configuration for the scenario
+        analysis report is correct.
+
+        :returns: True if the configuration is correct else False.
+        :rtype: bool
+        """
+        if not self.chb_metric_builder.isChecked():
+            # Not applicable so just return True
+            return True
+        else:
+            profile_collection = settings_manager.get_metric_profile_collection()
+            if profile_collection is None:
+                self.show_message(
+                    tr(
+                        f"No metric profiles found. Use the metric "
+                        f"builder to specify one or more metric "
+                        f"profiles."
+                    )
+                )
+                return False
+
+            metric_profile = profile_collection.get_current_profile()
+            if (
+                metric_profile is None
+                or metric_profile.config is None
+                or not metric_profile.config.is_valid()
+            ):
+                self.show_message(
+                    tr(
+                        f"Metric configuration is invalid or not yet defined. "
+                        f"Use the metric builder to check and re-run the wizard."
+                    )
+                )
+                return False
+
+            # Compare activities
+            selected_activities_ids = set(
+                [str(activity.uuid) for activity in self.selected_activities()]
+            )
+            metric_activity_ids = set(
+                [str(activity.uuid) for activity in metric_profile.config.activities]
+            )
+            if selected_activities_ids == metric_activity_ids:
+                return True
+            elif selected_activities_ids.issubset(metric_activity_ids):
+                return True
+            elif len(selected_activities_ids.difference(metric_activity_ids)) > 0:
+                self.show_message(
+                    tr(
+                        f"There are activities whose metrics has not not been "
+                        f"defined. Use the metric builder to update."
+                    )
+                )
+                return False
+
+        return True
+
+    def enable_analysis_controls(self, enable: bool):
+        """Enable or disable controls related to running the scenario analysis.
+
+        :param enable: True to enable else False to disable.
+        :type enable: bool
+        """
+        self.run_scenario_btn.setEnabled(enable)
+        self.gp_report_options.setEnabled(enable)
+
     def run_analysis(self):
         """Runs the plugin analysis
         Creates new QgsTask, progress dialog and report manager
@@ -1617,14 +1877,30 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
         self.log_text_box.clear()
 
-        extent_list = PILOT_AREA_EXTENT["coordinates"]
-        default_extent = QgsRectangle(
-            extent_list[0], extent_list[2], extent_list[1], extent_list[3]
-        )
+        if not self.is_metric_configuration_valid():
+            log(
+                "Scenario cannot run due to an invalid metric configuration "
+                "for the selected profile. Refer to the preceding "
+                "errors above."
+            )
+            return
+
         passed_extent = self.extent_box.outputExtent()
-        contains = default_extent == passed_extent or default_extent.contains(
-            passed_extent
+        passed_extent_crs = self.extent_box.outputCrs()
+
+        clip_to_studyarea = False
+        studyarea_path = settings_manager.get_value(
+            Settings.STUDYAREA_PATH, default="", setting_type=str
         )
+        aoi_layer = QgsVectorLayer(studyarea_path, "studyarea_path")
+
+        if (
+            self._aoi_source_group.checkedId() == AreaOfInterestSource.LAYER.value
+            and aoi_layer.isValid()
+        ):
+            passed_extent = aoi_layer.extent()
+            passed_extent_crs = aoi_layer.crs()
+            clip_to_studyarea = True
         self.analysis_scenario_name = self.scenario_name.text()
         self.analysis_scenario_description = self.scenario_description.text()
 
@@ -1652,11 +1928,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     group_layer_dict["layers"].append(layer.get("name"))
             self.analysis_priority_layers_groups.append(group_layer_dict)
 
-        self.analysis_activities = [
-            item.activity
-            for item in self.activity_widget.selected_activity_items()
-            if item.isEnabled()
-        ]
+        self.analysis_activities = self.selected_activities()
 
         self.analysis_weighted_ims = []
 
@@ -1683,21 +1955,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 level=Qgis.Critical,
             )
             return
-
-        if not contains:
-            self.show_message(
-                tr(f"Selected area of interest is outside the pilot area."),
-                level=Qgis.Info,
-            )
-            default_ext = (
-                f"{default_extent.xMinimum()}, {default_extent.xMaximum()},"
-                f"{default_extent.yMinimum()}, {default_extent.yMaximum()}"
-            )
-            log(
-                f"Outside the pilot area, passed extent "
-                f"{passed_extent}"
-                f"default extent{default_ext}"
-            )
 
         if base_dir is None:
             self.show_message(
@@ -1726,10 +1983,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 passed_extent.xMaximum(),
                 passed_extent.yMinimum(),
                 passed_extent.yMaximum(),
-            ]
+            ],
+            crs=settings_manager.get_value(
+                Settings.SCENARIO_CRS,
+                passed_extent_crs.authid() if passed_extent_crs else "EPSG:4326",
+            ),
         )
         try:
-            self.run_scenario_btn.setEnabled(False)
+            self.enable_analysis_controls(False)
 
             scenario = Scenario(
                 uuid=uuid.uuid4(),
@@ -1737,10 +1998,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 description=self.analysis_scenario_description,
                 extent=self.analysis_extent,
                 activities=self.analysis_activities,
-                weighted_activities=[],
                 priority_layer_groups=self.analysis_priority_layers_groups,
             )
-            task_config = self.create_task_config(scenario)
+            task_config = self.create_task_config(scenario, clip_to_studyarea)
 
             self.processing_cancelled = False
 
@@ -1804,32 +2064,34 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     )
                 )
                 self.processing_cancelled = True
-                self.run_scenario_btn.setEnabled(True)
+                self.enable_analysis_controls(True)
 
                 return
 
-            source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
-            destination_crs = QgsProject.instance().crs()
+            source_crs = passed_extent_crs or QgsCoordinateReferenceSystem("EPSG:4326")
+            destination_crs = QgsCoordinateReferenceSystem(self.analysis_extent.crs)
 
             if selected_pathway:
                 selected_pathway_layer = QgsRasterLayer(
                     selected_pathway.path, selected_pathway.name
                 )
-                if selected_pathway_layer.crs() is not None:
+                if selected_pathway_layer.crs() is not None and destination_crs is None:
                     destination_crs = selected_pathway_layer.crs()
-            elif use_default_layer:
-                destination_crs = QgsCoordinateReferenceSystem("EPSG:32735")
+                elif destination_crs is None:
+                    destination_crs = QgsProject.instance().crs()
 
-            transformed_extent = self.transform_extent(
-                extent_box, source_crs, destination_crs
-            )
+            if source_crs != destination_crs:
+                transformed_extent = self.transform_extent(
+                    extent_box, source_crs, destination_crs
+                )
 
-            self.analysis_extent.bbox = [
-                transformed_extent.xMinimum(),
-                transformed_extent.xMaximum(),
-                transformed_extent.yMinimum(),
-                transformed_extent.yMaximum(),
-            ]
+                self.analysis_extent.bbox = [
+                    transformed_extent.xMinimum(),
+                    transformed_extent.xMaximum(),
+                    transformed_extent.yMinimum(),
+                    transformed_extent.yMaximum(),
+                ]
+            self.analysis_extent.crs = destination_crs.authid()
 
             if self.processing_type.isChecked():
                 analysis_task = ScenarioAnalysisTaskApiClient(
@@ -1840,8 +2102,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                             passed_extent.xMaximum(),
                             passed_extent.yMinimum(),
                             passed_extent.yMaximum(),
-                        ]
+                        ],
+                        crs=passed_extent_crs.authid() if passed_extent_crs else None,
                     ),
+                    clip_to_studyarea,
                 )
             else:
                 analysis_task = ScenarioAnalysisTask(task_config)
@@ -1860,6 +2124,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 )
             )
             log(traceback.format_exc())
+
+    def selected_activities(self) -> typing.List[Activity]:
+        """Gets the collection of selected activities.
+
+        :returns: A list of selected activities.
+        :rtype: typing.List[Activity]
+        """
+        return [
+            item.activity
+            for item in self.activity_widget.selected_activity_items()
+            if item.isEnabled()
+        ]
 
     def task_terminated(
         self, task: typing.Union[ScenarioAnalysisTask, ScenarioAnalysisTaskApiClient]
@@ -1920,22 +2196,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.on_progress_dialog_cancelled()
             log(f"Problem cancelling task, {e}")
         self.processing_cancelled = True
-
-        # # Analysis processing tasks
-        # try:
-        #     if self.task:
-        #         self.task.cancel()
-        # except Exception as e:
-        #     self.on_progress_dialog_cancelled()
-        #     log(f"Problem cancelling task, {e}")
-        #
-        # # Report generating task
-        # try:
-        #     if self.reporting_feedback:
-        #         self.reporting_feedback.cancel()
-        # except Exception as e:
-        #     self.on_progress_dialog_cancelled()
-        #     log(f"Problem cancelling report generating task, {e}")
 
     def scenario_results(self, task, report_manager, progress_dialog):
         """Called when the task ends. Sets the progress bar to 100 if it finished.
@@ -2001,31 +2261,21 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if not self.processing_cancelled and scenario_result is not None:
             list_activities = scenario_result.scenario.activities
             if task is not None:
-                weighted_activities = task.analysis_weighted_activities
+                activities = task.analysis_activities
             elif scenario_result.scenario is not None:
-                weighted_activities = scenario_result.scenario.weighted_activities
+                activities = scenario_result.scenario.activities
             else:
-                weighted_activities = []
+                activities = []
             raster = scenario_result.analysis_output["OUTPUT"]
-            im_weighted_dir = os.path.join(
-                os.path.dirname(raster), "weighted_activities"
-            )
+            activities_dir = os.path.join(os.path.dirname(raster), "activities")
 
             # Layer options
-            load_ncs = settings_manager.get_value(
-                Settings.NCS_WITH_CARBON, default=True, setting_type=bool
+            load_weighted_ncs = settings_manager.get_value(
+                Settings.NCS_WEIGHTED, default=True, setting_type=bool
             )
             load_landuse = settings_manager.get_value(
                 Settings.LANDUSE_PROJECT, default=True, setting_type=bool
             )
-            load_landuse_normalized = settings_manager.get_value(
-                Settings.LANDUSE_NORMALIZED, default=True, setting_type=bool
-            )
-
-            load_landuse_weighted = settings_manager.get_value(
-                Settings.LANDUSE_WEIGHTED, default=False, setting_type=bool
-            )
-
             load_highest_position = settings_manager.get_value(
                 Settings.HIGHEST_POSITION, default=False, setting_type=bool
             )
@@ -2050,29 +2300,20 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             # Groups
             activity_group = None
-            activity_weighted_group = None
+            pathways_group = None
 
             scenario_group = instance_root.insertGroup(0, group_name)
             if load_landuse:
                 activity_group = scenario_group.addGroup(tr(ACTIVITY_GROUP_LAYER_NAME))
-            if load_landuse_weighted:
-                activity_weighted_group = (
-                    scenario_group.addGroup(tr(ACTIVITY_WEIGHTED_GROUP_NAME))
-                    if os.path.exists(im_weighted_dir)
-                    else None
-                )
-            if load_ncs:
+            if load_weighted_ncs:
                 pathways_group = scenario_group.addGroup(
-                    tr(NCS_PATHWAYS_GROUP_LAYER_NAME)
+                    tr(NCS_PATHWAYS_WEIGHTED_GROUP_LAYER_NAME)
                 )
                 pathways_group.setExpanded(False)
                 pathways_group.setItemVisibilityCheckedRecursive(False)
 
             # Group settings
             activity_group.setExpanded(False) if activity_group else None
-            activity_weighted_group.setExpanded(
-                False
-            ) if activity_weighted_group else None
 
             # Add scenario result layer to the canvas with styling
             layer_file = scenario_result.analysis_output.get("OUTPUT")
@@ -2102,7 +2343,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             scenario_layer = qgis_instance.addMapLayer(layer)
 
             # Scenario result layer styling
-            renderer = self.style_activities_layer(layer, weighted_activities)
+            renderer = self.style_activities_layer(layer, activities)
             layer.setRenderer(renderer)
             layer.triggerRepaint()
 
@@ -2133,10 +2374,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                         activity_layer.setRenderer(renderer)
                         activity_layer.triggerRepaint()
+
                     # Add activity pathways
-                    if load_ncs:
+                    if load_weighted_ncs:
                         if len(list_pathways) > 0:
-                            # im_pathway_group = pathways_group.addGroup(im_name)
                             activity_pathway_group = pathways_group.insertGroup(
                                 activity_index, activity_name
                             )
@@ -2177,40 +2418,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                     activity_index = activity_index + 1
 
-            if load_landuse_weighted:
-                for weighted_activity in weighted_activities:
-                    weighted_activity_path = weighted_activity.path
-                    weighted_activity_name = Path(weighted_activity_path).stem
-
-                    if not weighted_activity_path.endswith(".tif"):
-                        continue
-
-                    activity_weighted_layer = QgsRasterLayer(
-                        weighted_activity_path,
-                        weighted_activity_name,
-                        QGIS_GDAL_PROVIDER,
-                    )
-
-                    # Set UUID for easier retrieval
-                    activity_weighted_layer.setCustomProperty(
-                        ACTIVITY_IDENTIFIER_PROPERTY, str(weighted_activity.uuid)
-                    )
-
-                    renderer = self.style_activity_layer(
-                        activity_weighted_layer, weighted_activity
-                    )
-                    activity_weighted_layer.setRenderer(renderer)
-                    activity_weighted_layer.triggerRepaint()
-
-                    added_im_weighted_layer = qgis_instance.addMapLayer(
-                        activity_weighted_layer
-                    )
-                    self.move_layer_to_group(
-                        added_im_weighted_layer, activity_weighted_group
-                    )
-
             # Initiate report generation
-            if load_landuse_weighted and load_highest_position:
+            if load_landuse and load_highest_position:
                 self.run_report(progress_dialog, report_manager) if (
                     progress_dialog is not None and report_manager is not None
                 ) else None
@@ -2267,19 +2476,32 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :returns: Renderer for the symbology.
         :rtype: QgsSingleBandPseudoColorRenderer
         """
-
         # Retrieves a build-in QGIS color ramp
         color_ramp = activity.color_ramp()
 
         stats = layer.dataProvider().bandStatistics(1)
-        renderer = QgsSingleBandPseudoColorRenderer(layer.dataProvider(), 1)
+        min_value = stats.minimumValue
+        max_value = stats.maximumValue
 
-        renderer.setClassificationMin(stats.minimumValue)
-        renderer.setClassificationMax(stats.maximumValue)
-
-        renderer.createShader(
-            color_ramp, QgsColorRampShader.Interpolated, QgsColorRampShader.Continuous
-        )
+        if stats.minimumValue == stats.maximumValue:
+            # Create one class for the min/max value
+            color = color_ramp.color(min_value)
+            color_ramp_shader = QgsColorRampShader.ColorRampItem(
+                float(min_value), color, str(min_value)
+            )
+            class_data = QgsPalettedRasterRenderer.colorTableToClassData(
+                [color_ramp_shader]
+            )
+            renderer = QgsPalettedRasterRenderer(layer.dataProvider(), 1, class_data)
+        else:
+            renderer = QgsSingleBandPseudoColorRenderer(layer.dataProvider(), 1)
+            renderer.setClassificationMin(min_value)
+            renderer.setClassificationMax(max_value)
+            renderer.createShader(
+                color_ramp,
+                QgsColorRampShader.Interpolated,
+                QgsColorRampShader.Continuous,
+            )
 
         return renderer
 
@@ -2348,31 +2570,30 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def zoom_pilot_area(self):
         """Zoom the current main map canvas to the pilot area extent."""
         map_canvas = iface.mapCanvas()
-        extent_list = PILOT_AREA_EXTENT["coordinates"]
-        default_extent = QgsRectangle(
-            extent_list[0], extent_list[2], extent_list[1], extent_list[3]
-        )
-        zoom_extent = QgsRectangle(
-            extent_list[0] - 0.5, extent_list[2], extent_list[1] + 0.5, extent_list[3]
-        )
+
+        zoom_extent = self.extent_box.outputExtent()
+        original_crs = self.extent_box.outputCrs()
+
+        if (
+            self._aoi_source_group.checkedId() == AreaOfInterestSource.LAYER.value
+            and self._aoi_layer
+        ):
+            zoom_extent = self._aoi_layer.extent()
+            original_crs = self._aoi_layer.crs()
 
         canvas_crs = map_canvas.mapSettings().destinationCrs()
-        original_crs = QgsCoordinateReferenceSystem("EPSG:4326")
 
         if canvas_crs.authid() != original_crs.authid():
             zoom_extent = self.transform_extent(zoom_extent, original_crs, canvas_crs)
-            default_extent = self.transform_extent(
-                default_extent, original_crs, canvas_crs
-            )
 
         aoi = QgsRubberBand(iface.mapCanvas(), QgsWkbTypes.PolygonGeometry)
 
         aoi.setFillColor(QtGui.QColor(0, 0, 0, 0))
         aoi.setStrokeColor(QtGui.QColor(88, 128, 8))
-        aoi.setWidth(3)
+        aoi.setWidth(2)
         aoi.setLineStyle(QtCore.Qt.DashLine)
 
-        geom = QgsGeometry.fromRect(default_extent)
+        geom = QgsGeometry.fromRect(zoom_extent)
 
         aoi.setToGeometry(geom, canvas_crs)
 
@@ -2381,8 +2602,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def prepare_extent_box(self):
         """Configure the spatial extent box with the initial settings."""
-
-        self.extent_box.setOutputCrs(QgsCoordinateReferenceSystem("EPSG:4326"))
+        crs = self.crs_selector.crs()
+        if crs is None:
+            crs = QgsCoordinateReferenceSystem("EPSG:4326")
+            self.crs_selector.setCrs(crs)
+        self.extent_box.setOutputCrs(crs)
         map_canvas = iface.mapCanvas()
         self.extent_box.setCurrentExtent(
             map_canvas.mapSettings().destinationCrs().bounds(),
@@ -2398,7 +2622,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.extent_box.setOutputExtentFromUser(
             default_extent,
-            QgsCoordinateReferenceSystem("EPSG:4326"),
+            crs,
         )
 
     def on_tab_step_changed(self, index: int):
@@ -2407,11 +2631,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param index: Zero-based index position of new current tab
         :type index: int
         """
-        if index == 1:
+        activity_tab_index = 1
+        priority_group_tab_index = 2
+
+        if index == activity_tab_index:
             self.activity_widget.can_show_error_messages = True
             self.activity_widget.load()
 
-        elif index == 2 or index == 3:
+        elif index == priority_group_tab_index:
             tab_valid = True
             msg = ""
 
@@ -2448,28 +2675,19 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             if not tab_valid:
                 self.show_message(msg)
-                self.tab_widget.setCurrentIndex(1)
+                self.tab_widget.setCurrentIndex(activity_tab_index)
 
             else:
                 self.message_bar.clearWidgets()
 
-        if index == 3:
-            analysis_activities = [
-                item.activity
-                for item in self.activity_widget.selected_activity_items()
-                if item.isEnabled()
-            ]
+        if index == priority_group_tab_index:
+            analysis_activities = self.selected_activities()
             is_online_processing = False
             for activity in analysis_activities:
                 for pathway in activity.pathways:
                     if pathway.path.startswith("cplus://"):
                         is_online_processing = True
                         break
-                    else:
-                        for carbon_path in pathway.carbon_paths:
-                            if carbon_path.startswith("cplus://"):
-                                is_online_processing = True
-                                break
 
             priority_layers = settings_manager.get_priority_layers()
             for priority_layer in priority_layers:
@@ -2490,6 +2708,97 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def open_settings(self):
         """Options the CPLUS settings in the QGIS options dialog."""
         self.iface.showOptionsDialog(currentPage=OPTIONS_TITLE)
+
+    def on_use_custom_metrics(self, checked: bool):
+        """Slot raised when use custom metrics has been enabled or disabled.
+
+        :param checked: True to use custom metrics else False.
+        :type checked: bool
+        """
+        settings_manager.set_value(Settings.USE_CUSTOM_METRICS, checked)
+        self.btn_metric_builder.setEnabled(checked)
+
+    def on_show_metrics_wizard(self):
+        """Slot raised to show the metric customization
+        wizard for creating the scenario analysis report.
+        """
+        metrics_builder = ActivityMetricsBuilder(self)
+        metrics_builder.activities = self.selected_activities()
+
+        # Load previously saved profile collection
+        metric_profile_collection = settings_manager.get_metric_profile_collection()
+        if metric_profile_collection is not None:
+            metrics_builder.profile_collection = metric_profile_collection
+        else:
+            metrics_builder.initialize_collection()
+
+        if metrics_builder.exec_() == QtWidgets.QDialog.Accepted:
+            metric_profile_collection = metrics_builder.profile_collection
+            settings_manager.save_metric_profile_collection(metric_profile_collection)
+            self.update_metric_button_profiles()
+
+    def update_metric_button_profiles(self):
+        """Updates the profiles in the metric button menu based on the
+        existing metric configuration profiles.
+        """
+        metric_profile_collection = settings_manager.get_metric_profile_collection()
+        if metric_profile_collection is None:
+            log("Metric profile collection does not contain any profiles.")
+            return
+
+        # Update tooltip
+        current_profile = metric_profile_collection.get_current_profile()
+        if current_profile:
+            self.btn_metric_builder.setToolTip(
+                f"{tr('Active profile')}: <b>{current_profile.name}</b>"
+            )
+        else:
+            self.btn_metric_builder.setToolTip(f"{tr('No active profile specified')}")
+
+        # Update menu
+        if not metric_profile_collection.profiles:
+            return
+
+        profiles_menu = QtWidgets.QMenu()
+        self.profiles_action_group = QtWidgets.QActionGroup(self)
+        self.profiles_action_group.setExclusive(True)
+        self.profiles_action_group.triggered.connect(
+            self.on_profile_action_group_triggered
+        )
+        for profile in metric_profile_collection.profiles:
+            action = profiles_menu.addAction(profile.name)
+            action.setCheckable(True)
+            if profile.id == metric_profile_collection.current_profile:
+                action.setChecked(True)
+            # Disable invalid profiles
+            if not profile.is_valid():
+                action.setEnabled(False)
+            self.profiles_action_group.addAction(action)
+
+        self.btn_metric_builder.setMenu(profiles_menu)
+        self.btn_metric_builder.setPopupMode(QtWidgets.QToolButton.MenuButtonPopup)
+
+    def on_profile_action_group_triggered(self, action: QtWidgets.QAction):
+        """Slot raised when the action group for profiles
+        has been triggered.
+
+        :param action: Action in the group that has been triggered.
+        :type action: QtWidgets.QAction
+        """
+        metric_profile_collection = settings_manager.get_metric_profile_collection()
+        if metric_profile_collection is None:
+            return
+
+        # Set current profile
+        current_profile = ""
+        for profile in metric_profile_collection.profiles:
+            if profile.name == action.text():
+                current_profile = profile.id
+                break
+
+        if current_profile:
+            metric_profile_collection.current_profile = current_profile
+            settings_manager.save_metric_profile_collection(metric_profile_collection)
 
     def run_report(self, progress_dialog, report_manager):
         """Run report generation. This should be called after the
@@ -2517,7 +2826,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.reporting_feedback = reporting_feedback
 
         submit_result = report_manager.generate(
-            self.scenario_result, reporting_feedback
+            self.scenario_result,
+            reporting_feedback,
+            self.chb_metric_builder.isChecked(),
         )
         if not submit_result.status:
             msg = self.tr("Unable to submit report request for scenario")
@@ -2542,6 +2853,19 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             tr("Generating report for the analysis output")
         )
 
+    def on_report_status_changed(self, progress_dialog, message: str):
+        """Slot raised when report task status has changed.
+
+        :param progress_dialog: Dialog responsible for showing
+         all the analysis operations progress.
+        :type progress_dialog: ProgressDialog
+
+        :param message: Status message.
+        :type message: str
+        """
+        status_message = f"{tr('Report generation')} - {message}..."
+        progress_dialog.change_status_message(status_message)
+
     def on_report_error(self, progress_dialog, message: str):
         """Slot raised when report task error has occured.
 
@@ -2555,7 +2879,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
         log(message)
 
-        self.run_scenario_btn.setEnabled(True)
+        self.enable_analysis_controls(True)
 
     def reset_reporting_feedback(self, progress_dialog):
         """Creates a new reporting feedback object and reconnects
@@ -2609,7 +2933,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         progress_dialog.set_report_complete()
         progress_dialog.change_status_message(tr("Report generation complete"))
 
-        self.run_scenario_btn.setEnabled(True)
+        self.enable_analysis_controls(True)
 
     def report_job_is_for_current_scenario(self, scenario_id: str) -> bool:
         """Checks if the given scenario identifier is for the current
@@ -2641,4 +2965,4 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def on_progress_dialog_cancelled(self):
         """Slot raised when analysis has been cancelled in progress dialog."""
         if not self.run_scenario_btn.isEnabled():
-            self.run_scenario_btn.setEnabled(True)
+            self.enable_analysis_controls(True)

@@ -6,6 +6,7 @@
 import concurrent.futures
 import copy
 import datetime
+from enum import IntEnum
 import json
 import os
 
@@ -63,11 +64,15 @@ class BaseFetchScenarioOutput:
             pathway_filename = os.path.basename(pathway["path"])
             if pathway_filename in download_dict:
                 pathway["path"] = download_dict[pathway_filename]
+                pathway.pop("carbon_paths", None)
+                pathway.pop("carbon_uuids", None)
                 ncs_pathways.append(NcsPathway(**pathway))
         activity["pathways"] = ncs_pathways
         activity_filename = os.path.basename(activity["path"])
         if activity_filename in download_dict:
             activity["path"] = download_dict[activity_filename]
+
+        activity.pop("priority_layers", None)
         activity_obj = Activity(**activity)
         activity_obj.pathways = ncs_pathways
         return activity_obj
@@ -97,15 +102,12 @@ class BaseFetchScenarioOutput:
             if "_cleaned" in output["filename"]:
                 output_fnames.append(output["filename"])
 
-        weighted_activities = []
         activities = []
 
         download_dict = {os.path.basename(d): d for d in download_paths}
 
         for activity in scenario_detail.get("activities", []):
             activities.append(self.__create_activity(activity, download_dict))
-        for activity in scenario_detail.get("weighted_activities", []):
-            weighted_activities.append(self.__create_activity(activity, download_dict))
 
         scenario = Scenario(
             uuid=original_scenario.uuid,
@@ -113,7 +115,6 @@ class BaseFetchScenarioOutput:
             description=original_scenario.description,
             extent=original_scenario.extent,
             activities=activities,
-            weighted_activities=weighted_activities,
             priority_layer_groups=scenario_detail.get("priority_layer_groups", []),
             server_uuid=original_scenario.server_uuid,
         )
@@ -207,3 +208,28 @@ class BaseFetchScenarioOutput:
             analysis_output=final_output,
         )
         return scenario, scenario_result
+
+
+class ApiRequestStatus(IntEnum):
+    """Status of API request."""
+
+    NOT_STARTED = 0
+    IN_PROGRESS = 1
+    COMPLETED = 2
+    ERROR = 3
+    CANCELED = 4
+
+    @staticmethod
+    def from_int(status: int) -> "ApiRequestStatus":
+        """Gets the status from an int value.
+
+        :returns: The status from an int value.
+        :rtype: int
+        """
+        return {
+            0: ApiRequestStatus.NOT_STARTED,
+            1: ApiRequestStatus.IN_PROGRESS,
+            2: ApiRequestStatus.COMPLETED,
+            3: ApiRequestStatus.ERROR,
+            4: ApiRequestStatus.CANCELED,
+        }[status]

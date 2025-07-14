@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>594</width>
-    <height>719</height>
+    <height>795</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -36,8 +36,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>558</width>
-        <height>732</height>
+        <width>572</width>
+        <height>773</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -76,49 +76,20 @@
           </size>
          </property>
          <property name="title">
-          <string>Scenario Analysis</string>
+          <string>Scenario analysis</string>
          </property>
          <property name="collapsed">
           <bool>false</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout">
           <item row="0" column="0">
-           <widget class="QLabel" name="carbon_coefficien_la">
-            <property name="toolTip">
-             <string>The value that will be used as a coefficient when combining pathways with carbon layers. </string>
-            </property>
-            <property name="text">
-             <string>Coefficient for carbon layers</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QDoubleSpinBox" name="carbon_coefficient_box">
-            <property name="toolTip">
-             <string>The value that will be used as a coefficient when combining pathways with carbon layers. </string>
-            </property>
-            <property name="decimals">
-             <number>1</number>
-            </property>
-            <property name="maximum">
-             <double>5.000000000000000</double>
-            </property>
-            <property name="singleStep">
-             <double>1.000000000000000</double>
-            </property>
-            <property name="value">
-             <double>0.000000000000000</double>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
            <widget class="QLabel" name="lbl_suitability_index">
             <property name="text">
              <string>Pathway suitability index</string>
             </property>
            </widget>
           </item>
-          <item row="1" column="1">
+          <item row="0" column="1">
            <widget class="QDoubleSpinBox" name="suitability_index_box">
             <property name="decimals">
              <number>1</number>
@@ -128,6 +99,29 @@
             </property>
             <property name="singleStep">
              <double>1.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="lbl_nodata_value">
+            <property name="text">
+             <string>NoData Value</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QDoubleSpinBox" name="nodata_value_box">                       
+            <property name="singleStep">
+             <double>1.000000000000000</double>
+            </property>
+            <property name="decimals">
+             <number>1</number>
+            </property>
+            <property name="minimum">
+             <double>-3.4028235e+38</double>
+            </property>
+            <property name="maximum">
+             <double>3.4028235e+38</double>
             </property>
            </widget>
           </item>
@@ -158,18 +152,25 @@
               </layout>
              </item>
              <item>
+              <widget class="QLabel" name="reference_layer_label_3">
+               <property name="text">
+                <string>Reference layer</string>
+               </property>
+              </widget>
+             </item>
+             <item>
               <layout class="QHBoxLayout" name="horizontalLayout">
                <item>
                 <widget class="QgsFileWidget" name="map_layer_file_widget">
                  <property name="toolTip">
-                  <string>Select the priority layer from the local filesystem.</string>
+                  <string>Select the reference layer from the local filesystem.</string>
                  </property>
                 </widget>
                </item>
                <item>
                 <widget class="QgsMapLayerComboBox" name="map_layer_box">
                  <property name="toolTip">
-                  <string>Select priority layer from the current QGIS map layers.</string>
+                  <string>Select reference layer from the current QGIS map layers.</string>
                  </property>
                 </widget>
                </item>
@@ -304,6 +305,276 @@
             <property name="text">
              <string>...</string>
             </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QgsCollapsibleGroupBox" name="pwl_layers_box">
+         <property name="title">
+          <string>Global priority weighted layers (PWLs)</string>
+         </property>
+         <property name="collapsed">
+          <bool>false</bool>
+         </property>
+         <property name="saveCheckedState">
+          <bool>false</bool>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_pwls">
+          <item row="0" column="3">
+           <widget class="QToolButton" name="btn_edit_pwl">
+            <property name="toolTip">
+             <string>Edit layer</string>
+            </property>
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="4">
+           <widget class="QToolButton" name="btn_delete_pwl">
+            <property name="toolTip">
+             <string>Delete layer</string>
+            </property>
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>         
+          <item row="1" column="0" colspan="5">
+           <widget class="QTableView" name="tbl_pwl_layers">
+            <property name="toolTip">
+              <string>Global priority weighted layers (PWLs)</string>
+            </property>
+            <property name="showGrid">
+              <bool>false</bool>
+            </property>
+            <property name="alternatingRowColors">
+              <bool>true</bool>
+            </property>
+            <property name="selectionBehavior">
+              <enum>QAbstractItemView::SelectRows</enum>
+            </property>
+            <property name="selectionMode">
+              <enum>QAbstractItemView::SingleSelection</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>367</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="0" column="2">
+           <widget class="QToolButton" name="btn_add_pwl">
+            <property name="toolTip">
+             <string>Add layer</string>
+            </property>
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QToolButton" name="btn_download_pwl">
+            <property name="toolTip">
+             <string>Download layer</string>
+            </property>
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QgsCollapsibleGroupBox" name="gb_ic_reference_layer">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="title">
+          <string>Irrecoverable carbon reference layer</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_6">
+          <property name="leftMargin">
+           <number>6</number>
+          </property>
+          <property name="topMargin">
+           <number>6</number>
+          </property>
+          <property name="rightMargin">
+           <number>6</number>
+          </property>
+          <property name="bottomMargin">
+           <number>6</number>
+          </property>
+          <item row="0" column="0">
+           <widget class="QRadioButton" name="rb_local">
+            <property name="toolTip">
+             <string>Specify a dataset in the local computer or network drive</string>
+            </property>
+            <property name="text">
+             <string>Local path</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QRadioButton" name="rb_online">
+            <property name="toolTip">
+             <string>Specify the URL for the fetching the dataset from an online server</string>
+            </property>
+            <property name="text">
+             <string>Online source</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0" colspan="2">
+           <widget class="QStackedWidget" name="sw_irrecoverable_carbon">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="currentIndex">
+             <number>1</number>
+            </property>
+            <widget class="QWidget" name="pg_local_path">
+             <layout class="QHBoxLayout" name="horizontalLayout_7">
+              <property name="leftMargin">
+               <number>3</number>
+              </property>
+              <property name="topMargin">
+               <number>3</number>
+              </property>
+              <property name="rightMargin">
+               <number>3</number>
+              </property>
+              <property name="bottomMargin">
+               <number>3</number>
+              </property>
+              <item>
+               <widget class="QgsFileWidget" name="fw_irrecoverable_carbon"/>
+              </item>
+              <item>
+               <widget class="QgsMapLayerComboBox" name="cbo_irrecoverable_carbon"/>
+              </item>
+             </layout>
+            </widget>
+            <widget class="QWidget" name="pg_online_source">
+             <layout class="QGridLayout" name="gridLayout_4">
+              <property name="leftMargin">
+               <number>5</number>
+              </property>
+              <property name="topMargin">
+               <number>5</number>
+              </property>
+              <property name="rightMargin">
+               <number>5</number>
+              </property>
+              <property name="bottomMargin">
+               <number>5</number>
+              </property>
+              <item row="0" column="0">
+               <widget class="QLabel" name="label">
+                <property name="text">
+                 <string>URL</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1" colspan="2">
+               <widget class="QLineEdit" name="txt_ic_url">
+                <property name="toolTip">
+                 <string>Do not include the bbox PARAM, it will be automatically appended based on the current scenario extent</string>
+                </property>
+                <property name="placeholderText">
+                 <string>Specify the URL to fetch the dataset in the CI server</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_2">
+                <property name="text">
+                 <string>Save as</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1" colspan="2">
+               <widget class="QgsFileWidget" name="fw_save_online_file"/>
+              </item>
+              <item row="2" column="1">
+               <widget class="QPushButton" name="btn_ic_download">
+                <property name="toolTip">
+                 <string>Initiate new download or refesh previous download in the background</string>
+                </property>
+                <property name="text">
+                 <string>Start download</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="2">
+               <layout class="QHBoxLayout" name="horizontalLayout_8">
+                <property name="spacing">
+                 <number>4</number>
+                </property>
+                <item>
+                 <widget class="SvgLabel" name="lbl_download_status_tip">
+                  <property name="minimumSize">
+                   <size>
+                    <width>16</width>
+                    <height>16</height>
+                   </size>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>24</width>
+                    <height>24</height>
+                   </size>
+                  </property>
+                  <property name="frameShape">
+                   <enum>QFrame::NoFrame</enum>
+                  </property>
+                  <property name="text">
+                   <string/>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="lbl_ic_download_status">
+                  <property name="frameShape">
+                   <enum>QFrame::NoFrame</enum>
+                  </property>
+                  <property name="text">
+                   <string/>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </widget>
            </widget>
           </item>
          </layout>
@@ -477,6 +748,11 @@
    <extends>QScrollArea</extends>
    <header location="global">qgis.gui</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>SvgLabel</class>
+   <extends>QLabel</extends>
+   <header>cplus_plugin.gui.components.svg_label</header>
   </customwidget>
  </customwidgets>
  <resources/>

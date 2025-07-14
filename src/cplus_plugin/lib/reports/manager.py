@@ -29,6 +29,7 @@ from ...definitions.constants import COMPARISON_REPORT_SEGMENT
 from ...definitions.defaults import (
     DEFAULT_BASE_COMPARISON_REPORT_NAME,
     SCENARIO_ANALYSIS_TEMPLATE_NAME,
+    SCENARIO_ANALYSIS_METRICS_TEMPLATE_NAME,
     SCENARIO_COMPARISON_TEMPLATE_NAME,
 )
 from cplus_core.models.base import Scenario, ScenarioResult
@@ -55,6 +56,7 @@ class ReportManager(QtCore.QObject):
     generate_started = QtCore.pyqtSignal(str)
     generate_error = QtCore.pyqtSignal(str)
     generate_completed = QtCore.pyqtSignal(str)
+    status_changed = QtCore.pyqtSignal(str)
 
     # Max number of comparison report tasks
     COMPARISON_REPORT_LIMIT = 3
@@ -275,7 +277,10 @@ class ReportManager(QtCore.QObject):
         return scenario_path_str
 
     def generate(
-        self, scenario_result: ScenarioResult, feedback: QgsFeedback = None
+        self,
+        scenario_result: ScenarioResult,
+        feedback: QgsFeedback = None,
+        use_custom_metrics: bool = False,
     ) -> ReportSubmitStatus:
         """Initiates the report generation process using information
         resulting from the scenario analysis.
@@ -286,6 +291,12 @@ class ReportManager(QtCore.QObject):
         :param feedback: Feedback for reporting back to the main application.
         If one is not specified then the manager will create one for the context.
         :type feedback: QgsFeedback
+
+        :param use_custom_metrics: True to use custom metrics else False. If
+        True and there is no active profile or if the metrics configuration
+        profile is empty or undefined, then the default activity table in
+        the scenario analysis report will be used.
+        :type use_custom_metrics: bool
 
         :returns: True if the report generation process was successfully
         submitted else False if a running process is re-submitted. Object
@@ -301,7 +312,7 @@ class ReportManager(QtCore.QObject):
         if feedback is None:
             feedback = QgsFeedback(self)
 
-        ctx = self.create_report_context(scenario_result, feedback)
+        ctx = self.create_report_context(scenario_result, feedback, use_custom_metrics)
         if ctx is None:
             log("Could not create report context. Check directory settings.")
             return ReportSubmitStatus(False, None, "")
@@ -319,6 +330,8 @@ class ReportManager(QtCore.QObject):
         report_task.taskCompleted.connect(report_task_completed)
         report_task.taskTerminated.connect(report_task_completed)
 
+        report_task.status_changed.connect(self.on_analysis_status_changed)
+
         task_id = self.task_manager.addTask(report_task)
 
         self._report_tasks[scenario_id] = task_id
@@ -328,6 +341,17 @@ class ReportManager(QtCore.QObject):
     def report_task_completed(self, task):
         if len(task._result.messages) > 0:
             self.generate_error.emit(",".join(task._result.messages))
+
+    def on_analysis_status_changed(self, message: str):
+        """Slot raised when the status for a scenario analysis changes.
+
+        :param message: Status message.
+        :type message: str
+        """
+        if not message:
+            return
+
+        self.status_changed.emit(message)
 
     def report_result(self, scenario_id: str) -> typing.Union[ReportResult, None]:
         """Gets the report result for the scenario with the given ID.
@@ -350,7 +374,10 @@ class ReportManager(QtCore.QObject):
 
     @classmethod
     def create_report_context(
-        cls, scenario_result: ScenarioResult, feedback: QgsFeedback
+        cls,
+        scenario_result: ScenarioResult,
+        feedback: QgsFeedback,
+        use_custom_metrics: bool = False,
     ) -> typing.Optional[ReportContext]:
         """Creates the report context for use in the report
         generator task.
@@ -361,6 +388,11 @@ class ReportManager(QtCore.QObject):
         :param feedback: Feedback object for reporting back to the main
         application.
         :type feedback: QgsFeedback
+
+        :param use_custom_metrics: True to use custom metrics else False. If
+        True and the metrics configuration is empty or undefined, then the
+        default activity table in the scenario analysis report will be used.
+        :type use_custom_metrics: bool
 
         :returns: A report context object containing the information
         for generating the report else None if it could not be created.
@@ -408,7 +440,27 @@ class ReportManager(QtCore.QObject):
                 break
             counter += 1
 
-        template_path = FileUtils.report_template_path(SCENARIO_ANALYSIS_TEMPLATE_NAME)
+        metrics_configuration = None
+        metric_collection = settings_manager.get_metric_profile_collection()
+        if metric_collection:
+            current_metric_profile = metric_collection.get_current_profile()
+            if current_metric_profile:
+                metrics_configuration = current_metric_profile.config
+
+        if (
+            use_custom_metrics
+            and metrics_configuration is not None
+            and metrics_configuration.is_valid()
+        ):
+            # Metrics template
+            template_path = FileUtils.report_template_path(
+                SCENARIO_ANALYSIS_METRICS_TEMPLATE_NAME
+            )
+        else:
+            # Default template
+            template_path = FileUtils.report_template_path(
+                SCENARIO_ANALYSIS_TEMPLATE_NAME
+            )
 
         return ReportContext(
             template_path=template_path,
@@ -418,6 +470,7 @@ class ReportManager(QtCore.QObject):
             project_file=project_file_path,
             feedback=feedback,
             output_layer_name=scenario_result.output_layer_name,
+            custom_metrics=use_custom_metrics,
         )
 
     @classmethod

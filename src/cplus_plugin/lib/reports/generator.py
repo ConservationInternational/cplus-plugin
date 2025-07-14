@@ -11,6 +11,8 @@ import typing
 from qgis.core import (
     Qgis,
     QgsBasicNumericFormat,
+    QgsCoordinateReferenceSystem,
+    QgsFallbackNumericFormat,
     QgsFeedback,
     QgsFillSymbol,
     QgsLayerTreeNode,
@@ -25,10 +27,10 @@ from qgis.core import (
     QgsLayoutItemShape,
     QgsLayoutPoint,
     QgsLayoutSize,
+    QgsLayoutTableColumn,
     QgsMapLayerLegendUtils,
     QgsNumericFormatContext,
     QgsPrintLayout,
-    QgsProcessingFeedback,
     QgsProject,
     QgsRasterLayer,
     QgsReadWriteContext,
@@ -44,9 +46,9 @@ from qgis.core import (
 from qgis.PyQt import QtCore, QtGui, QtXml
 
 from .comparison_table import ScenarioComparisonTableInfo
+from ...conf import settings_manager
 from ...definitions.constants import (
     ACTIVITY_GROUP_LAYER_NAME,
-    ACTIVITY_WEIGHTED_GROUP_NAME,
     ACTIVITY_IDENTIFIER_PROPERTY,
 )
 from ...definitions.defaults import (
@@ -54,14 +56,23 @@ from ...definitions.defaults import (
     AREA_COMPARISON_TABLE_ID,
     MAX_ACTIVITY_DESCRIPTION_LENGTH,
     MAX_ACTIVITY_NAME_LENGTH,
+    METRICS_ACCREDITATION,
+    METRICS_FOOTER_BACKGROUND,
+    METRICS_HEADER_BACKGROUND,
+    METRICS_LOGO,
+    METRICS_PAGE_NUMBER,
+    METRICS_TABLE_HEADER,
     MINIMUM_ITEM_HEIGHT,
     MINIMUM_ITEM_WIDTH,
     PRIORITY_GROUP_WEIGHT_TABLE_ID,
+    REPORT_COLOR_TREEFOG,
 )
 from .layout_items import BasicScenarioDetailsItem, CplusMapRepeatItem
 from cplus_core.models.base import Activity, ScenarioResult
+from .metrics import create_metrics_expression_context, evaluate_activity_metric
 from ...models.helpers import extent_to_project_crs_extent
 from ...models.report import (
+    ActivityContextInfo,
     BaseReportContext,
     RepeatAreaDimension,
     ReportContext,
@@ -69,7 +80,7 @@ from ...models.report import (
     ScenarioComparisonReportContext,
 )
 from ...utils import (
-    calculate_raster_value_area,
+    calculate_raster_area_by_pixel_value,
     clean_filename,
     get_report_font,
     log,
@@ -84,13 +95,16 @@ DEFAULT_AREA_DECIMAL_PLACES = 2
 class BaseScenarioReportGeneratorTask(QgsTask):
     """Base proxy class for initiating the report generation process."""
 
+    status_changed = QtCore.pyqtSignal(str)
+
     def __init__(self, description: str, context: BaseReportContext):
         super().__init__(description)
         self._context = context
         self._result = None
         self._generator = BaseScenarioReportGenerator(
-            self._context, self._context.feedback
+            self, self._context, self._context.feedback
         )
+        self._generator.status_changed.connect(self._on_status_changed)
         self.layout_manager = QgsProject.instance().layoutManager()
         self.layout_manager.layoutAdded.connect(self._on_layout_added)
 
@@ -112,6 +126,14 @@ class BaseScenarioReportGeneratorTask(QgsTask):
         :rtype: ReportResult
         """
         return self._result
+
+    def _on_status_changed(self, message: str):
+        """Slot raised when the status of the generator has changed.
+
+        :param message: Status message.
+        :type message: str
+        """
+        self.status_changed.emit(message)
 
     def cancel(self):
         """Cancel the report generation task."""
@@ -185,15 +207,35 @@ class ScenarioAnalysisReportGeneratorTask(BaseScenarioReportGeneratorTask):
     def __init__(self, description: str, context: ReportContext):
         super().__init__(description, context)
         self._generator = ScenarioAnalysisReportGenerator(
-            context, self._context.feedback
+            self, context, self._context.feedback
         )
+        self._generator.status_changed.connect(self._on_status_changed)
 
     def _zoom_map_items_to_current_extents(self, layout: QgsPrintLayout):
         """Zoom extents of map items in the layout to current map canvas
         extents.
         """
+        # Use CRS of one of the pathways to get the source for transforming
+        # to the current project CRS.
+        source_crs = None
+        for activity in self._context.scenario.activities:
+            for pathway in activity.pathways:
+                layer = pathway.to_map_layer()
+                if layer is None or layer.crs() is None:
+                    continue
+                source_crs = layer.crs()
+                break
+            if source_crs is not None:
+                break
+
+        # Else, we will fall back to EPSG:32735 as explicitly defined in
+        # 'qgis_cplus_main.py'. Might to avoid hardcoding this in future
+        # iterations.
+        if source_crs is None:
+            source_crs = QgsCoordinateReferenceSystem("EPSG:32735")
+
         scenario_extent = extent_to_project_crs_extent(
-            self._context.scenario.extent, QgsProject.instance()
+            self._context.scenario.extent, QgsProject.instance(), source_crs
         )
         if scenario_extent is None:
             log("Cannot set extents for map items in the report.")
@@ -255,7 +297,7 @@ class ScenarioComparisonReportGeneratorTask(BaseScenarioReportGeneratorTask):
     def __init__(self, description: str, context: ScenarioComparisonReportContext):
         super().__init__(description, context)
         self._generator = ScenarioComparisonReportGenerator(
-            context, self._context.feedback
+            self, context, self._context.feedback
         )
 
     def finished(self, result: bool):
@@ -297,12 +339,20 @@ class ScenarioComparisonReportGeneratorTask(BaseScenarioReportGeneratorTask):
                 feedback.setProgress(100)
 
 
-class BaseScenarioReportGenerator:
+class BaseScenarioReportGenerator(QtCore.QObject):
     """Base class for generating a scenario report."""
+
+    status_changed = QtCore.pyqtSignal(str)
 
     AREA_DECIMAL_PLACES = DEFAULT_AREA_DECIMAL_PLACES
 
-    def __init__(self, context: BaseReportContext, feedback: QgsFeedback = None):
+    def __init__(
+        self,
+        parent: QtCore.QObject,
+        context: BaseReportContext,
+        feedback: QgsFeedback = None,
+    ):
+        super().__init__(parent)
         self._context = context
         self._feedback = context.feedback or feedback
         if self._feedback:
@@ -366,17 +416,23 @@ class BaseScenarioReportGenerator:
         """
         pass
 
-    def _process_check_cancelled_or_set_progress(self, value: float) -> bool:
+    def _process_check_cancelled_or_set_progress(
+        self, value: float, status_message: str = ""
+    ) -> bool:
         """Check if there is a request to cancel the process
         if a feedback object had been specified.
         """
         if (self._feedback and self._feedback.isCanceled()) or self._error_occurred:
             tr_msg = tr("Report generation cancelled.")
             self._error_messages.append(tr_msg)
+            self.status_changed.emit(tr_msg)
 
             return True
 
         self._feedback.setProgress(value)
+
+        if status_message:
+            self.status_changed.emit(status_message)
 
         return False
 
@@ -703,9 +759,12 @@ class ScenarioComparisonReportGenerator(DuplicatableRepeatPageReportGenerator):
     REPEAT_PAGE_ITEM_ID = "CPLUS Map Repeat Area 2"
 
     def __init__(
-        self, context: ScenarioComparisonReportContext, feedback: QgsFeedback = None
+        self,
+        parent: QtCore.QObject,
+        context: ScenarioComparisonReportContext,
+        feedback: QgsFeedback = None,
     ):
-        super().__init__(context, feedback)
+        super().__init__(parent, context, feedback)
 
         # Repeat item for half page one
         self._page_one_repeat_item = None
@@ -1033,8 +1092,13 @@ class ScenarioComparisonReportGenerator(DuplicatableRepeatPageReportGenerator):
 class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
     """Generator for CPLUS scenario analysis report."""
 
-    def __init__(self, context: ReportContext, feedback: QgsFeedback = None):
-        super().__init__(context, feedback)
+    def __init__(
+        self,
+        parent: QtCore.QObject,
+        context: ReportContext,
+        feedback: QgsFeedback = None,
+    ):
+        super().__init__(parent, context, feedback)
         self._repeat_page = None
         self._repeat_page_num = -1
         self._repeat_item = None
@@ -1043,9 +1107,25 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         self._area_processing_feedback = None
         self._activities_area = {}
         self._pixel_area_info = {}
+        self._use_custom_metrics = context.custom_metrics
+        self._metrics_configuration = None
+        self._setup_metrics_configuration()
 
         if self._feedback:
             self._feedback.canceled.connect(self._on_feedback_cancelled)
+
+    def _setup_metrics_configuration(self):
+        # Setup metrics configuration object
+        if not self._use_custom_metrics:
+            return
+
+        metric_profile_collection = settings_manager.get_metric_profile_collection()
+        if not metric_profile_collection:
+            return
+
+        current_metric_profile = metric_profile_collection.get_current_profile()
+        if current_metric_profile:
+            self._metrics_configuration = current_metric_profile.config
 
     @property
     def repeat_page(self) -> typing.Union[QgsLayoutItemPage, None]:
@@ -1061,17 +1141,23 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         """
         return self._repeat_page
 
-    def _process_check_cancelled_or_set_progress(self, value: float) -> bool:
+    def _process_check_cancelled_or_set_progress(
+        self, value: float, status_message: str = ""
+    ) -> bool:
         """Check if there is a request to cancel the process
         if a feedback object had been specified.
         """
         if (self._feedback and self._feedback.isCanceled()) or self._error_occurred:
-            tr_msg = tr("Report generation cancelled")
+            tr_msg = tr("Report generation cancelled.")
             self._error_messages.append(tr_msg)
+            self.status_changed.emit(tr_msg)
 
             return True
 
         self._feedback.setProgress(value)
+
+        if status_message:
+            self.status_changed.emit(status_message)
 
         return False
 
@@ -1183,7 +1269,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
         max_items_page = dimension.rows * dimension.columns
 
-        num_activities = len(self._context.scenario.weighted_activities)
+        num_activities = len(self._context.scenario.activities)
 
         if num_activities == 0:
             tr_msg = "No activities in the scenario"
@@ -1207,7 +1293,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             page_pos = self._repeat_page_num + p
             _ = self.duplicate_repeat_page(page_pos)
 
-        self._pixel_area_info = calculate_raster_value_area(
+        self._pixel_area_info = calculate_raster_area_by_pixel_value(
             self._scenario_layer, feedback=self._area_processing_feedback
         )
 
@@ -1221,7 +1307,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                     if im_count == num_activities:
                         break
 
-                    activity = self._context.scenario.weighted_activities[im_count]
+                    activity = self._context.scenario.activities[im_count]
                     reference_x_pos = repeat_ref_x + (c * dimension.width)
                     self._add_activity_items(
                         reference_x_pos,
@@ -1272,9 +1358,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         map_ref_point = QgsLayoutPoint(pos_x, pos_y, self._layout.units())
         im_map.attemptMove(map_ref_point, True, False, page)
         im_map.attemptResize(QgsLayoutSize(width, map_height, self._layout.units()))
-        im_layer = self._get_activity_layer_in_project(
-            str(activity.uuid), weighted=True
-        )
+        im_layer = self._get_activity_layer_in_project(str(activity.uuid))
         if im_layer is not None:
             ext = im_layer.extent()
             im_map.setLayers([im_layer])
@@ -1295,7 +1379,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         im_shape.attemptMove(shape_ref_point, True, False, page)
         im_shape.attemptResize(QgsLayoutSize(width, shape_height, self._layout.units()))
         symbol_props = {
-            "color": "#b2df8a",
+            "color": REPORT_COLOR_TREEFOG,
             "style": "solid",
             "outline_style": "no",
             "line_color": "#000000",
@@ -1322,7 +1406,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             "color": "255,255,255,179",
             "style": "solid",
             "outline_style": "solid",
-            "line_color": "#b2df8a",
+            "line_color": REPORT_COLOR_TREEFOG,
             "outline_width": "1.2",
         }
         symbol = QgsFillSymbol.createSimple(symbol_props_area)
@@ -1520,23 +1604,15 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         )
 
     def _get_activity_layer_in_project(
-        self, activity_identifier: str, weighted: bool = False
+        self, activity_identifier: str
     ) -> typing.Union[QgsRasterLayer, None]:
         """Retrieves the activity raster layer from the activity layer group in
         the project.
 
         :param activity_identifier: Unique identifier of the activity.
         :type activity_identifier: str
-
-        :param weighted: True to search under weighted activity
-        category else under the activities maps.
-        category. Default is False.
-        :type weighted: bool
         """
-        if weighted:
-            category_name = tr(ACTIVITY_WEIGHTED_GROUP_NAME)
-        else:
-            category_name = tr(ACTIVITY_GROUP_LAYER_NAME)
+        category_name = tr(ACTIVITY_GROUP_LAYER_NAME)
 
         if self._project is None:
             tr_msg = tr(
@@ -1687,30 +1763,220 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             int(value): area for value, area in pixel_area_info.items()
         }
 
+        # Set table columns but first fetch the activity name column
+        columns = parent_table.columns()
+
+        if self._use_custom_metrics:
+            for mc in self._metrics_configuration.metric_columns:
+                columns.append(mc.to_qgs_column())
+        else:
+            # Otherwise just add the area column
+            area_column = QgsLayoutTableColumn(tr("Area (ha)"))
+            area_column.setWidth(0)
+            area_column.setHAlignment(QtCore.Qt.AlignHCenter)
+
+            columns.append(area_column)
+
+        parent_table.setHeaders(columns)
+
+        metrics_context = create_metrics_expression_context(self._project)
+
         rows_data = []
-        for activity in self._context.scenario.weighted_activities:
+        for activity in self._context.scenario.activities:
+            activity_row_cells = []
+
             # Activity name column
             name_cell = QgsTableCell(activity.name)
             name_cell.setBackgroundColor(QtGui.QColor("#e9e9e9"))
 
-            # Activity area column
+            activity_row_cells.append(name_cell)
+
+            # Activity area
             if activity.style_pixel_value in int_pixel_area_info:
                 area_info = int_pixel_area_info.get(activity.style_pixel_value)
             else:
                 log(f"Pixel value not found in calculation")
                 area_info = tr("<Pixel value not found>")
 
-            area_cell = QgsTableCell(area_info)
-            if isinstance(area_info, Number):
-                number_format = QgsBasicNumericFormat()
-                number_format.setThousandsSeparator(",")
-                number_format.setShowTrailingZeros(True)
-                number_format.setNumberDecimalPlaces(self.AREA_DECIMAL_PLACES)
-                area_cell.setNumericFormat(number_format)
+            if self._use_custom_metrics:
+                activity_area = area_info if isinstance(area_info, Number) else 0
+                activity_context_info = ActivityContextInfo(activity, activity_area)
 
-            rows_data.append([name_cell, area_cell])
+                highlight_error = False
+
+                base_overall_progress = 70
+                progress_increment = 15 / (
+                    float(len(self._metrics_configuration.metric_columns))
+                    * num_activities
+                )
+
+                for i, mc in enumerate(self._metrics_configuration.metric_columns):
+                    progress = base_overall_progress + ((i + 1) * progress_increment)
+                    tr_msg = f"{tr('Calculating')} {activity.name} {mc.header} metrics"
+                    if self._process_check_cancelled_or_set_progress(progress, tr_msg):
+                        return self._get_failed_result()
+
+                    activity_metric = self._metrics_configuration.find(
+                        str(activity.uuid), mc.name
+                    )
+                    if activity_metric is None:
+                        cell_value = tr("Error fetching metric")
+                        highlight_error = True
+                    else:
+                        result = evaluate_activity_metric(
+                            metrics_context,
+                            activity_context_info,
+                            activity_metric.expression,
+                        )
+
+                        if not result.success:
+                            cell_value = tr("Metric eval error")
+                            highlight_error = True
+                        else:
+                            # Apply appropriate formatting
+                            if isinstance(result.value, Number):
+                                formatter = mc.number_formatter
+                                if formatter is None:
+                                    formatter = QgsFallbackNumericFormat()
+
+                                cell_value = formatter.formatDouble(
+                                    float(result.value), QgsNumericFormatContext()
+                                )
+                            else:
+                                cell_value = result.value
+
+                    activity_cell = QgsTableCell(cell_value)
+                    # Workaround of fetching alignment from the table column
+                    activity_cell.setHorizontalAlignment(
+                        mc.to_qgs_column().hAlignment()
+                    )
+
+                    if highlight_error:
+                        text_format = activity_cell.textFormat()
+                        text_format.setColor(QtCore.Qt.red)
+                        activity_cell.setTextFormat(text_format)
+
+                    activity_row_cells.append(activity_cell)
+            else:
+                formatted_area = self.format_number(area_info)
+                area_cell = QgsTableCell(formatted_area)
+
+                activity_row_cells.append(area_cell)
+
+            rows_data.append(activity_row_cells)
 
         parent_table.setTableContents(rows_data)
+
+        self._re_orient_area_table_page(parent_table)
+
+    @classmethod
+    def format_number(cls, value: typing.Any) -> str:
+        """Formats a number to two decimals places.
+
+        :returns: String representation of a number rounded off to
+        two decimal places with a comma thousands' separator or
+        just returns the value as passed in if its not a number.
+        :rtype: str
+        """
+        if not isinstance(value, Number):
+            return value
+
+        number_format = QgsBasicNumericFormat()
+        number_format.setThousandsSeparator(",")
+        number_format.setShowTrailingZeros(True)
+        number_format.setNumberDecimalPlaces(cls.AREA_DECIMAL_PLACES)
+
+        return number_format.formatDouble(value, QgsNumericFormatContext())
+
+    def _re_orient_area_table_page(self, table: QgsLayoutItemManualTable):
+        """If the width of the activity area table exceeds that of the page
+        then change orientation of the page to landscape. This is just one
+        strategy for trying to accommodate the size of the activity area table.
+
+        :param table: Activity metrics table whose width is to be evaluated,
+        with its container page being re-oriented.
+        :type table: QgsLayoutItemManualTable
+        """
+        table_width = table.totalWidth()
+
+        for table_frame in table.frames():
+            page_idx = table_frame.page()
+            page = self._layout.pageCollection().page(page_idx)
+            page_width = page.pageSize().width()
+
+            if table_width > page_width:
+                # Move items at the footer of the page otherwise they
+                # will spill to the next page when we change the
+                # page orientation
+                move_up_items = []
+                width_increase_items = []
+                move_right_items = []
+
+                background_item = self._layout.itemById(METRICS_FOOTER_BACKGROUND)
+                if background_item is not None:
+                    move_up_items.append(background_item)
+                    width_increase_items.append(background_item)
+
+                logo_item = self._layout.itemById(METRICS_LOGO)
+                if logo_item is not None:
+                    move_up_items.append(logo_item)
+                    move_right_items.append(logo_item)
+
+                page_number_item = self._layout.itemById(METRICS_PAGE_NUMBER)
+                if page_number_item is not None:
+                    move_up_items.append(page_number_item)
+
+                accreditation_item = self._layout.itemById(METRICS_ACCREDITATION)
+                if accreditation_item is not None:
+                    move_up_items.append(accreditation_item)
+                    width_increase_items.append(accreditation_item)
+
+                header_background_item = self._layout.itemById(
+                    METRICS_HEADER_BACKGROUND
+                )
+                if header_background_item is not None:
+                    width_increase_items.append(header_background_item)
+
+                table_header_item = self._layout.itemById(METRICS_TABLE_HEADER)
+                if table_header_item is not None:
+                    width_increase_items.append(table_header_item)
+
+                delta_pos = 297 - 210
+
+                # Move up and right if applicable
+                for item in move_up_items:
+                    position = item.positionWithUnits()
+                    position.setY(position.y() - delta_pos)
+                    if item in move_right_items:
+                        position.setX(position.x() + delta_pos)
+                    item.attemptMove(position)
+
+                # Increase width for some of the footer items
+                for item in width_increase_items:
+                    size = item.sizeWithUnits()
+                    size.setWidth(size.width() + delta_pos)
+                    item.attemptResize(size)
+
+                # We will also need to change the reference point of the
+                # frame for the table as it is anchored in the middle of
+                # the page. We will still maintain this
+                anchor_x_position = 297 / 2.0
+                table_position = table_frame.positionWithUnits()
+                table_position.setX(anchor_x_position)
+                table_frame.attemptMove(table_position)
+
+                # Also change the anchor point for the page number item
+                if page_number_item is not None:
+                    page_number_position = page_number_item.positionWithUnits()
+                    page_number_position.setX(anchor_x_position)
+                    page_number_item.attemptMove(page_number_position)
+
+                # Now we can change orientation
+                self._layout.pageCollection().beginPageSizeChange()
+                page.setPageSize("A4", QgsLayoutItemPage.Orientation.Landscape)
+                self._layout.pageCollection().reflow()
+                self._layout.pageCollection().endPageSizeChange()
+                self._layout.refresh()
 
     def _populate_scenario_weighting_values(self):
         """Populate table with weighting values for priority layer groups."""
@@ -1729,6 +1995,11 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             group_name = priority_group["name"]
             # Ensure there are no duplicates in the table
             if group_name in groups:
+                continue
+
+            # If group has no layers then exclude it from the table
+            layers = settings_manager.find_layers_by_group(group_name)
+            if not layers:
                 continue
 
             # If value is less than or equal to zero then do not include in the table.
@@ -1755,22 +2026,28 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         # Set repeat page
         self._set_repeat_page()
 
-        if self._process_check_cancelled_or_set_progress(20):
+        if self._process_check_cancelled_or_set_progress(
+            20, tr("initializing process")
+        ):
             return self._get_failed_result()
 
-        if self._process_check_cancelled_or_set_progress(45):
+        if self._process_check_cancelled_or_set_progress(
+            45, tr("rendering repeat page")
+        ):
             return self._get_failed_result()
 
         # Render repeat items i.e. activities
         self._render_repeat_items()
 
-        if self._process_check_cancelled_or_set_progress(70):
+        if self._process_check_cancelled_or_set_progress(
+            70, tr("populating activity metric table")
+        ):
             return self._get_failed_result()
 
         # Populate activity area table
         self._populate_activity_area_table()
 
-        if self._process_check_cancelled_or_set_progress(80):
+        if self._process_check_cancelled_or_set_progress(85, tr("rendering map items")):
             return self._get_failed_result()
 
         # Populate table with priority weighting values
@@ -1785,14 +2062,18 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         # Add CPLUS report flag
         self._variable_register.set_report_flag(self._layout)
 
-        if self._process_check_cancelled_or_set_progress(85):
+        if self._process_check_cancelled_or_set_progress(
+            88, tr("saving report layout")
+        ):
             return self._get_failed_result()
 
         result = self._save_layout_to_file()
         if not result:
             return self._get_failed_result()
 
-        if self._process_check_cancelled_or_set_progress(90):
+        if self._process_check_cancelled_or_set_progress(
+            90, tr("exporting report to PDF")
+        ):
             return self._get_failed_result()
 
         return ReportResult(

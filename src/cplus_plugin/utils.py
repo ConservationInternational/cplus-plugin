@@ -5,12 +5,18 @@
 
 import hashlib
 import json
+import math
 import os
+import typing
 import uuid
 import datetime
 from pathlib import Path
 from uuid import UUID
 from enum import Enum
+from zipfile import ZipFile
+
+import numpy as np
+from osgeo import gdal
 
 from qgis.PyQt import QtCore, QtGui
 from qgis.core import (
@@ -24,7 +30,6 @@ from qgis.core import (
     QgsProject,
     QgsProcessing,
     QgsRasterLayer,
-    QgsRectangle,
     QgsUnitTypes,
 )
 
@@ -170,10 +175,11 @@ def clean_filename(filename):
     return filename
 
 
-def calculate_raster_value_area(
+def calculate_raster_area_by_pixel_value(
     layer: QgsRasterLayer, band_number: int = 1, feedback: QgsProcessingFeedback = None
 ) -> dict:
-    """Calculates the area of value pixels for the given band in a raster layer.
+    """Calculates the area of value pixels for the given band in a raster layer and
+    groups the area by the pixel value.
 
     Please note that this function will run in the main application thread hence
     for best results, it is recommended to execute it in a background process
@@ -241,6 +247,48 @@ def calculate_raster_value_area(
         pixel_areas[pixel_value] = pixel_value_area
 
     return pixel_areas
+
+
+def calculate_raster_area(
+    layer: QgsRasterLayer, band_number: int = 1, feedback: QgsProcessingFeedback = None
+) -> float:
+    """Calculates the area of value pixels for the given band in a raster layer.
+
+    This varies from 'calculate_raster_area_by_pixel_value' in that it
+    gives the total area instead of grouping by pixel value.
+
+    Please note that this function will run in the main application thread hence
+    for best results, it is recommended to execute it in a background process
+    if part of a bigger workflow.
+
+    :param layer: Input layer whose area for value pixels is to be calculated.
+    :type layer: QgsRasterLayer
+
+    :param band_number: Band number to compute area, default is band one.
+    :type band_number: int
+
+    :param feedback: Feedback object for progress during area calculation.
+    :type feedback: QgsProcessingFeedback
+
+    :returns: The total area of value pixels of the raster else -1 if the raster
+    is invalid or if it is empty. Pixels with NoData value are not included
+    in the computation.
+    :rtype: float
+    """
+    area_by_pixel_value = calculate_raster_area_by_pixel_value(
+        layer, band_number, feedback
+    )
+    if len(area_by_pixel_value) == 0:
+        return -1.0
+
+    # Remove NoData pixels from the computation, just in case the process
+    # calculation might have sneaked it in.
+    if layer.dataProvider().sourceHasNoDataValue(band_number):
+        no_data_value = layer.dataProvider().sourceNoDataValue(band_number)
+        if no_data_value in area_by_pixel_value:
+            del area_by_pixel_value[no_data_value]
+
+    return float(sum(area_by_pixel_value.values()))
 
 
 def generate_random_color() -> QtGui.QColor:
@@ -447,6 +495,18 @@ class FileUtils:
         return f"{FileUtils.plugin_dir()}/data/fonts"
 
     @staticmethod
+    def get_icon_path(file_name: str) -> str:
+        """Gets the full path of the icon with the given name.
+
+        :param file_name: File name which should include the extension.
+        :type file_name: str
+
+        :returns: The full path to the icon in the plugin.
+        :rtype: str
+        """
+        return os.path.normpath(f"{FileUtils.plugin_dir()}/icons/{file_name}")
+
+    @staticmethod
     def get_icon(file_name: str) -> QtGui.QIcon:
         """Creates an icon based on the icon name in the 'icons' folder.
 
@@ -456,7 +516,7 @@ class FileUtils:
         :returns: Icon object matching the file name.
         :rtype: QtGui.QIcon
         """
-        icon_path = os.path.normpath(f"{FileUtils.plugin_dir()}/icons/{file_name}")
+        icon_path = FileUtils.get_icon_path(file_name)
 
         if not os.path.exists(icon_path):
             return QtGui.QIcon()
@@ -464,12 +524,29 @@ class FileUtils:
         return QtGui.QIcon(icon_path)
 
     @staticmethod
+    def get_pixmap(file_name: str) -> QtGui.QPixmap:
+        """Creates a pixmap based on the file name in the 'icons' folder.
+
+        :param file_name: File name which should include the extension.
+        :type file_name: str
+
+        :returns: Pixmap object matching the file name.
+        :rtype: QtGui.QPixmap
+        """
+        pixmap_path = os.path.normpath(f"{FileUtils.plugin_dir()}/icons/{file_name}")
+
+        if not os.path.exists(pixmap_path):
+            return QtGui.QPixmap()
+
+        return QtGui.QPixmap(pixmap_path)
+
+    @staticmethod
     def report_template_path(file_name=None) -> str:
         """Get the absolute path to the template file with the given name.
         Caller needs to verify that the file actually exists.
 
         :param file_name: Template file name including the extension. If
-        none is specified then it will use `scenario_analysis.qpt` as the default
+        none is specified then it will use `scenario_analysis_default.qpt` as the default
         template name.
         :type file_name: str
 
@@ -557,7 +634,7 @@ class FileUtils:
         p = Path(directory)
         if not p.exists():
             try:
-                p.mkdir()
+                p.mkdir(parents=True, exist_ok=True)
             except (FileNotFoundError, OSError):
                 log(log_message)
 
@@ -641,3 +718,277 @@ def get_layer_type(file_path: str):
         return 1
     else:
         return -1
+
+
+def function_help_to_html(
+    function_name: str,
+    description: str,
+    arguments: typing.List[tuple] = None,
+    examples: typing.List[tuple] = None,
+) -> str:
+    """Creates a HTML string containing the detailed help of an expression function.
+
+    The specific HTML formatting is deduced from the code here:
+    https://github.com/qgis/QGIS/blob/master/src/core/expression/qgsexpression.cpp#L565
+
+    :param function_name: Name of the expression function.
+    :type function_name: str
+
+    :param description: Detailed description of the function.
+    :type description: str
+
+    :param arguments: List containing the arguments. Each argument should consist of a
+    tuple containing three elements i.e. argument name, description and bool where True
+    will indicate the argument is optional. Take note of the order as mandatory
+    arguments should be first in the list.
+    :type arguments: typing.List[tuple]
+
+    :param examples: Examples of using the function. Each item in the list should be
+    a tuple containing an example expression and the corresponding return value.
+    :type examples: typing.List[tuple]
+
+    :returns: The expression function's help in HTML for use in, for example, an
+    expression builder.
+    :rtype: str
+    """
+    if arguments is None:
+        arguments = []
+
+    if examples is None:
+        examples = []
+
+    html_segments = []
+
+    # Title
+    html_segments.append(f"<h3>function {function_name}</h3>\n")
+
+    # Description
+    html_segments.append(f'<div class="description"><p>{description}</p></div>')
+
+    # Syntax
+    html_segments.append(
+        f'<h4>Syntax</h4>\n<div class="syntax">\n<code>'
+        f'<span class="functionname">{function_name}</span>'
+        f"("
+    )
+
+    has_optional = False
+    separator = ""
+    for arg in arguments:
+        arg_name = arg[0]
+        arg_mandatory = arg[2]
+        if not has_optional and arg_mandatory:
+            html_segments.append("[")
+            has_optional = True
+
+        html_segments.append(separator)
+        html_segments.append(f'<span class="argument">{arg_name}</span>')
+
+        if arg_mandatory:
+            html_segments.append("]")
+
+        separator = ","
+
+    html_segments.append(")</code>")
+
+    if has_optional:
+        html_segments.append("<br/><br/>[ ] marks optional components")
+
+    # Arguments
+    if len(arguments) > 0:
+        html_segments.append('<h4>Arguments</h4>\n<div class="arguments">\n<table>')
+        for arg in arguments:
+            arg_name = arg[0]
+            arg_description = arg[1]
+            html_segments.append(
+                f'<tr><td class="argument">{arg_name}</td><td>{arg_description}</td></tr>'
+            )
+
+        html_segments.append("</table>\n</div>\n")
+
+    # Examples
+    if len(examples) > 0:
+        html_segments.append('<h4>Examples</h4>\n<div class="examples">\n<ul>\n')
+        for example in examples:
+            expression = example[0]
+            return_value = example[1]
+            html_segments.append(
+                f"<li><code>{expression}</code> &rarr; <code>{return_value}</code>"
+            )
+
+        html_segments.append("</ul>\n</div>\n")
+
+    return "".join(html_segments)
+
+
+def convert_size(size_bytes):
+    """Convert byte size to human readable text.
+
+    :param size_bytes: byte sizse
+    :type size_bytes: int
+    :return: human readable text
+    :rtype: str
+    """
+    if size_bytes == 0:
+        return "0B"
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(math.floor(math.log(size_bytes, 1024)))
+    p = math.pow(1024, i)
+    s = round(size_bytes / p, 2)
+    return "%s %s" % (s, size_name[i])
+
+
+def zip_shapefile(shapefile_path: str) -> str:
+    """Zip shapefile to an object with same name.
+    For example, the .shp filename is `test_file.shp`, then the zip file
+    name would be `test_file.zip`
+
+    :param shapefile_path: Path of the shapefile
+    :type shapefile_path: str
+
+    :return: Zip file path if the specified `shapefile_path`
+        ends with .shp, return shapefile_path otherwise
+    :rtype: str
+    """
+
+    if shapefile_path.endswith(".shp"):
+        output_dir = os.path.dirname(shapefile_path)
+        filename_without_ext = os.path.splitext(os.path.basename(shapefile_path))[0]
+        zip_name = shapefile_path.replace(".shp", ".zip")
+        with ZipFile(zip_name, "w") as zip:
+            # writing each file one by one
+            for file in [
+                f
+                for f in os.listdir(output_dir)
+                if filename_without_ext in f and not f.endswith("zip")
+            ]:
+                zip.write(os.path.join(output_dir, file), file)
+        return zip_name
+    return shapefile_path
+
+
+def compress_raster(
+    input_path: str,
+    output_path: str = None,
+    compression_type: str = "DEFLATE",
+    compress_level: int = 6,
+    nodata_value: float = None,
+    output_format: str = "GTiff",
+    create_options: list = None,
+    additional_options: list = None,
+):
+    """
+    Compresses a raster file using GDAL and optionally replace old NoData pixel values with a new one.
+
+    :param input_path: Path to the input raster file
+    :type input_path: str
+
+    :param output_path: Path to the input raster file. If none the ouput will saved to a temporary file
+    :type output_path: str
+
+    :param compression_type: Compression algorithm (e.g., 'DEFLATE', 'LZW', 'PACKBITS', 'JPEG', 'NONE')
+    :type compression_type: str
+
+    :param compress_level: Compression level (1-9 for DEFLATE/LZW, 1-100 for JPEG)
+    :type compress_level: int
+
+    :param nodata_value: Value to set as nodata (default: None). If None, retain the input nodatavalue
+    :type nodata_value: float
+
+    :param output_format: Output format (default: 'GTiff' for GeoTIFF)
+    :type output_format: str
+
+    :param create_options: Additional GDAL creation options as a list
+    :type create_options: list
+
+    :param additional_options: dditional GDAL options as a list
+    :type additional_options: list
+
+    :return: Path to the temporary file if successful, None if failed
+    :rtype: str or None
+    """
+    if not os.path.isfile(input_path):
+        raise FileNotFoundError(f"Input raster file not found: {input_path}")
+
+    # Create a temporary file if output_path is None:
+    if not output_path:
+        unique_id = str(uuid.uuid4())[:8]
+        temp_file = QtCore.QTemporaryFile(
+            os.path.join(
+                QgsProject.instance().homePath(), f"temp_compressed_{unique_id}.tif"
+            )
+        )
+        if not temp_file.open():
+            log("Error: Could not create temporary file")
+            return None
+
+        base, ext = os.path.splitext(input_path)
+        output_path = temp_file.fileName() + ext or ".tif"
+        temp_file.close()
+
+    try:
+        # Load the input raster layer using GDAL
+        src_ds = gdal.Open(input_path, gdal.GA_ReadOnly)
+        if src_ds is None:
+            raise ValueError("Unable to open raster with GDAL")
+
+        band_count = src_ds.RasterCount
+        xsize = src_ds.RasterXSize
+        ysize = src_ds.RasterYSize
+        dtype = src_ds.GetRasterBand(1).DataType
+
+        compression = src_ds.GetMetadataItem("COMPRESSION", "IMAGE_STRUCTURE")
+        if compression.lower() == "deflate":
+            log(f"Raster {input_path} is already compressed with DEFLATE.")
+            return input_path
+
+        # Add any additional create options
+        if not create_options:
+            create_options = []
+
+        # Ensure standard options are included
+        create_options.extend(
+            [
+                f"COMPRESS={compression_type}",
+                f"ZLEVEL={compress_level}",
+                f"JPEG_QUALITY={compress_level}",
+                f"NUM_THREADS=ALL_CPUS",
+                "BIGTIFF=IF_SAFER",
+                "TILED=YES",
+            ]
+        )
+
+        # Set additional options if provided
+        if additional_options:
+            create_options.extend(additional_options)
+
+        # Create compressed output raster
+        driver = gdal.GetDriverByName(output_format)
+        out_ds = driver.Create(
+            output_path, xsize, ysize, band_count, dtype, create_options
+        )
+        out_ds.SetGeoTransform(src_ds.GetGeoTransform())
+        out_ds.SetProjection(src_ds.GetProjection())
+
+        for i in range(1, band_count + 1):
+            band = src_ds.GetRasterBand(i)
+            data = band.ReadAsArray()
+            old_nodata = band.GetNoDataValue()
+
+            # Replace pixel values if old NoData exists
+            if nodata_value is not None and old_nodata is not None:
+                data = np.where(data == old_nodata, nodata_value, data)
+
+            out_band = out_ds.GetRasterBand(i)
+            out_band.WriteArray(data)
+            out_band.SetNoDataValue(nodata_value)
+            out_band.FlushCache()
+
+        # Close datasets
+        src_ds = None
+        # if os.path.exists(output_path):
+        log(f"Successfully compressed raster saved to temporary file: {output_path}")
+        return output_path
+    except Exception as error:
+        log(f"Error occurred during raster compression. Error code: {error}")
+        return None

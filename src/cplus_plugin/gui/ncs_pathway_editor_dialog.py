@@ -7,17 +7,21 @@ import os
 import typing
 import uuid
 
-from qgis.core import Qgis, QgsRasterLayer
+from qgis.core import Qgis, QgsMapLayerProxyModel, QgsRasterLayer
 from qgis.gui import QgsGui, QgsMessageBar
 
 from qgis.PyQt import QtCore, QtGui, QtWidgets
 from qgis.PyQt.uic import loadUiType
 
-from .carbon_item_model import CarbonLayerItem, CarbonLayerModel
 from ..conf import Settings, settings_manager
-from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
-from cplus_core.models.base import LayerType, NcsPathway
-from ..utils import FileUtils, open_documentation, tr
+from ..definitions.defaults import (
+    ONLINE_DEFAULT_PREFIX,
+    ICON_PATH,
+    USER_DOCUMENTATION_SITE,
+)
+from cplus_core.models.base import LayerType, NcsPathway, NcsPathwayType
+from ..models.source import DataSourceType, LayerSource
+from ..utils import FileUtils, open_documentation, tr, log
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/ncs_pathway_editor_dialog.ui")
@@ -36,12 +40,6 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         self._message_bar = QgsMessageBar()
         self.vl_notification.addWidget(self._message_bar)
 
-        self._carbon_model = CarbonLayerModel(self)
-        self.lst_carbon_layers.setModel(self._carbon_model)
-        self.lst_carbon_layers.selectionModel().selectionChanged.connect(
-            self._on_selection_changed
-        )
-
         self.txt_description.textChanged.connect(self.description_changed)
 
         self.buttonBox.accepted.connect(self._on_accepted)
@@ -54,38 +52,59 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.btn_help.setIcon(help_icon)
         self.btn_help.clicked.connect(self.open_help)
 
-        add_icon = FileUtils.get_icon("symbologyAdd.svg")
-        self.btn_add_carbon.setIcon(add_icon)
-        self.btn_add_carbon.clicked.connect(self._on_add_carbon_layer)
-
-        remove_icon = FileUtils.get_icon("symbologyRemove.svg")
-        self.btn_delete_carbon.setIcon(remove_icon)
-        self.btn_delete_carbon.setEnabled(False)
-        self.btn_delete_carbon.clicked.connect(self._on_remove_carbon_layer)
-
-        edit_icon = FileUtils.get_icon("mActionToggleEditing.svg")
-        self.btn_edit_carbon.setIcon(edit_icon)
-        self.btn_edit_carbon.setEnabled(False)
-        self.btn_edit_carbon.clicked.connect(self._on_edit_carbon_layer)
+        self.cbo_default_layer_source.addItems(
+            [LayerSource.CPLUS.value, LayerSource.NATUREBASE.value]
+        )
+        self.cbo_default_layer_source.currentIndexChanged.connect(
+            self._on_default_layer_source_selection_changed
+        )
+        self.naturebase_list = []
+        self.cplus_list = []
 
         pathways = settings_manager.get_default_layers("ncs_pathway")
         self.cbo_default_layer.addItem("")
-        self.cbo_default_layer.addItems([p["name"] for p in pathways])
+        # Populate the default layer combobox with available pathways
+        for pathway in pathways:
+            source = pathway.get("source", "").lower()
+            if source == LayerSource.CPLUS.value.lower():
+                self.cplus_list.append(pathway)
+            elif source == LayerSource.NATUREBASE.value.lower():
+                self.naturebase_list.append(pathway)
+
+        items = sorted([p["name"] for p in self.cplus_list])
+        self.cbo_default_layer.addItems(items)
         self.cbo_default_layer.setCurrentIndex(0)
         self.cbo_default_layer.currentIndexChanged.connect(
             self._on_default_layer_selection_changed
         )
 
-        add_default_icon = FileUtils.get_icon("mActionAddDefaultCarbonLayer.svg")
-        self.btn_add_default_carbon.setIcon(add_default_icon)
-        self.btn_add_default_carbon.setMenu(QtWidgets.QMenu(self))
-        items = settings_manager.get_default_layers("ncs_carbon")
-        for item in items:
-            action = QtWidgets.QAction(item["name"], self)
-            action.triggered.connect(
-                lambda checked, item=item: self._on_default_carbon_layer_selected(item)
-            )
-            self.btn_add_default_carbon.menu().addAction(action)
+        # Pathway type
+        self._pathway_type_group = QtWidgets.QButtonGroup(self)
+        self._pathway_type_group.addButton(
+            self.rb_protection, NcsPathwayType.PROTECT.value
+        )
+        self._pathway_type_group.addButton(
+            self.rb_restoration, NcsPathwayType.RESTORE.value
+        )
+        self._pathway_type_group.addButton(
+            self.rb_management, NcsPathwayType.MANAGE.value
+        )
+
+        # Data source type
+        self._data_source_type_group = QtWidgets.QButtonGroup(self)
+        self._data_source_type_group.setExclusive(True)
+        self._data_source_type_group.addButton(
+            self.rb_local, DataSourceType.LOCAL.value
+        )
+        self._data_source_type_group.addButton(
+            self.rb_online, DataSourceType.ONLINE.value
+        )
+        self._data_source_type_group.idToggled.connect(self._on_data_source_changed)
+        self.rb_local.setChecked(True)
+
+        # Configure map combobox
+        self.cbo_layer.setAllowEmptyLayer(True, tr("<Layer not set>"))
+        self.cbo_layer.setFilters(QgsMapLayerProxyModel.Filter.RasterLayer)
 
         self._excluded_names = excluded_names
         if excluded_names is None:
@@ -148,18 +167,44 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.txt_name.setText(self._ncs_pathway.name)
         self.txt_description.setPlainText(self._ncs_pathway.description)
 
+        if self._ncs_pathway.pathway_type == NcsPathwayType.PROTECT:
+            self.rb_protection.setChecked(True)
+        if self._ncs_pathway.pathway_type == NcsPathwayType.RESTORE:
+            self.rb_restoration.setChecked(True)
+        if self._ncs_pathway.pathway_type == NcsPathwayType.MANAGE:
+            self.rb_management.setChecked(True)
+
+        if self._ncs_pathway.path.startswith(ONLINE_DEFAULT_PREFIX):
+            self.rb_online.setChecked(True)
+        else:
+            self.rb_local.setChecked(True)
+
         if self._layer:
             layer_path = self._layer.source()
             self._add_layer_path(layer_path)
         if self._ncs_pathway.layer_uuid:
             pathways = settings_manager.get_default_layers("ncs_pathway")
             for i, layer in enumerate(pathways):
+                if layer["source"].lower() == LayerSource.NATUREBASE.value.lower():
+                    self.cbo_default_layer_source.setCurrentIndex(1)
+                else:
+                    self.cbo_default_layer_source.setCurrentIndex(0)
+
                 if layer["layer_uuid"] == self._ncs_pathway.layer_uuid:
                     self.cbo_default_layer.setCurrentIndex(i + 1)
                     break
 
-        for carbon_path in self._ncs_pathway.carbon_paths:
-            self._carbon_model.add_carbon_layer(carbon_path)
+    def _on_data_source_changed(self, button_id: int, toggled: bool):
+        """Slot raised when the data source type button group has
+        been toggled.
+        """
+        if not toggled:
+            return
+
+        if button_id == DataSourceType.LOCAL.value:
+            self.data_source_stacked_widget.setCurrentIndex(0)
+        elif button_id == DataSourceType.ONLINE.value:
+            self.data_source_stacked_widget.setCurrentIndex(1)
 
     def _add_layer_path(self, layer_path: str):
         """Select or add layer path to the map layer combobox."""
@@ -210,15 +255,33 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._show_warning_message(msg)
             status = False
 
-        layer = self._get_selected_map_layer()
-        default_layer = self._get_selected_default_layer()
-        if layer is None and default_layer is None:
-            msg = tr("Map layer not specified.")
+        if self._pathway_type_group.checkedId() == -1:
+            msg = tr("The NCS pathway type is not specified.")
             self._show_warning_message(msg)
             status = False
 
-        if layer and not layer.isValid():
-            msg = tr("Map layer is not valid.")
+        layer = self._get_selected_map_layer()
+        default_layer = self._get_selected_default_layer()
+        data_source_type_id = self._data_source_type_group.checkedId()
+
+        if data_source_type_id == DataSourceType.LOCAL.value and layer is None:
+            msg = tr("Local map layer not specified.")
+            self._show_warning_message(msg)
+            status = False
+        elif (
+            data_source_type_id == DataSourceType.ONLINE.value
+            and len(default_layer) == 0
+        ):
+            msg = tr("Online default layer not specified.")
+            self._show_warning_message(msg)
+            status = False
+
+        if (
+            data_source_type_id == DataSourceType.LOCAL.value
+            and layer
+            and not layer.isValid()
+        ):
+            msg = tr("Local map layer is not valid.")
             self._show_warning_message(msg)
             status = False
 
@@ -242,14 +305,24 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._ncs_pathway.name = self.txt_name.text()
             self._ncs_pathway.description = self.txt_description.toPlainText()
 
-        self._ncs_pathway.layer_type = LayerType.RASTER
-        default_layer = self._get_selected_default_layer()
+        selected_pathway_type_id = self._pathway_type_group.checkedId()
+        if selected_pathway_type_id == NcsPathwayType.PROTECT.value:
+            self._ncs_pathway.pathway_type = NcsPathwayType.PROTECT
+        elif selected_pathway_type_id == NcsPathwayType.RESTORE.value:
+            self._ncs_pathway.pathway_type = NcsPathwayType.RESTORE
+        elif selected_pathway_type_id == NcsPathwayType.MANAGE.value:
+            self._ncs_pathway.pathway_type = NcsPathwayType.MANAGE
 
-        if default_layer:
-            self._ncs_pathway.path = "cplus://" + default_layer.get("layer_uuid")
-        else:
+        self._ncs_pathway.layer_type = LayerType.RASTER
+
+        data_source_type_id = self._data_source_type_group.checkedId()
+        if data_source_type_id == DataSourceType.LOCAL.value:
             self._ncs_pathway.path = self._layer.source()
-        self._ncs_pathway.carbon_paths = self._carbon_model.carbon_paths()
+        elif data_source_type_id == DataSourceType.ONLINE.value:
+            default_layer = self._get_selected_default_layer()
+            self._ncs_pathway.path = ONLINE_DEFAULT_PREFIX + default_layer.get(
+                "layer_uuid"
+            )
 
     def _get_selected_map_layer(self) -> QgsRasterLayer:
         """Returns the currently selected map layer or None if there is
@@ -278,126 +351,6 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         pathways = settings_manager.get_default_layers("ncs_pathway")
         layer = [p for p in pathways if p["name"] == layer_name]
         return layer[0] if layer else {}
-
-    def selected_carbon_items(self) -> typing.List[CarbonLayerItem]:
-        """Returns the selected carbon items in the list view.
-
-        :returns: A collection of the selected carbon items.
-        :rtype: list
-        """
-        selection_model = self.lst_carbon_layers.selectionModel()
-        idxs = selection_model.selectedRows()
-
-        return [self._carbon_model.item(idx.row()) for idx in idxs]
-
-    def _on_selection_changed(
-        self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection
-    ):
-        """Slot raised when the selection in the carbon list changes."""
-        self._update_ui_on_selection_changed()
-
-    def _update_ui_on_selection_changed(self):
-        """Update UI properties on selection changed."""
-        self.btn_edit_carbon.setEnabled(True)
-        self.btn_delete_carbon.setEnabled(True)
-
-        # Disable edit and remove buttons if more than
-        # one item has been selected.
-        selected_items = self.selected_carbon_items()
-        if len(selected_items) == 0:
-            self.btn_delete_carbon.setEnabled(False)
-            self.btn_edit_carbon.setEnabled(False)
-        elif len(selected_items) > 1:
-            self.btn_edit_carbon.setEnabled(False)
-
-    def _on_add_carbon_layer(self, activated: bool):
-        """Slot raised to add a carbon layer."""
-        self._message_bar.clearWidgets()
-
-        data_dir = settings_manager.get_value(Settings.LAST_DATA_DIR, "")
-        if not data_dir and self._layer:
-            data_path = self._layer.source()
-            if os.path.exists(data_path):
-                data_dir = os.path.dirname(data_path)
-
-        if not data_dir:
-            data_dir = "/home"
-
-        carbon_paths = self._show_carbon_path_selector(data_dir, select_multiple=True)
-        if len(carbon_paths) == 0:
-            return
-
-        existing_layers = []
-        for carbon_path in carbon_paths:
-            if self._carbon_model.contains_layer_path(carbon_path):
-                existing_layers.append(carbon_path)
-                continue
-
-            self._carbon_model.add_carbon_layer(carbon_path)
-
-        if len(existing_layers) > 0:
-            self._message_bar.clearWidgets()
-            for layer in existing_layers:
-                error_tr = tr("Carbon layer already exists")
-                self._show_warning_message(f"{error_tr}: {layer}")
-
-    def _on_edit_carbon_layer(self, activated: bool):
-        """Slot raised to edit a carbon layer."""
-        carbon_items = self.selected_carbon_items()
-        if len(carbon_items) == 0:
-            return
-
-        carbon_item = carbon_items[0]
-        carbon_paths = self._show_carbon_path_selector(carbon_item.layer_path)
-        if len(carbon_paths) == 0:
-            return
-
-        if self._carbon_model.contains_layer_path(carbon_paths[0]):
-            error_tr = tr("Selected carbon layer already exists.")
-            self._show_warning_message(f"{error_tr}")
-            return
-
-        carbon_item.update(carbon_paths[0])
-
-    def _on_remove_carbon_layer(self, activated: bool):
-        """Slot raised to remove one or more selected carbon layers."""
-        carbon_items = self.selected_carbon_items()
-        if len(carbon_items) == 0:
-            return
-
-        for ci in carbon_items:
-            index = self._carbon_model.indexFromItem(ci)
-            if not index.isValid():
-                continue
-            self._carbon_model.removeRows(index.row(), 1)
-
-    def _show_carbon_path_selector(
-        self, layer_dir: str, select_multiple: bool = False
-    ) -> typing.List[str]:
-        """Show file selector dialog for selecting a carbon layer."""
-        filter_tr = tr("All files")
-
-        if select_multiple:
-            open_file_func = QtWidgets.QFileDialog.getOpenFileNames
-            title = self.tr("Select Carbon Layers")
-        else:
-            open_file_func = QtWidgets.QFileDialog.getOpenFileName
-            title = self.tr("Select Carbon Layer")
-
-        layer_paths, _ = open_file_func(
-            self,
-            title,
-            layer_dir,
-            f"{filter_tr} (*.*)",
-            options=QtWidgets.QFileDialog.DontResolveSymlinks,
-        )
-        if not layer_paths or len(layer_paths) == 0:
-            return []
-
-        if not select_multiple:
-            return [layer_paths]
-
-        return layer_paths
 
     def open_help(self, activated: bool):
         """Opens the user documentation for the plugin in a browser."""
@@ -452,8 +405,13 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         # remove selection from cbo_layer
         self.cbo_layer.setAdditionalItems([])
 
-    def _on_default_carbon_layer_selected(self, item):
-        """Event raised when default carbon layer is selected."""
-        layer_name = item["name"]
-        layer_path = "cplus://" + item["layer_uuid"] + "/" + layer_name
-        self._carbon_model.add_carbon_layer(layer_path)
+    def _on_default_layer_source_selection_changed(self):
+        """Event raised when online layer source selection is changed."""
+        source = self.cbo_default_layer_source.currentText()
+        if source.lower() == LayerSource.CPLUS.value.lower():
+            items = sorted([p["name"] for p in self.cplus_list])
+        elif source == LayerSource.NATUREBASE.value:
+            items = sorted([p["name"] for p in self.naturebase_list])
+        self.cbo_default_layer.clear()
+        self.cbo_default_layer.addItem("")
+        self.cbo_default_layer.addItems(items)

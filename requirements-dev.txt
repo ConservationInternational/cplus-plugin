@@ -54,3 +54,5 @@ typer == 0.4.0
 watchdog == 2.1.6
 werkzeug == 2.0.2
 zipp == 3.7.0
+# use setuptools 70.3.0, to fix issue strip_trailing_zero
+setuptools == 70.3.0

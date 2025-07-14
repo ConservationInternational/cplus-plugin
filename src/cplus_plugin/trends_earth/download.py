@@ -270,6 +270,45 @@ def download_files(urls, out_folder):
     return downloads
 
 
+def download_file(url, out_path):
+    """Download a file from the given URL to the specified output path."""
+
+    if not os.access(os.path.abspath(os.path.join(out_path, os.pardir)), os.W_OK):
+        QtWidgets.QMessageBox.critical(
+            None,
+            tr_download.tr("Error"),
+            tr_download.tr("Unable to write to {}.".format(out_path)),
+        )
+        return None
+
+    if not os.path.exists(out_path) or not check_hash_against_etag(url, out_path):
+        log("Downloading {} to {}".format(url, out_path))
+
+        worker = Download(url, out_path)
+        try:
+            worker.start()
+        except PermissionError:
+            log("Unable to write to {}.".format(out_path))
+            QtWidgets.QMessageBox.critical(
+                None,
+                tr_download.tr("Error"),
+                tr_download.tr("Unable to write to {}.".format(out_path)),
+            )
+            return None
+
+        resp = worker.get_resp()
+        if not resp:
+            log("Error accessing {}.".format(url))
+            QtWidgets.QMessageBox.critical(
+                None,
+                tr_download.tr("Error"),
+                tr_download.tr("Error accessing {}.".format(url)),
+            )
+            return None
+    if os.path.exists(out_path):
+        return out_path
+
+
 def get_admin_bounds() -> typing.Dict[str, Country]:
     raw_admin_bounds = read_json("admin_bounds_key.json.gz", verify=False)
     countries_regions = {}

@@ -16,7 +16,6 @@ import os.path
 
 from qgis.core import (
     QgsApplication,
-    QgsColorBrewerColorRamp,
     QgsMasterLayoutInterface,
     QgsSettings,
 )
@@ -32,20 +31,8 @@ from .gui.qgis_cplus_main import QgisCplusMain
 from qgis.PyQt.QtWidgets import QToolButton
 from qgis.PyQt.QtWidgets import QMenu
 
+from .api.base import ApiRequestStatus
 from .conf import Settings, settings_manager
-from .definitions.constants import (
-    CARBON_PATHS_ATTRIBUTE,
-    COLOR_RAMP_PROPERTIES_ATTRIBUTE,
-    COLOR_RAMP_TYPE_ATTRIBUTE,
-    ACTIVITY_LAYER_STYLE_ATTRIBUTE,
-    NCS_CARBON_SEGMENT,
-    NCS_PATHWAY_SEGMENT,
-    PATH_ATTRIBUTE,
-    PIXEL_VALUE_ATTRIBUTE,
-    STYLE_ATTRIBUTE,
-    USER_DEFINED_ATTRIBUTE,
-    UUID_ATTRIBUTE,
-)
 from .definitions.defaults import (
     ABOUT_DOCUMENTATION_SITE,
     CI_LOGO_PATH,
@@ -54,6 +41,7 @@ from .definitions.defaults import (
     DEFAULT_REPORT_LICENSE,
     DOCUMENTATION_SITE,
     ICON_PATH,
+    IRRECOVERABLE_CARBON_API_URL,
     OPTIONS_TITLE,
     PRIORITY_GROUPS,
     PRIORITY_LAYERS,
@@ -63,6 +51,9 @@ from .definitions.defaults import (
 from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
 from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
 from .lib.reports.manager import report_manager
+from .lib.reports.metrics import register_metric_functions, unregister_metric_functions
+from .models.base import PriorityLayerType
+from .models.report import MetricConfigurationProfile, MetricProfileCollection
 from .gui.settings.cplus_options import CplusOptionsFactory
 from .gui.settings.log_options import LogOptionsFactory
 from .gui.settings.report_options import ReportOptionsFactory
@@ -74,6 +65,7 @@ from .utils import (
     log,
     open_documentation,
     get_plugin_version,
+    tr,
 )
 
 
@@ -114,12 +106,17 @@ class QgisCplus:
 
         create_priority_layers()
 
+        clean_up_finance_pwl_references()
+
         initialize_model_settings()
 
         # Initialize default report settings
         initialize_report_settings()
 
         initialize_api_url()
+
+        # Upgrade metric configuration to profile collection
+        upgrade_metric_configuration_to_profile_collection()
 
         self.main_widget = QgisCplusMain(
             iface=self.iface, parent=self.iface.mainWindow()
@@ -274,6 +271,10 @@ class QgisCplus:
         # Install report font
         self.install_report_font()
 
+        # Register metric functions. Note that these are
+        # scoped for specific contexts.
+        register_metric_functions()
+
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin widget is closed."""
         self.pluginIsActive = False
@@ -290,6 +291,9 @@ class QgisCplus:
             self.iface.unregisterOptionsWidgetFactory(self.cplus_options_factory)
             self.iface.unregisterOptionsWidgetFactory(self.reports_options_factory)
             self.iface.unregisterOptionsWidgetFactory(self.log_options_factory)
+
+            # Unregister metric functions
+            unregister_metric_functions()
 
         except Exception as e:
             log(str(e), info=False)
@@ -423,6 +427,70 @@ def create_priority_layers():
         settings_manager.set_value(priority_layers_setting, True)
 
 
+def clean_up_finance_pwl_references():
+    """Check if NPV PWLs are valid i.e. refer to existing NCS pathways.
+
+    This also cleans up those finance PWLs that were previously referring
+    to activities.
+    """
+    ncs_pathway_pwl_ids = list(
+        {
+            pwl.get("uuid")
+            for pathway in settings_manager.get_all_ncs_pathways()
+            for pwl in pathway.priority_layers
+            if pwl.get("uuid") is not None
+        }
+    )
+
+    for layer in settings_manager.get_priority_layers():
+        # Remove finance priority layers that were previously pointing
+        # to activities or also for NCS pathways that have been removed.
+        pwl_type = layer.get("type", PriorityLayerType.DEFAULT.value)
+        if pwl_type != PriorityLayerType.NPV:
+            continue
+
+        if layer["uuid"] not in ncs_pathway_pwl_ids:
+            settings_manager.delete_priority_layer(layer["uuid"])
+
+
+def upgrade_metric_configuration_to_profile_collection():
+    """Due to changes introduced in v1.17dev, where metrics are
+    now managed in a collection of profiles, this function will
+    attempt to automatically update the previous single metric
+    configuration to a 'Default' metric configuration profile.
+    """
+    metric_profile_collection = settings_manager.get_metric_profile_collection()
+    # We assume that since the collection is None then it was
+    # from an older version of managing metric configuration however
+    # if not None then no need to upgrade since its assumed
+    # that this was already automatically done before.
+    if metric_profile_collection:
+        log("Metric profile collection is upto date")
+        return
+
+    metric_configuration = settings_manager.get_metric_configuration()
+    if metric_configuration is None:
+        log(
+            "Metric configuration not found, skipping "
+            "upgrade to a default metric configuration profile"
+        )
+        return
+
+    # Group previous metric configuration as "Default"
+    default_profile_name = tr("Default")
+    default_metric_config_profile = MetricConfigurationProfile(
+        default_profile_name, metric_configuration
+    )
+    upgraded_profile_collection = MetricProfileCollection(
+        default_profile_name, [default_metric_config_profile]
+    )
+    settings_manager.save_metric_profile_collection(upgraded_profile_collection)
+    log(
+        "Successfully upgraded the metric configuration settings "
+        "to be the default metric configuration profile"
+    )
+
+
 def initialize_model_settings():
     """Initialize default model components such as NCS pathways
     and activities.
@@ -471,16 +539,42 @@ def initialize_api_url():
     if not settings_manager.get_value(Settings.BASE_API_URL, None, str):
         settings_manager.set_value(Settings.BASE_API_URL, BASE_API_URL)
 
+    # Default URL for irrecoverable carbon dataset
+    if not settings_manager.get_value(
+        Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE, None, str
+    ):
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE, IRRECOVERABLE_CARBON_API_URL
+        )
+
+    # Default status of downloading irrecoverable carbon dataset
+    if not settings_manager.get_value(
+        Settings.IRRECOVERABLE_CARBON_ONLINE_DOWNLOAD_STATUS, None, int
+    ):
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_DOWNLOAD_STATUS,
+            ApiRequestStatus.NOT_STARTED.value,
+        )
+
+    # Default description of irrecoverable carbon dataset download status
+    if not settings_manager.get_value(
+        Settings.IRRECOVERABLE_CARBON_ONLINE_STATUS_DESCRIPTION, None, str
+    ):
+        settings_manager.set_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_STATUS_DESCRIPTION,
+            tr("Download not started"),
+        )
+
 
 def initialize_report_settings():
     """Sets the default report settings on first time use
     of the plugin.
     """
-
-    log(f"Initializing report settings")
+    plugin_version = get_plugin_version()
+    log(f"Initializing report settings for version: {get_plugin_version()}")
 
     # Check if default report settings have already been set
-    report_setting = f"default_report_settings_set_{get_plugin_version()}"
+    report_setting = f"default_report_settings_set_{plugin_version}"
 
     if settings_manager.get_value(report_setting, default=False, setting_type=bool):
         return

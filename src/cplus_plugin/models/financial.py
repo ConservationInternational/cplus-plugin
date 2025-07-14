@@ -3,15 +3,14 @@
 """ Data models for the financial elements of the tool."""
 
 import dataclasses
-from enum import IntEnum
 import typing
 
-from cplus_core.models.base import Activity
+from cplus_core.models.base import Activity, NcsPathway
 
 
 @dataclasses.dataclass
 class NpvParameters:
-    """Parameters for computing an activity's NPV."""
+    """Parameters for computing an NCS pathway's NPV."""
 
     years: int
     discount: float
@@ -28,77 +27,77 @@ class NpvParameters:
 
 
 @dataclasses.dataclass
-class ActivityNpv:
-    """Mapping of the NPV parameters to the corresponding Activity model."""
+class NcsPathwayNpv:
+    """Mapping of the NPV parameters to the corresponding NCS pathway."""
 
     params: NpvParameters
     enabled: bool
-    activity: typing.Optional[Activity]
+    pathway: typing.Optional[NcsPathway]
 
     @property
-    def activity_id(self) -> str:
-        """Gets the identifier of the activity model.
+    def pathway_id(self) -> str:
+        """Gets the identifier of the NCS pathway model.
 
-        :returns: The unique identifier of the activity model else an
-        empty string if no activity has been set.
+        :returns: The unique identifier of the NCS pathway model
+        else an empty string if no NCS pathway has been set.
         """
-        if not self.activity:
+        if not self.pathway:
             return ""
 
-        return str(self.activity.uuid)
+        return str(self.pathway.uuid)
 
     @property
     def base_name(self) -> str:
-        """Returns a proposed name for the activity NPV.
+        """Returns a proposed name for the NCS pathway NPV.
 
-        An empty string will be return id the `activity` attribute
+        An empty string will be return id the `pathway` attribute
         is not set.
 
-        :returns: Proposed base name for the activity NPV.
+        :returns: Proposed base name for the NCS pathway NPV.
         :rtype: str
         """
-        if self.activity is None:
+        if self.pathway is None:
             return ""
 
-        return f"{self.activity.name} NPV Norm"
+        return f"{self.pathway.name} NPV Norm"
 
 
 @dataclasses.dataclass
-class ActivityNpvCollection:
-    """Collection for all ActivityNpvMapping configurations that have been
-    specified by the user.
+class NcsPathwayNpvCollection:
+    """Collection for all NcsPathwayNpv configurations
+    that have been specified by the user.
     """
 
     minimum_value: float
     maximum_value: float
     use_computed: bool = True
     remove_existing: bool = False
-    mappings: typing.List[ActivityNpv] = dataclasses.field(default_factory=list)
+    mappings: typing.List[NcsPathwayNpv] = dataclasses.field(default_factory=list)
 
-    def activity_npv(self, activity_identifier: str) -> typing.Optional[ActivityNpv]:
-        """Gets the mapping of an activity's NPV mapping if defined.
+    def pathway_npv(self, pathway_identifier: str) -> typing.Optional[NcsPathwayNpv]:
+        """Gets the mapping of an NCS pathway's NPV mapping if defined.
 
-        :param activity_identifier: Unique identifier of an activity whose
-        NPV mapping is to be retrieved.
-        :type activity_identifier: str
+        :param pathway_identifier: Unique identifier of an NCS pathway
+        whose NPV mapping is to be retrieved.
+        :type pathway_identifier: str
 
-        :returns: The activity's NPV mapping else None if not found.
-        :rtype: ActivityNpv
+        :returns: The NCS pathway's NPV mapping else None if not found.
+        :rtype: NcsPathwayNpv
         """
         matching_mapping = [
-            activity_npv
-            for activity_npv in self.mappings
-            if activity_npv.activity_id == activity_identifier
+            pathway_npv
+            for pathway_npv in self.mappings
+            if pathway_npv.pathway_id == pathway_identifier
         ]
 
         return None if len(matching_mapping) == 0 else matching_mapping[0]
 
     def update_computed_normalization_range(self) -> bool:
         """Update the minimum and maximum normalization values
-        based on the absolute values of the existing ActivityNpv
+        based on the absolute values of the existing NcsPathwayNpv
         objects.
 
-        Values for disabled activity NPVs will be excluded from
+        Values for disabled Ncs pathway NPVs will be excluded from
         the computation.
 
         :returns: True if the min/max values were updated else False if
@@ -108,8 +107,8 @@ class ActivityNpvCollection:
             return False
 
         valid_npv_values = [
-            activity_npv.params.absolute_npv
-            for activity_npv in self._valid_npv_mappings()
+            pathway_npv.params.absolute_npv
+            for pathway_npv in self._valid_npv_mappings()
         ]
 
         if len(valid_npv_values) == 0:
@@ -120,27 +119,27 @@ class ActivityNpvCollection:
 
         return True
 
-    def _valid_npv_mappings(self) -> typing.List[ActivityNpv]:
+    def _valid_npv_mappings(self) -> typing.List[NcsPathwayNpv]:
         """Gets NPV mappings which have an absolute value defined and are enabled.
 
         :returns: A set of valid NPV mappings.
         :rtype: list
         """
         return [
-            activity_npv
-            for activity_npv in self.mappings
-            if activity_npv.params.absolute_npv is not None and activity_npv.enabled
+            pathway_npv
+            for pathway_npv in self.mappings
+            if pathway_npv.params.absolute_npv is not None and pathway_npv.enabled
         ]
 
     def normalize_npvs(self) -> bool:
-        """Normalize the NPV values of the activities using the specified
+        """Normalize the NPV values of NCS pathway using the specified
         normalization range.
 
         If the absolute NPV values are less than or greater than the
         normalization range, then they will be truncated to 0.0 and 1.0
         respectively. To avoid such a situation from occurring, it is recommended
         to make sure that the ranges are synchronized using the latest absolute
-        NPV values hence call `update_computed_normalization_range` before
+        NPV values by calling `update_computed_normalization_range` before
         normalizing the NPVs.
 
         If there is only one NPV mapping, then assign a normalized value of 1.0.
@@ -155,8 +154,8 @@ class ActivityNpvCollection:
             return False
 
         if len(valid_npv_mappings) == 1:
-            activity_npv = self.mappings[0]
-            activity_npv.params.normalized_npv = 1.0
+            pathway_npv = self.mappings[0]
+            pathway_npv.params.normalized_npv = 1.0
             return True
 
         if self.minimum_value > self.maximum_value:
@@ -167,8 +166,8 @@ class ActivityNpvCollection:
         if norm_range == 0.0:
             return False
 
-        for activity_npv in valid_npv_mappings:
-            absolute_npv = activity_npv.params.absolute_npv
+        for pathway_npv in valid_npv_mappings:
+            absolute_npv = pathway_npv.params.absolute_npv
             if not absolute_npv:
                 continue
 
@@ -179,18 +178,18 @@ class ActivityNpvCollection:
             else:
                 normalized_npv = (absolute_npv - self.minimum_value) / norm_range
 
-            activity_npv.params.normalized_npv = normalized_npv
+            pathway_npv.params.normalized_npv = normalized_npv
 
         return True
 
 
 @dataclasses.dataclass
-class ActivityNpvPwl:
+class NcsPathwayNpvPwl:
     """Convenience class that contains parameters for creating
     a PWL raster layer.
     """
 
-    npv: ActivityNpv
+    npv: NcsPathwayNpv
     extent: typing.List[float]
     crs: str
     pixel_size: float

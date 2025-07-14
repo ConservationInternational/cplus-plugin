@@ -7,13 +7,16 @@ import typing
 import uuid
 
 from qgis.core import (
+    QgsApplication,
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransform,
     QgsProject,
     QgsRasterLayer,
+    QgsReadWriteContext,
     QgsRectangle,
 )
 
+from qgis.PyQt import QtCore
 from cplus_core.models.base import (
     BaseModelComponent,
     BaseModelComponentType,
@@ -22,37 +25,63 @@ from cplus_core.models.base import (
     LayerModelComponentType,
     LayerType,
     NcsPathway,
+    NcsPathwayType,
     ScenarioResult,
     SpatialExtent,
 )
 from ..definitions.constants import (
     ACTIVITY_IDENTIFIER_PROPERTY,
+    ACTIVITY_METRICS_PROPERTY,
     ABSOLUTE_NPV_ATTRIBUTE,
-    CARBON_PATHS_ATTRIBUTE,
+    ALIGNMENT_ATTRIBUTE,
+    AUTO_CALCULATED_ATTRIBUTE,
     COMPUTED_ATTRIBUTE,
+    CURRENT_PROFILE_PROPERTY,
     DISCOUNT_ATTRIBUTE,
-    ENABLED_ATTRIBUTE,
-    STYLE_ATTRIBUTE,
-    NAME_ATTRIBUTE,
     DESCRIPTION_ATTRIBUTE,
+    ENABLED_ATTRIBUTE,
+    EXPRESSION_ATTRIBUTE,
+    HEADER_ATTRIBUTE,
     LAYER_TYPE_ATTRIBUTE,
     MANUAL_NPV_ATTRIBUTE,
     MASK_PATHS_SEGMENT,
+    METRIC_COLLECTION_PROPERTY,
+    METRIC_CONFIGURATION_PROPERTY,
+    METRIC_IDENTIFIER_PROPERTY,
+    METRIC_TYPE_ATTRIBUTE,
     NPV_MAPPINGS_ATTRIBUTE,
     MAX_VALUE_ATTRIBUTE,
     MIN_VALUE_ATTRIBUTE,
+    METRIC_COLUMNS_PROPERTY,
+    MULTI_ACTIVITY_IDENTIFIER_PROPERTY,
+    NAME_ATTRIBUTE,
+    NCS_PATHWAY_IDENTIFIER_PROPERTY,
     NORMALIZED_NPV_ATTRIBUTE,
+    NUMBER_FORMATTER_ENABLED_ATTRIBUTE,
+    NUMBER_FORMATTER_ID_ATTRIBUTE,
+    NUMBER_FORMATTER_PROPS_ATTRIBUTE,
     PATH_ATTRIBUTE,
+    PATHWAY_TYPE_ATTRIBUTE,
     PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
+    PROFILES_ATTRIBUTE,
     REMOVE_EXISTING_ATTRIBUTE,
+    STYLE_ATTRIBUTE,
     USER_DEFINED_ATTRIBUTE,
     UUID_ATTRIBUTE,
     YEARS_ATTRIBUTE,
     YEARLY_RATES_ATTRIBUTE,
 )
 from ..definitions.defaults import DEFAULT_CRS_ID, QGIS_GDAL_PROVIDER
-from .financial import ActivityNpv, ActivityNpvCollection, NpvParameters
+from .financial import NcsPathwayNpv, NcsPathwayNpvCollection, NpvParameters
+from .report import (
+    ActivityColumnMetric,
+    MetricColumn,
+    MetricConfiguration,
+    MetricConfigurationProfile,
+    MetricProfileCollection,
+    MetricType,
+)
 
 from ..utils import log
 
@@ -178,8 +207,14 @@ def create_ncs_pathway(source_dict) -> typing.Union[NcsPathway, None]:
     # We are checking because of the various iterations of the attributes
     # in the NcsPathway class where some of these attributes might
     # be missing.
-    if CARBON_PATHS_ATTRIBUTE in source_dict:
-        ncs.carbon_paths = source_dict[CARBON_PATHS_ATTRIBUTE]
+    if PATHWAY_TYPE_ATTRIBUTE in source_dict:
+        ncs.pathway_type = NcsPathwayType.from_int(source_dict[PATHWAY_TYPE_ATTRIBUTE])
+    else:
+        # Assign undefined
+        ncs.pathway_type = NcsPathwayType.UNDEFINED
+
+    if PRIORITY_LAYERS_SEGMENT in source_dict.keys():
+        ncs.priority_layers = source_dict[PRIORITY_LAYERS_SEGMENT]
 
     return ncs
 
@@ -196,8 +231,6 @@ def create_activity(source_dict) -> typing.Union[Activity, None]:
     :rtype: Activity
     """
     activity = create_layer_component(source_dict, Activity)
-    if PRIORITY_LAYERS_SEGMENT in source_dict.keys():
-        activity.priority_layers = source_dict[PRIORITY_LAYERS_SEGMENT]
 
     if MASK_PATHS_SEGMENT in source_dict.keys():
         activity.mask_paths = source_dict[MASK_PATHS_SEGMENT]
@@ -270,7 +303,8 @@ def ncs_pathway_to_dict(ncs_pathway: NcsPathway, uuid_to_str=True) -> dict:
     :rtype: dict
     """
     base_ncs_dict = layer_component_to_dict(ncs_pathway, uuid_to_str)
-    base_ncs_dict[CARBON_PATHS_ATTRIBUTE] = ncs_pathway.carbon_paths
+    base_ncs_dict[PATHWAY_TYPE_ATTRIBUTE] = ncs_pathway.pathway_type
+    base_ncs_dict[PRIORITY_LAYERS_SEGMENT] = ncs_pathway.priority_layers
 
     return base_ncs_dict
 
@@ -410,8 +444,34 @@ def extent_to_qgs_rectangle(
     )
 
 
+def extent_to_url_param(rect_extent: QgsRectangle) -> str:
+    """Converts the bounding box in a QgsRectangle object to the equivalent
+    param for use in a URL. 'bbox' is appended as a prefix in the URL query
+    part.
+
+    :param rect_extent: Spatial extent that defines the AOI.
+    :type rect_extent: QgsRectangle
+
+    :returns: String representing the param defining the extents of the AOI.
+    If the extent is empty, it will return an empty string.
+    :rtype: str
+    """
+    if rect_extent.isEmpty():
+        return ""
+
+    url_query = QtCore.QUrlQuery()
+    url_query.addQueryItem(
+        "bbox",
+        f"{rect_extent.xMinimum()!s},{rect_extent.yMinimum()!s},{rect_extent.xMaximum()!s},{rect_extent.yMaximum()!s}",
+    )
+
+    return url_query.toString()
+
+
 def extent_to_project_crs_extent(
-    spatial_extent: SpatialExtent, project: QgsProject = None
+    spatial_extent: SpatialExtent,
+    project: QgsProject = None,
+    source_crs: QgsCoordinateReferenceSystem = None,
 ) -> typing.Union[QgsRectangle, None]:
     """Transforms SpatialExtent model to an QGIS extent based
     on the CRS of the given project.
@@ -424,6 +484,10 @@ def extent_to_project_crs_extent(
     the values of the output extent.
     :type project: QgsProject
 
+    :param source_crs: Specify a source CRS to use for the transformation
+    otherwise it will revert to the default which is WGS84.
+    :type source_crs: QgsCoordinateReferenceSystem
+
     :returns: Output extent in the project's CRS. If the input extent
     is invalid, this function will return None.
     :rtype: QgsRectangle
@@ -432,7 +496,7 @@ def extent_to_project_crs_extent(
     if input_rect is None:
         return None
 
-    default_crs = QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
+    default_crs = source_crs or QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
     if not default_crs.isValid():
         return None
 
@@ -453,163 +517,166 @@ def extent_to_project_crs_extent(
     return input_rect
 
 
-def activity_npv_to_dict(activity_npv: ActivityNpv) -> dict:
-    """Converts an ActivityNpv object to a dictionary representation.
+def ncs_pathway_npv_to_dict(pathway_npv: NcsPathwayNpv) -> dict:
+    """Converts an NcsPathwayNpv object to a dictionary representation.
 
     :returns: A dictionary containing attribute name-value pairs.
     :rtype: dict
     """
     return {
-        YEARS_ATTRIBUTE: activity_npv.params.years,
-        DISCOUNT_ATTRIBUTE: activity_npv.params.discount,
-        ABSOLUTE_NPV_ATTRIBUTE: activity_npv.params.absolute_npv,
-        NORMALIZED_NPV_ATTRIBUTE: activity_npv.params.normalized_npv,
-        YEARLY_RATES_ATTRIBUTE: activity_npv.params.yearly_rates,
-        MANUAL_NPV_ATTRIBUTE: activity_npv.params.manual_npv,
-        ENABLED_ATTRIBUTE: activity_npv.enabled,
-        ACTIVITY_IDENTIFIER_PROPERTY: activity_npv.activity_id,
+        YEARS_ATTRIBUTE: pathway_npv.params.years,
+        DISCOUNT_ATTRIBUTE: pathway_npv.params.discount,
+        ABSOLUTE_NPV_ATTRIBUTE: pathway_npv.params.absolute_npv,
+        NORMALIZED_NPV_ATTRIBUTE: pathway_npv.params.normalized_npv,
+        YEARLY_RATES_ATTRIBUTE: pathway_npv.params.yearly_rates,
+        MANUAL_NPV_ATTRIBUTE: pathway_npv.params.manual_npv,
+        ENABLED_ATTRIBUTE: pathway_npv.enabled,
+        NCS_PATHWAY_IDENTIFIER_PROPERTY: pathway_npv.pathway_id,
     }
 
 
-def create_activity_npv(activity_npv_dict: dict) -> typing.Optional[ActivityNpv]:
-    """Creates an ActivityNpv object from the equivalent dictionary
+def create_ncs_pathway_npv(pathway_npv_dict: dict) -> typing.Optional[NcsPathwayNpv]:
+    """Creates an NcsPathwayNpv object from the equivalent dictionary
     representation.
 
-    Please note that the `activity` attribute of the `ActivityNpv` object will be
-    `None` hence, will have to be set manually by extracting the corresponding `Activity`
+    Please note that the `pathway` attribute of the `NcsPathwayNpv` object will be
+    `None` hence, will have to be set manually by extracting the corresponding `NcsPathway`
     from the activity UUID.
 
-    :param activity_npv_dict: Dictionary containing information for deserializing
-    to the ActivityNpv object.
-    :type activity_npv_dict: dict
+    :param pathway_npv_dict: Dictionary containing information for deserializing
+    to the NcsPathwayNpv object.
+    :type pathway_npv_dict: dict
 
-    :returns: ActivityNpv deserialized from the dictionary representation.
-    :rtype: ActivityNpv
+    :returns: NcsPathwayNpv deserialized from the dictionary representation.
+    :rtype: NcsPathwayNpv
     """
     args = []
-    if YEARS_ATTRIBUTE in activity_npv_dict:
-        args.append(activity_npv_dict[YEARS_ATTRIBUTE])
+    if YEARS_ATTRIBUTE in pathway_npv_dict:
+        args.append(pathway_npv_dict[YEARS_ATTRIBUTE])
 
-    if DISCOUNT_ATTRIBUTE in activity_npv_dict:
-        args.append(activity_npv_dict[DISCOUNT_ATTRIBUTE])
+    if DISCOUNT_ATTRIBUTE in pathway_npv_dict:
+        args.append(pathway_npv_dict[DISCOUNT_ATTRIBUTE])
 
     if len(args) < 2:
         return None
 
     kwargs = {}
 
-    if ABSOLUTE_NPV_ATTRIBUTE in activity_npv_dict:
-        kwargs[ABSOLUTE_NPV_ATTRIBUTE] = activity_npv_dict[ABSOLUTE_NPV_ATTRIBUTE]
+    if ABSOLUTE_NPV_ATTRIBUTE in pathway_npv_dict:
+        kwargs[ABSOLUTE_NPV_ATTRIBUTE] = pathway_npv_dict[ABSOLUTE_NPV_ATTRIBUTE]
 
-    if NORMALIZED_NPV_ATTRIBUTE in activity_npv_dict:
-        kwargs[NORMALIZED_NPV_ATTRIBUTE] = activity_npv_dict[NORMALIZED_NPV_ATTRIBUTE]
+    if NORMALIZED_NPV_ATTRIBUTE in pathway_npv_dict:
+        kwargs[NORMALIZED_NPV_ATTRIBUTE] = pathway_npv_dict[NORMALIZED_NPV_ATTRIBUTE]
 
-    if MANUAL_NPV_ATTRIBUTE in activity_npv_dict:
-        kwargs[MANUAL_NPV_ATTRIBUTE] = activity_npv_dict[MANUAL_NPV_ATTRIBUTE]
+    if MANUAL_NPV_ATTRIBUTE in pathway_npv_dict:
+        kwargs[MANUAL_NPV_ATTRIBUTE] = pathway_npv_dict[MANUAL_NPV_ATTRIBUTE]
 
     npv_params = NpvParameters(*args, **kwargs)
 
-    if YEARLY_RATES_ATTRIBUTE in activity_npv_dict:
-        yearly_rates = activity_npv_dict[YEARLY_RATES_ATTRIBUTE]
+    if YEARLY_RATES_ATTRIBUTE in pathway_npv_dict:
+        yearly_rates = pathway_npv_dict[YEARLY_RATES_ATTRIBUTE]
         npv_params.yearly_rates = yearly_rates
 
     npv_enabled = False
-    if ENABLED_ATTRIBUTE in activity_npv_dict:
-        npv_enabled = activity_npv_dict[ENABLED_ATTRIBUTE]
+    if ENABLED_ATTRIBUTE in pathway_npv_dict:
+        npv_enabled = pathway_npv_dict[ENABLED_ATTRIBUTE]
 
-    return ActivityNpv(npv_params, npv_enabled, None)
+    return NcsPathwayNpv(npv_params, npv_enabled, None)
 
 
-def activity_npv_collection_to_dict(activity_collection: ActivityNpvCollection) -> dict:
-    """Converts the activity NPV collection object to the
+def ncs_pathway_npv_collection_to_dict(
+    pathway_collection: NcsPathwayNpvCollection,
+) -> dict:
+    """Converts the NCS pathway NPV collection object to the
     dictionary representation.
 
     :returns: A dictionary containing the attribute name-value pairs
-    of an activity NPV collection object
+    of an NCS pathway NPV collection object
     :rtype: dict
     """
     npv_collection_dict = {
-        MIN_VALUE_ATTRIBUTE: activity_collection.minimum_value,
-        MAX_VALUE_ATTRIBUTE: activity_collection.maximum_value,
-        COMPUTED_ATTRIBUTE: activity_collection.use_computed,
-        REMOVE_EXISTING_ATTRIBUTE: activity_collection.remove_existing,
+        MIN_VALUE_ATTRIBUTE: pathway_collection.minimum_value,
+        MAX_VALUE_ATTRIBUTE: pathway_collection.maximum_value,
+        COMPUTED_ATTRIBUTE: pathway_collection.use_computed,
+        REMOVE_EXISTING_ATTRIBUTE: pathway_collection.remove_existing,
     }
 
-    mapping_dict = list(map(activity_npv_to_dict, activity_collection.mappings))
+    mapping_dict = list(map(ncs_pathway_npv_to_dict, pathway_collection.mappings))
     npv_collection_dict[NPV_MAPPINGS_ATTRIBUTE] = mapping_dict
 
     return npv_collection_dict
 
 
-def create_activity_npv_collection(
-    activity_collection_dict: dict, reference_activities: typing.List[Activity] = None
-) -> typing.Optional[ActivityNpvCollection]:
-    """Creates an activity NPV collection object from the corresponding
+def create_ncs_pathway_npv_collection(
+    pathway_collection_dict: dict, reference_pathways: typing.List[NcsPathway] = None
+) -> typing.Optional[NcsPathwayNpvCollection]:
+    """Creates an NCS pathway NPV collection object from the corresponding
     dictionary representation.
 
-    :param activity_collection_dict: Dictionary representation containing
-    information of an activity NPV collection object.
-    :type activity_collection_dict: dict
+    :param pathway_collection_dict: Dictionary representation containing
+    information of an NCS pathway NPV collection object.
+    :type pathway_collection_dict: dict
 
-    :param reference_activities: Optional list of activities that will be
-    used to lookup  when deserializing the ActivityNpv objects.
-    :type reference_activities: list
+    :param reference_pathways: Optional list of NCS pathways that will be
+    used to lookup  when deserializing the NcsPathwayNpv objects.
+    :type reference_pathways: list
 
-    :returns: Activity NPV collection object from the dictionary representation
-    or None if the source dictionary is invalid.
-    :rtype: ActivityNpvCollection
+    :returns: NCS pathway NPV collection object from the dictionary
+    representation or None if the source dictionary is invalid.
+    :rtype: NcsPathwayNpvCollection
     """
-    if len(activity_collection_dict) == 0:
+    if len(pathway_collection_dict) == 0:
         return None
 
-    ref_activities_by_uuid = {
-        str(activity.uuid): activity for activity in reference_activities
+    ref_pathways_by_uuid = {
+        str(pathway.uuid): pathway for pathway in reference_pathways
     }
 
     args = []
 
     # Minimum value
-    if MIN_VALUE_ATTRIBUTE in activity_collection_dict:
-        args.append(activity_collection_dict[MIN_VALUE_ATTRIBUTE])
+    if MIN_VALUE_ATTRIBUTE in pathway_collection_dict:
+        args.append(pathway_collection_dict[MIN_VALUE_ATTRIBUTE])
 
     # Maximum value
-    if MAX_VALUE_ATTRIBUTE in activity_collection_dict:
-        args.append(activity_collection_dict[MAX_VALUE_ATTRIBUTE])
+    if MAX_VALUE_ATTRIBUTE in pathway_collection_dict:
+        args.append(pathway_collection_dict[MAX_VALUE_ATTRIBUTE])
 
     if len(args) < 2:
         return None
 
-    activity_npv_collection = ActivityNpvCollection(*args)
+    pathway_npv_collection = NcsPathwayNpvCollection(*args)
 
     # Use computed
-    if COMPUTED_ATTRIBUTE in activity_collection_dict:
-        use_computed = activity_collection_dict[COMPUTED_ATTRIBUTE]
-        activity_npv_collection.use_computed = use_computed
+    if COMPUTED_ATTRIBUTE in pathway_collection_dict:
+        use_computed = pathway_collection_dict[COMPUTED_ATTRIBUTE]
+        pathway_npv_collection.use_computed = use_computed
 
     # Remove existing
-    if REMOVE_EXISTING_ATTRIBUTE in activity_collection_dict:
-        remove_existing = activity_collection_dict[REMOVE_EXISTING_ATTRIBUTE]
-        activity_npv_collection.remove_existing = remove_existing
+    if REMOVE_EXISTING_ATTRIBUTE in pathway_collection_dict:
+        remove_existing = pathway_collection_dict[REMOVE_EXISTING_ATTRIBUTE]
+        pathway_npv_collection.remove_existing = remove_existing
 
-    if NPV_MAPPINGS_ATTRIBUTE in activity_collection_dict:
-        mappings_dict = activity_collection_dict[NPV_MAPPINGS_ATTRIBUTE]
+    if NPV_MAPPINGS_ATTRIBUTE in pathway_collection_dict:
+        mappings_dict = pathway_collection_dict[NPV_MAPPINGS_ATTRIBUTE]
         npv_mappings = []
         for md in mappings_dict:
-            activity_npv = create_activity_npv(md)
-            if activity_npv is None:
+            pathway_npv = create_ncs_pathway_npv(md)
+            if pathway_npv is None:
                 continue
 
-            # Get the corresponding activity from the unique identifier
-            if ACTIVITY_IDENTIFIER_PROPERTY in md:
-                activity_id = md[ACTIVITY_IDENTIFIER_PROPERTY]
-                if activity_id in ref_activities_by_uuid:
-                    ref_activity = ref_activities_by_uuid[activity_id]
-                    activity_npv.activity = ref_activity
-                    npv_mappings.append(activity_npv)
+            # Get the corresponding NCS pathway from the unique
+            # identifier
+            if NCS_PATHWAY_IDENTIFIER_PROPERTY in md:
+                pathway_id = md[NCS_PATHWAY_IDENTIFIER_PROPERTY]
+                if pathway_id in ref_pathways_by_uuid:
+                    ref_pathway = ref_pathways_by_uuid[pathway_id]
+                    pathway_npv.pathway = ref_pathway
+                    npv_mappings.append(pathway_npv)
 
-        activity_npv_collection.mappings = npv_mappings
+        pathway_npv_collection.mappings = npv_mappings
 
-    return activity_npv_collection
+    return pathway_npv_collection
 
 
 def layer_from_scenario_result(
@@ -630,3 +697,345 @@ def layer_from_scenario_result(
         return None
 
     return layer
+
+
+def metric_column_to_dict(metric_column: MetricColumn) -> dict:
+    """Converts a metric column object to a dictionary representation.
+
+    :param metric_column: Metric column to be serialized to a dictionary.
+    :type metric_column: MetricColumn
+
+    :returns: A dictionary containing attribute values of a metric column.
+    :rtype: dict
+    """
+    formatter_props = metric_column.number_formatter.configuration(
+        QgsReadWriteContext()
+    )
+    formatter_id = metric_column.number_formatter.id()
+    if formatter_id == "default":
+        formatter_props = {}
+
+    return {
+        NAME_ATTRIBUTE: metric_column.name,
+        HEADER_ATTRIBUTE: metric_column.header,
+        EXPRESSION_ATTRIBUTE: metric_column.expression,
+        ALIGNMENT_ATTRIBUTE: metric_column.alignment,
+        AUTO_CALCULATED_ATTRIBUTE: metric_column.auto_calculated,
+        NUMBER_FORMATTER_ENABLED_ATTRIBUTE: metric_column.format_as_number,
+        NUMBER_FORMATTER_ID_ATTRIBUTE: formatter_id,
+        NUMBER_FORMATTER_PROPS_ATTRIBUTE: formatter_props,
+    }
+
+
+def create_metric_column(metric_column_dict: dict) -> typing.Optional[MetricColumn]:
+    """Creates a metric column from the equivalent dictionary representation.
+
+    :param metric_column_dict: Dictionary containing information for deserializing
+    the dict to a metric column.
+    :type metric_column_dict: dict
+
+    :returns: Metric column object or None if the deserialization failed.
+    :rtype: MetricColumn
+    """
+    number_formatter = QgsApplication.numericFormatRegistry().create(
+        metric_column_dict[NUMBER_FORMATTER_ID_ATTRIBUTE],
+        metric_column_dict[NUMBER_FORMATTER_PROPS_ATTRIBUTE],
+        QgsReadWriteContext(),
+    )
+
+    return MetricColumn(
+        metric_column_dict[NAME_ATTRIBUTE],
+        metric_column_dict[HEADER_ATTRIBUTE],
+        metric_column_dict[EXPRESSION_ATTRIBUTE],
+        metric_column_dict[ALIGNMENT_ATTRIBUTE],
+        metric_column_dict[AUTO_CALCULATED_ATTRIBUTE],
+        metric_column_dict[NUMBER_FORMATTER_ENABLED_ATTRIBUTE],
+        number_formatter,
+    )
+
+
+def activity_metric_to_dict(activity_metric: ActivityColumnMetric) -> dict:
+    """Converts an activity column metric to a dictionary representation.
+
+    :param activity_metric: Activity column metric to be serialized to a dictionary.
+    :type activity_metric: ActivityColumnMetric
+
+    :returns: A dictionary containing attribute values of an
+    activity column metric.
+    :rtype: dict
+    """
+    return {
+        ACTIVITY_IDENTIFIER_PROPERTY: str(activity_metric.activity.uuid),
+        METRIC_IDENTIFIER_PROPERTY: activity_metric.metric_column.name,
+        METRIC_TYPE_ATTRIBUTE: activity_metric.metric_type.value,
+        EXPRESSION_ATTRIBUTE: activity_metric.expression,
+    }
+
+
+def create_activity_metric(
+    activity_metric_dict: dict, activity: Activity, metric_column: MetricColumn
+) -> typing.Optional[ActivityColumnMetric]:
+    """Creates a metric column from the equivalent dictionary representation.
+
+    :param activity_metric_dict: Dictionary containing information for deserializing
+    the dict to a metric column.
+    :type activity_metric_dict: dict
+
+    :param activity: Referenced activity matching the saved UUID.
+    :type activity: str
+
+    :param metric_column: Referenced metric column matching the saved name.
+    :type metric_column: MetricColumn
+
+    :returns: Metric column object or None if the deserialization failed.
+    :rtype: MetricColumn
+    """
+    return ActivityColumnMetric(
+        activity,
+        metric_column,
+        MetricType.from_int(activity_metric_dict[METRIC_TYPE_ATTRIBUTE]),
+        activity_metric_dict[EXPRESSION_ATTRIBUTE],
+    )
+
+
+def metric_configuration_to_dict(metric_configuration: MetricConfiguration) -> dict:
+    """Serializes a metric configuration to dict.
+
+    :param metric_configuration: Metric configuration to tbe serialized.
+    :type metric_configuration: MetricConfiguration
+
+    :returns: A dictionary representing a metric configuration.
+    :rtype: dict
+    """
+    metric_config_dict = {}
+
+    metric_column_dicts = [
+        metric_column_to_dict(mc) for mc in metric_configuration.metric_columns
+    ]
+    metric_config_dict[METRIC_COLUMNS_PROPERTY] = metric_column_dicts
+
+    activity_column_metrics = []
+    for activity_columns in metric_configuration.activity_metrics:
+        column_metrics = []
+        for activity_column_metric in activity_columns:
+            column_metrics.append(activity_metric_to_dict(activity_column_metric))
+        activity_column_metrics.append(column_metrics)
+
+    metric_config_dict[ACTIVITY_METRICS_PROPERTY] = activity_column_metrics
+
+    activity_identifiers = [
+        str(activity.uuid) for activity in metric_configuration.activities
+    ]
+    metric_config_dict[MULTI_ACTIVITY_IDENTIFIER_PROPERTY] = activity_identifiers
+
+    return metric_config_dict
+
+
+def create_metric_configuration(
+    metric_configuration_dict: dict, referenced_activities: typing.List[Activity]
+) -> typing.Optional[MetricConfiguration]:
+    """Creates a metric configuration from the equivalent dictionary representation.
+
+    :param metric_configuration_dict: Dictionary containing information for deserializing
+    a metric configuration object.
+    :type metric_configuration_dict: dict
+
+    :param referenced_activities: Activities which will be used to extract those
+    referenced in the metric configuration.
+    :type referenced_activities: typing.List[Activity]
+
+    :returns: Metric configuration object or None if the deserialization failed.
+    :rtype: MetricConfiguration
+    """
+    if len(metric_configuration_dict) == 0:
+        return None
+
+    metric_column_dicts = metric_configuration_dict[METRIC_COLUMNS_PROPERTY]
+    metric_columns = [create_metric_column(mc_dict) for mc_dict in metric_column_dicts]
+
+    indexed_metric_columns = {mc.name: mc for mc in metric_columns}
+    indexed_activities = {
+        str(activity.uuid): activity for activity in referenced_activities
+    }
+
+    activity_column_metrics = []
+    activity_column_metric_dicts = metric_configuration_dict[ACTIVITY_METRICS_PROPERTY]
+    for activity_row_dict in activity_column_metric_dicts:
+        if len(activity_row_dict) == 0:
+            continue
+
+        # Check if the activity exists
+        activity_id = activity_row_dict[0][ACTIVITY_IDENTIFIER_PROPERTY]
+        if activity_id not in indexed_activities:
+            # Most likely the activity in the metric config has been deleted
+            continue
+
+        activity_row_metrics = []
+        for activity_metric_dict in activity_row_dict:
+            name = activity_metric_dict[METRIC_IDENTIFIER_PROPERTY]
+            activity = indexed_activities[activity_id]
+            metric_column = indexed_metric_columns[name]
+
+            activity_row_metrics.append(
+                create_activity_metric(activity_metric_dict, activity, metric_column)
+            )
+
+        activity_column_metrics.append(activity_row_metrics)
+
+    return MetricConfiguration(metric_columns, activity_column_metrics)
+
+
+def metric_configuration_profile_to_dict(
+    metric_config_profile: MetricConfigurationProfile,
+) -> dict:
+    """Serializes a metric configuration profile to a dictionary.
+
+    :param metric_config_profile: Metric configuration profile to be
+    serialized.
+    :type metric_config_profile: MetricConfigurationProfile
+
+    :returns: A dictionary representing a metric configuration profile.
+    :rtype: dict
+    """
+    return {
+        NAME_ATTRIBUTE: metric_config_profile.name,
+        METRIC_CONFIGURATION_PROPERTY: metric_configuration_to_dict(
+            metric_config_profile.config
+        ),
+    }
+
+
+def create_metric_configuration_profile(
+    metric_configuration_profile_dict: dict,
+    referenced_activities: typing.List[Activity],
+) -> typing.Optional[MetricConfigurationProfile]:
+    """Creates a metric configuration profile from the equivalent
+    dictionary representation.
+
+    :param metric_configuration_profile_dict: Dictionary
+    containing information for deserializing a metric
+    configuration profile.
+    :type metric_configuration_profile_dict: dict
+
+    :param referenced_activities: Activities which will be used
+    to extract those referenced in the metric configuration
+    profile.
+    :type referenced_activities: typing.List[Activity]
+
+    :returns: Metric configuration profile
+    object or None if the deserialization failed.
+    :rtype: MetricConfiguration
+    """
+    if not metric_configuration_profile_dict:
+        return None
+
+    if NAME_ATTRIBUTE not in metric_configuration_profile_dict:
+        return None
+
+    if METRIC_CONFIGURATION_PROPERTY not in metric_configuration_profile_dict:
+        return None
+
+    name = metric_configuration_profile_dict[NAME_ATTRIBUTE]
+    config = create_metric_configuration(
+        metric_configuration_profile_dict[METRIC_CONFIGURATION_PROPERTY],
+        referenced_activities,
+    )
+
+    if config is None:
+        return None
+
+    return MetricConfigurationProfile(name, config)
+
+
+def clone_metric_configuration_profile(
+    metric_config_profile: MetricConfigurationProfile,
+    referenced_activities: typing.List[Activity],
+) -> typing.Optional[MetricConfigurationProfile]:
+    """Creates a deep copy version of the specified
+    metric configuration profile.
+
+    :param metric_config_profile: Metric configuration profile to be cloned.
+    :type metric_config_profile: MetricConfigurationProfile
+
+    :param referenced_activities: Activities which will be used
+    to extract those referenced in the metric configuration
+    profile.
+    :type referenced_activities: typing.List[Activity]
+
+    :returns: Cloned metric configuration profile or None if the
+    input metric configuration profile was invalid.
+    :rtype: MetricConfigurationProfile
+    """
+    if not metric_config_profile.is_valid():
+        return None
+
+    metric_profile_config_dict = metric_configuration_profile_to_dict(
+        metric_config_profile
+    )
+    if not metric_profile_config_dict:
+        return None
+
+    return create_metric_configuration_profile(
+        metric_profile_config_dict, referenced_activities
+    )
+
+
+def metric_profile_collection_to_dict(
+    metric_profile_collection: MetricProfileCollection,
+) -> dict:
+    """Serializes a metric configuration profile to a dictionary.
+
+    :param metric_profile_collection: Metric profile collection to be
+    serialized.
+    :type metric_profile_collection: MetricProfileCollection
+
+    :returns: A dictionary representing a metric profile collection.
+    :rtype: dict
+    """
+    return {
+        CURRENT_PROFILE_PROPERTY: metric_profile_collection.current_profile,
+        PROFILES_ATTRIBUTE: [
+            metric_configuration_profile_to_dict(mp)
+            for mp in metric_profile_collection.profiles
+        ],
+    }
+
+
+def create_metrics_profile_collection(
+    metric_profile_collection_dict, referenced_activities: typing.List[Activity]
+) -> typing.Optional[MetricProfileCollection]:
+    """Deserialized a metric profile collection from the equivalent
+    dictionary representation.
+
+    :param metric_profile_collection_dict: Dictionary containing
+    information about the profile collection.
+    :type metric_profile_collection_dict: dict
+
+    :param referenced_activities: Activities which will be used
+    to extract those referenced in the metric configuration
+    objects that correspond to the respective profiles.
+    :type referenced_activities: typing.List[Activity]
+
+    :returns: Metric profile configuration object or None if
+    the deserialization failed.
+    :rtype: MetricProfileCollection
+    """
+    if not metric_profile_collection_dict:
+        return None
+
+    if PROFILES_ATTRIBUTE not in metric_profile_collection_dict:
+        return None
+
+    current_profile_id = metric_profile_collection_dict.get(
+        CURRENT_PROFILE_PROPERTY, ""
+    )
+    metric_profiles = []
+    for profile_dict in metric_profile_collection_dict[PROFILES_ATTRIBUTE]:
+        profile = create_metric_configuration_profile(
+            profile_dict, referenced_activities
+        )
+        if profile is None:
+            continue
+        metric_profiles.append(profile)
+
+    return MetricProfileCollection(current_profile_id, metric_profiles)

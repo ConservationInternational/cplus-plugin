@@ -10,7 +10,7 @@ contact:
 license: This program is free software; you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
 ---
 
-# Preparing data
+# Preparing Data
 
 Data preparation is an important step before performing data analysis. This is especially true for spatial data (rasters and vector layers), as many factors play a role in the result. Here are some factors that need to be considered:
 
@@ -18,15 +18,15 @@ Data preparation is an important step before performing data analysis. This is e
 
 - Coordinate systems are very important when it comes to the accuracy of your spatial analysis.
 
-For most analysis, a projected coordinate system (e.g. UTM, Albers Equal Area Conic, South African LO-system, etc) is preferred above a geographic coordinate system (WGS84, Hartebeesthoek84, etc). This is because calculating distances and areas is much more accurate with projected coordinate systems.
+For most analysis, a projected coordinate system (e.g. UTM, Albers Equal Area Conic, South African LO-system, etc.) is preferred, but also mandatory for the input raster datasets, above a geographic coordinate system (WGS84, Hartebeesthoek84, etc.). This is because calculating distances and areas is much more accurate with projected coordinate systems.
 
 - The best practice will be to make use of the same coordinate system for each layer. Having a geographic coordinate
 for some layers, and projected coordinate systems for others, can have negative impacts on your results.
 
-- When working with rasters, be sure that the nodata value is set correctly, otherwise, the nodata value
-will be unknown during analysis and will be considered as a normal pixel value.
+- When working with rasters, be sure that the `nodata` value is set correctly, otherwise, the `nodata` value
+will be unknown during analysis and will be considered as a normal pixel value. This value should be -9999.
 
-- The plugin can only work with raster layers. If you have data in vector format, convert it to raster.
+- The plugin can only work with raster layers. If you have data in vector format, convert it to raster. The only applied vector datasets are the masking layers.
 
 - Any outlier values need to be removed from the spatial data before performing analysis.
 
@@ -36,38 +36,38 @@ Taking into account the above can greatly improve the analysis and the results p
 
 - The toolbox will be used for each section.
 
-## Carbon and Priority weighted layers
+## Priority weighted layers
 
-Both Carbon and Priority weighted layers (PWL) should not contain any nodata values. If the nodata pixels
+Priority weighted layers (PWL) should not contain any `nodata` values. If the `nodata` pixels
 are not removed from the rasters, the user's analysis will be less efficient and likely result in a reduction in
-results (e.g. all nodata pixels will end up as nodata). **Figure 1** shows a Carbon raster with nodata pixels.
+results (e.g. all `nodata` pixels will end up as `nodata`). **Figure 1** shows a Carbon raster with `nodata` pixels.
 
-![QGIS unknown crs](img/qgis-carbon-not-filled.png)
+![QGIS Carbon Not filled](img/qgis-carbon-not-filled.png)
 
-*Figure 1: Raster with nodata pixels*
+*Figure 1: Raster with `nodata` pixels*
 
-Follow these easy steps to remove nodata pixels from a raster:
+Follow these easy steps to remove `nodata` pixels from a raster:
 
-- In the toolbox search, type "fill nodata".
+- In the toolbox search, type "fill `nodata`".
 
-- Open the tool *Fill NoData cells*.
+- Open the tool *Fill `nodata` cells*.
 
 - Provide the parameters as follows:
-    - **Raster input**: Raster layer with nodata pixels which should be removed
+    - **Raster input**: Raster layer with `nodata` pixels which should be removed
     - **Fill value**: Zero should suffice for most cases
     - **Output raster**: Directory to which the filled raster should be stored
 
-![QGIS unknown crs](img/qgis-carbon-layer-fill.png)
+![QGIS Carbon Layer Fill](img/qgis-carbon-layer-fill.png)
 
-*Figure 2: QGIS Fill nodata cells*
+*Figure 2: QGIS Fill `nodata` cells*
 
 - Click **Run**
 
-**Figure 3** shows a nodata filled raster.
+**Figure 3** shows a `nodata` filled raster.
 
-![QGIS unknown crs](img/qgis-raster-filled.png)
+![QGIS Raster Filled](img/qgis-raster-filled.png)
 
-*Figure 3: Raster with nodata pixels removed/filled*
+*Figure 3: Raster with `nodata` pixels removed/filled*
 
 ### Coordinate systems
 
@@ -80,7 +80,7 @@ to be resolved before performing analysis. An unknown coordinate system can be i
 - QGIS will show a warning next to the layer.
 - This warning will explain that the coordinate system is not defined.
 
-![QGIS unknown crs](img/qgis-unknown-crs.png)
+![QGIS Unknown CRS](img/qgis-unknown-crs.png)
 
 *Figure 4: Unknown CRS for a layer in QGIS*
 
@@ -89,7 +89,7 @@ to be resolved before performing analysis. An unknown coordinate system can be i
 - Scroll down to *Coordinate Reference System (CRS)*
 - **Unknown** will be shown if the CRS is not set
 
-![QGIS layer information](img/qgis-properties-crs.png)
+![QGIS Properties CRS](img/qgis-properties-crs.png)
 
 *Figure 5: QGIS layer properties*
 
@@ -129,31 +129,31 @@ at the correct position spatially. </blockquote>
     - **Source CRS**: Current CRS of the layer.
     - **Target CRS**: The CRS to what the layer should be projected.
     - **Resampling method to use**: Nearest Neighbour. Using other options will change pixel values, which we don't want.
-    - **Nodata value**: Leave empty, except if the user wants to change the nodata value.
+    - **`nodata` value**: Leave empty, except if the user wants to change the `nodata` value.
     - **Reprojected**: The output file.
 
 - Click **Run**.
 - Do this for all geographic coordinate system rasters.
 - As mentioned above, the best will be for all layers to make use of the same coordinate system.
 
-### Nodata value
+### `nodata` value
 
-If a nodata value for a raster is not set correctly, it will be considered as a pixel value which is part of the analysis. This can have a negative impact on the analysis results.
+If a `nodata` value for a raster is not set correctly, it will be considered as a pixel value which is part of the analysis. This can have a negative impact on the analysis results.
 
-How to check if a raster's nodata is set correctly?
+How to check if a raster's `nodata` is set correctly?
 
 - Right-click on the raster in QGIS.
 - Select **Properties**.
 - Select the **Information** tab.
 - Scroll down to the **Bands** section.
-- Under **No-data** there should be a value.
-- If there is no value, this means that the nodata is not set correctly and therefore needs to be fixed.
+- Under **No-data** there should be a value i.e. -9999
+- If there is no value, this means that the `nodata` is not set correctly and therefore needs to be fixed.
 
-![QGIS raster nodata](img/qgis-raster-nodata.png)
+![QGIS raster `nodata`](img/qgis-raster-nodata.png)
 
-*Figure 8: Layer properties to check for nodata value*
+*Figure 8: Layer properties to check for `nodata` value*
 
-To fix a nodata issue, do the following:
+To fix a `nodata` issue, do the following:
 
 - Type *Translate* in the toolbox search.
 - Open the *Translate* tool under *Raster Conversion*.
@@ -164,10 +164,10 @@ To fix a nodata issue, do the following:
 
 - Provide the following parameters:
     - **Input layer**: Raster layer.
-    - **Assign a specific nodata value to output bands**: Provide a desired value here. -9999 will suffice for most cases.
+    - **Assign a specific `nodata` value to output bands**: Provide a desired value here. -9999 will suffice for most cases.
     - **Converted**: Output raster.
 
-This should solve a nodata issue with a raster. The *Translate* tool is to convert a raster to another format, but the user can still make use of the same format. This tool is useful to correctly set nodata values when needed.
+This should solve a `nodata` issue with a raster. The *Translate* tool is to convert a raster to another format, but the user can still make use of the same format. This tool is useful to correctly set `nodata` values when needed.
 
 ### Outlier pixels/values
 
@@ -189,7 +189,7 @@ accomplished using the *Reclassify by table* tool.
 
 *Figure 10: QGIS Reclassify by Table tool*
 
-- Open the *Reclassification table* so that the user can set the value reclassifications. At least one
+- Open the *Reclassification table* so that the user can set the value of the reclassification. At least one
 row needs to be provided.
 
 - Click **Add Row**.
@@ -200,7 +200,7 @@ row needs to be provided.
 
 - Set the new *Value* for each row:
     - *Value* has to be numeric.
-    - If a user wants to remove a pixel/value from the analysis, the value needs to be set to the nodata value of the raster (e.g. -9999). See the above section on the **Nodata value** on how to find the nodata value of a raster.
+    - If a user wants to remove a pixel/value from the analysis, the value needs to be set to the `nodata` value of the raster (e.g. -9999). See the above section on the **`nodata` value** on how to find the `nodata` value of a raster.
 
 ![QGIS Reclassification table](img/qgis-reclassification-table.png)
 
@@ -217,8 +217,8 @@ row needs to be provided.
 
 As mentioned above, the plugin can only work with raster layers. But often a user might have some data in vector format. This can easily be resolved by converting the vector layer to a raster, which can then be used as input to the plugin. Firstly, we want to convert the vector layer to make use of the same projected coordinate system as other data. This can be done as follows:
 
-- Type 'Reproject layer' in the QGIS toolbox search.
-- Select the 'Reproject layer' tool in the 'Vector general' section.
+- Type `Reproject layer` in the QGIS toolbox search.
+- Select the `Reproject layer` tool in the 'Vector general' section.
 
 ![QGIS Reproject tool](img/qgis-reproject-layer.png)
 
@@ -233,8 +233,8 @@ As mentioned above, the plugin can only work with raster layers. But often a use
 
 Now that the vector layer is in the correct coordinate system, the user can convert the vector layer to a raster:
 
-- Type 'rasterize' in the QGIS toolbox search.
-- Select 'Rasterize (vector to raster)'.
+- Type `rasterize` in the QGIS toolbox search.
+- Select `Rasterize (vector to raster)`.
 
 ![QGIS Rasterize tool](img/qgis-rasterize.png)
 
@@ -247,7 +247,7 @@ Now that the vector layer is in the correct coordinate system, the user can conv
     - **Output raster size units**: Georeferenced units.
     - **Width** and **Height**: Spatial resolution in meters. If the vector layer is in geographical coordinates, this distance will be degrees, not meters.
     - **Output extent**: Leave as is, except if the user wants to limit the output to an extent
-    - **Assign a specific nodata value to output bands**: -9999 will suffice for most cases
+    - **Assign a specific `nodata` value to output bands**: -9999 will suffice for most cases
     - **Rasterized**: The output raster.
 
 - Click **Run**.

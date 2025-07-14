@@ -76,3 +76,10 @@ class ScenarioDialog(QtWidgets.QDialog, DialogUi):
                     default_extent,
                     QgsCoordinateReferenceSystem("EPSG:4326"),
                 )
+
+            if self.scenario.extent.crs:
+                self.crs_selector.setCrs(
+                    QgsCoordinateReferenceSystem(self.scenario.extent.crs)
+                )
+            else:
+                self.crs_selector.setCrs(QgsCoordinateReferenceSystem("EPSG:4326"))
