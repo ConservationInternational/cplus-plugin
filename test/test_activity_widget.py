@@ -2,7 +2,6 @@ from unittest import TestCase
 from unittest.mock import MagicMock
 from qgis.gui import QgsMessageBar
 from cplus_plugin.gui.activity_widget import ActivityContainerWidget
-from cplus_plugin.models.base import Activity, NcsPathway
 from cplus_plugin.gui.component_item_model import ActivityItem, NcsPathwayItem
 from model_data_for_testing import get_activity, get_valid_ncs_pathway
 from utilities_for_testing import get_qgis_app

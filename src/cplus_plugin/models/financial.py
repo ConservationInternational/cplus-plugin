@@ -5,7 +5,7 @@
 import dataclasses
 import typing
 
-from .base import NcsPathway
+from cplus_core.models.base import Activity, NcsPathway
 
 
 @dataclasses.dataclass

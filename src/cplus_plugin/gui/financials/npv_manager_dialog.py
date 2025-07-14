@@ -21,7 +21,7 @@ from qgis.PyQt.uic import loadUiType
 from ..component_item_model import NcsPathwayItemModel
 from ...conf import settings_manager
 from ...definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
-from ...models.base import NcsPathway
+from cplus_core.models.base import Activity, NcsPathway
 from ...models.financial import NcsPathwayNpv, NcsPathwayNpvCollection, NpvParameters
 from .npv_financial_model import NpvFinancialModel
 from ...lib.financials import compute_discount_value

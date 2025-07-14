@@ -19,13 +19,8 @@ from ..definitions.defaults import (
     ICON_PATH,
     USER_DOCUMENTATION_SITE,
 )
-from ..models.base import (
-    DataSourceType,
-    LayerType,
-    NcsPathway,
-    NcsPathwayType,
-    LayerSource,
-)
+from cplus_core.models.base import LayerType, NcsPathway, NcsPathwayType
+from ..models.source import DataSourceType, LayerSource
 from ..utils import FileUtils, open_documentation, tr, log
 
 WidgetUi, _ = loadUiType(

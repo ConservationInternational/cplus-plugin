@@ -47,7 +47,7 @@ from ...conf import (
     settings_manager,
     Settings,
 )
-from ...models.base import DataSourceType
+from ...models.source import DataSourceType
 from ...definitions.constants import CPLUS_OPTIONS_KEY, NO_DATA_VALUE
 from ...definitions.defaults import (
     GENERAL_OPTIONS_TITLE,
@@ -62,7 +62,7 @@ from ...lib.validation.configs import (
 from ...lib.validation.feedback import ValidationFeedback
 from ...lib.validation.validators import DataValidator
 from ...models.validation import RuleInfo, RuleType
-from ...models.base import DataSourceType, LayerModelComponent, LayerType
+from cplus_core.models.base import LayerModelComponent, LayerType
 from ...trends_earth.constants import API_URL, TIMEOUT
 from ...utils import FileUtils, log, tr, convert_size
 from ...trends_earth import auth, api, download

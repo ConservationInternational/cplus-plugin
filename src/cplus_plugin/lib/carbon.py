@@ -22,7 +22,8 @@ from qgis.core import (
 from qgis import processing
 
 from ..conf import settings_manager, Settings
-from ..models.base import Activity, DataSourceType, NcsPathwayType
+from cplus_core.models.base import Activity, NcsPathwayType
+from ..models.source import DataSourceType
 from ..utils import log
 
 

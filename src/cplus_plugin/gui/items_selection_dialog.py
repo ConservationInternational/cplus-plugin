@@ -10,7 +10,8 @@ import uuid
 from qgis.PyQt import QtCore, QtWidgets
 from qgis.PyQt.uic import loadUiType
 
-from ..models.base import NcsPathway, PriorityLayer
+from cplus_core.models.base import NcsPathway, PriorityLayer
+
 from ..conf import settings_manager
 from ..utils import log, tr
 

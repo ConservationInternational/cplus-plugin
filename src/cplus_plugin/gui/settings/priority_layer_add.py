@@ -10,7 +10,7 @@ from ...api.request import (
 )
 from ...api.layer_tasks import CreateUpdateDefaultLayerTask
 from ...definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
-from ...models.base import LayerType
+from cplus_core.models.base import LayerType
 from ...trends_earth import api
 from ...trends_earth.constants import API_URL, TIMEOUT
 from ...utils import (

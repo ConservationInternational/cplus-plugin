@@ -52,7 +52,7 @@ from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
 from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
 from .lib.reports.manager import report_manager
 from .lib.reports.metrics import register_metric_functions, unregister_metric_functions
-from .models.base import PriorityLayerType
+from cplus_core.models.base import PriorityLayerType
 from .models.report import MetricConfigurationProfile, MetricProfileCollection
 from .gui.settings.cplus_options import CplusOptionsFactory
 from .gui.settings.log_options import LogOptionsFactory

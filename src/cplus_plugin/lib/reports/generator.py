@@ -68,8 +68,8 @@ from ...definitions.defaults import (
     REPORT_COLOR_TREEFOG,
 )
 from .layout_items import BasicScenarioDetailsItem, CplusMapRepeatItem
+from cplus_core.models.base import Activity, ScenarioResult
 from .metrics import create_metrics_expression_context, evaluate_activity_metric
-from ...models.base import Activity, ScenarioResult
 from ...models.helpers import extent_to_project_crs_extent
 from ...models.report import (
     ActivityContextInfo,

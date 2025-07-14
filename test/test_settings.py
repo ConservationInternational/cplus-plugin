@@ -3,7 +3,7 @@ import unittest
 from utilities_for_testing import get_qgis_app
 
 from cplus_plugin.definitions.defaults import IRRECOVERABLE_CARBON_API_URL
-from cplus_plugin.models.base import DataSourceType
+from cplus_plugin.models.source import DataSourceType
 from cplus_plugin.gui.settings.cplus_options import CplusSettings
 from cplus_plugin.gui.settings.report_options import ReportSettingsWidget
 from cplus_plugin.conf import (

@@ -16,7 +16,8 @@ from qgis.core import (
     QgsProcessingFeedback,
 )
 
-from ..models.base import Scenario, SpatialExtent, Activity, LayerSource
+from cplus_core.models.base import Scenario, SpatialExtent, Activity
+from ..models.source import LayerSource
 from ..conf import settings_manager, Settings
 from ..definitions.defaults import BASE_API_URL
 from ..trends_earth import auth

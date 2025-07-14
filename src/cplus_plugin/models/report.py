@@ -17,7 +17,7 @@ from qgis.core import (
 )
 from qgis.PyQt import QtCore
 
-from .base import Activity, Scenario, ScenarioResult
+from cplus_core.models.base import Activity, Scenario, ScenarioResult
 
 
 @dataclasses.dataclass

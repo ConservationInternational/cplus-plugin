@@ -32,7 +32,7 @@ from ...definitions.defaults import (
     SCENARIO_ANALYSIS_METRICS_TEMPLATE_NAME,
     SCENARIO_COMPARISON_TEMPLATE_NAME,
 )
-from ...models.base import Scenario, ScenarioResult
+from cplus_core.models.base import Scenario, ScenarioResult
 from ...models.report import (
     ReportContext,
     ReportResult,

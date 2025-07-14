@@ -17,8 +17,7 @@ from qgis.core import (
 )
 
 from qgis.PyQt import QtCore
-
-from .base import (
+from cplus_core.models.base import (
     BaseModelComponent,
     BaseModelComponentType,
     Activity,

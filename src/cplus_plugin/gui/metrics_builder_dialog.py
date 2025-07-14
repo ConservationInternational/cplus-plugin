@@ -36,7 +36,7 @@ from .metrics_builder_model import (
     MetricColumnListItem,
     MetricColumnListModel,
 )
-from ..models.base import Activity
+from cplus_core.models.base import Activity
 from ..models.helpers import clone_activity, clone_metric_configuration_profile
 from ..models.report import (
     ActivityColumnMetric,

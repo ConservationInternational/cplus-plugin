@@ -11,6 +11,8 @@ import typing
 import uuid
 from dateutil import tz
 from functools import partial
+from pathlib import Path
+import traceback
 
 from qgis.PyQt import (
     QtCore,
@@ -68,6 +70,7 @@ from ..definitions.constants import (
     ACTIVITY_IDENTIFIER_PROPERTY,
     NCS_PATHWAYS_WEIGHTED_GROUP_LAYER_NAME,
     USER_DEFINED_ATTRIBUTE,
+    NO_DATA_VALUE,
 )
 
 from .financials.npv_manager_dialog import NpvPwlManagerDialog
@@ -77,11 +80,8 @@ from .priority_group_dialog import PriorityGroupDialog
 
 from .scenario_dialog import ScenarioDialog
 
-from ..models.base import (
-    Activity,
-    PriorityLayerType,
-    AreaOfInterestSource,
-)
+from cplus_core.models.base import Activity, PriorityLayerType
+from ..models.source import AreaOfInterestSource
 from ..models.financial import NcsPathwayNpv
 from ..conf import settings_manager, Settings
 
@@ -109,16 +109,15 @@ from ..definitions.defaults import (
     SCENARIO_LOG_FILE_NAME,
     USER_DOCUMENTATION_SITE,
 )
-from ..lib.reports.manager import report_manager
-from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
-from ..tasks import ScenarioAnalysisTask
-from ..utils import (
-    open_documentation,
-    tr,
-    log,
-    FileUtils,
-    write_to_file,
+from ..lib.reports.manager import report_manager, ReportManager
+from cplus_core.models.base import (
+    Scenario,
+    ScenarioResult,
+    ScenarioState,
+    SpatialExtent,
 )
+from cplus_core.analysis import ScenarioAnalysisTask, TaskConfig
+from ..utils import open_documentation, tr, log, FileUtils, write_to_file
 
 
 WidgetUi, _ = loadUiType(
@@ -1488,15 +1487,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             progress_dialog.run_dialog()
 
-            analysis_task = FetchScenarioOutputTask(
-                self.analysis_scenario_name,
-                self.analysis_scenario_description,
-                self.analysis_activities,
-                self.analysis_priority_layers_groups,
-                self.analysis_extent,
-                scenario,
-                None,
-            )
+            task_config = self.create_task_config(scenario)
+            task_config.all_activities = self.analysis_activities
+            task_config.base_dir = settings_manager.get_value(Settings.BASE_DIR)
+
+            analysis_task = FetchScenarioOutputTask(task_config, scenario.extent)
             analysis_task.scenario_api_uuid = scenario.server_uuid
             analysis_task.task_finished.connect(self.update_scenario_list)
 
@@ -1663,6 +1658,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         analysis_task.info_message_changed.connect(self.show_message)
 
+        analysis_task.log_received.connect(self.on_log_message)
+
         self.current_analysis_task = analysis_task
 
         progress_dialog.analysis_task = analysis_task
@@ -1704,6 +1701,107 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.message_bar, 0, 0, 1, 1, alignment=QtCore.Qt.AlignTop
         )
         self.dock_widget_contents.layout().insertLayout(0, self.grid_layout)
+
+    def get_scenario_directory(self) -> str:
+        """Generate scenario directory for current task.
+
+        :return: Path to scenario directory
+        :rtype: str
+        """
+        base_dir = settings_manager.get_value(Settings.BASE_DIR)
+        return os.path.join(
+            f"{base_dir}",
+            "scenario_" f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}',
+        )
+
+    def create_task_config(
+        self, scenario: Scenario, clip_to_studyarea: bool
+    ) -> TaskConfig:
+        """Create task config from scenario and settings_manager.
+
+        :param scenario: Scenario object
+        :type scenario: Scenario
+        :param clip_to_studyarea: True if clip to study area
+        :type clip_to_studyarea: bool
+
+        :return: config for scenario analysis task
+        :rtype: TaskConfig
+        """
+        return TaskConfig(
+            scenario,
+            settings_manager.get_priority_layers(),
+            scenario.priority_layer_groups,
+            scenario.activities,
+            settings_manager.get_all_activities(),
+            settings_manager.get_value(
+                Settings.SNAPPING_ENABLED, default=False, setting_type=bool
+            ),
+            settings_manager.get_value(
+                Settings.SNAP_LAYER, default="", setting_type=str
+            ),
+            settings_manager.get_value(
+                Settings.MASK_LAYERS_PATHS, default="", setting_type=str
+            ),
+            settings_manager.get_value(
+                Settings.RESCALE_VALUES, default=False, setting_type=bool
+            ),
+            settings_manager.get_value(Settings.RESAMPLING_METHOD, default=0),
+            settings_manager.get_value(Settings.PATHWAY_SUITABILITY_INDEX, default=0),
+            0.0,
+            settings_manager.get_value(
+                Settings.SIEVE_ENABLED, default=False, setting_type=bool
+            ),
+            settings_manager.get_value(Settings.SIEVE_THRESHOLD, default=10.0),
+            settings_manager.get_value(
+                Settings.NCS_WITH_CARBON, default=True, setting_type=bool
+            ),
+            settings_manager.get_value(
+                Settings.LANDUSE_PROJECT, default=True, setting_type=bool
+            ),
+            settings_manager.get_value(
+                Settings.LANDUSE_NORMALIZED, default=True, setting_type=bool
+            ),
+            settings_manager.get_value(
+                Settings.LANDUSE_WEIGHTED, default=True, setting_type=bool
+            ),
+            settings_manager.get_value(
+                Settings.HIGHEST_POSITION, default=True, setting_type=bool
+            ),
+            self.get_scenario_directory(),
+            settings_manager.get_value(
+                Settings.NCS_NO_DATA_VALUE, default=NO_DATA_VALUE, setting_type=float
+            ),
+            settings_manager.get_value(
+                Settings.STUDYAREA_PATH, default="", setting_type=str
+            ),
+            clip_to_studyarea,
+        )
+
+    def on_log_message(
+        self,
+        message: str,
+        name: str = "qgis_cplus",
+        info: bool = True,
+        notify: bool = True,
+    ):
+        """Logs the message into QGIS logs using qgis_cplus as the default
+        log instance.
+        If notify_user is True, user will be notified about the log.
+
+        :param message: The log message
+        :type message: str
+
+        :param name: Name of te log instance, qgis_cplus is the default
+        :type message: str
+
+        :param info: Whether the message is about info or a
+            warning
+        :type info: bool
+
+        :param notify: Whether to notify user about the log
+        :type notify: bool
+        """
+        log(message, name=name, info=info, notify=notify)
 
     def is_metric_configuration_valid(self) -> bool:
         """Checks if the setup of the metric configuration for the scenario
@@ -1902,6 +2000,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 activities=self.analysis_activities,
                 priority_layer_groups=self.analysis_priority_layers_groups,
             )
+            task_config = self.create_task_config(scenario, clip_to_studyarea)
 
             self.processing_cancelled = False
 
@@ -1996,12 +2095,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             if self.processing_type.isChecked():
                 analysis_task = ScenarioAnalysisTaskApiClient(
-                    self.analysis_scenario_name,
-                    self.analysis_scenario_description,
-                    self.analysis_activities,
-                    self.analysis_priority_layers_groups,
-                    self.analysis_extent,
-                    scenario,
+                    task_config,
                     SpatialExtent(
                         bbox=[
                             passed_extent.xMinimum(),
@@ -2014,15 +2108,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     clip_to_studyarea,
                 )
             else:
-                analysis_task = ScenarioAnalysisTask(
-                    self.analysis_scenario_name,
-                    self.analysis_scenario_description,
-                    self.analysis_activities,
-                    self.analysis_priority_layers_groups,
-                    self.analysis_extent,
-                    scenario,
-                    clip_to_studyarea,
-                )
+                analysis_task = ScenarioAnalysisTask(task_config)
 
             self.run_cplus_main_task(progress_dialog, scenario, analysis_task)
 
@@ -2037,6 +2123,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     ', error message "{}"'.format(err)
                 )
             )
+            log(traceback.format_exc())
 
     def selected_activities(self) -> typing.List[Activity]:
         """Gets the collection of selected activities.
