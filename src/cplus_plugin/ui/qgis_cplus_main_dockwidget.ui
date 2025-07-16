@@ -138,16 +138,74 @@
          </widget>
         </item>
         <item row="7" column="0">
-         <widget class="QgsExtentGroupBox" name="extent_box">
+         <widget class="QGroupBox" name="groupBox_2">
           <property name="title">
-           <string>Area of interest</string>
+           <string>Area of Interest</string>
           </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-          <property name="collapsed">
-           <bool>false</bool>
-          </property>
+          <layout class="QGridLayout" name="gridLayout_3">
+           <item row="0" column="0">
+            <widget class="QRadioButton" name="rb_studyarea">
+             <property name="text">
+              <string>From Layer</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QRadioButton" name="rb_extent">
+             <property name="text">
+              <string>Define Extent</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0" colspan="2">
+            <widget class="QStackedWidget" name="studyarea_stacked_widget">
+             <property name="frameShape">
+              <enum>QFrame::NoFrame</enum>
+             </property>
+             <property name="currentIndex">
+              <number>0</number>
+             </property>
+             <widget class="QWidget" name="pg_local">
+              <layout class="QGridLayout" name="gridLayout_2">
+               <property name="leftMargin">
+                <number>2</number>
+               </property>
+               <property name="topMargin">
+                <number>2</number>
+               </property>
+               <property name="rightMargin">
+                <number>2</number>
+               </property>
+               <property name="bottomMargin">
+                <number>2</number>
+               </property>
+               <item row="0" column="0" alignment="Qt::AlignTop">
+                <widget class="QgsMapLayerComboBox" name="cbo_studyarea">                 
+                </widget>
+               </item>
+               <item row="0" column="1" alignment="Qt::AlignTop">
+                <widget class="QToolButton" name="btn_choose_studyarea_file">
+                 <property name="text">
+                  <string>...</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+             <widget class="QgsExtentGroupBox" name="extent_box">
+              <property name="title">
+               <string>Area of interest (Study Area)</string>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+              <property name="collapsed">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </widget>
+           </item>
+          </layout>
          </widget>
         </item>
         <item row="5" column="0">
@@ -166,19 +224,28 @@
            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;pre style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; background-color:#ffffff;&quot;&gt;&lt;span style=&quot; font-family:'JetBrains Mono','monospace'; font-size:9.8pt; color:#067d17;&quot;&gt;Changes the current map canvas extent to the pilot area extent. Zoom only occurs&lt;/span&gt;&lt;/pre&gt;&lt;pre style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; background-color:#ffffff;&quot;&gt;&lt;span style=&quot; font-family:'JetBrains Mono','monospace'; font-size:9.8pt; color:#067d17;&quot;&gt;if the map canvas is using EPSG:4326 coordinate system.&lt;/span&gt;&lt;/pre&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="text">
-           <string>Zoom to Pilot Area</string>
-          </property>
-         </widget>
-        </item>
-        <item row="10" column="0">
-         <widget class="QLabel" name="lblCrsdescription">
-          <property name="text">
-           <string>Scenario CRS for analysis (Must be projected CRS)</string>
+           <string>Zoom to Area of Interest</string>
           </property>
          </widget>
         </item>
         <item row="11" column="0">
-          <widget class="QgsProjectionSelectionWidget" name="crs_selector" native="true"/>
+         <widget class="QGroupBox" name="groupbox_crs">
+          <property name="title">
+           <string>Coordinate System</string>
+          </property>
+          <layout class="QGridLayout" name="grid_crs">
+           <item row="0" column="0">
+            <widget class="QLabel" name="lblCrsdescription">
+             <property name="text">
+              <string>Scenario CRS for analysis (Must be projected CRS)</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QgsProjectionSelectionWidget" name="crs_selector"/>
+           </item>
+          </layout>
+         </widget>
         </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_64">
@@ -808,15 +875,20 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>QgsProjectionSelectionWidget</class>
-   <extends>QWidget</extends>
-   <header>qgsprojectionselectionwidget.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>QgsExtentGroupBox</class>
    <extends>QgsCollapsibleGroupBox</extends>
    <header>qgsextentgroupbox.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>QgsMapLayerComboBox</class>
+   <extends>QComboBox</extends>
+   <header>qgsmaplayercombobox.h</header>
+  </customwidget>
+  <customwidget>
+   <class>QgsProjectionSelectionWidget</class>
+   <extends>QWidget</extends>
+   <header>qgsprojectionselectionwidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

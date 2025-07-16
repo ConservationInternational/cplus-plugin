@@ -658,3 +658,10 @@ class LayerSource(Enum):
 
     CPLUS = "CPLUS"
     NATUREBASE = "Naturebase"
+
+
+class AreaOfInterestSource(Enum):
+    """Defines the area of inteterest sources"""
+
+    LAYER = 0
+    EXTENT = 1

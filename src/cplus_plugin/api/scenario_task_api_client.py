@@ -71,6 +71,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
         analysis_extent: typing.List[float],
         scenario: Scenario,
         extent_box,
+        clip_to_studyarea: bool = False,
     ):
         super(ScenarioAnalysisTaskApiClient, self).__init__(
             analysis_scenario_name,
@@ -79,6 +80,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             analysis_priority_layers_groups,
             analysis_extent,
             scenario,
+            clip_to_studyarea,
         )
         self.total_file_upload_size = 0
         self.total_file_upload_chunks = 0
@@ -331,6 +333,10 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
 
         # 2 comes from sieve_mask_layer and snap layer
         check_counts = len(self.analysis_activities) + 2 + len(masking_layers)
+
+        if self.clip_to_studyarea:
+            check_counts += 1
+
         items_to_check = {}
 
         activity_pwl_uuids = set()
@@ -399,6 +405,19 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             }
         )
 
+        if self.clip_to_studyarea:
+            studyarea_path = self.get_settings_value(
+                Settings.STUDYAREA_PATH, default=""
+            )
+            zip_path = self.__zip_shapefiles(studyarea_path)
+            items_to_check[zip_path] = "studyarea_path"
+            self._update_scenario_status(
+                {
+                    "progress_text": "Checking layers to be uploaded",
+                    "progress": (5 / check_counts) * 100,
+                }
+            )
+
         for idx, masking_layer in enumerate(masking_layers):
             zip_path = self.__zip_shapefiles(masking_layer)
             items_to_check[zip_path] = "mask_layer"
@@ -406,7 +425,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             self._update_scenario_status(
                 {
                     "progress_text": "Checking layers to be uploaded",
-                    "progress": (idx + 5 / check_counts) * 100,
+                    "progress": (idx + 6 / check_counts) * 100,
                 }
             )
 
@@ -557,6 +576,21 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             else ""
         )
 
+        studyarea_path = (
+            self.get_settings_value(
+                Settings.STUDYAREA_PATH, default="", setting_type=str
+            )
+            if self.clip_to_studyarea
+            else ""
+        )
+
+        studyarea_path = studyarea_path.replace(".shp", ".zip")
+        studyarea_layer_uuid = (
+            self.path_to_layer_mapping.get(studyarea_path, {}).get("uuid")
+            if studyarea_path
+            else ""
+        )
+
         priority_layers = self.get_priority_layers()
         for priority_layer in priority_layers:
             path = priority_layer.get("path", "")
@@ -642,6 +676,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             "nodata_value": settings_manager.get_value(
                 Settings.NCS_NO_DATA_VALUE, NO_DATA_VALUE
             ),
+            "clip_to_studyarea": self.clip_to_studyarea,
+            "studyarea_path": studyarea_path,
+            "studyarea_layer_uuid": studyarea_layer_uuid,
         }
 
     def __execute_scenario_analysis(self) -> None:

@@ -25,8 +25,8 @@ from qgis.core import (
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransform,
     QgsFeedback,
-    QgsGeometry,
     QgsProject,
+    QgsGeometry,
     QgsProcessingAlgorithm,
     QgsProcessingContext,
     QgsProcessingFeedback,
@@ -37,6 +37,8 @@ from qgis.core import (
     QgsColorRampShader,
     QgsSingleBandPseudoColorRenderer,
     QgsPalettedRasterRenderer,
+    QgsMapLayerProxyModel,
+    QgsVectorLayer,
 )
 from qgis.gui import (
     QgsGui,
@@ -78,6 +80,7 @@ from .scenario_dialog import ScenarioDialog
 from ..models.base import (
     Activity,
     PriorityLayerType,
+    AreaOfInterestSource,
 )
 from ..models.financial import NcsPathwayNpv
 from ..conf import settings_manager, Settings
@@ -106,7 +109,7 @@ from ..definitions.defaults import (
     SCENARIO_LOG_FILE_NAME,
     USER_DOCUMENTATION_SITE,
 )
-from ..lib.reports.manager import report_manager, ReportManager
+from ..lib.reports.manager import report_manager
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
 from ..tasks import ScenarioAnalysisTask
 from ..utils import (
@@ -480,6 +483,27 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.on_scenario_list_selection_changed
         )
 
+        # Area of Interest
+        self._aoi_layer = None
+        self._aoi_source_group = QtWidgets.QButtonGroup(self)
+        self._aoi_source_group.setExclusive(True)
+        self._aoi_source_group.addButton(
+            self.rb_studyarea, AreaOfInterestSource.LAYER.value
+        )
+        self._aoi_source_group.addButton(
+            self.rb_extent, AreaOfInterestSource.EXTENT.value
+        )
+        self._aoi_source_group.idToggled.connect(self.on_aoi_source_changed)
+        self.rb_studyarea.setChecked(True)
+
+        self.cbo_studyarea.layerChanged.connect(self._on_studyarea_layer_changed)
+        self.cbo_studyarea.setFilters(QgsMapLayerProxyModel.PolygonLayer)
+
+        self.btn_choose_studyarea_file.setToolTip(tr("Select area of interest file"))
+        self.btn_choose_studyarea_file.clicked.connect(self._on_select_aoi_file)
+
+        # Coordinate System
+
         self.lblCrsdescription.setText(
             tr("Scenario CRS for analysis (Must be projected CRS)")
         )
@@ -495,13 +519,97 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.crs_selector.crsChanged.connect(self.on_crs_changed)
 
     def on_crs_changed(self):
-        current_crs = self.crs_selector.crs()
         self.message_bar.clearWidgets()
-        if current_crs.isValid() and not current_crs.isGeographic():
+        current_crs = self.crs_selector.crs()
+        self.extent_box.setOutputCrs(current_crs)
+
+        self.extent_box.setOutputExtentFromUser(
+            self.extent_box.outputExtent(),
+            current_crs,
+        )
+
+        if current_crs.isValid():
             authid = current_crs.authid()
             settings_manager.set_value(Settings.SCENARIO_CRS, authid)
+            if current_crs.isGeographic():
+                self.show_message(tr("Must be projected CRS."))
         else:
-            self.show_message(tr("Invalid CRS selected. Must be projected CRS."))
+            self.show_message(tr("Invalid CRS selected."))
+
+    def on_aoi_source_changed(self, button_id: int, toggled: bool):
+        """Slot raised when the area of interest source button group has
+        been toggled.
+        """
+        if not toggled:
+            return
+
+        if button_id == AreaOfInterestSource.LAYER.value:
+            self.studyarea_stacked_widget.setCurrentIndex(0)
+        elif button_id == AreaOfInterestSource.EXTENT.value:
+            self.studyarea_stacked_widget.setCurrentIndex(1)
+
+    def _on_select_aoi_file(self, activated: bool):
+        """Slot raised to upload a study area layer."""
+        data_dir = settings_manager.get_value(Settings.LAST_DATA_DIR, "")
+        if not data_dir and self._aoi_layer:
+            data_path = self._aoi_layer.source()
+            if os.path.exists(data_path):
+                data_dir = os.path.dirname(data_path)
+
+        if not data_dir:
+            data_dir = "/home"
+
+        filter_tr = tr("All files")
+
+        layer_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self,
+            self.tr("Select Study Area Layer"),
+            data_dir,
+            f"{filter_tr} (*.*)",
+            options=QtWidgets.QFileDialog.DontResolveSymlinks,
+        )
+        if not layer_path:
+            return
+
+        existing_paths = self.cbo_studyarea.additionalItems()
+        if layer_path in existing_paths:
+            return
+
+        layer = QgsVectorLayer(layer_path, "studyarea")
+        if not layer.isValid():
+            self.show_message(tr("Invalid study area layer : ") + layer_path)
+            return
+
+        self.cbo_studyarea.setAdditionalItems([])
+
+        self._add_layer_path(layer_path)
+        settings_manager.set_value(Settings.LAST_DATA_DIR, os.path.dirname(layer_path))
+        settings_manager.set_value(Settings.STUDYAREA_PATH, layer_path)
+
+    def _add_layer_path(self, layer_path: str):
+        """Select or add layer path to the map layer combobox."""
+        matching_index = -1
+        num_layers = self.cbo_studyarea.count()
+        for index in range(num_layers):
+            layer = self.cbo_studyarea.layer(index)
+            if layer is None:
+                continue
+            if os.path.normpath(layer.source()) == os.path.normpath(layer_path):
+                matching_index = index
+                break
+
+        if matching_index == -1:
+            self.cbo_studyarea.setAdditionalItems([layer_path])
+            self.cbo_studyarea.setCurrentIndex(num_layers)
+        else:
+            self.cbo_studyarea.setCurrentIndex(matching_index)
+
+        self._aoi_layer = QgsVectorLayer(layer_path, Path(layer_path).stem)
+
+    def _on_studyarea_layer_changed(self, layer):
+        if layer is not None:
+            self._aoi_layer = layer
+            settings_manager.set_value(Settings.STUDYAREA_PATH, layer.source())
 
     def priority_groups_update(self, target_item, selected_items):
         """Updates the priority groups list item with the passed
@@ -558,11 +666,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             Settings.SCENARIO_CRS, self.crs_selector.crs().authid()
         )
 
+        if self._aoi_layer:
+            studyarea_path = self._aoi_layer.source()
+            settings_manager.set_value(Settings.STUDYAREA_PATH, studyarea_path)
+
     def restore_scenario(self):
         """Update the first tab input with the last scenario details"""
         scenario_name = settings_manager.get_value(Settings.SCENARIO_NAME)
         scenario_description = settings_manager.get_value(Settings.SCENARIO_DESCRIPTION)
         extent = settings_manager.get_value(Settings.SCENARIO_EXTENT)
+        studyarea_path = settings_manager.get_value(Settings.STUDYAREA_PATH)
 
         self.scenario_name.setText(scenario_name) if scenario_name is not None else None
         self.scenario_description.setText(
@@ -577,6 +690,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 extent_rectangle,
                 QgsCoordinateReferenceSystem("EPSG:4326"),
             )
+
+        if studyarea_path:
+            self._add_layer_path(studyarea_path)
 
     def initialize_priority_layers(self):
         """Prepares the priority weighted layers UI with the defaults.
@@ -1671,16 +1787,22 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             return
 
-        extent_list = PILOT_AREA_EXTENT["coordinates"]
-        default_extent = QgsRectangle(
-            extent_list[0], extent_list[2], extent_list[1], extent_list[3]
-        )
         passed_extent = self.extent_box.outputExtent()
         passed_extent_crs = self.extent_box.outputCrs()
 
-        contains = default_extent == passed_extent or default_extent.contains(
-            passed_extent
+        clip_to_studyarea = False
+        studyarea_path = settings_manager.get_value(
+            Settings.STUDYAREA_PATH, default="", setting_type=str
         )
+        aoi_layer = QgsVectorLayer(studyarea_path, "studyarea_path")
+
+        if (
+            self._aoi_source_group.checkedId() == AreaOfInterestSource.LAYER.value
+            and aoi_layer.isValid()
+        ):
+            passed_extent = aoi_layer.extent()
+            passed_extent_crs = aoi_layer.crs()
+            clip_to_studyarea = True
         self.analysis_scenario_name = self.scenario_name.text()
         self.analysis_scenario_description = self.scenario_description.text()
 
@@ -1735,21 +1857,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 level=Qgis.Critical,
             )
             return
-
-        if not contains:
-            self.show_message(
-                tr(f"Selected area of interest is outside the pilot area."),
-                level=Qgis.Info,
-            )
-            default_ext = (
-                f"{default_extent.xMinimum()}, {default_extent.xMaximum()},"
-                f"{default_extent.yMinimum()}, {default_extent.yMaximum()}"
-            )
-            log(
-                f"Outside the pilot area, passed extent "
-                f"{passed_extent}"
-                f"default extent{default_ext}"
-            )
 
         if base_dir is None:
             self.show_message(
@@ -1904,6 +2011,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                         ],
                         crs=passed_extent_crs.authid() if passed_extent_crs else None,
                     ),
+                    clip_to_studyarea,
                 )
             else:
                 analysis_task = ScenarioAnalysisTask(
@@ -1913,6 +2021,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     self.analysis_priority_layers_groups,
                     self.analysis_extent,
                     scenario,
+                    clip_to_studyarea,
                 )
 
             self.run_cplus_main_task(progress_dialog, scenario, analysis_task)
@@ -2374,31 +2483,30 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def zoom_pilot_area(self):
         """Zoom the current main map canvas to the pilot area extent."""
         map_canvas = iface.mapCanvas()
-        extent_list = PILOT_AREA_EXTENT["coordinates"]
-        default_extent = QgsRectangle(
-            extent_list[0], extent_list[2], extent_list[1], extent_list[3]
-        )
-        zoom_extent = QgsRectangle(
-            extent_list[0] - 0.5, extent_list[2], extent_list[1] + 0.5, extent_list[3]
-        )
+
+        zoom_extent = self.extent_box.outputExtent()
+        original_crs = self.extent_box.outputCrs()
+
+        if (
+            self._aoi_source_group.checkedId() == AreaOfInterestSource.LAYER.value
+            and self._aoi_layer
+        ):
+            zoom_extent = self._aoi_layer.extent()
+            original_crs = self._aoi_layer.crs()
 
         canvas_crs = map_canvas.mapSettings().destinationCrs()
-        original_crs = QgsCoordinateReferenceSystem("EPSG:4326")
 
         if canvas_crs.authid() != original_crs.authid():
             zoom_extent = self.transform_extent(zoom_extent, original_crs, canvas_crs)
-            default_extent = self.transform_extent(
-                default_extent, original_crs, canvas_crs
-            )
 
         aoi = QgsRubberBand(iface.mapCanvas(), QgsWkbTypes.PolygonGeometry)
 
         aoi.setFillColor(QtGui.QColor(0, 0, 0, 0))
         aoi.setStrokeColor(QtGui.QColor(88, 128, 8))
-        aoi.setWidth(3)
+        aoi.setWidth(2)
         aoi.setLineStyle(QtCore.Qt.DashLine)
 
-        geom = QgsGeometry.fromRect(default_extent)
+        geom = QgsGeometry.fromRect(zoom_extent)
 
         aoi.setToGeometry(geom, canvas_crs)
 
@@ -2407,8 +2515,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def prepare_extent_box(self):
         """Configure the spatial extent box with the initial settings."""
-
-        self.extent_box.setOutputCrs(QgsCoordinateReferenceSystem("EPSG:4326"))
+        crs = self.crs_selector.crs()
+        if crs is None:
+            crs = QgsCoordinateReferenceSystem("EPSG:4326")
+            self.crs_selector.setCrs(crs)
+        self.extent_box.setOutputCrs(crs)
         map_canvas = iface.mapCanvas()
         self.extent_box.setCurrentExtent(
             map_canvas.mapSettings().destinationCrs().bounds(),
@@ -2424,7 +2535,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.extent_box.setOutputExtentFromUser(
             default_extent,
-            QgsCoordinateReferenceSystem("EPSG:4326"),
+            crs,
         )
 
     def on_tab_step_changed(self, index: int):
