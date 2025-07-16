@@ -485,6 +485,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         self.mask_layer_widget.setStorageMode(QgsFileWidget.StorageMode.GetFile)
         self.mask_layer_box.layerChanged.connect(self.mask_layer_changed)
+        self.mask_layer_box.setFilters(qgis.core.QgsMapLayerProxyModel.RasterLayer)
 
         self.resample_method_box.addItem(
             tr("Nearest Neighbour"), QgsAlignRaster.ResampleAlg.RA_NearestNeighbour
@@ -870,7 +871,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.mask_layer_widget.setFilePath(mask_layer_path)
 
         self.pixel_size_box.setValue(
-            float(settings_manager.get_value(Settings.SIEVE_THRESHOLD, default=10.0))
+            int(settings_manager.get_value(Settings.SIEVE_THRESHOLD, default=10))
         )
 
         # Mask layers settings

@@ -36,8 +36,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>572</width>
-        <height>773</height>
+        <width>555</width>
+        <height>907</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -110,18 +110,18 @@
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QDoubleSpinBox" name="nodata_value_box">                       
-            <property name="singleStep">
-             <double>1.000000000000000</double>
-            </property>
+           <widget class="QDoubleSpinBox" name="nodata_value_box">
             <property name="decimals">
              <number>1</number>
             </property>
             <property name="minimum">
-             <double>-3.4028235e+38</double>
+             <double>-340282349999999991754788743781432688640.000000000000000</double>
             </property>
             <property name="maximum">
-             <double>3.4028235e+38</double>
+             <double>340282349999999991754788743781432688640.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>1.000000000000000</double>
             </property>
            </widget>
           </item>
@@ -217,7 +217,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QgsDoubleSpinBox" name="pixel_size_box"/>
+             <widget class="QSpinBox" name="pixel_size_box"/>
             </item>
            </layout>
           </item>
@@ -341,23 +341,23 @@
              <string>...</string>
             </property>
            </widget>
-          </item>         
+          </item>
           <item row="1" column="0" colspan="5">
            <widget class="QTableView" name="tbl_pwl_layers">
             <property name="toolTip">
-              <string>Global priority weighted layers (PWLs)</string>
-            </property>
-            <property name="showGrid">
-              <bool>false</bool>
+             <string>Global priority weighted layers (PWLs)</string>
             </property>
             <property name="alternatingRowColors">
-              <bool>true</bool>
-            </property>
-            <property name="selectionBehavior">
-              <enum>QAbstractItemView::SelectRows</enum>
+             <bool>true</bool>
             </property>
             <property name="selectionMode">
-              <enum>QAbstractItemView::SingleSelection</enum>
+             <enum>QAbstractItemView::SingleSelection</enum>
+            </property>
+            <property name="selectionBehavior">
+             <enum>QAbstractItemView::SelectRows</enum>
+            </property>
+            <property name="showGrid">
+             <bool>false</bool>
             </property>
            </widget>
           </item>
@@ -727,11 +727,6 @@
    <extends>QGroupBox</extends>
    <header>qgscollapsiblegroupbox.h</header>
    <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>QgsDoubleSpinBox</class>
-   <extends>QDoubleSpinBox</extends>
-   <header>qgsdoublespinbox.h</header>
   </customwidget>
   <customwidget>
    <class>QgsFileWidget</class>
