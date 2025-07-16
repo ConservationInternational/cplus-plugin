@@ -89,6 +89,10 @@ class ScenarioAnalysisTask(QgsTask):
 
         self.scenario = scenario
 
+        self.no_data_value = settings_manager.get_value(
+            Settings.NCS_NO_DATA_VALUE, NO_DATA_VALUE
+        )
+
     def get_settings_value(self, name: str, default=None, setting_type=None):
         """Gets value of the setting with the passed name.
 
@@ -362,11 +366,11 @@ class ScenarioAnalysisTask(QgsTask):
             self.analysis_activities,
             extent_string,
         )
-        # TODO enable the sieve functionality
+
+        # Run sieve if enabled
         sieve_enabled = self.get_settings_value(
             Settings.SIEVE_ENABLED, default=False, setting_type=bool
         )
-
         if sieve_enabled:
             self.run_activities_sieve(
                 self.analysis_activities,
@@ -2124,15 +2128,17 @@ class ScenarioAnalysisTask(QgsTask):
                     feedback=self.feedback,
                 )["OUTPUT"]
 
-                log(f"TEMP_LOG Sieve Output: {sieve_output}")
-
-                # Step 5. Replace all 0 with -9999 using if ("combined@1" <= 0, -9999, "combined@1")
+                # Step 5. Replace all 0 with NO_DATA_VALUE using if
+                # ("combined@1" <= 0, NO_DATA_VALUE, "combined@1")
+                no_data_replace_exp = (
+                    f"(A > 0)*A + (A <= 0)*{float(self.no_data_value)}"
+                )
                 sieve_output_updated = processing.run(
                     "gdal:rastercalculator",
                     {
                         "INPUT_A": f"{sieve_output}",
                         "BAND_A": 1,
-                        "FORMULA": "9999*(A<=0)*(-1)+A*(A>0)",
+                        "FORMULA": no_data_replace_exp,
                         "NO_DATA": None,
                         "EXTENT_OPT": 0,
                         "RTYPE": 5,
@@ -2141,8 +2147,6 @@ class ScenarioAnalysisTask(QgsTask):
                     context=self.processing_context,
                     feedback=self.feedback,
                 )["OUTPUT"]
-
-                log(f"TEMP_LOG Sieve Output Updated: {sieve_output_updated}")
 
                 if not os.path.exists(sieve_output_updated):
                     self.log_message(
@@ -2159,7 +2163,8 @@ class ScenarioAnalysisTask(QgsTask):
                 if self.processing_cancelled:
                     return False
 
-                # Step 6. Run sum statistics with ignore no data values set to false and no data value
+                # Step 6. Run sum statistics with ignore no data values set to false
+                # and no data value
                 results = processing.run(
                     "native:cellstatistics",
                     {
@@ -2586,9 +2591,7 @@ class ScenarioAnalysisTask(QgsTask):
                 "IGNORE_NODATA": True,
                 "INPUT_RASTERS": sources,
                 "EXTENT": extent_string,
-                "OUTPUT_NODATA_VALUE": settings_manager.get_value(
-                    Settings.NCS_NO_DATA_VALUE, NO_DATA_VALUE
-                ),
+                "OUTPUT_NODATA_VALUE": self.no_data_value,
                 "REFERENCE_LAYER": list(layers.values())[0]
                 if len(layers) >= 1
                 else None,
