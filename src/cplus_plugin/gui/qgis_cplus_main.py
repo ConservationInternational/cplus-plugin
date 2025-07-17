@@ -517,6 +517,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             authid = current_crs.authid()
             if current_crs.isGeographic():
                 self.show_message(tr("Must be projected CRS."))
+            else:
+                settings_manager.set_value(Settings.SCENARIO_CRS, authid)
         else:
             self.show_message(tr("Invalid CRS selected."))
 
