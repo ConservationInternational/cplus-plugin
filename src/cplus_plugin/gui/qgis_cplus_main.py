@@ -11,6 +11,7 @@ import typing
 import uuid
 from dateutil import tz
 from functools import partial
+from pathlib import Path
 
 from qgis.PyQt import (
     QtCore,
