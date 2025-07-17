@@ -147,6 +147,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.processing_cancelled = False
         self.current_analysis_task = None
         self.fetch_default_layer_task = None
+        self._aoi_layer = None
 
         # Set icons for buttons
         help_icon = FileUtils.get_icon("mActionHelpContents_green.svg")
@@ -370,6 +371,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def prepare_input(self):
         """Initializes plugin input widgets"""
+        self.prepare_aoi_box()
         self.prepare_extent_box()
         self.grid_layout = QtWidgets.QGridLayout()
         self.message_bar = QgsMessageBar()
@@ -483,25 +485,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.on_scenario_list_selection_changed
         )
 
-        # Area of Interest
-        self._aoi_layer = None
-        self._aoi_source_group = QtWidgets.QButtonGroup(self)
-        self._aoi_source_group.setExclusive(True)
-        self._aoi_source_group.addButton(
-            self.rb_studyarea, AreaOfInterestSource.LAYER.value
-        )
-        self._aoi_source_group.addButton(
-            self.rb_extent, AreaOfInterestSource.EXTENT.value
-        )
-        self._aoi_source_group.idToggled.connect(self.on_aoi_source_changed)
-        self.rb_studyarea.setChecked(True)
-
-        self.cbo_studyarea.layerChanged.connect(self._on_studyarea_layer_changed)
-        self.cbo_studyarea.setFilters(QgsMapLayerProxyModel.PolygonLayer)
-
-        self.btn_choose_studyarea_file.setToolTip(tr("Select area of interest file"))
-        self.btn_choose_studyarea_file.clicked.connect(self._on_select_aoi_file)
-
         # Coordinate System
 
         self.lblCrsdescription.setText(
@@ -530,7 +513,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         if current_crs.isValid():
             authid = current_crs.authid()
-            settings_manager.set_value(Settings.SCENARIO_CRS, authid)
             if current_crs.isGeographic():
                 self.show_message(tr("Must be projected CRS."))
         else:
@@ -547,6 +529,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.studyarea_stacked_widget.setCurrentIndex(0)
         elif button_id == AreaOfInterestSource.EXTENT.value:
             self.studyarea_stacked_widget.setCurrentIndex(1)
+
+        self.save_scenario()
 
     def _on_select_aoi_file(self, activated: bool):
         """Slot raised to upload a study area layer."""
@@ -586,6 +570,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         settings_manager.set_value(Settings.LAST_DATA_DIR, os.path.dirname(layer_path))
         settings_manager.set_value(Settings.STUDYAREA_PATH, layer_path)
 
+        self.save_scenario()
+
     def _add_layer_path(self, layer_path: str):
         """Select or add layer path to the map layer combobox."""
         matching_index = -1
@@ -610,6 +596,28 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if layer is not None:
             self._aoi_layer = layer
             settings_manager.set_value(Settings.STUDYAREA_PATH, layer.source())
+            self.save_scenario()
+
+    def can_clip_to_studyarea(self) -> bool:
+        """Return true if clipping layers by study area is selected"""
+        clip_to_studyarea = False
+        studyarea_path = self.get_studyarea_path()
+        if (
+            self._aoi_source_group.checkedId() == AreaOfInterestSource.LAYER.value
+            and os.path.exists(studyarea_path)
+        ):
+            clip_to_studyarea = True
+        return clip_to_studyarea
+
+    def get_studyarea_path(self) -> str:
+        """Return the path of the study area
+
+        Returns:
+            str: Study area path
+        """
+        if self._aoi_layer:
+            return self._aoi_layer.source()
+        return ""
 
     def priority_groups_update(self, target_item, selected_items):
         """Updates the priority groups list item with the passed
@@ -666,9 +674,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             Settings.SCENARIO_CRS, self.crs_selector.crs().authid()
         )
 
-        if self._aoi_layer:
-            studyarea_path = self._aoi_layer.source()
-            settings_manager.set_value(Settings.STUDYAREA_PATH, studyarea_path)
+        settings_manager.set_value(Settings.STUDYAREA_PATH, self.get_studyarea_path())
+        settings_manager.set_value(
+            Settings.CLIP_TO_STUDYAREA, self.can_clip_to_studyarea()
+        )
 
     def restore_scenario(self):
         """Update the first tab input with the last scenario details"""
@@ -676,6 +685,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         scenario_description = settings_manager.get_value(Settings.SCENARIO_DESCRIPTION)
         extent = settings_manager.get_value(Settings.SCENARIO_EXTENT)
         studyarea_path = settings_manager.get_value(Settings.STUDYAREA_PATH)
+        clip_to_studyarea = settings_manager.get_value(Settings.CLIP_TO_STUDYAREA)
+        crs = QgsCoordinateReferenceSystem(
+            settings_manager.get_value(Settings.SCENARIO_CRS, f"EPSG:{DEFAULT_CRS_ID}")
+        )
+
+        if crs.isValid():
+            self.crs_selector.setCrs(crs)
 
         self.scenario_name.setText(scenario_name) if scenario_name is not None else None
         self.scenario_description.setText(
@@ -688,11 +704,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             self.extent_box.setOutputExtentFromUser(
                 extent_rectangle,
-                QgsCoordinateReferenceSystem("EPSG:4326"),
+                crs,
             )
 
         if studyarea_path:
             self._add_layer_path(studyarea_path)
+
+        if clip_to_studyarea:
+            self.on_aoi_source_changed(0, True)
+            self.rb_studyarea.setChecked(True)
+        else:
+            self.rb_extent.setChecked(True)
+            self.on_aoi_source_changed(1, True)
 
     def initialize_priority_layers(self):
         """Prepares the priority weighted layers UI with the defaults.
@@ -1387,6 +1410,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 if self.scenario_result
                 else None
             ),
+            clip_to_studyarea=self.can_clip_to_studyarea(),
+            studyarea_path=self.get_studyarea_path(),
         )
         settings_manager.save_scenario(scenario)
         if self.scenario_result:
@@ -1901,6 +1926,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 extent=self.analysis_extent,
                 activities=self.analysis_activities,
                 priority_layer_groups=self.analysis_priority_layers_groups,
+                clip_to_studyarea=self.can_clip_to_studyarea(),
+                studyarea_path=self.get_studyarea_path(),
             )
 
             self.processing_cancelled = False
@@ -2012,6 +2039,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                         crs=passed_extent_crs.authid() if passed_extent_crs else None,
                     ),
                     clip_to_studyarea,
+                    self.get_studyarea_path(),
                 )
             else:
                 analysis_task = ScenarioAnalysisTask(
@@ -2022,6 +2050,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     self.analysis_extent,
                     scenario,
                     clip_to_studyarea,
+                    self.get_studyarea_path(),
                 )
 
             self.run_cplus_main_task(progress_dialog, scenario, analysis_task)
@@ -2537,6 +2566,25 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             default_extent,
             crs,
         )
+
+    def prepare_aoi_box(self):
+        """Initialize the Area of interest box"""
+        # Area of Interest
+        self._aoi_source_group = QtWidgets.QButtonGroup(self)
+        self._aoi_source_group.setExclusive(True)
+        self._aoi_source_group.addButton(
+            self.rb_studyarea, AreaOfInterestSource.LAYER.value
+        )
+        self._aoi_source_group.addButton(
+            self.rb_extent, AreaOfInterestSource.EXTENT.value
+        )
+        self._aoi_source_group.idToggled.connect(self.on_aoi_source_changed)
+
+        self.cbo_studyarea.layerChanged.connect(self._on_studyarea_layer_changed)
+        self.cbo_studyarea.setFilters(QgsMapLayerProxyModel.PolygonLayer)
+
+        self.btn_choose_studyarea_file.setToolTip(tr("Select area of interest file"))
+        self.btn_choose_studyarea_file.clicked.connect(self._on_select_aoi_file)
 
     def on_tab_step_changed(self, index: int):
         """Slot raised when the current tab changes.

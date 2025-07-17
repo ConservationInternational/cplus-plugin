@@ -302,9 +302,8 @@ class ScenarioAnalysisTask(QgsTask):
             )
 
         # Clip to StudyArea
-        studyarea_path = self.get_settings_value(Settings.STUDYAREA_PATH, default="")
-        if self.clip_to_studyarea and os.path.exists(studyarea_path):
-            self.clip_analysis_data(studyarea_path)
+        if self.clip_to_studyarea and os.path.exists(self.studyarea_path):
+            self.clip_analysis_data(self.studyarea_path)
 
         # Reproject the pathways and priority layers to the
         # scenario CRS if it is not the same as the pathways CRS

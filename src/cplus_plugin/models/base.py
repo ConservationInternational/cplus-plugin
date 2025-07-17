@@ -615,6 +615,8 @@ class Scenario(BaseModelComponent):
     priority_layer_groups: typing.List
     state: ScenarioState = ScenarioState.IDLE
     server_uuid: UUID = None
+    clip_to_studyarea: bool = False
+    studyarea_path: str = None
 
 
 @dataclasses.dataclass

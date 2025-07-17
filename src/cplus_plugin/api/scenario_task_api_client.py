@@ -72,6 +72,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
         scenario: Scenario,
         extent_box,
         clip_to_studyarea: bool = False,
+        studyarea_path: str = None,
     ):
         super(ScenarioAnalysisTaskApiClient, self).__init__(
             analysis_scenario_name,
@@ -81,6 +82,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             analysis_extent,
             scenario,
             clip_to_studyarea,
+            studyarea_path,
         )
         self.total_file_upload_size = 0
         self.total_file_upload_chunks = 0
@@ -405,11 +407,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             }
         )
 
-        if self.clip_to_studyarea:
-            studyarea_path = self.get_settings_value(
-                Settings.STUDYAREA_PATH, default=""
-            )
-            zip_path = self.__zip_shapefiles(studyarea_path)
+        if self.clip_to_studyarea and os.path.exists(self.studyarea_path):
+            zip_path = self.__zip_shapefiles(self.studyarea_path)
             items_to_check[zip_path] = "studyarea_path"
             self._update_scenario_status(
                 {
@@ -576,20 +575,13 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             else ""
         )
 
-        studyarea_path = (
-            self.get_settings_value(
-                Settings.STUDYAREA_PATH, default="", setting_type=str
-            )
-            if self.clip_to_studyarea
-            else ""
-        )
-
-        studyarea_path = studyarea_path.replace(".shp", ".zip")
-        studyarea_layer_uuid = (
-            self.path_to_layer_mapping.get(studyarea_path, {}).get("uuid")
-            if studyarea_path
-            else ""
-        )
+        studyarea_path = ""
+        studyarea_layer_uuid = ""
+        if self.clip_to_studyarea and os.path.exists(self.studyarea_path):
+            studyarea_path = self.studyarea_path.replace(".shp", ".zip")
+            studyarea_layer_uuid = self.path_to_layer_mapping.get(
+                studyarea_path, {}
+            ).get("uuid")
 
         priority_layers = self.get_priority_layers()
         for priority_layer in priority_layers:

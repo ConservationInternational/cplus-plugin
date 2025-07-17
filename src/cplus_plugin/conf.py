@@ -131,6 +131,8 @@ class ScenarioSettings(Scenario):
             activities=activities,
             priority_layer_groups=[],
             server_uuid=uuid.UUID(server_uuid) if server_uuid else None,
+            clip_to_studyarea=settings.value("clip_to_studyarea", False),
+            studyarea_path=settings.value("studyarea_path", None),
         )
 
     @classmethod
@@ -256,6 +258,7 @@ class Settings(enum.Enum):
 
     # Study Area Path
     STUDYAREA_PATH = "studyarea_path"
+    CLIP_TO_STUDYAREA = "clip_to_studyarea"
 
 
 class SettingsManager(QtCore.QObject):
@@ -413,6 +416,8 @@ class SettingsManager(QtCore.QObject):
                 if scenario_settings.server_uuid
                 else None,
             )
+            settings.setValue("clip_to_studyarea", scenario_settings.clip_to_studyarea)
+            settings.setValue("studyarea_path", scenario_settings.studyarea_path)
 
     def save_scenario_extent(self, key, extent):
         """Saves the scenario extent into plugin settings
