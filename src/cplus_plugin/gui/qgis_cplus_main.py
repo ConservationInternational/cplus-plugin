@@ -1839,6 +1839,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         passed_extent = self.extent_box.outputExtent()
         passed_extent_crs = self.extent_box.outputCrs()
 
+        # Check if CRS is valid
+        crs = self.crs_selector.crs()
+        if crs is None or not crs.isValid() or crs.isGeographic():
+            self.show_message(
+                tr("Please select a valid Coordinate System from step one."),
+                level=Qgis.Critical,
+            )
+            return
+
         clip_to_studyarea = False
         studyarea_path = settings_manager.get_value(
             Settings.STUDYAREA_PATH, default="", setting_type=str
@@ -2623,14 +2632,26 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         activity_tab_index = 1
         priority_group_tab_index = 2
 
+        msg = ""
+        tab_valid = True
+
         if index == activity_tab_index:
             self.activity_widget.can_show_error_messages = True
             self.activity_widget.load()
 
-        elif index == priority_group_tab_index:
-            tab_valid = True
-            msg = ""
+            # Check if CRS is valid
+            crs = self.crs_selector.crs()
+            if crs is None or not crs.isValid() or crs.isGeographic():
+                msg = self.tr("Please select a valid coordinate system.")
+                tab_valid = False
 
+            if not tab_valid:
+                self.show_message(msg)
+                self.tab_widget.setCurrentIndex(0)
+            else:
+                self.message_bar.clearWidgets()
+
+        elif index == priority_group_tab_index:
             # Check if NCS pathways are valid
             ncs_valid = self.activity_widget.is_ncs_valid()
             if not ncs_valid:
