@@ -2639,8 +2639,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             if crs is None or not crs.isValid() or crs.isGeographic():
                 self.show_message(self.tr("Please select a valid coordinate system."))
                 self.tab_widget.setCurrentIndex(0)
-            else:
-                self.message_bar.clearWidgets()
 
         elif index == priority_group_tab_index:
             tab_valid = True
