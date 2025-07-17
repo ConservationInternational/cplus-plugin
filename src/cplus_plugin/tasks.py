@@ -32,7 +32,7 @@ from .definitions.defaults import (
     SCENARIO_OUTPUT_FILE_NAME,
     DEFAULT_CRS_ID,
 )
-from .models.base import ScenarioResult, SpatialExtent, Activity, NcsPathway
+from .models.base import ScenarioResult, Activity, NcsPathway
 from .resources import *
 from .utils import (
     align_rasters,
