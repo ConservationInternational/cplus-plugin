@@ -87,6 +87,7 @@ from ..models.financial import NcsPathwayNpv
 from ..conf import settings_manager, Settings
 
 from ..lib.financials import create_npv_pwls
+from ..definitions.defaults import DEFAULT_CRS_ID
 
 from .components.custom_tree_widget import (
     CustomTreeWidget,
@@ -1051,7 +1052,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             # Get the reference extent
             source_extent = self.extent_box.outputExtent()
-            source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
+            source_crs = QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
             reference_extent = self.transform_extent(
                 source_extent, source_crs, reference_crs
             )
@@ -1450,7 +1451,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.scenario_name.setText(scenario.name)
             self.scenario_description.setText(scenario.description)
 
-            self.extent_box.setOutputCrs(QgsCoordinateReferenceSystem("EPSG:4326"))
+            self.extent_box.setOutputCrs(
+                QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
+            )
             map_canvas = iface.mapCanvas()
             self.extent_box.setCurrentExtent(
                 map_canvas.mapSettings().destinationCrs().bounds(),
@@ -1470,7 +1473,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                 self.extent_box.setOutputExtentFromUser(
                     default_extent,
-                    QgsCoordinateReferenceSystem("EPSG:4326"),
+                    QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID),
                 )
             analysis_crs = scenario.extent.crs
 
@@ -1914,7 +1917,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             ],
             crs=settings_manager.get_value(
                 Settings.SCENARIO_CRS,
-                passed_extent_crs.authid() if passed_extent_crs else "EPSG:4326",
+                passed_extent_crs.authid()
+                if passed_extent_crs
+                else f"EPSG:{DEFAULT_CRS_ID}",
             ),
         )
         try:
@@ -1997,7 +2002,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                 return
 
-            source_crs = passed_extent_crs or QgsCoordinateReferenceSystem("EPSG:4326")
+            source_crs = passed_extent_crs or QgsCoordinateReferenceSystem.fromEpsgId(
+                DEFAULT_CRS_ID
+            )
             destination_crs = QgsCoordinateReferenceSystem(self.analysis_extent.crs)
 
             if selected_pathway:
@@ -2546,8 +2553,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def prepare_extent_box(self):
         """Configure the spatial extent box with the initial settings."""
         crs = self.crs_selector.crs()
-        if crs is None:
-            crs = QgsCoordinateReferenceSystem("EPSG:4326")
+        if crs is None or not crs.isValid():
+            crs = QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
             self.crs_selector.setCrs(crs)
         self.extent_box.setOutputCrs(crs)
         map_canvas = iface.mapCanvas()

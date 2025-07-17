@@ -30,6 +30,7 @@ from .conf import settings_manager, Settings
 from .definitions.constants import NO_DATA_VALUE
 from .definitions.defaults import (
     SCENARIO_OUTPUT_FILE_NAME,
+    DEFAULT_CRS_ID,
 )
 from .models.base import ScenarioResult, SpatialExtent, Activity, NcsPathway
 from .resources import *
@@ -265,7 +266,7 @@ class ScenarioAnalysisTask(QgsTask):
             dest_crs = (
                 target_layer.crs()
                 if selected_pathway and selected_pathway.path
-                else QgsCoordinateReferenceSystem("EPSG:4326")
+                else QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
             )
 
         processing_extent = QgsRectangle(
@@ -2535,7 +2536,7 @@ class ScenarioAnalysisTask(QgsTask):
                     for pathway in activity.pathways:
                         layers[activity.name] = QgsRasterLayer(pathway.path)
 
-            source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
+            source_crs = QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
             dest_crs = list(layers.values())[0].crs() if len(layers) > 0 else source_crs
 
             extent_string = (
