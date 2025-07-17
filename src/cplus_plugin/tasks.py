@@ -62,6 +62,7 @@ class ScenarioAnalysisTask(QgsTask):
         analysis_extent,
         scenario,
         clip_to_studyarea: bool = False,
+        studyarea_path: str = None,
     ):
         super().__init__()
         self.analysis_scenario_name = analysis_scenario_name
@@ -73,6 +74,7 @@ class ScenarioAnalysisTask(QgsTask):
         self.analysis_extent_string = None
 
         self.clip_to_studyarea = clip_to_studyarea
+        self.studyarea_path = studyarea_path
 
         self.scenario_result = None
         self.scenario_directory = None
