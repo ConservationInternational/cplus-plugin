@@ -663,6 +663,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         scenario_name = self.scenario_name.text()
         scenario_description = self.scenario_description.text()
         extent = self.extent_box.outputExtent()
+        self.extent_box.setOutputCrs(self.crs_selector.crs())
 
         extent_box = [
             extent.xMinimum(),
@@ -710,6 +711,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 extent_rectangle,
                 crs,
             )
+            self.extent_box.setOutputCrs(crs)
 
         if studyarea_path:
             self._add_layer_path(studyarea_path)
@@ -1453,9 +1455,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.scenario_name.setText(scenario.name)
             self.scenario_description.setText(scenario.description)
 
-            self.extent_box.setOutputCrs(
-                QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
-            )
+            crs = QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
             map_canvas = iface.mapCanvas()
             self.extent_box.setCurrentExtent(
                 map_canvas.mapSettings().destinationCrs().bounds(),
@@ -1480,11 +1480,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             analysis_crs = scenario.extent.crs
 
             if analysis_crs:
-                self.crs_selector.setCrs(QgsCoordinateReferenceSystem(analysis_crs))
-            else:
-                self.crs_selector.setCrs(
-                    QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
-                )
+                crs = QgsCoordinateReferenceSystem(analysis_crs)
+            self.crs_selector.setCrs(crs)
+            self.extent_box.setOutputCrs(crs)
 
             self.rb_studyarea.setChecked(False)
             self.rb_extent.setChecked(False)
