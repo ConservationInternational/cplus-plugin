@@ -1479,6 +1479,24 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 )
             analysis_crs = scenario.extent.crs
 
+            if analysis_crs:
+                self.crs_selector.setCrs(QgsCoordinateReferenceSystem(analysis_crs))
+            else:
+                self.crs_selector.setCrs(
+                    QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
+                )
+
+            self.rb_studyarea.setChecked(False)
+            self.rb_extent.setChecked(False)
+
+            if scenario.clip_to_studyarea and os.path.exists(scenario.studyarea_path):
+                self.on_aoi_source_changed(0, True)
+                self.rb_studyarea.setChecked(True)
+                self._add_layer_path(scenario.studyarea_path)
+            else:
+                self.on_aoi_source_changed(1, True)
+                self.rb_extent.setChecked(True)
+
         all_activities = sorted(
             scenario.activities,
             key=lambda activity_instance: activity_instance.style_pixel_value,
