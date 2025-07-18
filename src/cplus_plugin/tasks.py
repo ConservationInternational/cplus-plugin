@@ -30,8 +30,9 @@ from .conf import settings_manager, Settings
 from .definitions.constants import NO_DATA_VALUE
 from .definitions.defaults import (
     SCENARIO_OUTPUT_FILE_NAME,
+    DEFAULT_CRS_ID,
 )
-from .models.base import ScenarioResult, SpatialExtent, Activity, NcsPathway
+from .models.base import ScenarioResult, Activity, NcsPathway
 from .resources import *
 from .utils import (
     align_rasters,
@@ -61,6 +62,7 @@ class ScenarioAnalysisTask(QgsTask):
         analysis_extent,
         scenario,
         clip_to_studyarea: bool = False,
+        studyarea_path: str = None,
     ):
         super().__init__()
         self.analysis_scenario_name = analysis_scenario_name
@@ -72,6 +74,7 @@ class ScenarioAnalysisTask(QgsTask):
         self.analysis_extent_string = None
 
         self.clip_to_studyarea = clip_to_studyarea
+        self.studyarea_path = studyarea_path
 
         self.scenario_result = None
         self.scenario_directory = None
@@ -269,7 +272,7 @@ class ScenarioAnalysisTask(QgsTask):
             dest_crs = (
                 target_layer.crs()
                 if selected_pathway and selected_pathway.path
-                else QgsCoordinateReferenceSystem("EPSG:4326")
+                else QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
             )
 
         processing_extent = QgsRectangle(
@@ -306,9 +309,8 @@ class ScenarioAnalysisTask(QgsTask):
             )
 
         # Clip to StudyArea
-        studyarea_path = self.get_settings_value(Settings.STUDYAREA_PATH, default="")
-        if self.clip_to_studyarea and os.path.exists(studyarea_path):
-            self.clip_analysis_data(studyarea_path)
+        if self.clip_to_studyarea and os.path.exists(self.studyarea_path):
+            self.clip_analysis_data(self.studyarea_path)
 
         # Reproject the pathways and priority layers to the
         # scenario CRS if it is not the same as the pathways CRS
@@ -2549,7 +2551,7 @@ class ScenarioAnalysisTask(QgsTask):
                     for pathway in activity.pathways:
                         layers[activity.name] = QgsRasterLayer(pathway.path)
 
-            source_crs = QgsCoordinateReferenceSystem("EPSG:4326")
+            source_crs = QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
             dest_crs = list(layers.values())[0].crs() if len(layers) > 0 else source_crs
 
             extent_string = (
