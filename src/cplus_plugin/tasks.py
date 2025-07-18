@@ -89,6 +89,10 @@ class ScenarioAnalysisTask(QgsTask):
 
         self.scenario = scenario
 
+        self.no_data_value = settings_manager.get_value(
+            Settings.NCS_NO_DATA_VALUE, NO_DATA_VALUE
+        )
+
     def get_settings_value(self, name: str, default=None, setting_type=None):
         """Gets value of the setting with the passed name.
 
@@ -362,11 +366,11 @@ class ScenarioAnalysisTask(QgsTask):
             self.analysis_activities,
             extent_string,
         )
-        # TODO enable the sieve functionality
+
+        # Run sieve if enabled
         sieve_enabled = self.get_settings_value(
             Settings.SIEVE_ENABLED, default=False, setting_type=bool
         )
-
         if sieve_enabled:
             self.run_activities_sieve(
                 self.analysis_activities,
@@ -1983,14 +1987,14 @@ class ScenarioAnalysisTask(QgsTask):
 
         return results["OUTPUT"]
 
-    def run_activities_sieve(self, models, temporary_output=False):
-        """Runs the sieve functionality analysis on the passed models layers,
-        removing the models layer polygons that are smaller than the provided
+    def run_activities_sieve(self, activities, temporary_output=False):
+        """Runs the sieve functionality analysis on the passed activities layers,
+        removing the activities layer polygons that are smaller than the provided
         threshold size (in pixels) and replaces them with the pixel value of
         the largest neighbour polygon.
 
-        :param models: List of the analyzed activities
-        :type models: typing.List[ImplementationModel]
+        :param activities: List of the analyzed activities.
+        :type activities: typing.List[Activity]
 
         :param extent: Selected area of interest extent
         :type extent: str
@@ -2009,19 +2013,19 @@ class ScenarioAnalysisTask(QgsTask):
         self.set_status_message(tr("Applying sieve function to the activities"))
 
         try:
-            for model in models:
-                if model.path is None or model.path == "":
+            for activity in activities:
+                if activity.path is None or activity.path == "":
                     if not self.processing_cancelled:
                         self.set_info_message(
                             tr(
-                                f"Problem when running sieve function on models, "
-                                f"there is no map layer for the model {model.name}"
+                                f"Problem when running sieve function on activities, "
+                                f"there is no map layer for the activity {activity.name}"
                             ),
                             level=Qgis.Critical,
                         )
                         self.log_message(
-                            f"Problem when running sieve function on models, "
-                            f"there is no map layer for the model {model.name}"
+                            f"Problem when running sieve function on activities, "
+                            f"there is no map layer for the activity {activity.name}"
                         )
                     else:
                         # If the user cancelled the processing
@@ -2033,63 +2037,61 @@ class ScenarioAnalysisTask(QgsTask):
 
                     return False
 
-                sieved_ims_directory = os.path.join(
-                    self.scenario_directory, "sieved_ims"
+                sieved_activities_directory = os.path.join(
+                    self.scenario_directory, "sieved_activities"
                 )
-                FileUtils.create_new_dir(sieved_ims_directory)
-                file_name = clean_filename(model.name.replace(" ", "_"))
+                FileUtils.create_new_dir(sieved_activities_directory)
+                file_name = clean_filename(activity.name.replace(" ", "_"))
 
                 output_file = os.path.join(
-                    sieved_ims_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+                    sieved_activities_directory,
+                    f"{file_name}_{str(uuid.uuid4())[:4]}.tif",
                 )
 
                 threshold_value = float(
-                    self.get_settings_value(Settings.SIEVE_THRESHOLD, default=10.0)
+                    self.get_settings_value(Settings.SIEVE_THRESHOLD, default=10)
                 )
 
                 mask_layer = self.get_settings_value(
                     Settings.SIEVE_MASK_PATH, default=""
                 )
 
+                no_mask = not (mask_layer and os.path.exists(mask_layer))
+                mask_layer_ref = mask_layer if not no_mask else None
+
                 output = (
                     QgsProcessing.TEMPORARY_OUTPUT if temporary_output else output_file
                 )
 
-                # Actual processing calculation
-                alg_params = {
-                    "INPUT": model.path,
-                    "THRESHOLD": threshold_value,
-                    "MASK_LAYER": mask_layer,
-                    "OUTPUT": output,
-                }
-
-                self.log_message(f"Used parameters for sieving: {alg_params} \n")
-
-                input_name = os.path.splitext(os.path.basename(model.path))[0]
+                input_name = os.path.splitext(os.path.basename(activity.path))[0]
 
                 # Step 1: Create a binary mask from the original raster
                 binary_mask = processing.run(
                     "qgis:rastercalculator",
                     {
                         "CELLSIZE": 0,
-                        "LAYERS": [model.path],
+                        "LAYERS": [activity.path],
                         "CRS": None,
                         "EXPRESSION": f"{input_name}@1 > 0",
                         "OUTPUT": "TEMPORARY_OUTPUT",
                     },
                 )["OUTPUT"]
 
-                # Step 2: Run sieve analysis from on the binary mask
+                sieve_alg_params = {
+                    "INPUT": binary_mask,
+                    "THRESHOLD": threshold_value,
+                    "EIGHT_CONNECTEDNESS": True,
+                    "NO_MASK": no_mask,
+                    "MASK_LAYER": mask_layer_ref,
+                    "OUTPUT": "TEMPORARY_OUTPUT",
+                }
+
+                self.log_message(f"Used parameters for sieving: {sieve_alg_params} \n")
+
+                # Step 2: Run sieve analysis from the output of the binary mask
                 sieved_mask = processing.run(
                     "gdal:sieve",
-                    {
-                        "INPUT": binary_mask,
-                        "THRESHOLD": threshold_value,
-                        "EIGHT_CONNECTEDNESS": True,
-                        "NO_MASK": True,
-                        "MASK_LAYER": None,
-                        "OUTPUT": "TEMPORARY_OUTPUT",
-                    },
+                    sieve_alg_params,
                     context=self.processing_context,
                     feedback=self.feedback,
                 )["OUTPUT"]
@@ -2117,7 +2119,7 @@ class ScenarioAnalysisTask(QgsTask):
                     "qgis:rastercalculator",
                     {
                         "CELLSIZE": 0,
-                        "LAYERS": [model.path, sieved_mask_clean],
+                        "LAYERS": [activity.path, sieved_mask_clean],
                         "CRS": None,
                         "EXPRESSION": expr_2,
                         "OUTPUT": "TEMPORARY_OUTPUT",
@@ -2126,19 +2128,20 @@ class ScenarioAnalysisTask(QgsTask):
                     feedback=self.feedback,
                 )["OUTPUT"]
 
-                # Step 5. Replace all 0 with -9999 using if ("combined@1" <= 0, -9999, "combined@1")
+                # Step 5. Replace all 0 with NO_DATA_VALUE using if
+                # ("combined@1" <= 0, NO_DATA_VALUE, "combined@1")
+                no_data_replace_exp = (
+                    f"(A > 0)*A + (A <= 0)*{float(self.no_data_value)}"
+                )
                 sieve_output_updated = processing.run(
                     "gdal:rastercalculator",
                     {
                         "INPUT_A": f"{sieve_output}",
                         "BAND_A": 1,
-                        "FORMULA": "9999*(A<=0)*(-1)+A*(A>0)",
+                        "FORMULA": no_data_replace_exp,
                         "NO_DATA": None,
                         "EXTENT_OPT": 0,
-                        "PROJWIN": None,
                         "RTYPE": 5,
-                        "OPTIONS": "",
-                        "EXTRA": "",
                         "OUTPUT": "TEMPORARY_OUTPUT",
                     },
                     context=self.processing_context,
@@ -2148,7 +2151,7 @@ class ScenarioAnalysisTask(QgsTask):
                 if not os.path.exists(sieve_output_updated):
                     self.log_message(
                         f"Problem running sieve function "
-                        f"on models layers, sieve intermediate layer not found"
+                        f"on activity layers, sieve intermediate layer not found"
                         f" \n"
                     )
                     self.cancel_task()
@@ -2160,7 +2163,8 @@ class ScenarioAnalysisTask(QgsTask):
                 if self.processing_cancelled:
                     return False
 
-                # Step 6. Run sum statistics with ignore no data values set to false and no data value
+                # Step 6. Run sum statistics with ignore no data values set to false
+                # and no data value
                 results = processing.run(
                     "native:cellstatistics",
                     {
@@ -2177,10 +2181,19 @@ class ScenarioAnalysisTask(QgsTask):
                     feedback=self.feedback,
                 )
 
-                model.path = results["OUTPUT"]
+                feedback = QgsProcessingFeedback()
+
+                feedback.progressChanged.connect(self.update_progress)
+
+                if self.processing_cancelled:
+                    return False
+
+                activity.path = results["OUTPUT"]
 
         except Exception as e:
-            self.log_message(f"Problem running sieve function on models layers, {e} \n")
+            self.log_message(
+                f"Problem running sieve function on activity layers, {e} \n"
+            )
             self.cancel_task(e)
             return False
 
@@ -2578,9 +2591,7 @@ class ScenarioAnalysisTask(QgsTask):
                 "IGNORE_NODATA": True,
                 "INPUT_RASTERS": sources,
                 "EXTENT": extent_string,
-                "OUTPUT_NODATA_VALUE": settings_manager.get_value(
-                    Settings.NCS_NO_DATA_VALUE, NO_DATA_VALUE
-                ),
+                "OUTPUT_NODATA_VALUE": self.no_data_value,
                 "REFERENCE_LAYER": list(layers.values())[0]
                 if len(layers) >= 1
                 else None,
