@@ -78,6 +78,8 @@ from .priority_group_dialog import PriorityGroupDialog
 
 from .scenario_dialog import ScenarioDialog
 
+from .ncs_pwl_impact_manager_dialog import NcsPwlImpactManagerDialog
+
 from ..models.base import (
     Activity,
     PriorityLayerType,
@@ -420,11 +422,17 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.add_pwl_btn.setIcon(FileUtils.get_icon("symbologyAdd.svg"))
         self.edit_pwl_btn.setIcon(FileUtils.get_icon("mActionToggleEditing.svg"))
         self.remove_pwl_btn.setIcon(FileUtils.get_icon("symbologyRemove.svg"))
+        self.relative_pwl_matrix_btn.setIcon(
+            FileUtils.get_icon("mActionAddVectorTileLayer.svg")
+        )
 
         self.new_financial_pwl_btn.clicked.connect(self.on_manage_npv_pwls)
         self.add_pwl_btn.clicked.connect(self.add_priority_layer)
         self.edit_pwl_btn.clicked.connect(self.edit_priority_layer)
         self.remove_pwl_btn.clicked.connect(self.remove_priority_layer)
+        self.relative_pwl_matrix_btn.clicked.connect(
+            self.on_manage_pwls_relative_impact_matrix
+        )
 
         self.priority_layers_list.itemDoubleClicked.connect(
             self._on_double_click_priority_layer
@@ -1351,6 +1359,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                             continue
                         children.append(child)
                     group.addChildren(children)
+
+    def on_manage_pwls_relative_impact_matrix(self):
+        """Slot raised to show the dialog for managing relative impact matrix of PWLs."""
+        ncs_pwl_relative_impact_dialog = NcsPwlImpactManagerDialog(self)
+        if ncs_pwl_relative_impact_dialog.exec_() == QtWidgets.QDialog.Accepted:
+            pass
 
     def has_trends_auth(self):
         """Check if plugin has user Trends.Earth authentication.
