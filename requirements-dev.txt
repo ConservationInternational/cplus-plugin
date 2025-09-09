@@ -33,6 +33,7 @@ mkdocstrings-python
 mkdocs-video
 mkdocs
 packaging == 21.3
+plotly==6.3.0
 pygments == 2.11.2
 pymdown-extensions
 pyparsing == 3.0.6

@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import traceback
 import typing
+import uuid
 
 from qgis.core import (
     Qgis,
@@ -41,9 +42,12 @@ from qgis.core import (
     QgsTableCell,
     QgsTextFormat,
     QgsUnitTypes,
+    QgsMessageLog,
+    Qgis
 )
 
 from qgis.PyQt import QtCore, QtGui, QtXml
+from qgis.PyQt.QtGui import QColor
 
 from .comparison_table import ScenarioComparisonTableInfo
 from ...conf import settings_manager
@@ -79,6 +83,7 @@ from ...models.report import (
     ReportResult,
     ScenarioComparisonReportContext,
 )
+from .charts import PieChartRenderer
 from ...utils import (
     calculate_raster_area_by_pixel_value,
     clean_filename,
@@ -90,6 +95,29 @@ from .variables import create_bulleted_text, LayoutVariableRegister
 
 
 DEFAULT_AREA_DECIMAL_PLACES = 2
+
+
+def _qcolor_to_hex(c: QColor) -> str:
+    try:
+        return c.name(QColor.HexRgb) if isinstance(c, QColor) else "#888888"
+    except Exception:
+        return "#888888"
+
+
+def _activity_hex_color(activity) -> str:
+    """
+    Use the activity's scenario fill color (matches the map legend).
+    Falls back to grey if anything goes wrong.
+    """
+    try:
+        sym = activity.scenario_fill_symbol()  # your Activity model already provides this
+        return _qcolor_to_hex(sym.color())
+    except Exception:
+        return "#888888"
+
+
+def _log(msg: str):
+    QgsMessageLog.logMessage(f"[CPLUS REPORT] {msg}", "CPLUS", Qgis.Info)
 
 
 class BaseScenarioReportGeneratorTask(QgsTask):
@@ -1335,6 +1363,51 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 if isinstance(item, CplusMapRepeatItem):
                     item.setFrameEnabled(False)
 
+    def _add_activity_cell_pie(self, activity, pos_x, pos_y, width, height, page) -> None:
+        # totals
+        _log(f"mini pie: {activity.name} pos=({pos_x},{pos_y}) size=({width},{height}) page={page}")
+        nodata = getattr(self, "_nodata_value", None)
+        total = sum(v for k, v in self._pixel_area_info.items() if k != nodata)
+        sel_val = int(getattr(activity, "style_pixel_value", -1))
+        selected = float(self._pixel_area_info.get(sel_val, 0.0))
+        other = max(total - selected, 0.0)
+        _log(f"mini pie: selected={selected} other={other} total={total} sel_val={sel_val}")
+        if total <= 0:
+            _log("mini pie: total<=0 -> skip")
+            return
+
+        labels = [activity.name, "Rest of AOI"]
+        values = [selected, other]
+        colors = [_activity_hex_color(activity), "#C7C7C7"]
+
+        out_dir = os.path.join(self.output_dir, "charts")
+        os.makedirs(out_dir, exist_ok=True)
+        png_path = os.path.join(out_dir, f"cell_pie_{uuid.uuid4().hex}.png")
+        try:
+            PieChartRenderer.render_pie_png(png_path, [activity.name, "Rest of AOI"], [selected, other],
+                                        colors_hex=[_activity_hex_color(activity), "#C7C7C7"], size_px=280)
+        except Exception as e:
+            _log(f"mini pie: render failed: {e!r}")
+            return
+
+        # Geometry: map ~80% height; info strip ~20%. Place at bottom-right of the cell.
+        map_h = 0.8 * height
+        strip_h = 0.2 * height
+        pie_w = min(45, 0.25 * width)  # mm
+        pie_h = pie_w
+        margin = 3
+
+        pie_x = pos_x + width - pie_w - margin
+        pie_y = pos_y + map_h + (strip_h - pie_h) / 2
+        _log(f"mini pie: place mm=({pie_x},{pie_y}) wh=({pie_w},{pie_h})")
+
+        pic = QgsLayoutItemPicture(self._layout)
+        pic.setPicturePath(png_path)
+        pic.attemptMove(QgsLayoutPoint(pie_x, pie_y, QgsUnitTypes.LayoutMillimeters), True, False, page)
+        pic.attemptResize(QgsLayoutSize(pie_w, pie_h, QgsUnitTypes.LayoutMillimeters))
+        self._layout.addLayoutItem(pic)
+        _log("mini pie: picture added")
+
     def _add_activity_items(
         self,
         pos_x: float,
@@ -1460,6 +1533,14 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         area_size_lbl.attemptResize(
             QgsLayoutSize(0.2 * width, 0.2 * height, self._layout.units())
         )
+        #self._add_activity_cell_pie(
+        #    activity,
+        #    pos_x,
+        #    pos_y,
+        #    width,
+        #    height,
+        #    page
+        #)
 
         # North arrow
         arrow_item = QgsLayoutItemPicture(self._layout)
@@ -2019,6 +2100,76 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
         parent_table.setTableContents(rows_data)
 
+    def _add_scenario_area_by_activity_pie(self) -> None:
+        # Build labels/values/colors from scenario data computed
+        _log("scenario pie: start")
+
+        labels, values, colors = [], [], []
+        for act in self._context.scenario.activities:
+            pv = int(getattr(act, "style_pixel_value", -1))
+            area = float(self._pixel_area_info.get(pv, 0.0))
+            labels.append(act.name)
+            values.append(area)
+            colors.append(_activity_hex_color(act))
+
+        _log(f"scenario pie: labels={labels}")
+        _log(f"scenario pie: values={values} sum={sum(values)}")
+        if sum(values) <= 0:
+            _log("scenario pie: no positive values - skip")
+            return
+
+        # Render PNG
+        out_dir = os.path.join(self.output_dir, "charts")
+        os.makedirs(out_dir, exist_ok=True)
+        png_path = os.path.join(out_dir, f"scenario_pie_{uuid.uuid4().hex}.png")
+        _log(f"scenario pie: will write to {png_path}")
+        try:
+            PieChartRenderer.render_pie_png(
+                png_path, labels, values, colors_hex=colors,
+                title="Scenario-selected Area by Activity (ha)", size_px=560
+            )
+        except Exception as e:
+            _log(f"scenario pie: render failed: {e!r}")
+            return
+
+        exists = os.path.exists(png_path)
+        size = os.path.getsize(png_path) if exists else 0
+        _log(f"scenario pie: png exists={exists} size={size}")
+
+        if not exists or size == 0:
+            _log("scenario pie: png missing/empty -> abort placement")
+            return
+
+        # Prefer a template Picture item with this ID
+        item = self._layout.itemById("ACTIVITY_SHARE_PIE_PIC_ID")
+        if isinstance(item, QgsLayoutItemPicture):
+            # Use the placeholder
+            item.setPicturePath(png_path)
+            item.setFrameEnabled(False)
+            item.setOpacity(1.0)
+            item.invalidateCache()
+            item.refresh()
+            item.setZValue(10**6)
+            _log(f"scenario pie: set picture path on ACTIVITY_SHARE_PIE_PIC_ID - {png_path}")
+        else:
+            _log("scenario pie: placeholder missing or not a Picture; using fallback")
+            # Fallback: add a new picture on a specific page (here: last page)
+            target_page = self._layout.pageCollection().pageCount() - 1
+            pic = QgsLayoutItemPicture(self._layout)
+            pic.setPicturePath(png_path)
+            pic.attemptMove(
+                QgsLayoutPoint(15, 35, QgsUnitTypes.LayoutMillimeters),
+                True, False, target_page
+            )
+            pic.attemptResize(QgsLayoutSize(120, 90, QgsUnitTypes.LayoutMillimeters))
+            self._layout.addLayoutItem(pic)
+
+            pic.setOpacity(1.0)
+            pic.invalidateCache()
+            pic.refresh()
+            pic.setZValue(10**6)
+            _log("scenario pie: added fallback picture")
+
     def _run(self) -> ReportResult:
         """Runs report generation process."""
         super()._run()
@@ -2052,6 +2203,8 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
         # Populate table with priority weighting values
         self._populate_scenario_weighting_values()
+
+        self._add_scenario_area_by_activity_pie()
 
         # Set scenario layer in scenario map item
         self._update_main_map_layer()
