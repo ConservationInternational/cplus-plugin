@@ -2073,7 +2073,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             PieChartRenderer.render_pie_png(
                 png_path, labels, values,
                 colors_hex=colors,  # Pass the colors list to the new renderer
-                title="Scenario-selected Area by Activity (ha)", size_px=560
+                size_px=560
             )
         except Exception as e:
             log(f"scenario pie: render failed: {e!r}")
