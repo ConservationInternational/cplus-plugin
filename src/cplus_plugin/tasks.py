@@ -23,6 +23,7 @@ from qgis.core import (
     QgsRectangle,
     QgsVectorLayer,
     QgsWkbTypes,
+    QgsRasterBandStats,
 )
 from qgis.core import QgsTask
 
@@ -331,6 +332,9 @@ class ScenarioAnalysisTask(QgsTask):
             f"Replacing nodata value for the pathways and priority layers to {nodata_value}"
         )
         self.run_pathways_replace_nodata(nodata_value=nodata_value)
+
+        # Calculate total carbon mitigation values for the Naturebase pathways
+        self.run_pathways_carbon_summation()
 
         # Weight the pathways using the pathway suitability index
         # and priority group coefficients for the PWLs
@@ -724,6 +728,80 @@ class ScenarioAnalysisTask(QgsTask):
 
         except Exception as e:
             self.log_message(f"Problem replacing nodata value for layers, {e} \n")
+            self.cancel_task(e)
+            return False
+
+        return True
+
+    def run_pathways_carbon_summation(self) -> bool:
+        """Calculates total carbon mitigation values for the Naturebase pathways.
+
+        :returns: True if the task operation was successfully completed else False.
+        :rtype: bool
+        """
+        if self.processing_cancelled:
+            return False
+
+        self.set_status_message(
+            tr("Calculating total carbon mitigation values for the Naturebase pathways")
+        )
+
+        pathways: typing.List[NcsPathway] = []
+
+        try:
+            for activity in self.analysis_activities:
+                if not activity.pathways and (
+                    activity.path is None or activity.path == ""
+                ):
+                    self.set_info_message(
+                        tr(
+                            f"No defined activity pathways or "
+                            f" activity layers for the activity {activity.name}"
+                        ),
+                        level=Qgis.Critical,
+                    )
+                    self.log_message(
+                        f"No defined activity pathways or "
+                        f"activity layers for the activity {activity.name}"
+                    )
+                    return False
+
+                for pathway in activity.pathways:
+                    if not (pathway in pathways):
+                        pathways.append(pathway)
+
+            if pathways is not None and len(pathways) > 0:
+                for pathway in pathways:
+                    if pathway.name.startswith("Naturebase:") is False:
+                        continue
+
+                    pathway_layer = QgsRasterLayer(pathway.path, pathway.name)
+
+                    if self.processing_cancelled:
+                        return False
+                    if not pathway_layer.isValid():
+                        self.log_message(
+                            f"Pathway layer {pathway.name} is not valid, "
+                            f"skipping calculating total carbon value for layer."
+                        )
+                        continue
+
+                    raster_provider = pathway_layer.dataProvider()
+                    stats = raster_provider.bandStatistics(
+                        1, QgsRasterBandStats.Stats.Sum
+                    )
+                    if stats is None or stats.sum is None:
+                        self.log_message(
+                            f"Could not calculate statistics for pathway layer {pathway.name}, "
+                            f"skipping calculating total carbon value for layer."
+                        )
+                        continue
+                    pathway.carbon_impact_value = stats.sum
+
+        except Exception as e:
+            self.log_message(
+                f"Problem calculating total carbon values for layers, {e} \n"
+            )
             self.cancel_task(e)
             return False
 
