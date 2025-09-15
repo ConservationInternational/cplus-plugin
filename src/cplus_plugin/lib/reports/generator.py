@@ -64,12 +64,13 @@ from ...definitions.defaults import (
     METRICS_TABLE_HEADER,
     MINIMUM_ITEM_HEIGHT,
     MINIMUM_ITEM_WIDTH,
+    NCS_NATURE_CARBON_TABLE_ID,
     PRIORITY_GROUP_WEIGHT_TABLE_ID,
     REPORT_COLOR_TREEFOG,
 )
 from .layout_items import BasicScenarioDetailsItem, CplusMapRepeatItem
 from .metrics import create_metrics_expression_context, evaluate_activity_metric
-from ...models.base import Activity, ScenarioResult
+from ...models.base import Activity, NcsPathway
 from ...models.helpers import extent_to_project_crs_extent
 from ...models.report import (
     ActivityContextInfo,
@@ -1869,6 +1870,60 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
         self._re_orient_area_table_page(parent_table)
 
+    def _populate_ncs_naturebase_carbon_table(self):
+        """Populate the NCS Naturebase pathways carbon
+        mitigation value table."""
+        parent_table = self._get_manual_table_from_id(NCS_NATURE_CARBON_TABLE_ID)
+        if parent_table is None:
+            tr_msg = tr(
+                "Could not find parent table for NCS Naturebase pathways carbon mitigation values."
+            )
+            self._error_messages.append(tr_msg)
+            return
+
+        pathways: typing.List[NcsPathway] = []
+        for activity in self._context.scenario.activities:
+            if not activity.pathways and not activity.path:
+                msg = f"""No defined activity pathways or activity layers for the activity {activity.name}."""
+                self._error_messages.append(tr(msg))
+                return
+
+            for pathway in activity.pathways:
+                if not (pathway in pathways) and pathway.name.startswith("Naturebase:"):
+                    pathways.append(pathway)
+
+        if len(pathways) == 0:
+            tr_msg = tr("No Naturebase Pathways used in the scenario.")
+            self._error_messages.append(tr_msg)
+            return
+
+        rows_data = []
+        for pathway in pathways:
+            pathway.carbon_impact_value
+            pathway_name_cell = QgsTableCell(
+                pathway.name.replace("Naturebase:", "").strip()
+            )
+            pathway_name_cell.setBackgroundColor(QtGui.QColor("#e9e9e9"))
+            pathway_value_cell = QgsTableCell(
+                self.format_number(pathway.carbon_impact_value)
+            )
+            rows_data.append([pathway_name_cell, pathway_value_cell])
+
+        # Add total row
+        total_name_cell = QgsTableCell(tr("Total"))
+        total_name_cell.setBackgroundColor(QtGui.QColor("#e9e9e9"))
+        total_value = sum(
+            [
+                p.carbon_impact_value
+                for p in pathways
+                if isinstance(p.carbon_impact_value, Number)
+            ]
+        )
+        total_value_cell = QgsTableCell(self.format_number(total_value))
+        rows_data.append([total_name_cell, total_value_cell])
+
+        parent_table.setTableContents(rows_data)
+
     @classmethod
     def format_number(cls, value: typing.Any) -> str:
         """Formats a number to two decimals places.
@@ -2052,6 +2107,9 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
         # Populate table with priority weighting values
         self._populate_scenario_weighting_values()
+
+        # Populate table with Naturebase pathways carbon mitigation values
+        self._populate_ncs_naturebase_carbon_table()
 
         # Set scenario layer in scenario map item
         self._update_main_map_layer()

@@ -750,53 +750,41 @@ class ScenarioAnalysisTask(QgsTask):
 
         try:
             for activity in self.analysis_activities:
-                if not activity.pathways and (
-                    activity.path is None or activity.path == ""
-                ):
-                    self.set_info_message(
-                        tr(
-                            f"No defined activity pathways or "
-                            f" activity layers for the activity {activity.name}"
-                        ),
-                        level=Qgis.Critical,
-                    )
-                    self.log_message(
-                        f"No defined activity pathways or "
-                        f"activity layers for the activity {activity.name}"
-                    )
+                if not activity.pathways and not activity.path:
+                    msg = f"""No defined activity pathways or
+                     activity layers for the activity {activity.name}
+                    """
+                    self.set_info_message(tr(msg), level=Qgis.Critical)
+                    self.log_message(msg)
                     return False
 
                 for pathway in activity.pathways:
                     if not (pathway in pathways):
                         pathways.append(pathway)
 
-            if pathways is not None and len(pathways) > 0:
-                for pathway in pathways:
-                    if pathway.name.startswith("Naturebase:") is False:
-                        continue
+            for pathway in pathways:
+                if pathway.name.startswith("Naturebase:") is False:
+                    continue
 
-                    pathway_layer = QgsRasterLayer(pathway.path, pathway.name)
+                pathway_layer = QgsRasterLayer(pathway.path, pathway.name)
 
-                    if self.processing_cancelled:
-                        return False
-                    if not pathway_layer.isValid():
-                        self.log_message(
-                            f"Pathway layer {pathway.name} is not valid, "
-                            f"skipping calculating total carbon value for layer."
-                        )
-                        continue
-
-                    raster_provider = pathway_layer.dataProvider()
-                    stats = raster_provider.bandStatistics(
-                        1, QgsRasterBandStats.Stats.Sum
+                if self.processing_cancelled:
+                    return False
+                if not pathway_layer.isValid():
+                    self.log_message(
+                        f"Pathway layer {pathway.name} is not valid, "
+                        f"skipping calculating total carbon value for layer."
                     )
-                    if stats is None or stats.sum is None:
-                        self.log_message(
-                            f"Could not calculate statistics for pathway layer {pathway.name}, "
-                            f"skipping calculating total carbon value for layer."
-                        )
-                        continue
-                    pathway.carbon_impact_value = stats.sum
+                    continue
+
+                raster_provider = pathway_layer.dataProvider()
+                stats = raster_provider.bandStatistics(1, QgsRasterBandStats.Stats.Sum)
+                if stats is None or stats.sum is None:
+                    self.log_message(
+                        f"Could not calculate statistics for {pathway.name}, skipping."
+                    )
+                    continue
+                pathway.carbon_impact_value = stats.sum
 
         except Exception as e:
             self.log_message(
