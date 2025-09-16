@@ -1911,6 +1911,11 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
         # Add total row
         total_name_cell = QgsTableCell(tr("Total"))
+
+        text_format = total_name_cell.textFormat()
+        text_format.setFont(get_report_font(size=12, bold=True))
+
+        total_name_cell.setTextFormat(text_format)
         total_name_cell.setBackgroundColor(QtGui.QColor("#e9e9e9"))
         total_value = sum(
             [
@@ -1920,6 +1925,8 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             ]
         )
         total_value_cell = QgsTableCell(self.format_number(total_value))
+        total_value_cell.setTextFormat(text_format)
+
         rows_data.append([total_name_cell, total_value_cell])
 
         parent_table.setTableContents(rows_data)
