@@ -20,6 +20,7 @@ from ...conf import settings_manager
 from ...definitions.defaults import (
     BASE_PLUGIN_NAME,
     MEAN_BASED_IRRECOVERABLE_CARBON_EXPRESSION_DESCRIPTION,
+    NATUREBASE_CARBON_IMPACT_EXPRESSION_DESCRIPTION,
     NPV_EXPRESSION_DESCRIPTION,
     PWL_IMPACT_EXPRESSION_DESCRIPTION,
 )
@@ -35,6 +36,7 @@ METRICS_LIBRARY = []
 VAR_ACTIVITY_AREA = "cplus_activity_area"
 VAR_ACTIVITY_NAME = "cplus_activity_name"
 VAR_ACTIVITY_ID = "cplus_activity_id"
+VAR_ACTIVITY_NATUREBASE_CARBON_IMPACT = "cplus_activity_naturebase_carbon_impact"
 
 # Function names
 FUNC_MEAN_BASED_IC = "irrecoverable_carbon_by_mean"
@@ -266,6 +268,16 @@ def create_metrics_expression_scope() -> QgsExpressionContextScope:
             description=tr("The name of the activity being evaluated."),
         )
     )
+
+    # Activity total naturebase data carbon impact
+    expression_scope.addVariable(
+        QgsExpressionContextScope.StaticVariable(
+            VAR_ACTIVITY_NATUREBASE_CARBON_IMPACT,
+            -1,
+            description=tr(NATUREBASE_CARBON_IMPACT_EXPRESSION_DESCRIPTION),
+        )
+    )
+
     # Add functions
     expression_scope.addFunction(FUNC_PWL_IMPACT, ActivityPwlImpactFunction())
     expression_scope.addFunction(FUNC_ACTIVITY_NPV, ActivityNpvFunction())
@@ -384,6 +396,9 @@ def evaluate_activity_metric(
     metrics_scope.setVariable(VAR_ACTIVITY_ID, str(activity_info.activity.uuid))
     metrics_scope.setVariable(VAR_ACTIVITY_NAME, activity_info.activity.name)
     metrics_scope.setVariable(VAR_ACTIVITY_AREA, activity_info.area)
+    metrics_scope.setVariable(
+        VAR_ACTIVITY_NATUREBASE_CARBON_IMPACT, activity_info.total_naturebase_carbon
+    )
 
     expression = QgsExpression(expression_str)
     expression.prepare(context)
