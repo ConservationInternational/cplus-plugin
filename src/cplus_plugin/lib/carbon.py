@@ -5,6 +5,7 @@ Contains functions for carbon calculations.
 
 from functools import partial
 import math
+from numbers import Number
 import os
 import typing
 from itertools import count
@@ -22,7 +23,12 @@ from qgis.core import (
 from qgis import processing
 
 from ..conf import settings_manager, Settings
-from ..models.base import Activity, DataSourceType, NcsPathwayType
+from ..models.base import (
+    Activity,
+    DataSourceType,
+    NcsPathwayType,
+    NcsPathway,
+)
 from ..utils import log
 
 
@@ -468,3 +474,35 @@ class IrrecoverableCarbonCalculator:
         )
 
         return total_irrecoverable_carbon
+
+
+def calculate_activity_naturebase_carbon_impact(activity: Activity) -> float:
+    """Calculates the Naturebase pathways carbon impact an activity.
+
+    It sums the carbon mitigation values across each NCS Naturebase pathway that constitutes the
+    activity.
+
+    :param activity: The specific activity.
+    :type activity: Activity
+
+    :returns: Returns the total carbon impact of the activity, or -1.0
+    if the activity does not exist or if found, lacks Naturebase pathways
+    or if the total carbon impact could not be computed.
+    :rtype: float
+    """
+    if activity is None or len(activity.pathways) == 0:
+        return -1.0
+
+    activity_carbon_impact = -1
+    pathways: typing.List[NcsPathway] = []
+    for pathway in activity.pathways:
+        if not (pathway in pathways) and pathway.name.startswith("Naturebase:"):
+            pathways.append(pathway)
+
+    for pathway in pathways:
+        if pathway.carbon_impact_value and isinstance(
+            pathway.carbon_impact_value, Number
+        ):
+            activity_carbon_impact += pathway.carbon_impact_value
+
+    return float(activity_carbon_impact)

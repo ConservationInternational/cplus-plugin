@@ -45,6 +45,7 @@ from qgis.core import (
 
 from qgis.PyQt import QtCore, QtGui, QtXml
 
+from ..carbon import calculate_activity_naturebase_carbon_impact
 from .comparison_table import ScenarioComparisonTableInfo
 from ...conf import settings_manager
 from ...definitions.constants import (
@@ -64,7 +65,6 @@ from ...definitions.defaults import (
     METRICS_TABLE_HEADER,
     MINIMUM_ITEM_HEIGHT,
     MINIMUM_ITEM_WIDTH,
-    NCS_NATURE_CARBON_TABLE_ID,
     PRIORITY_GROUP_WEIGHT_TABLE_ID,
     REPORT_COLOR_TREEFOG,
 )
@@ -1771,12 +1771,19 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             for mc in self._metrics_configuration.metric_columns:
                 columns.append(mc.to_qgs_column())
         else:
-            # Otherwise just add the area column
+            # Otherwise just add the area and carbon columns
             area_column = QgsLayoutTableColumn(tr("Area (ha)"))
             area_column.setWidth(0)
             area_column.setHAlignment(QtCore.Qt.AlignHCenter)
 
             columns.append(area_column)
+
+            carbon_value_column = QgsLayoutTableColumn(tr("Total Carbon (tCO2e/yr)"))
+            carbon_value_column.setWidth(0)
+            carbon_value_column.setHAlignment(QtCore.Qt.AlignHCenter)
+
+            # Insert the carbon value column as the second
+            columns.insert(1, carbon_value_column)
 
         parent_table.setHeaders(columns)
 
@@ -1799,9 +1806,16 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 log(f"Pixel value not found in calculation")
                 area_info = tr("<Pixel value not found>")
 
+            # Activity naturebase carbon impact value
+            activity_naturebase_carbon = calculate_activity_naturebase_carbon_impact(
+                activity
+            )
+
             if self._use_custom_metrics:
                 activity_area = area_info if isinstance(area_info, Number) else 0
-                activity_context_info = ActivityContextInfo(activity, activity_area)
+                activity_context_info = ActivityContextInfo(
+                    activity, activity_area, activity_naturebase_carbon
+                )
 
                 highlight_error = False
 
@@ -1864,72 +1878,17 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
                 activity_row_cells.append(area_cell)
 
+                carbon_value_cell = QgsTableCell(
+                    self.format_number(activity_naturebase_carbon)
+                )
+
+                activity_row_cells.insert(1, carbon_value_cell)
+
             rows_data.append(activity_row_cells)
 
         parent_table.setTableContents(rows_data)
 
         self._re_orient_area_table_page(parent_table)
-
-    def _populate_ncs_naturebase_carbon_table(self):
-        """Populate the NCS Naturebase pathways carbon
-        mitigation value table."""
-        parent_table = self._get_manual_table_from_id(NCS_NATURE_CARBON_TABLE_ID)
-        if parent_table is None:
-            tr_msg = tr(
-                "Could not find parent table for NCS Naturebase pathways carbon mitigation values."
-            )
-            self._error_messages.append(tr_msg)
-            return
-
-        pathways: typing.List[NcsPathway] = []
-        for activity in self._context.scenario.activities:
-            if not activity.pathways and not activity.path:
-                msg = f"""No defined activity pathways or activity layers for the activity {activity.name}."""
-                self._error_messages.append(tr(msg))
-                return
-
-            for pathway in activity.pathways:
-                if not (pathway in pathways) and pathway.name.startswith("Naturebase:"):
-                    pathways.append(pathway)
-
-        if len(pathways) == 0:
-            tr_msg = tr("No Naturebase Pathways used in the scenario.")
-            self._error_messages.append(tr_msg)
-            return
-
-        rows_data = []
-        for pathway in pathways:
-            pathway.carbon_impact_value
-            pathway_name_cell = QgsTableCell(
-                pathway.name.replace("Naturebase:", "").strip()
-            )
-            pathway_name_cell.setBackgroundColor(QtGui.QColor("#e9e9e9"))
-            pathway_value_cell = QgsTableCell(
-                self.format_number(pathway.carbon_impact_value)
-            )
-            rows_data.append([pathway_name_cell, pathway_value_cell])
-
-        # Add total row
-        total_name_cell = QgsTableCell(tr("Total"))
-
-        text_format = total_name_cell.textFormat()
-        text_format.setFont(get_report_font(size=12, bold=True))
-
-        total_name_cell.setTextFormat(text_format)
-        total_name_cell.setBackgroundColor(QtGui.QColor("#e9e9e9"))
-        total_value = sum(
-            [
-                p.carbon_impact_value
-                for p in pathways
-                if isinstance(p.carbon_impact_value, Number)
-            ]
-        )
-        total_value_cell = QgsTableCell(self.format_number(total_value))
-        total_value_cell.setTextFormat(text_format)
-
-        rows_data.append([total_name_cell, total_value_cell])
-
-        parent_table.setTableContents(rows_data)
 
     @classmethod
     def format_number(cls, value: typing.Any) -> str:
@@ -2114,9 +2073,6 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
         # Populate table with priority weighting values
         self._populate_scenario_weighting_values()
-
-        # Populate table with Naturebase pathways carbon mitigation values
-        self._populate_ncs_naturebase_carbon_table()
 
         # Set scenario layer in scenario map item
         self._update_main_map_layer()

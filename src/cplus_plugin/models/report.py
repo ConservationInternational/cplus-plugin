@@ -476,6 +476,7 @@ class ActivityContextInfo:
 
     activity: Activity
     area: float
+    total_naturebase_carbon: float = -1.0
 
 
 @dataclasses.dataclass
