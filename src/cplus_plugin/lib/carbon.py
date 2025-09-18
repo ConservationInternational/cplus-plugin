@@ -27,7 +27,6 @@ from ..models.base import (
     Activity,
     DataSourceType,
     NcsPathwayType,
-    NcsPathway,
 )
 from ..utils import log
 
@@ -492,20 +491,14 @@ def calculate_activity_naturebase_carbon_impact(activity: Activity) -> float:
     if activity is None or len(activity.pathways) == 0:
         return -1.0
 
-    pathways: typing.List[NcsPathway] = []
-    for pathway in activity.pathways:
-        if not (pathway in pathways) and pathway.name.startswith("Naturebase:"):
-            pathways.append(pathway)
+    pathways = [
+        pathway
+        for pathway in activity.pathways
+        if pathway.name.startswith("Naturebase:")
+        and isinstance(pathway.carbon_impact_value, Number)
+    ]
 
-    # No naturebase pathways in the activity
-    if len(pathways) == 0:
+    if not pathways:
         return -1.0
 
-    activity_carbon_impact = 0
-    for pathway in pathways:
-        if pathway.carbon_impact_value and isinstance(
-            pathway.carbon_impact_value, Number
-        ):
-            activity_carbon_impact += pathway.carbon_impact_value
-
-    return float(activity_carbon_impact)
+    return float(sum(p.carbon_impact_value for p in pathways))
