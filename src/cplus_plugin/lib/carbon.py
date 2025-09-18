@@ -477,7 +477,7 @@ class IrrecoverableCarbonCalculator:
 
 
 def calculate_activity_naturebase_carbon_impact(activity: Activity) -> float:
-    """Calculates the Naturebase pathways carbon impact an activity.
+    """Calculates the carbon mitigation impact of an activity from Naturbase pathway.
 
     It sums the carbon mitigation values across each NCS Naturebase pathway that constitutes the
     activity.
@@ -486,19 +486,22 @@ def calculate_activity_naturebase_carbon_impact(activity: Activity) -> float:
     :type activity: Activity
 
     :returns: Returns the total carbon impact of the activity, or -1.0
-    if the activity does not exist or if found, lacks Naturebase pathways
-    or if the total carbon impact could not be computed.
+    if the activity does not exist or lacks Naturebase pathways.
     :rtype: float
     """
     if activity is None or len(activity.pathways) == 0:
         return -1.0
 
-    activity_carbon_impact = -1
     pathways: typing.List[NcsPathway] = []
     for pathway in activity.pathways:
         if not (pathway in pathways) and pathway.name.startswith("Naturebase:"):
             pathways.append(pathway)
 
+    # No naturebase pathways in the activity
+    if len(pathways) == 0:
+        return -1.0
+
+    activity_carbon_impact = 0
     for pathway in pathways:
         if pathway.carbon_impact_value and isinstance(
             pathway.carbon_impact_value, Number

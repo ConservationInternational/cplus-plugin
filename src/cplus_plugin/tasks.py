@@ -759,17 +759,24 @@ class ScenarioAnalysisTask(QgsTask):
                     return False
 
                 for pathway in activity.pathways:
-                    if not (pathway in pathways):
+                    if (
+                        pathway.name.startswith("Naturebase:")
+                        and pathway not in pathways
+                    ):
                         pathways.append(pathway)
 
+            if len(pathways) == 0:
+                self.set_info_message(
+                    tr("No Naturebase pathways found in any activity."),
+                    level=Qgis.Critical,
+                )
+                return False
+
             for pathway in pathways:
-                if pathway.name.startswith("Naturebase:") is False:
-                    continue
-
-                pathway_layer = QgsRasterLayer(pathway.path, pathway.name)
-
                 if self.processing_cancelled:
                     return False
+
+                pathway_layer = QgsRasterLayer(pathway.path, pathway.name)
                 if not pathway_layer.isValid():
                     self.log_message(
                         f"Pathway layer {pathway.name} is not valid, "
