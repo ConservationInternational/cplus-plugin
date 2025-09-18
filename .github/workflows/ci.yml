@@ -67,6 +67,9 @@ jobs:
           docker compose up -d
           sleep 10
 
+      - name: Install plugin dependencies in docker
+        run: docker compose exec -T qgis-testing-environment sh -c "pip3 install -r requirements-dev.txt"
+
       - name: Run test suite
         run: |
           docker compose exec -T qgis-testing-environment qgis_testrunner.sh test_suite.test_package
