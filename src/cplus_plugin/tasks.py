@@ -2241,6 +2241,18 @@ class ScenarioAnalysisTask(QgsTask):
             self.log_message(msg)
             return False
 
+        # Get the relative impact matrix
+        relative_impact_matrix = dict()
+        impact_matrix = settings_manager.get_value(
+            Settings.SCENARIO_IMPACT_MATRIX, dict()
+        )
+        if len(impact_matrix) > 0:
+            relative_impact_matrix = json.loads(impact_matrix)
+
+        pathway_uuids = relative_impact_matrix.get("pathway_uuids", [])
+        priority_layer_uuids = relative_impact_matrix.get("priority_layer_uuids", [])
+        relative_impact_values = relative_impact_matrix.get("values", [])
+
         # Get valid pathways
         pathways = []
         activities_paths = []
@@ -2342,6 +2354,27 @@ class ScenarioAnalysisTask(QgsTask):
                     for priority_layer in settings_priority_layers:
                         if priority_layer.get("name") == layer.get("name"):
                             for group in priority_layer.get("groups", []):
+                                try:
+                                    row = pathway_uuids.index(str(pathway.uuid))
+                                    col = priority_layer_uuids.index(layer["uuid"])
+                                except ValueError:
+                                    self.log_message(
+                                        f"Could not find pathway uuid {pathway.uuid} or "
+                                        f"priority layer uuid {layer['uuid']} in the relative impact matrix."
+                                    )
+                                    impact_value = None
+                                else:
+                                    if row < len(relative_impact_values) and col < len(
+                                        relative_impact_values[row]
+                                    ):
+                                        impact_value = relative_impact_values[row][col]
+                                    else:
+                                        self.log_message(
+                                            f"Index out of range for relative impact "
+                                            f"matrix: row={row}, col={col}."
+                                        )
+                                        impact_value = None
+
                                 value = group.get("value")
                                 priority_group_coefficient = float(value)
                                 if priority_group_coefficient > 0:
@@ -2349,6 +2382,12 @@ class ScenarioAnalysisTask(QgsTask):
                                         layers.append(pwl)
 
                                     pwl_expression = f'({priority_group_coefficient}*"{pwl_path_basename}@1")'
+
+                                    if impact_value is not None and impact_value != 0:
+                                        pwl_expression = (
+                                            f"({priority_group_coefficient * int(impact_value)}*"
+                                            f'"{pwl_path_basename}@1")'
+                                        )
                                     base_names.append(pwl_expression)
                                     if not run_calculation:
                                         run_calculation = True
