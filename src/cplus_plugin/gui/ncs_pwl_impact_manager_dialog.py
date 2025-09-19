@@ -3,24 +3,21 @@
 Dialog for creating a new financial PWL.
 """
 
+import json
 import os
 import typing
 
-from qgis.core import (
-    Qgis,
-    QgsApplication,
-)
+from qgis.core import Qgis
 from qgis.gui import QgsGui, QgsMessageBar
 
 from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
-from .component_item_model import NcsPathwayItemModel
 from ..conf import settings_manager, Settings
 from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
 from ..models.base import NcsPathway
-from ..utils import FileUtils, open_documentation, tr
+from ..utils import FileUtils, open_documentation, tr, log
 
 
 WidgetUi, _ = loadUiType(
@@ -244,11 +241,7 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
         # Set up the matrix
         self.setup_matrix_table()
 
-        if settings_manager.get_value(Settings.SCENARIO_IMPACT_MATRIX):
-            impact_matrix = settings_manager.get_value(
-                Settings.SCENARIO_IMPACT_MATRIX, {}
-            )
-            self.restore_matrix_values(impact_matrix)
+        self.restore_matrix_values()
 
         # Sets the LC table height based on the row height
         table_header = self.rel_impact_matrix.horizontalHeader()
@@ -267,7 +260,7 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
         # Set up legend
         self.setup_legend()
 
-    def setup_matrix_table(self):
+    def setup_matrix_table(self) -> None:
         """
         Sets up the matrix QTableWidget with editable cells for each pathway/PWL pair.
         """
@@ -338,58 +331,87 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
                     row, QtWidgets.QHeaderView.Stretch
                 )
 
-    def restore_matrix_values(self, impact_matrix: dict):
+    def restore_matrix_values(self) -> None:
         """
-        Restores the matrix values from a given impact matrix dictionary.
-
-        :param impact_matrix: Dictionary mapping pathway identifiers to lists of PWL ratings.
-        :type impact_matrix: dict
+        Restores the matrix values from the saved impact matrix.
         """
         pathways = settings_manager.get_all_ncs_pathways()
         priority_layers = settings_manager.get_priority_layers()
 
-        for row, pathway in enumerate(pathways):
-            if pathway.uuid in impact_matrix:
+        impact_matrix = settings_manager.get_value(
+            Settings.SCENARIO_IMPACT_MATRIX, dict()
+        )
+
+        try:
+            if not impact_matrix:
+                return
+
+            impact_matrix_dict = json.loads(impact_matrix)
+            impact_pathway_uuids = impact_matrix_dict.get("pathway_uuids", [])
+            impact_priority_layer_uuids = impact_matrix_dict.get(
+                "priority_layer_uuids", []
+            )
+            impact_matrix_values = impact_matrix_dict.get("values", [])
+
+            for row, pathway in enumerate(pathways):
+                pathway_uuid = str(pathway.uuid)
+                if pathway_uuid not in impact_pathway_uuids:
+                    continue
+                matrix_row = impact_pathway_uuids.index(pathway_uuid)
+
                 for col, pwl in enumerate(priority_layers):
-                    if pwl["uuid"] in impact_matrix[pathway.uuid]:
-                        value = impact_matrix[pathway.uuid][pwl["uuid"]]
-                        cell_widget = self.rel_impact_matrix.cellWidget(row, col)
-                        if isinstance(cell_widget, TransMatrixEdit):
-                            if value is None:
-                                cell_widget.setText("")
-                                cell_widget.setStyleSheet(
-                                    "QLineEdit {background: white;} "
-                                    "QLineEdit:hover {border: 1px solid gray; background: white;}"
-                                )
-                            else:
-                                cell_widget.setText(str(value))
-                                color = IMPACT_MATRIX_COLORS.get(value, {}).get(
-                                    "color", "white"
-                                )
-                                cell_widget.setStyleSheet(
-                                    f"QLineEdit {{background: {color};}} "
-                                    f"QLineEdit:hover {{border: 1px solid gray; background: {color};}}"
-                                )
+                    pwl_uuid = str(pwl["uuid"])
+                    if pwl_uuid not in impact_priority_layer_uuids:
+                        continue
+                    matrix_col = impact_priority_layer_uuids.index(pwl_uuid)
 
-    def get_impact_matrix_mapping(self) -> dict:
+                    # Validate indices
+                    if matrix_row >= len(impact_matrix_values) or matrix_col >= len(
+                        impact_matrix_values[matrix_row]
+                    ):
+                        continue
+
+                    value = impact_matrix_values[matrix_row][matrix_col]
+                    cell_widget = self.rel_impact_matrix.cellWidget(row, col)
+                    if isinstance(cell_widget, TransMatrixEdit):
+                        if value is None:
+                            cell_widget.setText("")
+                            cell_widget.setStyleSheet(
+                                "QLineEdit {background: white;} "
+                                "QLineEdit:hover {border: 1px solid gray; background: white;}"
+                            )
+                        else:
+                            cell_widget.setText(str(value))
+                            color = IMPACT_MATRIX_COLORS.get(value, {}).get(
+                                "color", "white"
+                            )
+                            cell_widget.setStyleSheet(
+                                f"QLineEdit {{background: {color};}} "
+                                f"QLineEdit:hover {{border: 1px solid gray; background: {color};}}"
+                            )
+        except Exception as e:
+            error_tr = tr(f"Error restoring matrix values: {e}")
+            self.show_message(error_tr, Qgis.MessageLevel.Warning)
+            log(error_tr)
+
+    def get_impact_matrix(self) -> typing.Dict:
         """
-        Retrieves the current values from the matrix as a dictionary
-        mapping pathway identifiers to their corresponding PWL ratings.
+        Retrieves the current values from the matrix
+        mapping pathway uuids, priority layer uuids and their corresponding ratings.
+        Rows -> pathways, Columns -> priority layers
 
-        :return: Dictionary mapping pathway identifiers to lists of PWL ratings.
-        :rtype: dict
+        :return: Dictionary mapping pathway, PWL  and ratings.
+        :rtype: typing.Dict
         """
         pathways = settings_manager.get_all_ncs_pathways()
         priority_layers = settings_manager.get_priority_layers()
         matrix_values = self.get_matrix_values()
 
-        impact_matrix_dict = {}
-        for row, pathway in enumerate(pathways):
-            impact_matrix_dict[pathway.uuid] = {}
-            for col, pwl in enumerate(priority_layers):
-                impact_matrix_dict[pathway.uuid][pwl["uuid"]] = matrix_values[row][col]
-
-        return impact_matrix_dict
+        return {
+            "pathway_uuids": [str(pathway.uuid) for pathway in pathways],
+            "priority_layer_uuids": [str(pwl.get("uuid")) for pwl in priority_layers],
+            "values": matrix_values,
+        }
 
     def get_matrix_values(self) -> typing.List[typing.List[int]]:
         """
@@ -445,7 +467,7 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
                             "QLineEdit:hover {border: 1px solid gray; background: white;}"
                         )
             settings_manager.set_value(
-                Settings.SCENARIO_IMPACT_MATRIX, self.get_impact_matrix_mapping()
+                Settings.SCENARIO_IMPACT_MATRIX, json.dumps(self.get_impact_matrix())
             )
 
     def setup_legend(self):
@@ -502,6 +524,21 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
     def _on_accepted(self):
         """Validates user input before closing."""
         settings_manager.set_value(
-            Settings.SCENARIO_IMPACT_MATRIX, self.get_impact_matrix_mapping()
+            Settings.SCENARIO_IMPACT_MATRIX, json.dumps(self.get_impact_matrix())
         )
         self.accept()
+
+    def show_message(self, message, level=Qgis.Info, duration: int = 0):
+        """Shows message on the main widget message bar.
+
+        :param message: Text message
+        :type message: str
+
+        :param level: Message level type
+        :type level: Qgis.MessageLevel
+
+        :param duration: Duration of the shown message
+        :type level: int
+        """
+        self.message_bar.clearWidgets()
+        self.message_bar.pushMessage(message, level=level, duration=duration)
