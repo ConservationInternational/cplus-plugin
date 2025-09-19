@@ -633,6 +633,13 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             activity["mask_uuids"] = mask_uuids
             activity["mask_paths"] = []
 
+        impact_matrix_dict = dict()
+        impact_matrix = settings_manager.get_value(
+            Settings.SCENARIO_IMPACT_MATRIX, dict()
+        )
+        if len(impact_matrix) > 0:
+            impact_matrix_dict = json.loads(impact_matrix)
+
         self.scenario_detail = {
             "scenario_name": old_scenario_dict["name"],
             "scenario_desc": old_scenario_dict["description"],
@@ -671,6 +678,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             "clip_to_studyarea": self.clip_to_studyarea,
             "studyarea_path": studyarea_path,
             "studyarea_layer_uuid": studyarea_layer_uuid,
+            "relative_impact_matrix": impact_matrix_dict,
         }
 
     def __execute_scenario_analysis(self) -> None:
