@@ -253,3 +253,12 @@ MEAN_BASED_IRRECOVERABLE_CARBON_EXPRESSION_DESCRIPTION = (
     "no overlapping pixels with the reference layer in the "
     "area of interest.</b>"
 )
+
+NATUREBASE_CARBON_IMPACT_EXPRESSION_DESCRIPTION = (
+    "The total carbon impact (tCO2e/yr) of "
+    "an activity by summing the carbon mitigation values of the Naturebase "
+    "pathways in the activity. <br><b>NOTE: A "
+    "value of -1.0 implies no Naturebase pathways in the activity "
+    "or no overlapping pixels with the reference layer in the "
+    "area of interest.</b>"
+)

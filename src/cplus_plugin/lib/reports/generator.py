@@ -45,6 +45,7 @@ from qgis.core import (
 
 from qgis.PyQt import QtCore, QtGui, QtXml
 
+from ..carbon import calculate_activity_naturebase_carbon_impact
 from .comparison_table import ScenarioComparisonTableInfo
 from ...conf import settings_manager
 from ...definitions.constants import (
@@ -69,7 +70,7 @@ from ...definitions.defaults import (
 )
 from .layout_items import BasicScenarioDetailsItem, CplusMapRepeatItem
 from .metrics import create_metrics_expression_context, evaluate_activity_metric
-from ...models.base import Activity, ScenarioResult
+from ...models.base import Activity, NcsPathway
 from ...models.helpers import extent_to_project_crs_extent
 from ...models.report import (
     ActivityContextInfo,
@@ -1770,12 +1771,19 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             for mc in self._metrics_configuration.metric_columns:
                 columns.append(mc.to_qgs_column())
         else:
-            # Otherwise just add the area column
+            # Otherwise just add the area and carbon columns
             area_column = QgsLayoutTableColumn(tr("Area (ha)"))
             area_column.setWidth(0)
             area_column.setHAlignment(QtCore.Qt.AlignHCenter)
 
             columns.append(area_column)
+
+            carbon_value_column = QgsLayoutTableColumn(tr("Total Carbon (tCO2e/yr)"))
+            carbon_value_column.setWidth(0)
+            carbon_value_column.setHAlignment(QtCore.Qt.AlignHCenter)
+
+            # Insert the carbon value column as the second
+            columns.insert(1, carbon_value_column)
 
         parent_table.setHeaders(columns)
 
@@ -1798,9 +1806,16 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 log(f"Pixel value not found in calculation")
                 area_info = tr("<Pixel value not found>")
 
+            # Activity naturebase carbon impact value
+            activity_naturebase_carbon = calculate_activity_naturebase_carbon_impact(
+                activity
+            )
+
             if self._use_custom_metrics:
                 activity_area = area_info if isinstance(area_info, Number) else 0
-                activity_context_info = ActivityContextInfo(activity, activity_area)
+                activity_context_info = ActivityContextInfo(
+                    activity, activity_area, activity_naturebase_carbon
+                )
 
                 highlight_error = False
 
@@ -1862,6 +1877,12 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 area_cell = QgsTableCell(formatted_area)
 
                 activity_row_cells.append(area_cell)
+
+                carbon_value_cell = QgsTableCell(
+                    self.format_number(activity_naturebase_carbon)
+                )
+
+                activity_row_cells.insert(1, carbon_value_cell)
 
             rows_data.append(activity_row_cells)
 
