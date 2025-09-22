@@ -26,7 +26,13 @@ import typer
 LOCAL_ROOT_DIR = Path(__file__).parent.resolve()
 SRC_NAME = "cplus_plugin"
 PACKAGE_NAME = SRC_NAME.replace("_", "")
-TEST_FILES = ["test", "test_suite.py", "docker-compose.yml", "scripts", "requirements-testing.txt"]
+TEST_FILES = [
+    "test",
+    "test_suite.py",
+    "docker-compose.yml",
+    "scripts",
+    "requirements-testing.txt"
+]
 app = typer.Typer()
 
 
