@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-""" QGIS CPLUS plugin admin operations
-
-"""
+"""QGIS CPLUS plugin admin operations"""
 
 
 import os
@@ -31,7 +29,7 @@ TEST_FILES = [
     "test_suite.py",
     "docker-compose.yml",
     "scripts",
-    "requirements-testing.txt"
+    "requirements-testing.txt",
 ]
 app = typer.Typer()
 
