@@ -4,7 +4,7 @@
 """
 
 import unittest
-
+import json
 import os
 import uuid
 import processing
@@ -150,6 +150,279 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         self.assertEqual(stat.minimumValue, 0.5)
         self.assertEqual(stat.maximumValue, 5.0)
+
+    def test_scenario_pathways_weighting_impact_matrix(self):
+        """Test the weighting of NCS pathways with relative impact matrix"""
+        pathway_layer_directory = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "data", "pathways", "layers"
+        )
+
+        pathway_layer_path = os.path.join(pathway_layer_directory, "test_pathway_4.tif")
+
+        priority_layers_directory = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "data", "priority", "layers"
+        )
+
+        priority_layer_path_1 = os.path.join(
+            priority_layers_directory, "test_priority_2.tif"
+        )
+        priority_layer_path_2 = os.path.join(
+            priority_layers_directory, "test_priority_3.tif"
+        )
+        priority_layer_path_3 = os.path.join(
+            priority_layers_directory, "test_priority_4.tif"
+        )
+        priority_layer_path_4 = os.path.join(
+            priority_layers_directory, "test_priority_5.tif"
+        )
+
+        test_priority_group_1 = {
+            "uuid": "a4f76e6c-9f83-4a9c-b700-fb1ae04860a1",
+            "name": "test_priority_group_1",
+            "description": "test_priority_group_description",
+            "value": 5,
+        }
+
+        test_priority_group_2 = {
+            "uuid": "a4f76e6c-9f83-4a9c-b700-fb1ae04860a2",
+            "name": "test_priority_group_2",
+            "description": "test_priority_group_description",
+            "value": 3,
+        }
+
+        test_priority_group_3 = {
+            "uuid": "a4f76e6c-9f83-4a9c-b700-fb1ae04860a3",
+            "name": "test_priority_group_3",
+            "description": "test_priority_group_description",
+            "value": 4,
+        }
+
+        test_priority_group_4 = {
+            "uuid": "a4f76e6c-9f83-4a9c-b700-fb1ae04860a4",
+            "name": "test_priority_group_4",
+            "description": "test_priority_group_description",
+            "value": 3,
+        }
+
+        priority_layer_1 = {
+            "uuid": "c931282f-db2d-4644-9786-6720b3ab206a",
+            "name": "test_priority_layer_1",
+            "description": "test_priority_layer_description",
+            "selected": False,
+            "path": priority_layer_path_1,
+            "groups": [test_priority_group_1],
+        }
+
+        priority_layer_2 = {
+            "uuid": "c931282f-db2d-4644-9786-6720b3ab206b",
+            "name": "test_priority_layer_2",
+            "description": "test_priority_layer_description",
+            "selected": False,
+            "path": priority_layer_path_2,
+            "groups": [test_priority_group_2],
+        }
+
+        priority_layer_3 = {
+            "uuid": "c931282f-db2d-4644-9786-6720b3ab206c",
+            "name": "test_priority_layer_3",
+            "description": "test_priority_layer_description",
+            "selected": False,
+            "path": priority_layer_path_3,
+            "groups": [test_priority_group_3],
+        }
+
+        priority_layer_4 = {
+            "uuid": "c931282f-db2d-4644-9786-6720b3ab206d",
+            "name": "test_priority_layer_4",
+            "description": "test_priority_layer_description",
+            "selected": False,
+            "path": priority_layer_path_4,
+            "groups": [test_priority_group_4],
+        }
+
+        settings_manager.save_priority_group(test_priority_group_1)
+        settings_manager.save_priority_group(test_priority_group_2)
+        settings_manager.save_priority_group(test_priority_group_3)
+        settings_manager.save_priority_group(test_priority_group_4)
+
+        settings_manager.save_priority_layer(priority_layer_1)
+        settings_manager.save_priority_layer(priority_layer_2)
+        settings_manager.save_priority_layer(priority_layer_3)
+        settings_manager.save_priority_layer(priority_layer_4)
+
+        test_pathway = NcsPathway(
+            uuid=uuid.uuid4(),
+            name="test_pathway",
+            description="test_description",
+            path=pathway_layer_path,
+            priority_layers=[
+                priority_layer_1,
+                priority_layer_2,
+                priority_layer_3,
+                priority_layer_4,
+            ],
+        )
+
+        test_layer = QgsRasterLayer(test_pathway.path, test_pathway.name)
+
+        test_extent = test_layer.extent()
+
+        spatial_extent = SpatialExtent(
+            bbox=[
+                test_extent.xMinimum(),
+                test_extent.xMaximum(),
+                test_extent.yMinimum(),
+                test_extent.yMaximum(),
+            ],
+            crs=test_layer.crs().authid(),
+        )
+
+        test_activity = Activity(
+            uuid=uuid.uuid4(),
+            name="test_activity",
+            description="test_description",
+            pathways=[test_pathway],
+        )
+
+        scenario = Scenario(
+            uuid=uuid.uuid4(),
+            name="Scenario",
+            description="Scenario description",
+            activities=[test_activity],
+            extent=spatial_extent,
+            priority_layer_groups=[
+                test_priority_group_1,
+                test_priority_group_2,
+                test_priority_group_3,
+                test_priority_group_4,
+            ],
+        )
+
+        analysis_task = ScenarioAnalysisTask(
+            "test_scenario_pathways_weighting",
+            "test_scenario_pathways_weighting_description",
+            [test_activity],
+            [
+                test_priority_group_1,
+                test_priority_group_2,
+                test_priority_group_3,
+                test_priority_group_4,
+            ],
+            test_layer.extent(),
+            scenario,
+        )
+
+        extent_string = (
+            f"{test_extent.xMinimum()},{test_extent.xMaximum()},"
+            f"{test_extent.yMinimum()},{test_extent.yMaximum()}"
+            f" [{test_layer.crs().authid()}]"
+        )
+
+        base_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "data",
+            "pathways",
+        )
+
+        scenario_directory = os.path.join(
+            f"{base_dir}",
+            f'scenario_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+            f"_{str(uuid.uuid4())[:4]}",
+        )
+
+        analysis_task.scenario_directory = scenario_directory
+
+        settings_manager.set_value(Settings.BASE_DIR, base_dir)
+        settings_manager.set_value(Settings.PATHWAY_SUITABILITY_INDEX, 2.0)
+
+        # Using positive impact matrix
+        settings_manager.set_value(
+            Settings.SCENARIO_IMPACT_MATRIX,
+            json.dumps(
+                {
+                    "pathway_uuids": [str(test_pathway.uuid)],
+                    "priority_layer_uuids": [
+                        priority_layer_1.get("uuid"),
+                        priority_layer_2.get("uuid"),
+                        priority_layer_3.get("uuid"),
+                        priority_layer_4.get("uuid"),
+                    ],
+                    "values": [[3, 2, 1, 3]],
+                }
+            ),
+        )
+
+        past_stat = test_layer.dataProvider().bandStatistics(1)
+
+        self.assertEqual(past_stat.minimumValue, 0.0)
+        self.assertEqual(past_stat.maximumValue, 1.0)
+
+        results = analysis_task.run_pathways_weighting(
+            [test_activity],
+            [
+                test_priority_group_1,
+                test_priority_group_2,
+                test_priority_group_3,
+                test_priority_group_4,
+            ],
+            extent_string,
+            temporary_output=False,
+        )
+
+        self.assertTrue(results)
+
+        result_layer = QgsRasterLayer(test_pathway.path, test_pathway.name)
+
+        stat = result_layer.dataProvider().bandStatistics(1)
+
+        self.assertEqual(stat.minimumValue, 0.0)
+        self.assertEqual(stat.maximumValue, 30.0)
+
+        # Using negative impact matrix
+
+        test_pathway.path = pathway_layer_path
+
+        settings_manager.set_value(
+            Settings.SCENARIO_IMPACT_MATRIX,
+            json.dumps(
+                {
+                    "pathway_uuids": [str(test_pathway.uuid)],
+                    "priority_layer_uuids": [
+                        priority_layer_1.get("uuid"),
+                        priority_layer_2.get("uuid"),
+                        priority_layer_3.get("uuid"),
+                        priority_layer_4.get("uuid"),
+                    ],
+                    "values": [[-3, 2, 1, -3]],
+                }
+            ),
+        )
+
+        past_stat = test_layer.dataProvider().bandStatistics(1)
+
+        self.assertEqual(past_stat.minimumValue, 0.0)
+        self.assertEqual(past_stat.maximumValue, 1.0)
+
+        results = analysis_task.run_pathways_weighting(
+            [test_activity],
+            [
+                test_priority_group_1,
+                test_priority_group_2,
+                test_priority_group_3,
+                test_priority_group_4,
+            ],
+            extent_string,
+            temporary_output=False,
+        )
+
+        self.assertTrue(results)
+
+        result_layer = QgsRasterLayer(test_pathway.path, test_pathway.name)
+
+        stat = result_layer.dataProvider().bandStatistics(1)
+
+        self.assertEqual(stat.minimumValue, 0.0)
+        self.assertEqual(stat.maximumValue, 42.0)
 
     def test_scenario_activities_creation(self):
         pathway_layer_directory = os.path.join(
