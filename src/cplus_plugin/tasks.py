@@ -2467,6 +2467,7 @@ class ScenarioAnalysisTask(QgsTask):
                     for priority_layer in settings_priority_layers:
                         if priority_layer.get("name") == layer.get("name"):
                             for group in priority_layer.get("groups", []):
+                                impact_value = None
                                 try:
                                     row = pathway_uuids.index(str(pathway.uuid))
                                     col = priority_layer_uuids.index(layer["uuid"])
@@ -2475,7 +2476,6 @@ class ScenarioAnalysisTask(QgsTask):
                                         f"Could not find pathway uuid {pathway.uuid} or "
                                         f"priority layer uuid {layer['uuid']} in the relative impact matrix."
                                     )
-                                    impact_value = None
                                 else:
                                     if row < len(relative_impact_values) and col < len(
                                         relative_impact_values[row]
@@ -2486,7 +2486,6 @@ class ScenarioAnalysisTask(QgsTask):
                                             f"Index out of range for relative impact "
                                             f"matrix: row={row}, col={col}."
                                         )
-                                        impact_value = None
 
                                 value = group.get("value")
                                 priority_group_coefficient = float(value)
