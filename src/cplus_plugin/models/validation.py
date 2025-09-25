@@ -19,6 +19,10 @@ class RuleType(IntEnum):
     CARBON_RESOLUTION = 4
     PROJECTED_CRS = 5
     NORMALIZED = 6
+    CROPLAND_SUPERSEDES = 7
+    WETLAND_SUPERSEDES = 8
+    BIODIVERSITY_SAFEGUARD = 9
+    ACTION_HIERARCHY = 10
 
 
 class ValidationCategory(IntEnum):
