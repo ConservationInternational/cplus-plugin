@@ -686,8 +686,20 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Save current scenario details into settings"""
         scenario_name = self.scenario_name.text()
         scenario_description = self.scenario_description.text()
-        extent = self.extent_box.outputExtent()
+
         self.extent_box.setOutputCrs(self.crs_selector.crs())
+        aoi_layer = QgsVectorLayer(self.get_studyarea_path(), "studyarea_path")
+        if (
+            self._aoi_source_group.checkedId() == AreaOfInterestSource.LAYER.value
+            and aoi_layer.isValid()
+        ):
+            aoi_layer_extent = aoi_layer.extent()
+            aoi_layer_crs = aoi_layer.crs()
+            extent = self.transform_extent(
+                aoi_layer_extent, aoi_layer_crs, self.crs_selector.crs()
+            )
+        else:
+            extent = self.extent_box.outputExtent()
 
         extent_box = [
             extent.xMinimum(),
@@ -699,6 +711,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         settings_manager.set_value(Settings.SCENARIO_NAME, scenario_name)
         settings_manager.set_value(Settings.SCENARIO_DESCRIPTION, scenario_description)
         settings_manager.set_value(Settings.SCENARIO_EXTENT, extent_box)
+
         settings_manager.set_value(
             Settings.SCENARIO_CRS, self.crs_selector.crs().authid()
         )

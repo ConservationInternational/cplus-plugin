@@ -1255,7 +1255,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
     def initialize_default_layers_table(self):
         """Initialize the default layers table."""
         self.pwl_model = QStandardItemModel()
-        headers = ["ID", "Name", "Type", "Size", "CRS", "Version", "Created"]
+        headers = ["ID", "#", "Name", "Type", "Size", "CRS", "Version", "Created"]
 
         for col, header in enumerate(headers):
             item = QStandardItem(header)
@@ -1273,8 +1273,11 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             1, QHeaderView.Interactive
         )
 
-        self.tbl_pwl_layers.sortByColumn(0, Qt.AscendingOrder)
-        self.tbl_pwl_layers.setAlternatingRowColors(False)
+        self.tbl_pwl_layers.verticalHeader().hide()
+        self.tbl_pwl_layers.setColumnWidth(1, 50)
+
+        self.tbl_pwl_layers.sortByColumn(1, Qt.AscendingOrder)
+        self.tbl_pwl_layers.setAlternatingRowColors(True)
         self.tbl_pwl_layers.setColumnHidden(0, True)  # Hide the column (ID)
         # Set minimum height of the table to accommodate 10 rows or the number of rows, whichever is smaller
         row_height = self.tbl_pwl_layers.verticalHeader().defaultSectionSize()
@@ -1316,9 +1319,10 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         )
 
         if self.default_priority_layers is not None:
-            for pwl in self.default_priority_layers:
+            for idx, pwl in enumerate(self.default_priority_layers):
                 items = [
                     QStandardItem(str(pwl.get("layer_uuid"))),
+                    QStandardItem(str(idx + 1)),
                     QStandardItem(str(pwl.get("name"))),
                     QStandardItem(
                         "Raster"

@@ -14,7 +14,10 @@ from qgis.core import (
     QgsTask,
     QgsProcessingFeedback,
     QgsProcessingContext,
+    QgsProject,
     QgsFileDownloader,
+    QgsCoordinateTransform,
+    QgsCoordinateReferenceSystem,
 )
 from qgis.PyQt import QtCore
 
@@ -32,6 +35,7 @@ from ..utils import (
     convert_size,
 )
 from .request import CplusApiRequest, CplusApiUrl
+from ..definitions.defaults import DEFAULT_CRS_ID
 
 
 class FetchDefaultLayerTask(QgsTask):
@@ -654,6 +658,18 @@ class DefaultPriorityLayerDownloadTask(QgsTask):
         extent_rectangle = QgsRectangle(
             float(extent[0]), float(extent[2]), float(extent[1]), float(extent[3])
         )
+
+        source_crs = QgsCoordinateReferenceSystem(
+            settings_manager.get_value(Settings.SCENARIO_CRS, f"EPSG:{DEFAULT_CRS_ID}")
+        )
+
+        dest_crs = QgsCoordinateReferenceSystem("EPSG:4326")
+        if source_crs.isValid() and source_crs != dest_crs:
+            transform = QgsCoordinateTransform(
+                source_crs, dest_crs, QgsProject.instance()
+            )
+            extent_rectangle = transform.transformBoundingBox(extent_rectangle)
+
         url_bbox_part = extent_to_url_param(extent_rectangle)
         if not url_bbox_part:
             log(
