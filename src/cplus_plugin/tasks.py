@@ -8,6 +8,7 @@ import json
 import math
 import os
 import uuid
+import traceback
 import typing
 from pathlib import Path
 
@@ -353,6 +354,11 @@ class ScenarioAnalysisTask(QgsTask):
             extent_string,
             temporary_output=not save_output,
         )
+
+        # Normalize the activities.
+        # This is useful when weighting pathways with relative impact matrix
+        # Activities created in previous step may have values greater than 1
+        self.run_activity_normalization()
 
         # Run masking of the activities layers
         masking_layers = self.get_masking_layers()
@@ -1528,6 +1534,114 @@ class ScenarioAnalysisTask(QgsTask):
             return False
 
         return True
+
+    def run_activity_normalization(
+        self,
+    ) -> bool:
+        """Runs normalization analysis on the the activities.
+        The formula is: (activity - min) / (max - min)
+
+        :returns: True if the task operation was successfully completed else False.
+        :rtype: bool
+        """
+        if self.processing_cancelled:
+            return False
+
+        self.set_status_message(tr("Normalization of activities"))
+        pathways: typing.List[NcsPathway] = []
+
+        normalized_activities_directory = os.path.join(
+            self.scenario_directory, "normalized_activities"
+        )
+        FileUtils.create_new_dir(normalized_activities_directory)
+
+        try:
+            for activity in self.analysis_activities:
+                if activity.path is None or activity.path == "":
+                    msg = f"No defined activity layer for the activity {activity.name}"
+                    self.set_info_message(
+                        tr(msg),
+                        level=Qgis.Critical,
+                    )
+                    self.log_message(msg)
+                    return False
+
+                if self.processing_cancelled:
+                    return False
+
+                activity_layer = QgsRasterLayer(activity.path, activity.name)
+
+                if not activity_layer.isValid():
+                    self.log_message(
+                        f"Activity layer {activity.name} is not valid, "
+                        f"skipping the layer from normalization."
+                    )
+                    continue
+
+                provider = activity_layer.dataProvider()
+                band_statistics = provider.bandStatistics(1)
+                min_value = band_statistics.minimumValue
+                max_value = band_statistics.maximumValue
+
+                if min_value is None or max_value is None:
+                    self.log_message(
+                        f"Activity layer {activity.name} has no valid "
+                        f"statistics, skipping the layer from normalization."
+                    )
+                    continue
+
+                if min_value >= 0 and max_value <= 1:
+                    new_path = FileUtils.copy_file(
+                        activity.path, normalized_activities_directory
+                    )
+                    if new_path and os.path.exists(new_path):
+                        activity.path = new_path
+                        self.log_message(
+                            f"Activity layer {activity.name} is already normalized (min={min_value}, max={max_value}), "
+                            f"skipping the layer from normalization."
+                        )
+                    continue
+
+                self.log_message(f"Normalizing {activity.name} activity layer \n")
+
+                expression = f"(A - {min_value}) / ({max_value} - {min_value})"
+                output_path = os.path.join(
+                    f"{normalized_activities_directory}",
+                    f"{Path(activity.path).stem}_norm_{str(uuid.uuid4())[:4]}.tif",
+                )
+                alg_params = {
+                    "INPUT_A": activity.path,
+                    "BAND_A": 1,
+                    "FORMULA": expression,
+                    "OPTIONS": "COMPRESS=DEFLATE|ZLEVEL=6|TILED=YES",  # Compress the layer
+                    "OUTPUT": output_path,
+                }
+
+                self.feedback = QgsProcessingFeedback()
+                self.feedback.progressChanged.connect(self.update_progress)
+
+                if self.processing_cancelled:
+                    return False
+
+                result = processing.run(
+                    "gdal:rastercalculator",
+                    alg_params,
+                    context=self.processing_context,
+                    feedback=self.feedback,
+                )
+                if result.get("OUTPUT"):
+                    activity.path = result.get("OUTPUT")
+                else:
+                    self.log_message(
+                        f"Problem normalizing activity layer {activity.name}, "
+                        f"skipping the layer from normalization."
+                    )
+            return True
+        except Exception as e:
+            self.log_message(f"Problem normalizing activities, {e} \n")
+            self.log_message(traceback.format_exc())
+            self.cancel_task(e)
+            return False
 
     def run_activities_masking(
         self, activities, masking_layers, extent, temporary_output=False
