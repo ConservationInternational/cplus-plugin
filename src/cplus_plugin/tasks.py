@@ -1538,7 +1538,7 @@ class ScenarioAnalysisTask(QgsTask):
     def run_activity_normalization(
         self,
     ) -> bool:
-        """Runs normalization analysis on the the activities.
+        """Runs normalization analysis on the activities.
         The formula is: (activity - min) / (max - min)
 
         :returns: True if the task operation was successfully completed else False.
@@ -1556,7 +1556,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         try:
             for activity in self.analysis_activities:
-                if activity.path is None or activity.path == "":
+                if not activity.path:
                     msg = f"No defined activity layer for the activity {activity.name}"
                     self.set_info_message(
                         tr(msg),

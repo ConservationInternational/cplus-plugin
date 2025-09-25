@@ -34,6 +34,8 @@ IMPACT_MATRIX_COLORS = {
     3: {"color": "#1a9641", "impact": "Best"},
 }
 
+DEFAULT_CELL_STYLE = "QLineEdit {background: white;} QLineEdit:hover {border: 1px solid gray; background: white;}"
+
 
 class RotatedHeaderView(QtWidgets.QHeaderView):
     """
@@ -146,10 +148,7 @@ class TransMatrixEdit(QtWidgets.QLineEdit):
         # Reset style for empty input
         if text == "":
             self.setText("")
-            self.setStyleSheet(
-                "QLineEdit {background: white;} "
-                "QLineEdit:hover {border: 1px solid gray; background: white;}"
-            )
+            self.setStyleSheet(DEFAULT_CELL_STYLE)
             return
 
         try:
@@ -164,10 +163,7 @@ class TransMatrixEdit(QtWidgets.QLineEdit):
         except ValueError:
             # Invalid input: reset to empty and default style
             self.setText("")
-            self.setStyleSheet(
-                "QLineEdit {background: white;} "
-                "QLineEdit:hover {border: 1px solid gray; background: white;}"
-            )
+            self.setStyleSheet(DEFAULT_CELL_STYLE)
 
     def focusInEvent(self, event):
         """
@@ -376,10 +372,7 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
                     if isinstance(cell_widget, TransMatrixEdit):
                         if value is None:
                             cell_widget.setText("")
-                            cell_widget.setStyleSheet(
-                                "QLineEdit {background: white;} "
-                                "QLineEdit:hover {border: 1px solid gray; background: white;}"
-                            )
+                            cell_widget.setStyleSheet(DEFAULT_CELL_STYLE)
                         else:
                             cell_widget.setText(str(value))
                             color = IMPACT_MATRIX_COLORS.get(value, {}).get(
@@ -462,10 +455,7 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
                     cell_widget = self.rel_impact_matrix.cellWidget(row, col)
                     if isinstance(cell_widget, TransMatrixEdit):
                         cell_widget.setText("")
-                        cell_widget.setStyleSheet(
-                            "QLineEdit {background: white;} "
-                            "QLineEdit:hover {border: 1px solid gray; background: white;}"
-                        )
+                        cell_widget.setStyleSheet(DEFAULT_CELL_STYLE)
             settings_manager.set_value(
                 Settings.SCENARIO_IMPACT_MATRIX, json.dumps(self.get_impact_matrix())
             )
