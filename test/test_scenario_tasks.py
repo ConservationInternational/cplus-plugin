@@ -647,6 +647,97 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         self.assertTrue(result_layer.isValid())
 
+    def test_scenario_activity_normalization(self):
+        "Test the normalization of activities"
+        activities_layer_directory = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "data", "activities", "layers"
+        )
+
+        activity_layer_path_1 = os.path.join(
+            activities_layer_directory, "test_activity_1.tif"
+        )
+
+        test_activity = Activity(
+            uuid=uuid.uuid4(),
+            name="test_activity",
+            description="test_description",
+            pathways=[],
+            path=activity_layer_path_1,
+            mask_paths=[],
+        )
+
+        settings_manager.save_activity(test_activity)
+
+        activity_layer = QgsRasterLayer(test_activity.path, test_activity.name)
+
+        test_extent = activity_layer.extent()
+
+        spatial_extent = SpatialExtent(
+            bbox=[
+                test_extent.xMinimum(),
+                test_extent.xMaximum(),
+                test_extent.yMinimum(),
+                test_extent.yMaximum(),
+            ],
+            crs=activity_layer.crs().authid(),
+        )
+
+        scenario = Scenario(
+            uuid=uuid.uuid4(),
+            name="Scenario",
+            description="Scenario description",
+            activities=[test_activity],
+            extent=spatial_extent,
+            priority_layer_groups=[],
+        )
+
+        analysis_task = ScenarioAnalysisTask(
+            "test_scenario_activities_normalization",
+            "test_scenario_activities_normalization_description",
+            [test_activity],
+            [],
+            test_extent,
+            scenario,
+        )
+
+        base_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "data",
+            "activities",
+        )
+
+        scenario_directory = os.path.join(
+            f"{base_dir}",
+            f'scenario_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+            f"_{str(uuid.uuid4())[:4]}",
+        )
+
+        analysis_task.scenario_directory = scenario_directory
+
+        settings_manager.set_value(Settings.BASE_DIR, base_dir)
+
+        # Before normalization, check if the activity layer stats are correct
+        activity_layer = QgsRasterLayer(test_activity.path, test_activity.name)
+        first_layer_stat = activity_layer.dataProvider().bandStatistics(1)
+
+        self.assertEqual(first_layer_stat.minimumValue, 1.0)
+        self.assertEqual(first_layer_stat.maximumValue, 19.0)
+
+        results = analysis_task.run_activity_normalization()
+
+        self.assertTrue(results)
+
+        self.assertIsInstance(results, bool)
+        self.assertTrue(results)
+
+        self.assertIsNotNone(test_activity.path)
+
+        result_layer = QgsRasterLayer(test_activity.path, test_activity.name)
+
+        result_stat = result_layer.dataProvider().bandStatistics(1)
+        self.assertEqual(result_stat.minimumValue, 0.0)
+        self.assertEqual(result_stat.maximumValue, 1.0)
+
     def test_scenario_layers_reprojection(self):
         """Test the reprojection of NCS pathways and priority layers"""
         pathway_layer_directory = os.path.join(
