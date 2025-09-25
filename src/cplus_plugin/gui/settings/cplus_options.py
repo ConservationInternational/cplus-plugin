@@ -1315,23 +1315,24 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             "priority_layer"
         )
 
-        for pwl in self.default_priority_layers:
-            items = [
-                QStandardItem(str(pwl.get("layer_uuid"))),
-                QStandardItem(str(pwl.get("name"))),
-                QStandardItem(
-                    "Raster"
-                    if pwl.get("layer_type") == LayerType.RASTER.value
-                    else "Vector"
-                ),
-                QStandardItem(str(convert_size(pwl.get("size")))),
-                QStandardItem(str(pwl.get("metadata", {}).get("crs"))),
-                QStandardItem(str(pwl.get("version", "v0.0.1"))),
-                QStandardItem(str(pwl.get("created_on"))),
-            ]
-            self.pwl_model.appendRow(items)
+        if self.default_priority_layers is not None:
+            for pwl in self.default_priority_layers:
+                items = [
+                    QStandardItem(str(pwl.get("layer_uuid"))),
+                    QStandardItem(str(pwl.get("name"))),
+                    QStandardItem(
+                        "Raster"
+                        if pwl.get("layer_type") == LayerType.RASTER.value
+                        else "Vector"
+                    ),
+                    QStandardItem(str(convert_size(pwl.get("size")))),
+                    QStandardItem(str(pwl.get("metadata", {}).get("crs"))),
+                    QStandardItem(str(pwl.get("version", "v0.0.1"))),
+                    QStandardItem(str(pwl.get("created_on"))),
+                ]
+                self.pwl_model.appendRow(items)
 
-        self.priority_layers_changed()
+            self.priority_layers_changed()
 
     def _on_add_pwl_layer(self, activated: bool):
         """Slot raised to add a new PWL layer."""
