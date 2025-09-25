@@ -121,7 +121,7 @@ from ..utils import (
     FileUtils,
     write_to_file,
 )
-
+from ..lib.validation.ncs_decision_tree import ApplyNcsDecisionTreeAlgorithm
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/qgis_cplus_main_dockwidget.ui")
@@ -163,6 +163,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         # Insert widget for step 2
         self.activity_widget = ActivityContainerWidget(self, self.message_bar)
         self.tab_widget.insertTab(1, self.activity_widget, self.tr("Step 2"))
+        self.tab_widget.setTabToolTip(1, self.tr("Here you can select activities and pathways"))
         self.tab_widget.currentChanged.connect(self.on_tab_step_changed)
 
         # Step 3, priority weighting layers initialization
@@ -2071,6 +2072,52 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     transformed_extent.yMaximum(),
                 ]
             self.analysis_extent.crs = destination_crs.authid()
+
+            dt_alg = ApplyNcsDecisionTreeAlgorithm()
+            pixel_size = 30.0
+            nodata_val = -9999
+            dt_extent = QgsRectangle(
+                float(self.analysis_extent.bbox[0]),
+                float(self.analysis_extent.bbox[2]),
+                float(self.analysis_extent.bbox[1]),
+                float(self.analysis_extent.bbox[3]),
+            )
+
+            scenario_dir = settings_manager.get_value(Settings.BASE_DIR)
+            os.makedirs(scenario_dir, exist_ok=True)
+
+            for activity in self.analysis_activities:
+                out_name = f"{self.analysis_scenario_name}__{activity.name}__decision_protect.tif"
+                out_path = os.path.join(scenario_dir, out_name)
+
+                dt_params = {
+                    dt_alg.P_ACTIVITY_ID: str(activity.uuid),
+                    dt_alg.P_TARGET_CRS: destination_crs,
+                    dt_alg.P_EXTENT: dt_extent,
+                    dt_alg.P_PIXEL: pixel_size,
+                    dt_alg.P_NODATA: nodata_val,
+                    dt_alg.P_SELECTED_ACTION: 0,  # 0=Protect; see CHOICES_ACTION
+                    dt_alg.O_SELECTED: out_path,
+                }
+                try:
+                    dt_result = dt_alg.processAlgorithm(
+                        dt_params,
+                        self.processing_context,
+                        self.position_feedback,
+                    )
+                    mask_path = dt_result[dt_alg.O_SELECTED]
+
+                    # Ensure mask_paths exists
+                    if not hasattr(activity, "mask_paths") or activity.mask_paths is None:
+                        activity.mask_paths = []
+
+                    activity.mask_paths.append(mask_path)
+                except Exception as e:
+                    log(
+                        tr(f"Decision Tree failed for {activity.name}: {e}"
+                        ),
+                        info=False
+                    )
 
             if self.processing_type.isChecked():
                 analysis_task = ScenarioAnalysisTaskApiClient(
