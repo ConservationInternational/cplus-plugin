@@ -2321,9 +2321,9 @@ class ScenarioAnalysisTask(QgsTask):
         """Runs weighting analysis on the pathways in the activities using
         the corresponding NCS PWLs.
 
-        The formula is: (suitability_index * pathway) +
-        (priority group coefficient 1 * PWL 1) +
-        (priority group coefficient 2 * PWL 2) ...
+        The formula is: (suitability_index * pathway) *
+        ((priority group coefficient 1 * impact weight * PWL 1) +
+        (priority group coefficient 2 * impact weight * PWL 2) ...)
 
         :param activities: List of the selected activities
         :type activities: typing.List[Activity]
