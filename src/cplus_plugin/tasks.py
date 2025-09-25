@@ -1548,7 +1548,6 @@ class ScenarioAnalysisTask(QgsTask):
             return False
 
         self.set_status_message(tr("Normalization of activities"))
-        pathways: typing.List[NcsPathway] = []
 
         normalized_activities_directory = os.path.join(
             self.scenario_directory, "normalized_activities"
