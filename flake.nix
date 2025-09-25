@@ -17,6 +17,7 @@
             ps.debugpy
             ps.future
             ps.psutil
+            ps.plotly
           ];
         };
       in qgisWithExtras;

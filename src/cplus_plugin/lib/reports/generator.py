@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import traceback
 import typing
+import uuid
 
 from qgis.core import (
     Qgis,
@@ -41,9 +42,12 @@ from qgis.core import (
     QgsTableCell,
     QgsTextFormat,
     QgsUnitTypes,
+    QgsMessageLog,
+    Qgis
 )
 
 from qgis.PyQt import QtCore, QtGui, QtXml
+from qgis.PyQt.QtGui import QColor
 
 from ..carbon import calculate_activity_naturebase_carbon_impact
 from .comparison_table import ScenarioComparisonTableInfo
@@ -80,6 +84,7 @@ from ...models.report import (
     ReportResult,
     ScenarioComparisonReportContext,
 )
+from .charts import PieChartRenderer
 from ...utils import (
     calculate_raster_area_by_pixel_value,
     clean_filename,
@@ -91,6 +96,25 @@ from .variables import create_bulleted_text, LayoutVariableRegister
 
 
 DEFAULT_AREA_DECIMAL_PLACES = 2
+
+
+def _qcolor_to_hex(c: QColor) -> str:
+    try:
+        return c.name(QColor.HexRgb) if isinstance(c, QColor) else "#888888"
+    except Exception:
+        return "#888888"
+
+
+def _activity_hex_color(activity) -> str:
+    """
+    Use the activity's scenario fill color (matches the map legend).
+    Falls back to grey if anything goes wrong.
+    """
+    try:
+        sym = activity.scenario_fill_symbol()
+        return _qcolor_to_hex(sym.color())
+    except Exception:
+        return "#888888"
 
 
 class BaseScenarioReportGeneratorTask(QgsTask):
@@ -1938,7 +1962,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                     move_up_items.append(background_item)
                     width_increase_items.append(background_item)
 
-                logo_item = self._layout.itemById(METRICS_LOGO)
+                logo_item = self._layout.itemById(METRICSlogO)
                 if logo_item is not None:
                     move_up_items.append(logo_item)
                     move_right_items.append(logo_item)
@@ -2040,6 +2064,86 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
         parent_table.setTableContents(rows_data)
 
+    def _add_scenario_area_by_activity_pie(self) -> None:
+        """Adds a pie chart to the layout showing area by activity
+        for the selected scenario.
+        """
+        # Build labels/values/colors from scenario data computed
+        log("scenario pie: start")
+
+        labels, values, colors = [], [], []
+        for act in self._context.scenario.activities:
+            pv = int(getattr(act, "style_pixel_value", -1))
+            area = float(self._pixel_area_info.get(pv, 0.0))
+            labels.append(act.name)
+            values.append(area)
+            colors.append(_activity_hex_color(act))
+
+        log(f"scenario pie: labels={labels}")
+        log(f"scenario pie: values={values} sum={sum(values)}")
+        if sum(values) <= 0:
+            log("scenario pie: no positive values - skip")
+            return
+
+        # Render PNG
+        out_dir = os.path.join(self.output_dir, "charts")
+        os.makedirs(out_dir, exist_ok=True)
+        png_path = os.path.join(out_dir, f"scenario_pie_{uuid.uuid4().hex}.png")
+        log(f"scenario pie: will write to {png_path}")
+        try:
+            PieChartRenderer.render_pie_png(
+                png_path, labels, values,
+                colors_hex=colors,  # Pass the colors list to the new renderer
+                size_px=560
+            )
+        except Exception as e:
+            log(f"scenario pie: render failed: {e!r}")
+            return
+
+        exists = os.path.exists(png_path)
+        size = os.path.getsize(png_path) if exists else 0
+        log(f"scenario pie: png exists={exists} size={size}")
+
+        if not exists or size == 0:
+            log("scenario pie: png missing/empty -> abort placement")
+            return
+
+        # Prefer a template Picture item with this ID
+        item = self._layout.itemById("ACTIVITY_SHARE_PIE_PIC_ID")
+        if isinstance(item, QgsLayoutItemPicture):
+            # Use the placeholder
+            item.setPicturePath(png_path)
+            item.setFrameEnabled(False)
+            item.setOpacity(1.0)
+            item.invalidateCache()
+            item.refresh()
+            item.setZValue(10**6)
+            log(
+                f"scenario pie: set picture path on ACTIVITY_SHARE_PIE_PIC_ID - {png_path}"
+            )
+        else:
+            log(
+                "scenario pie: placeholder missing or not a Picture; using fallback"
+            )
+            # Fallback: add a new picture on a specific page (here: last page)
+            target_page = self._layout.pageCollection().pageCount() - 1
+            pic = QgsLayoutItemPicture(self._layout)
+            pic.setPicturePath(png_path)
+            pic.attemptMove(
+                QgsLayoutPoint(15, 35, QgsUnitTypes.LayoutMillimeters),
+                True, False, target_page
+            )
+            pic.attemptResize(
+                QgsLayoutSize(120, 90, QgsUnitTypes.LayoutMillimeters)
+            )
+            self._layout.addLayoutItem(pic)
+
+            pic.setOpacity(1.0)
+            pic.invalidateCache()
+            pic.refresh()
+            pic.setZValue(10**6)
+            log("scenario pie: added fallback picture")
+
     def _run(self) -> ReportResult:
         """Runs report generation process."""
         super()._run()
@@ -2073,6 +2177,8 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
         # Populate table with priority weighting values
         self._populate_scenario_weighting_values()
+
+        self._add_scenario_area_by_activity_pie()
 
         # Set scenario layer in scenario map item
         self._update_main_map_layer()
