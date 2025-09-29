@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
- The plugin main window class.
+The plugin main window class.
 """
 
 import datetime
@@ -163,7 +163,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         # Insert widget for step 2
         self.activity_widget = ActivityContainerWidget(self, self.message_bar)
         self.tab_widget.insertTab(1, self.activity_widget, self.tr("Step 2"))
-        self.tab_widget.setTabToolTip(1, self.tr("Here you can select activities and pathways"))
+        self.tab_widget.setTabToolTip(
+            1, self.tr("Here you can select activities and pathways")
+        )
         self.tab_widget.currentChanged.connect(self.on_tab_step_changed)
 
         # Step 3, priority weighting layers initialization
@@ -716,9 +718,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.crs_selector.setCrs(crs)
 
         self.scenario_name.setText(scenario_name) if scenario_name is not None else None
-        self.scenario_description.setText(
-            scenario_description
-        ) if scenario_description is not None else None
+        (
+            self.scenario_description.setText(scenario_description)
+            if scenario_description is not None
+            else None
+        )
 
         if extent is not None:
             extent_rectangle = QgsRectangle(
@@ -1961,9 +1965,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             ],
             crs=settings_manager.get_value(
                 Settings.SCENARIO_CRS,
-                passed_extent_crs.authid()
-                if passed_extent_crs
-                else f"EPSG:{DEFAULT_CRS_ID}",
+                (
+                    passed_extent_crs.authid()
+                    if passed_extent_crs
+                    else f"EPSG:{DEFAULT_CRS_ID}"
+                ),
             ),
         )
         try:
@@ -2108,15 +2114,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     mask_path = dt_result[dt_alg.O_SELECTED]
 
                     # Ensure mask_paths exists
-                    if not hasattr(activity, "mask_paths") or activity.mask_paths is None:
+                    if (
+                        not hasattr(activity, "mask_paths")
+                        or activity.mask_paths is None
+                    ):
                         activity.mask_paths = []
 
                     activity.mask_paths.append(mask_path)
                 except Exception as e:
                     log(
-                        tr(f"Decision Tree failed for {activity.name}: {e}"
-                        ),
-                        info=False
+                        tr(f"Decision Tree failed for {activity.name}: {e}"), info=False
                     )
 
             if self.processing_type.isChecked():
@@ -2276,9 +2283,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             layer = instance_root.findLayer(layer.id())
             layer_clone = layer.clone()
             parent = layer.parent()
-            group.insertChildNode(
-                0, layer_clone
-            ) if group is not None else None  # Add to top of group
+            (
+                group.insertChildNode(0, layer_clone) if group is not None else None
+            )  # Add to top of group
             parent.removeChildNode(layer)
 
     def post_analysis(self, scenario_result, task, report_manager, progress_dialog):
@@ -2460,11 +2467,17 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             # Initiate report generation
             if load_landuse and load_highest_position:
-                self.run_report(progress_dialog, report_manager) if (
-                    progress_dialog is not None and report_manager is not None
-                ) else None
+                (
+                    self.run_report(progress_dialog, report_manager)
+                    if (progress_dialog is not None and report_manager is not None)
+                    else None
+                )
             else:
-                progress_dialog.processing_finished() if progress_dialog is not None else None
+                (
+                    progress_dialog.processing_finished()
+                    if progress_dialog is not None
+                    else None
+                )
 
         else:
             # Re-initializes variables if processing were cancelled by the user

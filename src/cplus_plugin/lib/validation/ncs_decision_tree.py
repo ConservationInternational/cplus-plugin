@@ -1,4 +1,5 @@
 """Decision tree processing algorithm for Nature-based Solutions (NCS)."""
+
 import os
 import tempfile
 import typing
@@ -24,6 +25,7 @@ from ...models.base import NcsPathway, NcsPathwayType
 
 
 # helpers
+
 
 def _tmp_tif() -> str:
     """Get a temporary filepath for a GTiff."""
@@ -113,12 +115,18 @@ def _materialize(
     try:
         out = _warp_clip(src, crs, extent, pixel_size, nodata)
     except Exception as ex:
-        log(f"DecisionTree: warp failed for '{getattr(mc,'name','?')}': {ex}", info=False)
+        log(
+            f"DecisionTree: warp failed for '{getattr(mc,'name','?')}': {ex}",
+            info=False,
+        )
         return None
 
     lyr = QgsRasterLayer(out, f"tmp_{getattr(mc, 'name', 'layer')}")
     if not lyr.isValid():
-        log(f"DecisionTree: invalid warped raster for '{getattr(mc,'name','?')}'", info=False)
+        log(
+            f"DecisionTree: invalid warped raster for '{getattr(mc,'name','?')}'",
+            info=False,
+        )
         try:
             os.remove(out)
         except Exception:
@@ -129,12 +137,14 @@ def _materialize(
     return lyr
 
 
-def _calcN(expr: str,
-           layers: typing.List[QgsRasterLayer],
-           out_path: str,
-           extent: QgsRectangle,
-           crs: QgsCoordinateReferenceSystem,
-           pixel_size: float) -> str:
+def _calcN(
+    expr: str,
+    layers: typing.List[QgsRasterLayer],
+    out_path: str,
+    extent: QgsRectangle,
+    crs: QgsCoordinateReferenceSystem,
+    pixel_size: float,
+) -> str:
     """
     N-ary raster calculator using a@1, b@1, c@1... variable refs.
     Layers must already be aligned (our _materialize does that).
@@ -153,10 +163,12 @@ def _calcN(expr: str,
     return out_path
 
 
-def _mosaic_sum(layers: typing.List[QgsRasterLayer],
-                crs: QgsCoordinateReferenceSystem,
-                extent: QgsRectangle,
-                pixel: float) -> typing.Optional[QgsRasterLayer]:
+def _mosaic_sum(
+    layers: typing.List[QgsRasterLayer],
+    crs: QgsCoordinateReferenceSystem,
+    extent: QgsRectangle,
+    pixel: float,
+) -> typing.Optional[QgsRasterLayer]:
     """
     Sum all input rasters, preserving magnitude (Float32).
     If only one layer, just return it.
@@ -178,10 +190,12 @@ def _mosaic_sum(layers: typing.List[QgsRasterLayer],
     return lyr if lyr.isValid() else None
 
 
-def _presence_mask(layer: QgsRasterLayer,
-                   extent: QgsRectangle,
-                   crs: QgsCoordinateReferenceSystem,
-                   pixel: float) -> QgsRasterLayer:
+def _presence_mask(
+    layer: QgsRasterLayer,
+    extent: QgsRectangle,
+    crs: QgsCoordinateReferenceSystem,
+    pixel: float,
+) -> QgsRasterLayer:
     """
     1 where layer > 0, else 0
     """
@@ -191,6 +205,7 @@ def _presence_mask(layer: QgsRasterLayer,
 
 
 # processing algo
+
 
 class ApplyNcsDecisionTreeAlgorithm(QgsProcessingAlgorithm):
     """
@@ -219,18 +234,27 @@ class ApplyNcsDecisionTreeAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterString(self.P_ACTIVITY_ID, tr("Activity ID (UUID)"))
         )
-        self.addParameter(QgsProcessingParameterCrs(self.P_TARGET_CRS, tr("Target CRS")))
-        self.addParameter(QgsProcessingParameterExtent(self.P_EXTENT, tr("Target Extent")))
+        self.addParameter(
+            QgsProcessingParameterCrs(self.P_TARGET_CRS, tr("Target CRS"))
+        )
+        self.addParameter(
+            QgsProcessingParameterExtent(self.P_EXTENT, tr("Target Extent"))
+        )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.P_PIXEL, tr("Pixel size (map units)"),
-                QgsProcessingParameterNumber.Double, 30.0, minValue=1e-6
+                self.P_PIXEL,
+                tr("Pixel size (map units)"),
+                QgsProcessingParameterNumber.Double,
+                30.0,
+                minValue=1e-6,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.P_NODATA, tr("NoData value"),
-                QgsProcessingParameterNumber.Integer, 0
+                self.P_NODATA,
+                tr("NoData value"),
+                QgsProcessingParameterNumber.Integer,
+                0,
             )
         )
         # User picks exactly one action to output
@@ -239,7 +263,7 @@ class ApplyNcsDecisionTreeAlgorithm(QgsProcessingAlgorithm):
                 self.P_SELECTED_ACTION,
                 tr("Selected action"),
                 options=self.CHOICES_ACTION,
-                defaultValue=0  # Protect by default
+                defaultValue=0,  # Protect by default
             )
         )
         # Single output
@@ -272,10 +296,10 @@ class ApplyNcsDecisionTreeAlgorithm(QgsProcessingAlgorithm):
         cropland, wetlands, grass_sav_shrub = [], [], []
 
         P_crops, M_crops, R_crops = [], [], []
-        P_wets,  M_wets,  R_wets  = [], [], []
+        P_wets, M_wets, R_wets = [], [], []
         P_other, M_other, R_other = [], [], []
 
-        R_forest, R_nonforest = [], []   # for biodiversity safeguard
+        R_forest, R_nonforest = [], []  # for biodiversity safeguard
 
         for p in pathways:
             if feedback.isCanceled():
@@ -288,10 +312,10 @@ class ApplyNcsDecisionTreeAlgorithm(QgsProcessingAlgorithm):
 
             # Biome grouping (prefer metadata; fallback on names)
             biome = (getattr(p, "biome", None) or getattr(p, "name", "")).lower()
-            is_crop = ("crop" in biome)
-            is_wet  = ("wetland" in biome)
+            is_crop = "crop" in biome
+            is_wet = "wetland" in biome
             is_grass_sav_shrub = any(k in biome for k in ("grass", "savanna", "shrub"))
-            is_forest = ("forest" in biome)
+            is_forest = "forest" in biome
 
             # populate biome lists (used to build presence masks C/W/G)
             if is_crop:
@@ -323,20 +347,19 @@ class ApplyNcsDecisionTreeAlgorithm(QgsProcessingAlgorithm):
         G = _presence_mask(G_sum, extent, tgt_crs, pixel) if G_sum else None
 
         P_c = _mosaic_sum(P_crops, tgt_crs, extent, pixel)
-        P_w = _mosaic_sum(P_wets,  tgt_crs, extent, pixel)
+        P_w = _mosaic_sum(P_wets, tgt_crs, extent, pixel)
         P_o = _mosaic_sum(P_other, tgt_crs, extent, pixel)
 
         M_c = _mosaic_sum(M_crops, tgt_crs, extent, pixel)
-        M_w = _mosaic_sum(M_wets,  tgt_crs, extent, pixel)
+        M_w = _mosaic_sum(M_wets, tgt_crs, extent, pixel)
         M_o = _mosaic_sum(M_other, tgt_crs, extent, pixel)
 
         R_c = _mosaic_sum(R_crops, tgt_crs, extent, pixel)
-        R_w = _mosaic_sum(R_wets,  tgt_crs, extent, pixel)
+        R_w = _mosaic_sum(R_wets, tgt_crs, extent, pixel)
         R_o = _mosaic_sum(R_other, tgt_crs, extent, pixel)
 
-        R_for = _mosaic_sum(R_forest,     tgt_crs, extent, pixel)
-        R_non = _mosaic_sum(R_nonforest,  tgt_crs, extent, pixel)
-
+        R_for = _mosaic_sum(R_forest, tgt_crs, extent, pixel)
+        R_non = _mosaic_sum(R_nonforest, tgt_crs, extent, pixel)
 
         # Short-circuit if nothing
         if not any([P_c, P_w, P_o, M_c, M_w, M_o, R_c, R_w, R_o]):
@@ -347,9 +370,8 @@ class ApplyNcsDecisionTreeAlgorithm(QgsProcessingAlgorithm):
         # ---------- ENFORCEMENT ORDER ----------
         # Helpers
         def _minus(
-                mask: QgsRasterLayer,
-                by: typing.Optional[QgsRasterLayer]
-            ) -> typing.Optional[QgsRasterLayer]:
+            mask: QgsRasterLayer, by: typing.Optional[QgsRasterLayer]
+        ) -> typing.Optional[QgsRasterLayer]:
             """Subtract 'by' mask from 'mask' (1 - (b>0)),
             preserving magnitude of 'mask'.
             """
@@ -375,44 +397,34 @@ class ApplyNcsDecisionTreeAlgorithm(QgsProcessingAlgorithm):
 
         # 2) Wetlands supersede remaining others, but NOT croplands
         P_after_wet = _sum_layers(
-            P_c,                                      # keep cropland
-            P_w,                                      # keep wetlands
-            _minus(_minus(P_after_crop, P_c), W)      # from post-crop, remove cropland then wetlands
+            P_c,  # keep cropland
+            P_w,  # keep wetlands
+            _minus(
+                _minus(P_after_crop, P_c), W
+            ),  # from post-crop, remove cropland then wetlands
         )
 
-        M_after_wet = _sum_layers(
-            M_c,
-            M_w,
-            _minus(_minus(M_after_crop, M_c), W)
-        )
+        M_after_wet = _sum_layers(M_c, M_w, _minus(_minus(M_after_crop, M_c), W))
 
-        R_after_wet = _sum_layers(
-            R_c,
-            R_w,
-            _minus(_minus(R_after_crop, R_c), W)
-        )
+        R_after_wet = _sum_layers(R_c, R_w, _minus(_minus(R_after_crop, R_c), W))
 
         # 3) Biodiversity safeguard (forest restore cannot replace native grass/savanna/shrub)
-        R_for_after_cropwet = _sum_layers(
-            _minus(R_for, C),   # remove cropland
-            None
+        R_for_after_cropwet = _sum_layers(_minus(R_for, C), None)  # remove cropland
+        R_for_after_cropwet = (
+            _minus(R_for_after_cropwet, W) if R_for_after_cropwet else None
         )
-        R_for_after_cropwet = _minus(R_for_after_cropwet, W) if R_for_after_cropwet else None
 
         # Apply the G mask to that slice (removing any forest-restore on native G/S/S)
         R_for_after = _minus(R_for_after_cropwet, G) if R_for_after_cropwet else None
 
         # Recombine: takes R_after_wet, removes the pre-G forest slice
         # and adds the G-filtered slice back
-        R_after_bio = _sum_layers(
-            _minus(R_after_wet, R_for_after_cropwet),
-            R_for_after
-        )
+        R_after_bio = _sum_layers(_minus(R_after_wet, R_for_after_cropwet), R_for_after)
 
         # 4) Action hierarchy: Protect > Manage > Restore
         P_final = P_after_wet
         M_final = _minus(M_after_wet, P_final) if M_after_wet else None
-        R_tmp   = _minus(R_after_bio, P_final) if R_after_bio else None
+        R_tmp = _minus(R_after_bio, P_final) if R_after_bio else None
         R_final = _minus(R_tmp, M_final) if (R_tmp and M_final) else R_tmp
 
         # Select the one action to output
@@ -424,7 +436,9 @@ class ApplyNcsDecisionTreeAlgorithm(QgsProcessingAlgorithm):
             selected_layer = R_final
 
         if selected_layer is None:
-            raise QgsProcessingException(f"No data available for selected action: {selected_name}")
+            raise QgsProcessingException(
+                f"No data available for selected action: {selected_name}"
+            )
 
         # Single output path
         out_path = self.parameterAsOutputLayer(params, self.O_SELECTED, context)
@@ -443,4 +457,4 @@ class ApplyNcsDecisionTreeAlgorithm(QgsProcessingAlgorithm):
         )
 
         log(f"DecisionTree: wrote '{selected_name}' mask to {out_path}")
-        return { self.O_SELECTED: out_path }
+        return {self.O_SELECTED: out_path}
