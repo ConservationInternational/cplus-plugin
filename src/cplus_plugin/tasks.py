@@ -8,6 +8,7 @@ import json
 import math
 import os
 import uuid
+import traceback
 import typing
 from pathlib import Path
 
@@ -358,6 +359,11 @@ class ScenarioAnalysisTask(QgsTask):
             extent_string,
             temporary_output=not save_output,
         )
+
+        # Normalize the activities.
+        # This is useful when weighting pathways with relative impact matrix
+        # Activities created in previous step may have values greater than 1
+        self.run_activity_normalization()
 
         # Run masking of the activities layers
         masking_layers = self.get_masking_layers()
@@ -1566,8 +1572,20 @@ class ScenarioAnalysisTask(QgsTask):
                     reference_layer = layers[0]
 
                 # Actual processing calculation
+                alg_params = {
+                    "IGNORE_NODATA": True,
+                    "INPUT": layers,
+                    "EXTENT": extent,
+                    "OUTPUT_NODATA_VALUE": settings_manager.get_value(
+                        Settings.NCS_NO_DATA_VALUE, NO_DATA_VALUE
+                    ),
+                    "REFERENCE_LAYER": reference_layer,
+                    "STATISTIC": 0,  # Sum
+                    "OUTPUT": output,
+                }
+
                 self.log_message(
-                    "Used parameters for " "activities generation \n"
+                    f"Used parameters for " f"activities generation: {alg_params} \n"
                 )
 
                 self.feedback = QgsProcessingFeedback()
@@ -1576,35 +1594,128 @@ class ScenarioAnalysisTask(QgsTask):
                 if self.processing_cancelled:
                     return False
 
-                raster_layers = [
-                    QgsRasterLayer(p, Path(p).stem) for p in layers
-                ]
-                combined = combine_layers(
-                    raster_layers,
-                    weights=None,
-                    scale_to_01=False
-                )
-
-                # keep your extent behavior
-                clipped = processing.run(
-                    "qgis:cliprasterbyextent",
-                    {
-                        "INPUT": combined,
-                        "EXTENT": extent,
-                        "NODATA": self.no_data_value,
-                        "OUTPUT": output,
-                    },
+                results = processing.run(
+                    "native:cellstatistics",
+                    alg_params,
                     context=self.processing_context,
                     feedback=self.feedback,
-                )["OUTPUT"]
-                activity.path = clipped["OUTPUT"]
+                )
+                activity.path = results["OUTPUT"]
 
         except Exception as e:
-            self.log_message(f"Problem creating activity layers, {e}")
+            self.log_message(f"Problem normalizing activities, {e} \n")
+            self.log_message(traceback.format_exc())
             self.cancel_task(e)
             return False
 
         return True
+
+    def run_activity_normalization(
+        self,
+    ) -> bool:
+        """Runs normalization analysis on the activities.
+        The formula is: (activity - min) / (max - min)
+
+        :returns: True if the task operation was successfully completed else False.
+        :rtype: bool
+        """
+        if self.processing_cancelled:
+            return False
+
+        self.set_status_message(tr("Normalization of activities"))
+
+        normalized_activities_directory = os.path.join(
+            self.scenario_directory, "normalized_activities"
+        )
+        FileUtils.create_new_dir(normalized_activities_directory)
+
+        try:
+            for activity in self.analysis_activities:
+                if not activity.path:
+                    msg = f"No defined activity layer for the activity {activity.name}"
+                    self.set_info_message(
+                        tr(msg),
+                        level=Qgis.Critical,
+                    )
+                    self.log_message(msg)
+                    return False
+
+                if self.processing_cancelled:
+                    return False
+
+                activity_layer = QgsRasterLayer(activity.path, activity.name)
+
+                if not activity_layer.isValid():
+                    self.log_message(
+                        f"Activity layer {activity.name} is not valid, "
+                        f"skipping the layer from normalization."
+                    )
+                    continue
+
+                provider = activity_layer.dataProvider()
+                band_statistics = provider.bandStatistics(1)
+                min_value = band_statistics.minimumValue
+                max_value = band_statistics.maximumValue
+
+                if min_value is None or max_value is None:
+                    self.log_message(
+                        f"Activity layer {activity.name} has no valid "
+                        f"statistics, skipping the layer from normalization."
+                    )
+                    continue
+
+                if min_value >= 0 and max_value <= 1:
+                    new_path = FileUtils.copy_file(
+                        activity.path, normalized_activities_directory
+                    )
+                    if new_path and os.path.exists(new_path):
+                        activity.path = new_path
+                        self.log_message(
+                            f"Activity layer {activity.name} is already normalized (min={min_value}, max={max_value}), "
+                            f"skipping the layer from normalization."
+                        )
+                    continue
+
+                self.log_message(f"Normalizing {activity.name} activity layer \n")
+
+                expression = f"(A - {min_value}) / ({max_value} - {min_value})"
+                output_path = os.path.join(
+                    f"{normalized_activities_directory}",
+                    f"{Path(activity.path).stem}_norm_{str(uuid.uuid4())[:4]}.tif",
+                )
+                alg_params = {
+                    "INPUT_A": activity.path,
+                    "BAND_A": 1,
+                    "FORMULA": expression,
+                    "OPTIONS": "COMPRESS=DEFLATE|ZLEVEL=6|TILED=YES",  # Compress the layer
+                    "OUTPUT": output_path,
+                }
+
+                self.feedback = QgsProcessingFeedback()
+                self.feedback.progressChanged.connect(self.update_progress)
+
+                if self.processing_cancelled:
+                    return False
+
+                result = processing.run(
+                    "gdal:rastercalculator",
+                    alg_params,
+                    context=self.processing_context,
+                    feedback=self.feedback,
+                )
+                if result.get("OUTPUT"):
+                    activity.path = result.get("OUTPUT")
+                else:
+                    self.log_message(
+                        f"Problem normalizing activity layer {activity.name}, "
+                        f"skipping the layer from normalization."
+                    )
+            return True
+        except Exception as e:
+            self.log_message(f"Problem normalizing activities, {e} \n")
+            self.log_message(traceback.format_exc())
+            self.cancel_task(e)
+            return False
 
     def run_activities_masking(
         self, activities, masking_layers, extent, temporary_output=False
@@ -2284,9 +2395,9 @@ class ScenarioAnalysisTask(QgsTask):
         """Runs weighting analysis on the pathways in the activities using
         the corresponding NCS PWLs.
 
-        The formula is: (suitability_index * pathway) +
-        (priority group coefficient 1 * PWL 1) +
-        (priority group coefficient 2 * PWL 2) ...
+        The formula is: (suitability_index * pathway) *
+        ((priority group coefficient 1 * impact weight * PWL 1) +
+        (priority group coefficient 2 * impact weight * PWL 2) ...)
 
         :param activities: List of the selected activities
         :type activities: typing.List[Activity]
@@ -2317,6 +2428,18 @@ class ScenarioAnalysisTask(QgsTask):
             )
             self.log_message(msg)
             return False
+
+        # Get the relative impact matrix
+        relative_impact_matrix = dict()
+        impact_matrix = settings_manager.get_value(
+            Settings.SCENARIO_IMPACT_MATRIX, dict()
+        )
+        if len(impact_matrix) > 0:
+            relative_impact_matrix = json.loads(impact_matrix)
+
+        pathway_uuids = relative_impact_matrix.get("pathway_uuids", [])
+        priority_layer_uuids = relative_impact_matrix.get("priority_layer_uuids", [])
+        relative_impact_values = relative_impact_matrix.get("values", [])
 
         # Get valid pathways
         pathways = []
@@ -2419,28 +2542,53 @@ class ScenarioAnalysisTask(QgsTask):
                                 )
                                 continue
 
-                            # look up coefficient from configured groups
-                            coeff = 0.0
-                            for priority_layer in settings_priority_layers:
-                                if priority_layer.get("name") == layer.get("name"):
-                                    for group in priority_layer.get("groups", []):
-                                        value = group.get("value")
-                                        try:
-                                            coeff = max(coeff, float(value or 0.0))
-                                        except Exception:
-                                            pass
+                    pwl_path_basename = pwl_path.stem
 
-                            if coeff > 0:
-                                pwl_layer = QgsRasterLayer(pwl_path, Path(pwl_path).stem)
-                                if not pwl_layer.isValid():
+                    for priority_layer in settings_priority_layers:
+                        if priority_layer.get("name") == layer.get("name"):
+                            for group in priority_layer.get("groups", []):
+                                impact_value = None
+                                try:
+                                    row = pathway_uuids.index(str(pathway.uuid))
+                                    col = priority_layer_uuids.index(layer["uuid"])
+                                except ValueError:
                                     self.log_message(
-                                        f"PWL {layer.get('name')} at {pwl_path} is invalid; skipping."
+                                        f"Could not find pathway uuid {pathway.uuid} or "
+                                        f"priority layer uuid {layer['uuid']} in the relative impact matrix."
                                     )
                                 else:
-                                    key = f"pwl::{Path(pwl_path).stem}"
-                                    layers_dict[key] = pwl_layer
-                                    weights_dict[key] = coeff
-                                    run_calculation = True
+                                    if row < len(relative_impact_values) and col < len(
+                                        relative_impact_values[row]
+                                    ):
+                                        impact_value = relative_impact_values[row][col]
+                                    else:
+                                        self.log_message(
+                                            f"Index out of range for relative impact "
+                                            f"matrix: row={row}, col={col}."
+                                        )
+
+                                value = group.get("value")
+                                priority_group_coefficient = float(value)
+                                if priority_group_coefficient > 0:
+                                    if pwl not in layers:
+                                        layers.append(pwl)
+
+                                    pwl_expression = f'({priority_group_coefficient}*"{pwl_path_basename}@1")'
+
+                                    if impact_value is not None:
+                                        pwl_expression = (
+                                            f"({priority_group_coefficient * int(impact_value)}*"
+                                            f'"{pwl_path_basename}@1")'
+                                        )
+                                        # Inverse the PWL
+                                        if impact_value < 0:
+                                            pwl_expression = (
+                                                f"({priority_group_coefficient * abs(int(impact_value))}*"
+                                                f'("{pwl_path_basename}@1" - 1) * -1)'
+                                            )
+                                    base_names.append(pwl_expression)
+                                    if not run_calculation:
+                                        run_calculation = True
 
                 # If nothing actually weights the pathway (suitability=0 and no PWL>0), leave as-is
                 if not run_calculation:
@@ -2453,16 +2601,30 @@ class ScenarioAnalysisTask(QgsTask):
                 output_file = os.path.join(
                     weighted_pathways_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
                 )
-                output = QgsProcessing.TEMPORARY_OUTPUT if temporary_output else output_file
 
-                # Combine with normalized weights (per-pixel; NoData-aware; 0 stays valid)
-                combined = combine_layers(
-                    layers_dict,
-                    weights=weights_dict,
-                    scale_to_01=False  # inputs already standardized in your pipeline
+                expression = f"{base_names[0]}"
+                if len(base_names) > 1:
+                    pwl_calc_expression = " + ".join(base_names[1:])
+                    expression += f" * ({pwl_calc_expression})"
+
+                output = (
+                    QgsProcessing.TEMPORARY_OUTPUT if temporary_output else output_file
                 )
 
-                # Clip to requested extent to mirror prior behavior
+                # Actual processing calculation
+                alg_params = {
+                    "CELLSIZE": 0,
+                    "CRS": None,
+                    "EXPRESSION": expression,
+                    "EXTENT": extent,
+                    "LAYERS": layers,
+                    "OUTPUT": output,
+                }
+
+                self.log_message(
+                    f" Used parameters for calculating weighting pathways {alg_params} \n"
+                )
+
                 self.feedback = QgsProcessingFeedback()
                 self.feedback.progressChanged.connect(self.update_progress)
 

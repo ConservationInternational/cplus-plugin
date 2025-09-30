@@ -194,6 +194,7 @@ class Settings(enum.Enum):
     SCENARIO_DESCRIPTION = "scenario_description"
     SCENARIO_EXTENT = "scenario_extent"
     SCENARIO_CRS = "scenario_crs"
+    SCENARIO_IMPACT_MATRIX = "scenario_impact_matrix"
 
     # Pathway suitability index value
     PATHWAY_SUITABILITY_INDEX = "pathway_suitability_index"
