@@ -1,4 +1,5 @@
-# utils.py
+"""Raster normalization utilities."""
+
 from typing import Dict, List, Union, Tuple
 from qgis.core import QgsRasterLayer
 from qgis import processing
@@ -220,22 +221,14 @@ def combine_layers(
         weight_masks.append(w_mask)
 
     if not weighted_layers:
-        raise ValueError(
-            "combine_layers: no (positive-weight) rasters matched"
-        )
+        raise ValueError("combine_layers: no (positive-weight) rasters matched")
 
     # 3) Sum of weighted values and sum of weight masks (ignoring NoData)
     sum_weighted = _cellstats(
-        weighted_layers,
-        statistic="SUM",
-        ignore_nodata=True,
-        nodata_value=nodata_value
+        weighted_layers, statistic="SUM", ignore_nodata=True, nodata_value=nodata_value
     )
     sum_masks = _cellstats(
-        weight_masks,
-        statistic="SUM",
-        ignore_nodata=True,
-        nodata_value=nodata_value
+        weight_masks, statistic="SUM", ignore_nodata=True, nodata_value=nodata_value
     )
 
     # 4) Final = where(sum_masks > 0, sum_weighted / sum_masks, nodata)

@@ -1,6 +1,6 @@
 # coding=utf-8
 """
- Plugin tasks related to the scenario analysis
+Plugin tasks related to the scenario analysis
 
 """
 import datetime
@@ -2599,7 +2599,8 @@ class ScenarioAnalysisTask(QgsTask):
 
                 file_name = clean_filename(pathway.name.replace(" ", "_"))
                 output_file = os.path.join(
-                    weighted_pathways_directory, f"{file_name}_{str(uuid.uuid4())[:4]}.tif"
+                    weighted_pathways_directory,
+                    f"{file_name}_{str(uuid.uuid4())[:4]}.tif",
                 )
 
                 expression = f"{base_names[0]}"
@@ -2842,9 +2843,9 @@ class ScenarioAnalysisTask(QgsTask):
                 "INPUT_RASTERS": sources,
                 "EXTENT": extent_string,
                 "OUTPUT_NODATA_VALUE": self.no_data_value,
-                "REFERENCE_LAYER": list(layers.values())[0]
-                if len(layers) >= 1
-                else None,
+                "REFERENCE_LAYER": (
+                    list(layers.values())[0] if len(layers) >= 1 else None
+                ),
                 "OUTPUT": output_file,
             }
 
