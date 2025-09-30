@@ -45,7 +45,6 @@ from .utils import (
     CustomJsonEncoder,
     todict,
 )
-from .lib.aggregation import combine_layers
 
 
 class ScenarioAnalysisTask(QgsTask):
@@ -1603,8 +1602,7 @@ class ScenarioAnalysisTask(QgsTask):
                 activity.path = results["OUTPUT"]
 
         except Exception as e:
-            self.log_message(f"Problem normalizing activities, {e} \n")
-            self.log_message(traceback.format_exc())
+            self.log_message(f"Problem creating activity layers, {e}")
             self.cancel_task(e)
             return False
 
@@ -2491,56 +2489,51 @@ class ScenarioAnalysisTask(QgsTask):
                 if self.processing_cancelled:
                     return False
 
-                layers_dict = {}
-                weights_dict = {}
-                run_calculation = False  # keep original skip semantics
+                base_names = []
+                layers = [pathway.path]
+                run_calculation = False
 
-                # Pathway term
-                pathway_layer = QgsRasterLayer(pathway.path, Path(pathway.path).stem)
-                if not pathway_layer.isValid():
-                    self.log_message(
-                        f"Pathway layer {pathway.name} is not valid, skipping weighting."
-                    )
-                    continue
-
-                layers_dict["__pathway__"] = pathway_layer
-
+                # Include suitability index if not zero
+                pathway_basename = Path(pathway.path).stem
                 if suitability_index > 0:
-                    weights_dict["__pathway__"] = suitability_index
+                    base_names.append(f'({suitability_index}*"{pathway_basename}@1")')
                     run_calculation = True
                 else:
-                    # keep the base pathway with unit weight if we end up combining with PWLs;
-                    # if no PWLs contribute, we will skip and leave pathway unmodified
-                    weights_dict["__pathway__"] = 1.0
+                    base_names.append(f'("{pathway_basename}@1")')
 
-                # PWL terms (if any groups are defined)
-                if not any(priority_layers_groups):
-                    self.log_message(
-                        "There are no defined priority layers in groups; "
-                        "skipping inclusion of PWLs in pathways weighting."
+                for layer in pathway.priority_layers:
+                    if not any(priority_layers_groups):
+                        self.log_message(
+                            f"There are no defined priority layers in groups,"
+                            f" skipping the inclusion of PWLs in pathways "
+                            f"weighting."
+                        )
+                        break
+
+                    if layer is None:
+                        continue
+
+                    settings_layer = self.get_priority_layer(layer.get("uuid"))
+                    if settings_layer is None:
+                        continue
+
+                    pwl = settings_layer.get("path")
+
+                    missing_pwl_message = (
+                        f"Path {pwl} for priority "
+                        f"weighting layer {layer.get('name')} "
+                        f"doesn't exist, skipping the layer "
+                        f"from the pathway {pathway.name} weighting."
                     )
-                else:
-                    if pathway.priority_layers:
-                        for layer in pathway.priority_layers:
-                            if layer is None:
-                                continue
+                    if pwl is None:
+                        self.log_message(missing_pwl_message)
+                        continue
 
-                            settings_layer = self.get_priority_layer(layer.get("uuid"))
-                            if settings_layer is None:
-                                continue
+                    pwl_path = Path(pwl)
 
-                            pwl_path = settings_layer.get("path")
-                            if not pwl_path:
-                                self.log_message(
-                                    f"Missing path for PWL {layer.get('name')} in pathway {pathway.name}, skipping."
-                                )
-                                continue
-
-                            if not Path(pwl_path).exists():
-                                self.log_message(
-                                    f"Path {pwl_path} for PWL {layer.get('name')} does not exist; skipping."
-                                )
-                                continue
+                    if not pwl_path.exists():
+                        self.log_message(missing_pwl_message)
+                        continue
 
                     pwl_path_basename = pwl_path.stem
 
@@ -2590,11 +2583,9 @@ class ScenarioAnalysisTask(QgsTask):
                                     if not run_calculation:
                                         run_calculation = True
 
-                # If nothing actually weights the pathway (suitability=0 and no PWL>0), leave as-is
+                # No need to run the calculation if suitability index is
+                # zero or there are no PWLs in the activity.
                 if not run_calculation:
-                    self.log_message(
-                        f"Skipping weighting for {pathway.name} (no positive weights); leaving original layer."
-                    )
                     continue
 
                 file_name = clean_filename(pathway.name.replace(" ", "_"))
@@ -2632,19 +2623,13 @@ class ScenarioAnalysisTask(QgsTask):
                 if self.processing_cancelled:
                     return False
 
-                result = processing.run(
-                    "qgis:cliprasterbyextent",
-                    {
-                        "INPUT": combined,
-                        "EXTENT": extent,
-                        "NODATA": self.no_data_value,
-                        "OUTPUT": output,
-                    },
+                results = processing.run(
+                    "qgis:rastercalculator",
+                    alg_params,
                     context=self.processing_context,
                     feedback=self.feedback,
                 )
-
-                pathway.path = result["OUTPUT"]
+                pathway.path = results["OUTPUT"]
 
         except Exception as e:
             self.log_message(f"Problem weighting pathways, {e}\n")
