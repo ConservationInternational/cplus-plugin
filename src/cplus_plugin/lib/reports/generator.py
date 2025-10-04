@@ -43,7 +43,7 @@ from qgis.core import (
     QgsTextFormat,
     QgsUnitTypes,
     QgsMessageLog,
-    Qgis
+    Qgis,
 )
 
 from qgis.PyQt import QtCore, QtGui, QtXml
@@ -2092,9 +2092,11 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         log(f"scenario pie: will write to {png_path}")
         try:
             PieChartRenderer.render_pie_png(
-                png_path, labels, values,
+                png_path,
+                labels,
+                values,
                 colors_hex=colors,  # Pass the colors list to the new renderer
-                size_px=560
+                size_px=560,
             )
         except Exception as e:
             log(f"scenario pie: render failed: {e!r}")
@@ -2122,20 +2124,18 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 f"scenario pie: set picture path on ACTIVITY_SHARE_PIE_PIC_ID - {png_path}"
             )
         else:
-            log(
-                "scenario pie: placeholder missing or not a Picture; using fallback"
-            )
+            log("scenario pie: placeholder missing or not a Picture; using fallback")
             # Fallback: add a new picture on a specific page (here: last page)
             target_page = self._layout.pageCollection().pageCount() - 1
             pic = QgsLayoutItemPicture(self._layout)
             pic.setPicturePath(png_path)
             pic.attemptMove(
                 QgsLayoutPoint(15, 35, QgsUnitTypes.LayoutMillimeters),
-                True, False, target_page
+                True,
+                False,
+                target_page,
             )
-            pic.attemptResize(
-                QgsLayoutSize(120, 90, QgsUnitTypes.LayoutMillimeters)
-            )
+            pic.attemptResize(QgsLayoutSize(120, 90, QgsUnitTypes.LayoutMillimeters))
             self._layout.addLayoutItem(pic)
 
             pic.setOpacity(1.0)

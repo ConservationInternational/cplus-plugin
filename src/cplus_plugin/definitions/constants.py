@@ -76,6 +76,7 @@ CURRENT_PROFILE_PROPERTY = "current_profile"
 CPLUS_OPTIONS_KEY = "cplus_main"
 LOG_OPTIONS_KEY = "cplus_log"
 REPORTS_OPTIONS_KEY = "cplus_report"
+CARBON_OPTIONS_KEY = "cplus_carbon"
 
 # Headers for financial NPV computation
 YEAR_HEADER = "Year"

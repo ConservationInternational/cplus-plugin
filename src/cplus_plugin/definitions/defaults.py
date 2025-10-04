@@ -40,6 +40,7 @@ BASE_PLUGIN_NAME = "CPLUS"
 OPTIONS_TITLE = BASE_PLUGIN_NAME
 GENERAL_OPTIONS_TITLE = "General"
 REPORT_OPTIONS_TITLE = "Reporting"
+CARBON_OPTIONS_TITLE = "Carbon"
 LOG_OPTIONS_TITLE = "Logs"
 ICON_PATH = ":/plugins/cplus_plugin/icon.svg"
 REPORT_SETTINGS_ICON_PATH = str(
@@ -52,6 +53,12 @@ LOG_SETTINGS_ICON_PATH = str(
     os.path.normpath(
         os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
         + "/icons/log_settings.svg"
+    )
+)
+CARBON_SETTINGS_ICON_PATH = str(
+    os.path.normpath(
+        os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        + "/icons/carbon_settings.svg"
     )
 )
 ICON_PDF = (

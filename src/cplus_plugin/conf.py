@@ -261,6 +261,9 @@ class Settings(enum.Enum):
     STUDYAREA_PATH = "studyarea_path"
     CLIP_TO_STUDYAREA = "clip_to_studyarea"
 
+    # Stored carbon - biomass
+    STORED_CARBON_BIOMASS_PATH = "carbon/stored_carbon_biomass_path"
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""
