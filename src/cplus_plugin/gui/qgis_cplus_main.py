@@ -698,6 +698,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         if studyarea_path:
             self._aoi_layer = QgsVectorLayer(studyarea_path, Path(studyarea_path).stem)
+            if self._aoi_layer.isValid():
+                self.studyarea_layer_file_widget.setFilePath(studyarea_path)
 
         if clip_to_studyarea:
             self.on_aoi_source_changed(0, True)
