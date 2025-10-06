@@ -1075,6 +1075,22 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 return
 
             reference_layer = reference_ncs_pathway.to_map_layer()
+
+            if reference_layer is None:
+                # Attempt to get reference layer from the snapping layer
+                snap_layer_path = settings_manager.get_value(
+                    Settings.SNAP_LAYER, default="", setting_type=str
+                )
+                reference_layer = QgsRasterLayer(snap_layer_path, "reference_layer")
+                if not reference_layer.isValid():
+                    log(
+                        message=tr(
+                            "There is no valid reference layer to extract the CRS and pixel size."
+                        ),
+                        info=False,
+                    )
+                    return
+
             reference_crs = reference_layer.crs()
             reference_pixel_size = reference_layer.rasterUnitsPerPixelX()
 
