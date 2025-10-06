@@ -653,6 +653,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 extent.yMaximum(),
             ]
             settings_manager.set_value(Settings.SCENARIO_EXTENT, extent_box)
+            settings_manager.set_value(
+                Settings.SCENARIO_EXTENT_CRS, self.extent_box.outputCrs().authid()
+            )
 
         settings_manager.set_value(Settings.SCENARIO_NAME, scenario_name)
         settings_manager.set_value(Settings.SCENARIO_DESCRIPTION, scenario_description)
@@ -690,10 +693,19 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             extent_rectangle = QgsRectangle(
                 float(extent[0]), float(extent[2]), float(extent[1]), float(extent[3])
             )
+
+            extent_crs = QgsCoordinateReferenceSystem(
+                settings_manager.get_value(
+                    Settings.SCENARIO_EXTENT_CRS, f"EPSG:{DEFAULT_CRS_ID}"
+                )
+            )
+            extent_crs = (
+                extent_crs if extent_crs.isValid() else self.extent_box.outputCrs()
+            )
+
             self.extent_box.setOutputExtentFromUser(
                 extent_rectangle,
-                self.extent_box.outputCrs()
-                or QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID),
+                extent_crs,
             )
 
         if studyarea_path:
