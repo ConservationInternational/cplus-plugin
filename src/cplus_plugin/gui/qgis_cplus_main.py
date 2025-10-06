@@ -518,12 +518,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def on_crs_changed(self):
         self.message_bar.clearWidgets()
         current_crs = self.crs_selector.crs()
-        self.extent_box.setOutputCrs(current_crs)
-
-        self.extent_box.setOutputExtentFromUser(
-            self.extent_box.outputExtent(),
-            current_crs,
-        )
 
         if current_crs.isValid():
             authid = current_crs.authid()
