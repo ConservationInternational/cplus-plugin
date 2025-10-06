@@ -58,12 +58,11 @@ class ScenarioDialog(QtWidgets.QDialog, DialogUi):
             # Area of Interest
             self.rb_studyarea.setEnabled(False)
             self.rb_extent.setEnabled(False)
-            self.cbo_studyarea.setEnabled(False)
+
             if self.scenario.studyarea_path and os.path.exists(
                 self.scenario.studyarea_path
             ):
-                self._add_layer_path(self.scenario.studyarea_path)
-
+                self.scenario_studyarea.setText(self.scenario.studyarea_path)
             if self.scenario.clip_to_studyarea:
                 self.on_aoi_source_changed(0, True)
                 self.rb_studyarea.setChecked(True)
@@ -71,15 +70,13 @@ class ScenarioDialog(QtWidgets.QDialog, DialogUi):
                 self.rb_extent.setChecked(True)
                 self.on_aoi_source_changed(1, True)
 
-            # CRS Selector
-            crs = QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
+            # CRS
             if self.scenario.extent.crs:
-                crs = QgsCoordinateReferenceSystem(self.scenario.extent.crs)
+                self.crs_text.setText(str(self.scenario.extent.crs))
+            else:
+                self.crs_text.setText(str(DEFAULT_CRS_ID))
 
-            if crs.isValid():
-                self.crs_selector.setCrs(crs)
-
-            self.crs_selector.setEnabled(False)
+            crs = QgsCoordinateReferenceSystem(self.crs_text.text())
 
             self.extent_box.setOutputCrs(crs)
             map_canvas = iface.mapCanvas()
@@ -103,24 +100,6 @@ class ScenarioDialog(QtWidgets.QDialog, DialogUi):
                     default_extent,
                     crs,
                 )
-
-    def _add_layer_path(self, layer_path: str):
-        """Select or add layer path to the map layer combobox."""
-        matching_index = -1
-        num_layers = self.cbo_studyarea.count()
-        for index in range(num_layers):
-            layer = self.cbo_studyarea.layer(index)
-            if layer is None:
-                continue
-            if os.path.normpath(layer.source()) == os.path.normpath(layer_path):
-                matching_index = index
-                break
-
-        if matching_index == -1:
-            self.cbo_studyarea.setAdditionalItems([layer_path])
-            self.cbo_studyarea.setCurrentIndex(num_layers)
-        else:
-            self.cbo_studyarea.setCurrentIndex(matching_index)
 
     def on_aoi_source_changed(self, button_id: int, toggled: bool):
         """Slot raised when the area of interest source button group has
