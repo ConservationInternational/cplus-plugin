@@ -49,7 +49,7 @@ from qgis.core import (
 from qgis.PyQt import QtCore, QtGui, QtXml
 from qgis.PyQt.QtGui import QColor
 
-from ..carbon import calculate_activity_naturebase_carbon_impact
+from ..carbon import calculate_activity_naturebase_carbon_impact, StoredCarbonCalculator
 from .comparison_table import ScenarioComparisonTableInfo
 from ...conf import settings_manager
 from ...definitions.constants import (
@@ -1795,19 +1795,32 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             for mc in self._metrics_configuration.metric_columns:
                 columns.append(mc.to_qgs_column())
         else:
-            # Otherwise just add the area and carbon columns
+            # Otherwise just add the default columns - area, carbon-related columns
             area_column = QgsLayoutTableColumn(tr("Area (ha)"))
             area_column.setWidth(0)
             area_column.setHAlignment(QtCore.Qt.AlignHCenter)
 
             columns.append(area_column)
 
-            carbon_value_column = QgsLayoutTableColumn(tr("Total Carbon (tCO2e/yr)"))
-            carbon_value_column.setWidth(0)
-            carbon_value_column.setHAlignment(QtCore.Qt.AlignHCenter)
+            carbon_impact_column = QgsLayoutTableColumn(tr("Carbon Impact (tCO2e/yr)"))
+            carbon_impact_column.setWidth(0)
+            carbon_impact_column.setHAlignment(QtCore.Qt.AlignHCenter)
 
-            # Insert the carbon value column as the second
-            columns.insert(1, carbon_value_column)
+            columns.append(carbon_impact_column)
+
+            # Stored carbon - protect pathways
+            stored_carbon_column = QgsLayoutTableColumn(tr("Stored Carbon (tons C)"))
+            stored_carbon_column.setWidth(0)
+            stored_carbon_column.setHAlignment(QtCore.Qt.AlignHCenter)
+
+            columns.append(stored_carbon_column)
+
+            # Total carbon
+            total_carbon_column = QgsLayoutTableColumn(tr("Total Carbon (tons C)"))
+            total_carbon_column.setWidth(0)
+            total_carbon_column.setHAlignment(QtCore.Qt.AlignHCenter)
+
+            columns.append(total_carbon_column)
 
         parent_table.setHeaders(columns)
 
@@ -1897,16 +1910,29 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
                     activity_row_cells.append(activity_cell)
             else:
+                # Perform carbon calculations
+                stored_carbon_calculator = StoredCarbonCalculator(activity)
+                stored_carbon = stored_carbon_calculator.run()
+
+                # Update values
                 formatted_area = self.format_number(area_info)
                 area_cell = QgsTableCell(formatted_area)
 
                 activity_row_cells.append(area_cell)
 
-                carbon_value_cell = QgsTableCell(
+                # Carbon impact
+                carbon_impact_cell = QgsTableCell(
                     self.format_number(activity_naturebase_carbon)
                 )
+                activity_row_cells.append(carbon_impact_cell)
 
-                activity_row_cells.insert(1, carbon_value_cell)
+                # Stored carbon
+                stored_carbon_cell = QgsTableCell(self.format_number(stored_carbon))
+                activity_row_cells.append(stored_carbon_cell)
+
+                # Total carbon
+                total_carbon_cell = QgsTableCell("")
+                activity_row_cells.append(total_carbon_cell)
 
             rows_data.append(activity_row_cells)
 
@@ -1962,7 +1988,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                     move_up_items.append(background_item)
                     width_increase_items.append(background_item)
 
-                logo_item = self._layout.itemById(METRICSlogO)
+                logo_item = self._layout.itemById(METRICS_LOGO)
                 if logo_item is not None:
                     move_up_items.append(logo_item)
                     move_right_items.append(logo_item)

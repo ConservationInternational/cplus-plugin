@@ -36,87 +36,65 @@ from ..utils import log
 # reference layer. This area is in hectares i.e. 300m by 300m pixel size.
 MEAN_REFERENCE_LAYER_AREA = 9.0
 
-LOG_PREFIX = "Irrecoverable Carbon Calculation"
+LOG_PREFIX = "Carbon Calculation"
 
 
-def calculate_irrecoverable_carbon_from_mean(
-    ncs_pathways_layer: QgsRasterLayer,
-) -> float:
-    """Calculates the total irrecoverable carbon in tonnes for protect NCS pathways
-    using the reference layer defined in settings that is based on the
-    mean value per hectare.
+def _get_intersecting_pixel_values(
+    ncs_protect_pathways_layer: QgsRasterLayer,
+    reference_layer_path: str,
+    reference_layer_name: str,
+    calculation_type: str,
+) -> typing.List[float]:
+    """Extracts pixel values from a reference layer that intersect with NCS pathways.
 
     This is a manual, pixel-by-pixel analysis that overcomes the limitations
     of the raster calculator and zonal statistics tools, which use the intersection
     of the center point of the reference pixel to determine whether the reference
-    pixel will be considered in the computation. The use of these tools results in some
-    valid intersecting pixels being excluded from the analysis. This is a known
-    issue that has been raised in the QGIS GitHub repo, hence the reason for
-    using this function.
+    pixel will be considered in the computation.
 
-    :param ncs_pathways_layer: Layer containing an aggregate of protect NCS pathways.
+    :param ncs_protect_pathways_layer: Layer containing an aggregate of protect NCS pathways.
     The CRS needs to be WGS84 otherwise the result will be incorrect. In addition,
     the layer needs to be in binary form i.e. a pixel value of 1 represents a
-    valid value and 0 represents a non-valid or nodata value. The raster boolean
-    (AND or OR) tool can be used to normalize the layer before passing it into
-    this function.
-    :type ncs_pathways_layer: QgsRasterLayer
+    valid value and 0 represents a non-valid or nodata value.
+    :type ncs_protect_pathways_layer: QgsRasterLayer
 
-    :returns: The total irrecoverable carbon for protect NCS pathways
-    specified in the input. If there are any errors during the operation,
-    such as an invalid input raster layer, then -1.0 will be returned.
-    :rtype: float
+    :param reference_layer_path: Path to the reference carbon layer. Used when
+    creating the raster layer.
+    :type reference_layer_path: str
+
+    :param reference_layer_name: Name for the reference layer.
+    :type reference_layer_name: str
+
+    :param calculation_type: Type of calculation (e.g., "Irrecoverable Carbon", "Stored Carbon").
+    :type calculation_type: str
+
+    :returns: List of intersecting pixel values. Returns an empty list if there are
+    any errors during the operation or no intersections are found.
+    :rtype: typing.List[float]
     """
-    if not ncs_pathways_layer.isValid():
+    if not ncs_protect_pathways_layer.isValid():
         log(
             f"{LOG_PREFIX} - Input union of protect NCS pathways is invalid.",
             info=False,
         )
-        return -1.0
+        return []
 
-    # TBC - should we cancel the process if using IC is disabled in settings? If
-    # so, we will need to explicitly need to check the corresponding settings.
-    source_type_int = settings_manager.get_value(
-        Settings.IRRECOVERABLE_CARBON_SOURCE_TYPE,
-        default=DataSourceType.UNDEFINED.value,
-        setting_type=int,
-    )
-    reference_source_path = ""
-    if source_type_int == DataSourceType.LOCAL.value:
-        reference_source_path = settings_manager.get_value(
-            Settings.IRRECOVERABLE_CARBON_LOCAL_SOURCE, default=""
-        )
-    elif source_type_int == DataSourceType.ONLINE.value:
-        reference_source_path = settings_manager.get_value(
-            Settings.IRRECOVERABLE_CARBON_ONLINE_LOCAL_PATH, default=""
-        )
-
-    if not reference_source_path:
-        log(
-            f"{LOG_PREFIX} - Data source for reference irrecoverable carbon layer not found.",
-            info=False,
-        )
-        return -1.0
-
-    norm_source_path = os.path.normpath(reference_source_path)
+    norm_source_path = os.path.normpath(reference_layer_path)
     if not os.path.exists(norm_source_path):
         error_msg = (
-            f"{LOG_PREFIX} - Irrecoverable Carbon Calculation - Data source for reference "
-            f"irrecoverable carbon layer {norm_source_path} does not exist."
+            f"{LOG_PREFIX} - {calculation_type} - Data source for reference "
+            f"layer {norm_source_path} does not exist."
         )
         log(error_msg, info=False)
-        return -1.0
+        return []
 
-    reference_irrecoverable_carbon_layer = QgsRasterLayer(
-        norm_source_path, "mean_irrecoverable_carbon"
-    )
+    reference_layer = QgsRasterLayer(norm_source_path, reference_layer_name)
 
     # Check CRS and warn if different
-    if reference_irrecoverable_carbon_layer.crs() != ncs_pathways_layer.crs():
+    if reference_layer.crs() != ncs_protect_pathways_layer.crs():
         log(
             f"{LOG_PREFIX} - Final computation might be incorrect as protect NCS "
-            "pathways and reference irrecoverable carbon layer have different "
-            "CRSs.",
+            f"pathways and reference {calculation_type} layer have different CRSs.",
             info=False,
         )
 
@@ -126,7 +104,7 @@ def calculate_irrecoverable_carbon_from_mean(
             f"{LOG_PREFIX} - Scenario extent not defined.",
             info=False,
         )
-        return -1.0
+        return []
 
     reference_extent = QgsRectangle(
         float(scenario_extent[0]),
@@ -135,25 +113,24 @@ def calculate_irrecoverable_carbon_from_mean(
         float(scenario_extent[3]),
     )
 
-    ncs_pathways_extent = ncs_pathways_layer.extent()
+    ncs_pathways_extent = ncs_protect_pathways_layer.extent()
 
     # if they do not intersect then exit. This might also be related to the CRS.
     if not reference_extent.intersects(ncs_pathways_extent):
         log(
             f"{LOG_PREFIX} - The protect NCS pathways layer does not intersect with "
-            "the reference irrecoverable carbon layer.",
+            f"the reference {calculation_type} layer.",
             info=False,
         )
-        return -1.0
+        return []
 
-    #
-    reference_provider = reference_irrecoverable_carbon_layer.dataProvider()
+    reference_provider = reference_layer.dataProvider()
     reference_layer_iterator = QgsRasterIterator(reference_provider)
     reference_layer_iterator.startRasterRead(
         1, reference_provider.xSize(), reference_provider.ySize(), reference_extent
     )
 
-    irrecoverable_carbon_intersecting_pixel_values = []
+    intersecting_pixel_values = []
 
     while True:
         (
@@ -170,7 +147,7 @@ def calculate_irrecoverable_carbon_from_mean(
 
         if not block.isValid():
             log(
-                f"{LOG_PREFIX} - Invalid irrecoverable carbon layer raster block.",
+                f"{LOG_PREFIX} - Invalid {calculation_type} layer raster block.",
                 info=False,
             )
             break
@@ -205,15 +182,15 @@ def calculate_irrecoverable_carbon_from_mean(
                 ncs_cols = math.ceil(
                     1.0
                     * analysis_extent.width()
-                    / ncs_pathways_layer.rasterUnitsPerPixelX()
+                    / ncs_protect_pathways_layer.rasterUnitsPerPixelX()
                 )
                 ncs_rows = math.ceil(
                     1.0
                     * analysis_extent.height()
-                    / ncs_pathways_layer.rasterUnitsPerPixelY()
+                    / ncs_protect_pathways_layer.rasterUnitsPerPixelY()
                 )
 
-                ncs_block = ncs_pathways_layer.dataProvider().block(
+                ncs_block = ncs_protect_pathways_layer.dataProvider().block(
                     1, analysis_extent, ncs_cols, ncs_rows
                 )
                 if not ncs_block.isValid():
@@ -228,9 +205,6 @@ def calculate_irrecoverable_carbon_from_mean(
 
                 # Check if the NCS block within the reference block contains
                 # any other value apart from the invalid value i.e. 0 pixel value.
-                # In future iterations, consider using QGIS 3.40+ which includes
-                # QgsRasterBlock.as_numpy() that provides the ability to work with
-                # the raw binary data in numpy for more faster calculations.
                 ncs_ba_set = set(
                     ncs_block_data[i] for i in range(ncs_block_data.size())
                 )
@@ -240,37 +214,128 @@ def calculate_irrecoverable_carbon_from_mean(
 
                 if ncs_ba_set - invalid_ba_set:
                     # we have valid overlapping pixels hence we can pick the value of
-                    # the corresponding reference IC layer.
-                    irrecoverable_carbon_intersecting_pixel_values.append(
-                        block.value(r, c)
-                    )
+                    # the corresponding reference layer.
+                    intersecting_pixel_values.append(block.value(r, c))
 
     reference_layer_iterator.stopRasterRead(1)
 
-    ic_pixel_count = len(irrecoverable_carbon_intersecting_pixel_values)
-    if ic_pixel_count == 0:
+    if len(intersecting_pixel_values) == 0:
         log(
             f"{LOG_PREFIX} - No protect NCS pathways were found in the reference layer.",
             info=False,
         )
-        return 0.0
 
-    ic_mean = sum(irrecoverable_carbon_intersecting_pixel_values) / float(
-        ic_pixel_count
+    return intersecting_pixel_values
+
+
+def calculate_irrecoverable_carbon_from_mean(
+    ncs_pathways_layer: QgsRasterLayer,
+) -> float:
+    """Calculates the total irrecoverable carbon in tonnes for protect NCS pathways
+    using the reference layer defined in settings that is based on the
+    mean value per hectare.
+
+    :param ncs_pathways_layer: Layer containing an aggregate of protect NCS pathways.
+    :type ncs_pathways_layer: QgsRasterLayer
+
+    :returns: The total irrecoverable carbon for protect NCS pathways.
+    If there are any errors, returns -1.0. If no pathways found, returns 0.0.
+    :rtype: float
+    """
+    source_type_int = settings_manager.get_value(
+        Settings.IRRECOVERABLE_CARBON_SOURCE_TYPE,
+        default=DataSourceType.UNDEFINED.value,
+        setting_type=int,
+    )
+    reference_source_path = ""
+    if source_type_int == DataSourceType.LOCAL.value:
+        reference_source_path = settings_manager.get_value(
+            Settings.IRRECOVERABLE_CARBON_LOCAL_SOURCE, default=""
+        )
+    elif source_type_int == DataSourceType.ONLINE.value:
+        reference_source_path = settings_manager.get_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_LOCAL_PATH, default=""
+        )
+
+    if not reference_source_path:
+        log(
+            f"{LOG_PREFIX} - Data source for reference irrecoverable carbon layer not found.",
+            info=False,
+        )
+        return -1.0
+
+    log("Calculating the total irrecoverable carbon from mean...")
+
+    intersecting_pixel_values = _get_intersecting_pixel_values(
+        ncs_pathways_layer,
+        reference_source_path,
+        "mean_irrecoverable_carbon",
+        "Irrecoverable Carbon",
     )
 
-    log("Calculating the total irrecoverable carbon...")
+    # Empty list indicates that an error occurred
+    if intersecting_pixel_values is None:
+        return -1.0
 
-    return MEAN_REFERENCE_LAYER_AREA * ic_pixel_count * ic_mean
+    pixel_count = len(intersecting_pixel_values)
+    if pixel_count == 0:
+        return 0.0
+
+    # Calculate using mean-based approach: mean × pixel_count × area_per_pixel
+    ic_mean = sum(intersecting_pixel_values) / float(pixel_count)
+    return MEAN_REFERENCE_LAYER_AREA * pixel_count * ic_mean
 
 
-class IrrecoverableCarbonCalculator:
-    """Calculates the total irrecoverable carbon of an activity using
-    the mean-based reference carbon layer.
+def calculate_stored_carbon(
+    ncs_pathways_layer: QgsRasterLayer,
+) -> float:
+    """Calculates the total stored carbon in tonnes for protect NCS pathways
+    by summing pixel values from the biomass reference layer defined in settings.
 
-    It specifically searches for protect pathways in the activity.
-    If none is found, it will return 0. This is designed to be called
-    within a QgsExpressionFunction.
+    :param ncs_pathways_layer: Layer containing an aggregate of protect NCS pathways.
+    :type ncs_pathways_layer: QgsRasterLayer
+
+    :returns: The total stored carbon for protect NCS pathways.
+    If there are any errors, returns -1.0. If no pathways found, returns 0.0.
+    :rtype: float
+    """
+    reference_source_path = settings_manager.get_value(
+        Settings.STORED_CARBON_BIOMASS_PATH, default=""
+    )
+
+    if not reference_source_path:
+        log(
+            f"{LOG_PREFIX} - Data source for reference biomass layer not found.",
+            info=False,
+        )
+        return -1.0
+
+    log("Calculating the stored carbon...")
+
+    intersecting_pixel_values = _get_intersecting_pixel_values(
+        ncs_pathways_layer,
+        reference_source_path,
+        "biomass_stored_carbon",
+        "Stored Carbon",
+    )
+
+    # Empty list indicates an error occurred
+    if intersecting_pixel_values is None:
+        return -1.0
+
+    pixel_count = len(intersecting_pixel_values)
+    if pixel_count == 0:
+        return 0.0
+
+    # Calculate by direct summation of pixel values
+    return sum(intersecting_pixel_values)
+
+
+class BaseProtectPathwaysCarbonCalculator:
+    """Base class for carbon calculators that process protect pathways.
+
+    This class encapsulates the common logic for preparing and processing
+    protect NCS pathways before calculating carbon values.
     """
 
     def __init__(self, activity: typing.Union[str, Activity]):
@@ -281,31 +346,43 @@ class IrrecoverableCarbonCalculator:
 
     @property
     def activity(self) -> Activity:
-        """Gets the activity used to calculate the total
-        irrecoverable carbon.
+        """Gets the activity used to calculate carbon values.
 
-        :returns: The activity for calculating the total
-        irrecoverable carbon.
+        :returns: The activity for calculating carbon values.
         :rtype: Activity
         """
         return self._activity
 
-    def run(self) -> float:
-        """Calculates the total irrecoverable carbon of the referenced activity.
+    @property
+    def calculation_type(self) -> str:
+        """Returns the type of calculation being performed.
+        Should be overridden by subclasses.
 
-        :returns: The total irrecoverable carbon of the activity. If there are
-        no protect NCS pathways in the activity, the function will return 0.0.
-        If there are any errors encountered during the process, the function
-        will return -1.0.
-        :rtype: float
+        :returns: The calculation type name.
+        :rtype: str
         """
+        return "Carbon"
+
+    def _prepare_protect_pathways_layer(self) -> typing.Optional[QgsRasterLayer]:
+        """Prepares a binary, reprojected layer from all protect pathways in the activity.
+
+        :returns: The prepared raster layer or None if an error occurs.
+        :rtype: typing.Optional[QgsRasterLayer]
+        """
+        if self._activity is None:
+            log(
+                f"{LOG_PREFIX} - The activity is invalid, null reference.",
+                info=False,
+            )
+            return None
+
         if len(self._activity.pathways) == 0:
             log(
                 f"{LOG_PREFIX} - There are no pathways in "
                 f"{self._activity.name} activity.",
                 info=False,
             )
-            return 0.0
+            return None
 
         protect_pathways = [
             pathway
@@ -319,7 +396,7 @@ class IrrecoverableCarbonCalculator:
                 f"{self._activity.name} activity.",
                 info=False,
             )
-            return 0.0
+            return None
 
         protect_layers = [pathway.to_map_layer() for pathway in protect_pathways]
         valid_protect_layers = [layer for layer in protect_layers if layer.isValid()]
@@ -329,18 +406,16 @@ class IrrecoverableCarbonCalculator:
                 f"{self._activity.name} activity.",
                 info=False,
             )
-            return 0.0
+            return None
 
         if len(valid_protect_layers) != len(protect_layers):
-            # Just warn if some layers were excluded
             log(
                 f"{LOG_PREFIX} - Some protect pathway layers are invalid and will be "
-                f"exclude from the irrecoverable carbon calculation.",
+                f"excluded from the {self.calculation_type.lower()} calculation.",
                 info=False,
             )
 
         processing_context = QgsProcessingContext()
-
         protect_data_sources = [layer.source() for layer in valid_protect_layers]
 
         # First merge the protect NCS pathways into one raster
@@ -365,7 +440,7 @@ class IrrecoverableCarbonCalculator:
                 f"{LOG_PREFIX} - Error creating a union of protect NCS pathways.",
                 info=False,
             )
-            return -1.0
+            return None
 
         merged_layer_path = merge_result["OUTPUT"]
         merged_layer = QgsRasterLayer(merged_layer_path, "merged_pathways")
@@ -374,15 +449,14 @@ class IrrecoverableCarbonCalculator:
                 f"{LOG_PREFIX} - Merged protect pathways layer is invalid.",
                 info=False,
             )
-            return -1.0
+            return None
 
         # Perform a binary transformation to get only the valid pixels for analysis
         boolean_args = {
             "INPUT": merged_layer_path,
             "REF_LAYER": merged_layer_path,
             "NODATA_AS_FALSE": True,
-            "DATA_TYPE": 0,  # quint8 - since we are only dealing wih 0s and 1s,
-            # this will help reduce the size of the output file.
+            "DATA_TYPE": 0,
             "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
         }
         boolean_result = None
@@ -400,7 +474,7 @@ class IrrecoverableCarbonCalculator:
                 f"{LOG_PREFIX} - Error creating a binary of merged protect NCS pathways.",
                 info=False,
             )
-            return -1.0
+            return None
 
         binary_layer_path = boolean_result["OUTPUT"]
         binary_layer = QgsRasterLayer(binary_layer_path, "binary_pathways")
@@ -409,20 +483,18 @@ class IrrecoverableCarbonCalculator:
                 f"{LOG_PREFIX} - Binary protect pathways layer is invalid.",
                 info=False,
             )
-            return -1.0
+            return None
 
         # Reproject the aggregated protect raster if required
         if binary_layer.crs() != QgsCoordinateReferenceSystem("EPSG:4326"):
             log(
                 f"{LOG_PREFIX} - Binary protect pathways layer has a different CRS from "
-                f"the reference mean irrecoverable carbon dataset."
+                f"the reference {self.calculation_type.lower()} dataset."
             )
             reproject_args = {
                 "INPUT": binary_layer_path,
                 "SOURCE_CRS": binary_layer.crs(),
-                "TARGET_CRS": QgsCoordinateReferenceSystem(
-                    "EPSG:4326"
-                ),  # Global IC reference raster
+                "TARGET_CRS": QgsCoordinateReferenceSystem("EPSG:4326"),
                 "RESAMPLING": 0,
                 "DATA_TYPE": 0,
                 "OPTIONS": "COMPRESS=DEFLATE|PREDICTOR=2|ZLEVEL=9",
@@ -443,7 +515,7 @@ class IrrecoverableCarbonCalculator:
                     "binary protect NCS pathways.",
                     info=False,
                 )
-                return -1.0
+                return None
 
             binary_layer_path = reproject_result["OUTPUT"]
 
@@ -455,24 +527,83 @@ class IrrecoverableCarbonCalculator:
                 f"{LOG_PREFIX} - Reprojected protect pathways layer is invalid.",
                 info=False,
             )
-            return -1.0
+            return None
 
-        total_irrecoverable_carbon = calculate_irrecoverable_carbon_from_mean(
-            reprojected_protect_layer
+        return reprojected_protect_layer
+
+    def _calculate_carbon(self, prepared_layer: QgsRasterLayer) -> float:
+        """Performs the actual carbon calculation. Should be overridden by subclasses.
+
+        :param prepared_layer: The prepared protect pathways layer.
+        :type prepared_layer: QgsRasterLayer
+
+        :returns: The calculated carbon value.
+        :rtype: float
+        """
+        raise NotImplementedError(
+            "Subclasses must implement the protected _calculate_carbon function."
         )
-        if total_irrecoverable_carbon == -1.0:
+
+    def run(self) -> float:
+        """Calculates the total carbon value for the referenced activity.
+
+        :returns: The total carbon value. If there are no protect NCS pathways,
+        returns 0.0. If errors occur, returns -1.0.
+        :rtype: float
+        """
+        prepared_layer = self._prepare_protect_pathways_layer()
+        if prepared_layer is None:
+            return 0.0
+
+        total_carbon = self._calculate_carbon(prepared_layer)
+
+        if total_carbon == -1.0:
             log(
-                f"{LOG_PREFIX} - Error occurred in "
-                "calculating the total irrecoverable carbon. See preceding logs "
-                "for details.",
+                f"{LOG_PREFIX} - Error occurred in calculating the total "
+                f"{self.calculation_type.lower()}. See preceding logs for details.",
                 info=False,
             )
+        else:
+            log(
+                f"Finished calculating the total {self.calculation_type.lower()} "
+                f"of {self._activity.name} as {total_carbon!s}"
+            )
 
-        log(
-            f"Finished calculating the total irrecoverable carbon of {self._activity.name} as {total_irrecoverable_carbon!s}"
-        )
+        return total_carbon
 
-        return total_irrecoverable_carbon
+
+class IrrecoverableCarbonCalculator(BaseProtectPathwaysCarbonCalculator):
+    """Calculates the total irrecoverable carbon of an activity using
+    the mean-based reference carbon layer.
+
+    It specifically searches for protect pathways in the activity.
+    If there are no protect pathways is found, it will return 0. This is
+    designed to be called within a QgsExpressionFunction.
+    """
+
+    @property
+    def calculation_type(self) -> str:
+        return "Irrecoverable Carbon"
+
+    def _calculate_carbon(self, prepared_layer: QgsRasterLayer) -> float:
+        return calculate_irrecoverable_carbon_from_mean(prepared_layer)
+
+
+class StoredCarbonCalculator(BaseProtectPathwaysCarbonCalculator):
+    """Calculates the Stored carbon of an activity using
+    the biomass reference layer.
+
+    It specifically searches for protect pathways in the activity.
+    If there are no protect pathways is found, it will return 0. This is
+    designed to be called within a QgsExpressionFunction.
+    """
+
+    @property
+    def calculation_type(self) -> str:
+        return "Stored Carbon"
+
+    def _calculate_carbon(self, prepared_layer: QgsRasterLayer) -> float:
+        return calculate_stored_carbon(prepared_layer)
 
 
 def calculate_activity_naturebase_carbon_impact(activity: Activity) -> float:

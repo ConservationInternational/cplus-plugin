@@ -23,8 +23,9 @@ from ...definitions.defaults import (
     NATUREBASE_CARBON_IMPACT_EXPRESSION_DESCRIPTION,
     NPV_EXPRESSION_DESCRIPTION,
     PWL_IMPACT_EXPRESSION_DESCRIPTION,
+    STORED_CARBON_EXPRESSION_DESCRIPTION,
 )
-from ..carbon import IrrecoverableCarbonCalculator
+from ..carbon import IrrecoverableCarbonCalculator, StoredCarbonCalculator
 from ..financials import calculate_activity_npv
 from ...models.report import ActivityContextInfo, MetricEvalResult
 from ...utils import calculate_raster_area, function_help_to_html, log, tr
@@ -42,6 +43,7 @@ VAR_ACTIVITY_NATUREBASE_CARBON_IMPACT = "cplus_activity_naturebase_carbon_impact
 FUNC_MEAN_BASED_IC = "irrecoverable_carbon_by_mean"
 FUNC_ACTIVITY_NPV = "activity_npv"
 FUNC_PWL_IMPACT = "pwl_impact"
+FUNC_STORED_CARBON = "stored_carbon"
 
 
 class ActivityIrrecoverableCarbonFunction(QgsScopedExpressionFunction):
@@ -237,6 +239,61 @@ class ActivityPwlImpactFunction(QgsScopedExpressionFunction):
         return ActivityPwlImpactFunction()
 
 
+class ActivityStoredCarbonFunction(QgsScopedExpressionFunction):
+    """Calculates the total stored carbon of an activity using the
+    reference biomass layer."""
+
+    def __init__(self):
+        help_html = function_help_to_html(
+            FUNC_STORED_CARBON,
+            tr(STORED_CARBON_EXPRESSION_DESCRIPTION),
+            examples=[(f"{FUNC_STORED_CARBON}()", "12,800")],
+        )
+        super().__init__(
+            FUNC_STORED_CARBON, 0, BASE_PLUGIN_NAME, help_html, isContextual=True
+        )
+
+    def func(
+        self,
+        values: typing.List[typing.Any],
+        context: QgsExpressionContext,
+        parent: QgsExpression,
+        node: QgsExpressionNodeFunction,
+    ) -> typing.Any:
+        """Returns the result of evaluating the function.
+
+        :param values: List of values passed to the function
+        :type values: typing.Iterable[typing.Any]
+
+        :param context: Context expression is being evaluated against
+        :type context: QgsExpressionContext
+
+        :param parent: Parent expression
+        :type parent: QgsExpression
+
+        :param node: Expression node
+        :type node: QgsExpressionNodeFunction
+
+        :returns: The result of the function.
+        :rtype: typing.Any
+        """
+        if not context.hasVariable(VAR_ACTIVITY_ID):
+            return -1.0
+
+        activity_id = context.variable(VAR_ACTIVITY_ID)
+        stored_carbon_calculator = StoredCarbonCalculator(activity_id)
+
+        return stored_carbon_calculator.run()
+
+    def clone(self) -> "ActivityStoredCarbonFunction":
+        """Gets a clone of this function.
+
+        :returns: A clone of this function.
+        :rtype: ActivityStoredCarbonFunction
+        """
+        return ActivityStoredCarbonFunction()
+
+
 def create_metrics_expression_scope() -> QgsExpressionContextScope:
     """Creates the expression context scope for activity metrics.
 
@@ -284,6 +341,7 @@ def create_metrics_expression_scope() -> QgsExpressionContextScope:
     expression_scope.addFunction(
         FUNC_MEAN_BASED_IC, ActivityIrrecoverableCarbonFunction()
     )
+    expression_scope.addFunction(FUNC_STORED_CARBON, ActivityStoredCarbonFunction())
 
     return expression_scope
 
@@ -301,6 +359,10 @@ def register_metric_functions():
     # PWL impact
     activity_pwl_impact_function = ActivityPwlImpactFunction()
     METRICS_LIBRARY.append(activity_pwl_impact_function)
+
+    # Stored carbon
+    stored_carbon_function = ActivityStoredCarbonFunction()
+    METRICS_LIBRARY.append(stored_carbon_function)
 
     for func in METRICS_LIBRARY:
         QgsExpression.registerFunction(func)

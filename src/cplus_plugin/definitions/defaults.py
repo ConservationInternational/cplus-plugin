@@ -269,3 +269,15 @@ NATUREBASE_CARBON_IMPACT_EXPRESSION_DESCRIPTION = (
     "or no overlapping pixels with the reference layer in the "
     "area of interest.</b>"
 )
+
+STORED_CARBON_EXPRESSION_DESCRIPTION = (
+    "Calculates the stored carbon (tons C) of "
+    "protect NCS pathways in an activity using the biomass "
+    "reference dataset. This dataset "
+    "needs to be defined in the CPLUS settings for this "
+    "expression to be evaluated.<br><b>NOTE: A value of -1.0 "
+    "will be returned if an error is encountered, or 0.0 if "
+    "there are no protect NCS pathways in the activity or "
+    "no overlapping pixels with the reference layer in the "
+    "area of interest.</b>"
+)
