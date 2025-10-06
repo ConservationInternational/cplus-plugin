@@ -2682,6 +2682,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
 
         self.cbo_studyarea.layerChanged.connect(self._on_studyarea_layer_changed)
+        self.cbo_studyarea.setAllowEmptyLayer(True, tr("<Select layer>"))
         self.cbo_studyarea.setFilters(QgsMapLayerProxyModel.PolygonLayer)
 
         self.studyarea_layer_file_widget.setToolTip(
