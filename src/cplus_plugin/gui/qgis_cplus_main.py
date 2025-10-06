@@ -674,7 +674,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         scenario_description = settings_manager.get_value(Settings.SCENARIO_DESCRIPTION)
         extent = settings_manager.get_value(Settings.SCENARIO_EXTENT)
         studyarea_path = settings_manager.get_value(Settings.STUDYAREA_PATH)
-        clip_to_studyarea = settings_manager.get_value(Settings.CLIP_TO_STUDYAREA)
+        clip_to_studyarea = settings_manager.get_value(
+            Settings.CLIP_TO_STUDYAREA, default=False, setting_type=bool
+        )
         crs = QgsCoordinateReferenceSystem(
             settings_manager.get_value(Settings.SCENARIO_CRS, f"EPSG:{DEFAULT_CRS_ID}")
         )
@@ -719,6 +721,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         else:
             self.rb_extent.setChecked(True)
             self.on_aoi_source_changed(1, True)
+        print("Restored scenario", clip_to_studyarea, studyarea_path)
 
     def initialize_priority_layers(self):
         """Prepares the priority weighted layers UI with the defaults.
