@@ -573,7 +573,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         settings_manager.set_value(Settings.LAST_DATA_DIR, os.path.dirname(layer_path))
         settings_manager.set_value(Settings.STUDYAREA_PATH, layer_path)
 
-        self.set_crs_from_layer(layer)
         self.save_scenario()
 
     def _on_studyarea_layer_changed(self, layer):
@@ -584,7 +583,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self._aoi_layer = layer
             settings_manager.set_value(Settings.STUDYAREA_PATH, layer.source())
 
-            self.set_crs_from_layer(layer)
             self.save_scenario()
 
     def can_clip_to_studyarea(self) -> bool:
@@ -607,21 +605,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if self._aoi_layer:
             return self._aoi_layer.source()
         return ""
-
-    def set_crs_from_layer(self, layer):
-        """Set the CRS of the CRS selector component from a layer
-        if the selector CRS is None or Invalid or IsGeographic
-        and the layer CRS is not None and IsValid and is not Geographic
-        """
-        selected_crs = self.crs_selector.crs()
-        if (
-            (selected_crs is None)
-            or (not selected_crs.isValid())
-            or (selected_crs.isGeographic())
-        ):
-            layer_crs = layer.crs()
-            if (layer_crs and layer_crs.isValid()) and (not layer_crs.isGeographic()):
-                self.crs_selector.setCrs(layer_crs)
 
     def priority_groups_update(self, target_item, selected_items):
         """Updates the priority groups list item with the passed
@@ -663,36 +646,27 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         scenario_name = self.scenario_name.text()
         scenario_description = self.scenario_description.text()
 
-        self.extent_box.setOutputCrs(self.crs_selector.crs())
-        aoi_layer = QgsVectorLayer(self.get_studyarea_path(), "studyarea_path")
-        if (
-            self._aoi_source_group.checkedId() == AreaOfInterestSource.LAYER.value
-            and aoi_layer.isValid()
-        ):
-            aoi_layer_extent = aoi_layer.extent()
-            aoi_layer_crs = aoi_layer.crs()
-            extent = self.transform_extent(
-                aoi_layer_extent, aoi_layer_crs, self.crs_selector.crs()
+        if self.can_clip_to_studyarea():
+            settings_manager.set_value(
+                Settings.STUDYAREA_PATH, self.get_studyarea_path()
             )
         else:
             extent = self.extent_box.outputExtent()
-
-        extent_box = [
-            extent.xMinimum(),
-            extent.xMaximum(),
-            extent.yMinimum(),
-            extent.yMaximum(),
-        ]
+            extent_box = [
+                extent.xMinimum(),
+                extent.xMaximum(),
+                extent.yMinimum(),
+                extent.yMaximum(),
+            ]
+            settings_manager.set_value(Settings.SCENARIO_EXTENT, extent_box)
 
         settings_manager.set_value(Settings.SCENARIO_NAME, scenario_name)
         settings_manager.set_value(Settings.SCENARIO_DESCRIPTION, scenario_description)
-        settings_manager.set_value(Settings.SCENARIO_EXTENT, extent_box)
 
         settings_manager.set_value(
             Settings.SCENARIO_CRS, self.crs_selector.crs().authid()
         )
 
-        settings_manager.set_value(Settings.STUDYAREA_PATH, self.get_studyarea_path())
         settings_manager.set_value(
             Settings.CLIP_TO_STUDYAREA, self.can_clip_to_studyarea()
         )
