@@ -1056,25 +1056,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 )
                 return
 
-            reference_ncs_pathway = None
+            reference_layer = None
             for pathway_npv in npv_collection.mappings:
                 if pathway_npv.pathway is None:
                     continue
                 else:
                     if pathway_npv.pathway.is_valid():
                         reference_ncs_pathway = pathway_npv.pathway
+                        reference_layer = reference_ncs_pathway.to_map_layer()
                         break
-
-            if reference_ncs_pathway is None:
-                log(
-                    message=tr(
-                        "There are no valid NCS pathways to extract the CRS and pixel size."
-                    ),
-                    info=False,
-                )
-                return
-
-            reference_layer = reference_ncs_pathway.to_map_layer()
 
             if reference_layer is None:
                 # Attempt to get reference layer from the snapping layer
@@ -1085,18 +1075,29 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 if not reference_layer.isValid():
                     log(
                         message=tr(
-                            "There is no valid reference layer to extract the CRS and pixel size."
+                            "There is no valid reference layer to extract the pixel size."
                         ),
                         info=False,
                     )
                     return
 
-            reference_crs = reference_layer.crs()
+            reference_crs = self.crs_selector.crs()
             reference_pixel_size = reference_layer.rasterUnitsPerPixelX()
 
             # Get the reference extent
             source_extent = self.extent_box.outputExtent()
-            source_crs = QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
+            source_crs = (
+                self.extent_box.outputCrs()
+                or QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
+            )
+
+            if self.can_clip_to_studyarea():
+                studyarea_path = self.get_studyarea_path()
+                studyarea_layer = QgsVectorLayer(studyarea_path, "studyarea")
+                if studyarea_layer.isValid():
+                    source_extent = studyarea_layer.extent()
+                    source_crs = studyarea_layer.crs()
+
             reference_extent = self.transform_extent(
                 source_extent, source_crs, reference_crs
             )
