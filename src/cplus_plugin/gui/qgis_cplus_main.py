@@ -692,9 +692,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             self.extent_box.setOutputExtentFromUser(
                 extent_rectangle,
-                crs,
+                self.extent_box.outputCrs()
+                or QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID),
             )
-            self.extent_box.setOutputCrs(crs)
 
         if studyarea_path:
             self._aoi_layer = QgsVectorLayer(studyarea_path, Path(studyarea_path).stem)
