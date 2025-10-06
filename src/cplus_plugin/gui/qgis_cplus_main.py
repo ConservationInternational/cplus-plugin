@@ -45,6 +45,7 @@ from qgis.gui import (
     QgsGui,
     QgsMessageBar,
     QgsRubberBand,
+    QgsFileWidget,
 )
 
 from qgis.utils import iface
@@ -547,8 +548,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.save_scenario()
 
-    def _on_select_aoi_file(self, activated: bool):
-        """Slot raised to upload a study area layer."""
+    def _on_studyarea_file_changed(self):
+        """Slot raised to when the area of interest is selected from a local file system."""
         data_dir = settings_manager.get_value(Settings.LAST_DATA_DIR, "")
         if not data_dir and self._aoi_layer:
             data_path = self._aoi_layer.source()
@@ -558,20 +559,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if not data_dir:
             data_dir = "/home"
 
-        filter_tr = tr("All files")
-
-        layer_path, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self,
-            self.tr("Select Study Area Layer"),
-            data_dir,
-            f"{filter_tr} (*.*)",
-            options=QtWidgets.QFileDialog.DontResolveSymlinks,
-        )
+        layer_path = self.studyarea_layer_file_widget.filePath()
         if not layer_path:
-            return
-
-        existing_paths = self.cbo_studyarea.additionalItems()
-        if layer_path in existing_paths:
             return
 
         layer = QgsVectorLayer(layer_path, "studyarea")
@@ -579,38 +568,22 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.show_message(tr("Invalid study area layer : ") + layer_path)
             return
 
-        self.cbo_studyarea.setAdditionalItems([])
+        self._aoi_layer = QgsVectorLayer(layer_path, Path(layer_path).stem)
 
-        self._add_layer_path(layer_path)
         settings_manager.set_value(Settings.LAST_DATA_DIR, os.path.dirname(layer_path))
         settings_manager.set_value(Settings.STUDYAREA_PATH, layer_path)
+
         self.set_crs_from_layer(layer)
         self.save_scenario()
 
-    def _add_layer_path(self, layer_path: str):
-        """Select or add layer path to the map layer combobox."""
-        matching_index = -1
-        num_layers = self.cbo_studyarea.count()
-        for index in range(num_layers):
-            layer = self.cbo_studyarea.layer(index)
-            if layer is None:
-                continue
-            if os.path.normpath(layer.source()) == os.path.normpath(layer_path):
-                matching_index = index
-                break
-
-        if matching_index == -1:
-            self.cbo_studyarea.setAdditionalItems([layer_path])
-            self.cbo_studyarea.setCurrentIndex(num_layers)
-        else:
-            self.cbo_studyarea.setCurrentIndex(matching_index)
-
-        self._aoi_layer = QgsVectorLayer(layer_path, Path(layer_path).stem)
-
     def _on_studyarea_layer_changed(self, layer):
+        """Slot raised to when the area of interest is selected from a map layers."""
         if layer is not None:
+            self.studyarea_layer_file_widget.setFilePath(layer.source())
+
             self._aoi_layer = layer
             settings_manager.set_value(Settings.STUDYAREA_PATH, layer.source())
+
             self.set_crs_from_layer(layer)
             self.save_scenario()
 
@@ -756,7 +729,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.extent_box.setOutputCrs(crs)
 
         if studyarea_path:
-            self._add_layer_path(studyarea_path)
+            self._aoi_layer = QgsVectorLayer(studyarea_path, Path(studyarea_path).stem)
 
         if clip_to_studyarea:
             self.on_aoi_source_changed(0, True)
@@ -1538,7 +1511,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             if scenario.clip_to_studyarea and os.path.exists(scenario.studyarea_path):
                 self.on_aoi_source_changed(0, True)
                 self.rb_studyarea.setChecked(True)
-                self._add_layer_path(scenario.studyarea_path)
+                self._aoi_layer = QgsVectorLayer(
+                    scenario.studyarea_path, Path(scenario.studyarea_path).stem
+                )
             else:
                 self.on_aoi_source_changed(1, True)
                 self.rb_extent.setChecked(True)
@@ -2718,11 +2693,19 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
         self._aoi_source_group.idToggled.connect(self.on_aoi_source_changed)
 
+        self.studyarea_layer_file_widget.setStorageMode(
+            QgsFileWidget.StorageMode.GetFile
+        )
+
         self.cbo_studyarea.layerChanged.connect(self._on_studyarea_layer_changed)
         self.cbo_studyarea.setFilters(QgsMapLayerProxyModel.PolygonLayer)
 
-        self.btn_choose_studyarea_file.setToolTip(tr("Select area of interest file"))
-        self.btn_choose_studyarea_file.clicked.connect(self._on_select_aoi_file)
+        self.studyarea_layer_file_widget.setToolTip(
+            tr("Select the study area layer from the local filesystem")
+        )
+        self.studyarea_layer_file_widget.fileChanged.connect(
+            self._on_studyarea_file_changed
+        )
 
     def on_tab_step_changed(self, index: int):
         """Slot raised when the current tab changes.

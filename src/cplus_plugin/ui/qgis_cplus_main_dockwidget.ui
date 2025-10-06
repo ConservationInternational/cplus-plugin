@@ -166,27 +166,18 @@
               <number>0</number>
              </property>
              <widget class="QWidget" name="pg_local">
-              <layout class="QGridLayout" name="gridLayout_2">
-               <property name="leftMargin">
-                <number>2</number>
-               </property>
-               <property name="topMargin">
-                <number>2</number>
-               </property>
-               <property name="rightMargin">
-                <number>2</number>
-               </property>
-               <property name="bottomMargin">
-                <number>2</number>
-               </property>
-               <item row="0" column="0" alignment="Qt::AlignTop">
-                <widget class="QgsMapLayerComboBox" name="cbo_studyarea">                 
+              <layout class="QHBoxLayout" name="horizontalLayout">
+               <item alignment="Qt::AlignTop">
+                <widget class="QgsFileWidget" name="studyarea_layer_file_widget">
+                 <property name="toolTip">
+                  <string>Select the study area layer from the local filesystem.</string>
+                 </property>
                 </widget>
                </item>
-               <item row="0" column="1" alignment="Qt::AlignTop">
-                <widget class="QToolButton" name="btn_choose_studyarea_file">
-                 <property name="text">
-                  <string>...</string>
+               <item alignment="Qt::AlignTop">
+                <widget class="QgsMapLayerComboBox" name="cbo_studyarea">
+                 <property name="toolTip">
+                  <string>Select study area layer from the current QGIS map layers.</string>
                  </property>
                 </widget>
                </item>
@@ -299,7 +290,7 @@
             </property>
             <property name="icon">
              <iconset>
-              <normaloff>../../../../../../../resources/cplus_right_arrow.svg</normaloff>../../../../../../../resources/cplus_right_arrow.svg</iconset>
+              <normaloff>../../../../../../resources/cplus_right_arrow.svg</normaloff>../../../../../../resources/cplus_right_arrow.svg</iconset>
             </property>
            </widget>
           </item>
@@ -313,7 +304,7 @@
             </property>
             <property name="icon">
              <iconset>
-              <normaloff>../../../../../../../resources/cplus_left_arrow.svg</normaloff>../../../../../../../resources/cplus_left_arrow.svg</iconset>
+              <normaloff>../../../../../../resources/cplus_left_arrow.svg</normaloff>../../../../../../resources/cplus_left_arrow.svg</iconset>
             </property>
            </widget>
           </item>
@@ -889,6 +880,11 @@
    <extends>QgsCollapsibleGroupBox</extends>
    <header>qgsextentgroupbox.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>QgsFileWidget</class>
+   <extends>QWidget</extends>
+   <header>qgsfilewidget.h</header>
   </customwidget>
   <customwidget>
    <class>QgsMapLayerComboBox</class>
