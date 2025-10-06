@@ -419,6 +419,7 @@ class SettingsManager(QtCore.QObject):
             )
             settings.setValue("clip_to_studyarea", scenario_settings.clip_to_studyarea)
             settings.setValue("studyarea_path", scenario_settings.studyarea_path)
+            settings.setValue("crs", scenario_settings.crs)
 
     def save_scenario_extent(self, key, extent):
         """Saves the scenario extent into plugin settings

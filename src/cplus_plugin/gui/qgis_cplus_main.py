@@ -1375,6 +1375,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         scenario_name = self.scenario_name.text()
         scenario_description = self.scenario_description.text()
         extent = self.extent_box.outputExtent()
+        extent_crs = self.extent_box.outputCrs()
 
         extent_box = [
             extent.xMinimum(),
@@ -1383,7 +1384,20 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             extent.yMaximum(),
         ]
 
-        extent = SpatialExtent(bbox=extent_box, crs=self.crs_selector.crs().authid())
+        if self.can_clip_to_studyarea():
+            study_area_path = self.get_studyarea_path()
+            layer = QgsVectorLayer(study_area_path, "studyarea")
+            if layer.isValid():
+                extent = layer.extent()
+                extent_box = [
+                    extent.xMinimum(),
+                    extent.xMaximum(),
+                    extent.yMinimum(),
+                    extent.yMaximum(),
+                ]
+                extent_crs = layer.crs()
+
+        extent = SpatialExtent(bbox=extent_box, crs=extent_crs.authid())
         scenario_id = uuid.uuid4()
 
         activities = []
@@ -1407,6 +1421,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             ),
             clip_to_studyarea=self.can_clip_to_studyarea(),
             studyarea_path=self.get_studyarea_path(),
+            crs=self.crs_selector.crs().authid(),
         )
         settings_manager.save_scenario(scenario)
         if self.scenario_result:
@@ -1444,7 +1459,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.scenario_name.setText(scenario.name)
             self.scenario_description.setText(scenario.description)
 
-            crs = QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
             map_canvas = iface.mapCanvas()
             self.extent_box.setCurrentExtent(
                 map_canvas.mapSettings().destinationCrs().bounds(),
@@ -1453,7 +1467,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.extent_box.setOutputExtentFromCurrent()
             self.extent_box.setMapCanvas(map_canvas)
 
-            extent_list = scenario.extent.bbox
+            # Set extent CRS and values
+            extent_crs_text = (
+                scenario.extent.crs
+                if scenario.extent and scenario.extent.crs
+                else f"EPSG:{DEFAULT_CRS_ID}"
+            )
+            extent_crs = QgsCoordinateReferenceSystem(extent_crs_text)
+
+            extent_list = scenario.extent.bbox if scenario.extent else None
             if extent_list:
                 default_extent = QgsRectangle(
                     float(extent_list[0]),
@@ -1461,28 +1483,50 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     float(extent_list[1]),
                     float(extent_list[3]),
                 )
+                self.extent_box.setOutputExtentFromUser(default_extent, extent_crs)
+                self.extent_box.setOutputCrs(extent_crs)
 
-                self.extent_box.setOutputExtentFromUser(
-                    default_extent,
-                    QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID),
-                )
-            analysis_crs = scenario.extent.crs
+            # Set analysis CRS
+            analysis_crs_text = scenario.crs or extent_crs_text
+            analysis_crs = QgsCoordinateReferenceSystem(analysis_crs_text)
+            self.crs_selector.setCrs(analysis_crs)
 
-            if analysis_crs:
-                crs = QgsCoordinateReferenceSystem(analysis_crs)
-            self.crs_selector.setCrs(crs)
-            self.extent_box.setOutputCrs(crs)
+            # Transform extent to analysis CRS
+            transformed_analysis_extent = self.transform_extent(
+                self.extent_box.outputExtent(), extent_crs, analysis_crs
+            )
+            transformed_analysis_extent_list = [
+                transformed_analysis_extent.xMinimum(),
+                transformed_analysis_extent.xMaximum(),
+                transformed_analysis_extent.yMinimum(),
+                transformed_analysis_extent.yMaximum(),
+            ]
 
             self.rb_studyarea.setChecked(False)
             self.rb_extent.setChecked(False)
 
             if scenario.clip_to_studyarea and os.path.exists(scenario.studyarea_path):
+                # Area of Interest from the study area layer
                 self.on_aoi_source_changed(0, True)
                 self.rb_studyarea.setChecked(True)
                 self._aoi_layer = QgsVectorLayer(
                     scenario.studyarea_path, Path(scenario.studyarea_path).stem
                 )
+
+                # Use the study area layer extent transformed to analysis CRS
+                extent = self._aoi_layer.extent()
+                transformed_analysis_extent = self.transform_extent(
+                    extent, self._aoi_layer.crs(), analysis_crs
+                )
+                transformed_analysis_extent_list = [
+                    transformed_analysis_extent.xMinimum(),
+                    transformed_analysis_extent.xMaximum(),
+                    transformed_analysis_extent.yMinimum(),
+                    transformed_analysis_extent.yMaximum(),
+                ]
+
             else:
+                # Area of Interest from the extent
                 self.on_aoi_source_changed(1, True)
                 self.rb_extent.setChecked(True)
 
@@ -1498,7 +1542,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if scenario and scenario.server_uuid:
             self.analysis_scenario_name = scenario.name
             self.analysis_scenario_description = scenario.description
-            self.analysis_extent = SpatialExtent(bbox=extent_list, crs=analysis_crs)
+            self.analysis_extent = SpatialExtent(
+                bbox=transformed_analysis_extent_list, crs=analysis_crs_text
+            )
             self.analysis_activities = scenario.activities
             self.analysis_priority_layers_groups = scenario.priority_layer_groups
 
@@ -1506,9 +1552,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 uuid=scenario.uuid,
                 name=self.analysis_scenario_name,
                 description=self.analysis_scenario_description,
-                extent=self.analysis_extent,
+                extent=SpatialExtent(bbox=extent_list, crs=extent_crs_text),
                 activities=self.analysis_activities,
                 priority_layer_groups=self.analysis_priority_layers_groups,
+                crs=analysis_crs_text,
             )
             scenario_obj.server_uuid = scenario.server_uuid
 
@@ -1829,8 +1876,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         passed_extent_crs = self.extent_box.outputCrs()
 
         # Check if CRS is valid
-        crs = self.crs_selector.crs()
-        if crs is None or not crs.isValid() or crs.isGeographic():
+        analysis_crs = self.crs_selector.crs()
+        if (
+            analysis_crs is None
+            or not analysis_crs.isValid()
+            or analysis_crs.isGeographic()
+        ):
             self.show_message(
                 tr("Please select a valid Coordinate System from step one."),
                 level=Qgis.Critical,
@@ -1850,6 +1901,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             passed_extent = aoi_layer.extent()
             passed_extent_crs = aoi_layer.crs()
             clip_to_studyarea = True
+
+        if passed_extent_crs != analysis_crs:
+            # Transform extent to analysis CRS
+            passed_extent = self.transform_extent(
+                passed_extent, passed_extent_crs, analysis_crs
+            )
+
         self.analysis_scenario_name = self.scenario_name.text()
         self.analysis_scenario_description = self.scenario_description.text()
 
@@ -1933,14 +1991,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 passed_extent.yMinimum(),
                 passed_extent.yMaximum(),
             ],
-            crs=settings_manager.get_value(
-                Settings.SCENARIO_CRS,
-                (
-                    passed_extent_crs.authid()
-                    if passed_extent_crs
-                    else f"EPSG:{DEFAULT_CRS_ID}"
-                ),
-            ),
+            crs=analysis_crs.authid(),
         )
         try:
             self.enable_analysis_controls(False)
@@ -1954,6 +2005,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 priority_layer_groups=self.analysis_priority_layers_groups,
                 clip_to_studyarea=self.can_clip_to_studyarea(),
                 studyarea_path=self.get_studyarea_path(),
+                crs=self.analysis_extent.crs,
             )
 
             self.processing_cancelled = False
@@ -1985,7 +2037,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 tr("Raster calculation for activities pathways")
             )
 
-            selected_pathway = None
             pathway_found = False
             use_default_layer = False
 
@@ -1999,15 +2050,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                         use_default_layer = True
                     elif pathway.path:
                         pathway_found = True
-                        selected_pathway = pathway
                         break
-
-            extent_box = QgsRectangle(
-                float(self.analysis_extent.bbox[0]),
-                float(self.analysis_extent.bbox[2]),
-                float(self.analysis_extent.bbox[1]),
-                float(self.analysis_extent.bbox[3]),
-            )
 
             if not pathway_found and not use_default_layer:
                 self.show_message(
@@ -2021,33 +2064,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.enable_analysis_controls(True)
 
                 return
-
-            source_crs = passed_extent_crs or QgsCoordinateReferenceSystem.fromEpsgId(
-                DEFAULT_CRS_ID
-            )
-            destination_crs = QgsCoordinateReferenceSystem(self.analysis_extent.crs)
-
-            if selected_pathway:
-                selected_pathway_layer = QgsRasterLayer(
-                    selected_pathway.path, selected_pathway.name
-                )
-                if selected_pathway_layer.crs() is not None and destination_crs is None:
-                    destination_crs = selected_pathway_layer.crs()
-                elif destination_crs is None:
-                    destination_crs = QgsProject.instance().crs()
-
-            if source_crs != destination_crs:
-                transformed_extent = self.transform_extent(
-                    extent_box, source_crs, destination_crs
-                )
-
-                self.analysis_extent.bbox = [
-                    transformed_extent.xMinimum(),
-                    transformed_extent.xMaximum(),
-                    transformed_extent.yMinimum(),
-                    transformed_extent.yMaximum(),
-                ]
-            self.analysis_extent.crs = destination_crs.authid()
 
             dt_alg = ApplyNcsDecisionTreeAlgorithm()
             pixel_size = 30.0
@@ -2068,7 +2084,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
                 dt_params = {
                     dt_alg.P_ACTIVITY_ID: str(activity.uuid),
-                    dt_alg.P_TARGET_CRS: destination_crs,
+                    dt_alg.P_TARGET_CRS: self.analysis_extent.crs,
                     dt_alg.P_EXTENT: dt_extent,
                     dt_alg.P_PIXEL: pixel_size,
                     dt_alg.P_NODATA: nodata_val,
