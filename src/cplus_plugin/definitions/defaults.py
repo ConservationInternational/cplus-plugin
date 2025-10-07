@@ -42,6 +42,12 @@ GENERAL_OPTIONS_TITLE = "General"
 REPORT_OPTIONS_TITLE = "Reporting"
 CARBON_OPTIONS_TITLE = "Carbon"
 LOG_OPTIONS_TITLE = "Logs"
+
+# Activity table headers in scenario analysis report
+CARBON_IMPACT_HEADER = "Carbon Imp"
+STORED_CARBON_HEADER = "Stored C"
+TOTAL_CARBON_HEADER = "Total C"
+
 ICON_PATH = ":/plugins/cplus_plugin/icon.svg"
 REPORT_SETTINGS_ICON_PATH = str(
     os.path.normpath(

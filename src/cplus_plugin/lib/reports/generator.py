@@ -59,6 +59,7 @@ from ...definitions.constants import (
 from ...definitions.defaults import (
     ACTIVITY_AREA_TABLE_ID,
     AREA_COMPARISON_TABLE_ID,
+    CARBON_IMPACT_HEADER,
     MAX_ACTIVITY_DESCRIPTION_LENGTH,
     MAX_ACTIVITY_NAME_LENGTH,
     METRICS_ACCREDITATION,
@@ -71,6 +72,8 @@ from ...definitions.defaults import (
     MINIMUM_ITEM_WIDTH,
     PRIORITY_GROUP_WEIGHT_TABLE_ID,
     REPORT_COLOR_TREEFOG,
+    STORED_CARBON_HEADER,
+    TOTAL_CARBON_HEADER,
 )
 from .layout_items import BasicScenarioDetailsItem, CplusMapRepeatItem
 from .metrics import create_metrics_expression_context, evaluate_activity_metric
@@ -1795,32 +1798,26 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             for mc in self._metrics_configuration.metric_columns:
                 columns.append(mc.to_qgs_column())
         else:
-            # Otherwise just add the default columns - area, carbon-related columns
-            area_column = QgsLayoutTableColumn(tr("Area (ha)"))
-            area_column.setWidth(0)
-            area_column.setHAlignment(QtCore.Qt.AlignHCenter)
-
-            columns.append(area_column)
-
-            carbon_impact_column = QgsLayoutTableColumn(tr("Carbon Impact (tCO2e/yr)"))
+            # Otherwise just add the additional default columns - carbon-related columns
+            carbon_impact_column = QgsLayoutTableColumn(tr(CARBON_IMPACT_HEADER))
             carbon_impact_column.setWidth(0)
             carbon_impact_column.setHAlignment(QtCore.Qt.AlignHCenter)
 
             columns.append(carbon_impact_column)
 
             # Stored carbon - protect pathways
-            stored_carbon_column = QgsLayoutTableColumn(tr("Stored Carbon (tons C)"))
+            stored_carbon_column = QgsLayoutTableColumn(tr(STORED_CARBON_HEADER))
             stored_carbon_column.setWidth(0)
             stored_carbon_column.setHAlignment(QtCore.Qt.AlignHCenter)
 
             columns.append(stored_carbon_column)
 
             # Total carbon
-            total_carbon_column = QgsLayoutTableColumn(tr("Total Carbon (tons C)"))
+            total_carbon_column = QgsLayoutTableColumn(tr(TOTAL_CARBON_HEADER))
             total_carbon_column.setWidth(0)
             total_carbon_column.setHAlignment(QtCore.Qt.AlignHCenter)
 
-            columns.append(total_carbon_column)
+            # columns.append(total_carbon_column)
 
         parent_table.setHeaders(columns)
 
@@ -1910,13 +1907,10 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
                     activity_row_cells.append(activity_cell)
             else:
-                # Perform carbon calculations
-                stored_carbon_calculator = StoredCarbonCalculator(activity)
-                stored_carbon = stored_carbon_calculator.run()
-
                 # Update values
                 formatted_area = self.format_number(area_info)
                 area_cell = QgsTableCell(formatted_area)
+                area_cell.setHorizontalAlignment(QtCore.Qt.AlignHCenter)
 
                 activity_row_cells.append(area_cell)
 
@@ -1924,15 +1918,17 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 carbon_impact_cell = QgsTableCell(
                     self.format_number(activity_naturebase_carbon)
                 )
+                carbon_impact_cell.setHorizontalAlignment(QtCore.Qt.AlignHCenter)
                 activity_row_cells.append(carbon_impact_cell)
 
                 # Stored carbon
-                stored_carbon_cell = QgsTableCell(self.format_number(stored_carbon))
+                stored_carbon_calculator = StoredCarbonCalculator(activity)
+                stored_carbon = stored_carbon_calculator.run()
+                stored_carbon_cell = QgsTableCell(
+                    self.format_number(stored_carbon, True)
+                )
+                stored_carbon_cell.setHorizontalAlignment(QtCore.Qt.AlignHCenter)
                 activity_row_cells.append(stored_carbon_cell)
-
-                # Total carbon
-                total_carbon_cell = QgsTableCell("")
-                activity_row_cells.append(total_carbon_cell)
 
             rows_data.append(activity_row_cells)
 
@@ -1941,7 +1937,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         self._re_orient_area_table_page(parent_table)
 
     @classmethod
-    def format_number(cls, value: typing.Any) -> str:
+    def format_number(cls, value: typing.Any, no_decimal_places: bool = False) -> str:
         """Formats a number to two decimals places.
 
         :returns: String representation of a number rounded off to
@@ -1955,7 +1951,8 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         number_format = QgsBasicNumericFormat()
         number_format.setThousandsSeparator(",")
         number_format.setShowTrailingZeros(True)
-        number_format.setNumberDecimalPlaces(cls.AREA_DECIMAL_PLACES)
+        decimal_places = 0 if no_decimal_places else cls.AREA_DECIMAL_PLACES
+        number_format.setNumberDecimalPlaces(decimal_places)
 
         return number_format.formatDouble(value, QgsNumericFormatContext())
 

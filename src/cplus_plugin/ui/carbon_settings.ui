@@ -206,7 +206,7 @@
    <item>
     <widget class="QgsCollapsibleGroupBox" name="gb_stored_carbon">
      <property name="title">
-      <string>Stored carbon</string>
+      <string>Stored carbon - protect pathways</string>
      </property>
      <layout class="QGridLayout" name="gridLayout">
       <item row="0" column="0">

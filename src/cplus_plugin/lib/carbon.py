@@ -12,6 +12,8 @@ from itertools import count
 
 from qgis.core import (
     QgsCoordinateReferenceSystem,
+    QgsCoordinateTransform,
+    QgsCoordinateTransformContext,
     QgsProcessing,
     QgsProcessingContext,
     QgsProcessingException,
@@ -39,6 +41,53 @@ MEAN_REFERENCE_LAYER_AREA = 9.0
 LOG_PREFIX = "Carbon Calculation"
 
 
+def _validate_and_transform_extent(
+    scenario_extent: typing.Tuple, reference_extent_crs_str: str
+) -> typing.Optional[QgsRectangle]:
+    """Validates and transforms the scenario extent to WGS84 if needed.
+
+    :param scenario_extent: The scenario extent tuple.
+    :type scenario_extent: typing.Tuple
+
+    :param reference_extent_crs_str: The CRS string of the reference extent.
+    :type reference_extent_crs_str: str
+
+    :returns: The validated and potentially reprojected extent, or None if invalid.
+    :rtype: typing.Optional[QgsRectangle]
+    """
+    reference_extent = QgsRectangle(
+        float(scenario_extent[0]),
+        float(scenario_extent[2]),
+        float(scenario_extent[1]),
+        float(scenario_extent[3]),
+    )
+
+    # Exit if already in WGS84
+    if reference_extent_crs_str == "EPSG:4326":
+        return reference_extent
+
+    # Validate and reproject if needed
+    reference_extent_crs = QgsCoordinateReferenceSystem(reference_extent_crs_str)
+    if not reference_extent_crs.isValid():
+        log(f"{LOG_PREFIX} - Scenario extent CRS is invalid.", info=False)
+        return None
+
+    try:
+        # Update to use project overload
+        coordinate_xform = QgsCoordinateTransform(
+            reference_extent_crs,
+            QgsCoordinateReferenceSystem("EPSG:4326"),
+            QgsCoordinateTransformContext(),
+        )
+        return coordinate_xform.transformBoundingBox(reference_extent)
+    except Exception as e:
+        log(
+            f"{LOG_PREFIX} - Unable to reproject scenario extent CRS to WGS84 of reference layer. Error: {e}",
+            info=False,
+        )
+        return None
+
+
 def _get_intersecting_pixel_values(
     ncs_protect_pathways_layer: QgsRasterLayer,
     reference_layer_path: str,
@@ -58,8 +107,7 @@ def _get_intersecting_pixel_values(
     valid value and 0 represents a non-valid or nodata value.
     :type ncs_protect_pathways_layer: QgsRasterLayer
 
-    :param reference_layer_path: Path to the reference carbon layer. Used when
-    creating the raster layer.
+    :param reference_layer_path: Path to the reference carbon layer.
     :type reference_layer_path: str
 
     :param reference_layer_name: Name for the reference layer.
@@ -72,6 +120,7 @@ def _get_intersecting_pixel_values(
     any errors during the operation or no intersections are found.
     :rtype: typing.List[float]
     """
+    # Validate input layer
     if not ncs_protect_pathways_layer.isValid():
         log(
             f"{LOG_PREFIX} - Input union of protect NCS pathways is invalid.",
@@ -79,18 +128,26 @@ def _get_intersecting_pixel_values(
         )
         return []
 
+    # Validate reference layer path
     norm_source_path = os.path.normpath(reference_layer_path)
     if not os.path.exists(norm_source_path):
-        error_msg = (
+        log(
             f"{LOG_PREFIX} - {calculation_type} - Data source for reference "
-            f"layer {norm_source_path} does not exist."
+            f"layer {norm_source_path} does not exist.",
+            info=False,
         )
-        log(error_msg, info=False)
         return []
 
+    # Load and validate reference layer
     reference_layer = QgsRasterLayer(norm_source_path, reference_layer_name)
+    if not reference_layer.isValid():
+        log(
+            f"{LOG_PREFIX} - Reference {calculation_type} layer is invalid.",
+            info=False,
+        )
+        return []
 
-    # Check CRS and warn if different
+    # Check CRS compatibility
     if reference_layer.crs() != ncs_protect_pathways_layer.crs():
         log(
             f"{LOG_PREFIX} - Final computation might be incorrect as protect NCS "
@@ -98,24 +155,29 @@ def _get_intersecting_pixel_values(
             info=False,
         )
 
+    # Get and validate scenario extent
     scenario_extent = settings_manager.get_value(Settings.SCENARIO_EXTENT)
     if scenario_extent is None:
-        log(
-            f"{LOG_PREFIX} - Scenario extent not defined.",
-            info=False,
-        )
+        log(f"{LOG_PREFIX} - Scenario extent not defined.", info=False)
         return []
 
-    reference_extent = QgsRectangle(
-        float(scenario_extent[0]),
-        float(scenario_extent[2]),
-        float(scenario_extent[1]),
-        float(scenario_extent[3]),
+    # Get and validate scenario CRS
+    reference_extent_crs_str = settings_manager.get_value(
+        Settings.SCENARIO_CRS, default=""
     )
+    if not reference_extent_crs_str:
+        log(f"{LOG_PREFIX} - Scenario extent CRS not been defined.", info=False)
+        return []
 
+    # Transform extent to WGS84 if needed
+    reference_extent = _validate_and_transform_extent(
+        scenario_extent, reference_extent_crs_str
+    )
+    if reference_extent is None:
+        return []
+
+    # Check intersection
     ncs_pathways_extent = ncs_protect_pathways_layer.extent()
-
-    # if they do not intersect then exit. This might also be related to the CRS.
     if not reference_extent.intersects(ncs_pathways_extent):
         log(
             f"{LOG_PREFIX} - The protect NCS pathways layer does not intersect with "
@@ -124,6 +186,18 @@ def _get_intersecting_pixel_values(
         )
         return []
 
+    # Pre-calculate constants for NCS pathway layer
+    ncs_pixel_width = ncs_protect_pathways_layer.rasterUnitsPerPixelX()
+    ncs_pixel_height = ncs_protect_pathways_layer.rasterUnitsPerPixelY()
+    ncs_provider = ncs_protect_pathways_layer.dataProvider()
+
+    # Pre-calculate reference extent properties
+    ref_width = reference_extent.width()
+    ref_height = reference_extent.height()
+    ref_x_min = reference_extent.xMinimum()
+    ref_y_max = reference_extent.yMaximum()
+
+    # Initialize iterator
     reference_provider = reference_layer.dataProvider()
     reference_layer_iterator = QgsRasterIterator(reference_provider)
     reference_layer_iterator.startRasterRead(
@@ -132,15 +206,10 @@ def _get_intersecting_pixel_values(
 
     intersecting_pixel_values = []
 
+    # Process ref layer blocks
     while True:
-        (
-            success,
-            columns,
-            rows,
-            block,
-            left,
-            top,
-        ) = reference_layer_iterator.readNextRasterPart(1)
+        result = reference_layer_iterator.readNextRasterPart(1)
+        success, columns, rows, block, left, top = result
 
         if not success:
             break
@@ -152,47 +221,36 @@ def _get_intersecting_pixel_values(
             )
             break
 
+        col_step = ref_width / columns
+        row_step = ref_height / rows
+
         for r in range(rows):
-            block_part_y_min = reference_extent.yMaximum() - (
-                (r + 1) / rows * reference_extent.height()
-            )
-            block_part_y_max = reference_extent.yMaximum() - (
-                r / rows * reference_extent.height()
-            )
+            # Calculate y bounds once per row
+            block_part_y_max = ref_y_max - r * row_step
+            block_part_y_min = block_part_y_max - row_step
 
             for c in range(columns):
                 if block.isNoData(r, c):
                     continue
 
-                block_part_x_min = reference_extent.xMinimum() + (
-                    c / columns * reference_extent.width()
-                )
-                block_part_x_max = reference_extent.xMinimum() + (
-                    (c + 1) / columns * reference_extent.width()
-                )
+                # Calculate x bounds
+                block_part_x_min = ref_x_min + c * col_step
+                block_part_x_max = block_part_x_min + col_step
 
-                # Use this to check if there are intersecting NCS pathway pixels in
-                # the reference layer block
+                # Create analysis extent
                 analysis_extent = QgsRectangle(
                     block_part_x_min,
                     block_part_y_min,
                     block_part_x_max,
                     block_part_y_max,
                 )
-                ncs_cols = math.ceil(
-                    1.0
-                    * analysis_extent.width()
-                    / ncs_protect_pathways_layer.rasterUnitsPerPixelX()
-                )
-                ncs_rows = math.ceil(
-                    1.0
-                    * analysis_extent.height()
-                    / ncs_protect_pathways_layer.rasterUnitsPerPixelY()
-                )
 
-                ncs_block = ncs_protect_pathways_layer.dataProvider().block(
-                    1, analysis_extent, ncs_cols, ncs_rows
-                )
+                # Calculate required dimensions for NCS block
+                ncs_cols = math.ceil(analysis_extent.width() / ncs_pixel_width)
+                ncs_rows = math.ceil(analysis_extent.height() / ncs_pixel_height)
+
+                # Get NCS block
+                ncs_block = ncs_provider.block(1, analysis_extent, ncs_cols, ncs_rows)
                 if not ncs_block.isValid():
                     log(
                         f"{LOG_PREFIX} - Invalid aggregated NCS pathway raster block.",
@@ -200,6 +258,7 @@ def _get_intersecting_pixel_values(
                     )
                     continue
 
+                # Check if the NCS block contains any valid data
                 ncs_block_data = ncs_block.data()
                 invalid_data = QgsRasterBlock.valueBytes(ncs_block.dataType(), 0.0)
 
@@ -213,8 +272,7 @@ def _get_intersecting_pixel_values(
                 )
 
                 if ncs_ba_set - invalid_ba_set:
-                    # we have valid overlapping pixels hence we can pick the value of
-                    # the corresponding reference layer.
+                    # We have valid overlapping pixels, store the reference value
                     intersecting_pixel_values.append(block.value(r, c))
 
     reference_layer_iterator.stopRasterRead(1)
