@@ -193,6 +193,7 @@ class Settings(enum.Enum):
     SCENARIO_NAME = "scenario_name"
     SCENARIO_DESCRIPTION = "scenario_description"
     SCENARIO_EXTENT = "scenario_extent"
+    SCENARIO_EXTENT_CRS = "scenario_extent_crs"
     SCENARIO_CRS = "scenario_crs"
     SCENARIO_IMPACT_MATRIX = "scenario_impact_matrix"
 
@@ -419,6 +420,7 @@ class SettingsManager(QtCore.QObject):
             )
             settings.setValue("clip_to_studyarea", scenario_settings.clip_to_studyarea)
             settings.setValue("studyarea_path", scenario_settings.studyarea_path)
+            settings.setValue("crs", scenario_settings.crs)
 
     def save_scenario_extent(self, key, extent):
         """Saves the scenario extent into plugin settings

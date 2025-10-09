@@ -618,6 +618,7 @@ class Scenario(BaseModelComponent):
     server_uuid: UUID = None
     clip_to_studyarea: bool = False
     studyarea_path: str = None
+    crs: str = None
 
 
 @dataclasses.dataclass
