@@ -3,12 +3,11 @@
 Contains functions for carbon calculations.
 """
 
-from functools import partial
+from dataclasses import dataclass
 import math
 from numbers import Number
 import os
 import typing
-from itertools import count
 
 from qgis.core import (
     QgsCoordinateReferenceSystem,
@@ -25,12 +24,14 @@ from qgis.core import (
 from qgis import processing
 
 from ..conf import settings_manager, Settings
+from ..definitions.constants import CARBON_IMPACT_ATTRIBUTE
 from ..models.base import (
     Activity,
     DataSourceType,
+    NcsPathway,
     NcsPathwayType,
 )
-from ..utils import log
+from ..utils import calculate_raster_area, log
 
 
 # For now, will set this manually but for future implementation, consider
@@ -401,11 +402,55 @@ def calculate_stored_carbon(
     return sum(intersecting_pixel_values)
 
 
-class BaseProtectPathwaysCarbonCalculator:
-    """Base class for carbon calculators that process protect pathways.
+@dataclass
+class NcsPathwayCarbonInfo:
+    """Container for NcsPathway layer and corresponding carbon
+    impact value.
+    """
 
-    This class encapsulates the common logic for preparing and processing
-    protect NCS pathways before calculating carbon values.
+    layer: QgsRasterLayer
+    carbon_impact_per_ha: float
+
+
+def calculate_manage_pathway_carbon(
+    ncs_pathways_carbon_info: typing.List[NcsPathwayCarbonInfo],
+) -> float:
+    """Calculates the carbon impact in tonnes for manage NCS pathways
+    by multiplying the area of the manage NCS pathway layers with
+    the user-defined carbon impact rate for the specific NCS pathway.
+
+    :param ncs_pathways_carbon_info: Container for pathway rasters
+    and their corresponding carbon impact values.
+    :type ncs_pathways_carbon_info: typing.List[NcsPathwayCarbonInfo]
+
+    :returns: The total carbon impact for manage NCS pathways. If no
+    pathways found, returns 0.0.
+    :rtype: float
+    """
+    if not ncs_pathways_carbon_info:
+        log(
+            f"{LOG_PREFIX} - No pathways found for calculating "
+            f"carbon impact for manage pathways.",
+            info=False,
+        )
+        return 0.0
+
+    log("Calculating carbon impact for manage pathways...")
+
+    total_carbon = 0.0
+    for carbon_info in ncs_pathways_carbon_info:
+        area = calculate_raster_area(carbon_info.layer, 1)
+        if area != -1.0:
+            total_carbon += area * carbon_info.carbon_impact_per_ha
+
+    return total_carbon
+
+
+class BasePathwaysCarbonCalculator:
+    """Base class for carbon calculators for NCS pathways.
+
+    This class encapsulates the common logic for preparing
+    the NCS pathways.
     """
 
     def __init__(self, activity: typing.Union[str, Activity]):
@@ -433,12 +478,28 @@ class BaseProtectPathwaysCarbonCalculator:
         """
         return "Carbon"
 
-    def _prepare_protect_pathways_layer(self) -> typing.Optional[QgsRasterLayer]:
-        """Prepares a binary, reprojected layer from all protect pathways in the activity.
+    @property
+    def pathway_type(self) -> NcsPathwayType:
+        """Returns the NCS pathway type used in the carbon
+        calculation. Needs to be overridden in subclasses.
 
-        :returns: The prepared raster layer or None if an error occurs.
-        :rtype: typing.Optional[QgsRasterLayer]
+        :returns: NCS pathway type to be applied in the calculation.
+        :rtype:
         """
+        return NcsPathwayType.UNDEFINED
+
+    def get_pathways(self) -> typing.List[NcsPathway]:
+        """Returns NCS pathways based on the type defined in
+        subclass implementations.
+
+        :returns: NCS pathways of the type defined in the
+        subclass. If the type of the NCS pathway in the
+        activity is not defined, then it will be excluded
+        from the list.
+        """
+        if self.pathway_type == NcsPathwayType.UNDEFINED:
+            return []
+
         if self._activity is None:
             log(
                 f"{LOG_PREFIX} - The activity is invalid, null reference.",
@@ -454,11 +515,50 @@ class BaseProtectPathwaysCarbonCalculator:
             )
             return None
 
-        protect_pathways = [
+        type_pathways = [
             pathway
             for pathway in self._activity.pathways
-            if pathway.pathway_type == NcsPathwayType.PROTECT
+            if pathway.pathway_type == self.pathway_type
         ]
+
+        return type_pathways
+
+    def run(self) -> float:
+        """Calculates carbon value for the referenced activity.
+
+        Subclasses need to implement this function.
+
+        :returns: The total carbon value.
+        :rtype: float
+        """
+        raise NotImplementedError("Subclasses must implement the 'run' function.")
+
+
+class BaseProtectPathwaysCarbonCalculator(BasePathwaysCarbonCalculator):
+    """Base class for carbon calculators that process protect pathways.
+
+    This class encapsulates the common logic for preparing and processing
+    protect NCS pathways before calculating carbon values.
+    """
+
+    @property
+    def pathway_type(self) -> NcsPathwayType:
+        """Returns the NCS protect pathway type used in
+        the carbon calculation.
+
+        :returns: NCS protect pathway type applied in
+        the calculation.
+        :rtype:
+        """
+        return NcsPathwayType.PROTECT
+
+    def _prepare_protect_pathways_layer(self) -> typing.Optional[QgsRasterLayer]:
+        """Prepares a binary, reprojected layer from all protect pathways in the activity.
+
+        :returns: The prepared raster layer or None if an error occurs.
+        :rtype: typing.Optional[QgsRasterLayer]
+        """
+        protect_pathways = self.get_pathways()
 
         if len(protect_pathways) == 0:
             log(
@@ -674,6 +774,67 @@ class StoredCarbonCalculator(BaseProtectPathwaysCarbonCalculator):
 
     def _calculate_carbon(self, prepared_layer: QgsRasterLayer) -> float:
         return calculate_stored_carbon(prepared_layer)
+
+
+class ManagePathwaysCarbonCalculator(BasePathwaysCarbonCalculator):
+    """Class for carbon calculation for manage NCS pathways."""
+
+    @property
+    def pathway_type(self) -> NcsPathwayType:
+        """Returns the NCS manage pathway type used in
+        the carbon calculation.
+
+        :returns: NCS manage pathway type applied in
+        the calculation.
+        :rtype:
+        """
+        return NcsPathwayType.MANAGE
+
+    @property
+    def calculation_type(self) -> str:
+        return "Manage Carbon Impact"
+
+    def run(self) -> float:
+        """Calculates the carbon impact for manage NCS pathways.
+
+        :returns: The total carbon impact value. If there are
+        no manage NCS pathways, returns 0.0. If errors occur,
+        returns -1.0.
+        :rtype: float
+        """
+        manage_pathways = self.get_pathways()
+
+        if len(manage_pathways) == 0:
+            log(
+                f"{LOG_PREFIX} - There are no manage pathways in "
+                f"{self._activity.name} activity.",
+                info=False,
+            )
+            return 0.0
+
+        manage_carbon_info = [
+            NcsPathwayCarbonInfo(layer, pathway.type_options[CARBON_IMPACT_ATTRIBUTE])
+            for pathway in manage_pathways
+            for layer in [pathway.to_map_layer()]
+            if layer.isValid() and CARBON_IMPACT_ATTRIBUTE in pathway.type_options
+        ]
+
+        if len(manage_carbon_info) == 0:
+            log(
+                f"{LOG_PREFIX} - There are no valid manage pathway layers in "
+                f"{self._activity.name} activity.",
+                info=False,
+            )
+            return 0.0
+
+        if len(manage_carbon_info) != len(manage_pathways):
+            log(
+                f"{LOG_PREFIX} - Some manage pathway layers are invalid and will be "
+                f"excluded from the {self.calculation_type.lower()} calculation.",
+                info=False,
+            )
+
+        return calculate_manage_pathway_carbon(manage_carbon_info)
 
 
 def calculate_activity_naturebase_carbon_impact(activity: Activity) -> float:
