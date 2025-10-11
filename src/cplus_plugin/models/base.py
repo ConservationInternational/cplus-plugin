@@ -314,6 +314,8 @@ class NcsPathway(LayerModelComponent):
     pathway_type: NcsPathwayType = NcsPathwayType.UNDEFINED
     priority_layers: typing.List[typing.Dict] = dataclasses.field(default_factory=list)
     carbon_impact_value: float = None
+    # Additional properties based on the NCS pathway type
+    type_options: typing.Dict = dataclasses.field(default_factory=dict)
 
     def __eq__(self, other: "NcsPathway") -> bool:
         """Test equality of NcsPathway object with another
@@ -371,6 +373,18 @@ class NcsPathway(LayerModelComponent):
                 break
 
         return is_valid
+
+    def supports_extra_options(self) -> bool:
+        """Checks if the pathway supports extra options.
+
+        :returns: True if the selected pathway type support extra options
+        else False.
+        :rtype: bool
+        """
+        if self.pathway_type == NcsPathwayType.MANAGE:
+            return True
+
+        return False
 
 
 @dataclasses.dataclass

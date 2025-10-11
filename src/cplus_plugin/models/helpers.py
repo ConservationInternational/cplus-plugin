@@ -46,7 +46,6 @@ from ..definitions.constants import (
     LAYER_TYPE_ATTRIBUTE,
     MANUAL_NPV_ATTRIBUTE,
     MASK_PATHS_SEGMENT,
-    METRIC_COLLECTION_PROPERTY,
     METRIC_CONFIGURATION_PROPERTY,
     METRIC_IDENTIFIER_PROPERTY,
     METRIC_TYPE_ATTRIBUTE,
@@ -63,6 +62,7 @@ from ..definitions.constants import (
     NUMBER_FORMATTER_PROPS_ATTRIBUTE,
     PATH_ATTRIBUTE,
     PATHWAY_TYPE_ATTRIBUTE,
+    PATHWAY_TYPE_OPTIONS_ATTRIBUTE,
     PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
     PROFILES_ATTRIBUTE,
@@ -217,6 +217,9 @@ def create_ncs_pathway(source_dict) -> typing.Union[NcsPathway, None]:
     if PRIORITY_LAYERS_SEGMENT in source_dict.keys():
         ncs.priority_layers = source_dict[PRIORITY_LAYERS_SEGMENT]
 
+    if PATHWAY_TYPE_OPTIONS_ATTRIBUTE in source_dict:
+        ncs.type_options = source_dict[PATHWAY_TYPE_OPTIONS_ATTRIBUTE]
+
     return ncs
 
 
@@ -306,6 +309,7 @@ def ncs_pathway_to_dict(ncs_pathway: NcsPathway, uuid_to_str=True) -> dict:
     base_ncs_dict = layer_component_to_dict(ncs_pathway, uuid_to_str)
     base_ncs_dict[PATHWAY_TYPE_ATTRIBUTE] = ncs_pathway.pathway_type
     base_ncs_dict[PRIORITY_LAYERS_SEGMENT] = ncs_pathway.priority_layers
+    base_ncs_dict[PATHWAY_TYPE_OPTIONS_ATTRIBUTE] = ncs_pathway.type_options
 
     return base_ncs_dict
 

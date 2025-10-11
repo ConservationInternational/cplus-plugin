@@ -44,8 +44,8 @@ CARBON_OPTIONS_TITLE = "Carbon"
 LOG_OPTIONS_TITLE = "Logs"
 
 # Activity table headers in scenario analysis report
-CARBON_IMPACT_HEADER = "Carbon Imp"
-STORED_CARBON_HEADER = "Stored C"
+CARBON_IMPACT_HEADER = "Carbon Impact (Naturebase)"
+STORED_CARBON_HEADER = "Carbon Impact (Protect)"
 TOTAL_CARBON_HEADER = "Total C"
 
 ICON_PATH = ":/plugins/cplus_plugin/icon.svg"
@@ -233,6 +233,9 @@ IRRECOVERABLE_CARBON_API_URL = f"{BASE_API_URL}/reference_layer/carbon_calculati
 
 DEFAULT_BASE_COMPARISON_REPORT_NAME = "Scenario Comparison Report"
 MAXIMUM_COMPARISON_REPORTS = 10
+
+# Carbon defaults
+MAX_CARBON_IMPACT_MANAGE = 100000.0
 
 NPV_EXPRESSION_DESCRIPTION = (
     "Calculates the financial NPV of the current "

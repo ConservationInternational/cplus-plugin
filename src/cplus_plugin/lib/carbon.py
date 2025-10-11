@@ -181,32 +181,38 @@ def _get_intersecting_pixel_values(
     if not reference_extent.intersects(ncs_pathways_extent):
         log(
             f"{LOG_PREFIX} - The protect NCS pathways layer does not intersect with "
-            f"the reference {calculation_type} layer.",
+            f"the reference {calculation_type} layer. "
+            f"\nReference extent: {reference_extent.toString()} "
+            f"\nProtect NCS pathway extent: {ncs_pathways_extent.toString()}",
             info=False,
         )
         return []
 
-    # Pre-calculate constants for NCS pathway layer
+    # Constants for NCS pathway layer
     ncs_pixel_width = ncs_protect_pathways_layer.rasterUnitsPerPixelX()
     ncs_pixel_height = ncs_protect_pathways_layer.rasterUnitsPerPixelY()
     ncs_provider = ncs_protect_pathways_layer.dataProvider()
 
-    # Pre-calculate reference extent properties
+    # Reference extent properties
     ref_width = reference_extent.width()
     ref_height = reference_extent.height()
     ref_x_min = reference_extent.xMinimum()
     ref_y_max = reference_extent.yMaximum()
 
+    # Specify extents for reading the reference layer
+    reference_num_cols = math.floor(ref_width / reference_layer.rasterUnitsPerPixelX())
+    reference_num_rows = math.floor(ref_height / reference_layer.rasterUnitsPerPixelY())
+
     # Initialize iterator
     reference_provider = reference_layer.dataProvider()
     reference_layer_iterator = QgsRasterIterator(reference_provider)
     reference_layer_iterator.startRasterRead(
-        1, reference_provider.xSize(), reference_provider.ySize(), reference_extent
+        1, reference_num_cols, reference_num_rows, reference_extent
     )
 
     intersecting_pixel_values = []
 
-    # Process ref layer blocks
+    # Process reference layer blocks
     while True:
         result = reference_layer_iterator.readNextRasterPart(1)
         success, columns, rows, block, left, top = result
@@ -223,6 +229,9 @@ def _get_intersecting_pixel_values(
 
         col_step = ref_width / columns
         row_step = ref_height / rows
+
+        # Set invalid data bytes once per block
+        invalid_data = None
 
         for r in range(rows):
             # Calculate y bounds once per row
@@ -258,12 +267,15 @@ def _get_intersecting_pixel_values(
                     )
                     continue
 
-                # Check if the NCS block contains any valid data
-                ncs_block_data = ncs_block.data()
-                invalid_data = QgsRasterBlock.valueBytes(ncs_block.dataType(), 0.0)
+                # Initialization invalid data once
+                if invalid_data is None:
+                    invalid_data = QgsRasterBlock.valueBytes(ncs_block.dataType(), 0.0)
 
-                # Check if the NCS block within the reference block contains
-                # any other value apart from the invalid value i.e. 0 pixel value.
+                ncs_block_data = ncs_block.data()
+
+                # Check if the NCS block contains any valid data i.e. if the NCS
+                # block within the reference block contains any other value
+                # apart from the invalid value i.e. 0 pixel value.
                 ncs_ba_set = set(
                     ncs_block_data[i] for i in range(ncs_block_data.size())
                 )

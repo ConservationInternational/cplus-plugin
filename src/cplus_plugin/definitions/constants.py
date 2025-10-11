@@ -22,10 +22,12 @@ ACTIVITY_NAME = "Activity"
 
 # Attribute names
 CARBON_COEFFICIENT_ATTRIBUTE = "carbon_coefficient"
+CARBON_IMPACT_ATTRIBUTE = "carbon_impact"
 CARBON_PATHS_ATTRIBUTE = "carbon_paths"
 COLOR_RAMP_PROPERTIES_ATTRIBUTE = "color_ramp"
 COLOR_RAMP_TYPE_ATTRIBUTE = "ramp_type"
 DESCRIPTION_ATTRIBUTE = "description"
+PATHWAY_TYPE_OPTIONS_ATTRIBUTE = "type_options"
 ACTIVITY_LAYER_STYLE_ATTRIBUTE = "activity_layer"
 ACTIVITY_SCENARIO_STYLE_ATTRIBUTE = "scenario_layer"
 LAYER_TYPE_ATTRIBUTE = "layer_type"

@@ -264,6 +264,9 @@ class Settings(enum.Enum):
     # Stored carbon - biomass
     STORED_CARBON_BIOMASS_PATH = "carbon/stored_carbon_biomass_path"
 
+    # Carbon impact - manage
+    DEFAULT_CARBON_IMPACT_MANAGE = "carbon/default_carbon_impact_manage"
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""
