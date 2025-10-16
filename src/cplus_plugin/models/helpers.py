@@ -30,6 +30,13 @@ from .base import (
     ScenarioResult,
     SpatialExtent,
 )
+from .constant_pwl import (
+    ConstantPwlItem,
+    ConstantPwlCollection,
+    InputMode,
+    ScaleMode,
+    Inversion,
+)
 from ..definitions.constants import (
     ACTIVITY_IDENTIFIER_PROPERTY,
     ACTIVITY_METRICS_PROPERTY,
@@ -678,6 +685,102 @@ def create_ncs_pathway_npv_collection(
         pathway_npv_collection.mappings = npv_mappings
 
     return pathway_npv_collection
+
+
+def constant_pwl_item_to_dict(item: ConstantPwlItem) -> dict:
+    """
+    Serialize a ConstantPwlItem to a dict that matches our helpers.py style.
+    """
+    return {
+        NCS_PATHWAY_IDENTIFIER_PROPERTY: str(item.pathway.uuid),
+        ENABLED_ATTRIBUTE: bool(item.enabled),
+        "input_mode": item.input_mode.name,  # e.g. "CONSTANT_VALUE"
+        PATH_ATTRIBUTE: item.raster_path or "",
+        "constant_value": float(item.constant_value),
+        "normalized_raster_path": item.normalized_raster_path or "",
+    }
+
+
+def create_constant_pwl_item(
+    d: dict, reference_pathways: typing.List[NcsPathway]
+) -> typing.Optional[ConstantPwlItem]:
+    """
+    Deserialize a ConstantPwlItem using pathway lookup from the provided references.
+    """
+    if not d or NCS_PATHWAY_IDENTIFIER_PROPERTY not in d:
+        return None
+
+    ref_pathways_by_uuid = {str(p.uuid): p for p in reference_pathways}
+    p = ref_pathways_by_uuid.get(d[NCS_PATHWAY_IDENTIFIER_PROPERTY])
+    if p is None:
+        # Pathway removed or not found – skip this item
+        return None
+
+    input_mode_name = d.get("input_mode", InputMode.CONSTANT_VALUE.name)
+    try:
+        imode = InputMode[input_mode_name]
+    except KeyError:
+        imode = InputMode.CONSTANT_VALUE
+
+    return ConstantPwlItem(
+        pathway=p,
+        enabled=bool(d.get(ENABLED_ATTRIBUTE, True)),
+        input_mode=imode,
+        raster_path=d.get(PATH_ATTRIBUTE, "") or "",
+        constant_value=float(d.get("constant_value", 0.0)),
+        normalized_raster_path=d.get("normalized_raster_path", "") or "",
+    )
+
+
+def constant_pwl_collection_to_dict(collection: ConstantPwlCollection) -> dict:
+    """
+    Serialize a ConstantPwlCollection, mirroring the NPV collection pattern.
+    """
+    return {
+        MIN_VALUE_ATTRIBUTE: float(collection.min_value),
+        MAX_VALUE_ATTRIBUTE: float(collection.max_value),
+        REMOVE_EXISTING_ATTRIBUTE: bool(collection.remove_disabled),
+        "scale_mode": collection.scale_mode.name,  # "AUTO_MINMAX" | "MANUAL_MINMAX"
+        "invert_mode": collection.invert_mode.name,  # "NONE" | "INVERT"
+        "mappings": [constant_pwl_item_to_dict(i) for i in collection.items],
+    }
+
+
+def create_constant_pwl_collection(
+    d: dict, reference_pathways: typing.List[NcsPathway]
+) -> typing.Optional[ConstantPwlCollection]:
+    """
+    Deserialize a ConstantPwlCollection from dict.
+    """
+    if not d:
+        return ConstantPwlCollection()
+
+    # Parse enums safely
+    scale_name = d.get("scale_mode", ScaleMode.AUTO_MINMAX.name)
+    invert_name = d.get("invert_mode", Inversion.NONE.name)
+    try:
+        smode = ScaleMode[scale_name]
+    except KeyError:
+        smode = ScaleMode.AUTO_MINMAX
+    try:
+        inv = Inversion[invert_name]
+    except KeyError:
+        inv = Inversion.NONE
+
+    items = []
+    for md in d.get("mappings", []):
+        itm = create_constant_pwl_item(md, reference_pathways)
+        if itm is not None:
+            items.append(itm)
+
+    return ConstantPwlCollection(
+        items=items,
+        min_value=float(d.get(MIN_VALUE_ATTRIBUTE, 0.0)),
+        max_value=float(d.get(MAX_VALUE_ATTRIBUTE, 1.0)),
+        scale_mode=smode,
+        invert_mode=inv,
+        remove_disabled=bool(d.get(REMOVE_EXISTING_ATTRIBUTE, True)),
+    )
 
 
 def layer_from_scenario_result(

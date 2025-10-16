@@ -74,6 +74,7 @@ from ..definitions.constants import (
 
 from .financials.npv_manager_dialog import NpvPwlManagerDialog
 from .financials.npv_progress_dialog import NpvPwlProgressDialog
+from .constant_raster.constant_pwl_manager_dialog import ConstantPwlManagerDialog
 from .priority_layer_dialog import PriorityLayerDialog
 from .priority_group_dialog import PriorityGroupDialog
 
@@ -430,7 +431,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             FileUtils.get_icon("mActionAddVectorTileLayer.svg")
         )
 
-        self.new_financial_pwl_btn.clicked.connect(self.on_manage_npv_pwls)
+        #self.new_financial_pwl_btn.clicked.connect(self.on_manage_npv_pwls)
+        self.new_financial_pwl_btn.clicked.connect(self.on_manage_pwl_tabs)
         self.add_pwl_btn.clicked.connect(self.add_priority_layer)
         self.edit_pwl_btn.clicked.connect(self.edit_priority_layer)
         self.remove_pwl_btn.clicked.connect(self.remove_priority_layer)
@@ -1098,6 +1100,21 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 self.on_npv_pwl_created,
                 self.on_npv_pwl_removed,
             )
+
+    def on_manage_constant_pwls(self):
+        """Open the Constant Raster PWL Manager dialog and save settings."""
+        dlg = ConstantPwlManagerDialog(self)
+        if dlg.exec_() == QtWidgets.QDialog.Accepted:
+            # The dialog already saves via settings_manager.save_constant_pwl(...)
+            # If you want to refresh PWL lists/groups immediately, do it here:
+            # self.update_priority_layers(update_groups=False)
+            pass
+
+    def on_manage_pwl_tabs(self):
+        """Open the tabbed dialog hosting NPV + Constant PWL managers."""
+        from .pwl_tabs_dialog import PwlTabsDialog
+        dlg = PwlTabsDialog(self)
+        dlg.exec_()
 
     def on_npv_pwl_removed(self, pwl_identifier: str):
         """Callback that is executed when an NPV PWL has

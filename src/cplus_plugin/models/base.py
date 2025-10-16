@@ -240,6 +240,7 @@ class PriorityLayerType(IntEnum):
 
     DEFAULT = 0
     NPV = 1
+    CONSTANT = 2
 
 
 @dataclasses.dataclass

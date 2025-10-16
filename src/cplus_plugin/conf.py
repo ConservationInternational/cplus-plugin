@@ -38,6 +38,7 @@ from .models.base import (
     ScenarioResult,
     SpatialExtent,
 )
+from .models.constant_pwl import ConstantPwlCollection
 from .models.financial import NcsPathwayNpvCollection
 from .models.helpers import (
     create_metrics_profile_collection,
@@ -50,6 +51,8 @@ from .models.helpers import (
     metric_configuration_to_dict,
     metric_profile_collection_to_dict,
     ncs_pathway_to_dict,
+    constant_pwl_collection_to_dict,
+    create_constant_pwl_collection,
 )
 from .models.report import MetricConfiguration, MetricProfileCollection
 from .utils import log, todict, CustomJsonEncoder
@@ -261,6 +264,9 @@ class Settings(enum.Enum):
     # Study Area Path
     STUDYAREA_PATH = "studyarea_path"
     CLIP_TO_STUDYAREA = "clip_to_studyarea"
+
+    # Constant PWL
+    _CONSTANT_PWL_KEY = "constant_pwl/collection"
 
 
 class SettingsManager(QtCore.QObject):
@@ -1569,6 +1575,21 @@ class SettingsManager(QtCore.QObject):
             a = settings.value(self.ONLINE_TASK_BASE)
             log(a)
             settings.remove(self.ONLINE_TASK_BASE)
+
+    def save_constant_pwl(self, collection: "ConstantPwlCollection") -> None:
+        """Persist ConstantPwlCollection to QgsSettings as JSON."""
+        data = constant_pwl_collection_to_dict(collection)
+        self.set_value(Settings._CONSTANT_PWL_KEY.value, json.dumps(data))
+
+    def load_constant_pwl(self) -> "ConstantPwlCollection":
+        """Load ConstantPwlCollection from QgsSettings JSON."""
+        raw = self.get_value(Settings._CONSTANT_PWL_KEY.value, "")
+        if not raw:
+            return ConstantPwlCollection()
+
+        data = json.loads(raw)
+        ref_pathways = self.get_all_ncs_pathways()
+        return create_constant_pwl_collection(data, ref_pathways)
 
 
 settings_manager = SettingsManager()

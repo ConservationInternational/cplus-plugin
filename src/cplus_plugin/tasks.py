@@ -34,7 +34,14 @@ from .definitions.defaults import (
     SCENARIO_OUTPUT_FILE_NAME,
     DEFAULT_CRS_ID,
 )
-from .models.base import ScenarioResult, Activity, NcsPathway
+from .models.base import (
+    ScenarioResult,
+    Activity,
+    NcsPathway,
+    PRIORITY_GROUP,
+    PriorityLayerType
+)
+from .models.constant_pwl import ConstantPwlCollection
 from .resources import *
 from .utils import (
     align_rasters,
@@ -2387,6 +2394,88 @@ class ScenarioAnalysisTask(QgsTask):
 
         return True
 
+    def _load_constant_pwl_collection(self) -> ConstantPwlCollection:
+        try:
+            return settings_manager.load_constant_pwl()
+        except Exception:
+            return ConstantPwlCollection()
+
+    def _inject_constant_pwls(
+        self,
+        pathways: list,                      # List[NcsPathway]
+        pathway_layers: dict                 # Dict[pathway_uuid, List[dict]]
+    ) -> None:
+        """
+        Adds normalized constant rasters to pathway_layers.
+        """
+        coll = self._load_constant_pwl_collection()
+        for item in coll.enabled_items():
+            raster = item.normalized_raster_path
+            if not raster:
+                continue  # not produced yet or disabled
+
+            p_uuid = str(item.pathway.uuid)
+            if p_uuid not in pathway_layers:
+                pathway_layers[p_uuid] = []
+
+            pathway_layers[p_uuid].append({
+                "name": f"Constant PWL ({item.input_mode.name.lower()})",
+                "path": raster,
+                "groups": [PRIORITY_GROUP.FINANCE_YEARS_EXPERIENCE.value],
+                "type": int(PriorityLayerType.CONSTANT) if hasattr(PriorityLayerType, "CONSTANT") else int(PriorityLayerType.DEFAULT),
+                "selected": True,
+            })
+
+    def _collect_existing_pw_pwl_layers(self, pathways: typing.List[NcsPathway]) -> dict:
+        """
+        Build a mapping of pathway_uuid -> List[PWL dict] for the *existing*
+        (non-constant) priority weighting layers already attached to each pathway.
+
+        Each PWL dict mirrors what run_pathways_weighting expects:
+        { "name": str, "path": str, "groups": list, "type": int, "selected": bool }
+        """
+        mapping: dict = {}
+
+        for pathway in pathways:
+            p_uuid = str(pathway.uuid)
+            mapping.setdefault(p_uuid, [])
+
+            # pathway.priority_layers is a list of dicts
+            for layer in pathway.priority_layers or []:
+                if layer is None:
+                    continue
+
+                settings_layer = self.get_priority_layer(layer.get("uuid"))
+                if not settings_layer:
+                    continue
+
+                pwl_path = settings_layer.get("path")
+                if not pwl_path or not Path(pwl_path).exists():
+                    # skip if the file does not exist
+                    continue
+
+                mapping[p_uuid].append(
+                    {
+                        "name": layer.get("name", Path(pwl_path).stem),
+                        "path": pwl_path,
+                        # keep groups from settings
+                        "groups": settings_layer.get("groups", []),
+                        "type": int(PriorityLayerType.DEFAULT),
+                        "selected": True,
+                    }
+                )
+
+        return mapping
+
+    def collect_priority_layers(self, pathways: list) -> dict:
+        """
+        Returns a mapping of pathway_uuid -> List[PWL dict].
+        """
+        mapping = self._collect_existing_pw_pwl_layers(pathways)
+        self._inject_constant_pwls(pathways, mapping)
+
+        return mapping
+
     def run_pathways_weighting(
         self, activities, priority_layers_groups, extent, temporary_output=False
     ) -> bool:
@@ -2426,6 +2515,16 @@ class ScenarioAnalysisTask(QgsTask):
             )
             self.log_message(msg)
             return False
+
+        all_pathways = []
+        for activity in activities:
+            for pathway in activity.pathways:
+                if pathway not in all_pathways:
+                    all_pathways.append(pathway)
+
+        # collect both normal and constant priority layers
+        priority_layers_mapping = self.collect_priority_layers(all_pathways)
+        self.log_message(f"Collected priority layers (with constants): {priority_layers_mapping}")
 
         # Get the relative impact matrix
         relative_impact_matrix = dict()
@@ -2501,7 +2600,7 @@ class ScenarioAnalysisTask(QgsTask):
                 else:
                     base_names.append(f'("{pathway_basename}@1")')
 
-                for layer in pathway.priority_layers:
+                for layer in priority_layers_mapping.get(str(pathway.uuid), []):
                     if not any(priority_layers_groups):
                         self.log_message(
                             f"There are no defined priority layers in groups,"
