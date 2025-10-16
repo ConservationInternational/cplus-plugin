@@ -1,12 +1,26 @@
-import plotly.graph_objects as go
+# -*- coding: utf-8 -*-
+
+from pathlib import Path
 import os
 from typing import List, Optional
 
+import plotly.graph_objects as go
+
 from qgis.core import (
     QgsBasicNumericFormat,
+    QgsLayoutExporter,
+    QgsLayoutFrame,
+    QgsLayoutItemHtml,
+    QgsLayoutPoint,
+    QgsLayoutSize,
     QgsNumericFormatContext,
+    QgsPrintLayout,
+    QgsProject,
     QgsReadWriteContext,
+    QgsUnitTypes,
 )
+
+from qgis.PyQt import QtCore
 
 from ...definitions.defaults import REPORT_FONT_NAME
 
@@ -78,10 +92,10 @@ def _format_number_locale(value: float, decimals: int = 2) -> str:
 
 
 class PieChartRenderer:
-    """Renders pie charts using Plotly and saves them as PNG files."""
+    """Renders pie charts using Plotly and saves them as an image file."""
 
     @staticmethod
-    def render_pie_png(
+    def render_pie_html(
         out_path: str,
         labels: List[str],
         values: List[float],
@@ -89,7 +103,7 @@ class PieChartRenderer:
         title: Optional[str] = None,
         size_px: int = 360,
     ) -> str:
-        """Renders a pie chart and saves it as a PNG file."""
+        """Renders a pie chart and saves it as a HTML file."""
         # Create output directory
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
@@ -108,6 +122,7 @@ class PieChartRenderer:
             text_colors = [_best_text_color(c) for c in colors_hex]
         else:
             text_colors = ["#000000"] * len(values)  # default
+
         # Create the pie chart trace
         pie_trace = go.Pie(
             labels=labels,
@@ -120,19 +135,28 @@ class PieChartRenderer:
             textfont=dict(family=REPORT_FONT_NAME, color=text_colors),
         )
 
+        # Ballpark figure to maintain 4:3 aspect ratio. Remove hardcode
+        # in the future, have it calculated from item size.
+        preferred_width, preferred_height = 640, 480
+
         # Define the layout
         layout = go.Layout(
             title=None,
             showlegend=True,
-            height=size_px,
-            width=size_px,
-            margin=go.layout.Margin(t=50, b=50, l=50, r=50),
+            height=preferred_height,
+            width=preferred_width,
+            margin=go.layout.Margin(t=10, b=10, l=10, r=10),
         )
 
         # Create the figure
         fig = go.Figure(data=[pie_trace], layout=layout)
 
-        # Save the figure to a file
-        fig.write_image(out_path)
+        # Save the figure to as HTML
+        fig.write_html(
+            out_path,
+            auto_open=False,
+            auto_play=False,
+            config={"displayModeBar": False},
+        )
 
         return out_path

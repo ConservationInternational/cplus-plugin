@@ -44,9 +44,10 @@ CARBON_OPTIONS_TITLE = "Carbon"
 LOG_OPTIONS_TITLE = "Logs"
 
 # Activity table headers in scenario analysis report
-CARBON_IMPACT_HEADER = "Carbon Impact (Naturebase)"
-STORED_CARBON_HEADER = "Carbon Impact (Protect)"
-TOTAL_CARBON_HEADER = "Total C"
+CARBON_IMPACT_HEADER = "C.I. (Naturebase)"
+PROTECT_CARBON_IMPACT_HEADER = "C.I. (Protect)"
+MANAGE_CARBON_IMPACT_HEADER = "C.I. (Manage)"
+TOTAL_CARBON_IMPACT_HEADER = "Total C.I."
 
 ICON_PATH = ":/plugins/cplus_plugin/icon.svg"
 REPORT_SETTINGS_ICON_PATH = str(
@@ -171,10 +172,11 @@ REPORT_COLOR_RAINFOREST = "#357d57"
 MAX_ACTIVITY_NAME_LENGTH = 50
 MAX_ACTIVITY_DESCRIPTION_LENGTH = 225
 
-# IDs for the given tables in the report template
+# IDs for the given items in the report template
 ACTIVITY_AREA_TABLE_ID = "activity_area_table"
 PRIORITY_GROUP_WEIGHT_TABLE_ID = "assigned_weights_table"
 AREA_COMPARISON_TABLE_ID = "comparison_table"
+ACTIVITY_AREA_HTML_ID = "activity_area_pie_html"
 
 # IDs for items in the metrics report template
 METRICS_HEADER_BACKGROUND = "metrics_header_background"
@@ -279,7 +281,7 @@ NATUREBASE_CARBON_IMPACT_EXPRESSION_DESCRIPTION = (
     "area of interest.</b>"
 )
 
-STORED_CARBON_EXPRESSION_DESCRIPTION = (
+PROTECT_CARBON_IMPACT_EXPRESSION_DESCRIPTION = (
     "Calculates the stored carbon (tons C) of "
     "protect NCS pathways in an activity using the biomass "
     "reference dataset. This dataset "
@@ -289,4 +291,14 @@ STORED_CARBON_EXPRESSION_DESCRIPTION = (
     "there are no protect NCS pathways in the activity or "
     "no overlapping pixels with the reference layer in the "
     "area of interest.</b>"
+)
+
+MANAGE_CARBON_IMPACT_EXPRESSION_DESCRIPTION = (
+    "Calculates the carbon impact (tons C) of "
+    "manage NCS pathways in an activity using a custom "
+    "defined rate for each manage NCS pathway. This dataset "
+    "needs to be defined in the CPLUS settings for this "
+    "expression to be evaluated.<br><b>NOTE: A value of -1.0 "
+    "will be returned if an error is encountered, or 0.0 if "
+    "there are no manage NCS pathways in the activity.</b>"
 )

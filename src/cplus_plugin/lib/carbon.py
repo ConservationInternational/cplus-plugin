@@ -759,9 +759,9 @@ class IrrecoverableCarbonCalculator(BaseProtectPathwaysCarbonCalculator):
         return calculate_irrecoverable_carbon_from_mean(prepared_layer)
 
 
-class StoredCarbonCalculator(BaseProtectPathwaysCarbonCalculator):
-    """Calculates the Stored carbon of an activity using
-    the biomass reference layer.
+class CarbonImpactProtectCalculator(BaseProtectPathwaysCarbonCalculator):
+    """Calculates the carbon impact of protect NCS pathways in an
+    activity using the biomass reference layer.
 
     It specifically searches for protect pathways in the activity.
     If there are no protect pathways is found, it will return 0. This is
@@ -776,8 +776,8 @@ class StoredCarbonCalculator(BaseProtectPathwaysCarbonCalculator):
         return calculate_stored_carbon(prepared_layer)
 
 
-class ManagePathwaysCarbonCalculator(BasePathwaysCarbonCalculator):
-    """Class for carbon calculation for manage NCS pathways."""
+class CarbonImpactManageCalculator(BasePathwaysCarbonCalculator):
+    """Class for carbon impact calculation for manage NCS pathways."""
 
     @property
     def pathway_type(self) -> NcsPathwayType:
