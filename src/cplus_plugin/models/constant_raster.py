@@ -24,10 +24,6 @@ class _StrEnum(str):
         return str(self.value)
 
 
-class InputMode(_StrEnum):
-    RASTER_FILE = "raster_file"
-
-
 class ScaleMode(_StrEnum):
     AUTO_MINMAX = "auto_minmax"
     MANUAL_MINMAX = "manual_minmax"
