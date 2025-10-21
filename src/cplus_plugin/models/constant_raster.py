@@ -5,7 +5,7 @@ from __future__ import annotations
 import dataclasses
 import typing
 
-from .base import NcsPathway
+from .base import NcsPathway, PriorityLayerType
 from ..definitions.constants import (
     MIN_VALUE_ATTRIBUTE,  # "minimum_value"
     MAX_VALUE_ATTRIBUTE,  # "maximum_value"
@@ -45,17 +45,13 @@ class ConstantItem:
     raster_path: str = ""  # used when input_mode == RASTER_FILE
     normalized_raster_path: str = ""  # set after normalization
 
-    # --- convenience ---
     def has_input(self) -> bool:
         return bool(self.raster_path)
-
-    def is_raster(self) -> bool:
-        return self.input_mode == InputMode.RASTER_FILE
 
     def validate(self) -> None:
         if self.pathway is None:
             raise ValueError("ConstantItem.pathway is required.")
-        if self.is_raster() and not self.raster_path:
+        if self.enabled and not self.raster_path:
             raise ValueError("raster_path is required when input_mode == RASTER_FILE.")
 
     # (de)serialization
@@ -80,6 +76,16 @@ class ConstantItem:
         )
 
 
+def _const_uuid_for(pathway_uuid: str) -> str:
+    # stable, deterministic id so we can replace/delete cleanly
+    return f"const-{pathway_uuid}"
+
+
+def _const_name_for(pathway_uuid: str) -> str:
+    # reserved name avoids collision with user-defined PWLs
+    return f"Constant::{pathway_uuid}"
+
+
 @dataclasses.dataclass
 class ConstantCollection:
     """Collection and shared settings for constant  generation."""
@@ -90,7 +96,6 @@ class ConstantCollection:
     scale_mode: ScaleMode = ScaleMode.AUTO_MINMAX
     remove_disabled: bool = True
 
-    # --- convenience ---
     def enabled_items(self) -> typing.List[ConstantItem]:
         return [i for i in self.items if i.enabled and i.has_input()]
 
@@ -133,21 +138,87 @@ class ConstantCollection:
         ]
         return coll
 
+    def to_pwl_entries(self) -> list[dict]:
+        """Create PWL-shaped entries (one per enabled item with a normalized raster)."""
+        entries = []
+        for it in self.enabled_items():
+            if not it.normalized_raster_path:
+                continue
+            pid = str(it.pathway.uuid)
+            entries.append(
+                {
+                    "uuid": _const_uuid_for(pid),
+                    "name": _const_name_for(pid),
+                    "type": int(PriorityLayerType.CONSTANT),
+                    "path": it.normalized_raster_path,
+                    "pathway_uuid": pid,
+                }
+            )
+        return entries
+
+    def upsert_into_priority_layers(
+        self,
+        get_layers: typing.Callable[[], list],
+        save_layers: typing.Callable[[list], None],
+    ) -> None:
+        """
+        Write constant rasters into the canonical
+        priority-layers list in settings so
+        the analysis sees them automatically.
+        """
+        layers = list(get_layers() or [])
+
+        # Index current constant entries by pathway
+        existing_by_pid = {}
+        for i, pl in enumerate(layers):
+            name = pl.get("name") or ""
+            uuid = pl.get("uuid") or ""
+            if name.startswith("Constant::") or str(uuid).startswith("const-"):
+                # Extract pid either from name or stored field
+                pid = pl.get("pathway_uuid")
+                if not pid and name.startswith("Constant::"):
+                    pid = name.split("::", 1)[1]
+                existing_by_pid[pid] = i
+
+        # Build fresh entries from current collection
+        fresh = {e["pathway_uuid"]: e for e in self.to_pwl_entries()}
+
+        # 1) Replace or remove existing constant entries
+        new_layers = []
+        for i, pl in enumerate(layers):
+            name = pl.get("name") or ""
+            uuid = pl.get("uuid") or ""
+            is_const = name.startswith("Constant::") or str(uuid).startswith("const-")
+            if not is_const:
+                new_layers.append(pl)
+                continue
+
+            # Determine pathway id of this constant
+            pid = pl.get("pathway_uuid")
+            if not pid and name.startswith("Constant::"):
+                pid = name.split("::", 1)[1]
+
+            # If we have a fresh entry for this pid, replace once and consume it
+            if pid in fresh:
+                new_layers.append(fresh.pop(pid))
+            else:
+                # No longer present/enabled
+                pass
+
+        # 2) Append any new constants that didn't replace an existing one
+        for e in fresh.values():
+            new_layers.append(e)
+
+        save_layers(new_layers)
+
 
 # ---------------------------
 # Preset builder (Years of Experience etc.)
 # ---------------------------
 def make_default_collection_for_pathways(
     pathways: typing.Iterable[NcsPathway],
-    default_value: float = 0.0,
     enabled: bool = True,
 ) -> ConstantCollection:
-    items = [
-        ConstantItem(
-            pathway=p,
-            enabled=enabled,
-            constant_value=float(default_value),
-        )
-        for p in pathways
-    ]
+    """Build a default ConstantCollection for the given pathways."""
+    items = [ConstantItem(pathway=p, enabled=enabled) for p in pathways]
     return ConstantCollection(items=items)
