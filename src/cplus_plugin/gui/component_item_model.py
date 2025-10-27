@@ -645,9 +645,12 @@ class LayerItem(QtGui.QStandardItem):
 class ComponentItemModel(QtGui.QStandardItemModel):
     """View model for ModelComponent objects."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, is_checkable=False):
         super().__init__(parent)
         self.setColumnCount(1)
+
+        # Added in v1.1.18
+        self.checkable_item = is_checkable
 
         self._uuid_row_idx = {}
 
@@ -845,6 +848,10 @@ class NcsPathwayItemModel(ComponentItemModel):
         :rtype: bool
         """
         ncs_item = NcsPathwayItem.create(ncs)
+
+        # Added in v1.1.18
+        ncs_item.setCheckable(self.checkable_item)
+
         self._update_display(ncs_item)
 
         status = self.add_component_item(ncs_item)
@@ -1003,6 +1010,10 @@ class ActivityItemModel(ComponentItemModel):
                 layer = activity.to_map_layer()
 
         activity_item = ActivityItem.create(activity)
+
+        # Added in v1.1.18
+        activity_item.setCheckable(self.checkable_item)
+
         if not self._load_pathways:
             activity_item.set_bold_font(False)
 

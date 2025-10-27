@@ -76,6 +76,7 @@ from .financials.npv_manager_dialog import NpvPwlManagerDialog
 from .financials.npv_progress_dialog import NpvPwlProgressDialog
 from .priority_layer_dialog import PriorityLayerDialog
 from .priority_group_dialog import PriorityGroupDialog
+from .pwl_manager_dialog import PwlManagerDialog
 
 from .scenario_dialog import ScenarioDialog
 
@@ -1013,91 +1014,107 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         open_documentation(USER_DOCUMENTATION_SITE)
 
     def on_manage_npv_pwls(self):
-        """Slot raised to show the dialog for managing NPV PWLs."""
-        financial_dialog = NpvPwlManagerDialog(self)
-        if financial_dialog.exec_() == QtWidgets.QDialog.Accepted:
-            npv_collection = financial_dialog.npv_collection
-            self.npv_processing_context = QgsProcessingContext()
-            self.npv_feedback = QgsProcessingFeedback(False)
-            self.npv_multi_step_feedback = QgsProcessingMultiStepFeedback(
-                len(npv_collection.mappings), self.npv_feedback
-            )
+        """Slot raised to show the unified PWL manager dialog for NPV and Constant Rasters."""
+        # Get current NCS pathways for constant rasters
+        pathways = self.activity_widget.ncs_pathways()
 
-            # Get CRS and pixel size from at least one of the
-            # NCS pathways in the collection.
-            if len(npv_collection.mappings) == 0:
-                log(
-                    message=tr("No NPV mappings to extract the CRS and pixel size."),
-                    info=False,
+        # Show unified PWL manager dialog with both NPV and Constant Raster tabs
+        pwl_dialog = PwlManagerDialog(pathways=pathways, parent=self)
+        if pwl_dialog.exec_() == QtWidgets.QDialog.Accepted:
+            # Process NPV collection if available
+            npv_collection = pwl_dialog.get_npv_collection()
+            if npv_collection:
+                self.npv_processing_context = QgsProcessingContext()
+                self.npv_feedback = QgsProcessingFeedback(False)
+                self.npv_multi_step_feedback = QgsProcessingMultiStepFeedback(
+                    len(npv_collection.mappings), self.npv_feedback
                 )
-                return
 
-            reference_layer = None
-            for pathway_npv in npv_collection.mappings:
-                if pathway_npv.pathway is None:
-                    continue
-                else:
-                    if pathway_npv.pathway.is_valid():
-                        reference_ncs_pathway = pathway_npv.pathway
-                        reference_layer = reference_ncs_pathway.to_map_layer()
-                        break
-
-            if reference_layer is None:
-                # Attempt to get reference layer from the snapping layer
-                snap_layer_path = settings_manager.get_value(
-                    Settings.SNAP_LAYER, default="", setting_type=str
-                )
-                reference_layer = QgsRasterLayer(snap_layer_path, "reference_layer")
-                if not reference_layer.isValid():
+                # Get CRS and pixel size from at least one of the
+                # NCS pathways in the collection.
+                if len(npv_collection.mappings) == 0:
                     log(
-                        message=tr(
-                            "There is no valid reference layer to extract the pixel size."
-                        ),
+                        message=tr("No NPV mappings to extract the CRS and pixel size."),
                         info=False,
                     )
                     return
 
-            reference_crs = self.crs_selector.crs()
-            reference_pixel_size = reference_layer.rasterUnitsPerPixelX()
+                reference_layer = None
+                for pathway_npv in npv_collection.mappings:
+                    if pathway_npv.pathway is None:
+                        continue
+                    else:
+                        if pathway_npv.pathway.is_valid():
+                            reference_ncs_pathway = pathway_npv.pathway
+                            reference_layer = reference_ncs_pathway.to_map_layer()
+                            break
 
-            # Get the reference extent
-            source_extent = self.extent_box.outputExtent()
-            source_crs = (
-                self.extent_box.outputCrs()
-                or QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
-            )
+                if reference_layer is None:
+                    # Attempt to get reference layer from the snapping layer
+                    snap_layer_path = settings_manager.get_value(
+                        Settings.SNAP_LAYER, default="", setting_type=str
+                    )
+                    reference_layer = QgsRasterLayer(snap_layer_path, "reference_layer")
+                    if not reference_layer.isValid():
+                        log(
+                            message=tr(
+                                "There is no valid reference layer to extract the pixel size."
+                            ),
+                            info=False,
+                        )
+                        return
 
-            if self.can_clip_to_studyarea():
-                studyarea_path = self.get_studyarea_path()
-                studyarea_layer = QgsVectorLayer(studyarea_path, "studyarea")
-                if studyarea_layer.isValid():
-                    source_extent = studyarea_layer.extent()
-                    source_crs = studyarea_layer.crs()
+                reference_crs = self.crs_selector.crs()
+                reference_pixel_size = reference_layer.rasterUnitsPerPixelX()
 
-            reference_extent = self.transform_extent(
-                source_extent, source_crs, reference_crs
-            )
-            reference_extent_str = (
-                f"{reference_extent.xMinimum()!s},"
-                f"{reference_extent.xMaximum()!s},"
-                f"{reference_extent.yMinimum()!s},"
-                f"{reference_extent.yMaximum()!s}"
-            )
+                # Get the reference extent
+                source_extent = self.extent_box.outputExtent()
+                source_crs = (
+                    self.extent_box.outputCrs()
+                    or QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
+                )
 
-            self.npv_progress_dialog = NpvPwlProgressDialog(self, self.npv_feedback)
-            self.npv_progress_dialog.show()
+                if self.can_clip_to_studyarea():
+                    studyarea_path = self.get_studyarea_path()
+                    studyarea_layer = QgsVectorLayer(studyarea_path, "studyarea")
+                    if studyarea_layer.isValid():
+                        source_extent = studyarea_layer.extent()
+                        source_crs = studyarea_layer.crs()
 
-            create_npv_pwls(
-                npv_collection,
-                self.npv_processing_context,
-                self.npv_multi_step_feedback,
-                self.npv_feedback,
-                reference_crs.authid(),
-                reference_pixel_size,
-                reference_extent_str,
-                self.on_npv_pwl_created,
-                self.on_npv_pwl_removed,
-            )
+                reference_extent = self.transform_extent(
+                    source_extent, source_crs, reference_crs
+                )
+                reference_extent_str = (
+                    f"{reference_extent.xMinimum()!s},"
+                    f"{reference_extent.xMaximum()!s},"
+                    f"{reference_extent.yMinimum()!s},"
+                    f"{reference_extent.yMaximum()!s}"
+                )
+
+                self.npv_progress_dialog = NpvPwlProgressDialog(self, self.npv_feedback)
+                self.npv_progress_dialog.show()
+
+                create_npv_pwls(
+                    npv_collection,
+                    self.npv_processing_context,
+                    self.npv_multi_step_feedback,
+                    self.npv_feedback,
+                    reference_crs.authid(),
+                    reference_pixel_size,
+                    reference_extent_str,
+                    self.on_npv_pwl_created,
+                    self.on_npv_pwl_removed,
+                )
+
+            # Process Constant Raster collection if available
+            constant_collection = pwl_dialog.get_constant_collection()
+            if constant_collection:
+                # TODO: Process constant rasters similar to NPV PWLs
+                # For now, just show confirmation
+                self.show_message(
+                    tr(f"Constant raster configuration saved with {len(constant_collection.enabled_components())} enabled pathways."),
+                    level=Qgis.Info
+                )
 
     def on_npv_pwl_removed(self, pwl_identifier: str):
         """Callback that is executed when an NPV PWL has

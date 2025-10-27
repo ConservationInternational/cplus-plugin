@@ -1040,3 +1040,43 @@ def create_metrics_profile_collection(
         metric_profiles.append(profile)
 
     return MetricProfileCollection(current_profile_id, metric_profiles)
+
+
+def constant_raster_collection_to_dict(
+    collection: "ConstantRasterCollection",
+) -> dict:
+    """Serializes a ConstantRasterCollection object into a dictionary.
+
+    :param collection: Constant raster collection object
+    :type collection: ConstantRasterCollection
+
+    :returns: Dictionary representation of the collection
+    :rtype: dict
+    """
+    if collection is None:
+        return {}
+
+    return collection.to_dict()
+
+
+def create_constant_raster_collection(
+    collection_dict: dict,
+    component_lookup: typing.Callable[[str], LayerModelComponent]
+) -> typing.Optional["ConstantRasterCollection"]:
+    """Creates a ConstantRasterCollection object from a dictionary.
+
+    :param collection_dict: Dictionary containing the collection data
+    :type collection_dict: dict
+
+    :param component_lookup: Function to retrieve component (NcsPathway or Activity) by UUID
+    :type component_lookup: typing.Callable[[str], LayerModelComponent]
+
+    :returns: Constant raster collection object or None if deserialization failed
+    :rtype: ConstantRasterCollection
+    """
+    if not collection_dict:
+        return None
+
+    from .constant_raster import ConstantRasterCollection
+
+    return ConstantRasterCollection.from_dict(collection_dict, component_lookup)

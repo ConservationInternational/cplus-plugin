@@ -240,6 +240,7 @@ class PriorityLayerType(IntEnum):
 
     DEFAULT = 0
     NPV = 1
+    CONSTANT = 2
 
 
 @dataclasses.dataclass
@@ -619,6 +620,7 @@ class Scenario(BaseModelComponent):
     clip_to_studyarea: bool = False
     studyarea_path: str = None
     crs: str = None
+    constant_raster_collection: typing.Optional[typing.Any] = None  # ConstantRasterCollection
 
 
 @dataclasses.dataclass
