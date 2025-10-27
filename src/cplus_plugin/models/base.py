@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-""" QGIS CPLUS plugin models.
-"""
+"""QGIS CPLUS plugin models."""
 
 import dataclasses
 import datetime
@@ -620,7 +619,9 @@ class Scenario(BaseModelComponent):
     clip_to_studyarea: bool = False
     studyarea_path: str = None
     crs: str = None
-    constant_raster_collection: typing.Optional[typing.Any] = None  # ConstantRasterCollection
+    constant_raster_collection: typing.Optional[typing.Any] = (
+        None  # ConstantRasterCollection
+    )
 
 
 @dataclasses.dataclass

@@ -1034,7 +1034,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 # NCS pathways in the collection.
                 if len(npv_collection.mappings) == 0:
                     log(
-                        message=tr("No NPV mappings to extract the CRS and pixel size."),
+                        message=tr(
+                            "No NPV mappings to extract the CRS and pixel size."
+                        ),
                         info=False,
                     )
                     return
@@ -1111,8 +1113,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             if constant_collection:
                 # Show confirmation
                 self.show_message(
-                    tr(f"Constant raster configuration saved with {len(constant_collection.enabled_components())} enabled pathways."),
-                    level=Qgis.Info
+                    tr(
+                        f"Constant raster configuration saved with {len(constant_collection.enabled_components())} enabled pathways."
+                    ),
+                    level=Qgis.Info,
                 )
 
     def on_npv_pwl_removed(self, pwl_identifier: str):

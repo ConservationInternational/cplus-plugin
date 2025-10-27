@@ -1060,8 +1060,7 @@ def constant_raster_collection_to_dict(
 
 
 def create_constant_raster_collection(
-    collection_dict: dict,
-    component_lookup: typing.Callable[[str], LayerModelComponent]
+    collection_dict: dict, component_lookup: typing.Callable[[str], LayerModelComponent]
 ) -> typing.Optional["ConstantRasterCollection"]:
     """Creates a ConstantRasterCollection object from a dictionary.
 

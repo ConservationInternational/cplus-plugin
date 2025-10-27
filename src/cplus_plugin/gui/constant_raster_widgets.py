@@ -54,7 +54,7 @@ class ConstantRasterWidgetInterface:
         requested so that, for example, the changes can be
         processed and saved.
         """
-        if hasattr(self, 'update_requested') and self._raster_component is not None:
+        if hasattr(self, "update_requested") and self._raster_component is not None:
             self.update_requested.emit(self._raster_component)
 
     def reset(self):
@@ -76,7 +76,9 @@ class ConstantRasterWidgetInterface:
         """
         raise NotImplementedError
 
-    def create_raster_component(self, model_component: LayerModelComponent) -> ConstantRasterComponent:
+    def create_raster_component(
+        self, model_component: LayerModelComponent
+    ) -> ConstantRasterComponent:
         """Creates a new default constant raster component.
 
         To be implemented by subclasses. Can use self to access
@@ -109,14 +111,14 @@ class YearsExperienceWidget(YearsExperienceWidgetUi, ConstantRasterWidgetInterfa
         super().__init__(parent)
 
         # Only setup UI if the UI file was loaded
-        if hasattr(self, 'setupUi'):
+        if hasattr(self, "setupUi"):
             self.setupUi(self)
         else:
             # Create a simple layout manually if UI file doesn't exist
             self._create_manual_ui()
 
         # Connect signals
-        if hasattr(self, 'sb_experience'):
+        if hasattr(self, "sb_experience"):
             self.sb_experience.valueChanged.connect(self.on_experience_value_changed)
 
     def _create_manual_ui(self):
@@ -140,7 +142,7 @@ class YearsExperienceWidget(YearsExperienceWidgetUi, ConstantRasterWidgetInterfa
 
     def reset(self):
         """Interface implementation."""
-        if hasattr(self, 'sb_experience'):
+        if hasattr(self, "sb_experience"):
             self.sb_experience.setValue(0.0)
 
     def load(self, raster_component: ConstantRasterComponent):
@@ -149,7 +151,7 @@ class YearsExperienceWidget(YearsExperienceWidgetUi, ConstantRasterWidgetInterfa
 
         # Block signals temporarily to prevent notify_update from
         # being called to save the value being loaded.
-        if hasattr(self, 'sb_experience'):
+        if hasattr(self, "sb_experience"):
             self.sb_experience.blockSignals(True)
             if raster_component and raster_component.value_info:
                 self.sb_experience.setValue(raster_component.value_info.absolute)
@@ -163,29 +165,39 @@ class YearsExperienceWidget(YearsExperienceWidgetUi, ConstantRasterWidgetInterfa
             self._raster_component.value_info.absolute = value
         self.notify_update()
 
-    def create_raster_component(self, layer_model_component: LayerModelComponent) -> ConstantRasterComponent:
+    def create_raster_component(
+        self, layer_model_component: LayerModelComponent
+    ) -> ConstantRasterComponent:
         """Interface implementation."""
         from ..models.base import ModelComponentType
 
         # Determine component type
         component_type = ModelComponentType.UNKNOWN
-        if hasattr(layer_model_component, '__class__'):
+        if hasattr(layer_model_component, "__class__"):
             class_name = layer_model_component.__class__.__name__
-            if class_name == 'NcsPathway':
+            if class_name == "NcsPathway":
                 component_type = ModelComponentType.NCS_PATHWAY
-            elif class_name == 'Activity':
+            elif class_name == "Activity":
                 component_type = ModelComponentType.ACTIVITY
 
         # Use current spinbox value if available, otherwise default to 0.0
         current_value = 0.0
-        if hasattr(self, 'sb_experience'):
+        if hasattr(self, "sb_experience"):
             current_value = self.sb_experience.value()
 
         return ConstantRasterComponent(
             value_info=ConstantRasterInfo(absolute=current_value),
             component=layer_model_component,
-            component_id=str(layer_model_component.uuid) if hasattr(layer_model_component, 'uuid') else "",
+            component_id=(
+                str(layer_model_component.uuid)
+                if hasattr(layer_model_component, "uuid")
+                else ""
+            ),
             component_type=component_type,
-            alias_name=layer_model_component.name if hasattr(layer_model_component, 'name') else "",
-            skip_value=False
+            alias_name=(
+                layer_model_component.name
+                if hasattr(layer_model_component, "name")
+                else ""
+            ),
+            skip_value=False,
         )

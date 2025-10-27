@@ -36,7 +36,7 @@ class ConstantRasterProcessingUtils:
     def create_constant_raster_metadata_collection(
         collection: ConstantRasterCollection,
         config: ConstantRasterConfig,
-        feedback: typing.Optional[QgsProcessingFeedback] = None
+        feedback: typing.Optional[QgsProcessingFeedback] = None,
     ) -> ConstantRasterMetadata:
         """Create constant raster metadata from collection and config.
 
@@ -75,7 +75,9 @@ class ConstantRasterProcessingUtils:
             if feedback:
                 progress = int((idx / total_components) * 100)
                 feedback.setProgress(progress)
-                feedback.pushInfo(f"Processing component {idx + 1}/{total_components}: {component.alias_name or component.component_id}")
+                feedback.pushInfo(
+                    f"Processing component {idx + 1}/{total_components}: {component.alias_name or component.component_id}"
+                )
 
             # Process the component raster
             try:
@@ -96,7 +98,9 @@ class ConstantRasterProcessingUtils:
 
         if feedback:
             feedback.setProgress(100)
-            feedback.pushInfo("Constant raster metadata collection created successfully")
+            feedback.pushInfo(
+                "Constant raster metadata collection created successfully"
+            )
 
         return metadata
 
@@ -104,7 +108,7 @@ class ConstantRasterProcessingUtils:
     def _process_component_raster(
         component: ConstantRasterComponent,
         config: ConstantRasterConfig,
-        feedback: typing.Optional[QgsProcessingFeedback] = None
+        feedback: typing.Optional[QgsProcessingFeedback] = None,
     ) -> None:
         """Process a single component raster.
 
@@ -115,7 +119,9 @@ class ConstantRasterProcessingUtils:
         """
         if not component.value_info or not component.value_info.filename:
             if feedback:
-                feedback.pushWarning(f"Component {component.component_id} has no input raster")
+                feedback.pushWarning(
+                    f"Component {component.component_id} has no input raster"
+                )
             return
 
         input_path = component.value_info.filename
@@ -153,10 +159,12 @@ class ConstantRasterProcessingUtils:
         min_value: float,
         max_value: float,
         extent: typing.Optional[QgsRectangle] = None,
-        resolution: typing.Optional[typing.Union[float, typing.Tuple[float, float]]] = None,
+        resolution: typing.Optional[
+            typing.Union[float, typing.Tuple[float, float]]
+        ] = None,
         crs: typing.Optional[QgsCoordinateReferenceSystem] = None,
         context: typing.Optional[QgsProcessingContext] = None,
-        feedback: typing.Optional[QgsProcessingFeedback] = None
+        feedback: typing.Optional[QgsProcessingFeedback] = None,
     ) -> str:
         """Normalize a raster to the specified value range using GDAL.
 
@@ -197,7 +205,9 @@ class ConstantRasterProcessingUtils:
         input_range = input_max - input_min
 
         if feedback:
-            feedback.pushInfo(f"Input raster stats - min: {input_min}, max: {input_max}")
+            feedback.pushInfo(
+                f"Input raster stats - min: {input_min}, max: {input_max}"
+            )
 
         if input_range == 0:
             raise QgsProcessingException("Input raster has no variation (min == max)")
@@ -214,10 +224,10 @@ class ConstantRasterProcessingUtils:
         # Build GDAL translate parameters
         # Using -scale to normalize: -scale <src_min> <src_max> <dst_min> <dst_max>
         alg_params = {
-            'INPUT': input_path,
-            'OUTPUT': output_path,
-            'SCALE': f'{input_min},{input_max},{min_value},{max_value}',
-            'DATA_TYPE': 6,  # Float32
+            "INPUT": input_path,
+            "OUTPUT": output_path,
+            "SCALE": f"{input_min},{input_max},{min_value},{max_value}",
+            "DATA_TYPE": 6,  # Float32
         }
 
         # Add optional extent if provided
@@ -228,18 +238,18 @@ class ConstantRasterProcessingUtils:
             )
             if crs:
                 extent_string += f" [{crs.authid()}]"
-            alg_params['PROJWIN'] = extent_string
+            alg_params["PROJWIN"] = extent_string
 
         # Add optional CRS if provided
         if crs:
-            alg_params['TARGET_CRS'] = crs.authid()
+            alg_params["TARGET_CRS"] = crs.authid()
 
         # Add optional resolution if provided
         if resolution:
             if isinstance(resolution, tuple):
-                alg_params['TR'] = f'{resolution[0]} {resolution[1]}'
+                alg_params["TR"] = f"{resolution[0]} {resolution[1]}"
             else:
-                alg_params['TR'] = f'{resolution} {resolution}'
+                alg_params["TR"] = f"{resolution} {resolution}"
 
         try:
             if feedback:
@@ -247,16 +257,13 @@ class ConstantRasterProcessingUtils:
 
             # Run GDAL translate following plugin pattern
             result = processing.run(
-                "gdal:translate",
-                alg_params,
-                context=context,
-                feedback=feedback
+                "gdal:translate", alg_params, context=context, feedback=feedback
             )
 
             if feedback:
                 feedback.pushInfo(f"Normalization complete: {output_path}")
 
-            return result['OUTPUT']
+            return result["OUTPUT"]
 
         except Exception as ex:
             err_msg = tr("Error normalizing raster")
@@ -271,7 +278,7 @@ class ConstantRasterProcessingUtils:
         crs: QgsCoordinateReferenceSystem,
         output_path: str,
         context: typing.Optional[QgsProcessingContext] = None,
-        feedback: typing.Optional[QgsProcessingFeedback] = None
+        feedback: typing.Optional[QgsProcessingFeedback] = None,
     ) -> str:
         """Create a constant raster with a specified value.
 
@@ -293,7 +300,9 @@ class ConstantRasterProcessingUtils:
             feedback.pushInfo(f"Extent: {extent.toString()}")
             feedback.pushInfo(f"CRS: {crs.authid()}")
             feedback.pushInfo(f"Pixel size: {pixel_size}")
-            feedback.pushInfo(f"Extent coords: xmin={extent.xMinimum()}, xmax={extent.xMaximum()}, ymin={extent.yMinimum()}, ymax={extent.yMaximum()}")
+            feedback.pushInfo(
+                f"Extent coords: xmin={extent.xMinimum()}, xmax={extent.xMaximum()}, ymin={extent.yMinimum()}, ymax={extent.yMaximum()}"
+            )
 
         # Ensure output directory exists
         output_dir = os.path.dirname(output_path)
@@ -338,7 +347,7 @@ class ConstantRasterProcessingUtils:
                 feedback.pushInfo(f"Constant raster created: {output_path}")
                 feedback.pushInfo(f"Result: {result}")
 
-            return result['OUTPUT']
+            return result["OUTPUT"]
 
         except QgsProcessingException as ex:
             err_msg = tr("Error creating constant raster")
@@ -347,8 +356,7 @@ class ConstantRasterProcessingUtils:
 
     @staticmethod
     def validate_raster(
-        raster_path: str,
-        feedback: typing.Optional[QgsProcessingFeedback] = None
+        raster_path: str, feedback: typing.Optional[QgsProcessingFeedback] = None
     ) -> bool:
         """Validate that a raster file is valid and can be loaded.
 
@@ -419,7 +427,7 @@ def create_constant_rasters(
     collection: ConstantRasterCollection,
     context: ConstantRasterContext,
     input_range: typing.Tuple[float, float] = (0.0, 100.0),
-    feedback: typing.Optional[QgsProcessingFeedback] = None
+    feedback: typing.Optional[QgsProcessingFeedback] = None,
 ) -> typing.List[str]:
     """Create constant rasters for all enabled components in a collection.
 
@@ -477,20 +485,28 @@ def create_constant_rasters(
             progress = int((idx / total_components) * 100)
             feedback.setProgress(progress)
             component_name = component.alias_name or component.component_id
-            feedback.pushInfo(f"Processing {idx + 1}/{total_components}: {component_name}")
+            feedback.pushInfo(
+                f"Processing {idx + 1}/{total_components}: {component_name}"
+            )
 
         # Get the constant value
         if not component.value_info:
             if feedback:
-                feedback.pushWarning(f"Component {component.component_id} has no value_info, skipping")
+                feedback.pushWarning(
+                    f"Component {component.component_id} has no value_info, skipping"
+                )
             continue
 
         absolute_value = component.value_info.absolute
 
         if feedback:
             feedback.pushInfo(f"DEBUG: Input value: {absolute_value}")
-            feedback.pushInfo(f"DEBUG: Input range: {input_range[0]} - {input_range[1]}")
-            feedback.pushInfo(f"DEBUG: Output range: {collection.filter_value} - {collection.total_value}")
+            feedback.pushInfo(
+                f"DEBUG: Input range: {input_range[0]} - {input_range[1]}"
+            )
+            feedback.pushInfo(
+                f"DEBUG: Output range: {collection.filter_value} - {collection.total_value}"
+            )
 
         # TWO-STEP NORMALIZATION:
 
@@ -513,22 +529,38 @@ def create_constant_rasters(
         constant_value = output_min + (normalized_0_1 * (output_max - output_min))
 
         if feedback:
-            feedback.pushInfo(f"DEBUG: Step 2 - Remapped to output range: {constant_value}")
+            feedback.pushInfo(
+                f"DEBUG: Step 2 - Remapped to output range: {constant_value}"
+            )
             feedback.pushInfo(f"DEBUG: Final raster value: {constant_value}")
 
         # Generate output filename
-        safe_name = component.alias_name.replace(" ", "_").replace("/", "_") if component.alias_name else component.component_id
+        safe_name = (
+            component.alias_name.replace(" ", "_").replace("/", "_")
+            if component.alias_name
+            else component.component_id
+        )
         output_filename = f"constant_raster_{safe_name}.tif"
-        output_path = os.path.join(context.output_dir, output_filename) if context.output_dir else output_filename
+        output_path = (
+            os.path.join(context.output_dir, output_filename)
+            if context.output_dir
+            else output_filename
+        )
 
         try:
             # Create the constant raster
             if feedback:
-                feedback.pushInfo(f"Component: {component.alias_name or component.component_id}")
+                feedback.pushInfo(
+                    f"Component: {component.alias_name or component.component_id}"
+                )
                 feedback.pushInfo(f"Absolute value: {absolute_value}")
-                feedback.pushInfo(f"Normalization range: {collection.filter_value} - {collection.total_value}")
+                feedback.pushInfo(
+                    f"Normalization range: {collection.filter_value} - {collection.total_value}"
+                )
                 feedback.pushInfo(f"Normalized value: {constant_value}")
-                feedback.pushInfo(f"Creating raster with normalized value {constant_value} at {output_path}")
+                feedback.pushInfo(
+                    f"Creating raster with normalized value {constant_value} at {output_path}"
+                )
 
             created_path = ConstantRasterProcessingUtils.create_constant_raster(
                 value=constant_value,
@@ -537,7 +569,7 @@ def create_constant_rasters(
                 crs=context.crs,
                 output_path=output_path,
                 context=processing_context,
-                feedback=feedback
+                feedback=feedback,
             )
 
             # Update component with created raster path
@@ -550,7 +582,9 @@ def create_constant_rasters(
                 feedback.pushInfo(f"Successfully created: {created_path}")
 
         except Exception as e:
-            error_msg = f"Failed to create raster for {component.component_id}: {str(e)}"
+            error_msg = (
+                f"Failed to create raster for {component.component_id}: {str(e)}"
+            )
             if feedback:
                 feedback.reportError(error_msg)
             log(error_msg, info=False)

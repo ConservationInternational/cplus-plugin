@@ -177,7 +177,9 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
         norm_group = QtWidgets.QGroupBox("Output Range (remapping)")
         norm_group.setCheckable(True)
         norm_group.setChecked(True)
-        norm_group.setToolTip("Adjust the output range for normalized values. Default 0-1 means full range.")
+        norm_group.setToolTip(
+            "Adjust the output range for normalized values. Default 0-1 means full range."
+        )
         norm_layout = QtWidgets.QFormLayout(norm_group)
         self.spin_min_value = QtWidgets.QDoubleSpinBox()
         self.spin_min_value.setRange(0.0, 1.0)
@@ -207,7 +209,9 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
         button_layout.addWidget(self.btn_close)
         main_layout.addLayout(button_layout)
 
-    def register_widget(self, metadata_id: str, config_widget: ConstantRasterWidgetInterface) -> bool:
+    def register_widget(
+        self, metadata_id: str, config_widget: ConstantRasterWidgetInterface
+    ) -> bool:
         """Register a configuration widget for a particular constant raster type.
 
         :param metadata_id: Metadata ID for the constant raster type
@@ -222,12 +226,14 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
 
         # Check if it implements the raster widget interface
         if isinstance(config_widget, ConstantRasterWidgetInterface):
-            if hasattr(config_widget, 'update_requested'):
+            if hasattr(config_widget, "update_requested"):
                 config_widget.update_requested.connect(self.on_update_raster_component)
 
         return True
 
-    def widget_by_identifier(self, metadata_id: str) -> typing.Optional[ConstantRasterWidgetInterface]:
+    def widget_by_identifier(
+        self, metadata_id: str
+    ) -> typing.Optional[ConstantRasterWidgetInterface]:
         """Return configuration widget by metadata ID.
 
         :param metadata_id: Metadata ID to look up
@@ -249,7 +255,9 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
             self.sw_component_container.setCurrentIndex(0)
             return
 
-        self.sw_component_container.setCurrentIndex(self._registered_component_widgets[metadata_id])
+        self.sw_component_container.setCurrentIndex(
+            self._registered_component_widgets[metadata_id]
+        )
 
     def _register_sample_metadata(self):
         """Register sample metadata for demonstration.
@@ -258,7 +266,10 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
         NCS pathways and activities.
         In production, metadata would be loaded from settings or defined elsewhere.
         """
-        from ..models.constant_raster import ConstantRasterMetadata, ConstantRasterCollection
+        from ..models.constant_raster import (
+            ConstantRasterMetadata,
+            ConstantRasterCollection,
+        )
 
         # Register for NCS Pathways
         if YEARS_EXPERIENCE_PATHWAY_ID not in self._raster_registry.metadata_ids():
@@ -266,7 +277,7 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
                 filter_value=0.0,
                 total_value=1.0,  # Output range: 0-1 (normalized)
                 components=[],
-                skip_raster=False
+                skip_raster=False,
             )
 
             metadata_pathway = ConstantRasterMetadata(
@@ -275,7 +286,7 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
                 fcollection=collection_pathway,
                 deserializer=None,
                 component_type=ModelComponentType.NCS_PATHWAY,
-                input_range=(0.0, 100.0)  # Years of experience: 0-100 years
+                input_range=(0.0, 100.0),  # Years of experience: 0-100 years
             )
             self._raster_registry.register_metadata(metadata_pathway)
 
@@ -285,7 +296,7 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
                 filter_value=0.0,
                 total_value=1.0,  # Output range: 0-1 (normalized)
                 components=[],
-                skip_raster=False
+                skip_raster=False,
             )
 
             metadata_activity = ConstantRasterMetadata(
@@ -294,7 +305,7 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
                 fcollection=collection_activity,
                 deserializer=None,
                 component_type=ModelComponentType.ACTIVITY,
-                input_range=(0.0, 100.0)  # Years of experience: 0-100 years
+                input_range=(0.0, 100.0),  # Years of experience: 0-100 years
             )
             self._raster_registry.register_metadata(metadata_activity)
 
@@ -314,7 +325,9 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
 
         if YEARS_EXPERIENCE_ACTIVITY_ID in metadata_ids:
             experience_widget_activity = YearsExperienceWidget()
-            self.register_widget(YEARS_EXPERIENCE_ACTIVITY_ID, experience_widget_activity)
+            self.register_widget(
+                YEARS_EXPERIENCE_ACTIVITY_ID, experience_widget_activity
+            )
 
         # Load item models
         self._pathways_model = NcsPathwayItemModel(is_checkable=True)
@@ -327,7 +340,9 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
             self._on_model_component_selection_changed
         )
 
-        self._activities_model = ActivityItemModel(load_pathways=False, is_checkable=True)
+        self._activities_model = ActivityItemModel(
+            load_pathways=False, is_checkable=True
+        )
         self.lst_activities.setModel(self._activities_model)
         for activity in settings_manager.get_all_activities():
             self._activities_model.add_activity(activity)
@@ -338,10 +353,14 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
         )
 
         # Connections
-        self.cbo_raster_type.currentIndexChanged.connect(self.on_raster_type_selection_changed)
+        self.cbo_raster_type.currentIndexChanged.connect(
+            self.on_raster_type_selection_changed
+        )
         self.rb_pathway.toggled.connect(self.on_pathway_type_selected)
         self.rb_activity.toggled.connect(self.on_activity_type_selected)
-        self.btn_create_current.clicked.connect(self.on_create_constant_raster_current_view)
+        self.btn_create_current.clicked.connect(
+            self.on_create_constant_raster_current_view
+        )
         self.btn_close.clicked.connect(self._on_close)
 
         # Connect output range spinboxes to save the values to the collection
@@ -366,7 +385,9 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
         )
 
         # Get metadata for pathways
-        pathway_metadatas = self._raster_registry.metadata_by_component_type(ModelComponentType.NCS_PATHWAY)
+        pathway_metadatas = self._raster_registry.metadata_by_component_type(
+            ModelComponentType.NCS_PATHWAY
+        )
         self.cbo_raster_type.clear()
         for metadata in pathway_metadatas:
             self.cbo_raster_type.addItem(metadata.display_name, metadata.id)
@@ -383,7 +404,9 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
         )
 
         # Get metadata for activities
-        activity_metadatas = self._raster_registry.metadata_by_component_type(ModelComponentType.ACTIVITY)
+        activity_metadatas = self._raster_registry.metadata_by_component_type(
+            ModelComponentType.ACTIVITY
+        )
         self.cbo_raster_type.clear()
         for metadata in activity_metadatas:
             self.cbo_raster_type.addItem(metadata.display_name, metadata.id)
@@ -403,7 +426,10 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
 
                 # Sanity check: if the range is invalid, reset to defaults
                 if collection.filter_value >= collection.total_value:
-                    log(f"Invalid range detected: min={collection.filter_value}, max={collection.total_value}. Resetting to 0-1.", info=True)
+                    log(
+                        f"Invalid range detected: min={collection.filter_value}, max={collection.total_value}. Resetting to 0-1.",
+                        info=True,
+                    )
                     collection.filter_value = 0.0
                     collection.total_value = 1.0
 
@@ -424,7 +450,7 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
             if max_val <= min_val:
                 self.message_bar.pushWarning(
                     "Invalid Range",
-                    f"Maximum ({max_val}) must be greater than minimum ({min_val})"
+                    f"Maximum ({max_val}) must be greater than minimum ({min_val})",
                 )
                 return
 
@@ -435,7 +461,9 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
             # Save to settings
             self._raster_registry.save()
 
-    def current_constant_raster_collection(self) -> typing.Optional[ConstantRasterCollection]:
+    def current_constant_raster_collection(
+        self,
+    ) -> typing.Optional[ConstantRasterCollection]:
         """Returns the constant raster collection based on the current selection in the combobox or None if invalid."""
         metadata_id = self.cbo_raster_type.itemData(self.cbo_raster_type.currentIndex())
         if not metadata_id:
@@ -443,7 +471,9 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
 
         return self._raster_registry.collection_by_id(metadata_id)
 
-    def _on_model_component_selection_changed(self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection):
+    def _on_model_component_selection_changed(
+        self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection
+    ):
         """Slot raised when the selection of model component changes."""
         selected_indexes = selected.indexes()
         if len(selected_indexes) == 0:
@@ -484,12 +514,17 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
         component_created = False
         if raster_component is None:
             # Create a default one and add it to the collection
-            raster_component = current_config_widget.create_raster_component(model_item.model_component)
+            raster_component = current_config_widget.create_raster_component(
+                model_item.model_component
+            )
             raster_collection.components.append(raster_component)
             component_created = True
             log(f"Created new component for {model_identifier}", info=True)
         else:
-            log(f"Found existing component for {model_identifier} with value: {raster_component.value_info.absolute if raster_component.value_info else 'None'}", info=True)
+            log(
+                f"Found existing component for {model_identifier} with value: {raster_component.value_info.absolute if raster_component.value_info else 'None'}",
+                info=True,
+            )
 
         current_config_widget.raster_component = raster_component
         current_config_widget.reset()
@@ -543,7 +578,7 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
 
         # Get the current value from the widget to use for ALL checked items
         current_value = None
-        if hasattr(current_config_widget, 'sb_experience'):
+        if hasattr(current_config_widget, "sb_experience"):
             current_value = current_config_widget.sb_experience.value()
 
         # Track items that were created/updated
@@ -566,7 +601,9 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
                 # Item is checked - ensure it has a component
                 if component is None:
                     # Create a new component
-                    component = current_config_widget.create_raster_component(item.model_component)
+                    component = current_config_widget.create_raster_component(
+                        item.model_component
+                    )
                     raster_collection.components.append(component)
                     items_created.append(item.text())
                 else:
@@ -602,13 +639,12 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
 
             if current_value is not None:
                 self.message_bar.pushInfo(
-                    "Components Configured",
-                    f"{msg} with value: {current_value}"
+                    "Components Configured", f"{msg} with value: {current_value}"
                 )
             else:
                 self.message_bar.pushWarning(
                     "Using Default Values",
-                    f"{msg} with default value (0.0). Enter a value in the widget first."
+                    f"{msg} with default value (0.0). Enter a value in the widget first.",
                 )
 
         # NOTE: We don't call normalize() here anymore because:
@@ -628,6 +664,7 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
         if use_aoi:
             # Use AOI extent
             from qgis.core import QgsVectorLayer
+
             aoi_layer = QgsVectorLayer(studyarea_path, "temp_aoi", "ogr")
             if aoi_layer.isValid():
                 extent = aoi_layer.extent()
@@ -642,6 +679,7 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
             # Fallback to map canvas extent
             try:
                 from qgis.utils import iface
+
                 canvas = iface.mapCanvas() if iface else None
             except:
                 canvas = None
@@ -653,7 +691,10 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
                 # Log extent details for debugging
                 log(f"Canvas extent: {extent.toString()}", info=True)
                 log(f"Canvas CRS: {crs.authid()}", info=True)
-                log(f"Extent bounds: xmin={extent.xMinimum()}, xmax={extent.xMaximum()}, ymin={extent.yMinimum()}, ymax={extent.yMaximum()}", info=True)
+                log(
+                    f"Extent bounds: xmin={extent.xMinimum()}, xmax={extent.xMaximum()}, ymin={extent.yMinimum()}, ymax={extent.yMaximum()}",
+                    info=True,
+                )
             else:
                 # Last resort: use project CRS and default extent
                 project = QgsProject.instance()
@@ -674,7 +715,7 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
             extent=extent,
             pixel_size=30.0,  # Default 30m resolution
             crs=crs,
-            output_dir=output_dir
+            output_dir=output_dir,
         )
 
     def on_create_constant_raster_current_view(self):
@@ -682,8 +723,7 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
         current_raster_collection = self.current_constant_raster_collection()
         if not current_raster_collection:
             self.message_bar.pushWarning(
-                "No Collection",
-                "Please select a constant raster type first."
+                "No Collection", "Please select a constant raster type first."
             )
             return
 
@@ -703,14 +743,17 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
         # Save the state after creating/updating components
         self._raster_registry.save()
 
-        log(f"After ensuring components, collection range: min={current_raster_collection.filter_value}, max={current_raster_collection.total_value}", info=True)
+        log(
+            f"After ensuring components, collection range: min={current_raster_collection.filter_value}, max={current_raster_collection.total_value}",
+            info=True,
+        )
 
         # NOW check if there are any enabled components (after creating them)
         enabled_components = current_raster_collection.enabled_components()
         if not enabled_components:
             self.message_bar.pushWarning(
                 "No Enabled Components",
-                "Please check at least one pathway/activity and set its value."
+                "Please check at least one pathway/activity and set its value.",
             )
             return
 
@@ -719,12 +762,12 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
         if studyarea_path and os.path.exists(studyarea_path):
             self.message_bar.pushInfo(
                 "Using AOI Extent",
-                "Creating rasters clipped to the Area of Interest defined in the plugin settings."
+                "Creating rasters clipped to the Area of Interest defined in the plugin settings.",
             )
         else:
             self.message_bar.pushInfo(
                 "Using Current View",
-                "Creating rasters using the current map canvas extent. To use AOI clipping, configure the study area in the main plugin."
+                "Creating rasters using the current map canvas extent. To use AOI clipping, configure the study area in the main plugin.",
             )
 
         # Create context
@@ -732,11 +775,7 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
 
         # Create progress dialog
         progress_dialog = QtWidgets.QProgressDialog(
-            "Creating constant rasters...",
-            "Cancel",
-            0,
-            100,
-            self
+            "Creating constant rasters...", "Cancel", 0, 100, self
         )
         progress_dialog.setWindowTitle("Creating Constant Rasters")
         progress_dialog.setWindowModality(QtCore.Qt.WindowModal)
@@ -761,17 +800,18 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
 
         # Get the metadata to extract input_range
         metadata_id = self.cbo_raster_type.itemData(self.cbo_raster_type.currentIndex())
-        metadata = self._raster_registry._metadata_store.get(metadata_id) if metadata_id else None
+        metadata = (
+            self._raster_registry._metadata_store.get(metadata_id)
+            if metadata_id
+            else None
+        )
         input_range = metadata.input_range if metadata else (0.0, 100.0)
 
         log(f"Using input_range: {input_range}", info=True)
 
         try:
             created_rasters = create_constant_rasters(
-                current_raster_collection,
-                context,
-                input_range,
-                feedback
+                current_raster_collection, context, input_range, feedback
             )
 
             progress_dialog.close()
@@ -779,20 +819,19 @@ class ConstantRastersManagerDialog(QtWidgets.QWidget):
             if created_rasters:
                 self.message_bar.pushSuccess(
                     "Success",
-                    f"Created {len(created_rasters)} constant raster(s) in {context.output_dir}"
+                    f"Created {len(created_rasters)} constant raster(s) in {context.output_dir}",
                 )
             else:
                 self.message_bar.pushWarning(
                     "No Rasters Created",
-                    "No enabled components found in the collection."
+                    "No enabled components found in the collection.",
                 )
 
         except Exception as e:
             progress_dialog.close()
             log(f"Error creating constant rasters: {str(e)}", info=False)
             self.message_bar.pushCritical(
-                "Error",
-                f"Failed to create constant rasters: {str(e)}"
+                "Error", f"Failed to create constant rasters: {str(e)}"
             )
 
     def _restore_ui_state(self):

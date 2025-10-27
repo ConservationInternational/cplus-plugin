@@ -65,7 +65,7 @@ class PwlManagerDialog(QtWidgets.QDialog):
     def _on_accept(self):
         """Handle dialog acceptance."""
         # Get results from NPV tab
-        if hasattr(self.npv_dialog, 'npv_collection'):
+        if hasattr(self.npv_dialog, "npv_collection"):
             self.npv_collection = self.npv_dialog.npv_collection
 
         # Constant raster tab manages its own collections via the registry
@@ -95,7 +95,7 @@ class PwlManagerDialog(QtWidgets.QDialog):
 
         :param tab_name: Tab name ('npv' or 'constant')
         """
-        if tab_name.lower() == 'npv':
+        if tab_name.lower() == "npv":
             self.tab_widget.setCurrentIndex(0)
-        elif tab_name.lower() == 'constant':
+        elif tab_name.lower() == "constant":
             self.tab_widget.setCurrentIndex(1)
