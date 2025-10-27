@@ -1109,8 +1109,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             # Process Constant Raster collection if available
             constant_collection = pwl_dialog.get_constant_collection()
             if constant_collection:
-                # TODO: Process constant rasters similar to NPV PWLs
-                # For now, just show confirmation
+                # Show confirmation
                 self.show_message(
                     tr(f"Constant raster configuration saved with {len(constant_collection.enabled_components())} enabled pathways."),
                     level=Qgis.Info

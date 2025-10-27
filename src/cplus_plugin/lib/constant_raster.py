@@ -291,6 +291,9 @@ class ConstantRasterProcessingUtils:
         if feedback:
             feedback.pushInfo(f"Creating constant raster with value: {value}")
             feedback.pushInfo(f"Extent: {extent.toString()}")
+            feedback.pushInfo(f"CRS: {crs.authid()}")
+            feedback.pushInfo(f"Pixel size: {pixel_size}")
+            feedback.pushInfo(f"Extent coords: xmin={extent.xMinimum()}, xmax={extent.xMaximum()}, ymin={extent.yMinimum()}, ymax={extent.yMaximum()}")
 
         # Ensure output directory exists
         output_dir = os.path.dirname(output_path)
@@ -321,6 +324,7 @@ class ConstantRasterProcessingUtils:
         try:
             if feedback:
                 feedback.pushInfo("Running native:createconstantrasterlayer...")
+                feedback.pushInfo(f"Algorithm parameters: {alg_params}")
 
             # Run QGIS processing following plugin pattern (same as financials.py:183-189)
             result = processing.run(
@@ -332,6 +336,7 @@ class ConstantRasterProcessingUtils:
 
             if feedback:
                 feedback.pushInfo(f"Constant raster created: {output_path}")
+                feedback.pushInfo(f"Result: {result}")
 
             return result['OUTPUT']
 
@@ -413,16 +418,19 @@ class ConstantRasterProcessingUtils:
 def create_constant_rasters(
     collection: ConstantRasterCollection,
     context: ConstantRasterContext,
+    input_range: typing.Tuple[float, float] = (0.0, 100.0),
     feedback: typing.Optional[QgsProcessingFeedback] = None
 ) -> typing.List[str]:
     """Create constant rasters for all enabled components in a collection.
 
     This function creates constant rasters based on the absolute values
-    specified in each component's value_info. The rasters are created
-    using the extent, resolution, and CRS from the context.
+    specified in each component's value_info. Uses two-step normalization:
+    1. Normalize input values to [0,1] using input_range
+    2. Remap to output range using collection's filter_value/total_value
 
     :param collection: ConstantRasterCollection containing components to process
     :param context: ConstantRasterContext with extent, CRS, and output settings
+    :param input_range: Tuple of (min, max) for input values (e.g., 0-100 years)
     :param feedback: Optional feedback for progress reporting
     :returns: List of paths to created raster files
     :raises QgsProcessingException: If raster creation fails
@@ -477,7 +485,36 @@ def create_constant_rasters(
                 feedback.pushWarning(f"Component {component.component_id} has no value_info, skipping")
             continue
 
-        constant_value = component.value_info.absolute
+        absolute_value = component.value_info.absolute
+
+        if feedback:
+            feedback.pushInfo(f"DEBUG: Input value: {absolute_value}")
+            feedback.pushInfo(f"DEBUG: Input range: {input_range[0]} - {input_range[1]}")
+            feedback.pushInfo(f"DEBUG: Output range: {collection.filter_value} - {collection.total_value}")
+
+        # TWO-STEP NORMALIZATION:
+
+        # Step 1: Normalize input value to [0,1] using input_range
+        input_min, input_max = input_range
+        if input_max != input_min:
+            normalized_0_1 = (absolute_value - input_min) / (input_max - input_min)
+            # Clamp to [0,1]
+            normalized_0_1 = max(0.0, min(1.0, normalized_0_1))
+        else:
+            # Edge case: if input range is invalid, use 0.5
+            normalized_0_1 = 0.5
+
+        if feedback:
+            feedback.pushInfo(f"DEBUG: Step 1 - Normalized to [0,1]: {normalized_0_1}")
+
+        # Step 2: Remap [0,1] to output range using collection's filter_value/total_value
+        output_min = collection.filter_value
+        output_max = collection.total_value
+        constant_value = output_min + (normalized_0_1 * (output_max - output_min))
+
+        if feedback:
+            feedback.pushInfo(f"DEBUG: Step 2 - Remapped to output range: {constant_value}")
+            feedback.pushInfo(f"DEBUG: Final raster value: {constant_value}")
 
         # Generate output filename
         safe_name = component.alias_name.replace(" ", "_").replace("/", "_") if component.alias_name else component.component_id
@@ -487,7 +524,11 @@ def create_constant_rasters(
         try:
             # Create the constant raster
             if feedback:
-                feedback.pushInfo(f"Creating raster with value {constant_value} at {output_path}")
+                feedback.pushInfo(f"Component: {component.alias_name or component.component_id}")
+                feedback.pushInfo(f"Absolute value: {absolute_value}")
+                feedback.pushInfo(f"Normalization range: {collection.filter_value} - {collection.total_value}")
+                feedback.pushInfo(f"Normalized value: {constant_value}")
+                feedback.pushInfo(f"Creating raster with normalized value {constant_value} at {output_path}")
 
             created_path = ConstantRasterProcessingUtils.create_constant_raster(
                 value=constant_value,

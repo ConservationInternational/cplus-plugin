@@ -54,7 +54,7 @@ class ConstantRasterWidgetInterface:
         requested so that, for example, the changes can be
         processed and saved.
         """
-        if hasattr(self, 'update_requested'):
+        if hasattr(self, 'update_requested') and self._raster_component is not None:
             self.update_requested.emit(self._raster_component)
 
     def reset(self):
@@ -76,11 +76,11 @@ class ConstantRasterWidgetInterface:
         """
         raise NotImplementedError
 
-    @classmethod
-    def create_raster_component(cls, model_component: LayerModelComponent) -> ConstantRasterComponent:
+    def create_raster_component(self, model_component: LayerModelComponent) -> ConstantRasterComponent:
         """Creates a new default constant raster component.
 
-        To be implemented by subclasses.
+        To be implemented by subclasses. Can use self to access
+        current widget state (e.g., current spinbox value).
 
         :returns: A constant raster component object for
         use in defining the default component to use for
@@ -163,8 +163,7 @@ class YearsExperienceWidget(YearsExperienceWidgetUi, ConstantRasterWidgetInterfa
             self._raster_component.value_info.absolute = value
         self.notify_update()
 
-    @classmethod
-    def create_raster_component(cls, layer_model_component: LayerModelComponent) -> ConstantRasterComponent:
+    def create_raster_component(self, layer_model_component: LayerModelComponent) -> ConstantRasterComponent:
         """Interface implementation."""
         from ..models.base import ModelComponentType
 
@@ -177,8 +176,13 @@ class YearsExperienceWidget(YearsExperienceWidgetUi, ConstantRasterWidgetInterfa
             elif class_name == 'Activity':
                 component_type = ModelComponentType.ACTIVITY
 
+        # Use current spinbox value if available, otherwise default to 0.0
+        current_value = 0.0
+        if hasattr(self, 'sb_experience'):
+            current_value = self.sb_experience.value()
+
         return ConstantRasterComponent(
-            value_info=ConstantRasterInfo(absolute=0.0),
+            value_info=ConstantRasterInfo(absolute=current_value),
             component=layer_model_component,
             component_id=str(layer_model_component.uuid) if hasattr(layer_model_component, 'uuid') else "",
             component_type=component_type,

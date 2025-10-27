@@ -283,6 +283,7 @@ class ConstantRasterMetadata:
     fcollection: typing.Optional[ConstantRasterCollection] = None
     deserializer: typing.Optional[typing.Callable] = None  # PyFunc
     component_type: typing.Optional["ModelComponentType"] = None  # Type this metadata applies to
+    input_range: typing.Tuple[float, float] = (0.0, 100.0)  # Min and max for input values (e.g., 0-100 years)
 
     def to_dict(self) -> dict:
         """Serialize to dictionary (excluding deserializer)."""
@@ -291,6 +292,7 @@ class ConstantRasterMetadata:
             "display_name": self.display_name,
             "fcollection": self.fcollection.to_dict() if self.fcollection else {},
             "component_type": self.component_type.value if self.component_type else None,
+            "input_range": list(self.input_range),
         }
 
 
@@ -406,23 +408,116 @@ class ConstantRasterRegistry:
     def save(cls):
         """Save all registered metadata to settings.
 
-        This method should be called to persist changes to the registry.
-        Implementation will use the registered serializers to save collections.
+        This method persists the state of all collections (component values,
+        output ranges, etc.) to QgsSettings so they can be restored later.
         """
-        # This will be implemented to save to QgsSettings
-        # For now, it's a placeholder that the dialog can call
-        pass
+        from qgis.core import QgsSettings
+        import json
+        from ..utils import log
+
+        settings = QgsSettings()
+        settings.beginGroup("cplus/constant_rasters")
+
+        log(f"Saving constant raster state for {len(cls._metadata_store)} metadata items", info=True)
+
+        # Save each metadata's collection state
+        for metadata_id, metadata in cls._metadata_store.items():
+            if metadata.fcollection:
+                collection_data = {
+                    'filter_value': metadata.fcollection.filter_value,
+                    'total_value': metadata.fcollection.total_value,
+                    'skip_raster': metadata.fcollection.skip_raster,
+                    'components': []
+                }
+
+                log(f"Saving {metadata_id}: {len(metadata.fcollection.components)} components", info=True)
+
+                # Save each component
+                for component in metadata.fcollection.components:
+                    absolute_value = component.value_info.absolute if component.value_info else 0.0
+                    component_data = {
+                        'component_id': component.component_id,
+                        'absolute_value': absolute_value,
+                        'skip_value': component.skip_value,
+                        'alias_name': component.alias_name,
+                    }
+                    collection_data['components'].append(component_data)
+
+                    log(f"  Component {component.component_id} ({component.alias_name}): value={absolute_value}, skip={component.skip_value}", info=True)
+
+                # Store as JSON string
+                json_str = json.dumps(collection_data)
+                settings.setValue(metadata_id, json_str)
+                log(f"Saved {metadata_id}: {json_str}", info=True)
+
+        settings.endGroup()
+        log("Constant raster state save completed", info=True)
 
     @classmethod
     def load(cls):
         """Load metadata from settings.
 
-        This method should be called on plugin initialization to restore
-        saved constant raster configurations.
+        This method restores the state of all collections from QgsSettings,
+        including component values and output ranges.
         """
-        # This will be implemented to load from QgsSettings
-        # For now, it's a placeholder
-        pass
+        from qgis.core import QgsSettings
+        import json
+        from ..utils import log
+
+        settings = QgsSettings()
+        settings.beginGroup("cplus/constant_rasters")
+
+        log(f"Loading constant raster state from settings. Keys: {settings.childKeys()}", info=True)
+
+        # Load each metadata's collection state
+        for metadata_id in settings.childKeys():
+            if metadata_id in cls._metadata_store:
+                try:
+                    json_str = settings.value(metadata_id, "{}")
+                    log(f"Loading {metadata_id}: {json_str}", info=True)
+
+                    collection_data = json.loads(json_str)
+                    metadata = cls._metadata_store[metadata_id]
+
+                    if metadata.fcollection and collection_data:
+                        # Restore collection properties
+                        metadata.fcollection.filter_value = collection_data.get('filter_value', 0.0)
+                        metadata.fcollection.total_value = collection_data.get('total_value', 1.0)
+                        metadata.fcollection.skip_raster = collection_data.get('skip_raster', False)
+
+                        log(f"Restored collection properties: filter={metadata.fcollection.filter_value}, total={metadata.fcollection.total_value}", info=True)
+
+                        # Clear existing components and restore from saved data
+                        metadata.fcollection.components.clear()
+
+                        # Recreate components from saved data
+                        components_data = collection_data.get('components', [])
+                        log(f"Restoring {len(components_data)} components", info=True)
+
+                        for saved_component in components_data:
+                            absolute_value = saved_component.get('absolute_value', 0.0)
+                            component_id = saved_component.get('component_id', '')
+
+                            log(f"Restoring component {component_id} with value {absolute_value}", info=True)
+
+                            # Create a minimal component to hold the saved state
+                            # The full component will be populated when the dialog loads
+                            component = ConstantRasterComponent(
+                                value_info=ConstantRasterInfo(absolute=absolute_value),
+                                component=None,  # Will be set by dialog
+                                component_id=component_id,
+                                skip_value=saved_component.get('skip_value', False),
+                                alias_name=saved_component.get('alias_name', ''),
+                            )
+                            metadata.fcollection.components.append(component)
+
+                        log(f"Loaded {len(metadata.fcollection.components)} components into collection", info=True)
+
+                except Exception as e:
+                    # Log error but don't crash
+                    log(f"Error loading constant raster state for {metadata_id}: {str(e)}", info=False)
+
+        settings.endGroup()
 
     @classmethod
     def __iter__(cls):
