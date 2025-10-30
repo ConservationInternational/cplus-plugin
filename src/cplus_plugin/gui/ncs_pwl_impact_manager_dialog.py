@@ -364,7 +364,7 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
                     if pwl_uuid not in impact_priority_layer_uuids:
                         continue
 
-                    # Skip constant raster PWLs as they are used in investability analysis only
+                    # Skip constant rasters (not default PWLs)
                     if pwl.get("type") != PriorityLayerType.DEFAULT.value:
                         continue
 

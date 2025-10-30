@@ -372,6 +372,14 @@ class NcsPathway(LayerModelComponent):
 
         return is_valid
 
+    def type(self) -> ModelComponentType:
+        """Returns the type of this model component.
+
+        :returns: ModelComponentType.NCS_PATHWAY
+        :rtype: ModelComponentType
+        """
+        return ModelComponentType.NCS_PATHWAY
+
 
 @dataclasses.dataclass
 class Activity(LayerModelComponent):
@@ -593,6 +601,14 @@ class Activity(LayerModelComponent):
             return QgsRandomColorRamp()
 
         return None
+
+    def type(self) -> ModelComponentType:
+        """Returns the type of this model component.
+
+        :returns: ModelComponentType.ACTIVITY
+        :rtype: ModelComponentType
+        """
+        return ModelComponentType.ACTIVITY
 
 
 class ScenarioState(Enum):

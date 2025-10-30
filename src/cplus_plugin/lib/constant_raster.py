@@ -18,7 +18,6 @@ from qgis.core import (
 from ..models.constant_raster import (
     ConstantRasterCollection,
     ConstantRasterComponent,
-    ConstantRasterConfig,
     ConstantRasterMetadata,
     ConstantRasterContext,
 )
@@ -31,126 +30,6 @@ class ConstantRasterProcessingUtils:
     This class provides methods for creating, processing, and normalizing
     constant rasters according to the CPLUS framework requirements.
     """
-
-    @staticmethod
-    def create_constant_raster_metadata_collection(
-        collection: ConstantRasterCollection,
-        config: ConstantRasterConfig,
-        feedback: typing.Optional[QgsProcessingFeedback] = None,
-    ) -> ConstantRasterMetadata:
-        """Create constant raster metadata from collection and config.
-
-        This method processes the collection, normalizes rasters if needed,
-        and creates metadata for the constant raster collection.
-
-        :param collection: ConstantRasterCollection to process
-        :param config: Configuration for raster creation
-        :param feedback: Optional feedback for progress reporting
-        :returns: ConstantRasterMetadata with processed information
-        :raises QgsProcessingException: If processing fails
-        """
-        if feedback:
-            feedback.pushInfo("Creating constant raster metadata collection")
-            feedback.setProgress(0)
-
-        # Validate collection
-        try:
-            collection.validate()
-        except ValueError as e:
-            if feedback:
-                feedback.reportError(f"Collection validation failed: {str(e)}")
-            raise QgsProcessingException(f"Invalid collection: {str(e)}")
-
-        # Process each component
-        total_components = len(collection.components)
-        for idx, component in enumerate(collection.components):
-            if feedback and feedback.isCanceled():
-                raise QgsProcessingException("Processing canceled by user")
-
-            if component.skip_value:
-                if feedback:
-                    feedback.pushInfo(f"Skipping component {component.component_id}")
-                continue
-
-            if feedback:
-                progress = int((idx / total_components) * 100)
-                feedback.setProgress(progress)
-                feedback.pushInfo(
-                    f"Processing component {idx + 1}/{total_components}: {component.alias_name or component.component_id}"
-                )
-
-            # Process the component raster
-            try:
-                ConstantRasterProcessingUtils._process_component_raster(
-                    component, config, feedback
-                )
-            except Exception as e:
-                if feedback:
-                    feedback.reportError(f"Error processing component: {str(e)}")
-                raise QgsProcessingException(f"Component processing failed: {str(e)}")
-
-        # Create metadata
-        metadata = ConstantRasterMetadata(
-            id=f"constant_raster_{id(collection)}",
-            display_name=config.value or "Constant Raster Collection",
-            fcollection=collection,
-        )
-
-        if feedback:
-            feedback.setProgress(100)
-            feedback.pushInfo(
-                "Constant raster metadata collection created successfully"
-            )
-
-        return metadata
-
-    @staticmethod
-    def _process_component_raster(
-        component: ConstantRasterComponent,
-        config: ConstantRasterConfig,
-        feedback: typing.Optional[QgsProcessingFeedback] = None,
-    ) -> None:
-        """Process a single component raster.
-
-        :param component: ConstantRasterComponent to process
-        :param config: Configuration for raster creation
-        :param feedback: Optional feedback for progress reporting
-        :raises QgsProcessingException: If processing fails
-        """
-        if not component.value_info or not component.value_info.filename:
-            if feedback:
-                feedback.pushWarning(
-                    f"Component {component.component_id} has no input raster"
-                )
-            return
-
-        input_path = component.value_info.filename
-        if not os.path.exists(input_path):
-            raise QgsProcessingException(f"Input raster not found: {input_path}")
-
-        # Load the raster
-        raster_layer = QgsRasterLayer(input_path, "temp_raster")
-        if not raster_layer.isValid():
-            raise QgsProcessingException(f"Invalid raster layer: {input_path}")
-
-        component.qgis_map_layer = raster_layer
-
-        if feedback:
-            feedback.pushInfo(f"Loaded raster: {input_path}")
-
-        # If already normalized, skip normalization
-        if component.value_info.normalized:
-            if feedback:
-                feedback.pushInfo("Raster already normalized, skipping normalization")
-            return
-
-        # Normalize the raster if needed
-        if feedback:
-            feedback.pushInfo("Normalizing raster...")
-
-        # Normalization logic will be implemented based on requirements
-        # This is a placeholder for the actual normalization algorithm
-        component.value_info.normalized = True
 
     @staticmethod
     def normalize_raster(
@@ -422,176 +301,489 @@ class ConstantRasterProcessingUtils:
 
         return info
 
+    @staticmethod
+    def create_constant_rasters(
+        collection: ConstantRasterCollection,
+        context: ConstantRasterContext,
+        input_range: typing.Tuple[float, float] = None,
+        feedback: typing.Optional[QgsProcessingFeedback] = None,
+        metadata_id: str = None,
+    ) -> typing.List[str]:
+        """Create constant rasters for all enabled components in a collection.
 
-def create_constant_rasters(
-    collection: ConstantRasterCollection,
-    context: ConstantRasterContext,
-    input_range: typing.Tuple[float, float] = (0.0, 100.0),
-    feedback: typing.Optional[QgsProcessingFeedback] = None,
-) -> typing.List[str]:
-    """Create constant rasters for all enabled components in a collection.
+        This function creates constant rasters based on the absolute values
+        specified in each component's value_info. Uses two-step normalization:
+        1. Normalize input values to [0,1] using actual min/max from component values
+        2. Remap to output range using collection's min_value/max_value
 
-    This function creates constant rasters based on the absolute values
-    specified in each component's value_info. Uses two-step normalization:
-    1. Normalize input values to [0,1] using input_range
-    2. Remap to output range using collection's filter_value/total_value
-
-    :param collection: ConstantRasterCollection containing components to process
-    :param context: ConstantRasterContext with extent, CRS, and output settings
-    :param input_range: Tuple of (min, max) for input values (e.g., 0-100 years)
-    :param feedback: Optional feedback for progress reporting
-    :returns: List of paths to created raster files
-    :raises QgsProcessingException: If raster creation fails
-    """
-    if feedback:
-        feedback.pushInfo("Starting constant raster creation")
-        feedback.setProgress(0)
-
-    # Validate inputs
-    if not collection:
-        raise QgsProcessingException("No collection provided")
-
-    if not context.extent:
-        raise QgsProcessingException("No extent provided in context")
-
-    if not context.crs:
-        raise QgsProcessingException("No CRS provided in context")
-
-    # Get enabled components
-    enabled_components = collection.enabled_components()
-    if not enabled_components:
+        :param collection: ConstantRasterCollection containing components to process
+        :param context: ConstantRasterContext with extent, CRS, and output settings
+        :param input_range: DEPRECATED - min/max are now calculated from actual component values
+        :param feedback: Optional feedback for progress reporting
+        :param metadata_id: Metadata ID for determining file naming (e.g., "years_experience_pathway")
+        :returns: List of paths to created raster files
+        :raises QgsProcessingException: If raster creation fails
+        """
         if feedback:
-            feedback.pushWarning("No enabled components found in collection")
-        return []
+            feedback.pushInfo("Starting constant raster creation")
+            feedback.setProgress(0)
 
-    if feedback:
-        feedback.pushInfo(f"Creating {len(enabled_components)} constant rasters")
+        # Validate inputs
+        if not collection:
+            raise QgsProcessingException("No collection provided")
 
-    # Ensure output directory exists
-    if context.output_dir and not os.path.exists(context.output_dir):
-        os.makedirs(context.output_dir, exist_ok=True)
-
-    created_rasters = []
-    processing_context = QgsProcessingContext()
-
-    # Process each component
-    total_components = len(enabled_components)
-    for idx, component in enumerate(enabled_components):
-        if feedback and feedback.isCanceled():
-            raise QgsProcessingException("Processing canceled by user")
-
-        # Update progress
-        if feedback:
-            progress = int((idx / total_components) * 100)
-            feedback.setProgress(progress)
-            component_name = component.alias_name or component.component_id
-            feedback.pushInfo(
-                f"Processing {idx + 1}/{total_components}: {component_name}"
-            )
-
-        # Get the constant value
-        if not component.value_info:
+        # Log skip_raster status
+        log(
+            f"Constant raster collection skip_raster value: {collection.skip_raster}",
+            info=True,
+        )
+        if collection.skip_raster:
             if feedback:
-                feedback.pushWarning(
-                    f"Component {component.component_id} has no value_info, skipping"
+                feedback.pushInfo(
+                    "skip_raster=True: Generating metadata files only (skipping raster creation)"
                 )
-            continue
+            log(
+                "skip_raster=True: Will generate metadata files only, not raster files",
+                info=True,
+            )
 
-        absolute_value = component.value_info.absolute
+        if not context.extent:
+            raise QgsProcessingException("No extent provided in context")
+
+        if not context.crs:
+            raise QgsProcessingException("No CRS provided in context")
+
+        # Get enabled components
+        enabled_components = collection.enabled_components()
+        if not enabled_components:
+            if feedback:
+                feedback.pushWarning("No enabled components found in collection")
+            return []
 
         if feedback:
-            feedback.pushInfo(f"DEBUG: Input value: {absolute_value}")
+            feedback.pushInfo(f"Creating {len(enabled_components)} constant rasters")
+
+        # STEP 1: Calculate actual min/max from component values
+        component_values = []
+        for component in enabled_components:
+            if component.value_info:
+                component_values.append(component.value_info.absolute)
+
+        if not component_values:
+            raise QgsProcessingException("No valid component values found")
+
+        actual_min = min(component_values)
+        actual_max = max(component_values)
+
+        if feedback:
             feedback.pushInfo(
-                f"DEBUG: Input range: {input_range[0]} - {input_range[1]}"
-            )
-            feedback.pushInfo(
-                f"DEBUG: Output range: {collection.filter_value} - {collection.total_value}"
+                f"Actual value range from components: min={actual_min}, max={actual_max}"
             )
 
-        # TWO-STEP NORMALIZATION:
+        # Import helper functions for filename generation and metadata
+        from ..models.helpers import (
+            get_constant_raster_dir,
+            generate_constant_raster_filename,
+            save_constant_raster_metadata,
+        )
 
-        # Step 1: Normalize input value to [0,1] using input_range
-        input_min, input_max = input_range
-        if input_max != input_min:
-            normalized_0_1 = (absolute_value - input_min) / (input_max - input_min)
-            # Clamp to [0,1]
-            normalized_0_1 = max(0.0, min(1.0, normalized_0_1))
+        # Determine the actual output directory using hierarchical structure
+        if metadata_id and collection.component_type:
+            # Use hierarchical directory structure
+            base_dir = context.output_dir or os.path.join(
+                os.path.expanduser("~"), "cplus"
+            )
+            actual_output_dir = get_constant_raster_dir(
+                base_dir, collection.component_type, metadata_id
+            )
         else:
-            # Edge case: if input range is invalid, use 0.5
-            normalized_0_1 = 0.5
+            # Fallback to flat structure if metadata_id not provided
+            actual_output_dir = context.output_dir or os.path.join(
+                os.path.expanduser("~"), "cplus", "constant_rasters"
+            )
+
+        # Ensure output directory exists
+        if actual_output_dir and not os.path.exists(actual_output_dir):
+            os.makedirs(actual_output_dir, exist_ok=True)
+            if feedback:
+                feedback.pushInfo(f"Created output directory: {actual_output_dir}")
+
+        created_rasters = []
+        processing_context = QgsProcessingContext()
+
+        # Process each component
+        total_components = len(enabled_components)
+        for idx, component in enumerate(enabled_components):
+            if feedback and feedback.isCanceled():
+                raise QgsProcessingException("Processing canceled by user")
+
+            # Update progress
+            if feedback:
+                progress = int((idx / total_components) * 100)
+                feedback.setProgress(progress)
+                component_name = component.alias_name or component.component_id
+                feedback.pushInfo(
+                    f"Processing {idx + 1}/{total_components}: {component_name}"
+                )
+
+            # Get the constant value
+            if not component.value_info:
+                if feedback:
+                    feedback.pushWarning(
+                        f"Component {component.component_id} has no value_info, skipping"
+                    )
+                continue
+
+            absolute_value = component.value_info.absolute
+
+            if feedback:
+                feedback.pushInfo(f"Component value: {absolute_value}")
+                feedback.pushInfo(f"Actual value range: {actual_min} - {actual_max}")
+                feedback.pushInfo(
+                    f"Output range: {collection.min_value} - {collection.max_value}"
+                )
+
+            # TWO-STEP NORMALIZATION:
+
+            # Step 1: Normalize input value to [0,1] using actual min/max from all components
+            if actual_max != actual_min:
+                normalized_0_1 = (absolute_value - actual_min) / (
+                    actual_max - actual_min
+                )
+            else:
+                # Edge case: all values are the same, normalize to 0.5
+                normalized_0_1 = 0.5
+
+            if feedback:
+                feedback.pushInfo(f"Step 1 - Normalized to [0,1]: {normalized_0_1}")
+
+            # Step 2: Remap [0,1] to user-specified output range
+            output_min = collection.min_value
+            output_max = collection.max_value
+            constant_value = output_min + (normalized_0_1 * (output_max - output_min))
+
+            if feedback:
+                feedback.pushInfo(
+                    f"Step 2 - Remapped to output range: {constant_value}"
+                )
+                feedback.pushInfo(f"Final raster value: {constant_value}")
+
+            # Generate output filename using helper
+            if metadata_id and component.alias_name:
+                # Use descriptive filename with value and unit
+                output_filename = generate_constant_raster_filename(
+                    component.alias_name, absolute_value, metadata_id
+                )
+            else:
+                # Fallback to old naming scheme
+                safe_name = (
+                    component.alias_name.replace(" ", "_").replace("/", "_")
+                    if component.alias_name
+                    else component.component_id
+                )
+                output_filename = f"constant_raster_{safe_name}.tif"
+
+            output_path = os.path.join(actual_output_dir, output_filename)
+
+            try:
+                # Create the constant raster only if skip_raster is False
+                if not collection.skip_raster:
+                    if feedback:
+                        feedback.pushInfo(
+                            f"Component: {component.alias_name or component.component_id}"
+                        )
+                        feedback.pushInfo(f"Absolute value: {absolute_value}")
+                        feedback.pushInfo(
+                            f"Normalization range: {collection.min_value} - {collection.max_value}"
+                        )
+                        feedback.pushInfo(f"Normalized value: {constant_value}")
+                        feedback.pushInfo(
+                            f"Creating raster with normalized value {constant_value} at {output_path}"
+                        )
+
+                    created_path = ConstantRasterProcessingUtils.create_constant_raster(
+                        value=constant_value,
+                        extent=context.extent,
+                        pixel_size=context.pixel_size,
+                        crs=context.crs,
+                        output_path=output_path,
+                        context=processing_context,
+                        feedback=feedback,
+                    )
+
+                    if feedback:
+                        feedback.pushInfo(f"Successfully created: {created_path}")
+                else:
+                    # Skip raster creation, just use the output path
+                    created_path = output_path
+                    log(
+                        f"Skipped raster creation for {output_filename} (skip_raster=True)",
+                        info=True,
+                    )
+
+                # Always save metadata file (even when skip_raster=True)
+                if metadata_id:
+                    try:
+                        meta_path = save_constant_raster_metadata(
+                            raster_path=created_path,
+                            component_id=component.component_id,
+                            component_name=component.alias_name
+                            or component.component_id,
+                            input_value=absolute_value,
+                            normalized_value=constant_value,
+                            output_min=collection.min_value,
+                            output_max=collection.max_value,
+                            metadata_id=metadata_id,
+                            component_type=(
+                                collection.component_type.value
+                                if collection.component_type
+                                else "unknown"
+                            ),
+                        )
+                        if feedback:
+                            feedback.pushInfo(f"Saved metadata: {meta_path}")
+                        log(f"Saved metadata: {meta_path}", info=True)
+                    except Exception as meta_error:
+                        if feedback:
+                            feedback.pushWarning(
+                                f"Failed to save metadata: {str(meta_error)}"
+                            )
+                        log(f"Failed to save metadata: {str(meta_error)}", info=False)
+
+                # Update component with raster path
+                component.value_info.filename = created_path
+                component.path = created_path
+
+                created_rasters.append(created_path)
+
+            except Exception as e:
+                error_msg = (
+                    f"Failed to create raster for {component.component_id}: {str(e)}"
+                )
+                if feedback:
+                    feedback.reportError(error_msg)
+                log(error_msg, info=False)
+                # Continue with other components even if one fails
 
         if feedback:
-            feedback.pushInfo(f"DEBUG: Step 1 - Normalized to [0,1]: {normalized_0_1}")
+            feedback.setProgress(100)
+            feedback.pushInfo(f"Completed: {len(created_rasters)} rasters created")
 
-        # Step 2: Remap [0,1] to output range using collection's filter_value/total_value
-        output_min = collection.filter_value
-        output_max = collection.total_value
-        constant_value = output_min + (normalized_0_1 * (output_max - output_min))
+        return created_rasters
 
-        if feedback:
-            feedback.pushInfo(
-                f"DEBUG: Step 2 - Remapped to output range: {constant_value}"
-            )
-            feedback.pushInfo(f"DEBUG: Final raster value: {constant_value}")
 
-        # Generate output filename
-        safe_name = (
-            component.alias_name.replace(" ", "_").replace("/", "_")
-            if component.alias_name
-            else component.component_id
+class ConstantRasterRegistry:
+    """Registry for managing constant raster metadata and collections."""
+
+    _metadata_store: typing.Dict[str, ConstantRasterMetadata] = {}
+    _serializers: typing.Dict[str, typing.Callable] = {}
+    _deserializers: typing.Dict[str, typing.Callable] = {}
+
+    @classmethod
+    def register_metadata(cls, metadata: ConstantRasterMetadata) -> bool:
+        """Register constant raster metadata."""
+        if metadata.id in cls._metadata_store:
+            return False
+        cls._metadata_store[metadata.id] = metadata
+        return True
+
+    @classmethod
+    def metadata_ids(cls) -> typing.List[str]:
+        """Get list of all registered metadata IDs."""
+        return list(cls._metadata_store.keys())
+
+    @classmethod
+    def metadata_by_id(
+        cls, metadata_identifier: str
+    ) -> typing.Optional[ConstantRasterMetadata]:
+        """Get metadata by its identifier."""
+        return cls._metadata_store.get(metadata_identifier)
+
+    @classmethod
+    def metadata_by_component_type(
+        cls, component_type: "ModelComponentType"
+    ) -> typing.List[ConstantRasterMetadata]:
+        """Get metadata filtered by component type."""
+        from ..models.base import ModelComponentType
+
+        result = []
+        for metadata in cls._metadata_store.values():
+            if metadata.component_type is not None:
+                if metadata.component_type == component_type:
+                    result.append(metadata)
+                continue
+
+            if not metadata.fcollection or not metadata.fcollection.components:
+                continue
+
+            for component in metadata.fcollection.components:
+                if component.component_type == component_type:
+                    result.append(metadata)
+                    break
+
+        return result
+
+    @classmethod
+    def collection_by_id(
+        cls, metadata_id: str
+    ) -> typing.Optional[ConstantRasterCollection]:
+        """Get collection by metadata ID."""
+        metadata = cls._metadata_store.get(metadata_id)
+        if metadata:
+            return metadata.fcollection
+        return None
+
+    @classmethod
+    def collection_by_component_type(
+        cls, component_type: "ModelComponentType"
+    ) -> typing.List[ConstantRasterCollection]:
+        """Get collections filtered by component type."""
+        result = []
+        for metadata in cls.metadata_by_component_type(component_type):
+            if metadata.fcollection:
+                result.append(metadata.fcollection)
+        return result
+
+    @classmethod
+    def model_type_components(
+        cls, model_identifier: str, component_type: "ModelComponentType"
+    ) -> typing.List[ConstantRasterComponent]:
+        """Get components for a specific model identifier and component type."""
+        result = []
+        for metadata in cls.metadata_by_component_type(component_type):
+            if metadata.fcollection:
+                component = metadata.fcollection.component_by_identifier(
+                    model_identifier
+                )
+                if component:
+                    result.append(component)
+        return result
+
+    @classmethod
+    def pathway_components(
+        cls, pathway_identifier: str
+    ) -> typing.List[ConstantRasterComponent]:
+        """Get all constant raster components for a specific pathway."""
+        from ..models.base import ModelComponentType
+
+        return cls.model_type_components(
+            pathway_identifier, ModelComponentType.NCS_PATHWAY
         )
-        output_filename = f"constant_raster_{safe_name}.tif"
-        output_path = (
-            os.path.join(context.output_dir, output_filename)
-            if context.output_dir
-            else output_filename
+
+    @classmethod
+    def activity_components(
+        cls, activity_identifier: str
+    ) -> typing.List[ConstantRasterComponent]:
+        """Get all constant raster components for a specific activity."""
+        from ..models.base import ModelComponentType
+
+        return cls.model_type_components(
+            activity_identifier, ModelComponentType.ACTIVITY
         )
 
-        try:
-            # Create the constant raster
-            if feedback:
-                feedback.pushInfo(
-                    f"Component: {component.alias_name or component.component_id}"
-                )
-                feedback.pushInfo(f"Absolute value: {absolute_value}")
-                feedback.pushInfo(
-                    f"Normalization range: {collection.filter_value} - {collection.total_value}"
-                )
-                feedback.pushInfo(f"Normalized value: {constant_value}")
-                feedback.pushInfo(
-                    f"Creating raster with normalized value {constant_value} at {output_path}"
-                )
+    @classmethod
+    def save(cls):
+        """Save all registered metadata to settings."""
+        from qgis.core import QgsSettings
+        import json
 
-            created_path = ConstantRasterProcessingUtils.create_constant_raster(
-                value=constant_value,
-                extent=context.extent,
-                pixel_size=context.pixel_size,
-                crs=context.crs,
-                output_path=output_path,
-                context=processing_context,
-                feedback=feedback,
-            )
+        settings = QgsSettings()
+        settings.beginGroup("cplus/constant_rasters")
 
-            # Update component with created raster path
-            component.value_info.filename = created_path
-            component.path = created_path
+        for metadata_id, metadata in cls._metadata_store.items():
+            if metadata.fcollection:
+                collection_data = {
+                    "min_value": metadata.fcollection.min_value,
+                    "max_value": metadata.fcollection.max_value,
+                    "allowable_min": metadata.fcollection.allowable_min,
+                    "allowable_max": metadata.fcollection.allowable_max,
+                    "skip_raster": metadata.fcollection.skip_raster,
+                    "components": [],
+                }
 
-            created_rasters.append(created_path)
+                for component in metadata.fcollection.components:
+                    absolute_value = (
+                        component.value_info.absolute if component.value_info else 0.0
+                    )
+                    component_data = {
+                        "component_id": component.component_id,
+                        "absolute_value": absolute_value,
+                        "skip_value": component.skip_value,
+                        "alias_name": component.alias_name,
+                    }
+                    collection_data["components"].append(component_data)
 
-            if feedback:
-                feedback.pushInfo(f"Successfully created: {created_path}")
+                json_str = json.dumps(collection_data)
+                settings.setValue(metadata_id, json_str)
 
-        except Exception as e:
-            error_msg = (
-                f"Failed to create raster for {component.component_id}: {str(e)}"
-            )
-            if feedback:
-                feedback.reportError(error_msg)
-            log(error_msg, info=False)
-            # Continue with other components even if one fails
+        settings.endGroup()
 
-    if feedback:
-        feedback.setProgress(100)
-        feedback.pushInfo(f"Completed: {len(created_rasters)} rasters created")
+    @classmethod
+    def load(cls):
+        """Load metadata from settings."""
+        from qgis.core import QgsSettings
+        import json
 
-    return created_rasters
+        settings = QgsSettings()
+        settings.beginGroup("cplus/constant_rasters")
+
+        for metadata_id in settings.childKeys():
+            if metadata_id in cls._metadata_store:
+                try:
+                    json_str = settings.value(metadata_id, "{}")
+                    collection_data = json.loads(json_str)
+                    metadata = cls._metadata_store[metadata_id]
+
+                    if metadata.fcollection and collection_data:
+                        metadata.fcollection.min_value = collection_data.get(
+                            "min_value", 0.0
+                        )
+                        metadata.fcollection.max_value = collection_data.get(
+                            "max_value", 1.0
+                        )
+                        metadata.fcollection.allowable_min = collection_data.get(
+                            "allowable_min", 0.0
+                        )
+                        metadata.fcollection.allowable_max = collection_data.get(
+                            "allowable_max", 1.0
+                        )
+                        metadata.fcollection.skip_raster = collection_data.get(
+                            "skip_raster", True
+                        )
+
+                        metadata.fcollection.components.clear()
+
+                        components_data = collection_data.get("components", [])
+                        for saved_component in components_data:
+                            from ..models.constant_raster import (
+                                ConstantRasterComponent,
+                                ConstantRasterInfo,
+                            )
+
+                            component = ConstantRasterComponent(
+                                value_info=ConstantRasterInfo(
+                                    absolute=saved_component.get("absolute_value", 0.0)
+                                ),
+                                component=None,
+                                component_id=saved_component.get("component_id", ""),
+                                skip_value=saved_component.get("skip_value", False),
+                                alias_name=saved_component.get("alias_name", ""),
+                            )
+                            metadata.fcollection.components.append(component)
+
+                except Exception as e:
+                    log(
+                        f"Error loading constant raster state for {metadata_id}: {str(e)}",
+                        info=False,
+                    )
+
+        settings.endGroup()
+
+    @classmethod
+    def __iter__(cls):
+        """Make registry iterable over metadata objects."""
+        return iter(cls._metadata_store.values())
+
+
+# Global registry instance
+constant_raster_registry = ConstantRasterRegistry

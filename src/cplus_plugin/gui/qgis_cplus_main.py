@@ -76,7 +76,7 @@ from .financials.npv_manager_dialog import NpvPwlManagerDialog
 from .financials.npv_progress_dialog import NpvPwlProgressDialog
 from .priority_layer_dialog import PriorityLayerDialog
 from .priority_group_dialog import PriorityGroupDialog
-from .pwl_manager_dialog import PwlManagerDialog
+from .constant_raster_manager_dialog import ConstantRastersManagerDialog
 
 from .scenario_dialog import ScenarioDialog
 
@@ -424,6 +424,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         # Priority layers buttons
         self.new_financial_pwl_btn.setIcon(FileUtils.get_icon("mActionNewMap.svg"))
+        self.new_constant_raster_pwl_btn.setIcon(FileUtils.get_icon("mActionNewMap.svg"))
         self.add_pwl_btn.setIcon(FileUtils.get_icon("symbologyAdd.svg"))
         self.edit_pwl_btn.setIcon(FileUtils.get_icon("mActionToggleEditing.svg"))
         self.remove_pwl_btn.setIcon(FileUtils.get_icon("symbologyRemove.svg"))
@@ -432,6 +433,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
 
         self.new_financial_pwl_btn.clicked.connect(self.on_manage_npv_pwls)
+        self.new_constant_raster_pwl_btn.clicked.connect(self.on_manage_constant_raster_pwls)
         self.add_pwl_btn.clicked.connect(self.add_priority_layer)
         self.edit_pwl_btn.clicked.connect(self.edit_priority_layer)
         self.remove_pwl_btn.clicked.connect(self.remove_priority_layer)
@@ -1014,15 +1016,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         open_documentation(USER_DOCUMENTATION_SITE)
 
     def on_manage_npv_pwls(self):
-        """Slot raised to show the unified PWL manager dialog for NPV and Constant Rasters."""
-        # Get current NCS pathways for constant rasters
-        pathways = self.activity_widget.ncs_pathways()
-
-        # Show unified PWL manager dialog with both NPV and Constant Raster tabs
-        pwl_dialog = PwlManagerDialog(pathways=pathways, parent=self)
-        if pwl_dialog.exec_() == QtWidgets.QDialog.Accepted:
+        """Slot raised to show the NPV PWL manager dialog."""
+        # Show NPV PWL manager dialog
+        npv_dialog = NpvPwlManagerDialog(parent=self)
+        if npv_dialog.exec_() == QtWidgets.QDialog.Accepted:
             # Process NPV collection if available
-            npv_collection = pwl_dialog.get_npv_collection()
+            npv_collection = npv_dialog.npv_collection
             if npv_collection:
                 self.npv_processing_context = QgsProcessingContext()
                 self.npv_feedback = QgsProcessingFeedback(False)
@@ -1108,16 +1107,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     self.on_npv_pwl_removed,
                 )
 
-            # Process Constant Raster collection if available
-            constant_collection = pwl_dialog.get_constant_collection()
-            if constant_collection:
-                # Show confirmation
-                self.show_message(
-                    tr(
-                        f"Constant raster configuration saved with {len(constant_collection.enabled_components())} enabled pathways."
-                    ),
-                    level=Qgis.Info,
-                )
+    def on_manage_constant_raster_pwls(self):
+        """Slot raised to show the Constant Raster manager dialog."""
+        # Show Constant Raster manager dialog
+        constant_raster_dialog = ConstantRastersManagerDialog(parent=self)
+        constant_raster_dialog.exec_()
 
     def on_npv_pwl_removed(self, pwl_identifier: str):
         """Callback that is executed when an NPV PWL has

@@ -118,6 +118,9 @@ class QgisCplus:
         # Upgrade metric configuration to profile collection
         upgrade_metric_configuration_to_profile_collection()
 
+        # Initialize constant raster metadata registry
+        initialize_constant_raster_registry()
+
         self.main_widget = QgisCplusMain(
             iface=self.iface, parent=self.iface.mainWindow()
         )
@@ -593,3 +596,48 @@ def initialize_report_settings():
     settings_manager.set_value(Settings.REPORT_CI_LOGO, CI_LOGO_PATH)
 
     settings_manager.set_value(report_setting, True)
+
+
+def initialize_constant_raster_registry():
+    """Initialize constant raster metadata registry during plugin startup.
+
+    Registers default constant raster types (e.g., Years of Experience)
+    for both NCS pathways and activities. Uses each widget's create_metadata()
+    classmethod to allow widgets to define their own metadata.
+    """
+    from .lib.constant_raster import constant_raster_registry
+    from .models.base import ModelComponentType
+    from .definitions.defaults import (
+        YEARS_EXPERIENCE_PATHWAY_ID,
+        YEARS_EXPERIENCE_ACTIVITY_ID,
+    )
+    from .gui.constant_raster_widgets import YearsExperienceWidget
+
+    log("Initializing constant raster metadata registry", info=True)
+
+    # Register "Years of Experience" for NCS Pathways
+    # Uses widget's create_metadata() for self-describing metadata
+    if YEARS_EXPERIENCE_PATHWAY_ID not in constant_raster_registry.metadata_ids():
+        metadata_pathway = YearsExperienceWidget.create_metadata(
+            YEARS_EXPERIENCE_PATHWAY_ID, ModelComponentType.NCS_PATHWAY
+        )
+        constant_raster_registry.register_metadata(metadata_pathway)
+        log(
+            f"Registered constant raster metadata: {YEARS_EXPERIENCE_PATHWAY_ID}",
+            info=True,
+        )
+
+    # Register "Years of Experience" for Activities
+    if YEARS_EXPERIENCE_ACTIVITY_ID not in constant_raster_registry.metadata_ids():
+        metadata_activity = YearsExperienceWidget.create_metadata(
+            YEARS_EXPERIENCE_ACTIVITY_ID, ModelComponentType.ACTIVITY
+        )
+        constant_raster_registry.register_metadata(metadata_activity)
+        log(
+            f"Registered constant raster metadata: {YEARS_EXPERIENCE_ACTIVITY_ID}",
+            info=True,
+        )
+
+    # Load saved state from settings
+    constant_raster_registry.load()
+    log("Constant raster registry initialized", info=True)

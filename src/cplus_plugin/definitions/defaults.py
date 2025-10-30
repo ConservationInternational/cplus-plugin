@@ -262,3 +262,7 @@ NATUREBASE_CARBON_IMPACT_EXPRESSION_DESCRIPTION = (
     "or no overlapping pixels with the reference layer in the "
     "area of interest.</b>"
 )
+
+# Constant raster type identifiers
+YEARS_EXPERIENCE_PATHWAY_ID = "years_experience_pathway"
+YEARS_EXPERIENCE_ACTIVITY_ID = "years_experience_activity"

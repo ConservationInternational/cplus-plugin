@@ -3,11 +3,9 @@
 Widgets for managing constant raster parameters.
 """
 
-import os
 import typing
 
 from qgis.PyQt import QtCore, QtWidgets
-from qgis.PyQt.uic import loadUiType
 
 from ..models.base import LayerModelComponent
 from ..models.constant_raster import (
@@ -76,14 +74,17 @@ class ConstantRasterWidgetInterface:
         """
         raise NotImplementedError
 
+    @classmethod
     def create_raster_component(
-        self, model_component: LayerModelComponent
+        cls, model_component: LayerModelComponent
     ) -> ConstantRasterComponent:
         """Creates a new default constant raster component.
 
-        To be implemented by subclasses. Can use self to access
-        current widget state (e.g., current spinbox value).
+        To be implemented by subclasses. Should create a component
+        with default values (typically 0.0 for numeric values).
+        The actual value will be set later when the user enters it.
 
+        :param model_component: The layer model component (pathway/activity)
         :returns: A constant raster component object for
         use in defining the default component to use for
         new mappings.
@@ -91,18 +92,47 @@ class ConstantRasterWidgetInterface:
         """
         raise NotImplementedError
 
+    @classmethod
+    def create_metadata(
+        cls, metadata_id: str, component_type: "ModelComponentType"
+    ) -> "ConstantRasterMetadata":
+        """Creates metadata for this constant raster type.
 
-# Try to load UI file for YearsExperienceWidget
-try:
-    YearsExperienceWidgetUi, _ = loadUiType(
-        os.path.join(os.path.dirname(__file__), "../ui/years_experience_widget.ui")
-    )
-except:
-    # Fallback if UI file doesn't exist yet
-    YearsExperienceWidgetUi = QtWidgets.QWidget
+        Provides default implementation that can be overridden by subclasses.
+        Each widget type should define its own display name, input range,
+        and other metadata properties.
+
+        :param metadata_id: Unique identifier for this metadata instance
+        :param component_type: Type of component (NCS_PATHWAY or ACTIVITY)
+        :returns: ConstantRasterMetadata object
+        """
+        from ..models.constant_raster import (
+            ConstantRasterMetadata,
+            ConstantRasterCollection,
+        )
+        from ..models.base import ModelComponentType
+
+        # Default implementation - subclasses should override
+        collection = ConstantRasterCollection(
+            min_value=0.0,
+            max_value=100.0,
+            component_type=component_type,
+            components=[],
+            allowable_max=100.0,
+            allowable_min=0.0,
+        )
+
+        return ConstantRasterMetadata(
+            id=metadata_id,
+            display_name="Constant Raster",  # Override in subclass
+            fcollection=collection,
+            deserializer=None,
+            component_type=component_type,
+            input_range=(0.0, 100.0),  # Override in subclass
+        )
 
 
-class YearsExperienceWidget(YearsExperienceWidgetUi, ConstantRasterWidgetInterface):
+class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
     """Widget for managing years of experience values."""
 
     update_requested = QtCore.pyqtSignal(ConstantRasterComponent)
@@ -110,12 +140,8 @@ class YearsExperienceWidget(YearsExperienceWidgetUi, ConstantRasterWidgetInterfa
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        # Only setup UI if the UI file was loaded
-        if hasattr(self, "setupUi"):
-            self.setupUi(self)
-        else:
-            # Create a simple layout manually if UI file doesn't exist
-            self._create_manual_ui()
+        # Create UI programmatically
+        self._create_manual_ui()
 
         # Connect signals
         if hasattr(self, "sb_experience"):
@@ -165,39 +191,75 @@ class YearsExperienceWidget(YearsExperienceWidgetUi, ConstantRasterWidgetInterfa
             self._raster_component.value_info.absolute = value
         self.notify_update()
 
+    @classmethod
     def create_raster_component(
-        self, layer_model_component: LayerModelComponent
+        cls, model_component: LayerModelComponent
     ) -> ConstantRasterComponent:
-        """Interface implementation."""
+        """Interface implementation.
+
+        Creates a component with default value 0.0. The actual value
+        will be set later when the user enters it in the widget.
+        """
         from ..models.base import ModelComponentType
 
         # Determine component type
         component_type = ModelComponentType.UNKNOWN
-        if hasattr(layer_model_component, "__class__"):
-            class_name = layer_model_component.__class__.__name__
+        if hasattr(model_component, "__class__"):
+            class_name = model_component.__class__.__name__
             if class_name == "NcsPathway":
                 component_type = ModelComponentType.NCS_PATHWAY
             elif class_name == "Activity":
                 component_type = ModelComponentType.ACTIVITY
 
-        # Use current spinbox value if available, otherwise default to 0.0
-        current_value = 0.0
-        if hasattr(self, "sb_experience"):
-            current_value = self.sb_experience.value()
-
         return ConstantRasterComponent(
-            value_info=ConstantRasterInfo(absolute=current_value),
-            component=layer_model_component,
+            value_info=ConstantRasterInfo(absolute=0.0),  # Default value
+            component=model_component,
             component_id=(
-                str(layer_model_component.uuid)
-                if hasattr(layer_model_component, "uuid")
+                str(model_component.uuid)
+                if hasattr(model_component, "uuid")
                 else ""
             ),
             component_type=component_type,
             alias_name=(
-                layer_model_component.name
-                if hasattr(layer_model_component, "name")
+                model_component.name
+                if hasattr(model_component, "name")
                 else ""
             ),
             skip_value=False,
+        )
+
+    @classmethod
+    def create_metadata(
+        cls, metadata_id: str, component_type: "ModelComponentType"
+    ) -> "ConstantRasterMetadata":
+        """Create metadata for Years of Experience constant raster type.
+
+        Overrides the default implementation to provide specific
+        metadata for this widget type.
+
+        :param metadata_id: Unique identifier for this metadata instance
+        :param component_type: Type of component (NCS_PATHWAY or ACTIVITY)
+        :returns: ConstantRasterMetadata object configured for years of experience
+        """
+        from ..models.constant_raster import (
+            ConstantRasterMetadata,
+            ConstantRasterCollection,
+        )
+
+        collection = ConstantRasterCollection(
+            min_value=0.0,
+            max_value=100.0,
+            component_type=component_type,
+            components=[],
+            allowable_max=100.0,
+            allowable_min=0.0,
+        )
+
+        return ConstantRasterMetadata(
+            id=metadata_id,
+            display_name="Years of Experience",
+            fcollection=collection,
+            deserializer=None,
+            component_type=component_type,
+            input_range=(0.0, 100.0),  # 0-100 years
         )
