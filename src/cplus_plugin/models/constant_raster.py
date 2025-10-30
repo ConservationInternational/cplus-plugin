@@ -18,8 +18,7 @@ class ConstantRasterInfo:
     """Value information for a constant raster.
 
     This dataclass only handles value information (normalized and absolute values),
-    following separation of concerns principle. File/layer information should be
-    handled separately by ConstantRasterComponent.
+    File/layer information should be handled separately by ConstantRasterComponent.
     """
 
     normalized: float = 0.0  # Normalized value (0-1 range)
@@ -46,8 +45,7 @@ class ConstantRasterComponent:
     """Individual constant raster with layer model component associations.
 
     This class links the ConstantRasterInfo with the specific layer model
-    component (NcsPathway or Activity). Already defined in cplus.models,
-    an Activity or NcsPathway can be associated with a ConstantRasterComponent.
+    component (NcsPathway or Activity).
     Activities are stored by calling their type.
     """
 

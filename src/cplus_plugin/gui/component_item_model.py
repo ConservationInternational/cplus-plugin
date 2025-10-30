@@ -99,7 +99,9 @@ class ModelComponentItem(QtGui.QStandardItem):
 
     @staticmethod
     @abstractmethod
-    def create(model_component: BaseModelComponent, checkable: bool = False) -> "ModelComponentItem":
+    def create(
+        model_component: BaseModelComponent, checkable: bool = False
+    ) -> "ModelComponentItem":
         """Factory method for creating an instance of a model item.
 
         This is an abstract method that needs to be implemented by
@@ -192,7 +194,9 @@ class LayerComponentItem(ModelComponentItem):
 
     @staticmethod
     @abstractmethod
-    def create(model_component: BaseModelComponent, checkable: bool = False) -> "ModelComponentItem":
+    def create(
+        model_component: BaseModelComponent, checkable: bool = False
+    ) -> "ModelComponentItem":
         """Factory method for creating an instance of a model item.
 
         This is an abstract method that needs to be implemented by
@@ -319,7 +323,9 @@ class NcsPathwayItem(LayerComponentItem):
 class ActivityItem(LayerComponentItem):
     """Standard item for an activity object."""
 
-    def __init__(self, activity: Activity, bold_text: bool = True, checkable: bool = False):
+    def __init__(
+        self, activity: Activity, bold_text: bool = True, checkable: bool = False
+    ):
         super().__init__(activity, checkable)
         self._activity = activity
 

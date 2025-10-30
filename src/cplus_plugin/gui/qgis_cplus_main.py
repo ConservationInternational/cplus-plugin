@@ -91,7 +91,10 @@ from ..models.financial import NcsPathwayNpv
 from ..conf import settings_manager, Settings
 
 from ..lib.financials import create_npv_pwls
-from ..lib.constant_raster import ConstantRasterProcessingUtils, constant_raster_registry
+from ..lib.constant_raster import (
+    ConstantRasterProcessingUtils,
+    constant_raster_registry,
+)
 from ..definitions.defaults import DEFAULT_CRS_ID
 
 from .components.custom_tree_widget import (
@@ -425,7 +428,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         # Priority layers buttons
         self.new_financial_pwl_btn.setIcon(FileUtils.get_icon("mActionNewMap.svg"))
-        self.new_constant_raster_pwl_btn.setIcon(FileUtils.get_icon("mActionNewMap.svg"))
+        self.new_constant_raster_pwl_btn.setIcon(
+            FileUtils.get_icon("mActionNewMap.svg")
+        )
         self.add_pwl_btn.setIcon(FileUtils.get_icon("symbologyAdd.svg"))
         self.edit_pwl_btn.setIcon(FileUtils.get_icon("mActionToggleEditing.svg"))
         self.remove_pwl_btn.setIcon(FileUtils.get_icon("symbologyRemove.svg"))
@@ -434,7 +439,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
 
         self.new_financial_pwl_btn.clicked.connect(self.on_manage_npv_pwls)
-        self.new_constant_raster_pwl_btn.clicked.connect(self.on_manage_constant_raster_pwls)
+        self.new_constant_raster_pwl_btn.clicked.connect(
+            self.on_manage_constant_raster_pwls
+        )
         self.add_pwl_btn.clicked.connect(self.add_priority_layer)
         self.edit_pwl_btn.clicked.connect(self.edit_priority_layer)
         self.remove_pwl_btn.clicked.connect(self.remove_priority_layer)
@@ -1115,9 +1122,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         # Connect signal to handle raster creation
         constant_raster_dialog.create_rasters_requested.connect(
-            lambda context, collection, input_range, metadata_id, current_view:
-            self._on_constant_rasters_create_requested(
-                context, collection, input_range, metadata_id, current_view, constant_raster_dialog
+            lambda context, collection, input_range, metadata_id, current_view: self._on_constant_rasters_create_requested(
+                context,
+                collection,
+                input_range,
+                metadata_id,
+                current_view,
+                constant_raster_dialog,
             )
         )
 
@@ -1130,7 +1141,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         input_range: tuple,
         metadata_id: str,
         current_view: bool = True,
-        dialog=None
+        dialog=None,
     ):
         """Handle constant raster creation request from the dialog.
 
@@ -1174,7 +1185,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 if created_rasters:
                     message = f"Created {len(created_rasters)} constant raster(s) in {context.output_dir}"
                     if dialog:
-                        dialog.raster_creation_completed.emit(True, message, len(created_rasters))
+                        dialog.raster_creation_completed.emit(
+                            True, message, len(created_rasters)
+                        )
                     else:
                         self.show_message(message, level=Qgis.Success)
                 else:
@@ -1189,19 +1202,31 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 metadata_ids = constant_raster_registry.metadata_ids()
 
                 for idx, current_metadata_id in enumerate(metadata_ids):
-                    current_collection = constant_raster_registry.collection_by_id(current_metadata_id)
+                    current_collection = constant_raster_registry.collection_by_id(
+                        current_metadata_id
+                    )
                     if current_collection is None or current_collection.skip_raster:
                         continue
 
                     # Get metadata for input_range
-                    current_metadata = constant_raster_registry._metadata_store.get(current_metadata_id)
-                    current_input_range = current_metadata.input_range if current_metadata else (0.0, 100.0)
+                    current_metadata = constant_raster_registry._metadata_store.get(
+                        current_metadata_id
+                    )
+                    current_input_range = (
+                        current_metadata.input_range
+                        if current_metadata
+                        else (0.0, 100.0)
+                    )
 
                     # Update progress
                     feedback.pushInfo(f"Creating rasters for {current_metadata_id}...")
 
                     created = ConstantRasterProcessingUtils.create_constant_rasters(
-                        current_collection, context, current_input_range, feedback, current_metadata_id
+                        current_collection,
+                        context,
+                        current_input_range,
+                        feedback,
+                        current_metadata_id,
                     )
                     if created:
                         all_created_rasters.extend(created)
@@ -1211,7 +1236,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 if all_created_rasters:
                     message = f"Created {len(all_created_rasters)} constant raster(s) across all types in {context.output_dir}"
                     if dialog:
-                        dialog.raster_creation_completed.emit(True, message, len(all_created_rasters))
+                        dialog.raster_creation_completed.emit(
+                            True, message, len(all_created_rasters)
+                        )
                     else:
                         self.show_message(message, level=Qgis.Success)
                 else:
@@ -1225,8 +1252,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             progress_dialog.close()
             log(f"Error creating constant rasters: {str(e)}", info=False)
             self.show_message(
-                f"Failed to create constant rasters: {str(e)}",
-                level=Qgis.Critical
+                f"Failed to create constant rasters: {str(e)}", level=Qgis.Critical
             )
 
     def on_npv_pwl_removed(self, pwl_identifier: str):
