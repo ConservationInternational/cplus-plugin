@@ -3,7 +3,8 @@
 
 import os
 import typing
-from pathlib import Path
+import json
+from qgis.core import QgsSettings
 
 from qgis import processing
 from qgis.core import (
@@ -20,8 +21,15 @@ from ..models.constant_raster import (
     ConstantRasterComponent,
     ConstantRasterMetadata,
     ConstantRasterContext,
+    ConstantRasterInfo,
 )
+from ..models.base import ModelComponentType
 from ..utils import log, tr
+from ..models.helpers import (
+    get_constant_raster_dir,
+    generate_constant_raster_filename,
+    save_constant_raster_metadata,
+)
 
 
 class ConstantRasterProcessingUtils:
@@ -363,7 +371,7 @@ class ConstantRasterProcessingUtils:
         if feedback:
             feedback.pushInfo(f"Creating {len(enabled_components)} constant rasters")
 
-        # STEP 1: Use input_range for normalization (not actual component values)
+        # STEP 1: Use input_range for normalization
         # input_range defines the theoretical range (e.g., 0-100 years)
         input_min, input_max = input_range
 
@@ -371,13 +379,6 @@ class ConstantRasterProcessingUtils:
             feedback.pushInfo(
                 f"Input range for normalization: min={input_min}, max={input_max}"
             )
-
-        # Import helper functions for filename generation and metadata
-        from ..models.helpers import (
-            get_constant_raster_dir,
-            generate_constant_raster_filename,
-            save_constant_raster_metadata,
-        )
 
         # Determine the actual output directory using hierarchical structure
         if metadata_id and collection.component_type:
@@ -543,7 +544,8 @@ class ConstantRasterProcessingUtils:
                         log(f"Failed to save metadata: {str(meta_error)}", info=False)
 
                 # Update component with raster path
-                component.value_info.filename = created_path
+                # Note: value_info only stores normalized/absolute values
+                # File path stored at component level
                 component.path = created_path
 
                 created_rasters.append(created_path)
@@ -572,8 +574,12 @@ class ConstantRasterRegistry:
     _deserializers: typing.Dict[str, typing.Callable] = {}
 
     @classmethod
-    def register_metadata(cls, metadata: ConstantRasterMetadata) -> bool:
-        """Register constant raster metadata."""
+    def add_metadata(cls, metadata: ConstantRasterMetadata) -> bool:
+        """Add constant raster metadata to the registry.
+
+        :param metadata: ConstantRasterMetadata to add
+        :returns: True if added successfully, False if metadata with same ID already exists
+        """
         if metadata.id in cls._metadata_store:
             return False
         cls._metadata_store[metadata.id] = metadata
@@ -596,7 +602,6 @@ class ConstantRasterRegistry:
         cls, component_type: "ModelComponentType"
     ) -> typing.List[ConstantRasterMetadata]:
         """Get metadata filtered by component type."""
-        from ..models.base import ModelComponentType
 
         result = []
         for metadata in cls._metadata_store.values():
@@ -605,10 +610,13 @@ class ConstantRasterRegistry:
                     result.append(metadata)
                 continue
 
-            if not metadata.fcollection or not metadata.fcollection.components:
+            if (
+                not metadata.raster_collection
+                or not metadata.raster_collection.components
+            ):
                 continue
 
-            for component in metadata.fcollection.components:
+            for component in metadata.raster_collection.components:
                 if component.component_type == component_type:
                     result.append(metadata)
                     break
@@ -622,7 +630,7 @@ class ConstantRasterRegistry:
         """Get collection by metadata ID."""
         metadata = cls._metadata_store.get(metadata_id)
         if metadata:
-            return metadata.fcollection
+            return metadata.raster_collection
         return None
 
     @classmethod
@@ -632,8 +640,8 @@ class ConstantRasterRegistry:
         """Get collections filtered by component type."""
         result = []
         for metadata in cls.metadata_by_component_type(component_type):
-            if metadata.fcollection:
-                result.append(metadata.fcollection)
+            if metadata.raster_collection:
+                result.append(metadata.raster_collection)
         return result
 
     @classmethod
@@ -643,8 +651,8 @@ class ConstantRasterRegistry:
         """Get components for a specific model identifier and component type."""
         result = []
         for metadata in cls.metadata_by_component_type(component_type):
-            if metadata.fcollection:
-                component = metadata.fcollection.component_by_identifier(
+            if metadata.raster_collection:
+                component = metadata.raster_collection.component_by_identifier(
                     model_identifier
                 )
                 if component:
@@ -676,31 +684,30 @@ class ConstantRasterRegistry:
     @classmethod
     def save(cls):
         """Save all registered metadata to settings."""
-        from qgis.core import QgsSettings
-        import json
 
         settings = QgsSettings()
         settings.beginGroup("cplus/constant_rasters")
 
         for metadata_id, metadata in cls._metadata_store.items():
-            if metadata.fcollection:
+            if metadata.raster_collection:
                 collection_data = {
-                    "min_value": metadata.fcollection.min_value,
-                    "max_value": metadata.fcollection.max_value,
-                    "allowable_min": metadata.fcollection.allowable_min,
-                    "allowable_max": metadata.fcollection.allowable_max,
-                    "skip_raster": metadata.fcollection.skip_raster,
+                    "min_value": metadata.raster_collection.min_value,
+                    "max_value": metadata.raster_collection.max_value,
+                    "allowable_min": metadata.raster_collection.allowable_min,
+                    "allowable_max": metadata.raster_collection.allowable_max,
+                    "skip_raster": metadata.raster_collection.skip_raster,
                     "components": [],
                 }
 
-                for component in metadata.fcollection.components:
+                for component in metadata.raster_collection.components:
                     absolute_value = (
                         component.value_info.absolute if component.value_info else 0.0
                     )
                     component_data = {
                         "component_id": component.component_id,
                         "absolute_value": absolute_value,
-                        "skip_value": component.skip_value,
+                        "skip_raster": component.skip_raster,
+                        "enabled": component.enabled,
                         "alias_name": component.alias_name,
                     }
                     collection_data["components"].append(component_data)
@@ -713,8 +720,6 @@ class ConstantRasterRegistry:
     @classmethod
     def load(cls):
         """Load metadata from settings."""
-        from qgis.core import QgsSettings
-        import json
 
         settings = QgsSettings()
         settings.beginGroup("cplus/constant_rasters")
@@ -726,31 +731,27 @@ class ConstantRasterRegistry:
                     collection_data = json.loads(json_str)
                     metadata = cls._metadata_store[metadata_id]
 
-                    if metadata.fcollection and collection_data:
-                        metadata.fcollection.min_value = collection_data.get(
+                    if metadata.raster_collection is not None and collection_data:
+                        metadata.raster_collection.min_value = collection_data.get(
                             "min_value", 0.0
                         )
-                        metadata.fcollection.max_value = collection_data.get(
+                        metadata.raster_collection.max_value = collection_data.get(
                             "max_value", 1.0
                         )
-                        metadata.fcollection.allowable_min = collection_data.get(
+                        metadata.raster_collection.allowable_min = collection_data.get(
                             "allowable_min", 0.0
                         )
-                        metadata.fcollection.allowable_max = collection_data.get(
+                        metadata.raster_collection.allowable_max = collection_data.get(
                             "allowable_max", 1.0
                         )
-                        metadata.fcollection.skip_raster = collection_data.get(
+                        metadata.raster_collection.skip_raster = collection_data.get(
                             "skip_raster", True
                         )
 
-                        metadata.fcollection.components.clear()
+                        metadata.raster_collection.components.clear()
 
                         components_data = collection_data.get("components", [])
                         for saved_component in components_data:
-                            from ..models.constant_raster import (
-                                ConstantRasterComponent,
-                                ConstantRasterInfo,
-                            )
 
                             component = ConstantRasterComponent(
                                 value_info=ConstantRasterInfo(
@@ -758,10 +759,11 @@ class ConstantRasterRegistry:
                                 ),
                                 component=None,
                                 component_id=saved_component.get("component_id", ""),
-                                skip_value=saved_component.get("skip_value", False),
+                                skip_raster=saved_component.get("skip_raster", True),
+                                enabled=saved_component.get("enabled", True),
                                 alias_name=saved_component.get("alias_name", ""),
                             )
-                            metadata.fcollection.components.append(component)
+                            metadata.raster_collection.components.append(component)
 
                 except Exception as e:
                     log(
@@ -770,6 +772,31 @@ class ConstantRasterRegistry:
                     )
 
         settings.endGroup()
+
+    @classmethod
+    def remove_metadata(cls, metadata_id: str) -> bool:
+        """Remove metadata from the registry.
+
+        :param metadata_id: ID of the metadata to remove
+        :returns: True if removed successfully, False if not found
+        """
+        if metadata_id in cls._metadata_store:
+            del cls._metadata_store[metadata_id]
+            return True
+        return False
+
+    @classmethod
+    def items(cls) -> typing.List[ConstantRasterMetadata]:
+        """Get list of all registered metadata items.
+
+        :returns: List of ConstantRasterMetadata objects
+        """
+        return list(cls._metadata_store.values())
+
+    @classmethod
+    def __len__(cls) -> int:
+        """Return the number of registered metadata items."""
+        return len(cls._metadata_store)
 
     @classmethod
     def __iter__(cls):

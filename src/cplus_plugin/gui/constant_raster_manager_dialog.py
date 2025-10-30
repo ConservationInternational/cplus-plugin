@@ -5,21 +5,17 @@ Dialog for managing constant rasters for NCS pathways and activities.
 
 import os
 import typing
-from pathlib import Path
 
 from qgis.PyQt import QtCore, QtGui, QtWidgets
 from qgis.core import (
     QgsProject,
     QgsRectangle,
-    QgsCoordinateReferenceSystem,
-    QgsProcessingContext,
-    QgsProcessingFeedback,
-    QgsFeedback,
     QgsSettings,
     QgsVectorLayer,
     QgsRasterLayer,
 )
-from qgis.gui import QgsGui, QgsMessageBar
+from qgis.gui import QgsMessageBar
+from qgis.utils import iface
 
 from ..conf import settings_manager, Settings
 from ..models.base import ModelComponentType
@@ -31,7 +27,6 @@ from ..models.constant_raster import (
 )
 from ..lib.constant_raster import (
     constant_raster_registry,
-    ConstantRasterProcessingUtils,
 )
 from ..definitions.defaults import (
     ICON_PATH,
@@ -43,7 +38,7 @@ from .constant_raster_widgets import (
     ConstantRasterWidgetInterface,
     YearsExperienceWidget,
 )
-from ..utils import log, FileUtils
+from ..utils import log
 
 
 class ConstantRastersManagerDialog(QtWidgets.QDialog):
@@ -61,16 +56,19 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self._raster_registry = constant_raster_registry
+        self.constant_raster_registry = constant_raster_registry
 
         # Registry for configuration widgets
         self._registered_component_widgets = {}
+
+        # Current raster collection being viewed/edited
+        self.current_raster_collection: typing.Optional[ConstantRasterCollection] = None
 
         # Create UI
         self._create_ui()
 
         # Initialize
-        self._initialize()
+        self.initialize()
 
     def _create_ui(self):
         """Create the user interface."""
@@ -232,14 +230,14 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Add menu actions
         self.action_create_current = create_menu.addAction("Create - Current View")
         self.action_create_current.triggered.connect(
-            lambda: self._on_create_rasters(current_view=True)
+            lambda: self.update_current_widget(current_view=True)
         )
 
         self.action_create_all = create_menu.addAction(
             "Create - All Constant Raster Types"
         )
         self.action_create_all.triggered.connect(
-            lambda: self._on_create_rasters(current_view=False)
+            lambda: self.update_current_widget(current_view=False)
         )
 
         # Set menu to button
@@ -290,7 +288,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         idx = self._registered_component_widgets[metadata_id]
         return self.sw_component_container.widget(idx)
 
-    def show_configuration_widget(self, metadata_id: str):
+    def show_widget(self, metadata_id: str):
         """Show widget corresponding to the given metadata ID or a blank widget if not found.
 
         :param metadata_id: Metadata ID to show widget for
@@ -312,7 +310,10 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         In production, metadata would be loaded from settings or defined elsewhere.
         """
         # Register for NCS Pathways
-        if YEARS_EXPERIENCE_PATHWAY_ID not in self._raster_registry.metadata_ids():
+        if (
+            YEARS_EXPERIENCE_PATHWAY_ID
+            not in self.constant_raster_registry.metadata_ids()
+        ):
             collection_pathway = ConstantRasterCollection(
                 min_value=0.0,
                 max_value=100.0,  # Output range: 0-100
@@ -322,15 +323,18 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             metadata_pathway = ConstantRasterMetadata(
                 id=YEARS_EXPERIENCE_PATHWAY_ID,
                 display_name="Years of Experience",
-                fcollection=collection_pathway,
+                raster_collection=collection_pathway,
                 deserializer=None,
                 component_type=ModelComponentType.NCS_PATHWAY,
                 input_range=(0.0, 100.0),  # Years of experience: 0-100 years
             )
-            self._raster_registry.register_metadata(metadata_pathway)
+            self.constant_raster_registry.add_metadata(metadata_pathway)
 
         # Register for Activities
-        if YEARS_EXPERIENCE_ACTIVITY_ID not in self._raster_registry.metadata_ids():
+        if (
+            YEARS_EXPERIENCE_ACTIVITY_ID
+            not in self.constant_raster_registry.metadata_ids()
+        ):
             collection_activity = ConstantRasterCollection(
                 min_value=0.0,
                 max_value=100.0,  # Output range: 0-100
@@ -340,23 +344,23 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             metadata_activity = ConstantRasterMetadata(
                 id=YEARS_EXPERIENCE_ACTIVITY_ID,
                 display_name="Years of Experience",
-                fcollection=collection_activity,
+                raster_collection=collection_activity,
                 deserializer=None,
                 component_type=ModelComponentType.ACTIVITY,
                 input_range=(0.0, 100.0),  # Years of experience: 0-100 years
             )
-            self._raster_registry.register_metadata(metadata_activity)
+            self.constant_raster_registry.add_metadata(metadata_activity)
 
-    def _initialize(self):
+    def initialize(self):
         """Initialize UI components and connections."""
         # Register sample metadata if not already registered
         self._register_sample_metadata()
 
         # Load saved state from settings
-        self._raster_registry.load()
+        self.constant_raster_registry.load()
 
         # Register widgets for known constant rasters
-        metadata_ids = self._raster_registry.metadata_ids()
+        metadata_ids = self.constant_raster_registry.metadata_ids()
         if YEARS_EXPERIENCE_PATHWAY_ID in metadata_ids:
             experience_widget_pathway = YearsExperienceWidget()
             self.register_widget(YEARS_EXPERIENCE_PATHWAY_ID, experience_widget_pathway)
@@ -397,7 +401,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         self.rb_pathway.toggled.connect(self.on_pathway_type_selected)
         self.rb_activity.toggled.connect(self.on_activity_type_selected)
         # Note: btn_create_current uses menu actions, not direct clicked connection
-        self.btn_close.clicked.connect(self._on_close)
+        self.btn_close.clicked.connect(self.close)
 
         # Connect model itemChanged signals to save checkbox states
         self._pathways_model.itemChanged.connect(self._on_item_checked_changed)
@@ -410,22 +414,28 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Restore UI state from saved components
         self._restore_ui_state()
 
-    def on_pathway_type_selected(self, checked: bool):
-        """Slot raised when pathway radio button is selected."""
-        if not checked:
-            return
+    def update_component_type_labels(self, label: str):
+        """Update UI labels based on component type.
 
-        # Save previous state before switching
-        self._save_dialog_state()
+        :param label: Either "NCS Pathways" or "Activities"
+        """
+        if label == "NCS Pathways":
+            self.sw_model_type_container.setCurrentIndex(0)
+            self._left_group.setTitle("NCS Pathways")
+            self.lbl_description.setText(
+                "<b>Description:</b> Constant rasters for NCS pathways"
+            )
+        elif label == "Activities":
+            self.sw_model_type_container.setCurrentIndex(1)
+            self._left_group.setTitle("Activities")
+            self.lbl_description.setText(
+                "<b>Description:</b> Constant rasters for activities"
+            )
 
-        self.sw_model_type_container.setCurrentIndex(0)
-        self._left_group.setTitle("NCS Pathways")
-        self.lbl_description.setText(
-            "<b>Description:</b> Constant rasters for NCS pathways"
-        )
-
+    def load_pathways(self):
+        """Load pathway metadata into the raster type dropdown and restore selection."""
         # Get metadata for pathways
-        pathway_metadatas = self._raster_registry.metadata_by_component_type(
+        pathway_metadatas = self.constant_raster_registry.metadata_by_component_type(
             ModelComponentType.NCS_PATHWAY
         )
         self.cbo_raster_type.clear()
@@ -455,22 +465,21 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                 self.lst_pathways.setCurrentIndex(index)
                 break
 
-    def on_activity_type_selected(self, checked: bool):
-        """Slot raised when activity radio button is selected."""
+    def on_pathway_type_selected(self, checked: bool):
+        """Slot raised when pathway radio button is selected."""
         if not checked:
             return
 
         # Save previous state before switching
         self._save_dialog_state()
 
-        self.sw_model_type_container.setCurrentIndex(1)
-        self._left_group.setTitle("Activities")
-        self.lbl_description.setText(
-            "<b>Description:</b> Constant rasters for activities"
-        )
+        self.update_component_type_labels("NCS Pathways")
+        self.load_pathways()
 
+    def load_activities(self):
+        """Load activity metadata into the raster type dropdown and restore selection."""
         # Get metadata for activities
-        activity_metadatas = self._raster_registry.metadata_by_component_type(
+        activity_metadatas = self.constant_raster_registry.metadata_by_component_type(
             ModelComponentType.ACTIVITY
         )
         self.cbo_raster_type.clear()
@@ -500,14 +509,25 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                 self.lst_activities.setCurrentIndex(index)
                 break
 
+    def on_activity_type_selected(self, checked: bool):
+        """Slot raised when activity radio button is selected."""
+        if not checked:
+            return
+
+        # Save previous state before switching
+        self._save_dialog_state()
+
+        self.update_component_type_labels("Activities")
+        self.load_activities()
+
     def on_raster_type_selection_changed(self, index: int):
         """Slot raised when the selection in the combobox for raster type has changed."""
         metadata_id = self.cbo_raster_type.itemData(index)
         if metadata_id:
-            self.show_configuration_widget(metadata_id)
+            self.show_widget(metadata_id)
 
             # Update min/max values from the collection
-            collection = self._raster_registry.collection_by_id(metadata_id)
+            collection = self.constant_raster_registry.collection_by_id(metadata_id)
             if collection is not None:
                 # Block signals temporarily to avoid triggering save while loading
                 self.spin_min_value.blockSignals(True)
@@ -568,7 +588,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             collection.max_value = max_val
 
             # Save to settings
-            self._raster_registry.save()
+            self.constant_raster_registry.save()
 
     def current_constant_raster_collection(
         self,
@@ -578,7 +598,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         if not metadata_id:
             return None
 
-        return self._raster_registry.collection_by_id(metadata_id)
+        return self.constant_raster_registry.collection_by_id(metadata_id)
 
     def _on_model_component_selection_changed(
         self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection
@@ -635,7 +655,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         # Save if we created a new component
         if component_created:
-            self._raster_registry.save()
+            self.constant_raster_registry.save()
 
     def _load_component_into_widget(self, component: ConstantRasterComponent):
         """Load a component's values into the current configuration widget.
@@ -655,14 +675,14 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         """Slot raised when an item's checkbox state changes."""
         is_checked = item.checkState() == QtCore.Qt.Checked
 
-        # Update the component's skip_value based on checkbox state
+        # Update the component's skip_raster based on checkbox state
         raster_collection = self.current_constant_raster_collection()
         if raster_collection is not None:
             component = raster_collection.component_by_id(item.uuid)
 
             if component:
-                # Component exists, update its skip_value
-                component.skip_value = not is_checked
+                # Component exists, update its skip_raster
+                component.skip_raster = not is_checked
 
                 # If checked, load this component into the widget
                 if is_checked:
@@ -679,14 +699,14 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                     new_component = current_config_widget.create_raster_component(
                         item.model_component
                     )
-                    new_component.skip_value = False  # It's checked
+                    new_component.skip_raster = False  # It's checked
                     raster_collection.components.append(new_component)
 
                     # Load the new component into widget
                     self._load_component_into_widget(new_component)
 
             # Save to registry
-            self._raster_registry.save()
+            self.constant_raster_registry.save()
 
     def on_update_raster_component(self, raster_component: ConstantRasterComponent):
         """Slot raised when the component has been updated through the configuration widget."""
@@ -702,13 +722,8 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                 # Component not in collection, add it
                 raster_collection.components.append(raster_component)
 
-            # NOTE: We don't call normalize() here because:
-            # 1. The output range (min_value, max_value) is user-controlled via spinboxes
-            # 2. Auto-normalizing would override the user's explicit settings
-            # 3. The user sets these values directly in the UI, not derived from component values
-
         # Save the registry to settings
-        self._raster_registry.save()
+        self.constant_raster_registry.save()
 
     def _ensure_checked_components_in_collection(self):
         """Ensure all checked items in the list have components in the collection.
@@ -781,11 +796,11 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                         component.value_info.absolute = current_value
 
                 # Mark as enabled
-                component.skip_value = False
+                component.skip_raster = False
             else:
                 # Item is unchecked - mark as disabled if it exists
                 if component is not None:
-                    component.skip_value = True
+                    component.skip_raster = True
 
         # Info message about what was done
         if items_created or items_updated:
@@ -877,10 +892,8 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         if not use_aoi:
             # Fallback to map canvas extent
             try:
-                from qgis.utils import iface
-
                 canvas = iface.mapCanvas() if iface else None
-            except:
+            except Exception:
                 canvas = None
 
             if canvas:
@@ -924,8 +937,8 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         else:
             self.message_bar.pushWarning("Warning", message)
 
-    def _on_create_rasters(self, current_view: bool = True):
-        """Handle create rasters request and emit signal to caller.
+    def update_current_widget(self, current_view: bool = True):
+        """Update current widget - creates constant rasters (if skip_raster is False) then saves the current collection in settings.
 
         This method validates the configuration and emits a signal for
         the caller to handle the actual raster creation.
@@ -951,7 +964,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         self._ensure_checked_components_in_collection()
 
         # Save the state after creating/updating components
-        self._raster_registry.save()
+        self.constant_raster_registry.save()
 
         # Validate based on current_view flag
         if current_view:
@@ -966,8 +979,8 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         else:
             # For all types, check if ANY collection has enabled components
             has_any_enabled = False
-            for metadata_id in self._raster_registry.metadata_ids():
-                collection = self._raster_registry.collection_by_id(metadata_id)
+            for metadata_id in self.constant_raster_registry.metadata_ids():
+                collection = self.constant_raster_registry.collection_by_id(metadata_id)
                 if collection and not collection.skip_raster:
                     if collection.enabled_components():
                         has_any_enabled = True
@@ -986,7 +999,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Get the metadata to extract input_range
         metadata_id = self.cbo_raster_type.itemData(self.cbo_raster_type.currentIndex())
         metadata = (
-            self._raster_registry._metadata_store.get(metadata_id)
+            self.constant_raster_registry._metadata_store.get(metadata_id)
             if metadata_id
             else None
         )
@@ -1061,7 +1074,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # (not just the currently selected tab)
 
         # Restore pathways
-        pathway_collection = self._raster_registry.collection_by_id(
+        pathway_collection = self.constant_raster_registry.collection_by_id(
             YEARS_EXPERIENCE_PATHWAY_ID
         )
         if pathway_collection:
@@ -1072,7 +1085,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                     continue
 
                 component = pathway_collection.component_by_id(item.uuid)
-                if component and not component.skip_value:
+                if component and not component.skip_raster:
                     # Block signals to prevent triggering _on_item_checked_changed
                     self._pathways_model.blockSignals(True)
                     item.setCheckState(QtCore.Qt.Checked)
@@ -1085,7 +1098,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                 self.lst_pathways.setCurrentIndex(first_pathway_index)
 
         # Restore activities
-        activity_collection = self._raster_registry.collection_by_id(
+        activity_collection = self.constant_raster_registry.collection_by_id(
             YEARS_EXPERIENCE_ACTIVITY_ID
         )
         if activity_collection:
@@ -1096,7 +1109,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                     continue
 
                 component = activity_collection.component_by_id(item.uuid)
-                if component and not component.skip_value:
+                if component and not component.skip_raster:
                     # Block signals to prevent triggering _on_item_checked_changed
                     self._activities_model.blockSignals(True)
                     item.setCheckState(QtCore.Qt.Checked)
@@ -1110,10 +1123,10 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             if self.rb_activity.isChecked() and first_activity_index is not None:
                 self.lst_activities.setCurrentIndex(first_activity_index)
 
-    def _on_close(self):
+    def close(self):
         """Handle close button click."""
         # Save component state
-        self._raster_registry.save()
+        self.constant_raster_registry.save()
 
         # Save dialog-level state (which tab, which raster type)
         self._save_dialog_state()

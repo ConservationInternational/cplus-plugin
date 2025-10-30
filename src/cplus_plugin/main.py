@@ -47,16 +47,20 @@ from .definitions.defaults import (
     PRIORITY_LAYERS,
     BASE_API_URL,
     REPORT_FONT_NAME,
+    YEARS_EXPERIENCE_PATHWAY_ID,
+    YEARS_EXPERIENCE_ACTIVITY_ID,
 )
 from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
 from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
 from .lib.reports.manager import report_manager
 from .lib.reports.metrics import register_metric_functions, unregister_metric_functions
-from .models.base import PriorityLayerType
+from .lib.constant_raster import constant_raster_registry
+from .models.base import PriorityLayerType, ModelComponentType
 from .models.report import MetricConfigurationProfile, MetricProfileCollection
 from .gui.settings.cplus_options import CplusOptionsFactory
 from .gui.settings.log_options import LogOptionsFactory
 from .gui.settings.report_options import ReportOptionsFactory
+from .gui.constant_raster_widgets import YearsExperienceWidget
 
 from .utils import (
     FileUtils,
@@ -605,14 +609,6 @@ def initialize_constant_raster_registry():
     for both NCS pathways and activities. Uses each widget's create_metadata()
     classmethod to allow widgets to define their own metadata.
     """
-    from .lib.constant_raster import constant_raster_registry
-    from .models.base import ModelComponentType
-    from .definitions.defaults import (
-        YEARS_EXPERIENCE_PATHWAY_ID,
-        YEARS_EXPERIENCE_ACTIVITY_ID,
-    )
-    from .gui.constant_raster_widgets import YearsExperienceWidget
-
     log("Initializing constant raster metadata registry", info=True)
 
     # Register "Years of Experience" for NCS Pathways
@@ -621,7 +617,7 @@ def initialize_constant_raster_registry():
         metadata_pathway = YearsExperienceWidget.create_metadata(
             YEARS_EXPERIENCE_PATHWAY_ID, ModelComponentType.NCS_PATHWAY
         )
-        constant_raster_registry.register_metadata(metadata_pathway)
+        constant_raster_registry.add_metadata(metadata_pathway)
         log(
             f"Registered constant raster metadata: {YEARS_EXPERIENCE_PATHWAY_ID}",
             info=True,
@@ -632,7 +628,7 @@ def initialize_constant_raster_registry():
         metadata_activity = YearsExperienceWidget.create_metadata(
             YEARS_EXPERIENCE_ACTIVITY_ID, ModelComponentType.ACTIVITY
         )
-        constant_raster_registry.register_metadata(metadata_activity)
+        constant_raster_registry.add_metadata(metadata_activity)
         log(
             f"Registered constant raster metadata: {YEARS_EXPERIENCE_ACTIVITY_ID}",
             info=True,

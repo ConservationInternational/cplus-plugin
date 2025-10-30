@@ -29,7 +29,7 @@ class ConstantRasterWidgetInterface:
         #  This is included so that the interface is compatible
         # with multiple MRO chains in subclass implementations.
         super().__init__(*args, **kwargs)
-        self._raster_component = None
+        self._constant_raster_component = None
 
     @property
     def raster_component(self) -> typing.Optional[ConstantRasterComponent]:
@@ -37,7 +37,7 @@ class ConstantRasterWidgetInterface:
 
         :returns: Current raster component or None
         """
-        return self._raster_component
+        return self._constant_raster_component
 
     @raster_component.setter
     def raster_component(self, component: ConstantRasterComponent):
@@ -45,15 +45,18 @@ class ConstantRasterWidgetInterface:
 
         :param component: Raster component to set
         """
-        self._raster_component = component
+        self._constant_raster_component = component
 
     def notify_update(self):
         """Notify calling widget that an update has been
         requested so that, for example, the changes can be
         processed and saved.
         """
-        if hasattr(self, "update_requested") and self._raster_component is not None:
-            self.update_requested.emit(self._raster_component)
+        if (
+            hasattr(self, "update_requested")
+            and self._constant_raster_component is not None
+        ):
+            self.update_requested.emit(self._constant_raster_component)
 
     def reset(self):
         """Widget implementations should define how the
@@ -125,7 +128,7 @@ class ConstantRasterWidgetInterface:
         return ConstantRasterMetadata(
             id=metadata_id,
             display_name="Constant Raster",  # Override in subclass
-            fcollection=collection,
+            raster_collection=collection,
             deserializer=None,
             component_type=component_type,
             input_range=(0.0, 100.0),  # Override in subclass
@@ -221,7 +224,7 @@ class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
             alias_name=(
                 model_component.name if hasattr(model_component, "name") else ""
             ),
-            skip_value=False,
+            skip_raster=False,
         )
 
     @classmethod
@@ -254,7 +257,7 @@ class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         return ConstantRasterMetadata(
             id=metadata_id,
             display_name="Years of Experience",
-            fcollection=collection,
+            raster_collection=collection,
             deserializer=None,
             component_type=component_type,
             input_range=(0.0, 100.0),  # 0-100 years

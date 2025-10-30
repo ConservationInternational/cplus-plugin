@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """Helper functions for supporting model management."""
-import json
+import os
 from dataclasses import field, fields
 import typing
 import uuid
@@ -25,6 +25,7 @@ from .base import (
     LayerModelComponent,
     LayerModelComponentType,
     LayerType,
+    ModelComponentType,
     NcsPathway,
     NcsPathwayType,
     ScenarioResult,
@@ -83,6 +84,12 @@ from .report import (
     MetricProfileCollection,
     MetricType,
 )
+from .constant_raster import (
+    ConstantRasterCollection,
+    ConstantRasterComponent,
+    ConstantRasterInfo,
+)
+from .base import ModelComponentType
 
 from ..utils import log
 
@@ -1056,8 +1063,6 @@ def constant_raster_collection_to_dict(
     if collection is None:
         return {}
 
-    from .constant_raster import ConstantRasterComponent, ConstantRasterInfo
-
     return {
         "min_value": collection.min_value,
         "max_value": collection.max_value,
@@ -1070,8 +1075,6 @@ def constant_raster_collection_to_dict(
         "components": [
             {
                 "value_info": {
-                    "filename": c.value_info.filename if c.value_info else "",
-                    "layer": c.value_info.layer if c.value_info else "",
                     "normalized": c.value_info.normalized if c.value_info else 0.0,
                     "absolute": c.value_info.absolute if c.value_info else 0.0,
                 },
@@ -1081,7 +1084,8 @@ def constant_raster_collection_to_dict(
                 "suffix": c.suffix,
                 "alias_name": c.alias_name,
                 "path": c.path,
-                "skip_value": c.skip_value,
+                "skip_raster": c.skip_raster,
+                "enabled": c.enabled,
                 "component_id": c.component_id,
                 "component_type": c.component_type.value if c.component_type else "",
             }
@@ -1107,13 +1111,6 @@ def constant_raster_collection_from_dict(
     if not collection_dict:
         return None
 
-    from .constant_raster import (
-        ConstantRasterCollection,
-        ConstantRasterComponent,
-        ConstantRasterInfo,
-    )
-    from .base import ModelComponentType
-
     # Create a lookup dict for quick component access
     component_lookup = {str(comp.uuid): comp for comp in model_components}
 
@@ -1124,8 +1121,6 @@ def constant_raster_collection_from_dict(
         component = component_lookup.get(component_uuid) if component_uuid else None
 
         value_info = ConstantRasterInfo(
-            filename=comp_dict.get("value_info", {}).get("filename", ""),
-            layer=comp_dict.get("value_info", {}).get("layer", ""),
             normalized=comp_dict.get("value_info", {}).get("normalized", 0.0),
             absolute=comp_dict.get("value_info", {}).get("absolute", 0.0),
         )
@@ -1141,7 +1136,8 @@ def constant_raster_collection_from_dict(
             suffix=comp_dict.get("suffix", ""),
             alias_name=comp_dict.get("alias_name", ""),
             path=comp_dict.get("path", ""),
-            skip_value=comp_dict.get("skip_value", False),
+            skip_raster=comp_dict.get("skip_raster", True),
+            enabled=comp_dict.get("enabled", True),
             component_id=comp_dict.get("component_id", ""),
             component_type=component_type,
         )
@@ -1243,8 +1239,6 @@ def get_constant_raster_dir(
     :returns: Full path to the constant raster directory
     :rtype: str
     """
-    import os
-    from .base import ModelComponentType
 
     # Determine component type subfolder
     if component_type == ModelComponentType.NCS_PATHWAY:

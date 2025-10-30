@@ -2,14 +2,13 @@
 """Models for Constant Raster according to architectural specification."""
 
 from __future__ import annotations
+import os
 import dataclasses
 import typing
-from qgis.core import QgsRasterLayer, QgsProcessingFeedback
+from qgis.core import QgsRasterLayer
 
-from .base import LayerModelComponent, ModelComponentType, PriorityLayerType
+from .base import LayerModelComponent, ModelComponentType
 from ..definitions.constants import (
-    NCS_PATHWAY_IDENTIFIER_PROPERTY,
-    ENABLED_ATTRIBUTE,
     PATH_ATTRIBUTE,
 )
 
@@ -59,7 +58,8 @@ class ConstantRasterComponent:
     suffix: str = ""  # Suffix for naming
     alias_name: str = ""
     path: str = ""  # Note: Returns False for components (not a file path)
-    skip_value: bool = False
+    skip_raster: bool = True  # Skip raster creation for this component (default: True)
+    enabled: bool = True  # Whether this component is enabled
     component_id: str = ""
     component_type: ModelComponentType = ModelComponentType.UNKNOWN
     qgis_map_layer: typing.Optional[QgsRasterLayer] = None
@@ -94,7 +94,8 @@ class ConstantRasterComponent:
             "suffix": self.suffix,
             "alias_name": self.alias_name,
             PATH_ATTRIBUTE: self.path,
-            "skip_value": self.skip_value,
+            "skip_raster": self.skip_raster,
+            "enabled": self.enabled,
             "component_id": self.component_id,
             "component_type": (
                 self.component_type.value
@@ -136,9 +137,51 @@ class ConstantRasterComponent:
             suffix=d.get("suffix", ""),
             alias_name=d.get("alias_name", ""),
             path=d.get(PATH_ATTRIBUTE, ""),
-            skip_value=bool(d.get("skip_value", False)),
+            skip_raster=bool(d.get("skip_raster", True)),
+            enabled=bool(d.get("enabled", True)),
             component_id=d.get("component_id", ""),
             component_type=component_type,
+        )
+
+    def to_map_layer(self) -> typing.Optional[QgsRasterLayer]:
+        """Convert to QGIS raster layer.
+
+        :returns: QgsRasterLayer if path exists and is valid, None otherwise
+        """
+        if not self.path or not self.path.strip():
+            return None
+
+        if self.qgis_map_layer:
+            return self.qgis_map_layer
+
+        if os.path.exists(self.path):
+            layer = QgsRasterLayer(self.path, self.alias_name or self.component_id)
+            if layer.isValid():
+                self.qgis_map_layer = layer
+                return layer
+
+        return None
+
+    def to_pwl(self):
+        """Convert to PriorityWeightingLayer.
+
+        :returns: PriorityWeightingLayer if path exists, None otherwise
+        """
+        if not self.path:
+            return None
+
+        # Import here to avoid circular dependency
+        from .base import PriorityLayer, PriorityLayerType
+
+        # Create priority layer from this constant raster component
+        return PriorityLayer(
+            uuid=self.component.uuid if self.component else None,
+            name=self.alias_name or self.component_id,
+            description=f"Constant raster for {self.alias_name or self.component_id}",
+            groups=[],
+            selected=True,
+            path=self.path,
+            type=PriorityLayerType.CONSTANT,
         )
 
 
@@ -184,11 +227,11 @@ class ConstantRasterCollection:
         self.allowable_max = max(values)
 
     def enabled_components(self) -> typing.List[ConstantRasterComponent]:
-        """Get list of enabled components (where skip_value is False).
+        """Get list of enabled components (where skip_raster is False).
 
         :returns: List of enabled ConstantRasterComponent objects
         """
-        return [c for c in self.components if not c.skip_value]
+        return [c for c in self.components if not c.skip_raster]
 
     def validate(self) -> bool:
         """Validate the collection configuration.
@@ -293,6 +336,7 @@ class ConstantRasterContext:
     pixel_size: float = 30.0  # Default pixel size in map units
     crs: typing.Any = None  # QgsCoordinateReferenceSystem
     output_dir: str = ""  # Output directory for created rasters
+    remove_existing: bool = True  # Whether to remove existing rasters
 
     def to_dict(self) -> dict:
         """Serialize to dictionary."""
@@ -313,7 +357,7 @@ class ConstantRasterMetadata:
 
     id: str = ""
     display_name: str = ""
-    fcollection: typing.Optional[ConstantRasterCollection] = None
+    raster_collection: typing.Optional[ConstantRasterCollection] = None
     deserializer: typing.Optional[typing.Callable] = None  # PyFunc
     component_type: typing.Optional["ModelComponentType"] = (
         None  # Type this metadata applies to
@@ -328,7 +372,9 @@ class ConstantRasterMetadata:
         return {
             "id": self.id,
             "display_name": self.display_name,
-            "fcollection": self.fcollection.to_dict() if self.fcollection else {},
+            "raster_collection": (
+                self.raster_collection.to_dict() if self.raster_collection else {}
+            ),
             "component_type": (
                 self.component_type.value if self.component_type else None
             ),
@@ -386,7 +432,3 @@ class ConstantRasterFileMetadata:
         ]
 
         return "\n".join(lines)
-
-
-# ConstantRasterRegistry has been moved to cplus_plugin.lib.constant_raster
-# Import using: from cplus_plugin.lib.constant_raster import ConstantRasterRegistry, constant_raster_registry
