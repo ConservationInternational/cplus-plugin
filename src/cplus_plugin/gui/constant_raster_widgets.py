@@ -215,15 +215,11 @@ class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
             value_info=ConstantRasterInfo(absolute=0.0),  # Default value
             component=model_component,
             component_id=(
-                str(model_component.uuid)
-                if hasattr(model_component, "uuid")
-                else ""
+                str(model_component.uuid) if hasattr(model_component, "uuid") else ""
             ),
             component_type=component_type,
             alias_name=(
-                model_component.name
-                if hasattr(model_component, "name")
-                else ""
+                model_component.name if hasattr(model_component, "name") else ""
             ),
             skip_value=False,
         )

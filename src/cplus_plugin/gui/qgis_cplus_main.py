@@ -91,6 +91,7 @@ from ..models.financial import NcsPathwayNpv
 from ..conf import settings_manager, Settings
 
 from ..lib.financials import create_npv_pwls
+from ..lib.constant_raster import ConstantRasterProcessingUtils, constant_raster_registry
 from ..definitions.defaults import DEFAULT_CRS_ID
 
 from .components.custom_tree_widget import (
@@ -1111,7 +1112,122 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Slot raised to show the Constant Raster manager dialog."""
         # Show Constant Raster manager dialog
         constant_raster_dialog = ConstantRastersManagerDialog(parent=self)
+
+        # Connect signal to handle raster creation
+        constant_raster_dialog.create_rasters_requested.connect(
+            lambda context, collection, input_range, metadata_id, current_view:
+            self._on_constant_rasters_create_requested(
+                context, collection, input_range, metadata_id, current_view, constant_raster_dialog
+            )
+        )
+
         constant_raster_dialog.exec_()
+
+    def _on_constant_rasters_create_requested(
+        self,
+        context,
+        collection,
+        input_range: tuple,
+        metadata_id: str,
+        current_view: bool = True,
+        dialog=None
+    ):
+        """Handle constant raster creation request from the dialog.
+
+        :param context: ConstantRasterContext with extent, CRS, output directory
+        :param collection: ConstantRasterCollection to create rasters from
+        :param input_range: Tuple of (min, max) for input values
+        :param metadata_id: Metadata identifier for the constant raster type
+        :param current_view: If True, create for current view only; if False, create for all types
+        :param dialog: Reference to the dialog for emitting completion signals
+        """
+        # Create progress dialog
+        progress_dialog = QtWidgets.QProgressDialog(
+            "Creating constant rasters...", "Cancel", 0, 100, self
+        )
+        progress_dialog.setWindowTitle("Creating Constant Rasters")
+        progress_dialog.setWindowModality(QtCore.Qt.WindowModal)
+        progress_dialog.show()
+
+        # Create feedback
+        feedback = QgsProcessingFeedback()
+
+        # Connect feedback to progress dialog
+        def update_progress(progress):
+            progress_dialog.setValue(int(progress))
+
+        def update_label(message):
+            progress_dialog.setLabelText(message)
+
+        feedback.progressChanged.connect(update_progress)
+        feedback.pushInfo = lambda msg: update_label(msg)
+
+        try:
+            if current_view:
+                # Create rasters for current view only
+                created_rasters = ConstantRasterProcessingUtils.create_constant_rasters(
+                    collection, context, input_range, feedback, metadata_id
+                )
+
+                progress_dialog.close()
+
+                if created_rasters:
+                    message = f"Created {len(created_rasters)} constant raster(s) in {context.output_dir}"
+                    if dialog:
+                        dialog.raster_creation_completed.emit(True, message, len(created_rasters))
+                    else:
+                        self.show_message(message, level=Qgis.Success)
+                else:
+                    message = "No enabled components found in the collection."
+                    if dialog:
+                        dialog.raster_creation_completed.emit(False, message, 0)
+                    else:
+                        self.show_message(message, level=Qgis.Warning)
+            else:
+                # Create rasters for all constant raster types
+                all_created_rasters = []
+                metadata_ids = constant_raster_registry.metadata_ids()
+
+                for idx, current_metadata_id in enumerate(metadata_ids):
+                    current_collection = constant_raster_registry.collection_by_id(current_metadata_id)
+                    if current_collection is None or current_collection.skip_raster:
+                        continue
+
+                    # Get metadata for input_range
+                    current_metadata = constant_raster_registry._metadata_store.get(current_metadata_id)
+                    current_input_range = current_metadata.input_range if current_metadata else (0.0, 100.0)
+
+                    # Update progress
+                    feedback.pushInfo(f"Creating rasters for {current_metadata_id}...")
+
+                    created = ConstantRasterProcessingUtils.create_constant_rasters(
+                        current_collection, context, current_input_range, feedback, current_metadata_id
+                    )
+                    if created:
+                        all_created_rasters.extend(created)
+
+                progress_dialog.close()
+
+                if all_created_rasters:
+                    message = f"Created {len(all_created_rasters)} constant raster(s) across all types in {context.output_dir}"
+                    if dialog:
+                        dialog.raster_creation_completed.emit(True, message, len(all_created_rasters))
+                    else:
+                        self.show_message(message, level=Qgis.Success)
+                else:
+                    message = "No enabled components found in any collection."
+                    if dialog:
+                        dialog.raster_creation_completed.emit(False, message, 0)
+                    else:
+                        self.show_message(message, level=Qgis.Warning)
+
+        except Exception as e:
+            progress_dialog.close()
+            log(f"Error creating constant rasters: {str(e)}", info=False)
+            self.show_message(
+                f"Failed to create constant rasters: {str(e)}",
+                level=Qgis.Critical
+            )
 
     def on_npv_pwl_removed(self, pwl_identifier: str):
         """Callback that is executed when an NPV PWL has

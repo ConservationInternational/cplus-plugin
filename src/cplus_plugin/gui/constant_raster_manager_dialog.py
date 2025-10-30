@@ -49,6 +49,15 @@ from ..utils import log, FileUtils
 class ConstantRastersManagerDialog(QtWidgets.QDialog):
     """Dialog for managing constant rasters."""
 
+    # Signal emitted when user requests to create constant rasters
+    # Parameters: (context, collection, input_range, metadata_id, current_view)
+    # current_view: True = current view only, False = all constant raster types
+    create_rasters_requested = QtCore.pyqtSignal(object, object, tuple, str, bool)
+
+    # Signal emitted when raster creation is complete (for showing results in dialog)
+    # Parameters: (success: bool, message: str, count: int)
+    raster_creation_completed = QtCore.pyqtSignal(bool, str, int)
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -208,7 +217,37 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         # Bottom: Action buttons
         button_layout = QtWidgets.QHBoxLayout()
-        self.btn_create_current = QtWidgets.QPushButton("Create Rasters - Current View")
+
+        # Create tool button with dropdown menu for raster creation
+        self.btn_create_current = QtWidgets.QToolButton()
+        self.btn_create_current.setText("Create Rasters")
+        self.btn_create_current.setPopupMode(QtWidgets.QToolButton.MenuButtonPopup)
+        self.btn_create_current.setToolTip(
+            "Create constant rasters for current view or all types"
+        )
+
+        # Create menu for the button
+        create_menu = QtWidgets.QMenu(self)
+
+        # Add menu actions
+        self.action_create_current = create_menu.addAction("Create - Current View")
+        self.action_create_current.triggered.connect(
+            lambda: self._on_create_rasters(current_view=True)
+        )
+
+        self.action_create_all = create_menu.addAction(
+            "Create - All Constant Raster Types"
+        )
+        self.action_create_all.triggered.connect(
+            lambda: self._on_create_rasters(current_view=False)
+        )
+
+        # Set menu to button
+        self.btn_create_current.setMenu(create_menu)
+
+        # Set default action (triggered when button clicked directly)
+        self.btn_create_current.setDefaultAction(self.action_create_current)
+
         self.btn_close = QtWidgets.QPushButton("Close")
         button_layout.addWidget(self.btn_create_current)
         button_layout.addStretch()
@@ -357,9 +396,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         )
         self.rb_pathway.toggled.connect(self.on_pathway_type_selected)
         self.rb_activity.toggled.connect(self.on_activity_type_selected)
-        self.btn_create_current.clicked.connect(
-            self.on_create_constant_raster_current_view
-        )
+        # Note: btn_create_current uses menu actions, not direct clicked connection
         self.btn_close.clicked.connect(self._on_close)
 
         # Connect model itemChanged signals to save checkbox states
@@ -486,6 +523,30 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
                 self.spin_min_value.blockSignals(False)
                 self.spin_max_value.blockSignals(False)
+
+                # Update button states based on skip_raster flag
+                self._update_create_button_states(collection)
+
+    def _update_create_button_states(self, collection):
+        """Update create button states based on collection's skip_raster flag.
+
+        :param collection: ConstantRasterCollection to check
+        """
+        if collection is None:
+            return
+
+        # Disable current view action if skip_raster is True
+        if collection.skip_raster:
+            self.action_create_current.setEnabled(True)  # Always enabled
+            self.action_create_current.setToolTip(
+                "Current view disabled - this constant raster type does not require rasters"
+            )
+        else:
+            self.action_create_current.setEnabled(True)
+            self.action_create_current.setToolTip("Create rasters for the current view")
+
+        # "All types" action is always enabled
+        self.action_create_all.setEnabled(True)
 
     def on_output_range_changed(self, value: float):
         """Slot raised when output range spinbox values change."""
@@ -851,8 +912,27 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             output_dir=output_dir,
         )
 
-    def on_create_constant_raster_current_view(self):
-        """Slot raised to create constant rasters for the current view."""
+    def _on_raster_creation_completed(self, success: bool, message: str, count: int):
+        """Handle completion of raster creation.
+
+        :param success: True if creation was successful
+        :param message: Message to display
+        :param count: Number of rasters created
+        """
+        if success:
+            self.message_bar.pushSuccess("Success", message)
+        else:
+            self.message_bar.pushWarning("Warning", message)
+
+    def _on_create_rasters(self, current_view: bool = True):
+        """Handle create rasters request and emit signal to caller.
+
+        This method validates the configuration and emits a signal for
+        the caller to handle the actual raster creation.
+
+        :param current_view: If True, create rasters for current view only;
+                           if False, create for all constant raster types
+        """
         current_raster_collection = self.current_constant_raster_collection()
         if current_raster_collection is None:
             self.message_bar.pushWarning(
@@ -860,8 +940,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             )
             return
 
-        # FIRST: Apply user-specified min/max values to the collection
-        # (Do this BEFORE creating components so normalize() doesn't override)
+        # Apply user-specified min/max values to the collection
         min_val = self.spin_min_value.value()
         max_val = self.spin_max_value.value()
 
@@ -874,55 +953,35 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Save the state after creating/updating components
         self._raster_registry.save()
 
-        # NOW check if there are any enabled components (after creating them)
-        enabled_components = current_raster_collection.enabled_components()
-        if not enabled_components:
-            self.message_bar.pushWarning(
-                "No Enabled Components",
-                "Please check at least one pathway/activity and set its value.",
-            )
-            return
-
-        # Show info about extent being used
-        studyarea_path = settings_manager.get_value(Settings.STUDYAREA_PATH)
-        if studyarea_path and os.path.exists(studyarea_path):
-            self.message_bar.pushInfo(
-                "Using AOI Extent",
-                "Creating rasters clipped to the Area of Interest defined in the plugin settings.",
-            )
+        # Validate based on current_view flag
+        if current_view:
+            # For current view, check if current collection has enabled components
+            enabled_components = current_raster_collection.enabled_components()
+            if not enabled_components:
+                self.message_bar.pushWarning(
+                    "No Enabled Components",
+                    "Please check at least one pathway/activity and set its value.",
+                )
+                return
         else:
-            self.message_bar.pushInfo(
-                "Using Current View",
-                "Creating rasters using the current map canvas extent. To use AOI clipping, configure the study area in the main plugin.",
-            )
+            # For all types, check if ANY collection has enabled components
+            has_any_enabled = False
+            for metadata_id in self._raster_registry.metadata_ids():
+                collection = self._raster_registry.collection_by_id(metadata_id)
+                if collection and not collection.skip_raster:
+                    if collection.enabled_components():
+                        has_any_enabled = True
+                        break
 
-        # Create context
+            if not has_any_enabled:
+                self.message_bar.pushWarning(
+                    "No Enabled Components",
+                    "No enabled components found in any constant raster collection. Please check at least one pathway/activity and set its value.",
+                )
+                return
+
+        # Create context for raster creation
         context = self._create_context()
-
-        # Create progress dialog
-        progress_dialog = QtWidgets.QProgressDialog(
-            "Creating constant rasters...", "Cancel", 0, 100, self
-        )
-        progress_dialog.setWindowTitle("Creating Constant Rasters")
-        progress_dialog.setWindowModality(QtCore.Qt.WindowModal)
-        progress_dialog.show()
-
-        # Create feedback
-        feedback = QgsProcessingFeedback()
-
-        # Connect feedback to progress dialog
-        def update_progress(progress):
-            progress_dialog.setValue(int(progress))
-
-        def update_label(message):
-            progress_dialog.setLabelText(message)
-
-        feedback.progressChanged.connect(update_progress)
-        feedback.pushInfo = lambda msg: update_label(msg)
-
-        # Check for cancel
-        def check_cancel():
-            return progress_dialog.wasCanceled()
 
         # Get the metadata to extract input_range
         metadata_id = self.cbo_raster_type.itemData(self.cbo_raster_type.currentIndex())
@@ -933,30 +992,10 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         )
         input_range = metadata.input_range if metadata else (0.0, 100.0)
 
-        try:
-            created_rasters = ConstantRasterProcessingUtils.create_constant_rasters(
-                current_raster_collection, context, input_range, feedback, metadata_id
-            )
-
-            progress_dialog.close()
-
-            if created_rasters:
-                self.message_bar.pushSuccess(
-                    "Success",
-                    f"Created {len(created_rasters)} constant raster(s) in {context.output_dir}",
-                )
-            else:
-                self.message_bar.pushWarning(
-                    "No Rasters Created",
-                    "No enabled components found in the collection.",
-                )
-
-        except Exception as e:
-            progress_dialog.close()
-            log(f"Error creating constant rasters: {str(e)}", info=False)
-            self.message_bar.pushCritical(
-                "Error", f"Failed to create constant rasters: {str(e)}"
-            )
+        # Emit signal for caller to handle raster creation
+        self.create_rasters_requested.emit(
+            context, current_raster_collection, input_range, metadata_id, current_view
+        )
 
     def _save_dialog_state(self):
         """Save dialog-level state (model type selection, raster type selection)."""
@@ -1063,7 +1102,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                     item.setCheckState(QtCore.Qt.Checked)
                     self._activities_model.blockSignals(False)
                     if first_activity_index is None:
-                        first_activity_index = self._activities_model.indexFromItem(item)
+                        first_activity_index = self._activities_model.indexFromItem(
+                            item
+                        )
 
             # Auto-select first checked activity if on activity tab
             if self.rb_activity.isChecked() and first_activity_index is not None:

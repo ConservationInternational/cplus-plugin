@@ -363,21 +363,13 @@ class ConstantRasterProcessingUtils:
         if feedback:
             feedback.pushInfo(f"Creating {len(enabled_components)} constant rasters")
 
-        # STEP 1: Calculate actual min/max from component values
-        component_values = []
-        for component in enabled_components:
-            if component.value_info:
-                component_values.append(component.value_info.absolute)
-
-        if not component_values:
-            raise QgsProcessingException("No valid component values found")
-
-        actual_min = min(component_values)
-        actual_max = max(component_values)
+        # STEP 1: Use input_range for normalization (not actual component values)
+        # input_range defines the theoretical range (e.g., 0-100 years)
+        input_min, input_max = input_range
 
         if feedback:
             feedback.pushInfo(
-                f"Actual value range from components: min={actual_min}, max={actual_max}"
+                f"Input range for normalization: min={input_min}, max={input_max}"
             )
 
         # Import helper functions for filename generation and metadata
@@ -438,20 +430,20 @@ class ConstantRasterProcessingUtils:
 
             if feedback:
                 feedback.pushInfo(f"Component value: {absolute_value}")
-                feedback.pushInfo(f"Actual value range: {actual_min} - {actual_max}")
+                feedback.pushInfo(f"Input range: {input_min} - {input_max}")
                 feedback.pushInfo(
                     f"Output range: {collection.min_value} - {collection.max_value}"
                 )
 
             # TWO-STEP NORMALIZATION:
 
-            # Step 1: Normalize input value to [0,1] using actual min/max from all components
-            if actual_max != actual_min:
-                normalized_0_1 = (absolute_value - actual_min) / (
-                    actual_max - actual_min
-                )
+            # Step 1: Normalize input value to [0,1] using input_range
+            if input_max != input_min:
+                normalized_0_1 = (absolute_value - input_min) / (input_max - input_min)
+                # Clamp to [0,1] range
+                normalized_0_1 = max(0.0, min(1.0, normalized_0_1))
             else:
-                # Edge case: all values are the same, normalize to 0.5
+                # Edge case: input range is zero, normalize to 0.5
                 normalized_0_1 = 0.5
 
             if feedback:
