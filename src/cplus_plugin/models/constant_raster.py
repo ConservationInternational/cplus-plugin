@@ -357,9 +357,9 @@ class ConstantRasterMetadata:
     display_name: str = ""
     raster_collection: typing.Optional[ConstantRasterCollection] = None
     deserializer: typing.Optional[typing.Callable] = None  # PyFunc
-    component_type: typing.Optional["ModelComponentType"] = (
-        None  # Type this metadata applies to
-    )
+    component_type: typing.Optional[
+        "ModelComponentType"
+    ] = None  # Type this metadata applies to
     input_range: typing.Tuple[float, float] = (
         0.0,
         100.0,

@@ -752,7 +752,6 @@ class ConstantRasterRegistry:
 
                         components_data = collection_data.get("components", [])
                         for saved_component in components_data:
-
                             component = ConstantRasterComponent(
                                 value_info=ConstantRasterInfo(
                                     absolute=saved_component.get("absolute_value", 0.0)
