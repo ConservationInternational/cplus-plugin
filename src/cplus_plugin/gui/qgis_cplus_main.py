@@ -1199,34 +1199,23 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             else:
                 # Create rasters for all constant raster types
                 all_created_rasters = []
-                metadata_ids = constant_raster_registry.metadata_ids()
 
-                for idx, current_metadata_id in enumerate(metadata_ids):
-                    current_collection = constant_raster_registry.collection_by_id(
-                        current_metadata_id
-                    )
+                for idx, metadata in enumerate(constant_raster_registry):
+                    current_collection = metadata.raster_collection
                     if current_collection is None or current_collection.skip_raster:
                         continue
 
-                    # Get metadata for input_range
-                    current_metadata = constant_raster_registry._metadata_store.get(
-                        current_metadata_id
-                    )
-                    current_input_range = (
-                        current_metadata.input_range
-                        if current_metadata
-                        else (0.0, 100.0)
-                    )
+                    current_input_range = metadata.input_range
 
                     # Update progress
-                    feedback.pushInfo(f"Creating rasters for {current_metadata_id}...")
+                    feedback.pushInfo(f"Creating rasters for {metadata.id}...")
 
                     created = ConstantRasterProcessingUtils.create_constant_rasters(
                         current_collection,
                         context,
                         current_input_range,
                         feedback,
-                        current_metadata_id,
+                        metadata.id,
                     )
                     if created:
                         all_created_rasters.extend(created)

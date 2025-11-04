@@ -7,10 +7,12 @@ import typing
 
 from qgis.PyQt import QtCore, QtWidgets
 
-from ..models.base import LayerModelComponent
+from ..models.base import LayerModelComponent, ModelComponentType
 from ..models.constant_raster import (
     ConstantRasterComponent,
     ConstantRasterInfo,
+    ConstantRasterMetadata,
+    ConstantRasterCollection,
 )
 
 
@@ -109,29 +111,13 @@ class ConstantRasterWidgetInterface:
         :param component_type: Type of component (NCS_PATHWAY or ACTIVITY)
         :returns: ConstantRasterMetadata object
         """
-        from ..models.constant_raster import (
-            ConstantRasterMetadata,
-            ConstantRasterCollection,
-        )
-        from ..models.base import ModelComponentType
-
-        # Default implementation - subclasses should override
-        collection = ConstantRasterCollection(
-            min_value=0.0,
-            max_value=100.0,
-            component_type=component_type,
-            components=[],
-            allowable_max=100.0,
-            allowable_min=0.0,
-        )
-
         return ConstantRasterMetadata(
             id=metadata_id,
-            display_name="Constant Raster",  # Override in subclass
-            raster_collection=collection,
+            display_name="Constant Raster",
+            raster_collection=None,
             deserializer=None,
             component_type=component_type,
-            input_range=(0.0, 100.0),  # Override in subclass
+            input_range=(0.0, 100.0),
         )
 
 
@@ -203,8 +189,6 @@ class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         Creates a component with default value 0.0. The actual value
         will be set later when the user enters it in the widget.
         """
-        from ..models.base import ModelComponentType
-
         # Determine component type
         component_type = ModelComponentType.UNKNOWN
         if hasattr(model_component, "__class__"):
@@ -240,11 +224,6 @@ class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         :param component_type: Type of component (NCS_PATHWAY or ACTIVITY)
         :returns: ConstantRasterMetadata object configured for years of experience
         """
-        from ..models.constant_raster import (
-            ConstantRasterMetadata,
-            ConstantRasterCollection,
-        )
-
         collection = ConstantRasterCollection(
             min_value=0.0,
             max_value=100.0,

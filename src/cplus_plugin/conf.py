@@ -262,6 +262,11 @@ class Settings(enum.Enum):
     STUDYAREA_PATH = "studyarea_path"
     CLIP_TO_STUDYAREA = "clip_to_studyarea"
 
+    # Constant Rasters Dialog
+    CONSTANT_RASTERS_DIALOG_MODEL_TYPE = "constant_rasters_dialog/model_type"
+    CONSTANT_RASTERS_DIALOG_PATHWAY_TYPE = "constant_rasters_dialog/pathway_raster_type"
+    CONSTANT_RASTERS_DIALOG_ACTIVITY_TYPE = "constant_rasters_dialog/activity_raster_type"
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""

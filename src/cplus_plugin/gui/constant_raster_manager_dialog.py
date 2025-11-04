@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Dialog for managing constant rasters for NCS pathways and activities.
+Dialog for managing constant rasters for activities.
 """
 
 import os
@@ -10,7 +10,6 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 from qgis.core import (
     QgsProject,
     QgsRectangle,
-    QgsSettings,
     QgsVectorLayer,
     QgsRasterLayer,
 )
@@ -30,24 +29,24 @@ from ..lib.constant_raster import (
 )
 from ..definitions.defaults import (
     ICON_PATH,
-    YEARS_EXPERIENCE_PATHWAY_ID,
     YEARS_EXPERIENCE_ACTIVITY_ID,
 )
-from .component_item_model import NcsPathwayItemModel, ActivityItemModel
+from .component_item_model import ActivityItemModel
 from .constant_raster_widgets import (
     ConstantRasterWidgetInterface,
     YearsExperienceWidget,
 )
-from ..utils import log
+from ..utils import log, tr
 
 
 class ConstantRastersManagerDialog(QtWidgets.QDialog):
     """Dialog for managing constant rasters."""
 
     # Signal emitted when user requests to create constant rasters
-    # Parameters: (context, collection, input_range, metadata_id, current_view)
+    # Parameters: (context: ConstantRasterContext, collection: ConstantRasterCollection,
+    #             input_range: tuple, metadata_id: str, current_view: bool)
     # current_view: True = current view only, False = all constant raster types
-    create_rasters_requested = QtCore.pyqtSignal(object, object, tuple, str, bool)
+    create_rasters_requested = QtCore.pyqtSignal(ConstantRasterContext, ConstantRasterCollection, tuple, str, bool)
 
     # Signal emitted when raster creation is complete (for showing results in dialog)
     # Parameters: (success: bool, message: str, count: int)
@@ -55,6 +54,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setWindowTitle(tr("Constant Rasters Manager"))
 
         self.constant_raster_registry = constant_raster_registry
 
@@ -296,6 +296,11 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         if metadata_id not in self._registered_component_widgets:
             # Show the blank widget (index 0)
             self.sw_component_container.setCurrentIndex(0)
+            # Show error message to user
+            self.message_bar.pushWarning(
+                "Configuration Error",
+                f"No widget defined for metadata ID '{metadata_id}'. Please contact the plugin developer."
+            )
             return
 
         self.sw_component_container.setCurrentIndex(
@@ -414,18 +419,18 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Restore UI state from saved components
         self._restore_ui_state()
 
-    def update_component_type_labels(self, label: str):
+    def update_component_type_labels(self, component_type: ModelComponentType):
         """Update UI labels based on component type.
 
-        :param label: Either "NCS Pathways" or "Activities"
+        :param component_type: ModelComponentType enum value (NCS_PATHWAY or ACTIVITY)
         """
-        if label == "NCS Pathways":
+        if component_type == ModelComponentType.NCS_PATHWAY:
             self.sw_model_type_container.setCurrentIndex(0)
             self._left_group.setTitle("NCS Pathways")
             self.lbl_description.setText(
                 "<b>Description:</b> Constant rasters for NCS pathways"
             )
-        elif label == "Activities":
+        elif component_type == ModelComponentType.ACTIVITY:
             self.sw_model_type_container.setCurrentIndex(1)
             self._left_group.setTitle("Activities")
             self.lbl_description.setText(
@@ -443,10 +448,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             self.cbo_raster_type.addItem(metadata.display_name, metadata.id)
 
         # Try to restore the previously selected pathway raster type
-        settings = QgsSettings()
-        settings.beginGroup("cplus/constant_rasters_dialog")
-        pathway_raster_type = settings.value("pathway_raster_type", None)
-        settings.endGroup()
+        pathway_raster_type = settings_manager.get_value(
+            Settings.CONSTANT_RASTERS_DIALOG_PATHWAY_TYPE, default=None
+        )
 
         # Select the saved raster type if available, otherwise first item
         if pathway_raster_type:
@@ -473,7 +477,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Save previous state before switching
         self._save_dialog_state()
 
-        self.update_component_type_labels("NCS Pathways")
+        self.update_component_type_labels(ModelComponentType.NCS_PATHWAY)
         self.load_pathways()
 
     def load_activities(self):
@@ -487,10 +491,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             self.cbo_raster_type.addItem(metadata.display_name, metadata.id)
 
         # Try to restore the previously selected activity raster type
-        settings = QgsSettings()
-        settings.beginGroup("cplus/constant_rasters_dialog")
-        activity_raster_type = settings.value("activity_raster_type", None)
-        settings.endGroup()
+        activity_raster_type = settings_manager.get_value(
+            Settings.CONSTANT_RASTERS_DIALOG_ACTIVITY_TYPE, default=None
+        )
 
         # Select the saved raster type if available, otherwise first item
         if activity_raster_type:
@@ -517,7 +520,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Save previous state before switching
         self._save_dialog_state()
 
-        self.update_component_type_labels("Activities")
+        self.update_component_type_labels(ModelComponentType.ACTIVITY)
         self.load_activities()
 
     def on_raster_type_selection_changed(self, index: int):
@@ -575,19 +578,20 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             min_val = self.spin_min_value.value()
             max_val = self.spin_max_value.value()
 
-            # Validate: max must be greater than min
-            if max_val <= min_val:
-                self.message_bar.pushWarning(
-                    "Invalid Range",
-                    f"Maximum ({max_val}) must be greater than minimum ({min_val})",
-                )
-                return
-
-            # Update collection with current spinbox values
             collection.min_value = min_val
             collection.max_value = max_val
 
-            # Save to settings
+            metadata_id = self.cbo_raster_type.itemData(
+                self.cbo_raster_type.currentIndex()
+            )
+            metadata = self.constant_raster_registry.metadata_by_id(metadata_id)
+
+            try:
+                collection.validate(metadata)
+            except ValueError as e:
+                self.message_bar.pushWarning("Invalid Range", str(e))
+                return
+
             self.constant_raster_registry.save()
 
     def current_constant_raster_collection(
@@ -826,49 +830,42 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # 2. Auto-normalizing would override user values
         # 3. With only one component, min==max causes incorrect 0.5 fallback
 
-    def _get_pixel_size_from_snap_layer(self) -> float:
-        """Get pixel size from the snap layer for consistency with analysis.
+    def _get_pixel_size_from_pathways(self) -> float:
+        """Get pixel size from NCS pathway rasters.
 
-        The snap layer is used as a reference to align all rasters during
-        scenario analysis. Using its pixel size ensures constant rasters
-        are consistent with other processing outputs.
-
-        :returns: Pixel size in map units, defaults to 30.0 if snap layer unavailable
+        :returns: Pixel size in map units
+        :raises ValueError: If pixel size cannot be determined from pathways
         """
-        DEFAULT_PIXEL_SIZE = 30.0
+        pathways = settings_manager.get_all_ncs_pathways()
 
-        # Get snap layer path from settings
-        snap_layer_path = settings_manager.get_value(Settings.SNAP_LAYER, default="")
+        if not pathways:
+            raise ValueError("No NCS pathways found in settings")
 
-        if not snap_layer_path:
-            return DEFAULT_PIXEL_SIZE
+        for pathway in pathways:
+            try:
+                pathway_layer = pathway.to_map_layer()
+                if pathway_layer and pathway_layer.isValid():
+                    pixel_size_x = pathway_layer.rasterUnitsPerPixelX()
+                    pixel_size_y = pathway_layer.rasterUnitsPerPixelY()
 
-        if not os.path.exists(snap_layer_path):
-            return DEFAULT_PIXEL_SIZE
-
-        try:
-            snap_layer = QgsRasterLayer(snap_layer_path, "snap", "gdal")
-            if not snap_layer.isValid():
+                    if pixel_size_x > 0 and pixel_size_y > 0:
+                        pixel_size = (pixel_size_x + pixel_size_y) / 2.0
+                        log(
+                            f"Got pixel size {pixel_size} from NCS pathway: {pathway.name}",
+                            info=True,
+                        )
+                        return pixel_size
+            except Exception as e:
                 log(
-                    f"Invalid snap layer: {snap_layer_path}, using default pixel size",
+                    f"Could not get pixel size from pathway {pathway.name}: {str(e)}",
                     info=False,
                 )
-                return DEFAULT_PIXEL_SIZE
+                continue
 
-            # Get pixel size (use X resolution, assuming square pixels)
-            pixel_size_x = snap_layer.rasterUnitsPerPixelX()
-            pixel_size_y = snap_layer.rasterUnitsPerPixelY()
-
-            # Use average if X and Y differ
-            pixel_size = (pixel_size_x + pixel_size_y) / 2.0
-            return pixel_size
-
-        except Exception as e:
-            log(
-                f"Error reading snap layer pixel size: {str(e)}, using default",
-                info=False,
-            )
-            return DEFAULT_PIXEL_SIZE
+        raise ValueError(
+            "Could not determine pixel size from any NCS pathway. "
+            "Ensure NCS pathways have valid raster layers."
+        )
 
     def _create_context(self) -> ConstantRasterContext:
         """Create a ConstantRasterContext from current map canvas and settings.
@@ -915,8 +912,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         output_dir = os.path.join(base_dir, "constant_rasters")
 
-        # Get pixel size from snap layer for consistency with analysis
-        pixel_size = self._get_pixel_size_from_snap_layer()
+        pixel_size = self._get_pixel_size_from_pathways()
 
         return ConstantRasterContext(
             extent=extent,
@@ -999,7 +995,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Get the metadata to extract input_range
         metadata_id = self.cbo_raster_type.itemData(self.cbo_raster_type.currentIndex())
         metadata = (
-            self.constant_raster_registry._metadata_store.get(metadata_id)
+            self.constant_raster_registry.metadata_by_id(metadata_id)
             if metadata_id
             else None
         )
@@ -1012,12 +1008,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
     def _save_dialog_state(self):
         """Save dialog-level state (model type selection, raster type selection)."""
-        settings = QgsSettings()
-        settings.beginGroup("cplus/constant_rasters_dialog")
-
         # Save which model type is selected (pathway=0, activity=1)
         model_type = 0 if self.rb_pathway.isChecked() else 1
-        settings.setValue("model_type", model_type)
+        settings_manager.set_value(Settings.CONSTANT_RASTERS_DIALOG_MODEL_TYPE, model_type)
 
         # Save the constant raster type selection for each model type
         current_metadata_id = self.cbo_raster_type.itemData(
@@ -1025,21 +1018,20 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         )
         if current_metadata_id:
             if self.rb_pathway.isChecked():
-                settings.setValue("pathway_raster_type", current_metadata_id)
+                settings_manager.set_value(
+                    Settings.CONSTANT_RASTERS_DIALOG_PATHWAY_TYPE, current_metadata_id
+                )
             else:
-                settings.setValue("activity_raster_type", current_metadata_id)
-
-        settings.endGroup()
+                settings_manager.set_value(
+                    Settings.CONSTANT_RASTERS_DIALOG_ACTIVITY_TYPE, current_metadata_id
+                )
 
     def _restore_dialog_state(self):
         """Restore dialog-level state (model type selection, raster type selection)."""
-        settings = QgsSettings()
-        settings.beginGroup("cplus/constant_rasters_dialog")
-
         # Restore which model type was selected
-        model_type = settings.value("model_type", 0, type=int)
-
-        settings.endGroup()
+        model_type = settings_manager.get_value(
+            Settings.CONSTANT_RASTERS_DIALOG_MODEL_TYPE, default=0, setting_type=int
+        )
 
         if model_type == 1:
             # Switch to activities

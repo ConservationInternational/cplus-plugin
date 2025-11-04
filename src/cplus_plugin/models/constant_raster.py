@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import dataclasses
 import typing
+from datetime import datetime
 from qgis.core import QgsRasterLayer
 
 from .base import LayerModelComponent, ModelComponentType
@@ -160,28 +161,6 @@ class ConstantRasterComponent:
 
         return None
 
-    def to_pwl(self):
-        """Convert to PriorityWeightingLayer.
-
-        :returns: PriorityWeightingLayer if path exists, None otherwise
-        """
-        if not self.path:
-            return None
-
-        # Import here to avoid circular dependency
-        from .base import PriorityLayer, PriorityLayerType
-
-        # Create priority layer from this constant raster component
-        return PriorityLayer(
-            uuid=self.component.uuid if self.component else None,
-            name=self.alias_name or self.component_id,
-            description=f"Constant raster for {self.alias_name or self.component_id}",
-            groups=[],
-            selected=True,
-            path=self.path,
-            type=PriorityLayerType.CONSTANT,
-        )
-
 
 @dataclasses.dataclass
 class ConstantRasterCollection:
@@ -231,13 +210,15 @@ class ConstantRasterCollection:
         """
         return [c for c in self.components if not c.skip_raster]
 
-    def validate(self) -> bool:
+    def validate(
+        self, metadata: typing.Optional["ConstantRasterMetadata"] = None
+    ) -> bool:
         """Validate the collection configuration.
 
+        :param metadata: Optional metadata to validate against input_range constraints
         :returns: True if valid, False otherwise
         :raises ValueError: If validation fails with details
         """
-        # Check that max > min for both ranges
         if self.min_value >= self.max_value:
             raise ValueError(
                 f"min_value ({self.min_value}) must be less than max_value ({self.max_value})"
@@ -248,16 +229,13 @@ class ConstantRasterCollection:
                 f"allowable_min ({self.allowable_min}) must be less than allowable_max ({self.allowable_max})"
             )
 
-        # Check that we have at least one component if not skipped
-        if not self.skip_raster and len(self.components) == 0:
-            raise ValueError(
-                "Collection must have at least one component when not skipped"
-            )
-
-        # Validate each component
-        for idx, component in enumerate(self.components):
-            if not component.value_info:
-                raise ValueError(f"Component at index {idx} has no value_info")
+        if metadata is not None:
+            input_min, input_max = metadata.input_range
+            if self.min_value < input_min or self.max_value > input_max:
+                raise ValueError(
+                    f"Output range ({self.min_value}, {self.max_value}) must be within "
+                    f"input range ({input_min}, {input_max}) defined in metadata"
+                )
 
         return True
 
@@ -404,8 +382,6 @@ class ConstantRasterFileMetadata:
 
         :returns: Formatted text suitable for writing to a .meta.txt file
         """
-        from datetime import datetime
-
         timestamp = self.created_timestamp or datetime.utcnow().isoformat()
 
         lines = [

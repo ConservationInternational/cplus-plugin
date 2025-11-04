@@ -569,42 +569,40 @@ class ConstantRasterProcessingUtils:
 class ConstantRasterRegistry:
     """Registry for managing constant raster metadata and collections."""
 
-    _metadata_store: typing.Dict[str, ConstantRasterMetadata] = {}
-    _serializers: typing.Dict[str, typing.Callable] = {}
-    _deserializers: typing.Dict[str, typing.Callable] = {}
+    def __init__(self):
+        """Initialize the registry with empty stores."""
+        self._metadata_store: typing.Dict[str, ConstantRasterMetadata] = {}
+        self._serializers: typing.Dict[str, typing.Callable] = {}
+        self._deserializers: typing.Dict[str, typing.Callable] = {}
 
-    @classmethod
-    def add_metadata(cls, metadata: ConstantRasterMetadata) -> bool:
+    def add_metadata(self, metadata: ConstantRasterMetadata) -> bool:
         """Add constant raster metadata to the registry.
 
         :param metadata: ConstantRasterMetadata to add
         :returns: True if added successfully, False if metadata with same ID already exists
         """
-        if metadata.id in cls._metadata_store:
+        if metadata.id in self._metadata_store:
             return False
-        cls._metadata_store[metadata.id] = metadata
+        self._metadata_store[metadata.id] = metadata
         return True
 
-    @classmethod
-    def metadata_ids(cls) -> typing.List[str]:
+    def metadata_ids(self) -> typing.List[str]:
         """Get list of all registered metadata IDs."""
-        return list(cls._metadata_store.keys())
+        return list(self._metadata_store.keys())
 
-    @classmethod
     def metadata_by_id(
-        cls, metadata_identifier: str
+        self, metadata_identifier: str
     ) -> typing.Optional[ConstantRasterMetadata]:
         """Get metadata by its identifier."""
-        return cls._metadata_store.get(metadata_identifier)
+        return self._metadata_store.get(metadata_identifier)
 
-    @classmethod
     def metadata_by_component_type(
-        cls, component_type: "ModelComponentType"
+        self, component_type: "ModelComponentType"
     ) -> typing.List[ConstantRasterMetadata]:
         """Get metadata filtered by component type."""
 
         result = []
-        for metadata in cls._metadata_store.values():
+        for metadata in self._metadata_store.values():
             if metadata.component_type is not None:
                 if metadata.component_type == component_type:
                     result.append(metadata)
@@ -623,34 +621,31 @@ class ConstantRasterRegistry:
 
         return result
 
-    @classmethod
     def collection_by_id(
-        cls, metadata_id: str
+        self, metadata_id: str
     ) -> typing.Optional[ConstantRasterCollection]:
         """Get collection by metadata ID."""
-        metadata = cls._metadata_store.get(metadata_id)
+        metadata = self._metadata_store.get(metadata_id)
         if metadata:
             return metadata.raster_collection
         return None
 
-    @classmethod
     def collection_by_component_type(
-        cls, component_type: "ModelComponentType"
+        self, component_type: "ModelComponentType"
     ) -> typing.List[ConstantRasterCollection]:
         """Get collections filtered by component type."""
         result = []
-        for metadata in cls.metadata_by_component_type(component_type):
+        for metadata in self.metadata_by_component_type(component_type):
             if metadata.raster_collection:
                 result.append(metadata.raster_collection)
         return result
 
-    @classmethod
     def model_type_components(
-        cls, model_identifier: str, component_type: "ModelComponentType"
+        self, model_identifier: str, component_type: "ModelComponentType"
     ) -> typing.List[ConstantRasterComponent]:
         """Get components for a specific model identifier and component type."""
         result = []
-        for metadata in cls.metadata_by_component_type(component_type):
+        for metadata in self.metadata_by_component_type(component_type):
             if metadata.raster_collection:
                 component = metadata.raster_collection.component_by_identifier(
                     model_identifier
@@ -659,36 +654,29 @@ class ConstantRasterRegistry:
                     result.append(component)
         return result
 
-    @classmethod
     def pathway_components(
-        cls, pathway_identifier: str
+        self, pathway_identifier: str
     ) -> typing.List[ConstantRasterComponent]:
         """Get all constant raster components for a specific pathway."""
-        from ..models.base import ModelComponentType
-
-        return cls.model_type_components(
+        return self.model_type_components(
             pathway_identifier, ModelComponentType.NCS_PATHWAY
         )
 
-    @classmethod
     def activity_components(
-        cls, activity_identifier: str
+        self, activity_identifier: str
     ) -> typing.List[ConstantRasterComponent]:
         """Get all constant raster components for a specific activity."""
-        from ..models.base import ModelComponentType
-
-        return cls.model_type_components(
+        return self.model_type_components(
             activity_identifier, ModelComponentType.ACTIVITY
         )
 
-    @classmethod
-    def save(cls):
+    def save(self):
         """Save all registered metadata to settings."""
 
         settings = QgsSettings()
         settings.beginGroup("cplus/constant_rasters")
 
-        for metadata_id, metadata in cls._metadata_store.items():
+        for metadata_id, metadata in self._metadata_store.items():
             if metadata.raster_collection:
                 collection_data = {
                     "min_value": metadata.raster_collection.min_value,
@@ -717,19 +705,18 @@ class ConstantRasterRegistry:
 
         settings.endGroup()
 
-    @classmethod
-    def load(cls):
+    def load(self):
         """Load metadata from settings."""
 
         settings = QgsSettings()
         settings.beginGroup("cplus/constant_rasters")
 
         for metadata_id in settings.childKeys():
-            if metadata_id in cls._metadata_store:
+            if metadata_id in self._metadata_store:
                 try:
                     json_str = settings.value(metadata_id, "{}")
                     collection_data = json.loads(json_str)
-                    metadata = cls._metadata_store[metadata_id]
+                    metadata = self._metadata_store[metadata_id]
 
                     if metadata.raster_collection is not None and collection_data:
                         metadata.raster_collection.min_value = collection_data.get(
@@ -772,36 +759,32 @@ class ConstantRasterRegistry:
 
         settings.endGroup()
 
-    @classmethod
-    def remove_metadata(cls, metadata_id: str) -> bool:
+    def remove_metadata(self, metadata_id: str) -> bool:
         """Remove metadata from the registry.
 
         :param metadata_id: ID of the metadata to remove
         :returns: True if removed successfully, False if not found
         """
-        if metadata_id in cls._metadata_store:
-            del cls._metadata_store[metadata_id]
+        if metadata_id in self._metadata_store:
+            del self._metadata_store[metadata_id]
             return True
         return False
 
-    @classmethod
-    def items(cls) -> typing.List[ConstantRasterMetadata]:
+    def items(self) -> typing.List[ConstantRasterMetadata]:
         """Get list of all registered metadata items.
 
         :returns: List of ConstantRasterMetadata objects
         """
-        return list(cls._metadata_store.values())
+        return list(self._metadata_store.values())
 
-    @classmethod
-    def __len__(cls) -> int:
+    def __len__(self) -> int:
         """Return the number of registered metadata items."""
-        return len(cls._metadata_store)
+        return len(self._metadata_store)
 
-    @classmethod
-    def __iter__(cls):
+    def __iter__(self):
         """Make registry iterable over metadata objects."""
-        return iter(cls._metadata_store.values())
+        return iter(self._metadata_store.values())
 
 
-# Global registry instance
-constant_raster_registry = ConstantRasterRegistry
+# Global registry instance (singleton)
+constant_raster_registry = ConstantRasterRegistry()

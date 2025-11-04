@@ -41,16 +41,11 @@ NCS_MIME_TYPE = "application/x-qabstractitemmodeldatalist"
 class ModelComponentItem(QtGui.QStandardItem):
     """Base standard item for a BaseModelComponent object."""
 
-    def __init__(self, model_component: BaseModelComponent, checkable: bool = False):
+    def __init__(self, model_component: BaseModelComponent):
         super().__init__(model_component.name)
         self.setToolTip(model_component.name)
 
         self._model_component = model_component
-
-        # Set checkable state if specified
-        if checkable:
-            self.setCheckable(True)
-            self.setCheckState(QtCore.Qt.Unchecked)
 
         if self._model_component is not None:
             self.update(self._model_component)
@@ -100,7 +95,7 @@ class ModelComponentItem(QtGui.QStandardItem):
     @staticmethod
     @abstractmethod
     def create(
-        model_component: BaseModelComponent, checkable: bool = False
+        model_component: BaseModelComponent
     ) -> "ModelComponentItem":
         """Factory method for creating an instance of a model item.
 
@@ -135,10 +130,10 @@ ModelComponentItemType = typing.TypeVar(
 class LayerComponentItem(ModelComponentItem):
     """Base class view item for layer-based component items."""
 
-    def __init__(self, model_component: LayerModelComponent, checkable: bool = False):
+    def __init__(self, model_component: LayerModelComponent):
         if not isinstance(model_component, LayerModelComponent):
             raise TypeError("'model_component' not of type LayerModelComponent")
-        super().__init__(model_component, checkable)
+        super().__init__(model_component)
 
     def is_valid(self) -> bool:
         """Checks whether the map layer of the underlying model
@@ -195,7 +190,7 @@ class LayerComponentItem(ModelComponentItem):
     @staticmethod
     @abstractmethod
     def create(
-        model_component: BaseModelComponent, checkable: bool = False
+        model_component: BaseModelComponent
     ) -> "ModelComponentItem":
         """Factory method for creating an instance of a model item.
 
@@ -236,8 +231,8 @@ class LayerComponentItem(ModelComponentItem):
 class NcsPathwayItem(LayerComponentItem):
     """Standard item for an NCS pathway object."""
 
-    def __init__(self, ncs: NcsPathway, checkable: bool = False):
-        super().__init__(ncs, checkable)
+    def __init__(self, ncs: NcsPathway):
+        super().__init__(ncs)
         self._ncs_pathway = ncs
         self._parent = None
 
@@ -269,20 +264,17 @@ class NcsPathwayItem(LayerComponentItem):
         return NCS_PATHWAY_TYPE
 
     @staticmethod
-    def create(ncs: NcsPathway, checkable: bool = False) -> "NcsPathwayItem":
+    def create(ncs: NcsPathway) -> "NcsPathwayItem":
         """Creates an instance of the NcsPathwayItem from the model object.
 
         :param ncs: NcsPathway model object
         :type ncs: NcsPathway
 
-        :param checkable: Whether the item should be checkable
-        :type checkable: bool
-
         :returns: An instance of the NcsPathway item to be used in a standard
         model.
         :rtype: NcsPathwayItem
         """
-        return NcsPathwayItem(ncs, checkable)
+        return NcsPathwayItem(ncs)
 
     def clone(self) -> "NcsPathwayItem":
         """Creates a cloned version of this item."""
@@ -324,9 +316,9 @@ class ActivityItem(LayerComponentItem):
     """Standard item for an activity object."""
 
     def __init__(
-        self, activity: Activity, bold_text: bool = True, checkable: bool = False
+        self, activity: Activity, bold_text: bool = True
     ):
-        super().__init__(activity, checkable)
+        super().__init__(activity)
         self._activity = activity
 
         self.set_bold_font(bold_text)
@@ -577,21 +569,18 @@ class ActivityItem(LayerComponentItem):
         return ACTIVITY_TYPE
 
     @staticmethod
-    def create(activity: Activity, checkable: bool = False) -> "ActivityItem":
+    def create(activity: Activity) -> "ActivityItem":
         """Creates an instance of the activity item from
         the model object.
 
         :param activity: Activity model object
         :type activity: Activity
 
-        :param checkable: Whether the item should be checkable
-        :type checkable: bool
-
         :returns: An instance of the activity item to
         be used in a standard model.
         :rtype: Activity
         """
-        return ActivityItem(activity, checkable=checkable)
+        return ActivityItem(activity)
 
     def clone(self) -> "ActivityItem":
         """Creates a cloned version of this item.
@@ -871,8 +860,9 @@ class NcsPathwayItemModel(ComponentItemModel):
         else False if the NcsPathway object is invalid.
         :rtype: bool
         """
-        # Pass checkable parameter to create method (v1.1.18+)
-        ncs_item = NcsPathwayItem.create(ncs, checkable=self.checkable_item)
+        ncs_item = NcsPathwayItem.create(ncs)
+        if self.checkable_item:
+            ncs_item.setCheckable(True)
 
         self._update_display(ncs_item)
 
@@ -1031,8 +1021,9 @@ class ActivityItemModel(ComponentItemModel):
             if activity.path:
                 layer = activity.to_map_layer()
 
-        # Pass checkable parameter to create method (v1.1.18+)
-        activity_item = ActivityItem.create(activity, checkable=self.checkable_item)
+        activity_item = ActivityItem.create(activity)
+        if self.checkable_item:
+            activity_item.setCheckable(True)
 
         if not self._load_pathways:
             activity_item.set_bold_font(False)
