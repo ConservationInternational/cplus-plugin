@@ -42,6 +42,7 @@ from ..definitions.constants import (
     MAX_VALUE_ATTRIBUTE_KEY,
     ALLOWABLE_MIN_ATTRIBUTE,
     ALLOWABLE_MAX_ATTRIBUTE,
+    LAST_UPDATED_ATTRIBUTE,
 )
 
 
@@ -173,11 +174,9 @@ class ConstantRasterProcessingUtils:
     @staticmethod
     def create_constant_raster(
         value: float,
-        extent: QgsRectangle,
-        pixel_size: float,
-        crs: QgsCoordinateReferenceSystem,
+        raster_context: ConstantRasterContext,
         output_path: str,
-        context: typing.Optional[QgsProcessingContext] = None,
+        processing_context: typing.Optional[QgsProcessingContext] = None,
         feedback: typing.Optional[QgsProcessingFeedback] = None,
     ) -> str:
         """Create a constant raster with a specified value.
@@ -186,15 +185,18 @@ class ConstantRasterProcessingUtils:
         Creates a raster where all pixels have the same constant value.
 
         :param value: Constant value for all pixels in the raster
-        :param extent: Spatial extent for the raster
-        :param pixel_size: Pixel size (resolution) for the raster
-        :param crs: Coordinate reference system
+        :param raster_context: ConstantRasterContext with extent, CRS, pixel size, etc.
         :param output_path: Path for output raster
-        :param context: Processing context (follows plugin pattern)
+        :param processing_context: QGIS processing context (optional)
         :param feedback: Optional feedback for progress reporting
         :returns: Path to created raster
         :raises QgsProcessingException: If creation fails
         """
+        # Extract parameters from context
+        extent = raster_context.extent
+        pixel_size = raster_context.pixel_size
+        crs = raster_context.crs
+
         if feedback:
             feedback.pushInfo(f"Creating constant raster with value: {value}")
             feedback.pushInfo(f"Extent: {extent.toString()}")
@@ -210,8 +212,8 @@ class ConstantRasterProcessingUtils:
             os.makedirs(output_dir, exist_ok=True)
 
         # Create processing context if not provided
-        if context is None:
-            context = QgsProcessingContext()
+        if processing_context is None:
+            processing_context = QgsProcessingContext()
 
         # Format extent string for QGIS processing
         # Format: "xmin,xmax,ymin,ymax [CRS_ID]"
@@ -239,7 +241,7 @@ class ConstantRasterProcessingUtils:
             result = processing.run(
                 "native:createconstantrasterlayer",
                 alg_params,
-                context=context,
+                context=processing_context,
                 feedback=feedback,
             )
 
@@ -525,11 +527,9 @@ class ConstantRasterProcessingUtils:
 
                     created_path = ConstantRasterProcessingUtils.create_constant_raster(
                         value=constant_value,
-                        extent=context.extent,
-                        pixel_size=context.pixel_size,
-                        crs=context.crs,
+                        raster_context=context,
                         output_path=output_path,
-                        context=processing_context,
+                        processing_context=processing_context,
                         feedback=feedback,
                     )
 
@@ -722,6 +722,7 @@ class ConstantRasterRegistry:
                     ALLOWABLE_MIN_ATTRIBUTE: metadata.raster_collection.allowable_min,
                     ALLOWABLE_MAX_ATTRIBUTE: metadata.raster_collection.allowable_max,
                     SKIP_RASTER_ATTRIBUTE: metadata.raster_collection.skip_raster,
+                    LAST_UPDATED_ATTRIBUTE: metadata.raster_collection.last_updated,
                     COMPONENTS_ATTRIBUTE: [
                         {
                             COMPONENT_ID_ATTRIBUTE: component.component_id,
@@ -770,6 +771,9 @@ class ConstantRasterRegistry:
                         )
                         metadata.raster_collection.skip_raster = collection_data.get(
                             SKIP_RASTER_ATTRIBUTE, False
+                        )
+                        metadata.raster_collection.last_updated = collection_data.get(
+                            LAST_UPDATED_ATTRIBUTE, ""
                         )
 
                         metadata.raster_collection.components.clear()

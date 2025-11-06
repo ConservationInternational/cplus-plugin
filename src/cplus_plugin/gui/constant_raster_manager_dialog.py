@@ -811,12 +811,15 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         :returns: Configured ConstantRasterContext
         """
-        # Try to get extent from AOI/Study Area first
+        clip_to_studyarea = settings_manager.get_value(
+            Settings.CLIP_TO_STUDYAREA, False
+        )
         studyarea_path = settings_manager.get_value(Settings.STUDYAREA_PATH)
-        use_aoi = studyarea_path and os.path.exists(studyarea_path)
+        use_aoi = (
+            clip_to_studyarea and studyarea_path and os.path.exists(studyarea_path)
+        )
 
         if use_aoi:
-            # Use AOI extent
             aoi_layer = QgsVectorLayer(studyarea_path, "temp_aoi", "ogr")
             if aoi_layer.isValid():
                 extent = aoi_layer.extent()
@@ -986,6 +989,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         self.spin_max_value.setValue(current_collection.max_value)
         self.spin_min_value.blockSignals(False)
         self.spin_max_value.blockSignals(False)
+
+        # Update last updated display
+        self._update_last_updated_display(current_collection)
 
         # Restore checked items for activities
         activity_collection = self.constant_raster_registry.collection_by_id(
