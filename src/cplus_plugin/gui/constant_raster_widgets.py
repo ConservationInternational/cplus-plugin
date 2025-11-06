@@ -178,7 +178,10 @@ class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
 
     def on_experience_value_changed(self, value: float):
         """Slot raised when spin box value changes."""
-        if self._constant_raster_component and self._constant_raster_component.value_info:
+        if (
+            self._constant_raster_component
+            and self._constant_raster_component.value_info
+        ):
             self._constant_raster_component.value_info.absolute = value
         self.notify_update()
 
