@@ -1,0 +1,312 @@
+# -*- coding: utf-8 -*-
+"""
+Unit tests for constant raster models and functionality.
+"""
+
+import sys
+from unittest import TestCase
+
+from cplus_plugin.definitions.constants import (
+    COMPONENT_ID_ATTRIBUTE,
+    COMPONENT_TYPE_ATTRIBUTE,
+    COMPONENT_UUID_ATTRIBUTE,
+    ENABLED_ATTRIBUTE,
+    SKIP_RASTER_ATTRIBUTE,
+    VALUE_INFO_ATTRIBUTE,
+    NORMALIZED_ATTRIBUTE,
+    ABSOLUTE_ATTRIBUTE,
+    MIN_VALUE_ATTRIBUTE_KEY,
+    MAX_VALUE_ATTRIBUTE_KEY,
+    ALLOWABLE_MIN_ATTRIBUTE,
+    ALLOWABLE_MAX_ATTRIBUTE,
+    COMPONENTS_ATTRIBUTE,
+)
+from cplus_plugin.models.base import ModelComponentType
+from cplus_plugin.models.constant_raster import (
+    ConstantRasterInfo,
+    ConstantRasterComponent,
+    ConstantRasterCollection,
+    ConstantRasterMetadata,
+    InputRange,
+)
+from cplus_plugin.models.helpers import (
+    constant_raster_collection_to_dict,
+    constant_raster_collection_from_dict,
+)
+
+from model_data_for_testing import (
+    get_constant_raster_info,
+    get_constant_raster_component,
+    get_constant_raster_collection,
+    get_constant_raster_metadata,
+    get_valid_ncs_pathway,
+)
+
+
+class TestInputRange(TestCase):
+    """Tests for InputRange NamedTuple."""
+
+    def test_input_range_creation(self):
+        """Test InputRange can be created with named parameters."""
+        input_range = InputRange(min=0.0, max=100.0)
+        self.assertEqual(input_range.min, 0.0)
+        self.assertEqual(input_range.max, 100.0)
+
+    def test_input_range_tuple_compatibility(self):
+        """Test InputRange is compatible with tuple operations."""
+        input_range = InputRange(min=0.0, max=100.0)
+        min_val, max_val = input_range
+        self.assertEqual(min_val, 0.0)
+        self.assertEqual(max_val, 100.0)
+
+    def test_input_range_immutable(self):
+        """Test InputRange is immutable."""
+        input_range = InputRange(min=0.0, max=100.0)
+        with self.assertRaises(AttributeError):
+            input_range.min = 50.0
+
+
+class TestConstantRasterInfo(TestCase):
+    """Tests for ConstantRasterInfo model."""
+
+    def setUp(self):
+        self.info = get_constant_raster_info()
+
+    def test_creation(self):
+        """Test ConstantRasterInfo creation."""
+        self.assertEqual(self.info.normalized, 0.5)
+        self.assertEqual(self.info.absolute, 50.0)
+
+    def test_to_dict(self):
+        """Test serialization to dictionary."""
+        result = self.info.to_dict()
+        self.assertIsInstance(result, dict)
+        self.assertEqual(result[NORMALIZED_ATTRIBUTE], 0.5)
+        self.assertEqual(result[ABSOLUTE_ATTRIBUTE], 50.0)
+
+    def test_from_dict(self):
+        """Test deserialization from dictionary."""
+        data = {NORMALIZED_ATTRIBUTE: 0.75, ABSOLUTE_ATTRIBUTE: 75.0}
+        result = ConstantRasterInfo.from_dict(data)
+        self.assertEqual(result.normalized, 0.75)
+        self.assertEqual(result.absolute, 75.0)
+
+    def test_round_trip_serialization(self):
+        """Test serialization and deserialization round trip."""
+        data_dict = self.info.to_dict()
+        restored = ConstantRasterInfo.from_dict(data_dict)
+        self.assertEqual(restored.normalized, self.info.normalized)
+        self.assertEqual(restored.absolute, self.info.absolute)
+
+
+class TestConstantRasterComponent(TestCase):
+    """Tests for ConstantRasterComponent model."""
+
+    def setUp(self):
+        self.component = get_constant_raster_component()
+
+    def test_creation(self):
+        """Test ConstantRasterComponent creation."""
+        self.assertIsNotNone(self.component.value_info)
+        self.assertIsNotNone(self.component.component)
+        self.assertEqual(self.component.component_type, ModelComponentType.NCS_PATHWAY)
+        self.assertFalse(self.component.skip_raster)
+        self.assertTrue(self.component.enabled)
+
+    def test_identifier_generation(self):
+        """Test identifier generation."""
+        identifier = self.component.identifier()
+        self.assertIsInstance(identifier, str)
+        self.assertTrue(len(identifier) > 0)
+
+    def test_to_dict(self):
+        """Test serialization to dictionary."""
+        result = self.component.to_dict()
+        self.assertIsInstance(result, dict)
+        self.assertIn(VALUE_INFO_ATTRIBUTE, result)
+        self.assertIn(COMPONENT_UUID_ATTRIBUTE, result)
+        self.assertIn(COMPONENT_ID_ATTRIBUTE, result)
+        self.assertIn(COMPONENT_TYPE_ATTRIBUTE, result)
+        self.assertIn(SKIP_RASTER_ATTRIBUTE, result)
+        self.assertIn(ENABLED_ATTRIBUTE, result)
+
+    def test_from_dict(self):
+        """Test deserialization from dictionary."""
+        ncs_pathway = get_valid_ncs_pathway()
+        data = self.component.to_dict()
+
+        def lookup(uuid_str):
+            return ncs_pathway if str(ncs_pathway.uuid) == uuid_str else None
+
+        restored = ConstantRasterComponent.from_dict(data, lookup)
+        self.assertEqual(restored.component_id, self.component.component_id)
+        self.assertEqual(restored.component_type, self.component.component_type)
+        self.assertEqual(restored.skip_raster, self.component.skip_raster)
+        self.assertEqual(restored.enabled, self.component.enabled)
+
+
+class TestConstantRasterCollection(TestCase):
+    """Tests for ConstantRasterCollection model."""
+
+    def setUp(self):
+        self.collection = get_constant_raster_collection()
+
+    def test_creation(self):
+        """Test ConstantRasterCollection creation."""
+        self.assertEqual(self.collection.min_value, 0.0)
+        self.assertEqual(self.collection.max_value, 100.0)
+        self.assertEqual(self.collection.component_type, ModelComponentType.NCS_PATHWAY)
+        self.assertFalse(self.collection.skip_raster)
+        self.assertEqual(len(self.collection.components), 1)
+
+    def test_enabled_components(self):
+        """Test getting enabled components."""
+        enabled = self.collection.enabled_components()
+        self.assertEqual(len(enabled), 1)
+
+        # Disable a component
+        self.collection.components[0].enabled = False
+        enabled = self.collection.enabled_components()
+        self.assertEqual(len(enabled), 0)
+
+    def test_component_by_id(self):
+        """Test retrieving component by ID."""
+        component_id = self.collection.components[0].component_id
+        found = self.collection.component_by_id(component_id)
+        self.assertIsNotNone(found)
+        self.assertEqual(found.component_id, component_id)
+
+    def test_add_component(self):
+        """Test adding a component to collection."""
+        new_component = get_constant_raster_component()
+        new_component.component_id = "new_test_id"
+        result = self.collection.add_component(new_component)
+        self.assertTrue(result)
+        self.assertEqual(len(self.collection.components), 2)
+
+    def test_add_duplicate_component(self):
+        """Test adding duplicate component fails."""
+        existing = self.collection.components[0]
+        result = self.collection.add_component(existing)
+        self.assertFalse(result)
+        self.assertEqual(len(self.collection.components), 1)
+
+    def test_remove_component(self):
+        """Test removing a component from collection."""
+        component_id = self.collection.components[0].component_id
+        result = self.collection.remove_component(component_id)
+        self.assertTrue(result)
+        self.assertEqual(len(self.collection.components), 0)
+
+    def test_validate_valid_range(self):
+        """Test validation with valid min/max range."""
+        result = self.collection.validate()
+        self.assertTrue(result)
+
+    def test_validate_invalid_min_max(self):
+        """Test validation fails with invalid min/max."""
+        self.collection.min_value = 100.0
+        self.collection.max_value = 0.0
+        with self.assertRaises(ValueError):
+            self.collection.validate()
+
+    def test_validate_with_metadata_constraints(self):
+        """Test validation with metadata input range constraints."""
+        metadata = get_constant_raster_metadata()
+        # Collection range within metadata input range
+        self.collection.min_value = 10.0
+        self.collection.max_value = 90.0
+        result = self.collection.validate(metadata)
+        self.assertTrue(result)
+
+        # Collection range outside metadata input range
+        self.collection.min_value = -10.0
+        with self.assertRaises(ValueError):
+            self.collection.validate(metadata)
+
+    def test_len_and_iter(self):
+        """Test collection length and iteration."""
+        self.assertEqual(len(self.collection), 1)
+
+        count = 0
+        for component in self.collection:
+            count += 1
+            self.assertIsInstance(component, ConstantRasterComponent)
+        self.assertEqual(count, 1)
+
+
+class TestConstantRasterMetadata(TestCase):
+    """Tests for ConstantRasterMetadata model."""
+
+    def setUp(self):
+        self.metadata = get_constant_raster_metadata()
+
+    def test_creation(self):
+        """Test ConstantRasterMetadata creation."""
+        self.assertEqual(self.metadata.id, "test_metadata")
+        self.assertEqual(self.metadata.display_name, "Test Constant Raster")
+        self.assertIsNotNone(self.metadata.raster_collection)
+        self.assertEqual(self.metadata.component_type, ModelComponentType.NCS_PATHWAY)
+        self.assertEqual(self.metadata.input_range.min, 0.0)
+        self.assertEqual(self.metadata.input_range.max, 100.0)
+
+    def test_to_dict(self):
+        """Test metadata serialization."""
+        result = self.metadata.to_dict()
+        self.assertIsInstance(result, dict)
+        self.assertIn("id", result)
+        self.assertIn("display_name", result)
+        self.assertIn("raster_collection", result)
+        self.assertIn("component_type", result)
+        self.assertIn("input_range", result)
+
+
+class TestConstantRasterHelpers(TestCase):
+    """Tests for constant raster helper functions."""
+
+    def setUp(self):
+        self.collection = get_constant_raster_collection()
+        self.ncs_pathway = get_valid_ncs_pathway()
+
+    def test_collection_to_dict(self):
+        """Test collection serialization."""
+        result = constant_raster_collection_to_dict(self.collection)
+        self.assertIsInstance(result, dict)
+        self.assertIn(MIN_VALUE_ATTRIBUTE_KEY, result)
+        self.assertIn(MAX_VALUE_ATTRIBUTE_KEY, result)
+        self.assertIn(COMPONENT_TYPE_ATTRIBUTE, result)
+        self.assertIn(ALLOWABLE_MIN_ATTRIBUTE, result)
+        self.assertIn(ALLOWABLE_MAX_ATTRIBUTE, result)
+        self.assertIn(SKIP_RASTER_ATTRIBUTE, result)
+        self.assertIn(COMPONENTS_ATTRIBUTE, result)
+
+    def test_collection_from_dict(self):
+        """Test collection deserialization."""
+        data = constant_raster_collection_to_dict(self.collection)
+        restored = constant_raster_collection_from_dict(data, [self.ncs_pathway])
+
+        self.assertIsNotNone(restored)
+        self.assertEqual(restored.min_value, self.collection.min_value)
+        self.assertEqual(restored.max_value, self.collection.max_value)
+        self.assertEqual(restored.component_type, self.collection.component_type)
+        self.assertEqual(len(restored.components), len(self.collection.components))
+
+    def test_collection_round_trip(self):
+        """Test serialization and deserialization round trip."""
+        data = constant_raster_collection_to_dict(self.collection)
+        restored = constant_raster_collection_from_dict(data, [self.ncs_pathway])
+
+        self.assertEqual(restored.min_value, self.collection.min_value)
+        self.assertEqual(restored.max_value, self.collection.max_value)
+        self.assertEqual(restored.skip_raster, self.collection.skip_raster)
+        self.assertEqual(len(restored.components), len(self.collection.components))
+
+    def test_collection_to_dict_none(self):
+        """Test serialization of None collection."""
+        result = constant_raster_collection_to_dict(None)
+        self.assertEqual(result, {})
+
+    def test_collection_from_dict_empty(self):
+        """Test deserialization of empty dict."""
+        result = constant_raster_collection_from_dict({}, [])
+        self.assertIsNone(result)
