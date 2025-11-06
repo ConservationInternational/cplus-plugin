@@ -2,7 +2,9 @@
 
 """Helper functions for supporting model management."""
 import os
+import sys
 from dataclasses import field, fields
+from datetime import datetime
 import typing
 import uuid
 
@@ -73,6 +75,20 @@ from ..definitions.constants import (
     UUID_ATTRIBUTE,
     YEARS_ATTRIBUTE,
     YEARLY_RATES_ATTRIBUTE,
+    COMPONENT_UUID_ATTRIBUTE,
+    COMPONENT_ID_ATTRIBUTE,
+    COMPONENT_TYPE_ATTRIBUTE,
+    SKIP_RASTER_ATTRIBUTE,
+    ALLOWABLE_MIN_ATTRIBUTE,
+    ALLOWABLE_MAX_ATTRIBUTE,
+    LAST_UPDATED_ATTRIBUTE,
+    COMPONENTS_ATTRIBUTE,
+    ABSOLUTE_VALUE_ATTRIBUTE,
+    VALUE_INFO_ATTRIBUTE,
+    NORMALIZED_ATTRIBUTE,
+    ABSOLUTE_ATTRIBUTE,
+    MIN_VALUE_ATTRIBUTE_KEY,
+    MAX_VALUE_ATTRIBUTE_KEY,
 )
 from ..definitions.defaults import DEFAULT_CRS_ID, QGIS_GDAL_PROVIDER
 from .financial import NcsPathwayNpv, NcsPathwayNpvCollection, NpvParameters
@@ -1064,30 +1080,34 @@ def constant_raster_collection_to_dict(
         return {}
 
     return {
-        "min_value": collection.min_value,
-        "max_value": collection.max_value,
-        "component_type": (
+        MIN_VALUE_ATTRIBUTE_KEY: collection.min_value,
+        MAX_VALUE_ATTRIBUTE_KEY: collection.max_value,
+        COMPONENT_TYPE_ATTRIBUTE: (
             collection.component_type.value if collection.component_type else None
         ),
-        "allowable_min": collection.allowable_min,
-        "allowable_max": collection.allowable_max,
-        "skip_raster": collection.skip_raster,
-        "components": [
+        ALLOWABLE_MIN_ATTRIBUTE: collection.allowable_min,
+        ALLOWABLE_MAX_ATTRIBUTE: collection.allowable_max,
+        SKIP_RASTER_ATTRIBUTE: collection.skip_raster,
+        LAST_UPDATED_ATTRIBUTE: collection.last_updated,
+        COMPONENTS_ATTRIBUTE: [
             {
-                "value_info": {
-                    "normalized": c.value_info.normalized if c.value_info else 0.0,
-                    "absolute": c.value_info.absolute if c.value_info else 0.0,
+                VALUE_INFO_ATTRIBUTE: {
+                    NORMALIZED_ATTRIBUTE: c.value_info.normalized
+                    if c.value_info
+                    else 0.0,
+                    ABSOLUTE_ATTRIBUTE: c.value_info.absolute if c.value_info else 0.0,
                 },
-                "component_uuid": str(c.component.uuid) if c.component else "",
+                COMPONENT_UUID_ATTRIBUTE: str(c.component.uuid) if c.component else "",
                 "prefix": c.prefix,
                 "base_name": c.base_name,
                 "suffix": c.suffix,
-                "alias_name": c.alias_name,
                 "path": c.path,
-                "skip_raster": c.skip_raster,
-                "enabled": c.enabled,
-                "component_id": c.component_id,
-                "component_type": c.component_type.value if c.component_type else "",
+                SKIP_RASTER_ATTRIBUTE: c.skip_raster,
+                ENABLED_ATTRIBUTE: c.enabled,
+                COMPONENT_ID_ATTRIBUTE: c.component_id,
+                COMPONENT_TYPE_ATTRIBUTE: c.component_type.value
+                if c.component_type
+                else "",
             }
             for c in collection.components
         ],
@@ -1116,16 +1136,20 @@ def constant_raster_collection_from_dict(
 
     # Deserialize components
     components = []
-    for comp_dict in collection_dict.get("components", []):
-        component_uuid = comp_dict.get("component_uuid")
+    for comp_dict in collection_dict.get(COMPONENTS_ATTRIBUTE, []):
+        component_uuid = comp_dict.get(COMPONENT_UUID_ATTRIBUTE)
         component = component_lookup.get(component_uuid) if component_uuid else None
 
         value_info = ConstantRasterInfo(
-            normalized=comp_dict.get("value_info", {}).get("normalized", 0.0),
-            absolute=comp_dict.get("value_info", {}).get("absolute", 0.0),
+            normalized=comp_dict.get(VALUE_INFO_ATTRIBUTE, {}).get(
+                NORMALIZED_ATTRIBUTE, 0.0
+            ),
+            absolute=comp_dict.get(VALUE_INFO_ATTRIBUTE, {}).get(
+                ABSOLUTE_ATTRIBUTE, 0.0
+            ),
         )
 
-        component_type_str = comp_dict.get("component_type", "")
+        component_type_str = comp_dict.get(COMPONENT_TYPE_ATTRIBUTE, "")
         component_type = ModelComponentType.from_string(component_type_str)
 
         raster_component = ConstantRasterComponent(
@@ -1134,29 +1158,29 @@ def constant_raster_collection_from_dict(
             prefix=comp_dict.get("prefix", ""),
             base_name=comp_dict.get("base_name", ""),
             suffix=comp_dict.get("suffix", ""),
-            alias_name=comp_dict.get("alias_name", ""),
             path=comp_dict.get("path", ""),
-            skip_raster=comp_dict.get("skip_raster", True),
-            enabled=comp_dict.get("enabled", True),
-            component_id=comp_dict.get("component_id", ""),
+            skip_raster=comp_dict.get(SKIP_RASTER_ATTRIBUTE, False),
+            enabled=comp_dict.get(ENABLED_ATTRIBUTE, True),
+            component_id=comp_dict.get(COMPONENT_ID_ATTRIBUTE, ""),
             component_type=component_type,
         )
         components.append(raster_component)
 
     # Parse component_type if present
     component_type = None
-    component_type_str = collection_dict.get("component_type")
+    component_type_str = collection_dict.get(COMPONENT_TYPE_ATTRIBUTE)
     if component_type_str:
         component_type = ModelComponentType.from_string(component_type_str)
 
     return ConstantRasterCollection(
-        min_value=collection_dict.get("min_value", 0.0),
-        max_value=collection_dict.get("max_value", 1.0),
+        min_value=collection_dict.get(MIN_VALUE_ATTRIBUTE_KEY, 0.0),
+        max_value=collection_dict.get(MAX_VALUE_ATTRIBUTE_KEY, 1.0),
         component_type=component_type,
         components=components,
-        skip_raster=collection_dict.get("skip_raster", False),
-        allowable_max=collection_dict.get("allowable_max", 1.0),
-        allowable_min=collection_dict.get("allowable_min", 0.0),
+        skip_raster=collection_dict.get(SKIP_RASTER_ATTRIBUTE, False),
+        allowable_max=collection_dict.get(ALLOWABLE_MAX_ATTRIBUTE, sys.float_info.max),
+        allowable_min=collection_dict.get(ALLOWABLE_MIN_ATTRIBUTE, 0.0),
+        last_updated=collection_dict.get(LAST_UPDATED_ATTRIBUTE, ""),
     )
 
 
@@ -1316,6 +1340,7 @@ def save_constant_raster_metadata(
     output_max: float,
     metadata_id: str,
     component_type: str,
+    skip_raster: bool = False,
 ) -> str:
     """Save metadata for a constant raster to a text file.
 
@@ -1325,7 +1350,7 @@ def save_constant_raster_metadata(
     This is a convenience function that creates a ConstantRasterFileMetadata
     instance and writes it to a file.
 
-    :param raster_path: Full path to the raster file
+    :param raster_path: Full path to the raster file (used for subfolder naming)
     :type raster_path: str
 
     :param component_id: UUID of the component
@@ -1340,10 +1365,10 @@ def save_constant_raster_metadata(
     :param normalized_value: Final normalized value stored in raster
     :type normalized_value: float
 
-    :param output_min: Minimum output range value
+    :param output_min: Minimum normalization range value
     :type output_min: float
 
-    :param output_max: Maximum output range value
+    :param output_max: Maximum normalization range value
     :type output_max: float
 
     :param metadata_id: Raster type ID
@@ -1352,14 +1377,18 @@ def save_constant_raster_metadata(
     :param component_type: Type of component (NCS_PATHWAY or ACTIVITY)
     :type component_type: str
 
+    :param skip_raster: If True, raster was not created (metadata only)
+    :type skip_raster: bool
+
     :returns: Path to the metadata file
     :rtype: str
     """
     from ..models.constant_raster import ConstantRasterFileMetadata
 
     # Create metadata instance
+    # If skip_raster is True, set raster_path to empty in the metadata content
     metadata = ConstantRasterFileMetadata(
-        raster_path=raster_path,
+        raster_path="" if skip_raster else raster_path,
         component_id=component_id,
         component_name=component_name,
         component_type=component_type,
@@ -1370,6 +1399,15 @@ def save_constant_raster_metadata(
         metadata_id=metadata_id,
     )
 
-    # Write to file
-    meta_path = f"{raster_path}.meta.txt"
+    # Create metadata subfolder in the same directory as the raster
+    # The raster is already in a timestamped session folder
+    raster_dir = os.path.dirname(raster_path)
+    raster_basename = os.path.splitext(os.path.basename(raster_path))[0]
+
+    # Create metadata subfolder: {session_folder}/metadata/
+    metadata_subfolder = os.path.join(raster_dir, "metadata")
+    os.makedirs(metadata_subfolder, exist_ok=True)
+
+    # Write to file in the metadata subfolder with raster-specific name
+    meta_path = os.path.join(metadata_subfolder, f"{raster_basename}.txt")
     return write_constant_raster_metadata_file(metadata, meta_path)

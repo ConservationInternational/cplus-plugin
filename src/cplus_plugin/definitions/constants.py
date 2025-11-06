@@ -85,3 +85,23 @@ DISCOUNTED_VALUE_HEADER = "Discounted Value (US$)"
 MAX_YEARS = 99
 
 NO_DATA_VALUE = -9999
+
+# Constant Raster attributes and keys
+CONSTANT_RASTERS_SETTINGS_KEY = "cplus/constant_rasters"
+COMPONENT_UUID_ATTRIBUTE = "component_uuid"
+COMPONENT_ID_ATTRIBUTE = "component_id"
+COMPONENT_TYPE_ATTRIBUTE = "component_type"
+SKIP_RASTER_ATTRIBUTE = "skip_raster"
+ALLOWABLE_MIN_ATTRIBUTE = "allowable_min"
+ALLOWABLE_MAX_ATTRIBUTE = "allowable_max"
+LAST_UPDATED_ATTRIBUTE = "last_updated"
+COMPONENTS_ATTRIBUTE = "components"
+ABSOLUTE_VALUE_ATTRIBUTE = "absolute_value"
+VALUE_INFO_ATTRIBUTE = "value_info"
+NORMALIZED_ATTRIBUTE = "normalized"
+ABSOLUTE_ATTRIBUTE = "absolute"
+INPUT_RANGE_ATTRIBUTE = "input_range"
+DISPLAY_NAME_ATTRIBUTE = "display_name"
+RASTER_COLLECTION_ATTRIBUTE = "raster_collection"
+MIN_VALUE_ATTRIBUTE_KEY = "min_value"
+MAX_VALUE_ATTRIBUTE_KEY = "max_value"

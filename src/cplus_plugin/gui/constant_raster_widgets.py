@@ -3,6 +3,7 @@
 Widgets for managing constant raster parameters.
 """
 
+import sys
 import typing
 
 from qgis.PyQt import QtCore, QtWidgets
@@ -13,6 +14,7 @@ from ..models.constant_raster import (
     ConstantRasterInfo,
     ConstantRasterMetadata,
     ConstantRasterCollection,
+    InputRange,
 )
 
 
@@ -117,7 +119,7 @@ class ConstantRasterWidgetInterface:
             raster_collection=None,
             deserializer=None,
             component_type=component_type,
-            input_range=(0.0, 100.0),
+            input_range=InputRange(min=0.0, max=100.0),
         )
 
 
@@ -205,9 +207,6 @@ class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
                 str(model_component.uuid) if hasattr(model_component, "uuid") else ""
             ),
             component_type=component_type,
-            alias_name=(
-                model_component.name if hasattr(model_component, "name") else ""
-            ),
             skip_raster=False,
         )
 
@@ -229,7 +228,7 @@ class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
             max_value=100.0,
             component_type=component_type,
             components=[],
-            allowable_max=100.0,
+            allowable_max=sys.float_info.max,
             allowable_min=0.0,
         )
 
@@ -239,5 +238,5 @@ class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
             raster_collection=collection,
             deserializer=None,
             component_type=component_type,
-            input_range=(0.0, 100.0),  # 0-100 years
+            input_range=InputRange(min=0.0, max=100.0),  # 0-100 years
         )

@@ -264,5 +264,4 @@ NATUREBASE_CARBON_IMPACT_EXPRESSION_DESCRIPTION = (
 )
 
 # Constant raster type identifiers
-YEARS_EXPERIENCE_PATHWAY_ID = "years_experience_pathway"
 YEARS_EXPERIENCE_ACTIVITY_ID = "years_experience_activity"

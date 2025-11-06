@@ -4,6 +4,7 @@
 import os
 import typing
 import json
+from datetime import datetime
 from qgis.core import QgsSettings
 
 from qgis import processing
@@ -29,6 +30,18 @@ from ..models.helpers import (
     get_constant_raster_dir,
     generate_constant_raster_filename,
     save_constant_raster_metadata,
+)
+from ..definitions.constants import (
+    CONSTANT_RASTERS_SETTINGS_KEY,
+    COMPONENT_ID_ATTRIBUTE,
+    SKIP_RASTER_ATTRIBUTE,
+    ENABLED_ATTRIBUTE,
+    ABSOLUTE_VALUE_ATTRIBUTE,
+    COMPONENTS_ATTRIBUTE,
+    MIN_VALUE_ATTRIBUTE_KEY,
+    MAX_VALUE_ATTRIBUTE_KEY,
+    ALLOWABLE_MIN_ATTRIBUTE,
+    ALLOWABLE_MAX_ATTRIBUTE,
 )
 
 
@@ -322,13 +335,13 @@ class ConstantRasterProcessingUtils:
         This function creates constant rasters based on the absolute values
         specified in each component's value_info. Uses two-step normalization:
         1. Normalize input values to [0,1] using actual min/max from component values
-        2. Remap to output range using collection's min_value/max_value
+        2. Remap to normalization range using collection's min_value/max_value
 
         :param collection: ConstantRasterCollection containing components to process
         :param context: ConstantRasterContext with extent, CRS, and output settings
         :param input_range: DEPRECATED - min/max are now calculated from actual component values
         :param feedback: Optional feedback for progress reporting
-        :param metadata_id: Metadata ID for determining file naming (e.g., "years_experience_pathway")
+        :param metadata_id: Metadata ID for determining file naming (e.g., "years_experience_activity")
         :returns: List of paths to created raster files
         :raises QgsProcessingException: If raster creation fails
         """
@@ -401,6 +414,13 @@ class ConstantRasterProcessingUtils:
             if feedback:
                 feedback.pushInfo(f"Created output directory: {actual_output_dir}")
 
+        # Create timestamped session folder for this raster creation session
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        session_dir = os.path.join(actual_output_dir, timestamp)
+        os.makedirs(session_dir, exist_ok=True)
+        if feedback:
+            feedback.pushInfo(f"Created session directory: {session_dir}")
+
         created_rasters = []
         processing_context = QgsProcessingContext()
 
@@ -414,7 +434,11 @@ class ConstantRasterProcessingUtils:
             if feedback:
                 progress = int((idx / total_components) * 100)
                 feedback.setProgress(progress)
-                component_name = component.alias_name or component.component_id
+                component_name = (
+                    component.component.name
+                    if component.component and hasattr(component.component, "name")
+                    else component.component_id
+                )
                 feedback.pushInfo(
                     f"Processing {idx + 1}/{total_components}: {component_name}"
                 )
@@ -433,7 +457,7 @@ class ConstantRasterProcessingUtils:
                 feedback.pushInfo(f"Component value: {absolute_value}")
                 feedback.pushInfo(f"Input range: {input_min} - {input_max}")
                 feedback.pushInfo(
-                    f"Output range: {collection.min_value} - {collection.max_value}"
+                    f"Normalization range: {collection.min_value} - {collection.max_value}"
                 )
 
             # TWO-STEP NORMALIZATION:
@@ -450,41 +474,46 @@ class ConstantRasterProcessingUtils:
             if feedback:
                 feedback.pushInfo(f"Step 1 - Normalized to [0,1]: {normalized_0_1}")
 
-            # Step 2: Remap [0,1] to user-specified output range
+            # Step 2: Remap [0,1] to user-specified normalization range
             output_min = collection.min_value
             output_max = collection.max_value
             constant_value = output_min + (normalized_0_1 * (output_max - output_min))
 
             if feedback:
                 feedback.pushInfo(
-                    f"Step 2 - Remapped to output range: {constant_value}"
+                    f"Step 2 - Remapped to normalization range: {constant_value}"
                 )
                 feedback.pushInfo(f"Final raster value: {constant_value}")
 
             # Generate output filename using helper
-            if metadata_id and component.alias_name:
+            component_name = (
+                component.component.name
+                if component.component and hasattr(component.component, "name")
+                else component.component_id
+            )
+            if metadata_id and component_name:
                 # Use descriptive filename with value and unit
                 output_filename = generate_constant_raster_filename(
-                    component.alias_name, absolute_value, metadata_id
+                    component_name, absolute_value, metadata_id
                 )
             else:
                 # Fallback to old naming scheme
-                safe_name = (
-                    component.alias_name.replace(" ", "_").replace("/", "_")
-                    if component.alias_name
-                    else component.component_id
-                )
+                safe_name = component_name.replace(" ", "_").replace("/", "_")
                 output_filename = f"constant_raster_{safe_name}.tif"
 
-            output_path = os.path.join(actual_output_dir, output_filename)
+            output_path = os.path.join(session_dir, output_filename)
 
             try:
                 # Create the constant raster only if skip_raster is False
                 if not collection.skip_raster:
                     if feedback:
-                        feedback.pushInfo(
-                            f"Component: {component.alias_name or component.component_id}"
+                        component_name = (
+                            component.component.name
+                            if component.component
+                            and hasattr(component.component, "name")
+                            else component.component_id
                         )
+                        feedback.pushInfo(f"Component: {component_name}")
                         feedback.pushInfo(f"Absolute value: {absolute_value}")
                         feedback.pushInfo(
                             f"Normalization range: {collection.min_value} - {collection.max_value}"
@@ -517,11 +546,16 @@ class ConstantRasterProcessingUtils:
                 # Always save metadata file (even when skip_raster=True)
                 if metadata_id:
                     try:
+                        component_name = (
+                            component.component.name
+                            if component.component
+                            and hasattr(component.component, "name")
+                            else component.component_id
+                        )
                         meta_path = save_constant_raster_metadata(
                             raster_path=created_path,
                             component_id=component.component_id,
-                            component_name=component.alias_name
-                            or component.component_id,
+                            component_name=component_name,
                             input_value=absolute_value,
                             normalized_value=constant_value,
                             output_min=collection.min_value,
@@ -532,6 +566,7 @@ class ConstantRasterProcessingUtils:
                                 if collection.component_type
                                 else "unknown"
                             ),
+                            skip_raster=collection.skip_raster,
                         )
                         if feedback:
                             feedback.pushInfo(f"Saved metadata: {meta_path}")
@@ -593,8 +628,19 @@ class ConstantRasterRegistry:
     def metadata_by_id(
         self, metadata_identifier: str
     ) -> typing.Optional[ConstantRasterMetadata]:
-        """Get metadata by its identifier."""
-        return self._metadata_store.get(metadata_identifier)
+        """Get metadata by its identifier.
+
+        :param metadata_identifier: Identifier for the metadata to retrieve
+        :returns: ConstantRasterMetadata if found, None otherwise
+        """
+        try:
+            return self._metadata_store.get(metadata_identifier)
+        except Exception as e:
+            log(
+                f"Error retrieving metadata by ID '{metadata_identifier}': {str(e)}",
+                info=False,
+            )
+            return None
 
     def metadata_by_component_type(
         self, component_type: "ModelComponentType"
@@ -634,11 +680,11 @@ class ConstantRasterRegistry:
         self, component_type: "ModelComponentType"
     ) -> typing.List[ConstantRasterCollection]:
         """Get collections filtered by component type."""
-        result = []
-        for metadata in self.metadata_by_component_type(component_type):
-            if metadata.raster_collection:
-                result.append(metadata.raster_collection)
-        return result
+        return [
+            metadata.raster_collection
+            for metadata in self.metadata_by_component_type(component_type)
+            if metadata.raster_collection
+        ]
 
     def model_type_components(
         self, model_identifier: str, component_type: "ModelComponentType"
@@ -654,14 +700,6 @@ class ConstantRasterRegistry:
                     result.append(component)
         return result
 
-    def pathway_components(
-        self, pathway_identifier: str
-    ) -> typing.List[ConstantRasterComponent]:
-        """Get all constant raster components for a specific pathway."""
-        return self.model_type_components(
-            pathway_identifier, ModelComponentType.NCS_PATHWAY
-        )
-
     def activity_components(
         self, activity_identifier: str
     ) -> typing.List[ConstantRasterComponent]:
@@ -674,31 +712,30 @@ class ConstantRasterRegistry:
         """Save all registered metadata to settings."""
 
         settings = QgsSettings()
-        settings.beginGroup("cplus/constant_rasters")
+        settings.beginGroup(CONSTANT_RASTERS_SETTINGS_KEY)
 
         for metadata_id, metadata in self._metadata_store.items():
             if metadata.raster_collection:
                 collection_data = {
-                    "min_value": metadata.raster_collection.min_value,
-                    "max_value": metadata.raster_collection.max_value,
-                    "allowable_min": metadata.raster_collection.allowable_min,
-                    "allowable_max": metadata.raster_collection.allowable_max,
-                    "skip_raster": metadata.raster_collection.skip_raster,
-                    "components": [],
+                    MIN_VALUE_ATTRIBUTE_KEY: metadata.raster_collection.min_value,
+                    MAX_VALUE_ATTRIBUTE_KEY: metadata.raster_collection.max_value,
+                    ALLOWABLE_MIN_ATTRIBUTE: metadata.raster_collection.allowable_min,
+                    ALLOWABLE_MAX_ATTRIBUTE: metadata.raster_collection.allowable_max,
+                    SKIP_RASTER_ATTRIBUTE: metadata.raster_collection.skip_raster,
+                    COMPONENTS_ATTRIBUTE: [
+                        {
+                            COMPONENT_ID_ATTRIBUTE: component.component_id,
+                            ABSOLUTE_VALUE_ATTRIBUTE: (
+                                component.value_info.absolute
+                                if component.value_info
+                                else 0.0
+                            ),
+                            SKIP_RASTER_ATTRIBUTE: component.skip_raster,
+                            ENABLED_ATTRIBUTE: component.enabled,
+                        }
+                        for component in metadata.raster_collection.components
+                    ],
                 }
-
-                for component in metadata.raster_collection.components:
-                    absolute_value = (
-                        component.value_info.absolute if component.value_info else 0.0
-                    )
-                    component_data = {
-                        "component_id": component.component_id,
-                        "absolute_value": absolute_value,
-                        "skip_raster": component.skip_raster,
-                        "enabled": component.enabled,
-                        "alias_name": component.alias_name,
-                    }
-                    collection_data["components"].append(component_data)
 
                 json_str = json.dumps(collection_data)
                 settings.setValue(metadata_id, json_str)
@@ -709,7 +746,7 @@ class ConstantRasterRegistry:
         """Load metadata from settings."""
 
         settings = QgsSettings()
-        settings.beginGroup("cplus/constant_rasters")
+        settings.beginGroup(CONSTANT_RASTERS_SETTINGS_KEY)
 
         for metadata_id in settings.childKeys():
             if metadata_id in self._metadata_store:
@@ -720,34 +757,39 @@ class ConstantRasterRegistry:
 
                     if metadata.raster_collection is not None and collection_data:
                         metadata.raster_collection.min_value = collection_data.get(
-                            "min_value", 0.0
+                            MIN_VALUE_ATTRIBUTE_KEY, 0.0
                         )
                         metadata.raster_collection.max_value = collection_data.get(
-                            "max_value", 1.0
+                            MAX_VALUE_ATTRIBUTE_KEY, 1.0
                         )
                         metadata.raster_collection.allowable_min = collection_data.get(
-                            "allowable_min", 0.0
+                            ALLOWABLE_MIN_ATTRIBUTE, 0.0
                         )
                         metadata.raster_collection.allowable_max = collection_data.get(
-                            "allowable_max", 1.0
+                            ALLOWABLE_MAX_ATTRIBUTE, 1.0
                         )
                         metadata.raster_collection.skip_raster = collection_data.get(
-                            "skip_raster", True
+                            SKIP_RASTER_ATTRIBUTE, False
                         )
 
                         metadata.raster_collection.components.clear()
 
-                        components_data = collection_data.get("components", [])
+                        components_data = collection_data.get(COMPONENTS_ATTRIBUTE, [])
                         for saved_component in components_data:
                             component = ConstantRasterComponent(
                                 value_info=ConstantRasterInfo(
-                                    absolute=saved_component.get("absolute_value", 0.0)
+                                    absolute=saved_component.get(
+                                        ABSOLUTE_VALUE_ATTRIBUTE, 0.0
+                                    )
                                 ),
                                 component=None,
-                                component_id=saved_component.get("component_id", ""),
-                                skip_raster=saved_component.get("skip_raster", True),
-                                enabled=saved_component.get("enabled", True),
-                                alias_name=saved_component.get("alias_name", ""),
+                                component_id=saved_component.get(
+                                    COMPONENT_ID_ATTRIBUTE, ""
+                                ),
+                                skip_raster=saved_component.get(
+                                    SKIP_RASTER_ATTRIBUTE, False
+                                ),
+                                enabled=saved_component.get(ENABLED_ATTRIBUTE, True),
                             )
                             metadata.raster_collection.components.append(component)
 

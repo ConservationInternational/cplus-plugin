@@ -3,15 +3,41 @@
 
 from __future__ import annotations
 import os
+import sys
 import dataclasses
 import typing
 from datetime import datetime
+from typing import NamedTuple
 from qgis.core import QgsRasterLayer
 
 from .base import LayerModelComponent, ModelComponentType
 from ..definitions.constants import (
     PATH_ATTRIBUTE,
+    COMPONENT_UUID_ATTRIBUTE,
+    COMPONENT_ID_ATTRIBUTE,
+    COMPONENT_TYPE_ATTRIBUTE,
+    SKIP_RASTER_ATTRIBUTE,
+    ENABLED_ATTRIBUTE,
+    VALUE_INFO_ATTRIBUTE,
+    NORMALIZED_ATTRIBUTE,
+    ABSOLUTE_ATTRIBUTE,
+    MIN_VALUE_ATTRIBUTE_KEY,
+    MAX_VALUE_ATTRIBUTE_KEY,
+    ALLOWABLE_MIN_ATTRIBUTE,
+    ALLOWABLE_MAX_ATTRIBUTE,
+    LAST_UPDATED_ATTRIBUTE,
+    COMPONENTS_ATTRIBUTE,
+    DISPLAY_NAME_ATTRIBUTE,
+    RASTER_COLLECTION_ATTRIBUTE,
+    INPUT_RANGE_ATTRIBUTE,
 )
+
+
+class InputRange(NamedTuple):
+    """Range for input values with named min/max fields for readability."""
+
+    min: float
+    max: float
 
 
 @dataclasses.dataclass
@@ -28,16 +54,16 @@ class ConstantRasterInfo:
     def to_dict(self) -> dict:
         """Serialize to dictionary."""
         return {
-            "normalized": self.normalized,
-            "absolute": self.absolute,
+            NORMALIZED_ATTRIBUTE: self.normalized,
+            ABSOLUTE_ATTRIBUTE: self.absolute,
         }
 
     @staticmethod
     def from_dict(d: dict) -> "ConstantRasterInfo":
         """Deserialize from dictionary."""
         return ConstantRasterInfo(
-            normalized=float(d.get("normalized", 0.0)),
-            absolute=float(d.get("absolute", 0.0)),
+            normalized=float(d.get(NORMALIZED_ATTRIBUTE, 0.0)),
+            absolute=float(d.get(ABSOLUTE_ATTRIBUTE, 0.0)),
         )
 
 
@@ -55,13 +81,13 @@ class ConstantRasterComponent:
     prefix: str = ""  # Prefix for naming
     base_name: str = ""  # Base component name
     suffix: str = ""  # Suffix for naming
-    alias_name: str = ""
     path: str = ""  # Note: Returns False for components (not a file path)
-    skip_raster: bool = True  # Skip raster creation for this component (default: True)
+    skip_raster: bool = (
+        False  # Skip raster creation for this component (default: False)
+    )
     enabled: bool = True  # Whether this component is enabled
     component_id: str = ""
     component_type: ModelComponentType = ModelComponentType.UNKNOWN
-    qgis_map_layer: typing.Optional[QgsRasterLayer] = None
 
     def identifier(self) -> str:
         """Generate unique identifier by concatenating naming components.
@@ -81,22 +107,23 @@ class ConstantRasterComponent:
 
         if parts:
             return "_".join(parts)
-        return self.alias_name or self.component_id
+        return self.component_id
 
     def to_dict(self) -> dict:
         """Serialize to dictionary."""
         return {
-            "value_info": self.value_info.to_dict() if self.value_info else {},
-            "component_uuid": str(self.component.uuid) if self.component else "",
+            VALUE_INFO_ATTRIBUTE: self.value_info.to_dict() if self.value_info else {},
+            COMPONENT_UUID_ATTRIBUTE: str(self.component.uuid)
+            if self.component
+            else "",
             "prefix": self.prefix,
             "base_name": self.base_name,
             "suffix": self.suffix,
-            "alias_name": self.alias_name,
             PATH_ATTRIBUTE: self.path,
-            "skip_raster": self.skip_raster,
-            "enabled": self.enabled,
-            "component_id": self.component_id,
-            "component_type": (
+            SKIP_RASTER_ATTRIBUTE: self.skip_raster,
+            ENABLED_ATTRIBUTE: self.enabled,
+            COMPONENT_ID_ATTRIBUTE: self.component_id,
+            COMPONENT_TYPE_ATTRIBUTE: (
                 self.component_type.value
                 if self.component_type
                 else ModelComponentType.UNKNOWN.value
@@ -114,18 +141,20 @@ class ConstantRasterComponent:
         :returns: ConstantRasterComponent instance
         """
         component = None
-        component_uuid = d.get("component_uuid")
+        component_uuid = d.get(COMPONENT_UUID_ATTRIBUTE)
         if component_uuid:
             component = component_lookup(component_uuid)
 
-        value_info_data = d.get("value_info", {})
+        value_info_data = d.get(VALUE_INFO_ATTRIBUTE, {})
         value_info = (
             ConstantRasterInfo.from_dict(value_info_data)
             if value_info_data
             else ConstantRasterInfo()
         )
 
-        component_type_str = d.get("component_type", ModelComponentType.UNKNOWN.value)
+        component_type_str = d.get(
+            COMPONENT_TYPE_ATTRIBUTE, ModelComponentType.UNKNOWN.value
+        )
         component_type = ModelComponentType.from_string(component_type_str)
 
         return ConstantRasterComponent(
@@ -134,11 +163,10 @@ class ConstantRasterComponent:
             prefix=d.get("prefix", ""),
             base_name=d.get("base_name", ""),
             suffix=d.get("suffix", ""),
-            alias_name=d.get("alias_name", ""),
             path=d.get(PATH_ATTRIBUTE, ""),
-            skip_raster=bool(d.get("skip_raster", True)),
-            enabled=bool(d.get("enabled", True)),
-            component_id=d.get("component_id", ""),
+            skip_raster=bool(d.get(SKIP_RASTER_ATTRIBUTE, False)),
+            enabled=bool(d.get(ENABLED_ATTRIBUTE, True)),
+            component_id=d.get(COMPONENT_ID_ATTRIBUTE, ""),
             component_type=component_type,
         )
 
@@ -150,13 +178,14 @@ class ConstantRasterComponent:
         if not self.path or not self.path.strip():
             return None
 
-        if self.qgis_map_layer:
-            return self.qgis_map_layer
-
         if os.path.exists(self.path):
-            layer = QgsRasterLayer(self.path, self.alias_name or self.component_id)
+            layer_name = (
+                self.component.name
+                if self.component and hasattr(self.component, "name")
+                else self.component_id
+            )
+            layer = QgsRasterLayer(self.path, layer_name)
             if layer.isValid():
-                self.qgis_map_layer = layer
                 return layer
 
         return None
@@ -178,9 +207,10 @@ class ConstantRasterCollection:
     components: typing.List[ConstantRasterComponent] = dataclasses.field(
         default_factory=list
     )
-    skip_raster: bool = True
-    allowable_max: float = 1.0
+    skip_raster: bool = False
+    allowable_max: float = sys.float_info.max
     allowable_min: float = 0.0
+    last_updated: str = ""  # ISO format timestamp of last modification
 
     def normalize(self) -> None:
         """Normalize the collection by updating min/max values based on components.
@@ -204,11 +234,15 @@ class ConstantRasterCollection:
         self.allowable_max = max(values)
 
     def enabled_components(self) -> typing.List[ConstantRasterComponent]:
-        """Get list of enabled components (where skip_raster is False).
+        """Get list of enabled components.
+
+        Returns components where enabled is True. Note that skip_raster is
+        independent - an enabled component may still skip raster creation
+        and only generate metadata.
 
         :returns: List of enabled ConstantRasterComponent objects
         """
-        return [c for c in self.components if not c.skip_raster]
+        return [c for c in self.components if c.enabled]
 
     def validate(
         self, metadata: typing.Optional["ConstantRasterMetadata"] = None
@@ -230,11 +264,13 @@ class ConstantRasterCollection:
             )
 
         if metadata is not None:
-            input_min, input_max = metadata.input_range
-            if self.min_value < input_min or self.max_value > input_max:
+            if (
+                self.min_value < metadata.input_range.min
+                or self.max_value > metadata.input_range.max
+            ):
                 raise ValueError(
-                    f"Output range ({self.min_value}, {self.max_value}) must be within "
-                    f"input range ({input_min}, {input_max}) defined in metadata"
+                    f"Normalization range ({self.min_value}, {self.max_value}) must be within "
+                    f"input range ({metadata.input_range.min}, {metadata.input_range.max}) defined in metadata"
                 )
 
         return True
@@ -338,23 +374,40 @@ class ConstantRasterMetadata:
     component_type: typing.Optional[
         "ModelComponentType"
     ] = None  # Type this metadata applies to
-    input_range: typing.Tuple[float, float] = (
-        0.0,
-        100.0,
+    input_range: InputRange = InputRange(
+        min=0.0, max=100.0
     )  # Min and max for input values (e.g., 0-100 years)
 
     def to_dict(self) -> dict:
-        """Serialize to dictionary (excluding deserializer)."""
+        """Serialize to dictionary."""
+        # Serialize raster_collection inline
+        collection_dict = {}
+        if self.raster_collection:
+            collection_dict = {
+                MIN_VALUE_ATTRIBUTE_KEY: self.raster_collection.min_value,
+                MAX_VALUE_ATTRIBUTE_KEY: self.raster_collection.max_value,
+                COMPONENT_TYPE_ATTRIBUTE: (
+                    self.raster_collection.component_type.value
+                    if self.raster_collection.component_type
+                    else None
+                ),
+                ALLOWABLE_MIN_ATTRIBUTE: self.raster_collection.allowable_min,
+                ALLOWABLE_MAX_ATTRIBUTE: self.raster_collection.allowable_max,
+                SKIP_RASTER_ATTRIBUTE: self.raster_collection.skip_raster,
+                LAST_UPDATED_ATTRIBUTE: self.raster_collection.last_updated,
+                COMPONENTS_ATTRIBUTE: [
+                    c.to_dict() for c in self.raster_collection.components
+                ],
+            }
+
         return {
             "id": self.id,
-            "display_name": self.display_name,
-            "raster_collection": (
-                self.raster_collection.to_dict() if self.raster_collection else {}
-            ),
-            "component_type": (
+            DISPLAY_NAME_ATTRIBUTE: self.display_name,
+            RASTER_COLLECTION_ATTRIBUTE: collection_dict,
+            COMPONENT_TYPE_ATTRIBUTE: (
                 self.component_type.value if self.component_type else None
             ),
-            "input_range": list(self.input_range),
+            INPUT_RANGE_ATTRIBUTE: list(self.input_range),
         }
 
 
@@ -390,19 +443,9 @@ class ConstantRasterFileMetadata:
             "",
             f"Created: {timestamp}",
             f"Raster Path: {self.raster_path}",
-            "",
-            "Component Information:",
-            f"  ID: {self.component_id}",
-            f"  Name: {self.component_name}",
-            f"  Type: {self.component_type}",
-            "",
-            "Values:",
-            f"  Input Value: {self.input_value}",
-            f"  Normalized Value: {self.normalized_value}",
-            f"  Output Range: {self.output_min} - {self.output_max}",
-            "",
-            "Metadata:",
-            f"  Type ID: {self.metadata_id}",
+            f"Component Name: {self.component_name}",
+            f"Normalized Value: {self.normalized_value}",
+            f"Normalization Range: {self.output_min} - {self.output_max}",
         ]
 
         return "\n".join(lines)
