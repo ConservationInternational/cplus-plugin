@@ -33,6 +33,7 @@ from cplus_plugin.models.helpers import (
     constant_raster_collection_to_dict,
     constant_raster_collection_from_dict,
 )
+from cplus_plugin.gui.constant_raster_widgets import YearsExperienceWidget
 
 from model_data_for_testing import (
     get_constant_raster_info,
@@ -224,6 +225,61 @@ class TestConstantRasterCollection(TestCase):
         with self.assertRaises(ValueError):
             self.collection.validate(metadata)
 
+    def test_normalize_updates_range_from_components(self):
+        """Test normalize() updates min/max from component absolute values."""
+        # Add components with different absolute values
+        component1 = get_constant_raster_component()
+        component1.value_info.absolute = 20.0
+        component1.component_id = "comp1"
+        component1.enabled = True
+
+        component2 = get_constant_raster_component()
+        component2.value_info.absolute = 24.0
+        component2.component_id = "comp2"
+        component2.enabled = True
+
+        component3 = get_constant_raster_component()
+        component3.value_info.absolute = 50.0
+        component3.component_id = "comp3"
+        component3.enabled = True
+
+        self.collection.components = [component1, component2, component3]
+
+        # Call normalize
+        self.collection.normalize()
+
+        # Check that min/max are updated
+        self.assertEqual(self.collection.min_value, 20.0)
+        self.assertEqual(self.collection.max_value, 50.0)
+        self.assertEqual(self.collection.allowable_min, 20.0)
+        self.assertEqual(self.collection.allowable_max, 50.0)
+
+    def test_normalize_ignores_disabled_components(self):
+        """Test normalize() only considers enabled components."""
+        component1 = get_constant_raster_component()
+        component1.value_info.absolute = 5.0
+        component1.component_id = "comp1"
+        component1.enabled = False  # Disabled
+
+        component2 = get_constant_raster_component()
+        component2.value_info.absolute = 30.0
+        component2.component_id = "comp2"
+        component2.enabled = True
+
+        component3 = get_constant_raster_component()
+        component3.value_info.absolute = 40.0
+        component3.component_id = "comp3"
+        component3.enabled = True
+
+        self.collection.components = [component1, component2, component3]
+
+        # Call normalize
+        self.collection.normalize()
+
+        # Should use 30-40 range, ignoring the disabled component with value 5
+        self.assertEqual(self.collection.min_value, 30.0)
+        self.assertEqual(self.collection.max_value, 40.0)
+
     def test_len_and_iter(self):
         """Test collection length and iteration."""
         self.assertEqual(len(self.collection), 1)
@@ -310,3 +366,137 @@ class TestConstantRasterHelpers(TestCase):
         """Test deserialization of empty dict."""
         result = constant_raster_collection_from_dict({}, [])
         self.assertIsNone(result)
+
+
+class TestYearsExperienceWidget(TestCase):
+    """Tests for YearsExperienceWidget."""
+
+    def setUp(self):
+        self.widget = YearsExperienceWidget()
+
+    def test_widget_creation(self):
+        """Test widget can be created."""
+        self.assertIsNotNone(self.widget)
+        self.assertTrue(hasattr(self.widget, "sb_experience"))
+
+    def test_reset_does_not_trigger_signals(self):
+        """Test reset() blocks signals to prevent unwanted updates."""
+        # Track signal emissions
+        signal_count = 0
+
+        def on_signal(component):
+            nonlocal signal_count
+            signal_count += 1
+
+        self.widget.update_requested.connect(on_signal)
+
+        # Set up a component with a value
+        component = get_constant_raster_component()
+        component.value_info.absolute = 50.0
+        self.widget.raster_component = component
+
+        # Reset should not trigger signals
+        self.widget.reset()
+        self.assertEqual(signal_count, 0)
+        self.assertEqual(self.widget.sb_experience.value(), 0.0)
+
+    def test_load_preserves_component_value(self):
+        """Test load() correctly loads component values without triggering signals."""
+        # Track signal emissions
+        signal_count = 0
+
+        def on_signal(component):
+            nonlocal signal_count
+            signal_count += 1
+
+        self.widget.update_requested.connect(on_signal)
+
+        # Create component with value
+        component = get_constant_raster_component()
+        component.value_info.absolute = 42.5
+        self.widget.raster_component = component
+
+        # Load should not trigger signals
+        self.widget.load(component)
+        self.assertEqual(signal_count, 0)
+        self.assertEqual(self.widget.sb_experience.value(), 42.5)
+
+    def test_reset_then_load_preserves_value(self):
+        """Test that reset() followed by load() preserves the component value."""
+        # Create component with value
+        component = get_constant_raster_component()
+        component.value_info.absolute = 35.0
+        self.widget.raster_component = component
+
+        # Reset and load
+        self.widget.reset()
+        self.widget.load(component)
+
+        # Value should be preserved
+        self.assertEqual(self.widget.sb_experience.value(), 35.0)
+        self.assertEqual(component.value_info.absolute, 35.0)
+
+    def test_switching_between_components_preserves_values(self):
+        """Test switching between components preserves their values."""
+        # Create two components with different values
+        component1 = get_constant_raster_component()
+        component1.value_info.absolute = 20.0
+        component1.component_id = "comp1"
+
+        component2 = get_constant_raster_component()
+        component2.value_info.absolute = 50.0
+        component2.component_id = "comp2"
+
+        # Load first component
+        self.widget.raster_component = component1
+        self.widget.reset()
+        self.widget.load(component1)
+        self.assertEqual(self.widget.sb_experience.value(), 20.0)
+
+        # Switch to second component
+        self.widget.raster_component = component2
+        self.widget.reset()
+        self.widget.load(component2)
+        self.assertEqual(self.widget.sb_experience.value(), 50.0)
+
+        # Switch back to first component
+        self.widget.raster_component = component1
+        self.widget.reset()
+        self.widget.load(component1)
+        self.assertEqual(self.widget.sb_experience.value(), 20.0)
+
+    def test_value_change_updates_component(self):
+        """Test that changing widget value updates the component."""
+        component = get_constant_raster_component()
+        component.value_info.absolute = 0.0
+        self.widget.raster_component = component
+
+        # Simulate user changing value
+        self.widget.sb_experience.setValue(75.0)
+
+        # Component should be updated
+        self.assertEqual(component.value_info.absolute, 75.0)
+
+    def test_create_raster_component(self):
+        """Test create_raster_component creates valid component."""
+        activity = get_valid_ncs_pathway()
+        component = YearsExperienceWidget.create_raster_component(activity)
+
+        self.assertIsNotNone(component)
+        self.assertIsNotNone(component.value_info)
+        self.assertEqual(component.value_info.absolute, 0.0)
+        self.assertEqual(component.component, activity)
+        self.assertFalse(component.skip_raster)
+
+    def test_create_metadata(self):
+        """Test create_metadata creates valid metadata."""
+        metadata = YearsExperienceWidget.create_metadata(
+            "test_years_exp", ModelComponentType.ACTIVITY
+        )
+
+        self.assertIsNotNone(metadata)
+        self.assertEqual(metadata.id, "test_years_exp")
+        self.assertEqual(metadata.display_name, "Years of Experience")
+        self.assertEqual(metadata.component_type, ModelComponentType.ACTIVITY)
+        self.assertEqual(metadata.input_range.min, 0.0)
+        self.assertEqual(metadata.input_range.max, 100.0)
