@@ -44,6 +44,7 @@ from .utils import (
     FileUtils,
     CustomJsonEncoder,
     todict,
+    create_connectivity_raster,
 )
 
 
@@ -2735,6 +2736,68 @@ class ScenarioAnalysisTask(QgsTask):
             return False
 
         return True
+
+    def create_activity_connectivity_layer(self, activity: Activity) -> str | None:
+        """Create an activity connectivity layer for investability analysis
+
+        :param activity: Activity
+        :type activity: Activity
+
+        :returns: The path to the connectivity layer or None if the process failed
+        :rtype: str | None
+        """
+        if not activity.path:
+            self.log_message(
+                f"Problem when creating the connectivity layer, "
+                f"there is no map layer for the activity {activity.name}"
+            )
+            return None
+
+        if not os.path.exists(activity.path):
+            self.log_message(
+                f"Problem when creating the connectivity layer, "
+                f"the map layer for the activity {activity.name} does not exist"
+            )
+            return None
+
+        self.set_status_message(
+            tr(f"Creating connectivity layer for the activity: {activity.name}")
+        )
+
+        output_directory = os.path.join(
+            self.scenario_directory, "investable_activities"
+        )
+        FileUtils.create_new_dir(output_directory)
+
+        output_path = os.path.join(
+            f"{output_directory}",
+            f"{Path(activity.path).stem}_connectivity_{str(uuid.uuid4())[:4]}.tif",
+        )
+
+        try:
+            if self.processing_cancelled:
+                return None
+
+            ok, logs = create_connectivity_raster(activity.path, output_path)
+
+            if ok and os.path.exists(output_path):
+                return output_path
+
+            self.log_message(
+                f" Error creating the connectivity layer for activity {activity.name}, "
+            )
+            for log in logs:
+                self.log_message(tr(log))
+
+            return None
+
+        except Exception as e:
+            self.log_message(
+                f"Problem creating connectivity layer for activity, {e} \n"
+            )
+            self.log_message(traceback.format_exc())
+            self.cancel_task(e)
+        return None
 
     def run_highest_position_analysis(self, temporary_output=False):
         """Runs the highest position analysis which is last step
