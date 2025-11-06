@@ -160,12 +160,12 @@ class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
     def reset(self):
         """Interface implementation."""
         if hasattr(self, "sb_experience"):
+            self.sb_experience.blockSignals(True)
             self.sb_experience.setValue(0.0)
+            self.sb_experience.blockSignals(False)
 
     def load(self, raster_component: ConstantRasterComponent):
         """Interface implementation."""
-        self._raster_component = raster_component
-
         # Block signals temporarily to prevent notify_update from
         # being called to save the value being loaded.
         if hasattr(self, "sb_experience"):
@@ -178,8 +178,8 @@ class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
 
     def on_experience_value_changed(self, value: float):
         """Slot raised when spin box value changes."""
-        if self._raster_component and self._raster_component.value_info:
-            self._raster_component.value_info.absolute = value
+        if self._constant_raster_component and self._constant_raster_component.value_info:
+            self._constant_raster_component.value_info.absolute = value
         self.notify_update()
 
     @classmethod

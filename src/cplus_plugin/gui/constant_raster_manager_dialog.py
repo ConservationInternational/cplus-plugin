@@ -173,13 +173,14 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         # Normalization range (collapsible)
         # This allows users to remap the normalized output to any range they want
-        norm_group = QtWidgets.QGroupBox("Normalization Range")
-        norm_group.setCheckable(True)
-        norm_group.setChecked(True)
-        norm_group.setToolTip(
-            "Adjust the normalization range for normalized values. Can be any range (e.g., 0-1, 0-100, etc.)"
+        self.grp_normalization_range = QtWidgets.QGroupBox("Normalization Range")
+        self.grp_normalization_range.setCheckable(True)
+        self.grp_normalization_range.setChecked(True)
+        self.grp_normalization_range.setToolTip(
+            "When checked: manually set min/max values.\n"
+            "When unchecked: automatically calculate min/max from component values."
         )
-        norm_layout = QtWidgets.QFormLayout(norm_group)
+        norm_layout = QtWidgets.QFormLayout(self.grp_normalization_range)
         self.spin_min_value = QtWidgets.QDoubleSpinBox()
         self.spin_min_value.setRange(0.0, sys.float_info.max)
         self.spin_min_value.setDecimals(3)
@@ -194,7 +195,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         self.spin_max_value.setToolTip("Maximum output value for the raster")
         norm_layout.addRow("Minimum", self.spin_min_value)
         norm_layout.addRow("Maximum", self.spin_max_value)
-        right_layout.addWidget(norm_group)
+        right_layout.addWidget(self.grp_normalization_range)
 
         splitter.addWidget(right_widget)
 
@@ -339,6 +340,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         self.spin_min_value.valueChanged.connect(self.on_normalization_range_changed)
         self.spin_max_value.valueChanged.connect(self.on_normalization_range_changed)
 
+        # Connect normalization group box toggle to auto-calculate min/max
+        self.grp_normalization_range.toggled.connect(self.on_normalization_toggled)
+
         # Restore UI state from saved components
         self._restore_ui_state()
 
@@ -470,6 +474,46 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
             self.constant_raster_registry.save()
 
+    def on_normalization_toggled(self, checked: bool):
+        """Slot raised when normalization range group box is toggled.
+
+        When unchecked, automatically calculate min/max from component values.
+        When checked, allow manual editing.
+
+        :param checked: True if group box is checked (manual mode)
+        """
+        # Enable/disable spinboxes based on checked state
+        self.spin_min_value.setEnabled(checked)
+        self.spin_max_value.setEnabled(checked)
+
+        if not checked:
+            # Auto-calculate mode - update from collection
+            self._auto_calculate_normalization_range()
+
+    def _auto_calculate_normalization_range(self):
+        """Auto-calculate normalization range from component absolute values."""
+        collection = self.current_constant_raster_collection()
+        if collection is None:
+            return
+
+        # Call normalize to calculate min/max from component values
+        collection.normalize()
+
+        # Update UI to show calculated values
+        self.spin_min_value.blockSignals(True)
+        self.spin_max_value.blockSignals(True)
+        self.spin_min_value.setValue(collection.min_value)
+        self.spin_max_value.setValue(collection.max_value)
+        self.spin_min_value.blockSignals(False)
+        self.spin_max_value.blockSignals(False)
+
+        # Update timestamp
+        collection.last_updated = datetime.now().isoformat()
+        self._update_last_updated_display(collection)
+
+        # Save to registry
+        self.constant_raster_registry.save()
+
     def current_constant_raster_collection(
         self,
     ) -> typing.Optional[ConstantRasterCollection]:
@@ -581,8 +625,12 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             raster_collection.last_updated = datetime.now().isoformat()
             self._update_last_updated_display(raster_collection)
 
-            # Save to registry
-            self.constant_raster_registry.save()
+            # Auto-calculate normalization range if unchecked
+            if not self.grp_normalization_range.isChecked():
+                self._auto_calculate_normalization_range()
+            else:
+                # Save to registry (auto-calculate saves internally)
+                self.constant_raster_registry.save()
 
     def on_update_raster_component(self, raster_component: ConstantRasterComponent):
         """Slot raised when the component has been updated through the configuration widget."""
@@ -602,8 +650,12 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             raster_collection.last_updated = datetime.now().isoformat()
             self._update_last_updated_display(raster_collection)
 
-        # Save the registry to settings
-        self.constant_raster_registry.save()
+            # Auto-calculate normalization range if unchecked
+            if not self.grp_normalization_range.isChecked():
+                self._auto_calculate_normalization_range()
+            else:
+                # Save the registry to settings (auto-calculate saves internally)
+                self.constant_raster_registry.save()
 
     def _ensure_checked_components_in_collection(self):
         """Ensure all checked items in the list have components in the collection.
@@ -696,10 +748,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             raster_collection.last_updated = datetime.now().isoformat()
             self._update_last_updated_display(raster_collection)
 
-        # NOTE: We don't call normalize() here anymore because:
-        # 1. The user specifies min/max values explicitly in the UI
-        # 2. Auto-normalizing would override user values
-        # 3. With only one component, min==max causes incorrect 0.5 fallback
+            # Auto-calculate normalization range if unchecked
+            if not self.grp_normalization_range.isChecked():
+                self._auto_calculate_normalization_range()
 
     def _get_pixel_size(self, target_crs: QgsCoordinateReferenceSystem = None) -> float:
         """Get pixel size using cascading fallback strategy.
