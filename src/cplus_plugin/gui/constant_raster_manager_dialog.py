@@ -515,7 +515,10 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             self._auto_calculate_normalization_range()
         else:
             # Manual mode - restore previous manual values if available
-            if self._manual_min_value is not None and self._manual_max_value is not None:
+            if (
+                self._manual_min_value is not None
+                and self._manual_max_value is not None
+            ):
                 # Block signals to avoid triggering save multiple times
                 self.spin_min_value.blockSignals(True)
                 self.spin_max_value.blockSignals(True)
