@@ -69,6 +69,10 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Current raster collection being viewed/edited
         self.current_raster_collection: typing.Optional[ConstantRasterCollection] = None
 
+        # Store manual normalization values when switching to auto mode
+        self._manual_min_value: typing.Optional[float] = None
+        self._manual_max_value: typing.Optional[float] = None
+
         # Create UI
         self._create_ui()
 
@@ -472,19 +476,17 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             min_val = self.spin_min_value.value()
             max_val = self.spin_max_value.value()
 
+            # Basic validation: min must not be greater than max
+            # Allow equal values (e.g., during initialization or for constant output)
+            if min_val > max_val:
+                self.message_bar.pushWarning(
+                    self.tr("Invalid Range"),
+                    self.tr("Minimum value must not be greater than maximum value."),
+                )
+                return
+
             collection.min_value = min_val
             collection.max_value = max_val
-
-            metadata_id = self.cbo_raster_type.itemData(
-                self.cbo_raster_type.currentIndex()
-            )
-            metadata = self.constant_raster_registry.metadata_by_id(metadata_id)
-
-            try:
-                collection.validate(metadata)
-            except ValueError as e:
-                self.message_bar.pushWarning(self.tr("Invalid Range"), str(e))
-                return
 
             # Update timestamp
             collection.last_updated = datetime.now().isoformat()
@@ -496,7 +498,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         """Slot raised when normalization range group box is toggled.
 
         When unchecked, automatically calculate min/max from component values.
-        When checked, allow manual editing.
+        When checked, allow manual editing and restore previous manual values.
 
         :param checked: True if group box is checked (manual mode)
         """
@@ -505,8 +507,37 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         self.spin_max_value.setEnabled(checked)
 
         if not checked:
+            # Save current manual values before switching to auto mode
+            self._manual_min_value = self.spin_min_value.value()
+            self._manual_max_value = self.spin_max_value.value()
+
             # Auto-calculate mode - update from collection
             self._auto_calculate_normalization_range()
+        else:
+            # Manual mode - restore previous manual values if available
+            if self._manual_min_value is not None and self._manual_max_value is not None:
+                # Block signals to avoid triggering save multiple times
+                self.spin_min_value.blockSignals(True)
+                self.spin_max_value.blockSignals(True)
+
+                self.spin_min_value.setValue(self._manual_min_value)
+                self.spin_max_value.setValue(self._manual_max_value)
+
+                self.spin_min_value.blockSignals(False)
+                self.spin_max_value.blockSignals(False)
+
+            # Explicitly set the collection's min/max from spinboxes
+            collection = self.current_constant_raster_collection()
+            if collection is not None:
+                collection.min_value = self.spin_min_value.value()
+                collection.max_value = self.spin_max_value.value()
+
+                # Update timestamp
+                collection.last_updated = datetime.now().isoformat()
+                self._update_last_updated_display(collection)
+
+                # Save to registry
+                self.constant_raster_registry.save()
 
     def _auto_calculate_normalization_range(self):
         """Auto-calculate normalization range from component absolute values."""
