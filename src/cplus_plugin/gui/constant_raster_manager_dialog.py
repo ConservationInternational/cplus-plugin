@@ -101,9 +101,11 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         # Information text
         info_text = QtWidgets.QLabel(
-            "Define constant raster parameters for activities. "
-            "Configure input values (e.g., years of experience), "
-            "specify the output normalization range, and create rasters clipped to your Area of Interest."
+            self.tr(
+                "Define constant raster parameters for activities. "
+                "Configure input values (e.g., years of experience), "
+                "specify the output normalization range, and create rasters clipped to your Area of Interest."
+            )
         )
         info_text.setWordWrap(True)
         info_layout.addWidget(info_text)
@@ -119,7 +121,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         raster_type_widget = QtWidgets.QWidget()
         raster_type_layout = QtWidgets.QHBoxLayout(raster_type_widget)
         raster_type_layout.setContentsMargins(0, 0, 0, 0)
-        self.lbl_raster_type = QtWidgets.QLabel("Constant raster type:")
+        self.lbl_raster_type = QtWidgets.QLabel(self.tr("Constant raster type:"))
         self.cbo_raster_type = QtWidgets.QComboBox()
         self.cbo_raster_type.setMinimumWidth(200)
         raster_type_layout.addWidget(self.lbl_raster_type)
@@ -138,7 +140,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         # Left column - Component list
         self._left_group = QtWidgets.QGroupBox()
-        self._left_group.setTitle("Activities")
+        self._left_group.setTitle(self.tr("Activities"))
         left_layout = QtWidgets.QVBoxLayout(self._left_group)
 
         self.lst_activities = QtWidgets.QListView()
@@ -155,7 +157,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         self.sw_component_container = QtWidgets.QStackedWidget()
 
         # Add a blank widget as default
-        blank_widget = QtWidgets.QLabel("Select a component to configure")
+        blank_widget = QtWidgets.QLabel(self.tr("Select a component to configure"))
         blank_widget.setAlignment(QtCore.Qt.AlignCenter)
         blank_widget.setStyleSheet("color: gray; padding: 20px;")
         self.sw_component_container.addWidget(blank_widget)
@@ -173,12 +175,16 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         # Normalization range (collapsible)
         # This allows users to remap the normalized output to any range they want
-        self.grp_normalization_range = QtWidgets.QGroupBox("Normalization Range")
+        self.grp_normalization_range = QtWidgets.QGroupBox(
+            self.tr("Normalization Range")
+        )
         self.grp_normalization_range.setCheckable(True)
         self.grp_normalization_range.setChecked(True)
         self.grp_normalization_range.setToolTip(
-            "When checked: manually set min/max values.\n"
-            "When unchecked: automatically calculate min/max from component values."
+            self.tr(
+                "When checked: manually set min/max values.\n"
+                "When unchecked: automatically calculate min/max from component values."
+            )
         )
         norm_layout = QtWidgets.QFormLayout(self.grp_normalization_range)
         self.spin_min_value = QtWidgets.QDoubleSpinBox()
@@ -186,15 +192,15 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         self.spin_min_value.setDecimals(3)
         self.spin_min_value.setSingleStep(0.1)
         self.spin_min_value.setValue(0.0)
-        self.spin_min_value.setToolTip("Minimum output value for the raster")
+        self.spin_min_value.setToolTip(self.tr("Minimum output value for the raster"))
         self.spin_max_value = QtWidgets.QDoubleSpinBox()
         self.spin_max_value.setRange(0.0, sys.float_info.max)
         self.spin_max_value.setDecimals(3)
         self.spin_max_value.setSingleStep(0.1)
         self.spin_max_value.setValue(0.0)
-        self.spin_max_value.setToolTip("Maximum output value for the raster")
-        norm_layout.addRow("Minimum", self.spin_min_value)
-        norm_layout.addRow("Maximum", self.spin_max_value)
+        self.spin_max_value.setToolTip(self.tr("Maximum output value for the raster"))
+        norm_layout.addRow(self.tr("Minimum"), self.spin_min_value)
+        norm_layout.addRow(self.tr("Maximum"), self.spin_max_value)
         right_layout.addWidget(self.grp_normalization_range)
 
         splitter.addWidget(right_widget)
@@ -210,23 +216,25 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         # Create tool button with dropdown menu for raster creation
         self.btn_create_current = QtWidgets.QToolButton()
-        self.btn_create_current.setText("Create Rasters")
+        self.btn_create_current.setText(self.tr("Create Rasters"))
         self.btn_create_current.setPopupMode(QtWidgets.QToolButton.MenuButtonPopup)
         self.btn_create_current.setToolTip(
-            "Create constant rasters for current view or all types"
+            self.tr("Create constant rasters for current view or all types")
         )
 
         # Create menu for the button
         create_menu = QtWidgets.QMenu(self)
 
         # Add menu actions
-        self.action_create_current = create_menu.addAction("Create - Current View")
+        self.action_create_current = create_menu.addAction(
+            self.tr("Create - Current View")
+        )
         self.action_create_current.triggered.connect(
             lambda: self.update_current_widget(current_view=True)
         )
 
         self.action_create_all = create_menu.addAction(
-            "Create - All Constant Raster Types"
+            self.tr("Create - All Constant Raster Types")
         )
         self.action_create_all.triggered.connect(
             lambda: self.update_current_widget(current_view=False)
@@ -238,7 +246,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Set default action (triggered when button clicked directly)
         self.btn_create_current.setDefaultAction(self.action_create_current)
 
-        self.btn_close = QtWidgets.QPushButton("Close")
+        self.btn_close = QtWidgets.QPushButton(self.tr("Close"))
         button_layout.addWidget(self.btn_create_current)
         button_layout.addStretch()
         button_layout.addWidget(self.btn_close)
@@ -290,8 +298,10 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             self.sw_component_container.setCurrentIndex(0)
             # Show error message to user
             self.message_bar.pushWarning(
-                "Configuration Error",
-                f"No widget defined for metadata ID '{metadata_id}'. Please contact the plugin developer.",
+                self.tr("Configuration Error"),
+                self.tr(
+                    "No widget defined for metadata ID '{metadata_id}'. Please contact the plugin developer."
+                ).format(metadata_id=metadata_id),
             )
             return
 
@@ -420,11 +430,15 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         if collection.skip_raster:
             self.action_create_current.setEnabled(True)  # Always enabled
             self.action_create_current.setToolTip(
-                "Current view disabled - this constant raster type does not require rasters"
+                self.tr(
+                    "Current view disabled - this constant raster type does not require rasters"
+                )
             )
         else:
             self.action_create_current.setEnabled(True)
-            self.action_create_current.setToolTip("Create rasters for the current view")
+            self.action_create_current.setToolTip(
+                self.tr("Create rasters for the current view")
+            )
 
         # "All types" action is always enabled
         self.action_create_all.setEnabled(True)
@@ -442,10 +456,14 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         try:
             timestamp = datetime.fromisoformat(collection.last_updated)
             formatted_time = timestamp.strftime("%Y-%m-%d %H:%M:%S")
-            self.lbl_last_updated.setText(f"Last updated: {formatted_time}")
+            self.lbl_last_updated.setText(
+                self.tr("Last updated: {time}").format(time=formatted_time)
+            )
         except (ValueError, AttributeError):
             # If parsing fails, show the raw timestamp
-            self.lbl_last_updated.setText(f"Last updated: {collection.last_updated}")
+            self.lbl_last_updated.setText(
+                self.tr("Last updated: {time}").format(time=collection.last_updated)
+            )
 
     def on_normalization_range_changed(self, value: float):
         """Slot raised when normalization range spinbox values change."""
@@ -465,7 +483,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             try:
                 collection.validate(metadata)
             except ValueError as e:
-                self.message_bar.pushWarning("Invalid Range", str(e))
+                self.message_bar.pushWarning(self.tr("Invalid Range"), str(e))
                 return
 
             # Update timestamp
@@ -729,19 +747,32 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         if items_created or items_updated:
             msg_parts = []
             if items_created:
-                msg_parts.append(f"Created {len(items_created)} component(s)")
+                msg_parts.append(
+                    self.tr("Created {count} component(s)").format(
+                        count=len(items_created)
+                    )
+                )
             if items_updated:
-                msg_parts.append(f"Updated {len(items_updated)} component(s)")
+                msg_parts.append(
+                    self.tr("Updated {count} component(s)").format(
+                        count=len(items_updated)
+                    )
+                )
             msg = " and ".join(msg_parts)
 
             if current_value is not None:
                 self.message_bar.pushInfo(
-                    "Components Configured", f"{msg} with value: {current_value}"
+                    self.tr("Components Configured"),
+                    self.tr("{msg} with value: {value}").format(
+                        msg=msg, value=current_value
+                    ),
                 )
             else:
                 self.message_bar.pushWarning(
-                    "Using Default Values",
-                    f"{msg} with default value (0.0). Enter a value in the widget first.",
+                    self.tr("Using Default Values"),
+                    self.tr(
+                        "{msg} with default value (0.0). Enter a value in the widget first."
+                    ).format(msg=msg),
                 )
 
             # Update timestamp when components are created or updated
@@ -852,9 +883,11 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         # No pixel size available
         raise ValueError(
-            "Cannot determine pixel size. Please configure either:\n"
-            "1. NCS pathways in the plugin, or\n"
-            "2. Snap layer in Settings > Advanced"
+            self.tr(
+                "Cannot determine pixel size. Please configure either:\n"
+                "1. NCS pathways in the plugin, or\n"
+                "2. Snap layer in Settings > Advanced"
+            )
         )
 
     def _create_context(self) -> ConstantRasterContext:
@@ -922,9 +955,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         :param count: Number of rasters created
         """
         if success:
-            self.message_bar.pushSuccess("Success", message)
+            self.message_bar.pushSuccess(self.tr("Success"), message)
         else:
-            self.message_bar.pushWarning("Warning", message)
+            self.message_bar.pushWarning(self.tr("Warning"), message)
 
     def update_current_widget(self, current_view: bool = True):
         """Update current widget - creates constant rasters (if skip_raster is False) then saves the current collection in settings.
@@ -938,7 +971,8 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         current_raster_collection = self.current_constant_raster_collection()
         if current_raster_collection is None:
             self.message_bar.pushWarning(
-                "No Collection", "Please select a constant raster type first."
+                self.tr("No Collection"),
+                self.tr("Please select a constant raster type first."),
             )
             return
 
@@ -965,8 +999,8 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             enabled_components = current_raster_collection.enabled_components()
             if not enabled_components:
                 self.message_bar.pushWarning(
-                    "No Enabled Components",
-                    "Please check at least one activity and set its value.",
+                    self.tr("No Enabled Components"),
+                    self.tr("Please check at least one activity and set its value."),
                 )
                 return
         else:
@@ -981,8 +1015,10 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
             if not has_any_enabled:
                 self.message_bar.pushWarning(
-                    "No Enabled Components",
-                    "No enabled components found in any constant raster collection. Please check at least one activity and set its value.",
+                    self.tr("No Enabled Components"),
+                    self.tr(
+                        "No enabled components found in any constant raster collection. Please check at least one activity and set its value."
+                    ),
                 )
                 return
 
@@ -990,7 +1026,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         try:
             context = self._create_context()
         except ValueError as e:
-            self.message_bar.pushWarning("Cannot Create Context", str(e))
+            self.message_bar.pushWarning(self.tr("Cannot Create Context"), str(e))
             return
 
         # Get the metadata to extract input_range
