@@ -1975,11 +1975,17 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
                 activity_row_cells.append(area_cell)
 
+                # Carbon impact total
+                total_carbon_impact = 0.0
+
                 # Carbon impact (naturebase)
                 progress = base_overall_progress + (1 * progress_increment)
                 tr_msg = f"{tr('Calculating')} {activity.name} naturebase carbon impact"
                 if self._process_check_cancelled_or_set_progress(progress, tr_msg):
                     return self._get_failed_result()
+
+                if activity_naturebase_carbon != -1.0:
+                    total_carbon_impact += activity_naturebase_carbon
 
                 carbon_impact_cell = QgsTableCell(
                     self.format_number(activity_naturebase_carbon)
@@ -2005,6 +2011,9 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 )
                 activity_row_cells.append(carbon_impact_protect_cell)
 
+                if carbon_impact_protect != -1.0:
+                    total_carbon_impact += carbon_impact_protect
+
                 # Carbon impact (manage)
                 progress = base_overall_progress + (3 * progress_increment)
                 tr_msg = f"{tr('Calculating')} {activity.name} manage carbon impact"
@@ -2018,6 +2027,16 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 )
                 carbon_impact_manage_cell.setHorizontalAlignment(QtCore.Qt.AlignHCenter)
                 activity_row_cells.append(carbon_impact_manage_cell)
+
+                if carbon_impact_manage != -1.0:
+                    total_carbon_impact += carbon_impact_manage
+
+                # Total carbon impact
+                total_carbon_impact_cell = QgsTableCell(
+                    self.format_number(total_carbon_impact, True)
+                )
+                total_carbon_impact_cell.setHorizontalAlignment(QtCore.Qt.AlignHCenter)
+                activity_row_cells.append(total_carbon_impact_cell)
 
             rows_data.append(activity_row_cells)
 
