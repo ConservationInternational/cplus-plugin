@@ -1576,38 +1576,39 @@ class SettingsManager(QtCore.QObject):
             log(a)
             settings.remove(self.ONLINE_TASK_BASE)
 
+    def save_constant_raster_collection(
+        self, metadata_id: str, collection_data: dict
+    ) -> None:
+        """Save constant raster collection data to settings.
 
-def save_constant_raster_collection(metadata_id: str, collection_data: dict) -> None:
-    """Save constant raster collection data to settings.
+        :param metadata_id: Unique identifier for the metadata
+        :param collection_data: Dictionary representation of the collection
+        """
+        with qgis_settings(CONSTANT_RASTERS_SETTINGS_KEY) as settings:
+            json_str = json.dumps(collection_data)
+            settings.setValue(metadata_id, json_str)
 
-    :param metadata_id: Unique identifier for the metadata
-    :param collection_data: Dictionary representation of the collection
-    """
-    with qgis_settings(CONSTANT_RASTERS_SETTINGS_KEY) as settings:
-        json_str = json.dumps(collection_data)
-        settings.setValue(metadata_id, json_str)
+    def load_constant_raster_collection(
+        self, metadata_id: str
+    ) -> typing.Optional[dict]:
+        """Load constant raster collection data from settings.
 
+        :param metadata_id: Unique identifier for the metadata
+        :returns: Dictionary representation of the collection, or None if not found
+        """
+        with qgis_settings(CONSTANT_RASTERS_SETTINGS_KEY) as settings:
+            json_str = settings.value(metadata_id, None)
+            if json_str:
+                return json.loads(json_str)
+            return None
 
-def load_constant_raster_collection(metadata_id: str) -> typing.Optional[dict]:
-    """Load constant raster collection data from settings.
+    def get_all_constant_raster_metadata_ids(self) -> typing.List[str]:
+        """Get all constant raster metadata IDs stored in settings.
 
-    :param metadata_id: Unique identifier for the metadata
-    :returns: Dictionary representation of the collection, or None if not found
-    """
-    with qgis_settings(CONSTANT_RASTERS_SETTINGS_KEY) as settings:
-        json_str = settings.value(metadata_id, None)
-        if json_str:
-            return json.loads(json_str)
-        return None
-
-
-def get_all_constant_raster_metadata_ids() -> typing.List[str]:
-    """Get all constant raster metadata IDs stored in settings.
-
-    :returns: List of metadata IDs
-    """
-    with qgis_settings(CONSTANT_RASTERS_SETTINGS_KEY) as settings:
-        return settings.childKeys()
+        :returns: List of metadata IDs
+        """
+        with qgis_settings(CONSTANT_RASTERS_SETTINGS_KEY) as settings:
+            return settings.childKeys()
 
 
 settings_manager = SettingsManager()

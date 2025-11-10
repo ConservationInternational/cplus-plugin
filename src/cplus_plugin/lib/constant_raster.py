@@ -25,12 +25,7 @@ from ..models.constant_raster import (
 )
 from ..models.base import ModelComponentType
 from ..utils import log, tr
-from ..conf import (
-    settings_manager,
-    save_constant_raster_collection,
-    load_constant_raster_collection,
-    get_all_constant_raster_metadata_ids,
-)
+from ..conf import settings_manager
 from ..models.helpers import (
     get_constant_raster_dir,
     generate_constant_raster_filename,
@@ -618,17 +613,21 @@ class ConstantRasterRegistry:
                         metadata.raster_collection
                     )
 
-                save_constant_raster_collection(metadata_id, collection_data)
+                settings_manager.save_constant_raster_collection(
+                    metadata_id, collection_data
+                )
 
     def load(self):
         """Load metadata from settings.
 
         Uses metadata.deserializer if provided, otherwise uses default deserializer.
         """
-        for metadata_id in get_all_constant_raster_metadata_ids():
+        for metadata_id in settings_manager.get_all_constant_raster_metadata_ids():
             if metadata_id in self._metadata_store:
                 try:
-                    collection_data = load_constant_raster_collection(metadata_id)
+                    collection_data = settings_manager.load_constant_raster_collection(
+                        metadata_id
+                    )
                     if not collection_data:
                         continue
 
