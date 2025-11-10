@@ -5,6 +5,7 @@ Unit tests for constant raster models and functionality.
 
 import sys
 from unittest import TestCase
+from uuid import UUID
 
 from cplus_plugin.definitions.constants import (
     COMPONENT_ID_ATTRIBUTE,
@@ -21,7 +22,7 @@ from cplus_plugin.definitions.constants import (
     ALLOWABLE_MAX_ATTRIBUTE,
     COMPONENTS_ATTRIBUTE,
 )
-from cplus_plugin.models.base import ModelComponentType
+from cplus_plugin.models.base import ModelComponentType, Activity, LayerType
 from cplus_plugin.models.constant_raster import (
     ConstantRasterInfo,
     ConstantRasterComponent,
@@ -38,6 +39,9 @@ from cplus_plugin.gui.constant_rasters.constant_raster_widgets import (
 )
 
 from model_data_for_testing import (
+    ACTIVITY_2_UUID_STR,
+    ACTIVITY_3_UUID_STR,
+    TEST_RASTER_PATH,
     get_activity,
     get_constant_raster_info,
     get_constant_raster_component,
@@ -135,7 +139,22 @@ class TestConstantRasterCollection(TestCase):
 
     def test_add_component(self):
         """Test adding a component to collection."""
-        new_component = get_constant_raster_component()
+        activity2 = Activity(
+            UUID(ACTIVITY_2_UUID_STR),
+            "Test Activity 2",
+            "Description for test activity 2",
+            TEST_RASTER_PATH,
+            LayerType.RASTER,
+            True,
+        )
+
+        new_component = ConstantRasterComponent(
+            value_info=get_constant_raster_info(),
+            component=activity2,
+            component_type=ModelComponentType.ACTIVITY,
+            skip_raster=False,
+            enabled=True,
+        )
         result = self.collection.add_component(new_component)
         self.assertTrue(result)
         self.assertEqual(len(self.collection.components), 2)
@@ -377,12 +396,39 @@ class TestYearsExperienceWidget(TestCase):
 
     def test_switching_between_components_preserves_values(self):
         """Test switching between components preserves their values."""
-        # Create two components with different values
-        component1 = get_constant_raster_component()
-        component1.value_info.absolute = 20.0
+        activity2 = Activity(
+            UUID(ACTIVITY_2_UUID_STR),
+            "Test Activity 2",
+            "Description for test activity 2",
+            TEST_RASTER_PATH,
+            LayerType.RASTER,
+            True,
+        )
 
-        component2 = get_constant_raster_component()
-        component2.value_info.absolute = 50.0
+        activity3 = Activity(
+            UUID(ACTIVITY_3_UUID_STR),
+            "Test Activity 3",
+            "Description for test activity 3",
+            TEST_RASTER_PATH,
+            LayerType.RASTER,
+            True,
+        )
+
+        component1 = ConstantRasterComponent(
+            value_info=ConstantRasterInfo(absolute=20.0),
+            component=activity2,
+            component_type=ModelComponentType.ACTIVITY,
+            skip_raster=False,
+            enabled=True,
+        )
+
+        component2 = ConstantRasterComponent(
+            value_info=ConstantRasterInfo(absolute=50.0),
+            component=activity3,
+            component_type=ModelComponentType.ACTIVITY,
+            skip_raster=False,
+            enabled=True,
+        )
 
         # Load first component
         self.widget.raster_component = component1
