@@ -446,14 +446,13 @@ def get_constant_raster_info(normalized=0.5, absolute=50.0) -> ConstantRasterInf
 
 def get_constant_raster_component() -> ConstantRasterComponent:
     """Creates a ConstantRasterComponent object for testing."""
-    ncs_pathway = get_valid_ncs_pathway()
+    activity = get_activity()
     value_info = get_constant_raster_info()
 
     return ConstantRasterComponent(
         value_info=value_info,
-        component=ncs_pathway,
-        component_id=str(ncs_pathway.uuid),
-        component_type=ModelComponentType.NCS_PATHWAY,
+        component=activity,
+        component_type=ModelComponentType.ACTIVITY,
         skip_raster=False,
         enabled=True,
     )
@@ -466,7 +465,7 @@ def get_constant_raster_collection() -> ConstantRasterCollection:
     collection = ConstantRasterCollection(
         min_value=0.0,
         max_value=100.0,
-        component_type=ModelComponentType.NCS_PATHWAY,
+        component_type=ModelComponentType.ACTIVITY,
         components=[component1],
         skip_raster=False,
         allowable_min=0.0,
@@ -484,7 +483,8 @@ def get_constant_raster_metadata() -> ConstantRasterMetadata:
         id="test_metadata",
         display_name="Test Constant Raster",
         raster_collection=collection,
+        serializer=None,
         deserializer=None,
-        component_type=ModelComponentType.NCS_PATHWAY,
+        component_type=ModelComponentType.ACTIVITY,
         input_range=InputRange(min=0.0, max=100.0),
     )
