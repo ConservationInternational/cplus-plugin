@@ -89,6 +89,9 @@ from ..definitions.constants import (
     ABSOLUTE_ATTRIBUTE,
     MIN_VALUE_ATTRIBUTE_KEY,
     MAX_VALUE_ATTRIBUTE_KEY,
+    PREFIX_ATTRIBUTE,
+    BASE_NAME_ATTRIBUTE,
+    SUFFIX_ATTRIBUTE,
 )
 from ..definitions.defaults import DEFAULT_CRS_ID, QGIS_GDAL_PROVIDER
 from .financial import NcsPathwayNpv, NcsPathwayNpvCollection, NpvParameters
@@ -104,10 +107,19 @@ from .constant_raster import (
     ConstantRasterCollection,
     ConstantRasterComponent,
     ConstantRasterInfo,
+    ConstantRasterMetadata,
 )
 from .base import ModelComponentType
 
-from ..utils import log
+from ..utils import (
+    log,
+    clean_filename,
+    format_value_with_unit,
+    get_constant_raster_dir,
+    generate_constant_raster_filename,
+    write_constant_raster_metadata_file,
+    save_constant_raster_metadata,
+)
 
 
 def model_component_to_dict(
@@ -1090,26 +1102,7 @@ def constant_raster_collection_to_dict(
         SKIP_RASTER_ATTRIBUTE: collection.skip_raster,
         LAST_UPDATED_ATTRIBUTE: collection.last_updated,
         COMPONENTS_ATTRIBUTE: [
-            {
-                VALUE_INFO_ATTRIBUTE: {
-                    NORMALIZED_ATTRIBUTE: c.value_info.normalized
-                    if c.value_info
-                    else 0.0,
-                    ABSOLUTE_ATTRIBUTE: c.value_info.absolute if c.value_info else 0.0,
-                },
-                COMPONENT_UUID_ATTRIBUTE: str(c.component.uuid) if c.component else "",
-                "prefix": c.prefix,
-                "base_name": c.base_name,
-                "suffix": c.suffix,
-                "path": c.path,
-                SKIP_RASTER_ATTRIBUTE: c.skip_raster,
-                ENABLED_ATTRIBUTE: c.enabled,
-                COMPONENT_ID_ATTRIBUTE: c.component_id,
-                COMPONENT_TYPE_ATTRIBUTE: c.component_type.value
-                if c.component_type
-                else "",
-            }
-            for c in collection.components
+            constant_raster_component_to_dict(c) for c in collection.components
         ],
     }
 
@@ -1131,40 +1124,17 @@ def constant_raster_collection_from_dict(
     if not collection_dict:
         return None
 
-    # Create a lookup dict for quick component access
-    component_lookup = {str(comp.uuid): comp for comp in model_components}
+    # Create a lookup function for component access
+    component_lookup_dict = {str(comp.uuid): comp for comp in model_components}
 
-    # Deserialize components
-    components = []
-    for comp_dict in collection_dict.get(COMPONENTS_ATTRIBUTE, []):
-        component_uuid = comp_dict.get(COMPONENT_UUID_ATTRIBUTE)
-        component = component_lookup.get(component_uuid) if component_uuid else None
+    def component_lookup(uuid_str: str) -> typing.Optional[LayerModelComponent]:
+        return component_lookup_dict.get(uuid_str)
 
-        value_info = ConstantRasterInfo(
-            normalized=comp_dict.get(VALUE_INFO_ATTRIBUTE, {}).get(
-                NORMALIZED_ATTRIBUTE, 0.0
-            ),
-            absolute=comp_dict.get(VALUE_INFO_ATTRIBUTE, {}).get(
-                ABSOLUTE_ATTRIBUTE, 0.0
-            ),
-        )
-
-        component_type_str = comp_dict.get(COMPONENT_TYPE_ATTRIBUTE, "")
-        component_type = ModelComponentType.from_string(component_type_str)
-
-        raster_component = ConstantRasterComponent(
-            value_info=value_info,
-            component=component,
-            prefix=comp_dict.get("prefix", ""),
-            base_name=comp_dict.get("base_name", ""),
-            suffix=comp_dict.get("suffix", ""),
-            path=comp_dict.get("path", ""),
-            skip_raster=comp_dict.get(SKIP_RASTER_ATTRIBUTE, False),
-            enabled=comp_dict.get(ENABLED_ATTRIBUTE, True),
-            component_id=comp_dict.get(COMPONENT_ID_ATTRIBUTE, ""),
-            component_type=component_type,
-        )
-        components.append(raster_component)
+    # Deserialize components using helper function
+    components = [
+        create_constant_raster_component(comp_dict, component_lookup)
+        for comp_dict in collection_dict.get(COMPONENTS_ATTRIBUTE, [])
+    ]
 
     # Parse component_type if present
     component_type = None
@@ -1184,230 +1154,135 @@ def constant_raster_collection_from_dict(
     )
 
 
-def sanitize_filename(name: str) -> str:
-    """Convert a string to a safe filename.
+def constant_raster_info_to_dict(constant_raster_info: ConstantRasterInfo) -> dict:
+    """Creates a dictionary containing attribute name-value pairs
+    from a ConstantRasterInfo object.
 
-    Converts to lowercase, replaces spaces and slashes with underscores,
-    removes special characters, and cleans up multiple underscores.
+    :param constant_raster_info: ConstantRasterInfo instance to serialize
+    :type constant_raster_info: ConstantRasterInfo
 
-    :param name: Input string to sanitize
-    :type name: str
-
-    :returns: Sanitized filename (lowercase, alphanumeric + underscore/hyphen only)
-    :rtype: str
+    :returns: Dictionary with normalized and absolute values
+    :rtype: dict
     """
-    import re
-
-    # Convert to lowercase
-    safe = name.lower()
-    # Replace spaces and slashes with underscores
-    safe = safe.replace(" ", "_").replace("/", "_").replace("\\", "_")
-    # Remove special characters, keeping only alphanumeric, underscore, and hyphen
-    safe = re.sub(r"[^a-z0-9_-]", "", safe)
-    # Replace multiple underscores with single underscore
-    safe = re.sub(r"_+", "_", safe)
-    # Remove leading/trailing underscores
-    safe = safe.strip("_")
-    return safe
+    return {
+        NORMALIZED_ATTRIBUTE: constant_raster_info.normalized,
+        ABSOLUTE_ATTRIBUTE: constant_raster_info.absolute,
+    }
 
 
-def format_value_with_unit(value: float, metadata_id: str) -> str:
-    """Format a value with an appropriate unit suffix for filename.
+def create_constant_raster_info(source_dict: dict) -> ConstantRasterInfo:
+    """Factory method for creating a ConstantRasterInfo object from dictionary.
 
-    The unit is determined based on the metadata_id. Common patterns:
-    - Years/experience: "5years", "10years"
-    - Percentage: "25pct", "50pct"
-    - Weight: "10kg", "25kg"
-    - Default: "12p50" (12.50 with decimal point as 'p')
+    :param source_dict: Dictionary containing property values
+    :type source_dict: dict
 
-    :param value: The numeric value
-    :type value: float
-
-    :param metadata_id: Metadata ID to determine the appropriate unit
-    :type metadata_id: str
-
-    :returns: Formatted string like "5years", "10pct", "25kg"
-    :rtype: str
+    :returns: ConstantRasterInfo instance with values from dictionary
+    :rtype: ConstantRasterInfo
     """
-    # Determine unit based on metadata ID
-    # This can be extended as more constant raster types are added
-    if "year" in metadata_id.lower() or "experience" in metadata_id.lower():
-        # Round to integer for years
-        return f"{int(value)}years"
-    elif "percent" in metadata_id.lower() or "pct" in metadata_id.lower():
-        return f"{int(value)}pct"
-    elif "weight" in metadata_id.lower() or "kg" in metadata_id.lower():
-        return f"{int(value)}kg"
-    else:
-        # Default: use value with 2 decimal places, replace . with p
-        return f"{value:.2f}".replace(".", "p")
-
-
-def get_constant_raster_dir(
-    base_dir: str, component_type: "ModelComponentType", metadata_id: str
-) -> str:
-    """Get the directory path for constant rasters.
-
-    Creates a hierarchical directory structure:
-    {base_dir}/{component_type}/{raster_type}/
-
-    :param base_dir: Base directory (e.g., "BASE_DIR/constant_rasters")
-    :type base_dir: str
-
-    :param component_type: Type of model component (NCS_PATHWAY or ACTIVITY)
-    :type component_type: ModelComponentType
-
-    :param metadata_id: Raster type ID (e.g., "years_experience_pathway")
-    :type metadata_id: str
-
-    :returns: Full path to the constant raster directory
-    :rtype: str
-    """
-
-    # Determine component type subfolder
-    if component_type == ModelComponentType.NCS_PATHWAY:
-        type_dir = "ncs_pathway"
-    elif component_type == ModelComponentType.ACTIVITY:
-        type_dir = "activity"
-    else:
-        type_dir = "unknown"
-
-    # Extract raster type from metadata_id (remove _pathway or _activity suffix)
-    raster_type = metadata_id
-    if raster_type.endswith("_pathway") or raster_type.endswith("_activity"):
-        raster_type = "_".join(raster_type.split("_")[:-1])
-
-    # Build the directory path
-    return os.path.join(base_dir, type_dir, raster_type)
-
-
-def generate_constant_raster_filename(
-    component_name: str, value: float, metadata_id: str
-) -> str:
-    """Generate a descriptive filename for a constant raster.
-
-    Follows the pattern: {sanitized_component_name}_{value_with_unit}.tif
-
-    Example outputs:
-    - "agroforestry_5years.tif"
-    - "corn_production_25pct.tif"
-    - "animal_management_10kg.tif"
-
-    :param component_name: Name of the pathway/activity
-    :type component_name: str
-
-    :param value: The constant value for this raster
-    :type value: float
-
-    :param metadata_id: Metadata ID to determine the value unit
-    :type metadata_id: str
-
-    :returns: Safe filename with extension
-    :rtype: str
-    """
-    safe_name = sanitize_filename(component_name)
-    value_str = format_value_with_unit(value, metadata_id)
-    return f"{safe_name}_{value_str}.tif"
-
-
-def write_constant_raster_metadata_file(
-    metadata: "ConstantRasterFileMetadata", file_path: str
-) -> str:
-    """Write constant raster metadata to a text file.
-
-    :param metadata: ConstantRasterFileMetadata instance with all metadata information
-    :type metadata: ConstantRasterFileMetadata
-
-    :param file_path: Path where the metadata file should be written
-    :type file_path: str
-
-    :returns: Path to the metadata file that was written
-    :rtype: str
-    """
-    with open(file_path, "w") as f:
-        f.write(metadata.to_text())
-
-    return file_path
-
-
-def save_constant_raster_metadata(
-    raster_path: str,
-    component_id: str,
-    component_name: str,
-    input_value: float,
-    normalized_value: float,
-    output_min: float,
-    output_max: float,
-    metadata_id: str,
-    component_type: str,
-    skip_raster: bool = False,
-) -> str:
-    """Save metadata for a constant raster to a text file.
-
-    Creates a .meta.txt file alongside the raster with information
-    about how it was created.
-
-    This is a convenience function that creates a ConstantRasterFileMetadata
-    instance and writes it to a file.
-
-    :param raster_path: Full path to the raster file (used for subfolder naming)
-    :type raster_path: str
-
-    :param component_id: UUID of the component
-    :type component_id: str
-
-    :param component_name: Name of the component
-    :type component_name: str
-
-    :param input_value: Original input value (e.g., 5.0 years)
-    :type input_value: float
-
-    :param normalized_value: Final normalized value stored in raster
-    :type normalized_value: float
-
-    :param output_min: Minimum normalization range value
-    :type output_min: float
-
-    :param output_max: Maximum normalization range value
-    :type output_max: float
-
-    :param metadata_id: Raster type ID
-    :type metadata_id: str
-
-    :param component_type: Type of component (NCS_PATHWAY or ACTIVITY)
-    :type component_type: str
-
-    :param skip_raster: If True, raster was not created (metadata only)
-    :type skip_raster: bool
-
-    :returns: Path to the metadata file
-    :rtype: str
-    """
-    from ..models.constant_raster import ConstantRasterFileMetadata
-
-    # Create metadata instance
-    # If skip_raster is True, set raster_path to empty in the metadata content
-    metadata = ConstantRasterFileMetadata(
-        raster_path="" if skip_raster else raster_path,
-        component_id=component_id,
-        component_name=component_name,
-        component_type=component_type,
-        input_value=input_value,
-        normalized_value=normalized_value,
-        output_min=output_min,
-        output_max=output_max,
-        metadata_id=metadata_id,
+    return ConstantRasterInfo(
+        normalized=float(source_dict.get(NORMALIZED_ATTRIBUTE, 0.0)),
+        absolute=float(source_dict.get(ABSOLUTE_ATTRIBUTE, 0.0)),
     )
 
-    # Create metadata subfolder in the same directory as the raster
-    # The raster is already in a timestamped session folder
-    raster_dir = os.path.dirname(raster_path)
-    raster_basename = os.path.splitext(os.path.basename(raster_path))[0]
 
-    # Create metadata subfolder: {session_folder}/metadata/
-    metadata_subfolder = os.path.join(raster_dir, "metadata")
-    os.makedirs(metadata_subfolder, exist_ok=True)
+def constant_raster_component_to_dict(
+    constant_raster_component: ConstantRasterComponent,
+) -> dict:
+    """Creates a dictionary containing attribute name-value pairs
+    from a ConstantRasterComponent object.
 
-    # Write to file in the metadata subfolder with raster-specific name
-    meta_path = os.path.join(metadata_subfolder, f"{raster_basename}.txt")
-    return write_constant_raster_metadata_file(metadata, meta_path)
+    :param constant_raster_component: ConstantRasterComponent instance to serialize
+    :type constant_raster_component: ConstantRasterComponent
+
+    :returns: Dictionary representation of the component
+    :rtype: dict
+    """
+    return {
+        VALUE_INFO_ATTRIBUTE: constant_raster_info_to_dict(
+            constant_raster_component.value_info
+        )
+        if constant_raster_component.value_info
+        else {},
+        COMPONENT_UUID_ATTRIBUTE: str(constant_raster_component.component.uuid)
+        if constant_raster_component.component
+        else "",
+        PREFIX_ATTRIBUTE: constant_raster_component.prefix,
+        BASE_NAME_ATTRIBUTE: constant_raster_component.base_name,
+        SUFFIX_ATTRIBUTE: constant_raster_component.suffix,
+        PATH_ATTRIBUTE: constant_raster_component.path,
+        SKIP_RASTER_ATTRIBUTE: constant_raster_component.skip_raster,
+        ENABLED_ATTRIBUTE: constant_raster_component.enabled,
+        COMPONENT_ID_ATTRIBUTE: constant_raster_component.component_id,
+        COMPONENT_TYPE_ATTRIBUTE: (
+            constant_raster_component.component_type.value
+            if constant_raster_component.component_type
+            else ModelComponentType.UNKNOWN.value
+        ),
+    }
+
+
+def create_constant_raster_component(
+    source_dict: dict, component_lookup: typing.Callable[[str], LayerModelComponent]
+) -> ConstantRasterComponent:
+    """Factory method for creating a ConstantRasterComponent from dictionary.
+
+    :param source_dict: Dictionary containing property values
+    :type source_dict: dict
+
+    :param component_lookup: Function to retrieve LayerModelComponent by UUID
+    :type component_lookup: Callable
+
+    :returns: ConstantRasterComponent instance with values from dictionary
+    :rtype: ConstantRasterComponent
+    """
+    component = None
+    component_uuid = source_dict.get(COMPONENT_UUID_ATTRIBUTE)
+    if component_uuid:
+        component = component_lookup(component_uuid)
+
+    value_info_data = source_dict.get(VALUE_INFO_ATTRIBUTE, {})
+    value_info = (
+        create_constant_raster_info(value_info_data)
+        if value_info_data
+        else ConstantRasterInfo()
+    )
+
+    component_type_str = source_dict.get(
+        COMPONENT_TYPE_ATTRIBUTE, ModelComponentType.UNKNOWN.value
+    )
+    component_type = ModelComponentType.from_string(component_type_str)
+
+    return ConstantRasterComponent(
+        value_info=value_info,
+        component=component,
+        prefix=source_dict.get(PREFIX_ATTRIBUTE, ""),
+        base_name=source_dict.get(BASE_NAME_ATTRIBUTE, ""),
+        suffix=source_dict.get(SUFFIX_ATTRIBUTE, ""),
+        path=source_dict.get(PATH_ATTRIBUTE, ""),
+        skip_raster=bool(source_dict.get(SKIP_RASTER_ATTRIBUTE, False)),
+        enabled=bool(source_dict.get(ENABLED_ATTRIBUTE, True)),
+        component_type=component_type,
+    )
+
+
+def constant_raster_metadata_to_dict(metadata: ConstantRasterMetadata) -> dict:
+    """Creates a dictionary containing attribute name-value pairs
+    from a ConstantRasterMetadata object.
+
+    :param metadata: ConstantRasterMetadata instance to serialize
+    :type metadata: ConstantRasterMetadata
+
+    :returns: Dictionary representation of the metadata
+    :rtype: dict
+    """
+    collection_dict = constant_raster_collection_to_dict(metadata.raster_collection)
+
+    return {
+        "id": metadata.id,
+        DISPLAY_NAME_ATTRIBUTE: metadata.display_name,
+        RASTER_COLLECTION_ATTRIBUTE: collection_dict,
+        COMPONENT_TYPE_ATTRIBUTE: (
+            metadata.component_type.value if metadata.component_type else None
+        ),
+        INPUT_RANGE_ATTRIBUTE: list(metadata.input_range),
+    }

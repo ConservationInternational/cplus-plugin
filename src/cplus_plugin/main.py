@@ -65,7 +65,7 @@ from .models.report import MetricConfigurationProfile, MetricProfileCollection
 from .gui.settings.cplus_options import CplusOptionsFactory
 from .gui.settings.log_options import LogOptionsFactory
 from .gui.settings.report_options import ReportOptionsFactory
-from .gui.constant_raster_widgets import YearsExperienceWidget
+from .gui.constant_rasters import YearsExperienceWidget
 
 from .utils import (
     FileUtils,

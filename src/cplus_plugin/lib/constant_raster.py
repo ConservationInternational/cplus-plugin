@@ -26,10 +26,13 @@ from ..models.constant_raster import (
 )
 from ..models.base import ModelComponentType
 from ..utils import log, tr
+from ..conf import settings_manager
 from ..models.helpers import (
     get_constant_raster_dir,
     generate_constant_raster_filename,
     save_constant_raster_metadata,
+    constant_raster_collection_to_dict,
+    constant_raster_collection_from_dict,
 )
 from ..definitions.constants import (
     CONSTANT_RASTERS_SETTINGS_KEY,
@@ -43,6 +46,7 @@ from ..definitions.constants import (
     ALLOWABLE_MIN_ATTRIBUTE,
     ALLOWABLE_MAX_ATTRIBUTE,
     LAST_UPDATED_ATTRIBUTE,
+    PATH_ATTRIBUTE,
 )
 
 
@@ -299,7 +303,7 @@ class ConstantRasterProcessingUtils:
         crs = raster_layer.crs()
 
         info = {
-            "path": raster_path,
+            PATH_ATTRIBUTE: raster_path,
             "width": raster_layer.width(),
             "height": raster_layer.height(),
             "bands": raster_layer.bandCount(),
@@ -467,11 +471,13 @@ class ConstantRasterProcessingUtils:
             # Step 1: Normalize input value to [0,1] using input_range
             if input_max != input_min:
                 normalized_0_1 = (absolute_value - input_min) / (input_max - input_min)
-                # Clamp to [0,1] range
-                normalized_0_1 = max(0.0, min(1.0, normalized_0_1))
             else:
-                # Edge case: input range is zero, normalize to 0.5
-                normalized_0_1 = 0.5
+                # Edge case: input range is zero (min == max), skip this component
+                if feedback:
+                    feedback.pushWarning(
+                        f"Skipping component {component.component_id}: input range is zero (min == max)"
+                    )
+                continue
 
             if feedback:
                 feedback.pushInfo(f"Step 1 - Normalized to [0,1]: {normalized_0_1}")
@@ -716,28 +722,9 @@ class ConstantRasterRegistry:
 
         for metadata_id, metadata in self._metadata_store.items():
             if metadata.raster_collection:
-                collection_data = {
-                    MIN_VALUE_ATTRIBUTE_KEY: metadata.raster_collection.min_value,
-                    MAX_VALUE_ATTRIBUTE_KEY: metadata.raster_collection.max_value,
-                    ALLOWABLE_MIN_ATTRIBUTE: metadata.raster_collection.allowable_min,
-                    ALLOWABLE_MAX_ATTRIBUTE: metadata.raster_collection.allowable_max,
-                    SKIP_RASTER_ATTRIBUTE: metadata.raster_collection.skip_raster,
-                    LAST_UPDATED_ATTRIBUTE: metadata.raster_collection.last_updated,
-                    COMPONENTS_ATTRIBUTE: [
-                        {
-                            COMPONENT_ID_ATTRIBUTE: component.component_id,
-                            ABSOLUTE_VALUE_ATTRIBUTE: (
-                                component.value_info.absolute
-                                if component.value_info
-                                else 0.0
-                            ),
-                            SKIP_RASTER_ATTRIBUTE: component.skip_raster,
-                            ENABLED_ATTRIBUTE: component.enabled,
-                        }
-                        for component in metadata.raster_collection.components
-                    ],
-                }
-
+                collection_data = constant_raster_collection_to_dict(
+                    metadata.raster_collection
+                )
                 json_str = json.dumps(collection_data)
                 settings.setValue(metadata_id, json_str)
 
@@ -757,45 +744,37 @@ class ConstantRasterRegistry:
                     metadata = self._metadata_store[metadata_id]
 
                     if metadata.raster_collection is not None and collection_data:
-                        metadata.raster_collection.min_value = collection_data.get(
-                            MIN_VALUE_ATTRIBUTE_KEY, 0.0
-                        )
-                        metadata.raster_collection.max_value = collection_data.get(
-                            MAX_VALUE_ATTRIBUTE_KEY, 1.0
-                        )
-                        metadata.raster_collection.allowable_min = collection_data.get(
-                            ALLOWABLE_MIN_ATTRIBUTE, 0.0
-                        )
-                        metadata.raster_collection.allowable_max = collection_data.get(
-                            ALLOWABLE_MAX_ATTRIBUTE, 1.0
-                        )
-                        metadata.raster_collection.skip_raster = collection_data.get(
-                            SKIP_RASTER_ATTRIBUTE, False
-                        )
-                        metadata.raster_collection.last_updated = collection_data.get(
-                            LAST_UPDATED_ATTRIBUTE, ""
+                        # Get all model components for reference
+                        model_components = []
+                        if metadata.component_type == ModelComponentType.ACTIVITY:
+                            model_components = settings_manager.get_all_activities()
+                        elif metadata.component_type == ModelComponentType.NCS_PATHWAY:
+                            model_components = settings_manager.get_all_ncs_pathways()
+
+                        # Use helper to deserialize, but components will be None
+                        # (will be populated later by dialog)
+                        loaded_collection = constant_raster_collection_from_dict(
+                            collection_data, model_components
                         )
 
-                        metadata.raster_collection.components.clear()
+                        if loaded_collection:
+                            # Copy values to existing collection
+                            metadata.raster_collection.min_value = loaded_collection.min_value
+                            metadata.raster_collection.max_value = loaded_collection.max_value
+                            metadata.raster_collection.allowable_min = loaded_collection.allowable_min
+                            metadata.raster_collection.allowable_max = loaded_collection.allowable_max
+                            metadata.raster_collection.skip_raster = loaded_collection.skip_raster
+                            metadata.raster_collection.last_updated = loaded_collection.last_updated
+                            metadata.raster_collection.components = loaded_collection.components
 
-                        components_data = collection_data.get(COMPONENTS_ATTRIBUTE, [])
-                        for saved_component in components_data:
-                            component = ConstantRasterComponent(
-                                value_info=ConstantRasterInfo(
-                                    absolute=saved_component.get(
-                                        ABSOLUTE_VALUE_ATTRIBUTE, 0.0
-                                    )
-                                ),
-                                component=None,
-                                component_id=saved_component.get(
-                                    COMPONENT_ID_ATTRIBUTE, ""
-                                ),
-                                skip_raster=saved_component.get(
-                                    SKIP_RASTER_ATTRIBUTE, False
-                                ),
-                                enabled=saved_component.get(ENABLED_ATTRIBUTE, True),
-                            )
-                            metadata.raster_collection.components.append(component)
+                            # Store saved UUIDs for later population
+                            components_data = collection_data.get(COMPONENTS_ATTRIBUTE, [])
+                            for idx, saved_component in enumerate(components_data):
+                                if idx < len(metadata.raster_collection.components):
+                                    component = metadata.raster_collection.components[idx]
+                                    saved_uuid = saved_component.get(COMPONENT_UUID_ATTRIBUTE) or saved_component.get(COMPONENT_ID_ATTRIBUTE)
+                                    if saved_uuid:
+                                        component._saved_component_uuid = saved_uuid
 
                 except Exception as e:
                     log(

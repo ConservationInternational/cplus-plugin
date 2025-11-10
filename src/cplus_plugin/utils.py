@@ -50,6 +50,8 @@ from .definitions.constants import (
     NPV_PRIORITY_LAYERS_SEGMENT,
     PRIORITY_LAYERS_SEGMENT,
 )
+from .models.base import ModelComponentType
+from .models.constant_raster import ConstantRasterFileMetadata
 
 
 def tr(message):
@@ -174,6 +176,192 @@ def clean_filename(filename):
             filename = filename.replace(character, "_")
 
     return filename
+
+
+def format_value_with_unit(value: float, metadata_id: str) -> str:
+    """Format a value with an appropriate unit suffix for filename.
+
+    The unit is determined based on the metadata_id. Common patterns:
+    - Years/experience: "5years", "10years"
+    - Percentage: "25pct", "50pct"
+    - Weight: "10kg", "25kg"
+    - Default: "12p50" (12.50 with decimal point as 'p')
+
+    :param value: The numeric value
+    :type value: float
+
+    :param metadata_id: Metadata ID to determine the appropriate unit
+    :type metadata_id: str
+
+    :returns: Formatted string like "5years", "10pct", "25kg"
+    :rtype: str
+    """
+    if "year" in metadata_id.lower() or "experience" in metadata_id.lower():
+        return f"{int(value)}years"
+    elif "percent" in metadata_id.lower() or "pct" in metadata_id.lower():
+        return f"{int(value)}pct"
+    elif "weight" in metadata_id.lower() or "kg" in metadata_id.lower():
+        return f"{int(value)}kg"
+    else:
+        return f"{value:.2f}".replace(".", "p")
+
+
+def get_constant_raster_dir(
+    base_dir: str, component_type: ModelComponentType, metadata_id: str
+) -> str:
+    """Get the directory path for constant rasters.
+
+    Creates a hierarchical directory structure:
+    {base_dir}/{component_type}/{raster_type}/
+
+    :param base_dir: Base directory (e.g., "BASE_DIR/constant_rasters")
+    :type base_dir: str
+
+    :param component_type: Type of model component (NCS_PATHWAY or ACTIVITY)
+    :type component_type: ModelComponentType
+
+    :param metadata_id: Raster type ID (e.g., "years_experience_pathway")
+    :type metadata_id: str
+
+    :returns: Full path to the constant raster directory
+    :rtype: str
+    """
+    if component_type == ModelComponentType.NCS_PATHWAY:
+        type_dir = "ncs_pathway"
+    elif component_type == ModelComponentType.ACTIVITY:
+        type_dir = "activity"
+    else:
+        type_dir = "unknown"
+
+    raster_type = metadata_id
+    if raster_type.endswith("_pathway") or raster_type.endswith("_activity"):
+        raster_type = "_".join(raster_type.split("_")[:-1])
+
+    return os.path.join(base_dir, type_dir, raster_type)
+
+
+def generate_constant_raster_filename(
+    component_name: str, value: float, metadata_id: str
+) -> str:
+    """Generate a descriptive filename for a constant raster.
+
+    Follows the pattern: {sanitized_component_name}_{value_with_unit}.tif
+
+    Example outputs:
+    - "agroforestry_5years.tif"
+    - "corn_production_25pct.tif"
+    - "animal_management_10kg.tif"
+
+    :param component_name: Name of the pathway/activity
+    :type component_name: str
+
+    :param value: The constant value for this raster
+    :type value: float
+
+    :param metadata_id: Metadata ID to determine the value unit
+    :type metadata_id: str
+
+    :returns: Safe filename with extension
+    :rtype: str
+    """
+    safe_name = clean_filename(component_name)
+    value_str = format_value_with_unit(value, metadata_id)
+    return f"{safe_name}_{value_str}.tif"
+
+
+def write_constant_raster_metadata_file(
+    metadata: ConstantRasterFileMetadata, file_path: str
+) -> str:
+    """Write constant raster metadata to a text file.
+
+    :param metadata: ConstantRasterFileMetadata instance with all metadata information
+    :type metadata: ConstantRasterFileMetadata
+
+    :param file_path: Path where the metadata file should be written
+    :type file_path: str
+
+    :returns: Path to the metadata file that was written
+    :rtype: str
+    """
+    with open(file_path, "w") as f:
+        f.write(metadata.to_text())
+
+    return file_path
+
+
+def save_constant_raster_metadata(
+    raster_path: str,
+    component_id: str,
+    component_name: str,
+    input_value: float,
+    normalized_value: float,
+    output_min: float,
+    output_max: float,
+    metadata_id: str,
+    component_type: str,
+    skip_raster: bool = False,
+) -> str:
+    """Save metadata for a constant raster to a text file.
+
+    Creates a .meta.txt file alongside the raster with information
+    about how it was created.
+
+    This is a convenience function that creates a ConstantRasterFileMetadata
+    instance and writes it to a file.
+
+    :param raster_path: Full path to the raster file (used for subfolder naming)
+    :type raster_path: str
+
+    :param component_id: UUID of the component
+    :type component_id: str
+
+    :param component_name: Name of the component
+    :type component_name: str
+
+    :param input_value: Original input value (e.g., 5.0 years)
+    :type input_value: float
+
+    :param normalized_value: Final normalized value stored in raster
+    :type normalized_value: float
+
+    :param output_min: Minimum normalization range value
+    :type output_min: float
+
+    :param output_max: Maximum normalization range value
+    :type output_max: float
+
+    :param metadata_id: Raster type ID
+    :type metadata_id: str
+
+    :param component_type: Type of component (NCS_PATHWAY or ACTIVITY)
+    :type component_type: str
+
+    :param skip_raster: If True, raster was not created (metadata only)
+    :type skip_raster: bool
+
+    :returns: Path to the metadata file
+    :rtype: str
+    """
+    metadata = ConstantRasterFileMetadata(
+        raster_path="" if skip_raster else raster_path,
+        component_id=component_id,
+        component_name=component_name,
+        component_type=component_type,
+        input_value=input_value,
+        normalized_value=normalized_value,
+        output_min=output_min,
+        output_max=output_max,
+        metadata_id=metadata_id,
+    )
+
+    raster_dir = os.path.dirname(raster_path)
+    raster_basename = os.path.splitext(os.path.basename(raster_path))[0]
+
+    metadata_subfolder = os.path.join(raster_dir, "metadata")
+    os.makedirs(metadata_subfolder, exist_ok=True)
+
+    meta_path = os.path.join(metadata_subfolder, f"{raster_basename}.txt")
+    return write_constant_raster_metadata_file(metadata, meta_path)
 
 
 def calculate_raster_area_by_pixel_value(

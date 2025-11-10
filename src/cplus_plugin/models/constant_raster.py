@@ -30,6 +30,9 @@ from ..definitions.constants import (
     DISPLAY_NAME_ATTRIBUTE,
     RASTER_COLLECTION_ATTRIBUTE,
     INPUT_RANGE_ATTRIBUTE,
+    PREFIX_ATTRIBUTE,
+    BASE_NAME_ATTRIBUTE,
+    SUFFIX_ATTRIBUTE,
 )
 
 
@@ -51,21 +54,6 @@ class ConstantRasterInfo:
     normalized: float = 0.0  # Normalized value (0-1 range)
     absolute: float = 0.0  # Absolute constant value for creating rasters
 
-    def to_dict(self) -> dict:
-        """Serialize to dictionary."""
-        return {
-            NORMALIZED_ATTRIBUTE: self.normalized,
-            ABSOLUTE_ATTRIBUTE: self.absolute,
-        }
-
-    @staticmethod
-    def from_dict(d: dict) -> "ConstantRasterInfo":
-        """Deserialize from dictionary."""
-        return ConstantRasterInfo(
-            normalized=float(d.get(NORMALIZED_ATTRIBUTE, 0.0)),
-            absolute=float(d.get(ABSOLUTE_ATTRIBUTE, 0.0)),
-        )
-
 
 @dataclasses.dataclass
 class ConstantRasterComponent:
@@ -86,8 +74,18 @@ class ConstantRasterComponent:
         False  # Skip raster creation for this component (default: False)
     )
     enabled: bool = True  # Whether this component is enabled
-    component_id: str = ""
     component_type: ModelComponentType = ModelComponentType.UNKNOWN
+
+    @property
+    def component_id(self) -> str:
+        """Get component ID from the associated component's UUID.
+
+        Returns empty string if no component is associated.
+        This is a readonly property derived from the component.
+        """
+        if not self.component:
+            return ""
+        return str(self.component.uuid)
 
     def identifier(self) -> str:
         """Generate unique identifier by concatenating naming components.
@@ -108,67 +106,6 @@ class ConstantRasterComponent:
         if parts:
             return "_".join(parts)
         return self.component_id
-
-    def to_dict(self) -> dict:
-        """Serialize to dictionary."""
-        return {
-            VALUE_INFO_ATTRIBUTE: self.value_info.to_dict() if self.value_info else {},
-            COMPONENT_UUID_ATTRIBUTE: str(self.component.uuid)
-            if self.component
-            else "",
-            "prefix": self.prefix,
-            "base_name": self.base_name,
-            "suffix": self.suffix,
-            PATH_ATTRIBUTE: self.path,
-            SKIP_RASTER_ATTRIBUTE: self.skip_raster,
-            ENABLED_ATTRIBUTE: self.enabled,
-            COMPONENT_ID_ATTRIBUTE: self.component_id,
-            COMPONENT_TYPE_ATTRIBUTE: (
-                self.component_type.value
-                if self.component_type
-                else ModelComponentType.UNKNOWN.value
-            ),
-        }
-
-    @staticmethod
-    def from_dict(
-        d: dict, component_lookup: typing.Callable[[str], LayerModelComponent]
-    ) -> "ConstantRasterComponent":
-        """Deserialize from dictionary.
-
-        :param d: Dictionary data
-        :param component_lookup: Function to retrieve component by UUID
-        :returns: ConstantRasterComponent instance
-        """
-        component = None
-        component_uuid = d.get(COMPONENT_UUID_ATTRIBUTE)
-        if component_uuid:
-            component = component_lookup(component_uuid)
-
-        value_info_data = d.get(VALUE_INFO_ATTRIBUTE, {})
-        value_info = (
-            ConstantRasterInfo.from_dict(value_info_data)
-            if value_info_data
-            else ConstantRasterInfo()
-        )
-
-        component_type_str = d.get(
-            COMPONENT_TYPE_ATTRIBUTE, ModelComponentType.UNKNOWN.value
-        )
-        component_type = ModelComponentType.from_string(component_type_str)
-
-        return ConstantRasterComponent(
-            value_info=value_info,
-            component=component,
-            prefix=d.get("prefix", ""),
-            base_name=d.get("base_name", ""),
-            suffix=d.get("suffix", ""),
-            path=d.get(PATH_ATTRIBUTE, ""),
-            skip_raster=bool(d.get(SKIP_RASTER_ATTRIBUTE, False)),
-            enabled=bool(d.get(ENABLED_ATTRIBUTE, True)),
-            component_id=d.get(COMPONENT_ID_ATTRIBUTE, ""),
-            component_type=component_type,
-        )
 
     def to_map_layer(self) -> typing.Optional[QgsRasterLayer]:
         """Convert to QGIS raster layer.
@@ -213,10 +150,13 @@ class ConstantRasterCollection:
     last_updated: str = ""  # ISO format timestamp of last modification
 
     def normalize(self) -> None:
-        """Normalize the collection by updating min/max values based on components.
+        """Normalize the collection by updating min/max values and calculating normalized values.
 
-        This method analyzes all enabled components and updates both min_value/max_value
-        and allowable_min/allowable_max based on the absolute values in component value_info objects.
+        This method:
+        1. Analyzes all enabled components and updates min_value/max_value
+        2. Calculates and sets the normalized value (0-1 range) for each component
+
+        Handles edge case where min == max by skipping normalization.
         """
         enabled = self.enabled_components()
         if not enabled:
@@ -232,6 +172,22 @@ class ConstantRasterCollection:
         self.max_value = max(values)
         self.allowable_min = min(values)
         self.allowable_max = max(values)
+
+        # Calculate normalized values for each component
+        value_range = self.max_value - self.min_value
+
+        # Logic to check for if min_value == max_value or min_value > max_value
+        if value_range <= 0:
+            # Edge case: all values are the same or invalid range
+            # Skip normalization, leave values as-is
+            return
+
+        # Standard normalization: (value - min) / (max - min)
+        for c in enabled:
+            if c.value_info:
+                c.value_info.normalized = (
+                    c.value_info.absolute - self.min_value
+                ) / float(value_range)
 
     def enabled_components(self) -> typing.List[ConstantRasterComponent]:
         """Get list of enabled components.
@@ -377,38 +333,6 @@ class ConstantRasterMetadata:
     input_range: InputRange = InputRange(
         min=0.0, max=100.0
     )  # Min and max for input values (e.g., 0-100 years)
-
-    def to_dict(self) -> dict:
-        """Serialize to dictionary."""
-        # Serialize raster_collection inline
-        collection_dict = {}
-        if self.raster_collection:
-            collection_dict = {
-                MIN_VALUE_ATTRIBUTE_KEY: self.raster_collection.min_value,
-                MAX_VALUE_ATTRIBUTE_KEY: self.raster_collection.max_value,
-                COMPONENT_TYPE_ATTRIBUTE: (
-                    self.raster_collection.component_type.value
-                    if self.raster_collection.component_type
-                    else None
-                ),
-                ALLOWABLE_MIN_ATTRIBUTE: self.raster_collection.allowable_min,
-                ALLOWABLE_MAX_ATTRIBUTE: self.raster_collection.allowable_max,
-                SKIP_RASTER_ATTRIBUTE: self.raster_collection.skip_raster,
-                LAST_UPDATED_ATTRIBUTE: self.raster_collection.last_updated,
-                COMPONENTS_ATTRIBUTE: [
-                    c.to_dict() for c in self.raster_collection.components
-                ],
-            }
-
-        return {
-            "id": self.id,
-            DISPLAY_NAME_ATTRIBUTE: self.display_name,
-            RASTER_COLLECTION_ATTRIBUTE: collection_dict,
-            COMPONENT_TYPE_ATTRIBUTE: (
-                self.component_type.value if self.component_type else None
-            ),
-            INPUT_RANGE_ATTRIBUTE: list(self.input_range),
-        }
 
 
 @dataclasses.dataclass

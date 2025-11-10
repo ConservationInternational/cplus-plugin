@@ -76,7 +76,7 @@ from .financials.npv_manager_dialog import NpvPwlManagerDialog
 from .financials.npv_progress_dialog import NpvPwlProgressDialog
 from .priority_layer_dialog import PriorityLayerDialog
 from .priority_group_dialog import PriorityGroupDialog
-from .constant_raster_manager_dialog import ConstantRastersManagerDialog
+from .constant_rasters import ConstantRastersManagerDialog
 
 from .scenario_dialog import ScenarioDialog
 

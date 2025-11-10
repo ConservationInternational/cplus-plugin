@@ -8,8 +8,8 @@ import typing
 
 from qgis.PyQt import QtCore, QtWidgets
 
-from ..models.base import LayerModelComponent, ModelComponentType
-from ..models.constant_raster import (
+from ...models.base import LayerModelComponent, ModelComponentType
+from ...models.constant_raster import (
     ConstantRasterComponent,
     ConstantRasterInfo,
     ConstantRasterMetadata,
@@ -206,9 +206,6 @@ class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         return ConstantRasterComponent(
             value_info=ConstantRasterInfo(absolute=0.0),  # Default value
             component=model_component,
-            component_id=(
-                str(model_component.uuid) if hasattr(model_component, "uuid") else ""
-            ),
             component_type=component_type,
             skip_raster=False,
         )

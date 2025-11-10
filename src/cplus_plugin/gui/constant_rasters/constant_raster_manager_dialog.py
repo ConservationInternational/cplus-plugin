@@ -19,27 +19,27 @@ from qgis.core import (
 from qgis.gui import QgsMessageBar
 from qgis.utils import iface
 
-from ..conf import settings_manager, Settings
-from ..models.base import ModelComponentType
-from ..models.constant_raster import (
+from ...conf import settings_manager, Settings
+from ...models.base import ModelComponentType
+from ...models.constant_raster import (
     ConstantRasterCollection,
     ConstantRasterComponent,
     ConstantRasterContext,
     ConstantRasterMetadata,
 )
-from ..lib.constant_raster import (
+from ...lib.constant_raster import (
     constant_raster_registry,
 )
-from ..definitions.defaults import (
+from ...definitions.defaults import (
     ICON_PATH,
     YEARS_EXPERIENCE_ACTIVITY_ID,
 )
-from .component_item_model import ActivityItemModel
+from ..component_item_model import ActivityItemModel
 from .constant_raster_widgets import (
     ConstantRasterWidgetInterface,
     YearsExperienceWidget,
 )
-from ..utils import log, tr
+from ...utils import log, tr
 
 
 class ConstantRastersManagerDialog(QtWidgets.QDialog):
@@ -313,6 +313,32 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             self._registered_component_widgets[metadata_id]
         )
 
+    def _populate_component_references(self, activities):
+        """Connect loaded components with actual Activity objects.
+
+        After loading from settings, components have component=None. This method
+        matches them with actual Activity objects based on saved component_ids.
+
+        :param activities: List of Activity objects
+        """
+        # Create lookup dict for activities by UUID
+        activity_lookup = {str(activity.uuid): activity for activity in activities}
+
+        # Populate component references in all collections
+        for metadata in self.constant_raster_registry.items():
+            if metadata.raster_collection:
+                for component in metadata.raster_collection.components:
+                    # Skip if already has component reference
+                    if component.component is not None:
+                        continue
+
+                    # Look up activity by saved UUID
+                    saved_uuid = getattr(component, "_saved_component_uuid", None)
+                    if saved_uuid and saved_uuid in activity_lookup:
+                        component.component = activity_lookup[saved_uuid]
+                        # Clean up temporary attribute
+                        delattr(component, "_saved_component_uuid")
+
     def initialize(self):
         """Initialize UI components and connections."""
 
@@ -332,8 +358,12 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             load_pathways=False, is_checkable=True
         )
         self.lst_activities.setModel(self._activities_model)
-        for activity in settings_manager.get_all_activities():
+        activities = settings_manager.get_all_activities()
+        for activity in activities:
             self._activities_model.add_activity(activity)
+
+        # Populate component references with actual activity objects
+        self._populate_component_references(activities)
 
         # Connect to the view's selection model, not the model itself
         self.lst_activities.selectionModel().selectionChanged.connect(
@@ -730,6 +760,19 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         current_value = None
         if hasattr(current_config_widget, "sb_experience"):
             current_value = current_config_widget.sb_experience.value()
+
+        # First, build a set of all model item UUIDs for quick lookup
+        model_uuids = set()
+        for row in range(model.rowCount()):
+            item = model.item(row)
+            if item is not None:
+                model_uuids.add(item.uuid)
+
+        # Disable any components that don't correspond to current model items
+        # (these are "orphaned" components from previous sessions)
+        for component in raster_collection.components:
+            if component.component_id not in model_uuids:
+                component.enabled = False
 
         # Track items that were created/updated
         items_created = []
