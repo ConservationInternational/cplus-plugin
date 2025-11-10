@@ -3,9 +3,7 @@
 
 import os
 import typing
-import json
 from datetime import datetime
-from qgis.core import QgsSettings
 
 from qgis import processing
 from qgis.core import (
@@ -23,10 +21,16 @@ from ..models.constant_raster import (
     ConstantRasterMetadata,
     ConstantRasterContext,
     ConstantRasterInfo,
+    ConstantRasterFileMetadata,
 )
 from ..models.base import ModelComponentType
 from ..utils import log, tr
-from ..conf import settings_manager
+from ..conf import (
+    settings_manager,
+    save_constant_raster_collection,
+    load_constant_raster_collection,
+    get_all_constant_raster_metadata_ids,
+)
 from ..models.helpers import (
     get_constant_raster_dir,
     generate_constant_raster_filename,
@@ -35,8 +39,8 @@ from ..models.helpers import (
     constant_raster_collection_from_dict,
 )
 from ..definitions.constants import (
-    CONSTANT_RASTERS_SETTINGS_KEY,
     COMPONENT_ID_ATTRIBUTE,
+    COMPONENT_UUID_ATTRIBUTE,
     SKIP_RASTER_ATTRIBUTE,
     ENABLED_ATTRIBUTE,
     ABSOLUTE_VALUE_ATTRIBUTE,
@@ -51,129 +55,11 @@ from ..definitions.constants import (
 
 
 class ConstantRasterProcessingUtils:
-    """Utilities for constant raster processing and normalization.
+    """Utilities for constant raster processing.
 
-    This class provides methods for creating, processing, and normalizing
+    This class provides methods for creating and processing
     constant rasters according to the CPLUS framework requirements.
     """
-
-    @staticmethod
-    def normalize_raster(
-        input_path: str,
-        output_path: str,
-        min_value: float,
-        max_value: float,
-        extent: typing.Optional[QgsRectangle] = None,
-        resolution: typing.Optional[
-            typing.Union[float, typing.Tuple[float, float]]
-        ] = None,
-        crs: typing.Optional[QgsCoordinateReferenceSystem] = None,
-        context: typing.Optional[QgsProcessingContext] = None,
-        feedback: typing.Optional[QgsProcessingFeedback] = None,
-    ) -> str:
-        """Normalize a raster to the specified value range using GDAL.
-
-        This method scales the input raster values to fall within the
-        specified min_value and max_value range using GDAL's translate
-        with the -scale parameter.
-
-        Formula: ((value - input_min) / (input_max - input_min)) * (max_value - min_value) + min_value
-
-        :param input_path: Path to input raster
-        :param output_path: Path for output normalized raster
-        :param min_value: Minimum value for normalization
-        :param max_value: Maximum value for normalization
-        :param extent: Optional extent for clipping
-        :param resolution: Optional resolution for resampling
-        :param crs: Optional CRS for reprojection
-        :param context: Processing context (follows plugin pattern)
-        :param feedback: Optional feedback for progress reporting
-        :returns: Path to normalized raster
-        :raises QgsProcessingException: If normalization fails
-        """
-        if feedback:
-            feedback.pushInfo(f"Normalizing raster: {input_path}")
-            feedback.pushInfo(f"Target range: [{min_value}, {max_value}]")
-
-        # Load input raster to get statistics
-        raster_layer = QgsRasterLayer(input_path, "input_raster")
-        if not raster_layer.isValid():
-            raise QgsProcessingException(f"Invalid input raster: {input_path}")
-
-        # Get raster statistics
-        provider = raster_layer.dataProvider()
-        band = 1  # Assuming single band
-        stats = provider.bandStatistics(band)
-
-        input_min = stats.minimumValue
-        input_max = stats.maximumValue
-        input_range = input_max - input_min
-
-        if feedback:
-            feedback.pushInfo(
-                f"Input raster stats - min: {input_min}, max: {input_max}"
-            )
-
-        if input_range == 0:
-            raise QgsProcessingException("Input raster has no variation (min == max)")
-
-        # Ensure output directory exists
-        output_dir = os.path.dirname(output_path)
-        if output_dir and not os.path.exists(output_dir):
-            os.makedirs(output_dir, exist_ok=True)
-
-        # Create processing context if not provided
-        if context is None:
-            context = QgsProcessingContext()
-
-        # Build GDAL translate parameters
-        # Using -scale to normalize: -scale <src_min> <src_max> <dst_min> <dst_max>
-        alg_params = {
-            "INPUT": input_path,
-            "OUTPUT": output_path,
-            "SCALE": f"{input_min},{input_max},{min_value},{max_value}",
-            "DATA_TYPE": 6,  # Float32
-        }
-
-        # Add optional extent if provided
-        if extent:
-            extent_string = (
-                f"{extent.xMinimum()},{extent.xMaximum()},"
-                f"{extent.yMinimum()},{extent.yMaximum()}"
-            )
-            if crs:
-                extent_string += f" [{crs.authid()}]"
-            alg_params["PROJWIN"] = extent_string
-
-        # Add optional CRS if provided
-        if crs:
-            alg_params["TARGET_CRS"] = crs.authid()
-
-        # Add optional resolution if provided
-        if resolution:
-            if isinstance(resolution, tuple):
-                alg_params["TR"] = f"{resolution[0]} {resolution[1]}"
-            else:
-                alg_params["TR"] = f"{resolution} {resolution}"
-
-        try:
-            if feedback:
-                feedback.pushInfo("Running GDAL translate with normalization...")
-
-            # Run GDAL translate following plugin pattern
-            result = processing.run(
-                "gdal:translate", alg_params, context=context, feedback=feedback
-            )
-
-            if feedback:
-                feedback.pushInfo(f"Normalization complete: {output_path}")
-
-            return result["OUTPUT"]
-
-        except Exception as ex:
-            err_msg = tr("Error normalizing raster")
-            log(f"{err_msg}: {str(ex)}", info=False)
-            raise QgsProcessingException(f"{err_msg}: {str(ex)}")
 
     @staticmethod
     def create_constant_raster(
@@ -558,21 +444,26 @@ class ConstantRasterProcessingUtils:
                             and hasattr(component.component, "name")
                             else component.component_id
                         )
-                        meta_path = save_constant_raster_metadata(
-                            raster_path=created_path,
+
+                        # Create metadata object
+                        file_metadata = ConstantRasterFileMetadata(
+                            raster_path="" if collection.skip_raster else created_path,
                             component_id=component.component_id,
                             component_name=component_name,
-                            input_value=absolute_value,
-                            normalized_value=constant_value,
-                            output_min=collection.min_value,
-                            output_max=collection.max_value,
-                            metadata_id=metadata_id,
                             component_type=(
                                 collection.component_type.value
                                 if collection.component_type
                                 else "unknown"
                             ),
-                            skip_raster=collection.skip_raster,
+                            input_value=absolute_value,
+                            normalized_value=constant_value,
+                            output_min=collection.min_value,
+                            output_max=collection.max_value,
+                            metadata_id=metadata_id,
+                        )
+
+                        meta_path = save_constant_raster_metadata(
+                            file_metadata, session_dir
                         )
                         if feedback:
                             feedback.pushInfo(f"Saved metadata: {meta_path}")
@@ -613,8 +504,6 @@ class ConstantRasterRegistry:
     def __init__(self):
         """Initialize the registry with empty stores."""
         self._metadata_store: typing.Dict[str, ConstantRasterMetadata] = {}
-        self._serializers: typing.Dict[str, typing.Callable] = {}
-        self._deserializers: typing.Dict[str, typing.Callable] = {}
 
     def add_metadata(self, metadata: ConstantRasterMetadata) -> bool:
         """Add constant raster metadata to the registry.
@@ -715,64 +604,86 @@ class ConstantRasterRegistry:
         )
 
     def save(self):
-        """Save all registered metadata to settings."""
+        """Save all registered metadata to settings.
 
-        settings = QgsSettings()
-        settings.beginGroup(CONSTANT_RASTERS_SETTINGS_KEY)
-
+        Uses metadata.serializer if provided, otherwise uses default serializer.
+        """
         for metadata_id, metadata in self._metadata_store.items():
             if metadata.raster_collection:
-                collection_data = constant_raster_collection_to_dict(
-                    metadata.raster_collection
-                )
-                json_str = json.dumps(collection_data)
-                settings.setValue(metadata_id, json_str)
+                # Use custom serializer if provided, otherwise use default
+                if metadata.serializer:
+                    collection_data = metadata.serializer(metadata.raster_collection)
+                else:
+                    collection_data = constant_raster_collection_to_dict(
+                        metadata.raster_collection
+                    )
 
-        settings.endGroup()
+                save_constant_raster_collection(metadata_id, collection_data)
 
     def load(self):
-        """Load metadata from settings."""
+        """Load metadata from settings.
 
-        settings = QgsSettings()
-        settings.beginGroup(CONSTANT_RASTERS_SETTINGS_KEY)
-
-        for metadata_id in settings.childKeys():
+        Uses metadata.deserializer if provided, otherwise uses default deserializer.
+        """
+        for metadata_id in get_all_constant_raster_metadata_ids():
             if metadata_id in self._metadata_store:
                 try:
-                    json_str = settings.value(metadata_id, "{}")
-                    collection_data = json.loads(json_str)
+                    collection_data = load_constant_raster_collection(metadata_id)
+                    if not collection_data:
+                        continue
+
                     metadata = self._metadata_store[metadata_id]
 
-                    if metadata.raster_collection is not None and collection_data:
-                        # Get all model components for reference
-                        model_components = []
-                        if metadata.component_type == ModelComponentType.ACTIVITY:
-                            model_components = settings_manager.get_all_activities()
-                        elif metadata.component_type == ModelComponentType.NCS_PATHWAY:
-                            model_components = settings_manager.get_all_ncs_pathways()
+                    if metadata.raster_collection is not None:
+                        # Get all activities for reference
+                        model_components = settings_manager.get_all_activities()
 
-                        # Use helper to deserialize, but components will be None
-                        # (will be populated later by dialog)
-                        loaded_collection = constant_raster_collection_from_dict(
-                            collection_data, model_components
-                        )
+                        # Use custom deserializer if provided, otherwise use default
+                        if metadata.deserializer:
+                            loaded_collection = metadata.deserializer(
+                                collection_data, model_components
+                            )
+                        else:
+                            loaded_collection = constant_raster_collection_from_dict(
+                                collection_data, model_components
+                            )
 
                         if loaded_collection:
                             # Copy values to existing collection
-                            metadata.raster_collection.min_value = loaded_collection.min_value
-                            metadata.raster_collection.max_value = loaded_collection.max_value
-                            metadata.raster_collection.allowable_min = loaded_collection.allowable_min
-                            metadata.raster_collection.allowable_max = loaded_collection.allowable_max
-                            metadata.raster_collection.skip_raster = loaded_collection.skip_raster
-                            metadata.raster_collection.last_updated = loaded_collection.last_updated
-                            metadata.raster_collection.components = loaded_collection.components
+                            metadata.raster_collection.min_value = (
+                                loaded_collection.min_value
+                            )
+                            metadata.raster_collection.max_value = (
+                                loaded_collection.max_value
+                            )
+                            metadata.raster_collection.allowable_min = (
+                                loaded_collection.allowable_min
+                            )
+                            metadata.raster_collection.allowable_max = (
+                                loaded_collection.allowable_max
+                            )
+                            metadata.raster_collection.skip_raster = (
+                                loaded_collection.skip_raster
+                            )
+                            metadata.raster_collection.last_updated = (
+                                loaded_collection.last_updated
+                            )
+                            metadata.raster_collection.components = (
+                                loaded_collection.components
+                            )
 
                             # Store saved UUIDs for later population
-                            components_data = collection_data.get(COMPONENTS_ATTRIBUTE, [])
+                            components_data = collection_data.get(
+                                COMPONENTS_ATTRIBUTE, []
+                            )
                             for idx, saved_component in enumerate(components_data):
                                 if idx < len(metadata.raster_collection.components):
-                                    component = metadata.raster_collection.components[idx]
-                                    saved_uuid = saved_component.get(COMPONENT_UUID_ATTRIBUTE) or saved_component.get(COMPONENT_ID_ATTRIBUTE)
+                                    component = metadata.raster_collection.components[
+                                        idx
+                                    ]
+                                    saved_uuid = saved_component.get(
+                                        COMPONENT_UUID_ATTRIBUTE
+                                    ) or saved_component.get(COMPONENT_ID_ATTRIBUTE)
                                     if saved_uuid:
                                         component._saved_component_uuid = saved_uuid
 
@@ -781,8 +692,6 @@ class ConstantRasterRegistry:
                         f"Error loading constant raster state for {metadata_id}: {str(e)}",
                         info=False,
                     )
-
-        settings.endGroup()
 
     def remove_metadata(self, metadata_id: str) -> bool:
         """Remove metadata from the registry.

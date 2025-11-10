@@ -59,13 +59,11 @@ class ConstantRasterInfo:
 class ConstantRasterComponent:
     """Individual constant raster with layer model component associations.
 
-    This class links the ConstantRasterInfo with the specific layer model
-    component (NcsPathway or Activity).
-    Activities are stored by calling their type.
+    This class links the ConstantRasterInfo with the Activity component.
     """
 
     value_info: ConstantRasterInfo
-    component: LayerModelComponent  # Either NcsPathway or Activity
+    component: LayerModelComponent  # Activity component
     prefix: str = ""  # Prefix for naming
     base_name: str = ""  # Base component name
     suffix: str = ""  # Suffix for naming
@@ -320,13 +318,14 @@ class ConstantRasterContext:
 class ConstantRasterMetadata:
     """Metadata for constant rasters.
 
-    Stores metadata including the deserializer callable (PyFunc).
+    Stores metadata for a constant raster type including serialization functions.
     """
 
     id: str = ""
     display_name: str = ""
     raster_collection: typing.Optional[ConstantRasterCollection] = None
-    deserializer: typing.Optional[typing.Callable] = None  # PyFunc
+    serializer: typing.Optional[typing.Callable] = None
+    deserializer: typing.Optional[typing.Callable] = None
     component_type: typing.Optional[
         "ModelComponentType"
     ] = None  # Type this metadata applies to
@@ -346,7 +345,7 @@ class ConstantRasterFileMetadata:
     raster_path: str
     component_id: str
     component_name: str
-    component_type: str  # "NCS_PATHWAY" or "ACTIVITY"
+    component_type: str  # "ACTIVITY"
     input_value: float
     normalized_value: float
     output_min: float

@@ -16,6 +16,10 @@ from ...models.constant_raster import (
     ConstantRasterCollection,
     InputRange,
 )
+from ...models.helpers import (
+    constant_raster_collection_to_dict,
+    constant_raster_collection_from_dict,
+)
 
 
 class ConstantRasterWidgetInterface:
@@ -73,7 +77,7 @@ class ConstantRasterWidgetInterface:
         """Widget to implement this and specify how the information
         in the raster component will update the corresponding
         controls in the widget. This will be called when a
-        user clicks on an NCS pathway or activity in the list view.
+        user clicks on an activity in the list view.
 
         The raster component passed in this function will also be
         automatically set in the attribute so no further action
@@ -91,7 +95,7 @@ class ConstantRasterWidgetInterface:
         with default values (typically 0.0 for numeric values).
         The actual value will be set later when the user enters it.
 
-        :param model_component: The layer model component (pathway/activity)
+        :param model_component: The activity model component
         :returns: A constant raster component object for
         use in defining the default component to use for
         new mappings.
@@ -110,13 +114,14 @@ class ConstantRasterWidgetInterface:
         and other metadata properties.
 
         :param metadata_id: Unique identifier for this metadata instance
-        :param component_type: Type of component (NCS_PATHWAY or ACTIVITY)
+        :param component_type: Type of component (ACTIVITY)
         :returns: ConstantRasterMetadata object
         """
         return ConstantRasterMetadata(
             id=metadata_id,
             display_name="Constant Raster",
             raster_collection=None,
+            serializer=None,
             deserializer=None,
             component_type=component_type,
             input_range=InputRange(min=0.0, max=100.0),
@@ -194,14 +199,8 @@ class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         Creates a component with default value 0.0. The actual value
         will be set later when the user enters it in the widget.
         """
-        # Determine component type
-        component_type = ModelComponentType.UNKNOWN
-        if hasattr(model_component, "__class__"):
-            class_name = model_component.__class__.__name__
-            if class_name == "NcsPathway":
-                component_type = ModelComponentType.NCS_PATHWAY
-            elif class_name == "Activity":
-                component_type = ModelComponentType.ACTIVITY
+        # Component type is always ACTIVITY for constant rasters
+        component_type = ModelComponentType.ACTIVITY
 
         return ConstantRasterComponent(
             value_info=ConstantRasterInfo(absolute=0.0),  # Default value
@@ -220,7 +219,7 @@ class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         metadata for this widget type.
 
         :param metadata_id: Unique identifier for this metadata instance
-        :param component_type: Type of component (NCS_PATHWAY or ACTIVITY)
+        :param component_type: Type of component (ACTIVITY)
         :returns: ConstantRasterMetadata object configured for years of experience
         """
         collection = ConstantRasterCollection(
@@ -236,7 +235,8 @@ class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
             id=metadata_id,
             display_name="Years of Experience",
             raster_collection=collection,
-            deserializer=None,
+            serializer=constant_raster_collection_to_dict,
+            deserializer=constant_raster_collection_from_dict,
             component_type=component_type,
             input_range=InputRange(min=0.0, max=100.0),  # 0-100 years
         )

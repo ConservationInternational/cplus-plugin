@@ -290,72 +290,28 @@ def write_constant_raster_metadata_file(
 
 
 def save_constant_raster_metadata(
-    raster_path: str,
-    component_id: str,
-    component_name: str,
-    input_value: float,
-    normalized_value: float,
-    output_min: float,
-    output_max: float,
-    metadata_id: str,
-    component_type: str,
-    skip_raster: bool = False,
+    metadata: ConstantRasterFileMetadata, raster_dir: str
 ) -> str:
     """Save metadata for a constant raster to a text file.
 
     Creates a .meta.txt file alongside the raster with information
     about how it was created.
 
-    This is a convenience function that creates a ConstantRasterFileMetadata
-    instance and writes it to a file.
+    :param metadata: ConstantRasterFileMetadata with all metadata information
+    :type metadata: ConstantRasterFileMetadata
 
-    :param raster_path: Full path to the raster file (used for subfolder naming)
-    :type raster_path: str
-
-    :param component_id: UUID of the component
-    :type component_id: str
-
-    :param component_name: Name of the component
-    :type component_name: str
-
-    :param input_value: Original input value (e.g., 5.0 years)
-    :type input_value: float
-
-    :param normalized_value: Final normalized value stored in raster
-    :type normalized_value: float
-
-    :param output_min: Minimum normalization range value
-    :type output_min: float
-
-    :param output_max: Maximum normalization range value
-    :type output_max: float
-
-    :param metadata_id: Raster type ID
-    :type metadata_id: str
-
-    :param component_type: Type of component (NCS_PATHWAY or ACTIVITY)
-    :type component_type: str
-
-    :param skip_raster: If True, raster was not created (metadata only)
-    :type skip_raster: bool
+    :param raster_dir: Directory where the raster file is located
+    :type raster_dir: str
 
     :returns: Path to the metadata file
     :rtype: str
     """
-    metadata = ConstantRasterFileMetadata(
-        raster_path="" if skip_raster else raster_path,
-        component_id=component_id,
-        component_name=component_name,
-        component_type=component_type,
-        input_value=input_value,
-        normalized_value=normalized_value,
-        output_min=output_min,
-        output_max=output_max,
-        metadata_id=metadata_id,
-    )
-
-    raster_dir = os.path.dirname(raster_path)
-    raster_basename = os.path.splitext(os.path.basename(raster_path))[0]
+    # Use raster_path from metadata if available, otherwise use component_name
+    if metadata.raster_path:
+        raster_basename = os.path.splitext(os.path.basename(metadata.raster_path))[0]
+    else:
+        # When skip_raster=True, use component_name for metadata filename
+        raster_basename = clean_filename(metadata.component_name)
 
     metadata_subfolder = os.path.join(raster_dir, "metadata")
     os.makedirs(metadata_subfolder, exist_ok=True)

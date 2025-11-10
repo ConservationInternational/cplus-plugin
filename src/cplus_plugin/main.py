@@ -56,11 +56,6 @@ from .lib.reports.manager import report_manager
 from .lib.reports.metrics import register_metric_functions, unregister_metric_functions
 from .lib.constant_raster import constant_raster_registry
 from .models.base import PriorityLayerType, ModelComponentType
-from .models.constant_raster import (
-    ConstantRasterCollection,
-    ConstantRasterMetadata,
-    InputRange,
-)
 from .models.report import MetricConfigurationProfile, MetricProfileCollection
 from .gui.settings.cplus_options import CplusOptionsFactory
 from .gui.settings.log_options import LogOptionsFactory
@@ -607,45 +602,18 @@ def initialize_report_settings():
     settings_manager.set_value(report_setting, True)
 
 
-def create_years_experience_metadata(
-    metadata_id: str, component_type: ModelComponentType
-) -> ConstantRasterMetadata:
-    """Create metadata for Years of Experience constant raster type.
-
-    :param metadata_id: Unique identifier for this metadata instance
-    :param component_type: Type of component (NCS_PATHWAY or ACTIVITY)
-    :returns: ConstantRasterMetadata object configured for years of experience
-    """
-    collection = ConstantRasterCollection(
-        min_value=0.0,
-        max_value=100.0,
-        component_type=component_type,
-        components=[],
-        allowable_max=sys.float_info.max,
-        allowable_min=0.0,
-    )
-
-    return ConstantRasterMetadata(
-        id=metadata_id,
-        display_name="Years of Experience",
-        raster_collection=collection,
-        deserializer=None,
-        component_type=component_type,
-        input_range=InputRange(min=0.0, max=100.0),  # 0-100 years
-    )
-
-
 def initialize_constant_raster_registry():
     """Initialize constant raster metadata registry during plugin startup.
 
     Registers default constant raster types (e.g., Years of Experience)
-    for activities.
+    for activities. Uses widget's create_metadata() method to ensure
+    consistency with serializer/deserializer setup.
     """
     log("Initializing constant raster metadata registry", info=True)
 
     # Register "Years of Experience" for Activities
     if YEARS_EXPERIENCE_ACTIVITY_ID not in constant_raster_registry.metadata_ids():
-        metadata_activity = create_years_experience_metadata(
+        metadata_activity = YearsExperienceWidget.create_metadata(
             YEARS_EXPERIENCE_ACTIVITY_ID, ModelComponentType.ACTIVITY
         )
         constant_raster_registry.add_metadata(metadata_activity)
