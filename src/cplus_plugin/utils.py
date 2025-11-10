@@ -14,10 +14,12 @@ from pathlib import Path
 from uuid import UUID
 from enum import Enum
 import shutil
+import traceback
 from zipfile import ZipFile
 
 import numpy as np
 from osgeo import gdal
+from scipy.ndimage import label
 
 from qgis.PyQt import QtCore, QtGui
 from qgis.core import (
@@ -32,6 +34,11 @@ from qgis.core import (
     QgsProcessing,
     QgsRasterLayer,
     QgsUnitTypes,
+    QgsRasterBlock,
+    Qgis,
+    QgsRasterPipe,
+    QgsRasterDataProvider,
+    QgsRasterFileWriter,
 )
 
 from qgis.analysis import QgsAlignRaster
@@ -1009,3 +1016,320 @@ def compress_raster(
     except Exception as error:
         log(f"Error occurred during raster compression. Error code: {error}")
         return None
+
+
+def raster_from_array(
+    array, extent, crs, output_path=None, layer_name="Numpy Raster"
+) -> QgsRasterLayer:
+    """
+    Create a QGIS raster layer from a numpy array
+
+    :param array: Input numpy array (2D or 3D)
+    :type array: ndarray
+
+    :param extent: QgsRectangle with the extent in CRS coordinates
+    :type extent: QgsRectangle
+
+    :param crs: Coordinate system
+    :type crs: QgsCoordinateReferenceSystem
+
+    :param output_path: Optional path to save as GeoTIFF (if None, creates temporary layer)
+    :type output_path: str
+
+    :param layer_name: Optional name for the layer
+    :type layer_name: str
+
+    Returns:
+    QgsRasterLayer
+    """
+
+    # Determine data type based on numpy array dtype
+    dtype_map = {
+        np.uint8: Qgis.Byte,
+        np.int16: Qgis.Int16,
+        np.uint16: Qgis.UInt16,
+        np.int32: Qgis.Int32,
+        np.uint32: Qgis.UInt32,
+        np.float32: Qgis.Float32,
+        np.float64: Qgis.Float64,
+    }
+
+    data_type = dtype_map.get(array.dtype.type, Qgis.Float32)
+
+    # Get array dimensions
+    if array.ndim == 2:
+        height, width = array.shape
+        bands = 1
+        # Reshape to 3D for consistent processing
+        array = array.reshape(1, height, width)
+    elif array.ndim == 3:
+        bands, height, width = array.shape
+    else:
+        raise ValueError("Array must be 2D or 3D")
+
+    if output_path:
+        # Create a raster file writer
+        writer = QgsRasterFileWriter(output_path)
+        writer.setOutputProviderKey("gdal")
+        writer.setOutputFormat("GTiff")
+
+        # Create the output raster
+        provider = writer.createOneBandRaster(data_type, width, height, extent, crs)
+    else:
+        # Create a temporary memory layer
+        provider = QgsRasterDataProvider("memory", "1", data_type, width, height, 1)
+
+    # Set the data for each band
+    for band in range(bands):
+        # Create raster block
+        block = QgsRasterBlock(data_type, width, height)
+
+        # Convert numpy array to bytes for the block
+        if array.dtype == np.float32:
+            data_bytes = array[band].tobytes()
+        else:
+            # Ensure correct byte order
+            data_bytes = array[band].astype(array.dtype.newbyteorder("=")).tobytes()
+
+        # Write data to block
+        block.setData(data_bytes)
+
+        # Write block to provider
+        provider.writeBlock(block, band + 1)
+
+        # Set NoData value to 0
+        provider.setNoDataValue(band + 1, 0)
+
+    if output_path:
+        provider.setEditable(False)
+        raster_layer = QgsRasterLayer(output_path, layer_name)
+    else:
+        # For memory provider, we need to create a proper raster layer
+        # This is a workaround since memory provider doesn't easily create layers
+        uri = f"MEM::{width}:{height}:{bands}:{data_type}:[{extent.xMinimum()},{extent.yMinimum()},{extent.xMaximum()},{extent.yMaximum()}]"
+        raster_layer = QgsRasterLayer(uri, layer_name, "memory")
+        # Copy the data (simplified approach)
+        pipe = QgsRasterPipe()
+        pipe.set(provider.clone())
+        raster_layer = QgsRasterLayer(pipe, layer_name)
+
+    # Set CRS
+    raster_layer.setCrs(crs)
+
+    return raster_layer
+
+
+def array_from_raster(input_layer: QgsRasterLayer):
+    """
+    Read a raster and return the pixel values as numpy array
+
+    :param input_layer: Input raster layer
+    :type input_layer: QgsRasterLayer
+
+    :return: Pixel values as numpy array
+    :rtype: ndarray
+
+    """
+    provider = input_layer.dataProvider()
+    extent = provider.extent()
+    height, width = input_layer.height(), input_layer.width()
+    block = provider.block(1, extent, width, height)  # assuming single band raster
+    array = np.zeros((height, width), dtype=np.float32)
+    for i in range(height):
+        for j in range(width):
+            array[i, j] = block.value(i, j)
+
+    return array
+
+
+def create_connectivity_raster(
+    input_raster_path: str,
+    output_raster_path: str,
+    connectivity_type: int = 8,
+    min_patch_area: float = None,
+    area_unit: str = "ha",
+):
+    """
+    Computes the pixel connectivity of a given binary raster
+
+    :param input_raster_path: Input layer path
+    :type input_raster_path: str
+
+    :param output_raster_path: Output layer path
+    :type output_raster_path: str
+
+    :param connectivity_type: Number of pixels reachable from the
+        specified pixel in 4- or 8-directional adjacency
+        For 4-directional connectivity → N, S, E, W adjacency
+        For 8-directional connectivity → N, S, E, W, NE, NW, SE, SW adjacency
+        Default to 8
+    :type connectivity_type: int
+
+    :param min_patch_area: Minimum patch size, default to None
+    :type min_patch_area: float | None
+
+    :param area_unit: Unit of the patch size i.e ha or m2, defaulto to ha
+    :type area_unit: str
+    """
+
+    logs = []
+
+    try:
+        # -----------------------
+        # 1. Load raster
+        # -----------------------
+        input_layer = QgsRasterLayer(input_raster_path, "raster")
+        if not input_layer.isValid():
+            logs.append(f"Invalid raster {input_raster_path}")
+            return False, logs
+
+        arr = array_from_raster(input_layer)
+        height, width = input_layer.height(), input_layer.width()
+
+        provider = input_layer.dataProvider()
+        if provider.sourceHasNoDataValue(1):
+            # Convert NoData value to 0
+            nodata_value = provider.sourceNoDataValue(1)
+            arr[arr == nodata_value] = 0.0
+
+        # Expecting a normalized raster 0-1. Convert any value greater than 1 to 0
+        arr[arr > 1] = 0.0
+
+        # Convert to binary to ignore resistance caused by varying pixel values
+        arr = (arr > 0).astype(np.uint8)
+
+        # Just need gdal to get the raster GeoTransform.
+        # Cannot directly get it from qgis rasterlayer because layer.rasterUnitsPerPixelY() is absolute
+        # gt = [extent.xMinimum(), layer.rasterUnitsPerPixelX(), 0, extent.yMaximum(), 0, layer.rasterUnitsPerPixelY()]
+        gdal_ds = gdal.Open(input_raster_path)
+        gt = gdal_ds.GetGeoTransform()
+        gdal_ds = None
+
+        # pixel size in map units (assume square pixels)
+        px_w = abs(gt[1])
+        px_h = abs(gt[5]) if gt[5] != 0 else px_w
+
+        # use average pixel size (map units) for distance scaling
+        pixel_size = math.sqrt(px_w * px_h)
+
+        # Minimum number of pixels to discriminate
+        MIN_SIZE_PENALTY_K = 100
+        EPS = 1e-12
+
+        # -----------------------
+        # 2. Determine the number of pixels for the minimum patch area
+        # -----------------------
+
+        if min_patch_area:
+            pixel_area_m2 = abs(px_w * px_h)
+            if area_unit.lower() == "ha":
+                min_patch_area_m2 = min_patch_area * 10000.0
+            elif area_unit.lower() == "m2":
+                min_patch_area_m2 = min_patch_area
+            else:
+                logs.append("Patch Area Unit must be 'ha' or 'm2'")
+                return False, logs
+
+            MIN_SIZE_PENALTY_K = int(math.ceil(min_patch_area_m2 / pixel_area_m2))
+
+        # -----------------------
+        # 3. Compute connected clusters
+        # -----------------------
+        if connectivity_type == 4:
+            struct = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]], dtype=np.uint8)
+        else:
+            struct = np.ones((3, 3), dtype=np.uint8)
+
+        labeled, n_labels = label(arr == 1, structure=struct)
+
+        cluster_size_array = np.zeros_like(labeled, dtype=np.int32)
+        centroid_mean_dist_array = np.zeros_like(labeled, dtype=np.float32)
+        raw_score_array = np.zeros_like(labeled, dtype=np.float32)
+
+        # precompute pixel coordinates in map units
+        rows, cols = np.indices((height, width))
+
+        # centroid coords = pixel center: x = gt[0] + (col + 0.5)*gt[1] + (row + 0.5)*gt[2] (usually gt[2]==0)
+        # y = gt[3] + (col + 0.5)*gt[4] + (row + 0.5)*gt[5] (usually gt[4]==0)
+
+        xs = gt[0] + (cols + 0.5) * gt[1] + (rows + 0.5) * gt[2]
+        ys = gt[3] + (cols + 0.5) * gt[4] + (rows + 0.5) * gt[5]
+
+        # iterate clusters
+        cluster_scores = []
+        for lbl in range(1, n_labels + 1):
+            mask = labeled == lbl
+            S = int(mask.sum())
+            cluster_size_array[mask] = S
+
+            # coordinates of pixels in map units (N x 2)
+            xs_pix = xs[mask].astype(float)
+            ys_pix = ys[mask].astype(float)
+            pts = np.column_stack((xs_pix, ys_pix))
+
+            if S == 1:
+                # Single pixel: distance = 0
+                mean_dist = 0.0
+            else:
+                # centroid
+                centroid = pts.mean(axis=0)
+                # compute distances from pixels to cluster centroid (map units)
+                dists = np.linalg.norm(pts - centroid, axis=1)
+                mean_dist = float(dists.mean())
+
+            centroid_mean_dist_array[mask] = mean_dist
+
+            # estimate cluster radius from area: pixel_area * S
+            pixel_area = abs(gt[1] * gt[5]) if gt[5] != 0 else (px_w * px_h)
+            cluster_area = S * pixel_area
+            if cluster_area <= 0:
+                r_est = pixel_size / 2.0
+            else:
+                r_est = math.sqrt(cluster_area / math.pi)
+
+            denom = r_est if r_est > 0 else (pixel_size / 2.0)
+            compactness = math.exp(-(mean_dist / (denom + EPS)))
+
+            k = float(MIN_SIZE_PENALTY_K)
+            size_penalty = 1.0 / (1.0 + math.exp(-(S - k) / (k + EPS)))  # ranges ~0..1
+
+            raw_score = S * compactness * size_penalty
+
+            raw_score_array[mask] = raw_score
+            cluster_scores.append(raw_score)
+
+        if len(cluster_scores) == 0:
+            logs.append(f"No clusters found for raster {input_raster_path}")
+            return False, logs
+
+        # Normalize raw_score_array over pixels that belong to clusters
+        mask_clusters = cluster_size_array > 0
+        raw_vals = raw_score_array[mask_clusters]
+        min_raw = float(np.nanmin(raw_vals))
+        max_raw = float(np.nanmax(raw_vals))
+        if abs(max_raw - min_raw) < EPS:
+            norm_score_array = np.zeros_like(raw_score_array, dtype=np.float32)
+            norm_score_array[mask_clusters] = 1.0
+        else:
+            norm_score_array = np.zeros_like(raw_score_array, dtype=np.float32)
+            norm_score_array[mask_clusters] = (
+                raw_score_array[mask_clusters] - min_raw
+            ) / (max_raw - min_raw)
+
+        # Ignore clusters with pixels less than MIN_SIZE_PENALTY_K
+        # norm_score_array[cluster_size_array < MIN_SIZE_PENALTY_K] = 0
+
+        output_layer = raster_from_array(
+            norm_score_array,
+            input_layer.extent(),
+            input_layer.crs(),
+            output_raster_path,
+        )
+        if output_layer and output_layer.isValid():
+            return True, logs
+
+    except Exception as e:
+        logs.append(f"Problem occured when creating connectivity layer, {str(e)}.")
+        logs.append(traceback.format_exc())
+
+    return False, logs
