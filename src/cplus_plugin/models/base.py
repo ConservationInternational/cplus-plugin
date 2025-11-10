@@ -5,8 +5,8 @@
 
 import dataclasses
 import datetime
-import enum
 from enum import Enum, IntEnum
+import locale
 import os.path
 import typing
 from uuid import UUID
@@ -682,3 +682,44 @@ class AreaOfInterestSource(Enum):
 
     LAYER = 0
     EXTENT = 1
+
+
+@dataclasses.dataclass
+class ResultInfo:
+    """Simple generic container for result collection and
+    when it was last updated. Use cases can include results
+    from online processing.
+
+    The `updated_date` is assumed to be in UTC in this
+    format %Y-%m-%dT%H:%M:%SZ.
+    """
+
+    result_collection: typing.List[object]
+    updated_date: str
+
+    def to_local_time(self) -> str:
+        """Convenience function that converts the `updated_date`
+        to more friendly display in the local time.
+
+        :returns: Friendly date/time display in local date/time
+        and format.
+        :rtype: str
+        """
+        if not self.updated_date or self.updated_date == "":
+            return ""
+
+        try:
+            utc_dt = datetime.datetime.strptime(self.updated_date, "%Y-%m-%dT%H:%M:%SZ")
+            utc_dt = utc_dt.replace(tzinfo=datetime.timezone.utc)
+            local_dt = utc_dt.astimezone()
+
+            try:
+                locale.setlocale(locale.LC_TIME, "")
+            except locale.Error:
+                pass  # Fallback to default locale
+
+            formatted_date = local_dt.strftime("%x")
+            formatted_time = local_dt.strftime("%H:%M")
+            return f"{formatted_date} {formatted_time}"
+        except (ValueError, TypeError) as e:
+            return f"Error: {str(e)}"

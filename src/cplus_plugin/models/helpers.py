@@ -27,6 +27,7 @@ from .base import (
     LayerType,
     NcsPathway,
     NcsPathwayType,
+    ResultInfo,
     ScenarioResult,
     SpatialExtent,
 )
@@ -43,6 +44,7 @@ from ..definitions.constants import (
     ENABLED_ATTRIBUTE,
     EXPRESSION_ATTRIBUTE,
     HEADER_ATTRIBUTE,
+    LAST_UPDATED_DATE_ATTRIBUTE,
     LAYER_TYPE_ATTRIBUTE,
     MANUAL_NPV_ATTRIBUTE,
     MASK_PATHS_SEGMENT,
@@ -67,6 +69,7 @@ from ..definitions.constants import (
     PRIORITY_LAYERS_SEGMENT,
     PROFILES_ATTRIBUTE,
     REMOVE_EXISTING_ATTRIBUTE,
+    RESULT_COLLECTION_ATTRIBUTE,
     STYLE_ATTRIBUTE,
     USER_DEFINED_ATTRIBUTE,
     UUID_ATTRIBUTE,
@@ -1009,7 +1012,7 @@ def metric_profile_collection_to_dict(
 def create_metrics_profile_collection(
     metric_profile_collection_dict, referenced_activities: typing.List[Activity]
 ) -> typing.Optional[MetricProfileCollection]:
-    """Deserialized a metric profile collection from the equivalent
+    """Deserializes a metric profile collection from the equivalent
     dictionary representation.
 
     :param metric_profile_collection_dict: Dictionary containing
@@ -1044,3 +1047,44 @@ def create_metrics_profile_collection(
         metric_profiles.append(profile)
 
     return MetricProfileCollection(current_profile_id, metric_profiles)
+
+
+def result_info_to_dict(result_info: ResultInfo) -> dict:
+    """Serializes a ResultInfo object to a dictionary.
+
+    The result collection should contain simple types that can be
+    decoded to string by the `json` library.
+
+    :param result_info: Result info object to serialize.
+    :type result_info: ResultInfo
+
+    :returns: A dictionary representation of the ResultInfo object.
+    :rtype: dict
+    """
+    return {
+        RESULT_COLLECTION_ATTRIBUTE: result_info.result_collection,
+        LAST_UPDATED_DATE_ATTRIBUTE: result_info.updated_date,
+    }
+
+
+def create_result_info(result_info_dict: dict) -> typing.Optional[ResultInfo]:
+    """Creates a ResultInfo object from the dictionary representation.
+
+    :param result_info_dict: Representation of ResultInfo object.
+    :type result_info_dict: dict
+
+    :returns: A representation of the result info or None if
+    there is missing information in the dictionary.
+    :rtype: ResultInfo
+    """
+    args = []
+    if RESULT_COLLECTION_ATTRIBUTE in result_info_dict:
+        args.append(result_info_dict.get(RESULT_COLLECTION_ATTRIBUTE))
+
+    if LAST_UPDATED_DATE_ATTRIBUTE in result_info_dict:
+        args.append(result_info_dict.get(LAST_UPDATED_DATE_ATTRIBUTE))
+
+    if len(args) < 2:
+        return None
+
+    return ResultInfo(*args)
