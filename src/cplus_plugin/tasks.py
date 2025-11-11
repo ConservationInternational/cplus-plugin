@@ -2737,7 +2737,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         return True
 
-    def create_activity_connectivity_layer(self, activity: Activity) -> str | None:
+    def create_activity_connectivity_layer(self, activity: Activity):
         """Create an activity connectivity layer for investability analysis
 
         :param activity: Activity
