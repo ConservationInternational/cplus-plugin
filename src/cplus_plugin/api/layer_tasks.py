@@ -10,7 +10,6 @@ import time
 import traceback
 import typing
 
-from click import progressbar
 from qgis.core import (
     QgsApplication,
     QgsRectangle,
