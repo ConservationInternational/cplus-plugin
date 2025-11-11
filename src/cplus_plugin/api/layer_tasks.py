@@ -751,7 +751,7 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
     def __init__(
         self,
         bbox: typing.Union[str, list] = None,
-        polling_interval: float = 1.0,
+        polling_interval: float = 3.0,
         parent=None,
     ):
         super().__init__(tr("Calculating mean zonal statistics of Naturebase layers"))
@@ -770,35 +770,12 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
 
             return str(self.bbox)
 
-        # Otherwise get saved scenario extent and transform to WGS84 if needed
+        # Otherwise get saved scenario extent
         extent = settings_manager.get_value(Settings.SCENARIO_EXTENT, default=None)
         if not extent or len(extent) < 4:
             raise ValueError("Scenario extent is not defined or invalid.")
 
-        # Transform CRS to 4326 if needed
-        source_crs = QgsCoordinateReferenceSystem(
-            settings_manager.get_value(Settings.SCENARIO_CRS, default=None)
-        )
-        if not source_crs:
-            raise ValueError("Unable to determine the scenario extent CRS.")
-
-        dest_crs = QgsCoordinateReferenceSystem("EPSG:4326")
-        rect = QgsRectangle(
-            float(extent[0]), float(extent[1]), float(extent[2]), float(extent[3])
-        )
-        if source_crs.isValid() and source_crs != dest_crs:
-            transform = QgsCoordinateTransform(
-                source_crs, dest_crs, QgsProject.instance()
-            )
-            rect = transform.transformBoundingBox(rect)
-
-        minx, miny, maxx, maxy = (
-            rect.xMinimum(),
-            rect.yMinimum(),
-            rect.xMaximum(),
-            rect.yMaximum(),
-        )
-        return f"{minx},{miny},{maxx},{maxy}"
+        return f"{float(extent[0])},{float(extent[2])},{float(extent[1])},{float(extent[3])}"
 
     def run(self) -> bool:
         """Initiate the zonal statistics calculation and poll until
@@ -818,6 +795,7 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
         self.set_status_message("Starting zonal statistics job on server...")
         response = None
         try:
+            log(f"BBOX for zonal stats calculation: {bbox_str}")
             response, status = self.request.calculate_zonal_statistics(bbox_str)
         except Exception as ex:
             log(

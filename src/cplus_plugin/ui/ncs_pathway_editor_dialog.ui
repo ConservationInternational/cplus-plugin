@@ -171,6 +171,9 @@
         <property name="frameShape">
          <enum>QFrame::NoFrame</enum>
         </property>
+        <property name="currentIndex">
+         <number>0</number>
+        </property>
         <widget class="QWidget" name="pg_management">
          <layout class="QVBoxLayout" name="verticalLayout">
           <property name="leftMargin">
@@ -209,15 +212,15 @@
              <item row="0" column="0">
               <widget class="QLabel" name="label_3">
                <property name="text">
-                <string>Carbon impact (tons / ha)</string>
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Carbon impact (tCO2e/ha)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
               </widget>
              </item>
              <item row="0" column="1">
-              <widget class="QgsDoubleSpinBox" name="sb_management_carbon_impact">
+              <widget class="QgsDoubleSpinBox" name="sb_management_carbon_impact_mng">
                <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
+                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                 <horstretch>5</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
@@ -233,15 +236,112 @@
               </widget>
              </item>
              <item row="0" column="2">
-              <widget class="QComboBox" name="cbo_naturebase_carbon">
+              <widget class="QComboBox" name="cbo_naturebase_carbon_mng">
                <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>1</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
+               <property name="maximumSize">
+                <size>
+                 <width>25</width>
+                 <height>16777215</height>
+                </size>
+               </property>
                <property name="toolTip">
                 <string>Choose a computed value for the corresponding or similar Naturebase layer</string>
+               </property>
+               <property name="sizeAdjustPolicy">
+                <enum>QComboBox::AdjustToContents</enum>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="pg_restoration">
+         <layout class="QGridLayout" name="gridLayout_8">
+          <property name="leftMargin">
+           <number>4</number>
+          </property>
+          <property name="topMargin">
+           <number>4</number>
+          </property>
+          <property name="rightMargin">
+           <number>4</number>
+          </property>
+          <property name="bottomMargin">
+           <number>4</number>
+          </property>
+          <item row="0" column="0">
+           <widget class="QgsCollapsibleGroupBox" name="mGroupBox_2">
+            <property name="title">
+             <string>Options</string>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_7">
+             <property name="leftMargin">
+              <number>8</number>
+             </property>
+             <property name="topMargin">
+              <number>8</number>
+             </property>
+             <property name="rightMargin">
+              <number>8</number>
+             </property>
+             <property name="bottomMargin">
+              <number>8</number>
+             </property>
+             <property name="spacing">
+              <number>6</number>
+             </property>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_4">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Carbon impact (tCO2e/ha)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QgsDoubleSpinBox" name="sb_management_carbon_impact_rst">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                 <horstretch>5</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="decimals">
+                <number>8</number>
+               </property>
+               <property name="maximum">
+                <double>1000.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>10.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="2">
+              <widget class="QComboBox" name="cbo_naturebase_carbon_rst">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>1</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>25</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="toolTip">
+                <string>Choose a computed value for the corresponding or similar Naturebase layer</string>
+               </property>
+               <property name="sizeAdjustPolicy">
+                <enum>QComboBox::AdjustToContents</enum>
                </property>
               </widget>
              </item>

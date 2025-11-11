@@ -1269,4 +1269,4 @@ class CplusApiRequest:
         :rtype: CplusApiPooling
         """
         url = self.urls.zonal_stats_progress(task_uuid)
-        return CplusApiPooling(self, url)
+        return CplusApiPooling(self, url, max_limit=1000)

@@ -104,23 +104,29 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         # Pathway type options
         self.sw_pathway_type.hide()
-        self.sb_management_carbon_impact.setMaximum(MAX_CARBON_IMPACT_MANAGE)
+        self.sb_management_carbon_impact_mng.setMaximum(MAX_CARBON_IMPACT_MANAGE)
+        self.sb_management_carbon_impact_rst.setMaximum(MAX_CARBON_IMPACT_MANAGE)
 
-        # Naturebase carbon
+        # Naturebase carbon impact reference
         carbon_impact_info = settings_manager.get_nature_base_zonal_stats()
         if carbon_impact_info:
-            for carbon_impact in carbon_impact_info.result_collection:
-                if (
-                    LAYER_NAME_ATTRIBUTE in carbon_impact
-                    and MEAN_VALUE_ATTRIBUTE in carbon_impact
-                ):
-                    self.cbo_naturebase_carbon.addItem(
-                        carbon_impact[LAYER_NAME_ATTRIBUTE],
-                        round(carbon_impact[MEAN_VALUE_ATTRIBUTE], 8),
-                    )
+            # Manage page
+            self.cbo_naturebase_carbon_mng.addItem("")
+            self.cbo_naturebase_carbon_rst.addItem("")
+            for impact in carbon_impact_info.result_collection:
+                layer_name = impact.get(LAYER_NAME_ATTRIBUTE)
+                mean_value = impact.get(MEAN_VALUE_ATTRIBUTE) or 0.0
 
-        self.cbo_naturebase_carbon.currentIndexChanged.connect(
-            self._on_naturebase_carbon_changed
+                if layer_name is not None:
+                    rounded_mean = round(mean_value, 8)
+                    self.cbo_naturebase_carbon_mng.addItem(layer_name, rounded_mean)
+                    self.cbo_naturebase_carbon_rst.addItem(layer_name, rounded_mean)
+
+        self.cbo_naturebase_carbon_mng.currentIndexChanged.connect(
+            self._on_naturebase_carbon_changed_manage
+        )
+        self.cbo_naturebase_carbon_rst.currentIndexChanged.connect(
+            self._on_naturebase_carbon_changed_restore
         )
 
         # Data source type
@@ -203,11 +209,16 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         if self._ncs_pathway.pathway_type == NcsPathwayType.PROTECT:
             self.rb_protection.setChecked(True)
         if self._ncs_pathway.pathway_type == NcsPathwayType.RESTORE:
+            # Load options in stack widget
+            if CARBON_IMPACT_ATTRIBUTE in self._ncs_pathway.type_options:
+                self.sb_management_carbon_impact_rst.setValue(
+                    self._ncs_pathway.type_options[CARBON_IMPACT_ATTRIBUTE]
+                )
             self.rb_restoration.setChecked(True)
         if self._ncs_pathway.pathway_type == NcsPathwayType.MANAGE:
-            # Load options
+            # Load options in stack widget
             if CARBON_IMPACT_ATTRIBUTE in self._ncs_pathway.type_options:
-                self.sb_management_carbon_impact.setValue(
+                self.sb_management_carbon_impact_mng.setValue(
                     self._ncs_pathway.type_options[CARBON_IMPACT_ATTRIBUTE]
                 )
             self.rb_management.setChecked(True)
@@ -252,21 +263,39 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         if button_id == NcsPathwayType.MANAGE:
             self.sw_pathway_type.setCurrentIndex(0)
             self.sw_pathway_type.show()
+        elif button_id == NcsPathwayType.RESTORE:
+            self.sw_pathway_type.setCurrentIndex(1)
+            self.sw_pathway_type.show()
         else:
             self.sw_pathway_type.hide()
 
-    def _on_naturebase_carbon_changed(self, index: int):
-        """Slot raised when the selection of Naturebase carbon has changed.
-        The corresponding value is populated in the spinbox.
+    def _on_naturebase_carbon_changed_manage(self, index: int):
+        """Slot raised when the selection of Naturebase carbon has
+        changed in the manage page. The corresponding value is populated
+        in the spinbox.
         """
-        carbon_impact = self.cbo_naturebase_carbon.itemData(index)
+        carbon_impact = self.cbo_naturebase_carbon_mng.itemData(index)
         if not carbon_impact:
-            return
+            carbon_impact = 0.0
 
         if not isinstance(carbon_impact, float):
             return
 
-        self.sb_management_carbon_impact.setValue(carbon_impact)
+        self.sb_management_carbon_impact_mng.setValue(carbon_impact)
+
+    def _on_naturebase_carbon_changed_restore(self, index: int):
+        """Slot raised when the selection of Naturebase carbon has
+        changed in the restore page. The corresponding value is populated
+        in the spinbox.
+        """
+        carbon_impact = self.cbo_naturebase_carbon_rst.itemData(index)
+        if not carbon_impact:
+            carbon_impact = 0.0
+
+        if not isinstance(carbon_impact, float):
+            return
+
+        self.sb_management_carbon_impact_rst.setValue(carbon_impact)
 
     def get_pathway_type_options(self) -> dict:
         """Returns the user-defined option values for the currently
@@ -278,7 +307,13 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         """
         # Manage pathways
         if self._pathway_type_group.checkedId() == NcsPathwayType.MANAGE:
-            return {CARBON_IMPACT_ATTRIBUTE: self.sb_management_carbon_impact.value()}
+            return {
+                CARBON_IMPACT_ATTRIBUTE: self.sb_management_carbon_impact_mng.value()
+            }
+        elif self._pathway_type_group.checkedId() == NcsPathwayType.RESTORE:
+            return {
+                CARBON_IMPACT_ATTRIBUTE: self.sb_management_carbon_impact_rst.value()
+            }
 
         return {}
 
