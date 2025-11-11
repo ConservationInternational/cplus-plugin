@@ -54,6 +54,7 @@ from ..carbon import (
     calculate_activity_naturebase_carbon_impact,
     CarbonImpactManageCalculator,
     CarbonImpactProtectCalculator,
+    CarbonImpactRestoreCalculator,
 )
 from .comparison_table import ScenarioComparisonTableInfo
 from ...conf import settings_manager
@@ -79,6 +80,7 @@ from ...definitions.defaults import (
     MINIMUM_ITEM_WIDTH,
     PRIORITY_GROUP_WEIGHT_TABLE_ID,
     REPORT_COLOR_TREEFOG,
+    RESTORE_CARBON_IMPACT_HEADER,
     PROTECT_CARBON_IMPACT_HEADER,
     TOTAL_CARBON_IMPACT_HEADER,
 )
@@ -1866,6 +1868,15 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
             columns.append(carbon_impact_manage_column)
 
+            # Carbon impact - restore pathways
+            carbon_impact_restore_column = QgsLayoutTableColumn(
+                tr(RESTORE_CARBON_IMPACT_HEADER)
+            )
+            carbon_impact_restore_column.setWidth(0)
+            carbon_impact_restore_column.setHAlignment(QtCore.Qt.AlignHCenter)
+
+            columns.append(carbon_impact_restore_column)
+
             # Total carbon
             total_carbon_column = QgsLayoutTableColumn(tr(TOTAL_CARBON_IMPACT_HEADER))
             total_carbon_column.setWidth(0)
@@ -1965,7 +1976,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 # Prepare updates to progress bar
                 # Number of columns with substantial calculation; use
                 # this to update progress
-                num_columns = 3
+                num_columns = 4
                 progress_increment = 15 / (float(num_columns) * num_activities)
 
                 # Update values
@@ -2030,6 +2041,27 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
                 if carbon_impact_manage != -1.0:
                     total_carbon_impact += carbon_impact_manage
+
+                # Carbon impact (restore)
+                progress = base_overall_progress + (4 * progress_increment)
+                tr_msg = f"{tr('Calculating')} {activity.name} restore carbon impact"
+                if self._process_check_cancelled_or_set_progress(progress, tr_msg):
+                    return self._get_failed_result()
+
+                carbon_impact_restore_calculator = CarbonImpactRestoreCalculator(
+                    activity
+                )
+                carbon_impact_restore = carbon_impact_restore_calculator.run()
+                carbon_impact_restore_cell = QgsTableCell(
+                    self.format_number(carbon_impact_restore, True)
+                )
+                carbon_impact_restore_cell.setHorizontalAlignment(
+                    QtCore.Qt.AlignHCenter
+                )
+                activity_row_cells.append(carbon_impact_restore_cell)
+
+                if carbon_impact_restore != -1.0:
+                    total_carbon_impact += carbon_impact_restore
 
                 # Total carbon impact
                 total_carbon_impact_cell = QgsTableCell(

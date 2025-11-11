@@ -412,30 +412,30 @@ class NcsPathwayCarbonInfo:
     carbon_impact_per_ha: float
 
 
-def calculate_manage_pathway_carbon(
+def calculate_pathway_carbon_by_area(
     ncs_pathways_carbon_info: typing.List[NcsPathwayCarbonInfo],
 ) -> float:
-    """Calculates the carbon impact in tonnes for manage NCS pathways
-    by multiplying the area of the manage NCS pathway layers with
+    """Calculates the carbon impact in tonnes for NCS pathways
+    by multiplying the area of the NCS pathway layers with
     the user-defined carbon impact rate for the specific NCS pathway.
 
     :param ncs_pathways_carbon_info: Container for pathway rasters
     and their corresponding carbon impact values.
     :type ncs_pathways_carbon_info: typing.List[NcsPathwayCarbonInfo]
 
-    :returns: The total carbon impact for manage NCS pathways. If no
+    :returns: The total carbon impact for NCS pathways. If no
     pathways found, returns 0.0.
     :rtype: float
     """
     if not ncs_pathways_carbon_info:
         log(
             f"{LOG_PREFIX} - No pathways found for calculating "
-            f"carbon impact for manage pathways.",
+            f"carbon impact for pathways.",
             info=False,
         )
         return 0.0
 
-    log("Calculating carbon impact for manage pathways...")
+    log("Calculating carbon impact for pathways...")
 
     total_carbon = 0.0
     for carbon_info in ncs_pathways_carbon_info:
@@ -505,7 +505,7 @@ class BasePathwaysCarbonCalculator:
                 f"{LOG_PREFIX} - The activity is invalid, null reference.",
                 info=False,
             )
-            return None
+            return []
 
         if len(self._activity.pathways) == 0:
             log(
@@ -513,7 +513,7 @@ class BasePathwaysCarbonCalculator:
                 f"{self._activity.name} activity.",
                 info=False,
             )
-            return None
+            return []
 
         type_pathways = [
             pathway
@@ -776,7 +776,56 @@ class CarbonImpactProtectCalculator(BaseProtectPathwaysCarbonCalculator):
         return calculate_stored_carbon(prepared_layer)
 
 
-class CarbonImpactManageCalculator(BasePathwaysCarbonCalculator):
+class CarbonImpactPathwayCalculator(BasePathwaysCarbonCalculator):
+    """Generic calculator for NCS pathway area-based carbon impact calculations.
+
+    Subclasses only need to override pathway_type and calculation_type.
+    """
+
+    def run(self) -> float:
+        """Calculates the carbon impact for the configured pathway_type.
+
+        :returns: The total carbon impact value. If there are
+        no matching pathways, returns 0.0. If errors occur,
+        returns -1.0.
+        :rtype: float
+        """
+        pathways = self.get_pathways()
+
+        if len(pathways) == 0:
+            log(
+                f"{LOG_PREFIX} - There are no {self.pathway_type.name.lower()} pathways in "
+                f"{self._activity.name} activity.",
+                info=False,
+            )
+            return 0.0
+
+        pathway_carbon_info = [
+            NcsPathwayCarbonInfo(layer, pathway.type_options[CARBON_IMPACT_ATTRIBUTE])
+            for pathway in pathways
+            for layer in [pathway.to_map_layer()]
+            if layer.isValid() and CARBON_IMPACT_ATTRIBUTE in pathway.type_options
+        ]
+
+        if len(pathway_carbon_info) == 0:
+            log(
+                f"{LOG_PREFIX} - There are no valid {self.pathway_type.name.lower()} pathway layers in "
+                f"{self._activity.name} activity.",
+                info=False,
+            )
+            return 0.0
+
+        if len(pathway_carbon_info) != len(pathways):
+            log(
+                f"{LOG_PREFIX} - Some {self.pathway_type.name.lower()} pathway layers are invalid and will be "
+                f"excluded from the {self.calculation_type.lower()} calculation.",
+                info=False,
+            )
+
+        return calculate_pathway_carbon_by_area(pathway_carbon_info)
+
+
+class CarbonImpactManageCalculator(CarbonImpactPathwayCalculator):
     """Class for carbon impact calculation for manage NCS pathways."""
 
     @property
@@ -794,47 +843,29 @@ class CarbonImpactManageCalculator(BasePathwaysCarbonCalculator):
     def calculation_type(self) -> str:
         return "Manage Carbon Impact"
 
-    def run(self) -> float:
-        """Calculates the carbon impact for manage NCS pathways.
 
-        :returns: The total carbon impact value. If there are
-        no manage NCS pathways, returns 0.0. If errors occur,
-        returns -1.0.
-        :rtype: float
+class CarbonImpactRestoreCalculator(CarbonImpactPathwayCalculator):
+    """Class for carbon impact calculation for restore NCS pathways.
+
+    This class differs from CarbonImpactManageCalculator only in the
+    pathway_type it returns (NcsPathwayType.RESTORE), reusing the
+    generic pathway calculation logic provided by CarbonImpactPathwayCalculator.
+    """
+
+    @property
+    def pathway_type(self) -> NcsPathwayType:
+        """Returns the NCS restore pathway type used in
+        the carbon calculation.
+
+        :returns: NCS restore pathway type applied in
+        the calculation.
+        :rtype:
         """
-        manage_pathways = self.get_pathways()
+        return NcsPathwayType.RESTORE
 
-        if len(manage_pathways) == 0:
-            log(
-                f"{LOG_PREFIX} - There are no manage pathways in "
-                f"{self._activity.name} activity.",
-                info=False,
-            )
-            return 0.0
-
-        manage_carbon_info = [
-            NcsPathwayCarbonInfo(layer, pathway.type_options[CARBON_IMPACT_ATTRIBUTE])
-            for pathway in manage_pathways
-            for layer in [pathway.to_map_layer()]
-            if layer.isValid() and CARBON_IMPACT_ATTRIBUTE in pathway.type_options
-        ]
-
-        if len(manage_carbon_info) == 0:
-            log(
-                f"{LOG_PREFIX} - There are no valid manage pathway layers in "
-                f"{self._activity.name} activity.",
-                info=False,
-            )
-            return 0.0
-
-        if len(manage_carbon_info) != len(manage_pathways):
-            log(
-                f"{LOG_PREFIX} - Some manage pathway layers are invalid and will be "
-                f"excluded from the {self.calculation_type.lower()} calculation.",
-                info=False,
-            )
-
-        return calculate_manage_pathway_carbon(manage_carbon_info)
+    @property
+    def calculation_type(self) -> str:
+        return "Restore Carbon Impact"
 
 
 def calculate_activity_naturebase_carbon_impact(activity: Activity) -> float:

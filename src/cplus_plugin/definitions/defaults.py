@@ -47,6 +47,7 @@ LOG_OPTIONS_TITLE = "Logs"
 CARBON_IMPACT_HEADER = "C.I. (Naturebase)"
 PROTECT_CARBON_IMPACT_HEADER = "C.I. (Protect)"
 MANAGE_CARBON_IMPACT_HEADER = "C.I. (Manage)"
+RESTORE_CARBON_IMPACT_HEADER = "C.I. (Restore)"
 TOTAL_CARBON_IMPACT_HEADER = "Total C.I."
 
 ICON_PATH = ":/plugins/cplus_plugin/icon.svg"
