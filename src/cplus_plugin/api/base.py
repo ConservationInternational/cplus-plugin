@@ -72,6 +72,9 @@ class BaseFetchScenarioOutput:
         if activity_filename in download_dict:
             activity["path"] = download_dict[activity_filename]
 
+        if activity.get("constant_rasters"):
+            del activity["constant_rasters"]
+
         activity.pop("priority_layers", None)
         activity_obj = Activity(**activity)
         activity_obj.pathways = ncs_pathways
