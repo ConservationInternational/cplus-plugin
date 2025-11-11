@@ -12,6 +12,7 @@ import typing
 
 from click import progressbar
 from qgis.core import (
+    QgsApplication,
     QgsRectangle,
     QgsTask,
     QgsProcessingFeedback,
@@ -738,8 +739,10 @@ class DefaultPriorityLayerDownloadTask(QgsTask):
         return True
 
 
-class CalculateNatureBaseZonalStatistics(QgsTask):
-    """Worker that starts a zonal statistics job on the server and polls progress."""
+class CalculateNatureBaseZonalStatsTask(QgsTask):
+    """Worker that starts a zonal statistics job on the server
+    and polls progress.
+    """
 
     status_message_changed = QtCore.pyqtSignal(str)
     progress_changed = QtCore.pyqtSignal(float)
@@ -752,9 +755,7 @@ class CalculateNatureBaseZonalStatistics(QgsTask):
         polling_interval: float = 1.0,
         parent=None,
     ):
-        super().__init__(
-            tr("Calculating mean zonal statistics of Naturebase layers"), parent
-        )
+        super().__init__(tr("Calculating mean zonal statistics of Naturebase layers"))
         self.status_message = None
         self.request = CplusApiRequest()
         self.urls = CplusApiUrl()
@@ -826,16 +827,16 @@ class CalculateNatureBaseZonalStatistics(QgsTask):
             )
             return False
 
-        if status < 200 or status >= 300:
+        if response is None:
             log(
-                f"Server returned error when starting zonal statistics: {response}",
+                "No response received from the server.",
                 info=False,
             )
             return False
 
-        if response is None:
+        if status < 200 or status >= 300:
             log(
-                "No response received from the server.",
+                f"Server returned error when starting zonal statistics: {response}",
                 info=False,
             )
             return False
@@ -907,3 +908,28 @@ class CalculateNatureBaseZonalStatistics(QgsTask):
     def set_status_message(self, message: str):
         self.status_message = message
         self.status_message_changed.emit(self.status_message)
+
+
+def calculate_zonal_stats_task() -> QgsTask:
+    """Convenience function that initiates a task for calculating
+    zonal stats.
+
+    It checks if there are any existing zonal stats tasks and
+    cancels them before initiating a new one.
+
+    :returns: Task for calculating mean zonal
+    statistics.
+    :rtype: QgsTask
+    """
+    zonal_stats_tasks = [
+        task
+        for task in QgsApplication.taskManager().tasks()
+        if isinstance(task, CalculateNatureBaseZonalStatsTask)
+    ]
+    for zs_task in zonal_stats_tasks:
+        zs_task.cancel()
+
+    new_zonal_stats_task = CalculateNatureBaseZonalStatsTask()
+    QgsApplication.taskManager().addTask(new_zonal_stats_task)
+
+    return new_zonal_stats_task

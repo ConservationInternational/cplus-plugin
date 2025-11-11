@@ -63,6 +63,8 @@ NUMBER_FORMATTER_PROPS_ATTRIBUTE = "number_formatter_props"
 LAST_UPDATED_DATE_ATTRIBUTE = "last_updated_date"
 RESULT_COLLECTION_ATTRIBUTE = "result_collection"
 NATURE_BASE_MEAN_ZONAL_STATS_ATTRIBUTE = "nb_mean_zonal_stats"
+LAYER_NAME_ATTRIBUTE = "layer_name"
+MEAN_VALUE_ATTRIBUTE = "mean_value"
 
 ACTIVITY_IDENTIFIER_PROPERTY = "activity_identifier"
 NCS_PATHWAY_IDENTIFIER_PROPERTY = "pathway_identifier"

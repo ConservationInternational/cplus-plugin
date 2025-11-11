@@ -14,7 +14,11 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 from qgis.PyQt.uic import loadUiType
 
 from ..conf import Settings, settings_manager
-from ..definitions.constants import CARBON_IMPACT_ATTRIBUTE
+from ..definitions.constants import (
+    CARBON_IMPACT_ATTRIBUTE,
+    LAYER_NAME_ATTRIBUTE,
+    MEAN_VALUE_ATTRIBUTE,
+)
 from ..definitions.defaults import (
     ONLINE_DEFAULT_PREFIX,
     ICON_PATH,
@@ -101,6 +105,23 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         # Pathway type options
         self.sw_pathway_type.hide()
         self.sb_management_carbon_impact.setMaximum(MAX_CARBON_IMPACT_MANAGE)
+
+        # Naturebase carbon
+        carbon_impact_info = settings_manager.get_nature_base_zonal_stats()
+        if carbon_impact_info:
+            for carbon_impact in carbon_impact_info.result_collection:
+                if (
+                    LAYER_NAME_ATTRIBUTE in carbon_impact
+                    and MEAN_VALUE_ATTRIBUTE in carbon_impact
+                ):
+                    self.cbo_naturebase_carbon.addItem(
+                        carbon_impact[LAYER_NAME_ATTRIBUTE],
+                        round(carbon_impact[MEAN_VALUE_ATTRIBUTE], 8),
+                    )
+
+        self.cbo_naturebase_carbon.currentIndexChanged.connect(
+            self._on_naturebase_carbon_changed
+        )
 
         # Data source type
         self._data_source_type_group = QtWidgets.QButtonGroup(self)
@@ -230,19 +251,22 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         if button_id == NcsPathwayType.MANAGE:
             self.sw_pathway_type.setCurrentIndex(0)
-
-            # Set default value (to update)
-            if not self._edit_mode:
-                default_carbon_impact = settings_manager.get_value(
-                    Settings.DEFAULT_CARBON_IMPACT_MANAGE,
-                    default=0.0,
-                    setting_type=float,
-                )
-                self.sb_management_carbon_impact.setValue(default_carbon_impact)
-
             self.sw_pathway_type.show()
         else:
             self.sw_pathway_type.hide()
+
+    def _on_naturebase_carbon_changed(self, index: int):
+        """Slot raised when the selection of Naturebase carbon has changed.
+        The corresponding value is populated in the spinbox.
+        """
+        carbon_impact = self.cbo_naturebase_carbon.itemData(index)
+        if not carbon_impact:
+            return
+
+        if not isinstance(carbon_impact, float):
+            return
+
+        self.sb_management_carbon_impact.setValue(carbon_impact)
 
     def get_pathway_type_options(self) -> dict:
         """Returns the user-defined option values for the currently

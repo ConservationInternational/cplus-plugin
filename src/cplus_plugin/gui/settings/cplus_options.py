@@ -38,7 +38,11 @@ from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem
 from qgis.PyQt.QtCore import Qt, QSortFilterProxyModel
 
 from ...api.base import ApiRequestStatus
-from ...api.layer_tasks import DeleteDefaultLayerTask, DefaultPriorityLayerDownloadTask
+from ...api.layer_tasks import (
+    DeleteDefaultLayerTask,
+    DefaultPriorityLayerDownloadTask,
+    calculate_zonal_stats_task,
+)
 from ...conf import (
     settings_manager,
     Settings,
@@ -281,6 +285,9 @@ class DlgSettingsLogin(QtWidgets.QDialog, Ui_TrendsEarthDlgSettingsLogin):
             )
 
             self.main_widget.fetch_scenario_history_list()
+
+            # Initiate Naturebase mean zonal stats task
+            _ = calculate_zonal_stats_task()
 
             self.ok = True
             self.close()
