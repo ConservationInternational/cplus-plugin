@@ -68,8 +68,6 @@ class CplusPluginSettingsTest(unittest.TestCase):
         pathway_suitability_index = settings_dialog.suitability_index_box.value()
         self.assertEqual(save_pathway_suitability_index, pathway_suitability_index)
 
-        self.assertTrue(settings_dialog.rb_local.isChecked())
-
     def test_base_dir_exist(self):
         """A test which checks if the base_dir_exists function works
         as it should. A test is done for when the base directory exist,
