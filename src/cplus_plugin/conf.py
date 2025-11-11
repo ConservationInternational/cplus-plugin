@@ -17,6 +17,7 @@ from qgis.PyQt import QtCore
 from qgis.core import QgsSettings
 
 from .definitions.constants import (
+    CONSTANT_RASTERS_SETTINGS_KEY,
     METRIC_COLLECTION_PROPERTY,
     METRIC_CONFIGURATION_PROPERTY,
     NCS_CARBON_SEGMENT,
@@ -197,6 +198,7 @@ class Settings(enum.Enum):
     SCENARIO_NAME = "scenario_name"
     SCENARIO_DESCRIPTION = "scenario_description"
     SCENARIO_EXTENT = "scenario_extent"
+    SCENARIO_EXTENT_CRS = "scenario_extent_crs"
     SCENARIO_CRS = "scenario_crs"
     SCENARIO_IMPACT_MATRIX = "scenario_impact_matrix"
 
@@ -273,6 +275,11 @@ class Settings(enum.Enum):
 
     # Naturebase mean zonal statistics
     NATURE_BASE_MEAN_ZONAL_STATS = "nature_base_zonal_stats/mean"
+
+    # Constant Rasters Dialog
+    CONSTANT_RASTERS_DIALOG_ACTIVITY_TYPE = (
+        "constant_rasters_dialog/activity_raster_type"
+    )
 
 
 class SettingsManager(QtCore.QObject):
@@ -432,6 +439,7 @@ class SettingsManager(QtCore.QObject):
             )
             settings.setValue("clip_to_studyarea", scenario_settings.clip_to_studyarea)
             settings.setValue("studyarea_path", scenario_settings.studyarea_path)
+            settings.setValue("crs", scenario_settings.crs)
 
     def save_scenario_extent(self, key, extent):
         """Saves the scenario extent into plugin settings
@@ -1616,6 +1624,40 @@ class SettingsManager(QtCore.QObject):
             return None
 
         return create_result_info(result_info_dict)
+
+    def save_constant_raster_collection(
+        self, metadata_id: str, collection_data: dict
+    ) -> None:
+        """Save constant raster collection data to settings.
+
+        :param metadata_id: Unique identifier for the metadata
+        :param collection_data: Dictionary representation of the collection
+        """
+        with qgis_settings(CONSTANT_RASTERS_SETTINGS_KEY) as settings:
+            json_str = json.dumps(collection_data)
+            settings.setValue(metadata_id, json_str)
+
+    def load_constant_raster_collection(
+        self, metadata_id: str
+    ) -> typing.Optional[dict]:
+        """Load constant raster collection data from settings.
+
+        :param metadata_id: Unique identifier for the metadata
+        :returns: Dictionary representation of the collection, or None if not found
+        """
+        with qgis_settings(CONSTANT_RASTERS_SETTINGS_KEY) as settings:
+            json_str = settings.value(metadata_id, None)
+            if json_str:
+                return json.loads(json_str)
+            return None
+
+    def get_all_constant_raster_metadata_ids(self) -> typing.List[str]:
+        """Get all constant raster metadata IDs stored in settings.
+
+        :returns: List of metadata IDs
+        """
+        with qgis_settings(CONSTANT_RASTERS_SETTINGS_KEY) as settings:
+            return settings.childKeys()
 
 
 settings_manager = SettingsManager()

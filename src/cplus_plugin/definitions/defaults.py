@@ -302,3 +302,6 @@ MANAGE_CARBON_IMPACT_EXPRESSION_DESCRIPTION = (
     "will be returned if an error is encountered, or 0.0 if "
     "there are no manage NCS pathways in the activity.</b>"
 )
+
+# Constant raster type identifiers
+YEARS_EXPERIENCE_ACTIVITY_ID = "years_experience_activity"

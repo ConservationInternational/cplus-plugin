@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-""" QGIS CPLUS plugin models.
-"""
+"""QGIS CPLUS plugin models."""
 
 import dataclasses
 import datetime
@@ -386,6 +385,14 @@ class NcsPathway(LayerModelComponent):
 
         return False
 
+    def type(self) -> ModelComponentType:
+        """Returns the type of this model component.
+
+        :returns: ModelComponentType.NCS_PATHWAY
+        :rtype: ModelComponentType
+        """
+        return ModelComponentType.NCS_PATHWAY
+
 
 @dataclasses.dataclass
 class Activity(LayerModelComponent):
@@ -608,6 +615,14 @@ class Activity(LayerModelComponent):
 
         return None
 
+    def type(self) -> ModelComponentType:
+        """Returns the type of this model component.
+
+        :returns: ModelComponentType.ACTIVITY
+        :rtype: ModelComponentType
+        """
+        return ModelComponentType.ACTIVITY
+
 
 class ScenarioState(Enum):
     """Defines scenario analysis process states"""
@@ -632,6 +647,10 @@ class Scenario(BaseModelComponent):
     server_uuid: UUID = None
     clip_to_studyarea: bool = False
     studyarea_path: str = None
+    crs: str = None
+    constant_raster_collection: typing.Optional[
+        typing.Any
+    ] = None  # ConstantRasterCollection
 
 
 @dataclasses.dataclass

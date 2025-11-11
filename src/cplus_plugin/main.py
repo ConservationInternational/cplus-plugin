@@ -13,6 +13,7 @@
 """
 
 import os.path
+import sys
 
 from qgis.core import (
     QgsApplication,
@@ -47,17 +48,20 @@ from .definitions.defaults import (
     PRIORITY_LAYERS,
     BASE_API_URL,
     REPORT_FONT_NAME,
+    YEARS_EXPERIENCE_ACTIVITY_ID,
 )
 from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
 from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
 from .lib.reports.manager import report_manager
 from .lib.reports.metrics import register_metric_functions, unregister_metric_functions
-from .models.base import PriorityLayerType
+from .lib.constant_raster import constant_raster_registry
+from .models.base import PriorityLayerType, ModelComponentType
 from .models.report import MetricConfigurationProfile, MetricProfileCollection
 from .gui.settings.carbon_options import CarbonOptionsFactory
 from .gui.settings.cplus_options import CplusOptionsFactory
 from .gui.settings.log_options import LogOptionsFactory
 from .gui.settings.report_options import ReportOptionsFactory
+from .gui.constant_rasters import YearsExperienceWidget
 
 from .utils import (
     FileUtils,
@@ -118,6 +122,9 @@ class QgisCplus:
 
         # Upgrade metric configuration to profile collection
         upgrade_metric_configuration_to_profile_collection()
+
+        # Initialize constant raster metadata registry
+        initialize_constant_raster_registry()
 
         self.main_widget = QgisCplusMain(
             iface=self.iface, parent=self.iface.mainWindow()
@@ -596,3 +603,28 @@ def initialize_report_settings():
     settings_manager.set_value(Settings.REPORT_CI_LOGO, CI_LOGO_PATH)
 
     settings_manager.set_value(report_setting, True)
+
+
+def initialize_constant_raster_registry():
+    """Initialize constant raster metadata registry during plugin startup.
+
+    Registers default constant raster types (e.g., Years of Experience)
+    for activities. Uses widget's create_metadata() method to ensure
+    consistency with serializer/deserializer setup.
+    """
+    log("Initializing constant raster metadata registry", info=True)
+
+    # Register "Years of Experience" for Activities
+    if YEARS_EXPERIENCE_ACTIVITY_ID not in constant_raster_registry.metadata_ids():
+        metadata_activity = YearsExperienceWidget.create_metadata(
+            YEARS_EXPERIENCE_ACTIVITY_ID, ModelComponentType.ACTIVITY
+        )
+        constant_raster_registry.add_metadata(metadata_activity)
+        log(
+            f"Registered constant raster metadata: {YEARS_EXPERIENCE_ACTIVITY_ID}",
+            info=True,
+        )
+
+    # Load saved state from settings
+    constant_raster_registry.load()
+    log("Constant raster registry initialized", info=True)

@@ -16,7 +16,7 @@ from qgis.PyQt.uic import loadUiType
 
 from ..conf import settings_manager, Settings
 from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
-from ..models.base import NcsPathway
+from ..models.base import NcsPathway, PriorityLayerType
 from ..utils import FileUtils, open_documentation, tr, log
 
 
@@ -261,7 +261,11 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
         Sets up the matrix QTableWidget with editable cells for each pathway/PWL pair.
         """
         pathways: typing.List[NcsPathway] = settings_manager.get_all_ncs_pathways()
-        priority_layers: typing.List = settings_manager.get_priority_layers()
+        priority_layers: typing.List = [
+            pwl
+            for pwl in settings_manager.get_priority_layers()
+            if pwl.get("type") == PriorityLayerType.DEFAULT.value
+        ]
 
         num_pathways = len(pathways)
         num_priority_layers = len(priority_layers)
@@ -359,6 +363,11 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
                     pwl_uuid = str(pwl["uuid"])
                     if pwl_uuid not in impact_priority_layer_uuids:
                         continue
+
+                    # Skip constant rasters (not default PWLs)
+                    if pwl.get("type") != PriorityLayerType.DEFAULT.value:
+                        continue
+
                     matrix_col = impact_priority_layer_uuids.index(pwl_uuid)
 
                     # Validate indices
@@ -402,7 +411,11 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
 
         return {
             "pathway_uuids": [str(pathway.uuid) for pathway in pathways],
-            "priority_layer_uuids": [str(pwl.get("uuid")) for pwl in priority_layers],
+            "priority_layer_uuids": [
+                str(pwl.get("uuid"))
+                for pwl in priority_layers
+                if pwl.get("type") == PriorityLayerType.DEFAULT.value
+            ],
             "values": matrix_values,
         }
 
