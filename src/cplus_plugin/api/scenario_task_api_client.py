@@ -19,6 +19,7 @@ from ..models.base import Activity, NcsPathway, Scenario
 from ..tasks import ScenarioAnalysisTask
 from ..utils import FileUtils, CustomJsonEncoder, todict
 from ..definitions.constants import NO_DATA_VALUE
+from ..lib.constant_raster import constant_raster_registry
 
 
 def clean_filename(filename):
@@ -354,6 +355,15 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
                         priority_layer.get()
                         activity_pwl_uuids.add(priority_layer.get("uuid", ""))
 
+            constant_raster_components = constant_raster_registry.activity_components(
+                activity_identifier=str(activity.uuid)
+            )
+            for constant_raster_component in constant_raster_components:
+                if not constant_raster_component.skip_raster and os.path.exists(
+                    constant_raster_component.path
+                ):
+                    items_to_check[constant_raster_component.path] = "constant_raster"
+
             self._update_scenario_status(
                 {
                     "progress_text": "Checking Activity layers to be uploaded",
@@ -594,6 +604,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
                 priority_layer["layer_uuid"] = ""
             priority_layer["path"] = ""
 
+        activity_constant_rasters = {}
         for activity in old_scenario_dict["activities"]:
             activity["layer_type"] = 0
             activity["path"] = ""
@@ -632,6 +643,37 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             activity["priority_layers"] = new_priority_layers
             activity["mask_uuids"] = mask_uuids
             activity["mask_paths"] = []
+
+            constant_rasters = []
+            constant_raster_components = constant_raster_registry.activity_components(
+                activity_identifier=activity["uuid"]
+            )
+            for component in constant_raster_components:
+                constant_raster = {
+                    "name": component.component.name,
+                    "base_name": component.base_name,
+                    "uuid": component.component_id,
+                    "absolute": component.value_info.absolute,
+                    "normalized": component.value_info.normalized,
+                    "path": "",
+                    "skip_raster": component.skip_raster
+                    if os.path.exists(component.path)
+                    else True,
+                }
+
+                if not component.skip_raster and component.path:
+                    path = component.path
+                    if path.startswith("cplus://"):
+                        constant_raster["uuid"] = path.replace("cplus://", "")
+                    elif os.path.exists(path) and self.path_to_layer_mapping.get(
+                        path, None
+                    ):
+                        constant_raster["uuid"] = self.path_to_layer_mapping.get(path)[
+                            "uuid"
+                        ]
+                constant_rasters.append(constant_raster)
+
+            activity_constant_rasters[activity["uuid"]] = constant_rasters
 
         impact_matrix_dict = dict()
         impact_matrix = settings_manager.get_value(
@@ -679,6 +721,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             "studyarea_path": studyarea_path,
             "studyarea_layer_uuid": studyarea_layer_uuid,
             "relative_impact_matrix": impact_matrix_dict,
+            "activity_constant_rasters": activity_constant_rasters,
         }
 
     def __execute_scenario_analysis(self) -> None:
