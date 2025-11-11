@@ -2847,11 +2847,25 @@ class ScenarioAnalysisTask(QgsTask):
 
                 constant_raster_components = (
                     constant_raster_registry.activity_components(
-                        activity_identifier=str(activity.id)
+                        activity_identifier=str(activity.uuid)
                     )
                 )
 
-                constant_rasters = constant_raster_components
+                # Serialize the constant rasters
+                constant_rasters = [
+                    {
+                        "name": component.base_name,
+                        "uuid": component.component_id,
+                        "absolute": component.value_info.absolute,
+                        "normalized": component.value_info.normalized,
+                        "path": component.path,
+                        "skip_raster": component.skip_raster
+                        if os.path.exists(component.path)
+                        else True,
+                    }
+                    for component in constant_raster_components
+                ]
+
                 if constant_rasters is None:
                     constant_rasters = []
 
@@ -2875,19 +2889,19 @@ class ScenarioAnalysisTask(QgsTask):
                         f"Invalid path for connectivity layer of activity {activity.name}"
                     )
 
-                if len(constant_rasters) == 0:
+                nr_constant_rasters = len(constant_rasters)
+
+                if nr_constant_rasters == 0:
                     self.log_message(
                         f"No defined constant rasters, "
                         f"Skipping investability analysis for the activity {activity.name}"
                     )
                     continue
 
-                nr_constant_rasters = len(constant_rasters)
-
                 for constant_raster in constant_rasters:
                     if "normalized" in constant_raster:
                         expression_items.append(
-                            f"{constant_raster.get('normalized')} / {nr_constant_rasters}"
+                            str(constant_raster.get("normalized") / nr_constant_rasters)
                         )
                     else:
                         path = constant_raster.get("path", "")
