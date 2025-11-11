@@ -35,9 +35,6 @@ class CplusPluginSettingsTest(unittest.TestCase):
 
         settings_dialog.suitability_index_box.setValue(pathway_suitability_index)
 
-        settings_dialog.fw_irrecoverable_carbon.setFilePath(
-            irrecoverable_carbon_local_path
-        )
         settings_dialog.fw_save_online_file.setFilePath(
             irrecoverable_carbon_online_save_as_path
         )
@@ -118,10 +115,6 @@ class CplusPluginSettingsTest(unittest.TestCase):
         pathway_suitability_index = settings_dialog.suitability_index_box.value()
         self.assertEqual(save_pathway_suitability_index, pathway_suitability_index)
 
-        self.assertEqual(
-            settings_dialog.fw_irrecoverable_carbon.filePath(),
-            irrecoverable_carbon_local_path,
-        )
         self.assertEqual(
             settings_dialog.txt_ic_url.text(), IRRECOVERABLE_CARBON_API_URL
         )
