@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
 """Helper functions for supporting model management."""
-import json
+import os
+import sys
 from dataclasses import field, fields
+from datetime import datetime
 import typing
 import uuid
 
@@ -25,6 +27,7 @@ from .base import (
     LayerModelComponent,
     LayerModelComponentType,
     LayerType,
+    ModelComponentType,
     NcsPathway,
     NcsPathwayType,
     ScenarioResult,
@@ -72,6 +75,23 @@ from ..definitions.constants import (
     UUID_ATTRIBUTE,
     YEARS_ATTRIBUTE,
     YEARLY_RATES_ATTRIBUTE,
+    COMPONENT_UUID_ATTRIBUTE,
+    COMPONENT_ID_ATTRIBUTE,
+    COMPONENT_TYPE_ATTRIBUTE,
+    SKIP_RASTER_ATTRIBUTE,
+    ALLOWABLE_MIN_ATTRIBUTE,
+    ALLOWABLE_MAX_ATTRIBUTE,
+    LAST_UPDATED_ATTRIBUTE,
+    COMPONENTS_ATTRIBUTE,
+    ABSOLUTE_VALUE_ATTRIBUTE,
+    VALUE_INFO_ATTRIBUTE,
+    NORMALIZED_ATTRIBUTE,
+    ABSOLUTE_ATTRIBUTE,
+    MIN_VALUE_ATTRIBUTE_KEY,
+    MAX_VALUE_ATTRIBUTE_KEY,
+    PREFIX_ATTRIBUTE,
+    BASE_NAME_ATTRIBUTE,
+    SUFFIX_ATTRIBUTE,
 )
 from ..definitions.defaults import DEFAULT_CRS_ID, QGIS_GDAL_PROVIDER
 from .financial import NcsPathwayNpv, NcsPathwayNpvCollection, NpvParameters
@@ -83,8 +103,23 @@ from .report import (
     MetricProfileCollection,
     MetricType,
 )
+from .constant_raster import (
+    ConstantRasterCollection,
+    ConstantRasterComponent,
+    ConstantRasterInfo,
+    ConstantRasterMetadata,
+)
+from .base import ModelComponentType
 
-from ..utils import log
+from ..utils import (
+    log,
+    clean_filename,
+    format_value_with_unit,
+    get_constant_raster_dir,
+    generate_constant_raster_filename,
+    write_constant_raster_metadata_file,
+    save_constant_raster_metadata,
+)
 
 
 def model_component_to_dict(
@@ -1040,3 +1075,214 @@ def create_metrics_profile_collection(
         metric_profiles.append(profile)
 
     return MetricProfileCollection(current_profile_id, metric_profiles)
+
+
+def constant_raster_collection_to_dict(
+    collection: "ConstantRasterCollection",
+) -> dict:
+    """Serializes a ConstantRasterCollection object into a dictionary.
+
+    :param collection: Constant raster collection object
+    :type collection: ConstantRasterCollection
+
+    :returns: Dictionary representation of the collection
+    :rtype: dict
+    """
+    if collection is None:
+        return {}
+
+    return {
+        MIN_VALUE_ATTRIBUTE_KEY: collection.min_value,
+        MAX_VALUE_ATTRIBUTE_KEY: collection.max_value,
+        COMPONENT_TYPE_ATTRIBUTE: (
+            collection.component_type.value if collection.component_type else None
+        ),
+        ALLOWABLE_MIN_ATTRIBUTE: collection.allowable_min,
+        ALLOWABLE_MAX_ATTRIBUTE: collection.allowable_max,
+        SKIP_RASTER_ATTRIBUTE: collection.skip_raster,
+        LAST_UPDATED_ATTRIBUTE: collection.last_updated,
+        COMPONENTS_ATTRIBUTE: [
+            constant_raster_component_to_dict(c) for c in collection.components
+        ],
+    }
+
+
+def constant_raster_collection_from_dict(
+    collection_dict: dict, model_components: typing.List[LayerModelComponent]
+) -> typing.Optional["ConstantRasterCollection"]:
+    """Creates a ConstantRasterCollection object from a dictionary.
+
+    :param collection_dict: Dictionary containing the collection data
+    :type collection_dict: dict
+
+    :param model_components: List of LayerModelComponent objects (NcsPathway or Activity)
+    :type model_components: typing.List[LayerModelComponent]
+
+    :returns: Constant raster collection object or None if deserialization failed
+    :rtype: ConstantRasterCollection
+    """
+    if not collection_dict:
+        return None
+
+    # Create a lookup function for component access
+    component_lookup_dict = {str(comp.uuid): comp for comp in model_components}
+
+    def component_lookup(uuid_str: str) -> typing.Optional[LayerModelComponent]:
+        return component_lookup_dict.get(uuid_str)
+
+    # Deserialize components using helper function
+    components = [
+        create_constant_raster_component(comp_dict, component_lookup)
+        for comp_dict in collection_dict.get(COMPONENTS_ATTRIBUTE, [])
+    ]
+
+    # Parse component_type if present
+    component_type = None
+    component_type_str = collection_dict.get(COMPONENT_TYPE_ATTRIBUTE)
+    if component_type_str:
+        component_type = ModelComponentType.from_string(component_type_str)
+
+    return ConstantRasterCollection(
+        min_value=collection_dict.get(MIN_VALUE_ATTRIBUTE_KEY, 0.0),
+        max_value=collection_dict.get(MAX_VALUE_ATTRIBUTE_KEY, 1.0),
+        component_type=component_type,
+        components=components,
+        skip_raster=collection_dict.get(SKIP_RASTER_ATTRIBUTE, False),
+        allowable_max=collection_dict.get(ALLOWABLE_MAX_ATTRIBUTE, sys.float_info.max),
+        allowable_min=collection_dict.get(ALLOWABLE_MIN_ATTRIBUTE, 0.0),
+        last_updated=collection_dict.get(LAST_UPDATED_ATTRIBUTE, ""),
+    )
+
+
+def constant_raster_info_to_dict(constant_raster_info: ConstantRasterInfo) -> dict:
+    """Creates a dictionary containing attribute name-value pairs
+    from a ConstantRasterInfo object.
+
+    :param constant_raster_info: ConstantRasterInfo instance to serialize
+    :type constant_raster_info: ConstantRasterInfo
+
+    :returns: Dictionary with normalized and absolute values
+    :rtype: dict
+    """
+    return {
+        NORMALIZED_ATTRIBUTE: constant_raster_info.normalized,
+        ABSOLUTE_ATTRIBUTE: constant_raster_info.absolute,
+    }
+
+
+def create_constant_raster_info(source_dict: dict) -> ConstantRasterInfo:
+    """Factory method for creating a ConstantRasterInfo object from dictionary.
+
+    :param source_dict: Dictionary containing property values
+    :type source_dict: dict
+
+    :returns: ConstantRasterInfo instance with values from dictionary
+    :rtype: ConstantRasterInfo
+    """
+    return ConstantRasterInfo(
+        normalized=float(source_dict.get(NORMALIZED_ATTRIBUTE, 0.0)),
+        absolute=float(source_dict.get(ABSOLUTE_ATTRIBUTE, 0.0)),
+    )
+
+
+def constant_raster_component_to_dict(
+    constant_raster_component: ConstantRasterComponent,
+) -> dict:
+    """Creates a dictionary containing attribute name-value pairs
+    from a ConstantRasterComponent object.
+
+    :param constant_raster_component: ConstantRasterComponent instance to serialize
+    :type constant_raster_component: ConstantRasterComponent
+
+    :returns: Dictionary representation of the component
+    :rtype: dict
+    """
+    return {
+        VALUE_INFO_ATTRIBUTE: constant_raster_info_to_dict(
+            constant_raster_component.value_info
+        )
+        if constant_raster_component.value_info
+        else {},
+        COMPONENT_UUID_ATTRIBUTE: str(constant_raster_component.component.uuid)
+        if constant_raster_component.component
+        else "",
+        PREFIX_ATTRIBUTE: constant_raster_component.prefix,
+        BASE_NAME_ATTRIBUTE: constant_raster_component.base_name,
+        SUFFIX_ATTRIBUTE: constant_raster_component.suffix,
+        PATH_ATTRIBUTE: constant_raster_component.path,
+        SKIP_RASTER_ATTRIBUTE: constant_raster_component.skip_raster,
+        ENABLED_ATTRIBUTE: constant_raster_component.enabled,
+        COMPONENT_ID_ATTRIBUTE: constant_raster_component.component_id,
+        COMPONENT_TYPE_ATTRIBUTE: (
+            constant_raster_component.component_type.value
+            if constant_raster_component.component_type
+            else ModelComponentType.UNKNOWN.value
+        ),
+    }
+
+
+def create_constant_raster_component(
+    source_dict: dict, component_lookup: typing.Callable[[str], LayerModelComponent]
+) -> ConstantRasterComponent:
+    """Factory method for creating a ConstantRasterComponent from dictionary.
+
+    :param source_dict: Dictionary containing property values
+    :type source_dict: dict
+
+    :param component_lookup: Function to retrieve LayerModelComponent by UUID
+    :type component_lookup: Callable
+
+    :returns: ConstantRasterComponent instance with values from dictionary
+    :rtype: ConstantRasterComponent
+    """
+    component = None
+    component_uuid = source_dict.get(COMPONENT_UUID_ATTRIBUTE)
+    if component_uuid:
+        component = component_lookup(component_uuid)
+
+    value_info_data = source_dict.get(VALUE_INFO_ATTRIBUTE, {})
+    value_info = (
+        create_constant_raster_info(value_info_data)
+        if value_info_data
+        else ConstantRasterInfo()
+    )
+
+    component_type_str = source_dict.get(
+        COMPONENT_TYPE_ATTRIBUTE, ModelComponentType.UNKNOWN.value
+    )
+    component_type = ModelComponentType.from_string(component_type_str)
+
+    return ConstantRasterComponent(
+        value_info=value_info,
+        component=component,
+        prefix=source_dict.get(PREFIX_ATTRIBUTE, ""),
+        base_name=source_dict.get(BASE_NAME_ATTRIBUTE, ""),
+        suffix=source_dict.get(SUFFIX_ATTRIBUTE, ""),
+        path=source_dict.get(PATH_ATTRIBUTE, ""),
+        skip_raster=bool(source_dict.get(SKIP_RASTER_ATTRIBUTE, False)),
+        enabled=bool(source_dict.get(ENABLED_ATTRIBUTE, True)),
+        component_type=component_type,
+    )
+
+
+def constant_raster_metadata_to_dict(metadata: ConstantRasterMetadata) -> dict:
+    """Creates a dictionary containing attribute name-value pairs
+    from a ConstantRasterMetadata object.
+
+    :param metadata: ConstantRasterMetadata instance to serialize
+    :type metadata: ConstantRasterMetadata
+
+    :returns: Dictionary representation of the metadata
+    :rtype: dict
+    """
+    collection_dict = constant_raster_collection_to_dict(metadata.raster_collection)
+
+    return {
+        "id": metadata.id,
+        DISPLAY_NAME_ATTRIBUTE: metadata.display_name,
+        RASTER_COLLECTION_ATTRIBUTE: collection_dict,
+        COMPONENT_TYPE_ATTRIBUTE: (
+            metadata.component_type.value if metadata.component_type else None
+        ),
+        INPUT_RANGE_ATTRIBUTE: list(metadata.input_range),
+    }

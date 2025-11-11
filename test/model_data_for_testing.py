@@ -40,6 +40,14 @@ from cplus_plugin.models.report import (
     MetricConfiguration,
     MetricType,
 )
+from cplus_plugin.models.constant_raster import (
+    ConstantRasterComponent,
+    ConstantRasterCollection,
+    ConstantRasterInfo,
+    ConstantRasterMetadata,
+    InputRange,
+)
+from cplus_plugin.models.base import ModelComponentType
 
 
 VALID_NCS_UUID_STR = "b5338edf-f3cc-4040-867d-be9651a28b63"
@@ -425,3 +433,58 @@ METRIC_CONFIGURATION_DICT = {
     ],
     "activity_identifiers": [ACTIVITY_UUID_STR],
 }
+
+
+# Constant Raster Test Data
+CONSTANT_RASTER_COMPONENT_UUID_STR = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+
+def get_constant_raster_info(normalized=0.5, absolute=50.0) -> ConstantRasterInfo:
+    """Creates a ConstantRasterInfo object for testing."""
+    return ConstantRasterInfo(normalized=normalized, absolute=absolute)
+
+
+def get_constant_raster_component() -> ConstantRasterComponent:
+    """Creates a ConstantRasterComponent object for testing."""
+    activity = get_activity()
+    value_info = get_constant_raster_info()
+
+    return ConstantRasterComponent(
+        value_info=value_info,
+        component=activity,
+        component_type=ModelComponentType.ACTIVITY,
+        skip_raster=False,
+        enabled=True,
+    )
+
+
+def get_constant_raster_collection() -> ConstantRasterCollection:
+    """Creates a ConstantRasterCollection object for testing."""
+    component1 = get_constant_raster_component()
+
+    collection = ConstantRasterCollection(
+        min_value=0.0,
+        max_value=100.0,
+        component_type=ModelComponentType.ACTIVITY,
+        components=[component1],
+        skip_raster=False,
+        allowable_min=0.0,
+        allowable_max=100.0,
+    )
+
+    return collection
+
+
+def get_constant_raster_metadata() -> ConstantRasterMetadata:
+    """Creates a ConstantRasterMetadata object for testing."""
+    collection = get_constant_raster_collection()
+
+    return ConstantRasterMetadata(
+        id="test_metadata",
+        display_name="Test Constant Raster",
+        raster_collection=collection,
+        serializer=None,
+        deserializer=None,
+        component_type=ModelComponentType.ACTIVITY,
+        input_range=InputRange(min=0.0, max=100.0),
+    )

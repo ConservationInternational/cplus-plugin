@@ -76,6 +76,7 @@ from .financials.npv_manager_dialog import NpvPwlManagerDialog
 from .financials.npv_progress_dialog import NpvPwlProgressDialog
 from .priority_layer_dialog import PriorityLayerDialog
 from .priority_group_dialog import PriorityGroupDialog
+from .constant_rasters import ConstantRastersManagerDialog
 
 from .scenario_dialog import ScenarioDialog
 
@@ -90,6 +91,10 @@ from ..models.financial import NcsPathwayNpv
 from ..conf import settings_manager, Settings
 
 from ..lib.financials import create_npv_pwls
+from ..lib.constant_raster import (
+    ConstantRasterProcessingUtils,
+    constant_raster_registry,
+)
 from ..definitions.defaults import DEFAULT_CRS_ID
 
 from .components.custom_tree_widget import (
@@ -423,6 +428,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         # Priority layers buttons
         self.new_financial_pwl_btn.setIcon(FileUtils.get_icon("mActionNewMap.svg"))
+        self.new_constant_raster_pwl_btn.setIcon(
+            FileUtils.get_icon("mActionNewMap.svg")
+        )
         self.add_pwl_btn.setIcon(FileUtils.get_icon("symbologyAdd.svg"))
         self.edit_pwl_btn.setIcon(FileUtils.get_icon("mActionToggleEditing.svg"))
         self.remove_pwl_btn.setIcon(FileUtils.get_icon("symbologyRemove.svg"))
@@ -431,6 +439,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
 
         self.new_financial_pwl_btn.clicked.connect(self.on_manage_npv_pwls)
+        self.new_constant_raster_pwl_btn.clicked.connect(
+            self.on_manage_constant_raster_pwls
+        )
         self.add_pwl_btn.clicked.connect(self.add_priority_layer)
         self.edit_pwl_btn.clicked.connect(self.edit_priority_layer)
         self.remove_pwl_btn.clicked.connect(self.remove_priority_layer)
@@ -1013,90 +1024,224 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         open_documentation(USER_DOCUMENTATION_SITE)
 
     def on_manage_npv_pwls(self):
-        """Slot raised to show the dialog for managing NPV PWLs."""
-        financial_dialog = NpvPwlManagerDialog(self)
-        if financial_dialog.exec_() == QtWidgets.QDialog.Accepted:
-            npv_collection = financial_dialog.npv_collection
-            self.npv_processing_context = QgsProcessingContext()
-            self.npv_feedback = QgsProcessingFeedback(False)
-            self.npv_multi_step_feedback = QgsProcessingMultiStepFeedback(
-                len(npv_collection.mappings), self.npv_feedback
-            )
-
-            # Get CRS and pixel size from at least one of the
-            # NCS pathways in the collection.
-            if len(npv_collection.mappings) == 0:
-                log(
-                    message=tr("No NPV mappings to extract the CRS and pixel size."),
-                    info=False,
+        """Slot raised to show the NPV PWL manager dialog."""
+        # Show NPV PWL manager dialog
+        npv_dialog = NpvPwlManagerDialog(parent=self)
+        if npv_dialog.exec_() == QtWidgets.QDialog.Accepted:
+            # Process NPV collection if available
+            npv_collection = npv_dialog.npv_collection
+            if npv_collection:
+                self.npv_processing_context = QgsProcessingContext()
+                self.npv_feedback = QgsProcessingFeedback(False)
+                self.npv_multi_step_feedback = QgsProcessingMultiStepFeedback(
+                    len(npv_collection.mappings), self.npv_feedback
                 )
-                return
 
-            reference_layer = None
-            for pathway_npv in npv_collection.mappings:
-                if pathway_npv.pathway is None:
-                    continue
-                else:
-                    if pathway_npv.pathway.is_valid():
-                        reference_ncs_pathway = pathway_npv.pathway
-                        reference_layer = reference_ncs_pathway.to_map_layer()
-                        break
-
-            if reference_layer is None:
-                # Attempt to get reference layer from the snapping layer
-                snap_layer_path = settings_manager.get_value(
-                    Settings.SNAP_LAYER, default="", setting_type=str
-                )
-                reference_layer = QgsRasterLayer(snap_layer_path, "reference_layer")
-                if not reference_layer.isValid():
+                # Get CRS and pixel size from at least one of the
+                # NCS pathways in the collection.
+                if len(npv_collection.mappings) == 0:
                     log(
                         message=tr(
-                            "There is no valid reference layer to extract the pixel size."
+                            "No NPV mappings to extract the CRS and pixel size."
                         ),
                         info=False,
                     )
                     return
 
-            reference_crs = self.crs_selector.crs()
-            reference_pixel_size = reference_layer.rasterUnitsPerPixelX()
+                reference_layer = None
+                for pathway_npv in npv_collection.mappings:
+                    if pathway_npv.pathway is None:
+                        continue
+                    else:
+                        if pathway_npv.pathway.is_valid():
+                            reference_ncs_pathway = pathway_npv.pathway
+                            reference_layer = reference_ncs_pathway.to_map_layer()
+                            break
 
-            # Get the reference extent
-            source_extent = self.extent_box.outputExtent()
-            source_crs = (
-                self.extent_box.outputCrs()
-                or QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
+                if reference_layer is None:
+                    # Attempt to get reference layer from the snapping layer
+                    snap_layer_path = settings_manager.get_value(
+                        Settings.SNAP_LAYER, default="", setting_type=str
+                    )
+                    reference_layer = QgsRasterLayer(snap_layer_path, "reference_layer")
+                    if not reference_layer.isValid():
+                        log(
+                            message=tr(
+                                "There is no valid reference layer to extract the pixel size."
+                            ),
+                            info=False,
+                        )
+                        return
+
+                reference_crs = self.crs_selector.crs()
+                reference_pixel_size = reference_layer.rasterUnitsPerPixelX()
+
+                # Get the reference extent
+                source_extent = self.extent_box.outputExtent()
+                source_crs = (
+                    self.extent_box.outputCrs()
+                    or QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
+                )
+
+                if self.can_clip_to_studyarea():
+                    studyarea_path = self.get_studyarea_path()
+                    studyarea_layer = QgsVectorLayer(studyarea_path, "studyarea")
+                    if studyarea_layer.isValid():
+                        source_extent = studyarea_layer.extent()
+                        source_crs = studyarea_layer.crs()
+
+                reference_extent = self.transform_extent(
+                    source_extent, source_crs, reference_crs
+                )
+                reference_extent_str = (
+                    f"{reference_extent.xMinimum()!s},"
+                    f"{reference_extent.xMaximum()!s},"
+                    f"{reference_extent.yMinimum()!s},"
+                    f"{reference_extent.yMaximum()!s}"
+                )
+
+                self.npv_progress_dialog = NpvPwlProgressDialog(self, self.npv_feedback)
+                self.npv_progress_dialog.show()
+
+                create_npv_pwls(
+                    npv_collection,
+                    self.npv_processing_context,
+                    self.npv_multi_step_feedback,
+                    self.npv_feedback,
+                    reference_crs.authid(),
+                    reference_pixel_size,
+                    reference_extent_str,
+                    self.on_npv_pwl_created,
+                    self.on_npv_pwl_removed,
+                )
+
+    def on_manage_constant_raster_pwls(self):
+        """Slot raised to show the Constant Raster manager dialog."""
+        # Show Constant Raster manager dialog
+        constant_raster_dialog = ConstantRastersManagerDialog(parent=self)
+
+        # Connect signal to handle raster creation
+        constant_raster_dialog.create_rasters_requested.connect(
+            lambda context, collection, input_range, metadata_id, current_view: self._on_constant_rasters_create_requested(
+                context,
+                collection,
+                input_range,
+                metadata_id,
+                current_view,
+                constant_raster_dialog,
             )
+        )
 
-            if self.can_clip_to_studyarea():
-                studyarea_path = self.get_studyarea_path()
-                studyarea_layer = QgsVectorLayer(studyarea_path, "studyarea")
-                if studyarea_layer.isValid():
-                    source_extent = studyarea_layer.extent()
-                    source_crs = studyarea_layer.crs()
+        constant_raster_dialog.exec_()
 
-            reference_extent = self.transform_extent(
-                source_extent, source_crs, reference_crs
-            )
-            reference_extent_str = (
-                f"{reference_extent.xMinimum()!s},"
-                f"{reference_extent.xMaximum()!s},"
-                f"{reference_extent.yMinimum()!s},"
-                f"{reference_extent.yMaximum()!s}"
-            )
+    def _on_constant_rasters_create_requested(
+        self,
+        context,
+        collection,
+        input_range: tuple,
+        metadata_id: str,
+        current_view: bool = True,
+        dialog=None,
+    ):
+        """Handle constant raster creation request from the dialog.
 
-            self.npv_progress_dialog = NpvPwlProgressDialog(self, self.npv_feedback)
-            self.npv_progress_dialog.show()
+        :param context: ConstantRasterContext with extent, CRS, output directory
+        :param collection: ConstantRasterCollection to create rasters from
+        :param input_range: Tuple of (min, max) for input values
+        :param metadata_id: Metadata identifier for the constant raster type
+        :param current_view: If True, create for current view only; if False, create for all types
+        :param dialog: Reference to the dialog for emitting completion signals
+        """
+        # Create progress dialog
+        progress_dialog = QtWidgets.QProgressDialog(
+            "Creating constant rasters...", "Cancel", 0, 100, self
+        )
+        progress_dialog.setWindowTitle("Creating Constant Rasters")
+        progress_dialog.setWindowModality(QtCore.Qt.WindowModal)
+        progress_dialog.show()
 
-            create_npv_pwls(
-                npv_collection,
-                self.npv_processing_context,
-                self.npv_multi_step_feedback,
-                self.npv_feedback,
-                reference_crs.authid(),
-                reference_pixel_size,
-                reference_extent_str,
-                self.on_npv_pwl_created,
-                self.on_npv_pwl_removed,
+        # Create feedback
+        feedback = QgsProcessingFeedback()
+
+        # Connect feedback to progress dialog
+        def update_progress(progress):
+            progress_dialog.setValue(int(progress))
+
+        def update_label(message):
+            progress_dialog.setLabelText(message)
+
+        feedback.progressChanged.connect(update_progress)
+        feedback.pushInfo = lambda msg: update_label(msg)
+
+        try:
+            if current_view:
+                # Create rasters for current view only
+                created_rasters = ConstantRasterProcessingUtils.create_constant_rasters(
+                    collection, context, input_range, feedback, metadata_id
+                )
+
+                progress_dialog.close()
+
+                if created_rasters:
+                    message = f"Created {len(created_rasters)} constant raster(s) in {context.output_dir}"
+                    if dialog:
+                        dialog.raster_creation_completed.emit(
+                            True, message, len(created_rasters)
+                        )
+                    else:
+                        self.show_message(message, level=Qgis.Success)
+                else:
+                    message = "No enabled components found in the collection."
+                    if dialog:
+                        dialog.raster_creation_completed.emit(False, message, 0)
+                    else:
+                        self.show_message(message, level=Qgis.Warning)
+            else:
+                # Create rasters for all constant raster types
+                all_created_rasters = []
+
+                for idx, metadata in enumerate(constant_raster_registry):
+                    current_collection = metadata.raster_collection
+                    if current_collection is None or current_collection.skip_raster:
+                        continue
+
+                    current_input_range = metadata.input_range
+
+                    # Update progress
+                    feedback.pushInfo(f"Creating rasters for {metadata.id}...")
+
+                    created = ConstantRasterProcessingUtils.create_constant_rasters(
+                        current_collection,
+                        context,
+                        current_input_range,
+                        feedback,
+                        metadata.id,
+                    )
+                    if created:
+                        all_created_rasters.extend(created)
+
+                progress_dialog.close()
+
+                if all_created_rasters:
+                    message = f"Created {len(all_created_rasters)} constant raster(s) across all types in {context.output_dir}"
+                    if dialog:
+                        dialog.raster_creation_completed.emit(
+                            True, message, len(all_created_rasters)
+                        )
+                    else:
+                        self.show_message(message, level=Qgis.Success)
+                else:
+                    message = "No enabled components found in any collection."
+                    if dialog:
+                        dialog.raster_creation_completed.emit(False, message, 0)
+                    else:
+                        self.show_message(message, level=Qgis.Warning)
+
+        except Exception as e:
+            progress_dialog.close()
+            log(f"Error creating constant rasters: {str(e)}", info=False)
+            self.show_message(
+                f"Failed to create constant rasters: {str(e)}", level=Qgis.Critical
             )
 
     def on_npv_pwl_removed(self, pwl_identifier: str):

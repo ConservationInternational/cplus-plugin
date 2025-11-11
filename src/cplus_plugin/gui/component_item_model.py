@@ -46,6 +46,7 @@ class ModelComponentItem(QtGui.QStandardItem):
         self.setToolTip(model_component.name)
 
         self._model_component = model_component
+
         if self._model_component is not None:
             self.update(self._model_component)
 
@@ -261,6 +262,9 @@ class NcsPathwayItem(LayerComponentItem):
     @staticmethod
     def create(ncs: NcsPathway) -> "NcsPathwayItem":
         """Creates an instance of the NcsPathwayItem from the model object.
+
+        :param ncs: NcsPathway model object
+        :type ncs: NcsPathway
 
         :returns: An instance of the NcsPathway item to be used in a standard
         model.
@@ -563,6 +567,9 @@ class ActivityItem(LayerComponentItem):
         """Creates an instance of the activity item from
         the model object.
 
+        :param activity: Activity model object
+        :type activity: Activity
+
         :returns: An instance of the activity item to
         be used in a standard model.
         :rtype: Activity
@@ -645,9 +652,12 @@ class LayerItem(QtGui.QStandardItem):
 class ComponentItemModel(QtGui.QStandardItemModel):
     """View model for ModelComponent objects."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, is_checkable=False):
         super().__init__(parent)
         self.setColumnCount(1)
+
+        # Added in v1.1.18
+        self.checkable_item = is_checkable
 
         self._uuid_row_idx = {}
 
@@ -845,6 +855,9 @@ class NcsPathwayItemModel(ComponentItemModel):
         :rtype: bool
         """
         ncs_item = NcsPathwayItem.create(ncs)
+        if self.checkable_item:
+            ncs_item.setCheckable(True)
+
         self._update_display(ncs_item)
 
         status = self.add_component_item(ncs_item)
@@ -1003,6 +1016,9 @@ class ActivityItemModel(ComponentItemModel):
                 layer = activity.to_map_layer()
 
         activity_item = ActivityItem.create(activity)
+        if self.checkable_item:
+            activity_item.setCheckable(True)
+
         if not self._load_pathways:
             activity_item.set_bold_font(False)
 
