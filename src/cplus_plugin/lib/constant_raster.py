@@ -265,14 +265,8 @@ class ConstantRasterProcessingUtils:
 
         if feedback:
             feedback.pushInfo(f"Creating {len(enabled_components)} constant rasters")
-
-        # STEP 1: Use input_range for normalization
-        # input_range defines the theoretical range (e.g., 0-100 years)
-        input_min, input_max = input_range
-
-        if feedback:
             feedback.pushInfo(
-                f"Input range for normalization: min={input_min}, max={input_max}"
+                f"Data range for normalization: {collection.min_value} - {collection.max_value}"
             )
 
         # Determine the actual output directory using hierarchical structure
@@ -337,37 +331,29 @@ class ConstantRasterProcessingUtils:
 
             if feedback:
                 feedback.pushInfo(f"Component value: {absolute_value}")
-                feedback.pushInfo(f"Input range: {input_min} - {input_max}")
                 feedback.pushInfo(
-                    f"Normalization range: {collection.min_value} - {collection.max_value}"
+                    f"Data range: {collection.min_value} - {collection.max_value}"
                 )
 
-            # TWO-STEP NORMALIZATION:
-
-            # Step 1: Normalize input value to [0,1] using input_range
-            if input_max != input_min:
-                normalized_0_1 = (absolute_value - input_min) / (input_max - input_min)
+            # Normalize to 0-1 scale using collection's data range
+            data_range = collection.max_value - collection.min_value
+            if data_range <= 0:
+                # Single value case: min=0, max=value, result=1.0
+                if collection.max_value > 0:
+                    normalized_value = 1.0
+                    if feedback:
+                        feedback.pushInfo(f"Single value: treated as maximum (1.0)")
+                else:
+                    if feedback:
+                        feedback.pushWarning(
+                            f"Skipping component {component.component_id}: invalid data range"
+                        )
+                    continue
             else:
-                # Edge case: input range is zero (min == max), skip this component
-                if feedback:
-                    feedback.pushWarning(
-                        f"Skipping component {component.component_id}: input range is zero (min == max)"
-                    )
-                continue
+                normalized_value = (absolute_value - collection.min_value) / data_range
 
             if feedback:
-                feedback.pushInfo(f"Step 1 - Normalized to [0,1]: {normalized_0_1}")
-
-            # Step 2: Remap [0,1] to user-specified normalization range
-            output_min = collection.min_value
-            output_max = collection.max_value
-            constant_value = output_min + (normalized_0_1 * (output_max - output_min))
-
-            if feedback:
-                feedback.pushInfo(
-                    f"Step 2 - Remapped to normalization range: {constant_value}"
-                )
-                feedback.pushInfo(f"Final raster value: {constant_value}")
+                feedback.pushInfo(f"Normalized value (0-1): {normalized_value}")
 
             # Generate output filename using helper
             component_name = (
@@ -399,16 +385,13 @@ class ConstantRasterProcessingUtils:
                         )
                         feedback.pushInfo(f"Component: {component_name}")
                         feedback.pushInfo(f"Absolute value: {absolute_value}")
+                        feedback.pushInfo(f"Normalized value: {normalized_value}")
                         feedback.pushInfo(
-                            f"Normalization range: {collection.min_value} - {collection.max_value}"
-                        )
-                        feedback.pushInfo(f"Normalized value: {constant_value}")
-                        feedback.pushInfo(
-                            f"Creating raster with normalized value {constant_value} at {output_path}"
+                            f"Creating raster with value {normalized_value} at {output_path}"
                         )
 
                     created_path = ConstantRasterProcessingUtils.create_constant_raster(
-                        value=constant_value,
+                        value=normalized_value,
                         raster_context=context,
                         output_path=output_path,
                         processing_context=processing_context,
@@ -446,7 +429,7 @@ class ConstantRasterProcessingUtils:
                                 else "unknown"
                             ),
                             input_value=absolute_value,
-                            normalized_value=constant_value,
+                            normalized_value=normalized_value,
                             output_min=collection.min_value,
                             output_max=collection.max_value,
                             metadata_id=metadata_id,
