@@ -13,11 +13,13 @@ from qgis.PyQt import uic
 from qgis.PyQt import QtCore
 from qgis.PyQt.QtGui import (
     QIcon,
-    QShowEvent,
     QPixmap,
+    QShowEvent,
+    QStandardItem,
+    QStandardItemModel,
 )
 
-from qgis.PyQt.QtWidgets import QButtonGroup, QWidget
+from qgis.PyQt.QtWidgets import QButtonGroup, QHeaderView, QWidget
 
 from ...api.base import ApiRequestStatus
 from ...api.carbon import (
@@ -29,12 +31,18 @@ from ...conf import (
     settings_manager,
     Settings,
 )
-from ...definitions.constants import CPLUS_OPTIONS_KEY, CARBON_OPTIONS_KEY
+from ...definitions.constants import (
+    CPLUS_OPTIONS_KEY,
+    CARBON_OPTIONS_KEY,
+    LAYER_NAME_ATTRIBUTE,
+    MEAN_VALUE_ATTRIBUTE,
+)
 from ...definitions.defaults import (
+    CARBON_IMPACT_PER_HA_HEADER,
     OPTIONS_TITLE,
     CARBON_OPTIONS_TITLE,
     CARBON_SETTINGS_ICON_PATH,
-    MAX_CARBON_IMPACT_MANAGE,
+    LAYER_NAME_HEADER,
 )
 from ...models.base import DataSourceType
 from ...utils import FileUtils, tr
@@ -43,6 +51,39 @@ from ...utils import FileUtils, tr
 Ui_CarbonSettingsWidget, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "../../ui/carbon_settings.ui")
 )
+
+
+class NaturebaseCarbonImpactModel(QStandardItemModel):
+    """Model for displaying carbon impact values in a table view."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setColumnCount(2)
+        self.setHorizontalHeaderLabels([LAYER_NAME_HEADER, CARBON_IMPACT_PER_HA_HEADER])
+
+    def _readonly_item(self, text: str = "") -> QStandardItem:
+        """Helper to create a non-editable QStandardItem with
+        given display text.
+        """
+        item = QStandardItem(text)
+        item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+
+        return item
+
+    def add_row(self, layer_name: str, carbon_impact: float):
+        """Adds a row with the layer details to the model.
+
+        :param layer_name: Name of the layer.
+        :type layer_name: str
+
+        :param carbon_impact: Value of the carbon impact.
+        :type carbon_impact: float
+        """
+        name_item = self._readonly_item(str(layer_name))
+        carbon_item = self._readonly_item(str(carbon_impact))
+        carbon_item.setData(carbon_impact, QtCore.Qt.UserRole)
+
+        self.appendRow([name_item, carbon_item])
 
 
 class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
@@ -114,8 +155,29 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
         self.cbo_biomass.setFilters(qgis.core.QgsMapLayerProxyModel.Filter.RasterLayer)
 
         # Naturebase carbon impact
-        # Temp disable until functionality is complete
-        self.gb_carbon_management.setVisible(False)
+        self._carbon_impact_model = NaturebaseCarbonImpactModel()
+        self.tv_naturebase_carbon_impact.setModel(self._carbon_impact_model)
+        self.tv_naturebase_carbon_impact.setSortingEnabled(True)
+
+        header = self.tv_naturebase_carbon_impact.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Stretch)
+        header.setSectionsClickable(True)
+        header.setSortIndicatorShown(True)
+
+        carbon_impact_info = settings_manager.get_nature_base_zonal_stats()
+        if carbon_impact_info:
+            for impact in carbon_impact_info.result_collection:
+                layer_name = impact.get(LAYER_NAME_ATTRIBUTE)
+                mean_value = impact.get(MEAN_VALUE_ATTRIBUTE) or 0.0
+                self._carbon_impact_model.add_row(layer_name, mean_value)
+
+            updated_str = (
+                f'<html><head/><body><p><span style=" color:#6a6a6a;"><i>'
+                f'{self.tr("Last updated")}: {carbon_impact_info.to_local_time()}:</i></span></p></body></html>'
+            )
+            self.lbl_last_updated_carbon_impact.setText(updated_str)
+
+        self.tv_naturebase_carbon_impact.sortByColumn(0, QtCore.Qt.AscendingOrder)
 
     def apply(self) -> None:
         """This is called on OK click in the QGIS options panel."""

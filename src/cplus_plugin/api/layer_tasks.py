@@ -875,7 +875,10 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
                     "Empty result set for zonal statistics calculation of Naturebase layers.",
                     info=False,
                 )
-            result_info = ResultInfo(results, self.result.get("finished_at", ""))
+            sorted_results = []
+            if results:
+                sorted_results = sorted(results, key=lambda d: d["layer_name"])
+            result_info = ResultInfo(sorted_results, self.result.get("finished_at", ""))
             settings_manager.save_nature_base_zonal_stats(result_info)
         else:
             self.set_status_message("Zonal statistics task failed or was cancelled")
