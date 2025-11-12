@@ -105,7 +105,7 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
         self._configure_irrecoverable_carbon_downloader_updates()
 
         # Stored carbon
-        self.fw_biomass.setDialogTitle(tr("Select Biomass Dataset"))
+        self.fw_biomass.setDialogTitle(tr("Select Reference Layer"))
         self.fw_biomass.setRelativeStorage(QgsFileWidget.RelativeStorage.Absolute)
         self.fw_biomass.setStorageMode(QgsFileWidget.StorageMode.GetFile)
         self.fw_biomass.setFilter(tif_file_filter)
@@ -113,8 +113,9 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
         self.cbo_biomass.layerChanged.connect(self._on_biomass_layer_changed)
         self.cbo_biomass.setFilters(qgis.core.QgsMapLayerProxyModel.Filter.RasterLayer)
 
-        # Carbon impact - manage
-        self.sb_management_default.setMaximum(MAX_CARBON_IMPACT_MANAGE)
+        # Naturebase carbon impact
+        # Temp disable until functionality is complete
+        self.gb_carbon_management.setVisible(False)
 
     def apply(self) -> None:
         """This is called on OK click in the QGIS options panel."""
@@ -153,12 +154,6 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
         settings_manager.set_value(
             Settings.STORED_CARBON_BIOMASS_PATH,
             self.fw_biomass.filePath(),
-        )
-
-        # Carbon impact - manage
-        settings_manager.set_value(
-            Settings.DEFAULT_CARBON_IMPACT_MANAGE,
-            self.sb_management_default.value(),
         )
 
     def load_settings(self):
@@ -213,11 +208,6 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
         )
 
         # Carbon impact - manage
-        self.sb_management_default.setValue(
-            settings_manager.get_value(
-                Settings.DEFAULT_CARBON_IMPACT_MANAGE, default=0.0, setting_type=float
-            )
-        )
 
     def showEvent(self, event: QShowEvent) -> None:
         """Show event being called. This will display the plugin settings.
