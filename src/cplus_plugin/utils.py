@@ -1521,6 +1521,12 @@ def normalize_raster(
                 f"Layer is already normalized (min={min_value}, max={max_value})",
             )
 
+        if min_value == max_value:
+            return (
+                False,
+                f"Layer cannot be normalized because min value = {min_value} is same as max value = {max_value}",
+            )
+
         expression = f"(A - {min_value}) / ({max_value} - {min_value})"
 
         alg_params = {
