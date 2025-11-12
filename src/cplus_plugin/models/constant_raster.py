@@ -154,7 +154,8 @@ class ConstantRasterCollection:
         1. Analyzes all enabled components and updates min_value/max_value
         2. Calculates and sets the normalized value (0-1 range) for each component
 
-        Handles edge case where min == max by skipping normalization.
+        Special case: If only one value exists, min is set to 0 and max to that value,
+        resulting in normalized value of 1.0 (treated as highest value).
         """
         enabled = self.enabled_components()
         if not enabled:
@@ -166,19 +167,30 @@ class ConstantRasterCollection:
             return
 
         # Update both sets of min/max
-        self.min_value = min(values)
-        self.max_value = max(values)
-        self.allowable_min = min(values)
-        self.allowable_max = max(values)
+        data_min = min(values)
+        data_max = max(values)
+
+        # Special case: only one unique value - treat as maximum
+        if data_min == data_max:
+            self.min_value = 0.0
+            self.max_value = data_max
+            self.allowable_min = 0.0
+            self.allowable_max = data_max
+
+            # All components get value 1.0 (highest)
+            for c in enabled:
+                if c.value_info:
+                    c.value_info.normalized = 1.0
+            return
+
+        # Normal case: multiple different values
+        self.min_value = data_min
+        self.max_value = data_max
+        self.allowable_min = data_min
+        self.allowable_max = data_max
 
         # Calculate normalized values for each component
         value_range = self.max_value - self.min_value
-
-        # Logic to check for if min_value == max_value or min_value > max_value
-        if value_range <= 0:
-            # Edge case: all values are the same or invalid range
-            # Skip normalization, leave values as-is
-            return
 
         # Standard normalization: (value - min) / (max - min)
         for c in enabled:

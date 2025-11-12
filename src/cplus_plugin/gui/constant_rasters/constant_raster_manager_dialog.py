@@ -69,10 +69,6 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Current raster collection being viewed/edited
         self.current_raster_collection: typing.Optional[ConstantRasterCollection] = None
 
-        # Store manual normalization values when switching to auto mode
-        self._manual_min_value: typing.Optional[float] = None
-        self._manual_max_value: typing.Optional[float] = None
-
         # Create UI
         self._create_ui()
 
@@ -428,6 +424,19 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         if metadata_id:
             self.show_widget(metadata_id)
 
+            # Restore normalization mode for this metadata_id
+            auto_mode_key = f"constant_rasters_dialog/auto_mode/{metadata_id}"
+            is_auto_mode = settings_manager.get_value(
+                auto_mode_key, default=False, setting_type=bool
+            )
+
+            self.grp_normalization_range.blockSignals(True)
+            self.grp_normalization_range.setChecked(not is_auto_mode)
+            self.grp_normalization_range.blockSignals(False)
+
+            self.spin_min_value.setEnabled(not is_auto_mode)
+            self.spin_max_value.setEnabled(not is_auto_mode)
+
             # Update min/max values from the collection
             collection = self.constant_raster_registry.collection_by_id(metadata_id)
             if collection is not None:
@@ -518,6 +527,21 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             collection.min_value = min_val
             collection.max_value = max_val
 
+            # If in manual mode, save the manual values to QgsSettings
+            if self.grp_normalization_range.isChecked():
+                current_metadata_id = self.cbo_raster_type.itemData(
+                    self.cbo_raster_type.currentIndex()
+                )
+                if current_metadata_id:
+                    manual_min_key = (
+                        f"constant_rasters_dialog/manual_min/{current_metadata_id}"
+                    )
+                    manual_max_key = (
+                        f"constant_rasters_dialog/manual_max/{current_metadata_id}"
+                    )
+                    settings_manager.set_value(manual_min_key, min_val)
+                    settings_manager.set_value(manual_max_key, max_val)
+
             # Update timestamp
             collection.last_updated = datetime.now().isoformat()
             self._update_last_updated_display(collection)
@@ -532,32 +556,59 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         :param checked: True if group box is checked (manual mode)
         """
+        # Save the checkbox state
+        current_metadata_id = self.cbo_raster_type.itemData(
+            self.cbo_raster_type.currentIndex()
+        )
+        if current_metadata_id:
+            auto_mode_key = f"constant_rasters_dialog/auto_mode/{current_metadata_id}"
+            settings_manager.set_value(auto_mode_key, not checked)
+
         # Enable/disable spinboxes based on checked state
         self.spin_min_value.setEnabled(checked)
         self.spin_max_value.setEnabled(checked)
 
         if not checked:
-            # Save current manual values before switching to auto mode
-            self._manual_min_value = self.spin_min_value.value()
-            self._manual_max_value = self.spin_max_value.value()
+            # Save current manual values to QgsSettings before switching to auto mode
+            if current_metadata_id:
+                manual_min_key = (
+                    f"constant_rasters_dialog/manual_min/{current_metadata_id}"
+                )
+                manual_max_key = (
+                    f"constant_rasters_dialog/manual_max/{current_metadata_id}"
+                )
+                settings_manager.set_value(manual_min_key, self.spin_min_value.value())
+                settings_manager.set_value(manual_max_key, self.spin_max_value.value())
 
             # Auto-calculate mode - update from collection
             self._auto_calculate_normalization_range()
         else:
-            # Manual mode - restore previous manual values if available
-            if (
-                self._manual_min_value is not None
-                and self._manual_max_value is not None
-            ):
-                # Block signals to avoid triggering save multiple times
-                self.spin_min_value.blockSignals(True)
-                self.spin_max_value.blockSignals(True)
+            # Manual mode - restore previous manual values from QgsSettings
+            if current_metadata_id:
+                manual_min_key = (
+                    f"constant_rasters_dialog/manual_min/{current_metadata_id}"
+                )
+                manual_max_key = (
+                    f"constant_rasters_dialog/manual_max/{current_metadata_id}"
+                )
 
-                self.spin_min_value.setValue(self._manual_min_value)
-                self.spin_max_value.setValue(self._manual_max_value)
+                manual_min = settings_manager.get_value(
+                    manual_min_key, default=None, setting_type=float
+                )
+                manual_max = settings_manager.get_value(
+                    manual_max_key, default=None, setting_type=float
+                )
 
-                self.spin_min_value.blockSignals(False)
-                self.spin_max_value.blockSignals(False)
+                if manual_min is not None and manual_max is not None:
+                    # Restore saved manual values
+                    self.spin_min_value.blockSignals(True)
+                    self.spin_max_value.blockSignals(True)
+
+                    self.spin_min_value.setValue(manual_min)
+                    self.spin_max_value.setValue(manual_max)
+
+                    self.spin_min_value.blockSignals(False)
+                    self.spin_max_value.blockSignals(False)
 
             # Explicitly set the collection's min/max from spinboxes
             collection = self.current_constant_raster_collection()
@@ -1121,7 +1172,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         )
 
     def _save_dialog_state(self):
-        """Save dialog-level state (raster type selection)."""
+        """Save dialog-level state (raster type selection and normalization mode)."""
         # Save the constant raster type selection
         current_metadata_id = self.cbo_raster_type.itemData(
             self.cbo_raster_type.currentIndex()
@@ -1129,6 +1180,12 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         if current_metadata_id:
             settings_manager.set_value(
                 Settings.CONSTANT_RASTERS_DIALOG_ACTIVITY_TYPE, current_metadata_id
+            )
+
+            # Save normalization mode (manual/auto) per metadata_id
+            auto_mode_key = f"constant_rasters_dialog/auto_mode/{current_metadata_id}"
+            settings_manager.set_value(
+                auto_mode_key, not self.grp_normalization_range.isChecked()
             )
 
     def _restore_dialog_state(self):
@@ -1145,6 +1202,25 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         current_collection = self.current_constant_raster_collection()
         if current_collection is None:
             return
+
+        # Restore normalization mode (manual/auto) for current metadata_id
+        current_metadata_id = self.cbo_raster_type.itemData(
+            self.cbo_raster_type.currentIndex()
+        )
+        if current_metadata_id:
+            auto_mode_key = f"constant_rasters_dialog/auto_mode/{current_metadata_id}"
+            is_auto_mode = settings_manager.get_value(
+                auto_mode_key, default=False, setting_type=bool
+            )
+
+            # Set checkbox state (checked = manual, unchecked = auto)
+            self.grp_normalization_range.blockSignals(True)
+            self.grp_normalization_range.setChecked(not is_auto_mode)
+            self.grp_normalization_range.blockSignals(False)
+
+            # Enable/disable spinboxes based on mode
+            self.spin_min_value.setEnabled(not is_auto_mode)
+            self.spin_max_value.setEnabled(not is_auto_mode)
 
         # Restore normalization range for currently selected collection
         self.spin_min_value.blockSignals(True)
