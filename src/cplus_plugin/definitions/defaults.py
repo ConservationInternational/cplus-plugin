@@ -40,7 +40,16 @@ BASE_PLUGIN_NAME = "CPLUS"
 OPTIONS_TITLE = BASE_PLUGIN_NAME
 GENERAL_OPTIONS_TITLE = "General"
 REPORT_OPTIONS_TITLE = "Reporting"
+CARBON_OPTIONS_TITLE = "Carbon"
 LOG_OPTIONS_TITLE = "Logs"
+
+# Activity table headers in scenario analysis report
+CARBON_IMPACT_HEADER = "C.I. (Naturebase)"
+PROTECT_CARBON_IMPACT_HEADER = "C.I. (Protect)"
+MANAGE_CARBON_IMPACT_HEADER = "C.I. (Manage)"
+RESTORE_CARBON_IMPACT_HEADER = "C.I. (Restore)"
+TOTAL_CARBON_IMPACT_HEADER = "Total C.I."
+
 ICON_PATH = ":/plugins/cplus_plugin/icon.svg"
 REPORT_SETTINGS_ICON_PATH = str(
     os.path.normpath(
@@ -52,6 +61,12 @@ LOG_SETTINGS_ICON_PATH = str(
     os.path.normpath(
         os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
         + "/icons/log_settings.svg"
+    )
+)
+CARBON_SETTINGS_ICON_PATH = str(
+    os.path.normpath(
+        os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        + "/icons/carbon_settings.svg"
     )
 )
 ICON_PDF = (
@@ -158,10 +173,11 @@ REPORT_COLOR_RAINFOREST = "#357d57"
 MAX_ACTIVITY_NAME_LENGTH = 50
 MAX_ACTIVITY_DESCRIPTION_LENGTH = 225
 
-# IDs for the given tables in the report template
+# IDs for the given items in the report template
 ACTIVITY_AREA_TABLE_ID = "activity_area_table"
 PRIORITY_GROUP_WEIGHT_TABLE_ID = "assigned_weights_table"
 AREA_COMPARISON_TABLE_ID = "comparison_table"
+ACTIVITY_AREA_HTML_ID = "activity_area_pie_html"
 
 # IDs for items in the metrics report template
 METRICS_HEADER_BACKGROUND = "metrics_header_background"
@@ -221,6 +237,9 @@ IRRECOVERABLE_CARBON_API_URL = f"{BASE_API_URL}/reference_layer/carbon_calculati
 DEFAULT_BASE_COMPARISON_REPORT_NAME = "Scenario Comparison Report"
 MAXIMUM_COMPARISON_REPORTS = 10
 
+# Carbon defaults
+MAX_CARBON_IMPACT_MANAGE = 100000.0
+
 NPV_EXPRESSION_DESCRIPTION = (
     "Calculates the financial NPV of the current "
     "activity. This returns the equivalent of the "
@@ -261,6 +280,28 @@ NATUREBASE_CARBON_IMPACT_EXPRESSION_DESCRIPTION = (
     "value of -1.0 implies no Naturebase pathways in the activity "
     "or no overlapping pixels with the reference layer in the "
     "area of interest.</b>"
+)
+
+PROTECT_CARBON_IMPACT_EXPRESSION_DESCRIPTION = (
+    "Calculates the stored carbon (tons C) of "
+    "protect NCS pathways in an activity using the biomass "
+    "reference dataset. This dataset "
+    "needs to be defined in the CPLUS settings for this "
+    "expression to be evaluated.<br><b>NOTE: A value of -1.0 "
+    "will be returned if an error is encountered, or 0.0 if "
+    "there are no protect NCS pathways in the activity or "
+    "no overlapping pixels with the reference layer in the "
+    "area of interest.</b>"
+)
+
+MANAGE_CARBON_IMPACT_EXPRESSION_DESCRIPTION = (
+    "Calculates the carbon impact (tons C) of "
+    "manage NCS pathways in an activity using a custom "
+    "defined rate for each manage NCS pathway. This dataset "
+    "needs to be defined in the CPLUS settings for this "
+    "expression to be evaluated.<br><b>NOTE: A value of -1.0 "
+    "will be returned if an error is encountered, or 0.0 if "
+    "there are no manage NCS pathways in the activity.</b>"
 )
 
 # Constant raster type identifiers

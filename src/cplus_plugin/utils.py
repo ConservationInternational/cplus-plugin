@@ -331,8 +331,8 @@ def save_constant_raster_metadata(
 def calculate_raster_area_by_pixel_value(
     layer: QgsRasterLayer, band_number: int = 1, feedback: QgsProcessingFeedback = None
 ) -> dict:
-    """Calculates the area of value pixels for the given band in a raster layer and
-    groups the area by the pixel value.
+    """Calculates the area of value pixels in hectares for the given band in a
+    raster layer and groups the area by the pixel value.
 
     Please note that this function will run in the main application thread hence
     for best results, it is recommended to execute it in a background process

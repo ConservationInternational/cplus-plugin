@@ -139,21 +139,27 @@ class CplusApiPooling:
         """
         if self.cancelled:
             return {"status": JOB_CANCELLED_STATUS}
+
         if self.limit != -1 and self.current_repeat >= self.limit:
             raise CplusApiRequestError("Request Timeout when fetching status!")
+
         self.current_repeat += 1
+
         try:
             response, status_code = self.__call_api()
             if status_code != 200:
                 error_detail = response.get("detail", "Unknown Error!")
                 raise CplusApiRequestError(f"{status_code} - {error_detail}")
+
             if self.on_response_fetched:
                 self.on_response_fetched(response)
+
             if response["status"] in self.FINAL_STATUS_LIST:
                 return response
             else:
                 time.sleep(self.interval)
                 return self.results()
+
         except Exception as ex:
             log(f"Error when fetching results {ex}", info=False)
             time.sleep(self.interval)
@@ -337,6 +343,34 @@ class CplusApiUrl:
             f"{self.base_url}/scenario_output/{scenario_uuid}/"
             "list/?page=1&page_size=100"
         )
+
+    def zonal_stats_calculate(self) -> str:
+        """Returns the URL for calculating the zonal statistics
+        of naturebase layers.
+
+        The calculation is executed using GET command.
+
+        :returns: Cplus API URL for calculating the zonal
+        statistics of naturebase layers.
+        :rtype: str
+        """
+        return f"{self.base_url}/zonal_statistics/"
+
+    def zonal_stats_progress(self, task_uuid: str) -> str:
+        """Returns the URL for getting the progress of zonal
+        statistics calculation.
+
+        The status check is executed using GET command.
+
+        :param task_uuid: The UUID of the zonal
+        calculation task.
+        :type task_uuid: str
+
+        :return: Cplus API URL for getting the progress of zonal
+        statistics calculation.
+        :rtype: str
+        """
+        return f"{self.base_url}/zonal_statistics/{task_uuid}/progress/"
 
 
 class CplusApiRequest:
@@ -1201,3 +1235,38 @@ class CplusApiRequest:
         if status_code != 204:
             raise CplusApiRequestError(result.get("detail", ""))
         return result
+
+    def calculate_zonal_statistics(
+        self, bbox: typing.Union[str, list]
+    ) -> typing.Tuple[dict, int]:
+        """Initiate zonal statistics calculation in the Cplus
+        server.
+
+        :param bbox: Bounding box coordinates in WGS84.
+        :type bbox: typing.Union[str, list]
+
+        :returns: JSON response and HTTP status code.
+        :rtype: typing.Tuple[dict, int]
+        """
+        if isinstance(bbox, (list, tuple)):
+            bbox_val = ",".join(str(v) for v in bbox)
+        else:
+            bbox_val = str(bbox)
+
+        url = self.urls.zonal_stats_calculate()
+
+        return self.get(
+            f"{url}?bbox={QtCore.QUrl.toPercentEncoding(bbox_val).data().decode('utf-8')}"
+        )
+
+    def fetch_zonal_statistics_progress(self, task_uuid: str) -> CplusApiPooling:
+        """Check progress of zonal statistics calculation.
+
+        :param task_uuid: ID of the zonal statistics calculation task.
+        :type task_uuid: str
+
+        :returns: CplusApiPooling configured to poll the progress endpoint.
+        :rtype: CplusApiPooling
+        """
+        url = self.urls.zonal_stats_progress(task_uuid)
+        return CplusApiPooling(self, url, max_limit=1000)

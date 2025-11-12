@@ -6,10 +6,12 @@
 from datetime import datetime
 import os
 import json
+import time
 import traceback
 import typing
 
 from qgis.core import (
+    QgsApplication,
     QgsRectangle,
     QgsTask,
     QgsProcessingFeedback,
@@ -22,8 +24,11 @@ from qgis.core import (
 from qgis.PyQt import QtCore
 
 from ..conf import settings_manager, Settings
-from ..definitions.constants import NO_DATA_VALUE
+from ..definitions.constants import (
+    NO_DATA_VALUE,
+)
 from .base import ApiRequestStatus
+from ..models.base import ResultInfo
 from ..models.helpers import extent_to_url_param
 from ..utils import (
     log,
@@ -34,7 +39,7 @@ from ..utils import (
     get_layer_type,
     convert_size,
 )
-from .request import CplusApiRequest, CplusApiUrl
+from .request import CplusApiPooling, CplusApiRequest, CplusApiUrl, JOB_COMPLETED_STATUS
 from ..definitions.defaults import DEFAULT_CRS_ID
 
 
@@ -731,3 +736,177 @@ class DefaultPriorityLayerDownloadTask(QgsTask):
         self._event_loop.exec_()
 
         return True
+
+
+class CalculateNatureBaseZonalStatsTask(QgsTask):
+    """Worker that starts a zonal statistics job on the server
+    and polls progress.
+    """
+
+    status_message_changed = QtCore.pyqtSignal(str)
+    progress_changed = QtCore.pyqtSignal(float)
+    results_ready = QtCore.pyqtSignal(object)
+    task_finished = QtCore.pyqtSignal(bool)
+
+    def __init__(
+        self,
+        bbox: typing.Union[str, list] = None,
+        polling_interval: float = 3.0,
+        parent=None,
+    ):
+        super().__init__(tr("Calculating mean zonal statistics of Naturebase layers"))
+        self.status_message = None
+        self.request = CplusApiRequest()
+        self.urls = CplusApiUrl()
+        self.result = None
+        self.bbox = bbox
+        self.polling_interval = polling_interval
+
+    def _get_bbox_for_request(self) -> str:
+        """Return bbox either from provided bbox or from settings."""
+        if self.bbox:
+            if isinstance(self.bbox, (list, tuple)):
+                return ",".join(str(v) for v in self.bbox)
+
+            return str(self.bbox)
+
+        # Otherwise get saved scenario extent
+        extent = settings_manager.get_value(Settings.SCENARIO_EXTENT, default=None)
+        if not extent or len(extent) < 4:
+            raise ValueError("Scenario extent is not defined or invalid.")
+
+        return f"{float(extent[0])},{float(extent[2])},{float(extent[1])},{float(extent[3])}"
+
+    def run(self) -> bool:
+        """Initiate the zonal statistics calculation and poll until
+        completed.
+
+        :returns: True if the calculation process succeeded or
+        False it if failed.
+        :rtype: bool
+        """
+        try:
+            bbox_str = self._get_bbox_for_request()
+        except Exception as e:
+            log(f"Invalid bbox: {e}")
+            return False
+
+        self.setProgress(0)
+        self.set_status_message("Starting zonal statistics job on server...")
+        response = None
+        try:
+            log(f"BBOX for zonal stats calculation: {bbox_str}")
+            response, status = self.request.calculate_zonal_statistics(bbox_str)
+        except Exception as ex:
+            log(
+                f"Failed to call zonal statistics endpoint: {ex}",
+                info=False,
+            )
+            return False
+
+        if response is None:
+            log(
+                "No response received from the server.",
+                info=False,
+            )
+            return False
+
+        if status < 200 or status >= 300:
+            log(
+                f"Server returned error when starting zonal statistics: {response}",
+                info=False,
+            )
+            return False
+
+        task_uuid = response.get("task_uuid", "")
+        if not task_uuid:
+            log(f"No task id returned: {response}", info=False)
+            return False
+
+        self.set_status_message(
+            f"Zonal statistics calculation started, task id: {task_uuid}"
+        )
+
+        pooling = self.request.fetch_zonal_statistics_progress(task_uuid)
+
+        # Repeatedly poll until final status
+        try:
+            while not self.isCanceled():
+                response = pooling.results() or {}
+                status_str = response.get("status")
+                progress = response.get("progress", 0.0)
+                try:
+                    progress_value = float(progress)
+                except Exception as ex:
+                    log(
+                        f"Failed to determine progress: {ex}",
+                        info=False,
+                    )
+                    progress_value = 0.0
+
+                self.setProgress(int(progress_value))
+                self.progress_changed.emit(progress_value)
+                self.set_status_message(
+                    f"Zonal statistics: {status_str} ({progress_value:.1f}%)"
+                )
+                if status_str in CplusApiPooling.FINAL_STATUS_LIST:
+                    self.result = response
+                    break
+
+                # Pooling.results already sleeps between attempts, but keep guard
+                time.sleep(self.polling_interval)
+
+            return True
+        except Exception as ex:
+            log(
+                f"Error while polling zonal statistics progress: {ex}",
+                info=False,
+            )
+            return False
+
+    def finished(self, result: bool):
+        """Emit signals and optionally persist results in settings."""
+        if result and self.result:
+            results = self.result.get("results", [])
+            self.results_ready.emit(results)
+            self.set_status_message("Zonal statistics completed")
+            if len(results) == 0:
+                log(
+                    "Empty result set for zonal statistics calculation of Naturebase layers.",
+                    info=False,
+                )
+            result_info = ResultInfo(results, self.result.get("finished_at", ""))
+            settings_manager.save_nature_base_zonal_stats(result_info)
+        else:
+            self.set_status_message("Zonal statistics task failed or was cancelled")
+
+        self.task_finished.emit(result)
+
+    def set_status_message(self, message: str):
+        self.status_message = message
+        self.status_message_changed.emit(self.status_message)
+
+
+def calculate_zonal_stats_task() -> QgsTask:
+    """Convenience function that initiates a task for calculating
+    zonal stats.
+
+    It checks if there are any existing zonal stats tasks and
+    cancels them before initiating a new one.
+
+    :returns: Task for calculating mean zonal
+    statistics.
+    :rtype: QgsTask
+    """
+    zonal_stats_tasks = [
+        task
+        for task in QgsApplication.taskManager().tasks()
+        if isinstance(task, CalculateNatureBaseZonalStatsTask)
+    ]
+    for zs_task in zonal_stats_tasks:
+        zs_task.cancel()
+
+    new_zonal_stats_task = CalculateNatureBaseZonalStatsTask()
+    QgsApplication.taskManager().addTask(new_zonal_stats_task)
+
+    return new_zonal_stats_task

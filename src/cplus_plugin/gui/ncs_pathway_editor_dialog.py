@@ -14,9 +14,15 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 from qgis.PyQt.uic import loadUiType
 
 from ..conf import Settings, settings_manager
+from ..definitions.constants import (
+    CARBON_IMPACT_ATTRIBUTE,
+    LAYER_NAME_ATTRIBUTE,
+    MEAN_VALUE_ATTRIBUTE,
+)
 from ..definitions.defaults import (
     ONLINE_DEFAULT_PREFIX,
     ICON_PATH,
+    MAX_CARBON_IMPACT_MANAGE,
     USER_DOCUMENTATION_SITE,
 )
 from ..models.base import (
@@ -89,10 +95,38 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             self.rb_protection, NcsPathwayType.PROTECT.value
         )
         self._pathway_type_group.addButton(
-            self.rb_restoration, NcsPathwayType.RESTORE.value
+            self.rb_management, NcsPathwayType.MANAGE.value
         )
         self._pathway_type_group.addButton(
-            self.rb_management, NcsPathwayType.MANAGE.value
+            self.rb_restoration, NcsPathwayType.RESTORE.value
+        )
+        self._pathway_type_group.idToggled.connect(self._on_pathway_type_changed)
+
+        # Pathway type options
+        self.sw_pathway_type.hide()
+        self.sb_management_carbon_impact_mng.setMaximum(MAX_CARBON_IMPACT_MANAGE)
+        self.sb_management_carbon_impact_rst.setMaximum(MAX_CARBON_IMPACT_MANAGE)
+
+        # Naturebase carbon impact reference
+        carbon_impact_info = settings_manager.get_nature_base_zonal_stats()
+        if carbon_impact_info:
+            # Manage page
+            self.cbo_naturebase_carbon_mng.addItem("")
+            self.cbo_naturebase_carbon_rst.addItem("")
+            for impact in carbon_impact_info.result_collection:
+                layer_name = impact.get(LAYER_NAME_ATTRIBUTE)
+                mean_value = impact.get(MEAN_VALUE_ATTRIBUTE) or 0.0
+
+                if layer_name is not None:
+                    rounded_mean = round(mean_value, 8)
+                    self.cbo_naturebase_carbon_mng.addItem(layer_name, rounded_mean)
+                    self.cbo_naturebase_carbon_rst.addItem(layer_name, rounded_mean)
+
+        self.cbo_naturebase_carbon_mng.currentIndexChanged.connect(
+            self._on_naturebase_carbon_changed_manage
+        )
+        self.cbo_naturebase_carbon_rst.currentIndexChanged.connect(
+            self._on_naturebase_carbon_changed_restore
         )
 
         # Data source type
@@ -175,8 +209,18 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         if self._ncs_pathway.pathway_type == NcsPathwayType.PROTECT:
             self.rb_protection.setChecked(True)
         if self._ncs_pathway.pathway_type == NcsPathwayType.RESTORE:
+            # Load options in stack widget
+            if CARBON_IMPACT_ATTRIBUTE in self._ncs_pathway.type_options:
+                self.sb_management_carbon_impact_rst.setValue(
+                    self._ncs_pathway.type_options[CARBON_IMPACT_ATTRIBUTE]
+                )
             self.rb_restoration.setChecked(True)
         if self._ncs_pathway.pathway_type == NcsPathwayType.MANAGE:
+            # Load options in stack widget
+            if CARBON_IMPACT_ATTRIBUTE in self._ncs_pathway.type_options:
+                self.sb_management_carbon_impact_mng.setValue(
+                    self._ncs_pathway.type_options[CARBON_IMPACT_ATTRIBUTE]
+                )
             self.rb_management.setChecked(True)
 
         if self._ncs_pathway.path.startswith(ONLINE_DEFAULT_PREFIX):
@@ -210,6 +254,68 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             self.data_source_stacked_widget.setCurrentIndex(0)
         elif button_id == DataSourceType.ONLINE.value:
             self.data_source_stacked_widget.setCurrentIndex(1)
+
+    def _on_pathway_type_changed(self, button_id: int, toggled: bool):
+        """Slot raised when the pathway type button group has been toggled."""
+        if not toggled:
+            return
+
+        if button_id == NcsPathwayType.MANAGE:
+            self.sw_pathway_type.setCurrentIndex(0)
+            self.sw_pathway_type.show()
+        elif button_id == NcsPathwayType.RESTORE:
+            self.sw_pathway_type.setCurrentIndex(1)
+            self.sw_pathway_type.show()
+        else:
+            self.sw_pathway_type.hide()
+
+    def _on_naturebase_carbon_changed_manage(self, index: int):
+        """Slot raised when the selection of Naturebase carbon has
+        changed in the manage page. The corresponding value is populated
+        in the spinbox.
+        """
+        carbon_impact = self.cbo_naturebase_carbon_mng.itemData(index)
+        if not carbon_impact:
+            carbon_impact = 0.0
+
+        if not isinstance(carbon_impact, float):
+            return
+
+        self.sb_management_carbon_impact_mng.setValue(carbon_impact)
+
+    def _on_naturebase_carbon_changed_restore(self, index: int):
+        """Slot raised when the selection of Naturebase carbon has
+        changed in the restore page. The corresponding value is populated
+        in the spinbox.
+        """
+        carbon_impact = self.cbo_naturebase_carbon_rst.itemData(index)
+        if not carbon_impact:
+            carbon_impact = 0.0
+
+        if not isinstance(carbon_impact, float):
+            return
+
+        self.sb_management_carbon_impact_rst.setValue(carbon_impact)
+
+    def get_pathway_type_options(self) -> dict:
+        """Returns the user-defined option values for the currently
+        selected pathway type.
+
+        :returns: User-defined options values for the current pathway
+        type.
+        :rtype: dict
+        """
+        # Manage pathways
+        if self._pathway_type_group.checkedId() == NcsPathwayType.MANAGE:
+            return {
+                CARBON_IMPACT_ATTRIBUTE: self.sb_management_carbon_impact_mng.value()
+            }
+        elif self._pathway_type_group.checkedId() == NcsPathwayType.RESTORE:
+            return {
+                CARBON_IMPACT_ATTRIBUTE: self.sb_management_carbon_impact_rst.value()
+            }
+
+        return {}
 
     def _add_layer_path(self, layer_path: str):
         """Select or add layer path to the map layer combobox."""
@@ -328,6 +434,9 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._ncs_pathway.path = ONLINE_DEFAULT_PREFIX + default_layer.get(
                 "layer_uuid"
             )
+
+        # Extra pathway type options
+        self._ncs_pathway.type_options = self.get_pathway_type_options()
 
     def _get_selected_map_layer(self) -> QgsRasterLayer:
         """Returns the currently selected map layer or None if there is

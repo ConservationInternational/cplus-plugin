@@ -57,6 +57,7 @@ from .lib.reports.metrics import register_metric_functions, unregister_metric_fu
 from .lib.constant_raster import constant_raster_registry
 from .models.base import PriorityLayerType, ModelComponentType
 from .models.report import MetricConfigurationProfile, MetricProfileCollection
+from .gui.settings.carbon_options import CarbonOptionsFactory
 from .gui.settings.cplus_options import CplusOptionsFactory
 from .gui.settings.log_options import LogOptionsFactory
 from .gui.settings.report_options import ReportOptionsFactory
@@ -135,6 +136,7 @@ class QgisCplus:
         # Create options factories
         self.cplus_options_factory = CplusOptionsFactory(main_widget=self.main_widget)
         self.reports_options_factory = ReportOptionsFactory()
+        self.carbon_options_factory = CarbonOptionsFactory()
         self.log_options_factory = LogOptionsFactory()
 
         self.options_factory = None
@@ -268,6 +270,7 @@ class QgisCplus:
         # Register plugin options factories
         self.iface.registerOptionsWidgetFactory(self.cplus_options_factory)
         self.iface.registerOptionsWidgetFactory(self.reports_options_factory)
+        self.iface.registerOptionsWidgetFactory(self.carbon_options_factory)
 
         # Register custom layout items
         self.register_layout_items()

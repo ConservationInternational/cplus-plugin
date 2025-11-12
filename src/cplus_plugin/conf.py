@@ -24,6 +24,7 @@ from .definitions.constants import (
     NCS_PATHWAY_SEGMENT,
     NPV_COLLECTION_PROPERTY,
     MASK_PATHS_SEGMENT,
+    NATURE_BASE_MEAN_ZONAL_STATS_ATTRIBUTE,
     PATH_ATTRIBUTE,
     PATHWAYS_ATTRIBUTE,
     PIXEL_VALUE_ATTRIBUTE,
@@ -35,6 +36,7 @@ from .definitions.defaults import PRIORITY_LAYERS
 from .models.base import (
     Activity,
     NcsPathway,
+    ResultInfo,
     Scenario,
     ScenarioResult,
     SpatialExtent,
@@ -42,6 +44,7 @@ from .models.base import (
 from .models.financial import NcsPathwayNpvCollection
 from .models.helpers import (
     create_metrics_profile_collection,
+    create_result_info,
     ncs_pathway_npv_collection_to_dict,
     create_activity,
     create_ncs_pathway_npv_collection,
@@ -51,6 +54,7 @@ from .models.helpers import (
     metric_configuration_to_dict,
     metric_profile_collection_to_dict,
     ncs_pathway_to_dict,
+    result_info_to_dict,
 )
 from .models.report import MetricConfiguration, MetricProfileCollection
 from .utils import log, todict, CustomJsonEncoder
@@ -262,6 +266,15 @@ class Settings(enum.Enum):
     # Study Area Path
     STUDYAREA_PATH = "studyarea_path"
     CLIP_TO_STUDYAREA = "clip_to_studyarea"
+
+    # Stored carbon - biomass
+    STORED_CARBON_BIOMASS_PATH = "carbon/stored_carbon_biomass_path"
+
+    # Carbon impact - manage
+    DEFAULT_CARBON_IMPACT_MANAGE = "carbon/default_carbon_impact_manage"
+
+    # Naturebase mean zonal statistics
+    NATURE_BASE_MEAN_ZONAL_STATS = "nature_base_zonal_stats/mean"
 
     # Constant Rasters Dialog
     CONSTANT_RASTERS_DIALOG_ACTIVITY_TYPE = (
@@ -1575,6 +1588,42 @@ class SettingsManager(QtCore.QObject):
             a = settings.value(self.ONLINE_TASK_BASE)
             log(a)
             settings.remove(self.ONLINE_TASK_BASE)
+
+    def save_nature_base_zonal_stats(self, result_info: ResultInfo):
+        """Saves the results of the calculation of mean zonal stats.
+
+        :param result_info: Results from the online calculation of
+        mean zonal statistics of Naturebase layers.
+        :type result_info: ResultInfo
+        """
+        result_info_dict = result_info_to_dict(result_info)
+        if not result_info_dict:
+            log("Naturebase zonal stats cannot be saved, result set is empty.")
+            return
+
+        result_str = json.dumps(result_info_dict)
+        self.set_value(NATURE_BASE_MEAN_ZONAL_STATS_ATTRIBUTE, result_str)
+
+    def get_nature_base_zonal_stats(self) -> typing.Optional[ResultInfo]:
+        """Gets the last saved result set of Naturebase mean zonal stats.
+
+        :returns: Result set of Naturebase mean zonal stats or None if it
+        does not exist or an error occurred during the deserialization
+        process.
+        :rtype: typing.Optional[ResultInfo]
+        """
+        result_info_str = self.get_value(NATURE_BASE_MEAN_ZONAL_STATS_ATTRIBUTE, None)
+        if not result_info_str:
+            return None
+
+        result_info_dict = {}
+        try:
+            result_info_dict = json.loads(result_info_str)
+        except json.JSONDecodeError:
+            log("Naturebase zonal stats JSON is invalid.")
+            return None
+
+        return create_result_info(result_info_dict)
 
     def save_constant_raster_collection(
         self, metadata_id: str, collection_data: dict

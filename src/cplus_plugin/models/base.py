@@ -4,11 +4,14 @@
 
 import dataclasses
 import datetime
-import enum
 from enum import Enum, IntEnum
+import locale
 import os.path
 import typing
 from uuid import UUID
+
+from osgeo_utils.gdal2tiles import update_no_data_values
+from qgis.PyQt.QtCore import QDateTime, QLocale, Qt
 
 from qgis.core import (
     QgsColorBrewerColorRamp,
@@ -23,6 +26,7 @@ from qgis.core import (
     QgsRasterLayer,
     QgsVectorLayer,
 )
+from setuptools.command.easy_install import update_dist_caches
 
 from ..definitions.constants import (
     COLOR_RAMP_PROPERTIES_ATTRIBUTE,
@@ -313,6 +317,8 @@ class NcsPathway(LayerModelComponent):
     pathway_type: NcsPathwayType = NcsPathwayType.UNDEFINED
     priority_layers: typing.List[typing.Dict] = dataclasses.field(default_factory=list)
     carbon_impact_value: float = None
+    # Additional properties based on the NCS pathway type
+    type_options: typing.Dict = dataclasses.field(default_factory=dict)
 
     def __eq__(self, other: "NcsPathway") -> bool:
         """Test equality of NcsPathway object with another
@@ -370,6 +376,18 @@ class NcsPathway(LayerModelComponent):
                 break
 
         return is_valid
+
+    def supports_extra_options(self) -> bool:
+        """Checks if the pathway supports extra options.
+
+        :returns: True if the selected pathway type support extra options
+        else False.
+        :rtype: bool
+        """
+        if self.pathway_type == NcsPathwayType.MANAGE:
+            return True
+
+        return False
 
     def type(self) -> ModelComponentType:
         """Returns the type of this model component.
@@ -687,3 +705,35 @@ class AreaOfInterestSource(Enum):
 
     LAYER = 0
     EXTENT = 1
+
+
+@dataclasses.dataclass
+class ResultInfo:
+    """Simple generic container for result collection and
+    when it was last updated. Use cases can include results
+    from online processing.
+
+    The `updated_date` is assumed to be in UTC in this
+    format %Y-%m-%dT%H:%M:%SZ.
+    """
+
+    result_collection: typing.List[object]
+    # Should be in ISO format e.g. 2025-11-07T06:57:43Z
+    updated_date: str
+
+    def to_local_time(self) -> str:
+        """Convenience function that converts the `updated_date`
+        to more friendly display in the local time.
+
+        :returns: Friendly date/time display in local date/time
+        and format, or an empty string if the date/time is invalid.
+        :rtype: str
+        """
+        if not self.updated_date:
+            return ""
+
+        updated_date_time = QDateTime.fromString(self.updated_date, Qt.ISODate)
+        if not updated_date_time.isValid():
+            return ""
+
+        return QLocale.system().toString(updated_date_time, QLocale.LongFormat)

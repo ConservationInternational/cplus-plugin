@@ -19,12 +19,18 @@ from qgis.core import (
 from ...conf import settings_manager
 from ...definitions.defaults import (
     BASE_PLUGIN_NAME,
+    MANAGE_CARBON_IMPACT_EXPRESSION_DESCRIPTION,
     MEAN_BASED_IRRECOVERABLE_CARBON_EXPRESSION_DESCRIPTION,
     NATUREBASE_CARBON_IMPACT_EXPRESSION_DESCRIPTION,
     NPV_EXPRESSION_DESCRIPTION,
     PWL_IMPACT_EXPRESSION_DESCRIPTION,
+    PROTECT_CARBON_IMPACT_EXPRESSION_DESCRIPTION,
 )
-from ..carbon import IrrecoverableCarbonCalculator
+from ..carbon import (
+    CarbonImpactProtectCalculator,
+    CarbonImpactManageCalculator,
+    IrrecoverableCarbonCalculator,
+)
 from ..financials import calculate_activity_npv
 from ...models.report import ActivityContextInfo, MetricEvalResult
 from ...utils import calculate_raster_area, function_help_to_html, log, tr
@@ -42,6 +48,8 @@ VAR_ACTIVITY_NATUREBASE_CARBON_IMPACT = "cplus_activity_naturebase_carbon_impact
 FUNC_MEAN_BASED_IC = "irrecoverable_carbon_by_mean"
 FUNC_ACTIVITY_NPV = "activity_npv"
 FUNC_PWL_IMPACT = "pwl_impact"
+FUNC_CARBON_IMPACT_PROTECT = "carbon_impact_protect"
+FUNC_CARBON_IMPACT_MANAGE = "carbon_impact_manage"
 
 
 class ActivityIrrecoverableCarbonFunction(QgsScopedExpressionFunction):
@@ -237,6 +245,120 @@ class ActivityPwlImpactFunction(QgsScopedExpressionFunction):
         return ActivityPwlImpactFunction()
 
 
+class ActivityProtectCarbonImpactFunction(QgsScopedExpressionFunction):
+    """Calculates the carbon impact of protect NCS pathways
+    in an activity using the reference biomass layer.
+    """
+
+    def __init__(self):
+        help_html = function_help_to_html(
+            FUNC_CARBON_IMPACT_PROTECT,
+            tr(PROTECT_CARBON_IMPACT_EXPRESSION_DESCRIPTION),
+            examples=[(f"{FUNC_CARBON_IMPACT_PROTECT}()", "12,800")],
+        )
+        super().__init__(
+            FUNC_CARBON_IMPACT_PROTECT,
+            0,
+            BASE_PLUGIN_NAME,
+            help_html,
+            isContextual=True,
+        )
+
+    def func(
+        self,
+        values: typing.List[typing.Any],
+        context: QgsExpressionContext,
+        parent: QgsExpression,
+        node: QgsExpressionNodeFunction,
+    ) -> typing.Any:
+        """Returns the result of evaluating the function.
+
+        :param values: List of values passed to the function
+        :type values: typing.Iterable[typing.Any]
+
+        :param context: Context expression is being evaluated against
+        :type context: QgsExpressionContext
+
+        :param parent: Parent expression
+        :type parent: QgsExpression
+
+        :param node: Expression node
+        :type node: QgsExpressionNodeFunction
+
+        :returns: The result of the function.
+        :rtype: typing.Any
+        """
+        if not context.hasVariable(VAR_ACTIVITY_ID):
+            return -1.0
+
+        activity_id = context.variable(VAR_ACTIVITY_ID)
+        protect_carbon_calculator = CarbonImpactProtectCalculator(activity_id)
+
+        return protect_carbon_calculator.run()
+
+    def clone(self) -> "ActivityProtectCarbonImpactFunction":
+        """Gets a clone of this function.
+
+        :returns: A clone of this function.
+        :rtype: ActivityProtectCarbonImpactFunction
+        """
+        return ActivityProtectCarbonImpactFunction()
+
+
+class ActivityManageCarbonImpactFunction(QgsScopedExpressionFunction):
+    """Calculates the carbon impact of manage NCS pathways in an activity."""
+
+    def __init__(self):
+        help_html = function_help_to_html(
+            FUNC_CARBON_IMPACT_MANAGE,
+            tr(MANAGE_CARBON_IMPACT_EXPRESSION_DESCRIPTION),
+            examples=[(f"{FUNC_CARBON_IMPACT_MANAGE}()", "4,500")],
+        )
+        super().__init__(
+            FUNC_CARBON_IMPACT_MANAGE, 0, BASE_PLUGIN_NAME, help_html, isContextual=True
+        )
+
+    def func(
+        self,
+        values: typing.List[typing.Any],
+        context: QgsExpressionContext,
+        parent: QgsExpression,
+        node: QgsExpressionNodeFunction,
+    ) -> typing.Any:
+        """Returns the result of evaluating the function.
+
+        :param values: List of values passed to the function
+        :type values: typing.Iterable[typing.Any]
+
+        :param context: Context expression is being evaluated against
+        :type context: QgsExpressionContext
+
+        :param parent: Parent expression
+        :type parent: QgsExpression
+
+        :param node: Expression node
+        :type node: QgsExpressionNodeFunction
+
+        :returns: The result of the function.
+        :rtype: typing.Any
+        """
+        if not context.hasVariable(VAR_ACTIVITY_ID):
+            return -1.0
+
+        activity_id = context.variable(VAR_ACTIVITY_ID)
+        manage_carbon_calculator = CarbonImpactManageCalculator(activity_id)
+
+        return manage_carbon_calculator.run()
+
+    def clone(self) -> "ActivityManageCarbonImpactFunction":
+        """Gets a clone of this function.
+
+        :returns: A clone of this function.
+        :rtype: ActivityManageCarbonImpactFunction
+        """
+        return ActivityManageCarbonImpactFunction()
+
+
 def create_metrics_expression_scope() -> QgsExpressionContextScope:
     """Creates the expression context scope for activity metrics.
 
@@ -284,6 +406,12 @@ def create_metrics_expression_scope() -> QgsExpressionContextScope:
     expression_scope.addFunction(
         FUNC_MEAN_BASED_IC, ActivityIrrecoverableCarbonFunction()
     )
+    expression_scope.addFunction(
+        FUNC_CARBON_IMPACT_PROTECT, ActivityProtectCarbonImpactFunction()
+    )
+    expression_scope.addFunction(
+        FUNC_CARBON_IMPACT_MANAGE, ActivityManageCarbonImpactFunction()
+    )
 
     return expression_scope
 
@@ -301,6 +429,14 @@ def register_metric_functions():
     # PWL impact
     activity_pwl_impact_function = ActivityPwlImpactFunction()
     METRICS_LIBRARY.append(activity_pwl_impact_function)
+
+    # Protect carbon impact
+    protect_carbon_function = ActivityProtectCarbonImpactFunction()
+    METRICS_LIBRARY.append(protect_carbon_function)
+
+    # Manage carbon impact
+    manage_carbon_function = ActivityManageCarbonImpactFunction()
+    METRICS_LIBRARY.append(manage_carbon_function)
 
     for func in METRICS_LIBRARY:
         QgsExpression.registerFunction(func)

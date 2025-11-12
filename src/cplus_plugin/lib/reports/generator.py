@@ -18,6 +18,7 @@ from qgis.core import (
     QgsFillSymbol,
     QgsLayerTreeNode,
     QgsLayoutExporter,
+    QgsLayoutItemHtml,
     QgsLayoutItemLabel,
     QgsLayoutItemLegend,
     QgsLayoutItemManualTable,
@@ -43,13 +44,18 @@ from qgis.core import (
     QgsTextFormat,
     QgsUnitTypes,
     QgsMessageLog,
-    Qgis
+    Qgis,
 )
 
 from qgis.PyQt import QtCore, QtGui, QtXml
 from qgis.PyQt.QtGui import QColor
 
-from ..carbon import calculate_activity_naturebase_carbon_impact
+from ..carbon import (
+    calculate_activity_naturebase_carbon_impact,
+    CarbonImpactManageCalculator,
+    CarbonImpactProtectCalculator,
+    CarbonImpactRestoreCalculator,
+)
 from .comparison_table import ScenarioComparisonTableInfo
 from ...conf import settings_manager
 from ...definitions.constants import (
@@ -57,8 +63,11 @@ from ...definitions.constants import (
     ACTIVITY_IDENTIFIER_PROPERTY,
 )
 from ...definitions.defaults import (
+    ACTIVITY_AREA_HTML_ID,
     ACTIVITY_AREA_TABLE_ID,
     AREA_COMPARISON_TABLE_ID,
+    CARBON_IMPACT_HEADER,
+    MANAGE_CARBON_IMPACT_HEADER,
     MAX_ACTIVITY_DESCRIPTION_LENGTH,
     MAX_ACTIVITY_NAME_LENGTH,
     METRICS_ACCREDITATION,
@@ -71,6 +80,9 @@ from ...definitions.defaults import (
     MINIMUM_ITEM_WIDTH,
     PRIORITY_GROUP_WEIGHT_TABLE_ID,
     REPORT_COLOR_TREEFOG,
+    RESTORE_CARBON_IMPACT_HEADER,
+    PROTECT_CARBON_IMPACT_HEADER,
+    TOTAL_CARBON_IMPACT_HEADER,
 )
 from .layout_items import BasicScenarioDetailsItem, CplusMapRepeatItem
 from .metrics import create_metrics_expression_context, evaluate_activity_metric
@@ -309,6 +321,25 @@ class ScenarioAnalysisReportGeneratorTask(BaseScenarioReportGeneratorTask):
 
             # Zoom the extents of map items in the layout then export to PDF
             self._zoom_map_items_to_current_extents(layout)
+
+            # Add pie chart to layout item since it has to be done in
+            # the main application thread (for HTML layout items)
+            html_path = self._generator.activity_pie_html
+            if not html_path:
+                log("Activity area pie chart could not be rendered.", info=False)
+            else:
+                html_frame = layout.itemById(ACTIVITY_AREA_HTML_ID)
+                if html_frame:
+                    pie_url = QtCore.QUrl.fromLocalFile(html_path)
+                    html_item = html_frame.multiFrame()
+                    html_item.setUrl(pie_url)
+                    html_item.update()
+                    log(f"scenario pie: set HTML item URL - {html_path}.")
+                else:
+                    log(
+                        f"scenario pie: HTML layout item '{ACTIVITY_AREA_HTML_ID}' not found in the layout."
+                    )
+
             project.layoutManager().addLayout(layout)
             project.write()
 
@@ -1135,6 +1166,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         self._use_custom_metrics = context.custom_metrics
         self._metrics_configuration = None
         self._setup_metrics_configuration()
+        self._activity_pie_html = ""
 
         if self._feedback:
             self._feedback.canceled.connect(self._on_feedback_cancelled)
@@ -1165,6 +1197,22 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         :rtype: QgsLayoutItemPage
         """
         return self._repeat_page
+
+    @property
+    def activity_pie_html(self) -> str:
+        """Returns the HTML path for the pie chart showing the activity
+        area distribution.
+
+        We want to use the QgsLayoutItemHtml to render the HTML file
+        however, it cannot be rendered in a background thread hence we
+        make the HTML available for use in the main application thread
+        when the task has finished.
+
+        :returns: The path to the HTML file containing the activity
+        area pie chart.
+        :rtype: str
+        """
+        return self._activity_pie_html
 
     def _process_check_cancelled_or_set_progress(
         self, value: float, status_message: str = ""
@@ -1795,19 +1843,46 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             for mc in self._metrics_configuration.metric_columns:
                 columns.append(mc.to_qgs_column())
         else:
-            # Otherwise just add the area and carbon columns
-            area_column = QgsLayoutTableColumn(tr("Area (ha)"))
-            area_column.setWidth(0)
-            area_column.setHAlignment(QtCore.Qt.AlignHCenter)
+            # Otherwise just add the additional default columns - carbon-related columns
+            carbon_impact_column = QgsLayoutTableColumn(tr(CARBON_IMPACT_HEADER))
+            carbon_impact_column.setWidth(0)
+            carbon_impact_column.setHAlignment(QtCore.Qt.AlignHCenter)
 
-            columns.append(area_column)
+            columns.append(carbon_impact_column)
 
-            carbon_value_column = QgsLayoutTableColumn(tr("Total Carbon (tCO2e/yr)"))
-            carbon_value_column.setWidth(0)
-            carbon_value_column.setHAlignment(QtCore.Qt.AlignHCenter)
+            # Carbon impact - protect pathways
+            carbon_impact_protect_column = QgsLayoutTableColumn(
+                tr(PROTECT_CARBON_IMPACT_HEADER)
+            )
+            carbon_impact_protect_column.setWidth(0)
+            carbon_impact_protect_column.setHAlignment(QtCore.Qt.AlignHCenter)
 
-            # Insert the carbon value column as the second
-            columns.insert(1, carbon_value_column)
+            columns.append(carbon_impact_protect_column)
+
+            # Carbon impact - manage pathways
+            carbon_impact_manage_column = QgsLayoutTableColumn(
+                tr(MANAGE_CARBON_IMPACT_HEADER)
+            )
+            carbon_impact_manage_column.setWidth(0)
+            carbon_impact_manage_column.setHAlignment(QtCore.Qt.AlignHCenter)
+
+            columns.append(carbon_impact_manage_column)
+
+            # Carbon impact - restore pathways
+            carbon_impact_restore_column = QgsLayoutTableColumn(
+                tr(RESTORE_CARBON_IMPACT_HEADER)
+            )
+            carbon_impact_restore_column.setWidth(0)
+            carbon_impact_restore_column.setHAlignment(QtCore.Qt.AlignHCenter)
+
+            columns.append(carbon_impact_restore_column)
+
+            # Total carbon
+            total_carbon_column = QgsLayoutTableColumn(tr(TOTAL_CARBON_IMPACT_HEADER))
+            total_carbon_column.setWidth(0)
+            total_carbon_column.setHAlignment(QtCore.Qt.AlignHCenter)
+
+            columns.append(total_carbon_column)
 
         parent_table.setHeaders(columns)
 
@@ -1835,6 +1910,8 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 activity
             )
 
+            base_overall_progress = 70
+
             if self._use_custom_metrics:
                 activity_area = area_info if isinstance(area_info, Number) else 0
                 activity_context_info = ActivityContextInfo(
@@ -1843,7 +1920,6 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
                 highlight_error = False
 
-                base_overall_progress = 70
                 progress_increment = 15 / (
                     float(len(self._metrics_configuration.metric_columns))
                     * num_activities
@@ -1897,16 +1973,102 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
                     activity_row_cells.append(activity_cell)
             else:
+                # Prepare updates to progress bar
+                # Number of columns with substantial calculation; use
+                # this to update progress
+                num_columns = 4
+                progress_increment = 15 / (float(num_columns) * num_activities)
+
+                # Update values
                 formatted_area = self.format_number(area_info)
                 area_cell = QgsTableCell(formatted_area)
+                area_cell.setHorizontalAlignment(QtCore.Qt.AlignHCenter)
 
                 activity_row_cells.append(area_cell)
 
-                carbon_value_cell = QgsTableCell(
+                # Carbon impact total
+                total_carbon_impact = 0.0
+
+                # Carbon impact (naturebase)
+                progress = base_overall_progress + (1 * progress_increment)
+                tr_msg = f"{tr('Calculating')} {activity.name} naturebase carbon impact"
+                if self._process_check_cancelled_or_set_progress(progress, tr_msg):
+                    return self._get_failed_result()
+
+                if activity_naturebase_carbon != -1.0:
+                    total_carbon_impact += activity_naturebase_carbon
+
+                carbon_impact_cell = QgsTableCell(
                     self.format_number(activity_naturebase_carbon)
                 )
+                carbon_impact_cell.setHorizontalAlignment(QtCore.Qt.AlignHCenter)
+                activity_row_cells.append(carbon_impact_cell)
 
-                activity_row_cells.insert(1, carbon_value_cell)
+                # Carbon impact (protect)
+                progress = base_overall_progress + (2 * progress_increment)
+                tr_msg = f"{tr('Calculating')} {activity.name} protect carbon impact"
+                if self._process_check_cancelled_or_set_progress(progress, tr_msg):
+                    return self._get_failed_result()
+
+                carbon_impact_protect_calculator = CarbonImpactProtectCalculator(
+                    activity
+                )
+                carbon_impact_protect = carbon_impact_protect_calculator.run()
+                carbon_impact_protect_cell = QgsTableCell(
+                    self.format_number(carbon_impact_protect, True)
+                )
+                carbon_impact_protect_cell.setHorizontalAlignment(
+                    QtCore.Qt.AlignHCenter
+                )
+                activity_row_cells.append(carbon_impact_protect_cell)
+
+                if carbon_impact_protect != -1.0:
+                    total_carbon_impact += carbon_impact_protect
+
+                # Carbon impact (manage)
+                progress = base_overall_progress + (3 * progress_increment)
+                tr_msg = f"{tr('Calculating')} {activity.name} manage carbon impact"
+                if self._process_check_cancelled_or_set_progress(progress, tr_msg):
+                    return self._get_failed_result()
+
+                carbon_impact_manage_calculator = CarbonImpactManageCalculator(activity)
+                carbon_impact_manage = carbon_impact_manage_calculator.run()
+                carbon_impact_manage_cell = QgsTableCell(
+                    self.format_number(carbon_impact_manage, True)
+                )
+                carbon_impact_manage_cell.setHorizontalAlignment(QtCore.Qt.AlignHCenter)
+                activity_row_cells.append(carbon_impact_manage_cell)
+
+                if carbon_impact_manage != -1.0:
+                    total_carbon_impact += carbon_impact_manage
+
+                # Carbon impact (restore)
+                progress = base_overall_progress + (4 * progress_increment)
+                tr_msg = f"{tr('Calculating')} {activity.name} restore carbon impact"
+                if self._process_check_cancelled_or_set_progress(progress, tr_msg):
+                    return self._get_failed_result()
+
+                carbon_impact_restore_calculator = CarbonImpactRestoreCalculator(
+                    activity
+                )
+                carbon_impact_restore = carbon_impact_restore_calculator.run()
+                carbon_impact_restore_cell = QgsTableCell(
+                    self.format_number(carbon_impact_restore, True)
+                )
+                carbon_impact_restore_cell.setHorizontalAlignment(
+                    QtCore.Qt.AlignHCenter
+                )
+                activity_row_cells.append(carbon_impact_restore_cell)
+
+                if carbon_impact_restore != -1.0:
+                    total_carbon_impact += carbon_impact_restore
+
+                # Total carbon impact
+                total_carbon_impact_cell = QgsTableCell(
+                    self.format_number(total_carbon_impact, True)
+                )
+                total_carbon_impact_cell.setHorizontalAlignment(QtCore.Qt.AlignHCenter)
+                activity_row_cells.append(total_carbon_impact_cell)
 
             rows_data.append(activity_row_cells)
 
@@ -1915,7 +2077,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         self._re_orient_area_table_page(parent_table)
 
     @classmethod
-    def format_number(cls, value: typing.Any) -> str:
+    def format_number(cls, value: typing.Any, no_decimal_places: bool = False) -> str:
         """Formats a number to two decimals places.
 
         :returns: String representation of a number rounded off to
@@ -1929,7 +2091,8 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         number_format = QgsBasicNumericFormat()
         number_format.setThousandsSeparator(",")
         number_format.setShowTrailingZeros(True)
-        number_format.setNumberDecimalPlaces(cls.AREA_DECIMAL_PLACES)
+        decimal_places = 0 if no_decimal_places else cls.AREA_DECIMAL_PLACES
+        number_format.setNumberDecimalPlaces(decimal_places)
 
         return number_format.formatDouble(value, QgsNumericFormatContext())
 
@@ -1962,7 +2125,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                     move_up_items.append(background_item)
                     width_increase_items.append(background_item)
 
-                logo_item = self._layout.itemById(METRICSlogO)
+                logo_item = self._layout.itemById(METRICS_LOGO)
                 if logo_item is not None:
                     move_up_items.append(logo_item)
                     move_right_items.append(logo_item)
@@ -2065,8 +2228,9 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         parent_table.setTableContents(rows_data)
 
     def _add_scenario_area_by_activity_pie(self) -> None:
-        """Adds a pie chart to the layout showing area by activity
-        for the selected scenario.
+        """Creates a pie chart to the layout showing area by activity
+        for the selected scenario and saves it as a HTML file for use
+        in the main application thread when the task has finished..
         """
         # Build labels/values/colors from scenario data computed
         log("scenario pie: start")
@@ -2085,64 +2249,27 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             log("scenario pie: no positive values - skip")
             return
 
-        # Render PNG
+        # Create HTML
         out_dir = os.path.join(self.output_dir, "charts")
         os.makedirs(out_dir, exist_ok=True)
-        png_path = os.path.join(out_dir, f"scenario_pie_{uuid.uuid4().hex}.png")
-        log(f"scenario pie: will write to {png_path}")
+        html_path = os.path.join(out_dir, f"scenario_pie_{uuid.uuid4().hex}.html")
+        log(f"scenario pie: will write to {html_path}")
         try:
-            PieChartRenderer.render_pie_png(
-                png_path, labels, values,
+            _ = PieChartRenderer.render_pie_html(
+                html_path,
+                labels,
+                values,
                 colors_hex=colors,  # Pass the colors list to the new renderer
-                size_px=560
+                size_px=560,
             )
         except Exception as e:
             log(f"scenario pie: render failed: {e!r}")
             return
 
-        exists = os.path.exists(png_path)
-        size = os.path.getsize(png_path) if exists else 0
-        log(f"scenario pie: png exists={exists} size={size}")
-
-        if not exists or size == 0:
-            log("scenario pie: png missing/empty -> abort placement")
-            return
-
-        # Prefer a template Picture item with this ID
-        item = self._layout.itemById("ACTIVITY_SHARE_PIE_PIC_ID")
-        if isinstance(item, QgsLayoutItemPicture):
-            # Use the placeholder
-            item.setPicturePath(png_path)
-            item.setFrameEnabled(False)
-            item.setOpacity(1.0)
-            item.invalidateCache()
-            item.refresh()
-            item.setZValue(10**6)
-            log(
-                f"scenario pie: set picture path on ACTIVITY_SHARE_PIE_PIC_ID - {png_path}"
-            )
-        else:
-            log(
-                "scenario pie: placeholder missing or not a Picture; using fallback"
-            )
-            # Fallback: add a new picture on a specific page (here: last page)
-            target_page = self._layout.pageCollection().pageCount() - 1
-            pic = QgsLayoutItemPicture(self._layout)
-            pic.setPicturePath(png_path)
-            pic.attemptMove(
-                QgsLayoutPoint(15, 35, QgsUnitTypes.LayoutMillimeters),
-                True, False, target_page
-            )
-            pic.attemptResize(
-                QgsLayoutSize(120, 90, QgsUnitTypes.LayoutMillimeters)
-            )
-            self._layout.addLayoutItem(pic)
-
-            pic.setOpacity(1.0)
-            pic.invalidateCache()
-            pic.refresh()
-            pic.setZValue(10**6)
-            log("scenario pie: added fallback picture")
+        exists = os.path.exists(html_path)
+        log(f"scenario pie: HTML created successfully: {exists}")
+        if exists:
+            self._activity_pie_html = html_path
 
     def _run(self) -> ReportResult:
         """Runs report generation process."""
@@ -2165,7 +2292,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         self._render_repeat_items()
 
         if self._process_check_cancelled_or_set_progress(
-            70, tr("populating activity metric table")
+            70, tr("populating activity statistics table")
         ):
             return self._get_failed_result()
 
