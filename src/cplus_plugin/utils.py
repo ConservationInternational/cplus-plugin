@@ -1542,4 +1542,4 @@ def normalize_raster(
             return True, f"Normalized raster saved to : {output_raster_path}"
 
     except Exception as e:
-        return False, f"Problem normalizing pathways, {e} \n"
+        return False, f"Problem normalizing raster, {e} \n"
