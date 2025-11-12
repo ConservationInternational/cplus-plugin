@@ -10,6 +10,9 @@ import os.path
 import typing
 from uuid import UUID
 
+from osgeo_utils.gdal2tiles import update_no_data_values
+from qgis.PyQt.QtCore import QDateTime, QLocale, Qt
+
 from qgis.core import (
     QgsColorBrewerColorRamp,
     QgsColorRamp,
@@ -23,6 +26,7 @@ from qgis.core import (
     QgsRasterLayer,
     QgsVectorLayer,
 )
+from setuptools.command.easy_install import update_dist_caches
 
 from ..definitions.constants import (
     COLOR_RAMP_PROPERTIES_ATTRIBUTE,
@@ -714,6 +718,7 @@ class ResultInfo:
     """
 
     result_collection: typing.List[object]
+    # Should be in ISO format e.g. 2025-11-07T06:57:43Z
     updated_date: str
 
     def to_local_time(self) -> str:
@@ -721,24 +726,14 @@ class ResultInfo:
         to more friendly display in the local time.
 
         :returns: Friendly date/time display in local date/time
-        and format.
+        and format, or an empty string if the date/time is invalid.
         :rtype: str
         """
-        if not self.updated_date or self.updated_date == "":
+        if not self.updated_date:
             return ""
 
-        try:
-            utc_dt = datetime.datetime.strptime(self.updated_date, "%Y-%m-%dT%H:%M:%SZ")
-            utc_dt = utc_dt.replace(tzinfo=datetime.timezone.utc)
-            local_dt = utc_dt.astimezone()
+        updated_date_time = QDateTime.fromString(self.updated_date, Qt.ISODate)
+        if not updated_date_time.isValid():
+            return ""
 
-            try:
-                locale.setlocale(locale.LC_TIME, "")
-            except locale.Error:
-                pass  # Fallback to default locale
-
-            formatted_date = local_dt.strftime("%x")
-            formatted_time = local_dt.strftime("%H:%M")
-            return f"{formatted_date} {formatted_time}"
-        except (ValueError, TypeError) as e:
-            return f"Error: {str(e)}"
+        return QLocale.system().toString(updated_date_time, QLocale.LongFormat)

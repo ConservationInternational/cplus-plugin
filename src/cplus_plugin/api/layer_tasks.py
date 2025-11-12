@@ -824,7 +824,7 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
             return False
 
         self.set_status_message(
-            f"Zonal statistics calculation started, task id: {task_uuid})"
+            f"Zonal statistics calculation started, task id: {task_uuid}"
         )
 
         pooling = self.request.fetch_zonal_statistics_progress(task_uuid)
@@ -832,7 +832,7 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
         # Repeatedly poll until final status
         try:
             while not self.isCanceled():
-                response = pooling.results()
+                response = pooling.results() or {}
                 status_str = response.get("status")
                 progress = response.get("progress", 0.0)
                 try:
