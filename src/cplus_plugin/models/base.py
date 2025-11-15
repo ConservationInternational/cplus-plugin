@@ -736,4 +736,7 @@ class ResultInfo:
         if not updated_date_time.isValid():
             return ""
 
-        return QLocale.system().toString(updated_date_time, QLocale.LongFormat)
+        updated_date_time.setTimeSpec(Qt.UTC)
+        local_date_time = updated_date_time.toLocalTime()
+
+        return QLocale.system().toString(local_date_time, QLocale.LongFormat)

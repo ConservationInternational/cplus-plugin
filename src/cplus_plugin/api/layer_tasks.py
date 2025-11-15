@@ -39,7 +39,13 @@ from ..utils import (
     get_layer_type,
     convert_size,
 )
-from .request import CplusApiPooling, CplusApiRequest, CplusApiUrl, JOB_COMPLETED_STATUS
+from .request import (
+    CplusApiPooling,
+    CplusApiRequest,
+    CplusApiRequestError,
+    CplusApiUrl,
+    JOB_COMPLETED_STATUS,
+)
 from ..definitions.defaults import DEFAULT_CRS_ID
 
 
@@ -744,7 +750,6 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
     """
 
     status_message_changed = QtCore.pyqtSignal(str)
-    progress_changed = QtCore.pyqtSignal(float)
     results_ready = QtCore.pyqtSignal(object)
     task_finished = QtCore.pyqtSignal(bool)
 
@@ -780,6 +785,8 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
     def run(self) -> bool:
         """Initiate the zonal statistics calculation and poll until
         completed.
+
+        Use `poll_once` method for non-blocking iterations.
 
         :returns: True if the calculation process succeeded or
         False it if failed.
@@ -827,12 +834,31 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
             f"Zonal statistics calculation started, task id: {task_uuid}"
         )
 
-        pooling = self.request.fetch_zonal_statistics_progress(task_uuid)
+        polling = self.request.fetch_zonal_statistics_progress(task_uuid)
 
         # Repeatedly poll until final status
+        status = True
         try:
-            while not self.isCanceled():
-                response = pooling.results() or {}
+            while True:
+                if self.isCanceled():
+                    polling.cancelled = True
+                    status = False
+                    break
+
+                try:
+                    response = polling.poll_once() or {}
+                except CplusApiRequestError as ex:
+                    log(f"Polling error: {ex}", info=False)
+                    status = False
+                    break
+                except Exception as ex:
+                    log(
+                        f"Error while polling zonal statistics progress: {ex}",
+                        info=False,
+                    )
+                    time.sleep(self.polling_interval)
+                    continue
+
                 status_str = response.get("status")
                 progress = response.get("progress", 0.0)
                 try:
@@ -845,18 +871,20 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
                     progress_value = 0.0
 
                 self.setProgress(int(progress_value))
-                self.progress_changed.emit(progress_value)
                 self.set_status_message(
                     f"Zonal statistics: {status_str} ({progress_value:.1f}%)"
                 )
+
                 if status_str in CplusApiPooling.FINAL_STATUS_LIST:
+                    if status_str != JOB_COMPLETED_STATUS:
+                        status = False
                     self.result = response
                     break
 
-                # Pooling.results already sleeps between attempts, but keep guard
+                # Sleep between poll iterations so that we can control the frequency
                 time.sleep(self.polling_interval)
 
-            return True
+            return status
         except Exception as ex:
             log(
                 f"Error while polling zonal statistics progress: {ex}",
@@ -865,7 +893,7 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
             return False
 
     def finished(self, result: bool):
-        """Emit signals and optionally persist results in settings."""
+        """Emit signals and persist results in settings."""
         if result and self.result:
             results = self.result.get("results", [])
             self.results_ready.emit(results)
