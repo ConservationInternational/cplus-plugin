@@ -113,7 +113,7 @@ plugins:
             separate_signature: true
             merge_init_into_class: true
             docstring_options:
-              ignore_init_summary: true
+            # ignore_init_summary: true
 
 theme:
   name: material
@@ -121,12 +121,12 @@ theme:
   features:
     - navigation.tabs
     - navigation.sections
-    - navigation.expand
+    # - navigation.expand
     - navigation.indexes
     - navigation.instant
     - navigation.tabs.sticky
     - navigation.tracking
-    - toc.integrate
+    # - toc.integrate
     - toc.follow
     - navigation.top
     - search.suggest
