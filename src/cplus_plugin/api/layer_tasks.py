@@ -20,6 +20,7 @@ from qgis.core import (
     QgsFileDownloader,
     QgsCoordinateTransform,
     QgsCoordinateReferenceSystem,
+    QgsVectorLayer,
 )
 from qgis.PyQt import QtCore
 
@@ -38,8 +39,15 @@ from ..utils import (
     compress_raster,
     get_layer_type,
     convert_size,
+    transform_extent,
 )
-from .request import CplusApiPooling, CplusApiRequest, CplusApiUrl, JOB_COMPLETED_STATUS
+from .request import (
+    CplusApiPooling,
+    CplusApiRequest,
+    CplusApiRequestError,
+    CplusApiUrl,
+    JOB_COMPLETED_STATUS,
+)
 from ..definitions.defaults import DEFAULT_CRS_ID
 
 
@@ -744,7 +752,6 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
     """
 
     status_message_changed = QtCore.pyqtSignal(str)
-    progress_changed = QtCore.pyqtSignal(float)
     results_ready = QtCore.pyqtSignal(object)
     task_finished = QtCore.pyqtSignal(bool)
 
@@ -770,16 +777,68 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
 
             return str(self.bbox)
 
-        # Otherwise get saved scenario extent
-        extent = settings_manager.get_value(Settings.SCENARIO_EXTENT, default=None)
+        # Otherwise get saved extents from settings
+        clip_to_studyarea = settings_manager.get_value(
+            Settings.CLIP_TO_STUDYAREA, default=False, setting_type=bool
+        )
+        if clip_to_studyarea:
+            # From vector layer
+            study_area_path = settings_manager.get_value(
+                Settings.STUDYAREA_PATH, default="", setting_type=str
+            )
+            if not study_area_path or not os.path.exists(study_area_path):
+                log("Path for determining layer extent is invalid.", info=False)
+                return ""
+
+            aoi_layer = QgsVectorLayer(study_area_path, "AOI Layer")
+            if not aoi_layer.isValid():
+                log("AOI layer is invalid.", info=False)
+                return ""
+
+            source_crs = aoi_layer.crs()
+            if not source_crs:
+                log("CRS of AOI layer is undefined.", info=False)
+                return ""
+
+            aoi_extent = aoi_layer.extent()
+            if not aoi_extent:
+                log("Extent of AOI layer is undefined.", info=False)
+                return ""
+
+            # Reproject extent if required
+            destination_crs = QgsCoordinateReferenceSystem("EPSG:4326")
+            if source_crs != destination_crs:
+                aoi_extent = transform_extent(aoi_extent, source_crs, destination_crs)
+
+            extent = [
+                aoi_extent.xMinimum(),
+                aoi_extent.yMinimum(),
+                aoi_extent.xMaximum(),
+                aoi_extent.yMaximum(),
+            ]
+        else:
+            # From explicit extent definition
+            settings_extent = settings_manager.get_value(
+                Settings.SCENARIO_EXTENT, default=None
+            )
+            # Ensure in minX, minY, maxX, maxY format
+            extent = [
+                float(settings_extent[0]),
+                float(settings_extent[2]),
+                float(settings_extent[1]),
+                float(settings_extent[3]),
+            ]
+
         if not extent or len(extent) < 4:
             raise ValueError("Scenario extent is not defined or invalid.")
 
-        return f"{float(extent[0])},{float(extent[2])},{float(extent[1])},{float(extent[3])}"
+        return f"{extent[0]},{extent[1]},{extent[2]},{extent[3]}"
 
     def run(self) -> bool:
         """Initiate the zonal statistics calculation and poll until
         completed.
+
+        Use `poll_once` method for non-blocking iterations.
 
         :returns: True if the calculation process succeeded or
         False it if failed.
@@ -787,6 +846,7 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
         """
         try:
             bbox_str = self._get_bbox_for_request()
+            log(f"BBOX for Zonal stats request: {bbox_str}")
         except Exception as e:
             log(f"Invalid bbox: {e}")
             return False
@@ -827,12 +887,32 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
             f"Zonal statistics calculation started, task id: {task_uuid}"
         )
 
-        pooling = self.request.fetch_zonal_statistics_progress(task_uuid)
+        polling = self.request.fetch_zonal_statistics_progress(task_uuid)
 
         # Repeatedly poll until final status
+        status = True
         try:
-            while not self.isCanceled():
-                response = pooling.results() or {}
+            while True:
+                if self.isCanceled():
+                    polling.cancelled = True
+                    status = False
+                    break
+
+                try:
+                    # Use poll once which is non-blocking
+                    response = polling.poll_once() or {}
+                except CplusApiRequestError as ex:
+                    log(f"Polling error: {ex}", info=False)
+                    status = False
+                    break
+                except Exception as ex:
+                    log(
+                        f"Error while polling zonal statistics progress: {ex}",
+                        info=False,
+                    )
+                    time.sleep(self.polling_interval)
+                    continue
+
                 status_str = response.get("status")
                 progress = response.get("progress", 0.0)
                 try:
@@ -845,18 +925,20 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
                     progress_value = 0.0
 
                 self.setProgress(int(progress_value))
-                self.progress_changed.emit(progress_value)
                 self.set_status_message(
                     f"Zonal statistics: {status_str} ({progress_value:.1f}%)"
                 )
+
                 if status_str in CplusApiPooling.FINAL_STATUS_LIST:
+                    if status_str != JOB_COMPLETED_STATUS:
+                        status = False
                     self.result = response
                     break
 
-                # Pooling.results already sleeps between attempts, but keep guard
+                # Sleep between poll iterations so that we can control the frequency
                 time.sleep(self.polling_interval)
 
-            return True
+            return status
         except Exception as ex:
             log(
                 f"Error while polling zonal statistics progress: {ex}",
@@ -865,7 +947,7 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
             return False
 
     def finished(self, result: bool):
-        """Emit signals and optionally persist results in settings."""
+        """Emit signals and persist results in settings."""
         if result and self.result:
             results = self.result.get("results", [])
             self.results_ready.emit(results)
@@ -875,7 +957,10 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
                     "Empty result set for zonal statistics calculation of Naturebase layers.",
                     info=False,
                 )
-            result_info = ResultInfo(results, self.result.get("finished_at", ""))
+            sorted_results = []
+            if results:
+                sorted_results = sorted(results, key=lambda d: d["layer_name"])
+            result_info = ResultInfo(sorted_results, self.result.get("finished_at", ""))
             settings_manager.save_nature_base_zonal_stats(result_info)
         else:
             self.set_status_message("Zonal statistics task failed or was cancelled")

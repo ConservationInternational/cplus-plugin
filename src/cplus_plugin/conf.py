@@ -275,6 +275,7 @@ class Settings(enum.Enum):
 
     # Naturebase mean zonal statistics
     NATURE_BASE_MEAN_ZONAL_STATS = "nature_base_zonal_stats/mean"
+    AUTO_REFRESH_NATURE_BASE_ZONAL_STATS = "nature_base_zonal_stats/auto_refresh"
 
     # Constant Rasters Dialog
     CONSTANT_RASTERS_DIALOG_ACTIVITY_TYPE = (
