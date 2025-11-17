@@ -206,9 +206,6 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
             self.fw_irrecoverable_carbon.filePath(),
         )
         settings_manager.set_value(
-            Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE, self.txt_ic_url.text()
-        )
-        settings_manager.set_value(
             Settings.IRRECOVERABLE_CARBON_ONLINE_LOCAL_PATH,
             self.fw_save_online_file.filePath(),
         )
@@ -258,11 +255,6 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
         )
 
         # Online config
-        self.txt_ic_url.setText(
-            settings_manager.get_value(
-                Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE, default=""
-            )
-        )
         self.fw_save_online_file.setFilePath(
             settings_manager.get_value(
                 Settings.IRRECOVERABLE_CARBON_ONLINE_LOCAL_PATH, default=""
@@ -371,7 +363,9 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
         well-formed.
         :rtype: bool
         """
-        dataset_url = self.txt_ic_url.text()
+        dataset_url = settings_manager.get_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE, default="", setting_type=str
+        )
         if not dataset_url:
             self.message_bar.pushWarning(
                 tr("CPLUS - Irrecoverable carbon dataset"), tr("URL not defined")
