@@ -20,6 +20,7 @@ from qgis.core import (
     QgsFileDownloader,
     QgsCoordinateTransform,
     QgsCoordinateReferenceSystem,
+    QgsVectorLayer,
 )
 from qgis.PyQt import QtCore
 
@@ -38,6 +39,7 @@ from ..utils import (
     compress_raster,
     get_layer_type,
     convert_size,
+    transform_extent,
 )
 from .request import (
     CplusApiPooling,
@@ -775,12 +777,62 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
 
             return str(self.bbox)
 
-        # Otherwise get saved scenario extent
-        extent = settings_manager.get_value(Settings.SCENARIO_EXTENT, default=None)
+        # Otherwise get saved extents from settings
+        clip_to_studyarea = settings_manager.get_value(
+            Settings.CLIP_TO_STUDYAREA, default=False, setting_type=bool
+        )
+        if clip_to_studyarea:
+            # From vector layer
+            study_area_path = settings_manager.get_value(
+                Settings.STUDYAREA_PATH, default="", setting_type=str
+            )
+            if not study_area_path or not os.path.exists(study_area_path):
+                log("Path for determining layer extent is invalid.", info=False)
+                return ""
+
+            aoi_layer = QgsVectorLayer(study_area_path, "AOI Layer")
+            if not aoi_layer.isValid():
+                log("AOI layer is invalid.", info=False)
+                return ""
+
+            source_crs = aoi_layer.crs()
+            if not source_crs:
+                log("CRS of AOI layer is undefined.", info=False)
+                return ""
+
+            aoi_extent = aoi_layer.extent()
+            if not aoi_extent:
+                log("Extent of AOI layer is undefined.", info=False)
+                return ""
+
+            # Reproject extent if required
+            destination_crs = QgsCoordinateReferenceSystem("EPSG:4326")
+            if source_crs != destination_crs:
+                aoi_extent = transform_extent(aoi_extent, source_crs, destination_crs)
+
+            extent = [
+                aoi_extent.xMinimum(),
+                aoi_extent.yMinimum(),
+                aoi_extent.xMaximum(),
+                aoi_extent.yMaximum(),
+            ]
+        else:
+            # From explicit extent definition
+            settings_extent = settings_manager.get_value(
+                Settings.SCENARIO_EXTENT, default=None
+            )
+            # Ensure in minX, minY, maxX, maxY format
+            extent = [
+                float(settings_extent[0]),
+                float(settings_extent[2]),
+                float(settings_extent[1]),
+                float(settings_extent[3]),
+            ]
+
         if not extent or len(extent) < 4:
             raise ValueError("Scenario extent is not defined or invalid.")
 
-        return f"{float(extent[0])},{float(extent[2])},{float(extent[1])},{float(extent[3])}"
+        return f"{extent[0]},{extent[1]},{extent[2]},{extent[3]}"
 
     def run(self) -> bool:
         """Initiate the zonal statistics calculation and poll until
@@ -794,6 +846,7 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
         """
         try:
             bbox_str = self._get_bbox_for_request()
+            log(f"BBOX for Zonal stats request: {bbox_str}")
         except Exception as e:
             log(f"Invalid bbox: {e}")
             return False
@@ -846,6 +899,7 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
                     break
 
                 try:
+                    # Use poll once which is non-blocking
                     response = polling.poll_once() or {}
                 except CplusApiRequestError as ex:
                     log(f"Polling error: {ex}", info=False)

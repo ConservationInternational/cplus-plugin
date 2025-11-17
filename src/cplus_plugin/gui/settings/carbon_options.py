@@ -180,6 +180,7 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
 
     def load_carbon_impact(self):
         """Load carbon impact info based on the latest values in settings."""
+        self._carbon_impact_model.remove_all_rows()
         carbon_impact_info = settings_manager.get_nature_base_zonal_stats()
         if carbon_impact_info:
             for impact in carbon_impact_info.result_collection:

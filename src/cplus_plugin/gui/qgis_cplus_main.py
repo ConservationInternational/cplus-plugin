@@ -57,7 +57,7 @@ from .scenario_item_widget import ScenarioItemWidget
 from .progress_dialog import OnlineProgressDialog, ReportProgressDialog, ProgressDialog
 from ..trends_earth import auth
 from ..api.scenario_task_api_client import ScenarioAnalysisTaskApiClient
-from ..api.layer_tasks import FetchDefaultLayerTask
+from ..api.layer_tasks import calculate_zonal_stats_task, FetchDefaultLayerTask
 from ..api.scenario_history_tasks import (
     FetchScenarioHistoryTask,
     FetchScenarioOutputTask,
@@ -404,6 +404,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.scenario_name.textChanged.connect(self.save_scenario)
         self.scenario_description.textChanged.connect(self.save_scenario)
         self.extent_box.extentChanged.connect(self.save_scenario)
+        self.extent_box.extentChanged.connect(
+            lambda s: self.update_naturebase_carbon_impact()
+        )
 
         icon_pixmap = QtGui.QPixmap(ICON_PATH)
         self.icon_la.setPixmap(icon_pixmap)
@@ -553,6 +556,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.save_scenario()
 
+        # Check and fetch carbon impact for the current extent
+        self.update_naturebase_carbon_impact()
+
     def _on_studyarea_file_changed(self):
         """Slot raised to when the area of interest is selected from a local file system."""
         data_dir = settings_manager.get_value(Settings.LAST_DATA_DIR, "")
@@ -580,6 +586,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.save_scenario()
 
+        # Check and fetch carbon impact for the current extent
+        self.update_naturebase_carbon_impact()
+
     def _on_studyarea_layer_changed(self, layer):
         """Slot raised to when the area of interest is selected from a map layers."""
         if layer is not None:
@@ -589,6 +598,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             settings_manager.set_value(Settings.STUDYAREA_PATH, layer.source())
 
             self.save_scenario()
+
+            # Check and fetch carbon impact for the current extent
+            self.update_naturebase_carbon_impact()
 
     def can_clip_to_studyarea(self) -> bool:
         """Return true if clipping layers by study area is selected"""
@@ -600,6 +612,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         ):
             clip_to_studyarea = True
         return clip_to_studyarea
+
+    def update_naturebase_carbon_impact(self):
+        """Fetch the naturebase zonal stats based on the current extent."""
+        auto_refresh = settings_manager.get_value(
+            Settings.AUTO_REFRESH_NATURE_BASE_ZONAL_STATS,
+            default=False,
+            setting_type=bool,
+        )
+        if not auto_refresh:
+            return
+
+        _ = calculate_zonal_stats_task()
 
     def get_studyarea_path(self) -> str:
         """Return the path of the study area
