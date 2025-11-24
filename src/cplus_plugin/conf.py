@@ -281,6 +281,7 @@ class Settings(enum.Enum):
     CONSTANT_RASTERS_DIALOG_ACTIVITY_TYPE = (
         "constant_rasters_dialog/activity_raster_type"
     )
+    CUSTOM_CONSTANT_RASTER_TYPES = "constant_rasters/custom_types"
 
 
 class SettingsManager(QtCore.QObject):
@@ -1659,6 +1660,27 @@ class SettingsManager(QtCore.QObject):
         """
         with qgis_settings(CONSTANT_RASTERS_SETTINGS_KEY) as settings:
             return settings.childKeys()
+
+    def save_custom_constant_raster_types(
+        self, custom_types: typing.List[dict]
+    ) -> None:
+        """Save custom constant raster type definitions to settings.
+
+        :param custom_types: List of custom type definition dictionaries
+        """
+        json_str = json.dumps(custom_types)
+        self.set_value(Settings.CUSTOM_CONSTANT_RASTER_TYPES, json_str)
+
+    def load_custom_constant_raster_types(self) -> typing.List[dict]:
+        """Load custom constant raster type definitions from settings.
+
+        :returns: List of custom type definition dictionaries
+        """
+        json_str = self.get_value(Settings.CUSTOM_CONSTANT_RASTER_TYPES, "[]")
+        try:
+            return json.loads(json_str) if json_str else []
+        except json.JSONDecodeError:
+            return []
 
 
 settings_manager = SettingsManager()
