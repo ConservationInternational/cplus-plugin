@@ -12,10 +12,7 @@ license: This program is free software; you can redistribute it and/or modify it
 
 # Manual
 
-The manual covers two sections. Firstly the workflow will be covered. This includes a discussion of the calculations
-and formulas. This is so that a user can understand how the CPLUS processing workflow and calculations for each step are
-done when processing the pathways and carbon layers, how the activities are created, algorithms applied to
-create the priority weighted layer (weighted activity), and the last step, which is the highest position calculation.
+The manual is divided into two main sections. The first section explains the complete workflow, including the calculations and formulas used throughout the CPLUS processing process. This section helps users understand how pathways and carbon layers are processed, how activities are generated, and which algorithms are applied to create the priority-weighted (weighted activity) layer. It also covers how the highest-position values are calculated.
 
 The second section offers a succinct overview of each step, providing references to detailed explanations for further clarification. A description of the generated report is also provided.
 
@@ -31,6 +28,98 @@ The second section offers a succinct overview of each step, providing references
 ![QGIS highest position example](img/cplus-workflow.png)
 
 *Figure 1: CPLUS workflow*
+
+### Evaluation Normalization Across Pathways
+
+Conservation planning analyses often use pathways that differ in structure, scale, or number of input variables. Without correction, pathways containing more variables may contribute disproportionately to the results. To ensure fairness and comparability, the plugin performs an Evaluation Normalization step before any pathway is processed into activities.
+
+**Figure 2** shows the Evaluation normalization workflow. 
+
+![Evaluation normalization workflow](img/cplus-normalization.png)
+
+*Figure 2: Evaluation Normalization workflow*
+
+**Purpose of Evaluation Normalization**
+
+The goal of this step is to:
+
+- Equalize the influence of pathways with different matrix sizes
+
+- Rescale all evaluation variables so they contribute proportionally
+
+- Integrate user-defined priorities into the weighting
+
+- Ensure the final activities reflect both user intent and balanced mathematical treatment
+
+This ensures that no pathway or variable dominates merely because it has more inputs, higher numeric ranges, or larger matrices.
+
+### Normalization Workflow
+
+The Evaluation Normalization step consists of four operations:
+
+**1. Suitability Coefficient × Impact Weight × User Weight**
+
+Each suitability matrix (representing system-defined suitability) is multiplied by a matrix of:
+
+- Impact weights (assigned per variable)
+
+- User weights (representing pathway importance)
+
+This produces a weighted evaluation matrix for each pathway.
+
+**Concept:**
+
+Suitability defines how appropriate a location is, while impact and user weights define how important each variable is.
+
+**2. Scaling Pathways with Different Numbers of Variables**
+
+Pathways may have very different structures.
+For example:
+
+- Biodiversity → 3 × 5 matrix
+
+- Livelihoods → 2 × 3
+
+- Freshwater → 1 × 4
+
+- Carbon → 3 × 3
+
+If left uncorrected, larger matrices contribute larger numbers simply because they contain more values.
+
+To prevent over-representation, all weighted matrices are **rescaled to a common magnitude.**
+
+This ensures that each pathway contributes proportionally to its assigned user weight—not according to its raw matrix size.
+
+**3. Normalizing Variable Influence**
+
+Within each pathway, variables may have naturally different ranges (e.g., from 0–3 vs 0–10).
+The plugin applies a normalization step so that each variable contributes equally within its pathway before combining them.
+
+This prevents numeric ranges from skewing the evaluation results.
+
+**4. Producing Balanced Weighted Pathway Layers**
+
+The result of the operations above is a balanced, normalized, and user-weighted evaluation layer for each pathway:
+
+-Biodiversity
+
+-Livelihoods
+
+-Freshwater
+
+-Carbon
+
+These evaluation layers are the inputs to the next stage of the CPLUS workflow, where they are used to generate:
+
+- NCS weighted carbon
+
+- Activities
+
+- Priority weighted layers
+
+- Highest position results
+
+Evaluation normalization ensures that the downstream results accurately reflect user priorities and scientifically balanced structures.
 
 ### NCS weighted carbon
 
@@ -139,7 +228,7 @@ Figure 2 shows an example from the QGIS description of the Highest position tool
 
 ![QGIS highest position example](img/qgis-highest-position-example.png)
 
-*Figure 2: Highest position example*
+*Figure 3: Highest position example*
 
 In the plugin, the `nodata` values are ignored. This means that if at least one raster has a pixel value
 at that cell there will be a raster stack value. If none of the rasters in the stack has a pixel value
@@ -151,21 +240,21 @@ Here is an explanation of how to use the **Highest position** tool:
 
 ![QGIS layer 1](img/qgis-hp-stack-layer-1.png)
 
-*Figure 3: Layer 1 used as the highest position input*
+*Figure 4: Layer 1 used as the highest position input*
 
 - Figure 4 shows the layer for the Highest position at stack position 2
 
 ![QGIS layer 2](img/qgis-hp-stack-layer-2.png)
 
-*Figure 4: Layer 2 used as the highest position input*
+*Figure 5: Layer 2 used as the highest position input*
 
-- Figure 5 shows the result from the Highest position calculation (Scenario result)
+- Figure 6 shows the result from the Highest position calculation (Scenario result)
     - *Stack layer 1* (blue): Figure 2 raster had the highest pixel value
     - *Stack layer 2* (red): Figure 3 raster had the highest pixel value
 
 ![QGIS highest position result](img/qgis-hp-result.png)
 
-*Figure 5: Highest position result*
+*Figure 6: Highest position result*
 
 This concludes the section on how the calculations are done.
 
