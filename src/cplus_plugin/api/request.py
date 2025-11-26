@@ -129,6 +129,37 @@ class CplusApiPooling:
             return self.context.get(self.url)
         return self.context.post(self.url, self.data)
 
+    def poll_once(self) -> dict:
+        """Perform a single API call to the network resource
+        and returns the response dict.
+
+        This does not sleep or recurse. It increments the
+        retry counter and enforces cancellation / timeout rules.
+        Use this from external loops to control the
+        loop frequency and update dependencies
+        after each response.
+
+        :returns: Dictionary containing the response details.
+        :rtype: dict
+        """
+        if self.cancelled:
+            return {"status": JOB_CANCELLED_STATUS}
+
+        if self.limit != -1 and self.current_repeat >= self.limit:
+            raise CplusApiRequestError("Request Timeout when fetching status!")
+
+        self.current_repeat += 1
+
+        response, status_code = self.__call_api()
+        if status_code != 200:
+            error_detail = response.get("detail", "Unknown Error!")
+            raise CplusApiRequestError(f"{status_code} - {error_detail}")
+
+        if self.on_response_fetched:
+            self.on_response_fetched(response)
+
+        return response
+
     def results(self) -> dict:
         """Fetch the results from API every X seconds and stop when status is in the final status list.
 

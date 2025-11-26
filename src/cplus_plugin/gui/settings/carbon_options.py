@@ -10,31 +10,40 @@ import qgis.core
 from qgis.gui import QgsFileWidget, QgsMessageBar, QgsOptionsPageWidget
 from qgis.gui import QgsOptionsWidgetFactory
 from qgis.PyQt import uic
-from qgis.PyQt import QtCore
+from qgis.PyQt import QtCore, sip
 from qgis.PyQt.QtGui import (
     QIcon,
-    QShowEvent,
     QPixmap,
+    QShowEvent,
+    QStandardItem,
+    QStandardItemModel,
 )
 
-from qgis.PyQt.QtWidgets import QButtonGroup, QWidget
+from qgis.PyQt.QtWidgets import QButtonGroup, QHeaderView, QWidget
 
 from ...api.base import ApiRequestStatus
 from ...api.carbon import (
     start_irrecoverable_carbon_download,
     get_downloader_task,
 )
+from ...api.layer_tasks import calculate_zonal_stats_task
 
 from ...conf import (
     settings_manager,
     Settings,
 )
-from ...definitions.constants import CPLUS_OPTIONS_KEY, CARBON_OPTIONS_KEY
+from ...definitions.constants import (
+    CPLUS_OPTIONS_KEY,
+    CARBON_OPTIONS_KEY,
+    LAYER_NAME_ATTRIBUTE,
+    MEAN_VALUE_ATTRIBUTE,
+)
 from ...definitions.defaults import (
+    CARBON_IMPACT_PER_HA_HEADER,
     OPTIONS_TITLE,
     CARBON_OPTIONS_TITLE,
     CARBON_SETTINGS_ICON_PATH,
-    MAX_CARBON_IMPACT_MANAGE,
+    LAYER_NAME_HEADER,
 )
 from ...models.base import DataSourceType
 from ...utils import FileUtils, tr
@@ -43,6 +52,45 @@ from ...utils import FileUtils, tr
 Ui_CarbonSettingsWidget, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "../../ui/carbon_settings.ui")
 )
+
+
+class NaturebaseCarbonImpactModel(QStandardItemModel):
+    """Model for displaying carbon impact values in a table view."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setColumnCount(2)
+        self.setHorizontalHeaderLabels([LAYER_NAME_HEADER, CARBON_IMPACT_PER_HA_HEADER])
+
+    def _readonly_item(self, text: str = "") -> QStandardItem:
+        """Helper to create a non-editable QStandardItem with
+        given display text.
+        """
+        item = QStandardItem(text)
+        item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+
+        return item
+
+    def add_row(self, layer_name: str, carbon_impact: float):
+        """Adds a row with the layer details to the model.
+
+        :param layer_name: Name of the layer.
+        :type layer_name: str
+
+        :param carbon_impact: Value of the carbon impact.
+        :type carbon_impact: float
+        """
+        name_item = self._readonly_item(str(layer_name))
+        carbon_item = self._readonly_item(str(carbon_impact))
+        carbon_item.setData(carbon_impact, QtCore.Qt.UserRole)
+
+        self.appendRow([name_item, carbon_item])
+
+    def remove_all_rows(self) -> None:
+        """Remove all rows from the model while preserving the column headers."""
+        row_count = self.rowCount()
+        if row_count > 0:
+            self.removeRows(0, row_count)
 
 
 class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
@@ -114,8 +162,37 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
         self.cbo_biomass.setFilters(qgis.core.QgsMapLayerProxyModel.Filter.RasterLayer)
 
         # Naturebase carbon impact
-        # Temp disable until functionality is complete
-        self.gb_carbon_management.setVisible(False)
+        self.zonal_stats_task = None
+        self._carbon_impact_model = NaturebaseCarbonImpactModel()
+        self.tv_naturebase_carbon_impact.setModel(self._carbon_impact_model)
+        self.tv_naturebase_carbon_impact.setSortingEnabled(True)
+
+        header = self.tv_naturebase_carbon_impact.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Stretch)
+        header.setSectionsClickable(True)
+        header.setSortIndicatorShown(True)
+        self.load_carbon_impact()
+        self.tv_naturebase_carbon_impact.sortByColumn(0, QtCore.Qt.AscendingOrder)
+
+        self.btn_reload_carbon_impact.clicked.connect(
+            self._on_reload_naturebase_carbon_impact
+        )
+
+    def load_carbon_impact(self):
+        """Load carbon impact info based on the latest values in settings."""
+        self._carbon_impact_model.remove_all_rows()
+        carbon_impact_info = settings_manager.get_nature_base_zonal_stats()
+        if carbon_impact_info:
+            for impact in carbon_impact_info.result_collection:
+                layer_name = impact.get(LAYER_NAME_ATTRIBUTE)
+                mean_value = impact.get(MEAN_VALUE_ATTRIBUTE) or 0.0
+                self._carbon_impact_model.add_row(layer_name, mean_value)
+
+            updated_date_str = (
+                f'<html><head/><body><p><span style=" color:#6a6a6a;"><i>'
+                f'{self.tr("Last updated")}: {carbon_impact_info.to_local_time()}</i></span></p></body></html>'
+            )
+            self.lbl_last_updated_carbon_impact.setText(updated_date_str)
 
     def apply(self) -> None:
         """This is called on OK click in the QGIS options panel."""
@@ -127,9 +204,6 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
         settings_manager.set_value(
             Settings.IRRECOVERABLE_CARBON_LOCAL_SOURCE,
             self.fw_irrecoverable_carbon.filePath(),
-        )
-        settings_manager.set_value(
-            Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE, self.txt_ic_url.text()
         )
         settings_manager.set_value(
             Settings.IRRECOVERABLE_CARBON_ONLINE_LOCAL_PATH,
@@ -156,6 +230,12 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
             self.fw_biomass.filePath(),
         )
 
+        # Carbon impact
+        settings_manager.set_value(
+            Settings.AUTO_REFRESH_NATURE_BASE_ZONAL_STATS,
+            self.cb_auto_refresh_carbon_impact.isChecked(),
+        )
+
     def load_settings(self):
         """Loads the settings and displays it in the UI."""
         # Irrecoverable carbon
@@ -175,11 +255,6 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
         )
 
         # Online config
-        self.txt_ic_url.setText(
-            settings_manager.get_value(
-                Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE, default=""
-            )
-        )
         self.fw_save_online_file.setFilePath(
             settings_manager.get_value(
                 Settings.IRRECOVERABLE_CARBON_ONLINE_LOCAL_PATH, default=""
@@ -207,7 +282,13 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
             settings_manager.get_value(Settings.STORED_CARBON_BIOMASS_PATH, default="")
         )
 
-        # Carbon impact - manage
+        # Carbon impact
+        auto_refresh = settings_manager.get_value(
+            Settings.AUTO_REFRESH_NATURE_BASE_ZONAL_STATS,
+            default=False,
+            setting_type=bool,
+        )
+        self.cb_auto_refresh_carbon_impact.setChecked(auto_refresh)
 
     def showEvent(self, event: QShowEvent) -> None:
         """Show event being called. This will display the plugin settings.
@@ -282,7 +363,9 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
         well-formed.
         :rtype: bool
         """
-        dataset_url = self.txt_ic_url.text()
+        dataset_url = settings_manager.get_value(
+            Settings.IRRECOVERABLE_CARBON_ONLINE_SOURCE, default="", setting_type=str
+        )
         if not dataset_url:
             self.message_bar.pushWarning(
                 tr("CPLUS - Irrecoverable carbon dataset"), tr("URL not defined")
@@ -418,6 +501,75 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
         """
         if layer is not None:
             self.fw_biomass.setFilePath(layer.source())
+
+    def _on_reload_naturebase_carbon_impact(self):
+        """Slot raised to initiate the fetching of Naturebase zonal stats."""
+        # Disconnect any existing zonal stats receivers
+        if self.zonal_stats_task and not sip.isdeleted(self.zonal_stats_task):
+            self.zonal_stats_task.statusChanged.disconnect(
+                lambda s: self.reload_zonal_stats_task_status()
+            )
+            self.zonal_stats_task.taskCompleted.disconnect(
+                self._on_zonal_stats_complete_or_error
+            )
+            self.zonal_stats_task.taskTerminated.disconnect(
+                self._on_zonal_stats_complete_or_error
+            )
+
+        self.zonal_stats_task = calculate_zonal_stats_task()
+
+        # Reconnect signals
+        if self.zonal_stats_task:
+            self.zonal_stats_task.statusChanged.connect(
+                lambda s: self.reload_zonal_stats_task_status()
+            )
+            self.zonal_stats_task.progressChanged.connect(
+                lambda s: self.reload_zonal_stats_task_status()
+            )
+            self.zonal_stats_task.taskCompleted.connect(
+                self._on_zonal_stats_complete_or_error
+            )
+            self.zonal_stats_task.taskTerminated.connect(
+                self._on_zonal_stats_complete_or_error
+            )
+
+        self.btn_reload_carbon_impact.setEnabled(False)
+        self.tv_naturebase_carbon_impact.setEnabled(False)
+
+        # Update the latest status
+        self.reload_zonal_stats_task_status()
+
+    def _on_zonal_stats_complete_or_error(self):
+        """Re-enable controls and refresh table view if applicable."""
+        self.btn_reload_carbon_impact.setEnabled(True)
+        self.tv_naturebase_carbon_impact.setEnabled(True)
+        if self.zonal_stats_task.status() == qgis.core.QgsTask.TaskStatus.Complete:
+            self.load_carbon_impact()
+
+    def reload_zonal_stats_task_status(self):
+        """Update icon and description of zonal stats task."""
+        icon_path = ""
+        description = ""
+        if self.zonal_stats_task:
+            status = self.zonal_stats_task.status()
+            if status == qgis.core.QgsTask.TaskStatus.OnHold:
+                icon_path = FileUtils.get_icon_path("mIndicatorTemporal.svg")
+                description = self.tr("Not started")
+            elif status == qgis.core.QgsTask.TaskStatus.Queued:
+                icon_path = FileUtils.get_icon_path("mIndicatorTemporal.svg")
+                description = self.tr("Queued")
+            elif status == qgis.core.QgsTask.TaskStatus.Running:
+                icon_path = FileUtils.get_icon_path("progress-indicator.svg")
+                description = f"{self.tr('Running')} ({int(self.zonal_stats_task.progress())}%)..."
+            elif status == qgis.core.QgsTask.TaskStatus.Complete:
+                icon_path = FileUtils.get_icon_path("mIconSuccess.svg")
+                description = self.tr("Completed")
+            elif status == qgis.core.QgsTask.TaskStatus.Terminated:
+                icon_path = FileUtils.get_icon_path("mIconWarning.svg")
+                description = self.tr("Terminated")
+
+        self.lbl_carbon_impact_status_icon.svg_path = icon_path
+        self.lbl_carbon_impact_status_description.setText(description)
 
 
 class CarbonOptionsFactory(QgsOptionsWidgetFactory):

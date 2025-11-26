@@ -110,7 +110,6 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         # Naturebase carbon impact reference
         carbon_impact_info = settings_manager.get_nature_base_zonal_stats()
         if carbon_impact_info:
-            # Manage page
             self.cbo_naturebase_carbon_mng.addItem("")
             self.cbo_naturebase_carbon_rst.addItem("")
             for impact in carbon_impact_info.result_collection:

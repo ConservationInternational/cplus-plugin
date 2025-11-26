@@ -50,6 +50,10 @@ MANAGE_CARBON_IMPACT_HEADER = "C.I. (Manage)"
 RESTORE_CARBON_IMPACT_HEADER = "C.I. (Restore)"
 TOTAL_CARBON_IMPACT_HEADER = "Total C.I."
 
+# Naturebase carbon impact table headers
+LAYER_NAME_HEADER = "Layer Name"
+CARBON_IMPACT_PER_HA_HEADER = "tCO2e/ha"
+
 ICON_PATH = ":/plugins/cplus_plugin/icon.svg"
 REPORT_SETTINGS_ICON_PATH = str(
     os.path.normpath(
