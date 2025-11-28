@@ -2850,7 +2850,7 @@ class ScenarioAnalysisTask(QgsTask):
                     "FIELD_TYPE": 0,
                     "FIELD_LENGTH": 0,
                     "FIELD_PRECISION": 0,
-                    "FORMULA": ' "_sum" * 4*pi() * area(@geometry)/(perimeter(@geometry) * perimeter(@geometry))',
+                    "FORMULA": '"_sum"  * 4* pi() *  $area  /($perimeter * $perimeter)',
                     "OUTPUT": "TEMPORARY_OUTPUT",
                 },
                 context=self.processing_context,
