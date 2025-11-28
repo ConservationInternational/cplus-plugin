@@ -392,7 +392,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                 if type_def:
                     # Create widget for this custom type
                     widget = GenericNumericWidget(
-                        label=type_def.get(NAME_ATTRIBUTE, "Custom Type"),
+                        label=type_def.get(NAME_ATTRIBUTE, self.tr("Custom Type")),
                         metadata_id=metadata_id,
                         min_value=type_def.get(MIN_VALUE_ATTRIBUTE_KEY, 0.0),
                         max_value=type_def.get(MAX_VALUE_ATTRIBUTE_KEY, 100.0),

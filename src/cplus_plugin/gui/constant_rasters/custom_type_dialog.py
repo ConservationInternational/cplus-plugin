@@ -107,6 +107,27 @@ class CustomTypeDefinitionDialog(QtWidgets.QDialog):
         """Connect widget signals."""
         # Clear validation message when user types
         self.txt_type_name.textChanged.connect(lambda: self.lbl_validation.hide())
+        self.spin_min_value.valueChanged.connect(self._validate_default_range)
+        self.spin_max_value.valueChanged.connect(self._validate_default_range)
+        self.spin_default_value.valueChanged.connect(self._validate_default_range)
+
+    def _validate_default_range(self):
+        """Ensure default value always stays between min and max."""
+        min_val = self.spin_min_value.value()
+        max_val = self.spin_max_value.value()
+        default_val = self.spin_default_value.value()
+
+        # Auto-fix default value if outside new range
+        if default_val < min_val:
+            self.spin_default_value.setValue(min_val)
+            default_val = min_val
+
+        if default_val > max_val:
+            self.spin_default_value.setValue(max_val)
+            default_val = max_val
+
+        # Hide any previous error while user edits
+        self.lbl_validation.hide()
 
     def validate_and_accept(self):
         """Validate input and accept dialog if valid."""
