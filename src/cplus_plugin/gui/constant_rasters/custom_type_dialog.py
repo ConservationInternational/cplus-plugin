@@ -117,6 +117,11 @@ class CustomTypeDefinitionDialog(QtWidgets.QDialog):
         max_val = self.spin_max_value.value()
         default_val = self.spin_default_value.value()
 
+        # Block ALL spinboxes to prevent circular valueChanged loops
+        self.spin_min_value.blockSignals(True)
+        self.spin_max_value.blockSignals(True)
+        self.spin_default_value.blockSignals(True)
+
         # Auto-fix default value if outside new range
         if default_val < min_val:
             self.spin_default_value.setValue(min_val)
@@ -125,6 +130,11 @@ class CustomTypeDefinitionDialog(QtWidgets.QDialog):
         if default_val > max_val:
             self.spin_default_value.setValue(max_val)
             default_val = max_val
+
+        # Unblock signals
+        self.spin_min_value.blockSignals(False)
+        self.spin_default_value.blockSignals(False)
+        self.spin_max_value.blockSignals(False)
 
         # Hide any previous error while user edits
         self.lbl_validation.hide()
