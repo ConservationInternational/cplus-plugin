@@ -344,6 +344,7 @@ class ConstantRasterMetadata:
     input_range: InputRange = InputRange(
         min=0.0, max=100.0
     )  # Min and max for input values (e.g., 0-100 years)
+    user_defined: bool = False  # True for custom types, False for built-ins
 
 
 @dataclasses.dataclass

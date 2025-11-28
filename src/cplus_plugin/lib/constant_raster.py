@@ -477,6 +477,7 @@ class ConstantRasterRegistry:
     def __init__(self):
         """Initialize the registry with empty stores."""
         self._metadata_store: typing.Dict[str, ConstantRasterMetadata] = {}
+        self._custom_type_definitions: typing.List[dict] = []
 
     def add_metadata(self, metadata: ConstantRasterMetadata) -> bool:
         """Add constant raster metadata to the registry.
@@ -576,10 +577,68 @@ class ConstantRasterRegistry:
             activity_identifier, ModelComponentType.ACTIVITY
         )
 
+    def add_custom_type_definition(self, type_def: dict) -> bool:
+        """Add a custom type definition to the registry.
+
+        :param type_def: Dictionary with custom type definition (id, name, min_value, max_value, etc.)
+        :returns: True if added successfully, False if already exists
+        """
+        # Check if already exists
+        if any(
+            t.get("id") == type_def.get("id") for t in self._custom_type_definitions
+        ):
+            return False
+        self._custom_type_definitions.append(type_def)
+        return True
+
+    def remove_custom_type_definition(self, type_id: str) -> bool:
+        """Remove a custom type definition from the registry.
+
+        :param type_id: ID of the custom type to remove
+        :returns: True if removed, False if not found
+        """
+        for i, type_def in enumerate(self._custom_type_definitions):
+            if type_def.get("id") == type_id:
+                self._custom_type_definitions.pop(i)
+                return True
+        return False
+
+    def get_custom_type_definitions(self) -> typing.List[dict]:
+        """Get all custom type definitions.
+
+        :returns: List of custom type definition dictionaries
+        """
+        return self._custom_type_definitions.copy()
+
+    def get_custom_type_definition(self, type_id: str) -> typing.Optional[dict]:
+        """Get a specific custom type definition by ID.
+
+        :param type_id: ID of the custom type
+        :returns: Custom type definition dictionary, or None if not found
+        """
+        for type_def in self._custom_type_definitions:
+            if type_def.get("id") == type_id:
+                return type_def.copy()
+        return None
+
+    def update_custom_type_definition(self, type_id: str, updated_def: dict) -> bool:
+        """Update a custom type definition.
+
+        :param type_id: ID of the custom type to update
+        :param updated_def: Dictionary with updated values
+        :returns: True if updated, False if not found
+        """
+        for i, type_def in enumerate(self._custom_type_definitions):
+            if type_def.get("id") == type_id:
+                self._custom_type_definitions[i] = updated_def
+                return True
+        return False
+
     def save(self):
         """Save all registered metadata to settings.
 
         Uses metadata.serializer if provided, otherwise uses default serializer.
+        Also saves custom type definitions.
         """
         for metadata_id, metadata in self._metadata_store.items():
             if metadata.raster_collection:
@@ -595,10 +654,16 @@ class ConstantRasterRegistry:
                     metadata_id, collection_data
                 )
 
+        # Save custom type definitions
+        settings_manager.save_custom_constant_raster_types(
+            self._custom_type_definitions
+        )
+
     def load(self):
         """Load metadata from settings.
 
         Uses metadata.deserializer if provided, otherwise uses default deserializer.
+        Also loads custom type definitions.
         """
         for metadata_id in settings_manager.get_all_constant_raster_metadata_ids():
             if metadata_id in self._metadata_store:
@@ -669,6 +734,11 @@ class ConstantRasterRegistry:
                         f"Error loading constant raster state for {metadata_id}: {str(e)}",
                         info=False,
                     )
+
+        # Load custom type definitions
+        self._custom_type_definitions = (
+            settings_manager.load_custom_constant_raster_types()
+        )
 
     def remove_metadata(self, metadata_id: str) -> bool:
         """Remove metadata from the registry.
