@@ -39,10 +39,10 @@ class TestGenericNumericWidget(TestCase):
         )
 
         self.assertIsNotNone(widget)
-        self.assertEqual(widget._label, "Test Label")
-        self.assertEqual(widget._min_value, 0.0)
-        self.assertEqual(widget._max_value, 50.0)
-        self.assertEqual(widget._metadata_id, "test_id")
+        self.assertEqual(widget.label, "Test Label")
+        self.assertEqual(widget.min_value, 0.0)
+        self.assertEqual(widget.max_value, 50.0)
+        self.assertEqual(widget.metadata_id, "test_id")
 
     def test_spinbox_configuration(self):
         """Test spinbox is configured correctly."""
@@ -50,6 +50,7 @@ class TestGenericNumericWidget(TestCase):
             label="Test",
             min_value=10.0,
             max_value=90.0,
+            default_value=10.0,
             metadata_id="test",
         )
 
@@ -112,7 +113,7 @@ class TestGenericNumericWidget(TestCase):
         collection = metadata.raster_collection
         self.assertIsNotNone(collection)
         self.assertEqual(collection.min_value, 0.0)
-        self.assertEqual(collection.max_value, 0.0)
+        self.assertEqual(collection.max_value, 100.0)
         self.assertEqual(collection.component_type, ModelComponentType.ACTIVITY)
 
     def test_create_metadata_input_range(self):
@@ -131,6 +132,13 @@ class TestGenericNumericWidget(TestCase):
 
     def test_create_raster_component(self):
         """Test create_raster_component creates valid component."""
+        widget = GenericNumericWidget(
+            label="Test",
+            min_value=0.0,
+            max_value=100.0,
+            metadata_id="test",
+        )
+
         activity = Activity(
             uuid=uuid4(),
             name="Test Activity",
@@ -139,14 +147,22 @@ class TestGenericNumericWidget(TestCase):
             layer_type=LayerType.RASTER,
         )
 
-        component = GenericNumericWidget.create_raster_component(activity)
+        component = widget.create_raster_component(activity)
 
         self.assertIsInstance(component, ConstantRasterComponent)
-        self.assertEqual(component.component_id, activity.uuid)
+        self.assertEqual(component.component.uuid, activity.uuid)
         self.assertIsInstance(component.value_info, ConstantRasterInfo)
 
     def test_create_raster_component_default_value(self):
-        """Test create_raster_component sets default value to 0.0."""
+        """Test create_raster_component sets default value to configured default."""
+        widget = GenericNumericWidget(
+            label="Test",
+            min_value=0.0,
+            max_value=100.0,
+            default_value=0.0,
+            metadata_id="test",
+        )
+
         activity = Activity(
             uuid=uuid4(),
             name="Test Activity",
@@ -155,24 +171,25 @@ class TestGenericNumericWidget(TestCase):
             layer_type=LayerType.RASTER,
         )
 
-        component = GenericNumericWidget.create_raster_component(activity)
+        component = widget.create_raster_component(activity)
 
         self.assertEqual(component.value_info.normalized, 0.0)
         self.assertEqual(component.value_info.absolute, 0.0)
 
-    def test_reset_clears_to_minimum(self):
-        """Test reset() sets spinbox to minimum value."""
+    def test_reset_clears_to_default(self):
+        """Test reset() sets spinbox to default value."""
         widget = GenericNumericWidget(
             label="Test",
             min_value=5.0,
             max_value=50.0,
+            default_value=10.0,
             metadata_id="test",
         )
 
         widget.spin_box.setValue(25.0)
         widget.reset()
 
-        self.assertEqual(widget.spin_box.value(), 5.0)
+        self.assertEqual(widget.spin_box.value(), 10.0)
 
     def test_load_populates_from_component(self):
         """Test load() populates spinbox from component."""
@@ -191,8 +208,10 @@ class TestGenericNumericWidget(TestCase):
             layer_type=LayerType.RASTER,
         )
         component = ConstantRasterComponent(
-            component_id=activity.uuid,
+            component=activity,
+            component_type=ModelComponentType.ACTIVITY,
             value_info=ConstantRasterInfo(normalized=42.5, absolute=42.5),
+            skip_raster=False,
         )
 
         widget.load(component)
