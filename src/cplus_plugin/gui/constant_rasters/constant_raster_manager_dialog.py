@@ -897,12 +897,11 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         # Get the current value from the widget to use for ALL checked items
         current_value = None
-        if hasattr(current_config_widget, "sb_experience"):
-            # YearsExperienceWidget
-            current_value = current_config_widget.sb_experience.value()
-        elif hasattr(current_config_widget, "spin_box"):
-            # GenericNumericWidget
-            current_value = current_config_widget.spin_box.value()
+        if (
+            current_config_widget.raster_component
+            and current_config_widget.raster_component.value_info
+        ):
+            current_value = current_config_widget.raster_component.value_info.absolute
 
         # First, build a set of all model item UUIDs for quick lookup
         model_uuids = set()

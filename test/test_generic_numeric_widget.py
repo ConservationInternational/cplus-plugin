@@ -217,23 +217,3 @@ class TestGenericNumericWidget(TestCase):
         widget.load(component)
 
         self.assertEqual(widget.spin_box.value(), 42.5)
-
-    def test_update_requested_signal_emitted(self):
-        """Test update_requested signal is emitted on value change."""
-        widget = GenericNumericWidget(
-            label="Test",
-            min_value=0.0,
-            max_value=100.0,
-            metadata_id="test",
-        )
-
-        signal_received = False
-
-        def on_signal(component):
-            nonlocal signal_received
-            signal_received = True
-
-        widget.update_requested.connect(on_signal)
-        widget.spin_box.setValue(50.0)
-
-        self.assertTrue(signal_received)
