@@ -45,7 +45,6 @@ from .utils import (
     FileUtils,
     CustomJsonEncoder,
     todict,
-    create_connectivity_raster,
     normalize_raster,
 )
 
