@@ -1,16 +1,16 @@
 <?xml version = '1.0' encoding = 'UTF-8'?>
 <plugins>
-<pyqgis_plugin name="CPLUS plugin" version="v1.1.20">
+<pyqgis_plugin name="CPLUS plugin" version="v1.1.21">
                 <description><![CDATA[QGIS plugin for the CPLUS framework]]></description>
                 <about><![CDATA[Adds functionality to use the CPLUS decision support tool in making informed decisions, from spatial information such as land cover, carbon stocks, and potential for carbon sequestration, CPLUS enables the identification of key areas for intervention and investment.]]></about>
-                <version>v1.1.20</version>
+                <version>v1.1.21</version>
                 <qgis_minimum_version>3.22</qgis_minimum_version>
                 <homepage><![CDATA[https://github.com/ConservationInternational/cplus-plugin]]></homepage>
-                <file_name>cplus_plugin.1.1.20.zip</file_name>
+                <file_name>cplus_plugin.1.1.21.zip</file_name>
                 <icon>icon.svg</icon>
                 <author_name><![CDATA[Kartoza]]></author_name>
-                <download_url>https://github.com/ConservationInternational/cplus-plugin/releases/download/v1.1.20/cplus_plugin.1.1.20.zip</download_url>
-                <update_date>2025-11-28 09:57:21</update_date>
+                <download_url>https://github.com/ConservationInternational/cplus-plugin/releases/download/v1.1.21/cplus_plugin.1.1.21.zip</download_url>
+                <update_date>2025-11-28 14:32:05</update_date>
                 <experimental>False</experimental>
                 <deprecated>False</deprecated>
                 <tracker><![CDATA[https://github.com/ConservationInternational/cplus-plugin/issues]]></tracker>
