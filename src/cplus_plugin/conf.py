@@ -215,6 +215,7 @@ class Settings(enum.Enum):
     RESCALE_VALUES = "snap_rescale"
     RESAMPLING_METHOD = "snap_method"
     SNAP_PIXEL_VALUE = "snap_pixel_value"
+    PIXEL_CONNECTIVITY_ENABLED = "pixel_connectivity_enabled"
 
     # Sieve function parameters
     SIEVE_ENABLED = "sieve_enabled"

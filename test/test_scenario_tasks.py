@@ -1095,7 +1095,6 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
 
         settings_manager.set_value(Settings.BASE_DIR, base_dir)
 
-        activity_layer = QgsRasterLayer(activity_layer_path_1, "test_activity_2")
         first_layer_stat = activity_layer.dataProvider().bandStatistics(1)
 
         self.assertEqual(first_layer_stat.minimumValue, 0.0)

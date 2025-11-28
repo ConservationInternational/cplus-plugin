@@ -721,6 +721,10 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             Settings.RESCALE_VALUES, self.rescale_values.isChecked()
         )
         settings_manager.set_value(
+            Settings.PIXEL_CONNECTIVITY_ENABLED,
+            self.pixel_connectivity_enabled.isChecked(),
+        )
+        settings_manager.set_value(
             Settings.RESAMPLING_METHOD, self.resample_method_box.currentIndex()
         )
 
@@ -782,6 +786,11 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.rescale_values.setChecked(
             settings_manager.get_value(
                 Settings.RESCALE_VALUES, default=False, setting_type=bool
+            )
+        )
+        self.pixel_connectivity_enabled.setChecked(
+            settings_manager.get_value(
+                Settings.PIXEL_CONNECTIVITY_ENABLED, default=True, setting_type=bool
             )
         )
         self.resample_method_box.setCurrentIndex(
