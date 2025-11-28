@@ -186,7 +186,7 @@ class TestConstantRasterRegistry(TestCase):
         self.assertIn(MAX_VALUE_ATTRIBUTE_KEY, retrieved)
         self.assertIn(COMPONENT_TYPE_ATTRIBUTE, retrieved)
 
-    @patch('cplus_plugin.lib.constant_raster.settings_manager')
+    @patch("cplus_plugin.lib.constant_raster.settings_manager")
     def test_save_persists_custom_types(self, mock_settings_manager):
         """Test save() persists custom types to settings."""
         type_def = {
@@ -205,7 +205,7 @@ class TestConstantRasterRegistry(TestCase):
         args = mock_settings_manager.save_custom_constant_raster_types.call_args[0]
         self.assertIn(type_def, args[0])
 
-    @patch('cplus_plugin.lib.constant_raster.settings_manager')
+    @patch("cplus_plugin.lib.constant_raster.settings_manager")
     def test_load_retrieves_custom_types(self, mock_settings_manager):
         """Test load() retrieves custom types from settings."""
         saved_types = [
@@ -218,7 +218,9 @@ class TestConstantRasterRegistry(TestCase):
             }
         ]
 
-        mock_settings_manager.load_custom_constant_raster_types.return_value = saved_types
+        mock_settings_manager.load_custom_constant_raster_types.return_value = (
+            saved_types
+        )
         self.registry.load()
 
         self.assertEqual(len(self.registry._custom_type_definitions), 1)

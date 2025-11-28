@@ -3,6 +3,8 @@
 Dialog for creating and editing custom constant raster type definitions.
 """
 
+import sys
+
 from qgis.PyQt import QtCore, QtWidgets, QtGui
 
 from ...models.base import ModelComponentType
@@ -28,7 +30,10 @@ class CustomTypeDefinitionDialog(QtWidgets.QDialog):
         self.existing_types = existing_types or []
         self.original_name = None  # Store original name in edit mode
 
-        self.setWindowTitle("Edit Custom Type" if edit_mode else "Add Custom Type")
+        if edit_mode:
+            self.setWindowTitle(self.tr("Edit Constant Raster Type"))
+        else:
+            self.setWindowTitle(self.tr("Add New Constant Raster Type"))
         self.setMinimumWidth(400)
 
         self._setup_ui()
@@ -38,15 +43,50 @@ class CustomTypeDefinitionDialog(QtWidgets.QDialog):
         """Create the dialog UI."""
         layout = QtWidgets.QVBoxLayout(self)
 
+        # Type configuration
+        form_layout = QtWidgets.QFormLayout()
+
         # Type Name
-        name_group = QtWidgets.QGroupBox("Type Information")
-        name_layout = QtWidgets.QFormLayout(name_group)
-
         self.txt_type_name = QtWidgets.QLineEdit()
-        self.txt_type_name.setPlaceholderText("e.g., Market Trends")
-        name_layout.addRow("Type Name:", self.txt_type_name)
+        self.txt_type_name.setPlaceholderText(self.tr("e.g., Market Trends"))
+        form_layout.addRow(self.tr("Name:"), self.txt_type_name)
 
-        layout.addWidget(name_group)
+        # Range configuration group
+        range_group = QtWidgets.QGroupBox(self.tr("Normalization Range Configuration"))
+        range_layout = QtWidgets.QFormLayout(range_group)
+
+        # Minimum value
+        self.spin_min_value = QtWidgets.QDoubleSpinBox()
+        self.spin_min_value.setRange(0.0, sys.float_info.max)
+        self.spin_min_value.setDecimals(1)
+        self.spin_min_value.setValue(0.0)
+        self.spin_min_value.setToolTip(
+            self.tr("Minimum value users can enter in the widget")
+        )
+        range_layout.addRow(self.tr("Minimum:"), self.spin_min_value)
+
+        # Maximum value
+        self.spin_max_value = QtWidgets.QDoubleSpinBox()
+        self.spin_max_value.setRange(0.0, sys.float_info.max)
+        self.spin_max_value.setDecimals(1)
+        self.spin_max_value.setValue(100.0)
+        self.spin_max_value.setToolTip(
+            self.tr("Maximum value users can enter in the widget")
+        )
+        range_layout.addRow(self.tr("Maximum:"), self.spin_max_value)
+
+        # Default value
+        self.spin_default_value = QtWidgets.QDoubleSpinBox()
+        self.spin_default_value.setRange(0.0, sys.float_info.max)
+        self.spin_default_value.setDecimals(1)
+        self.spin_default_value.setValue(0.0)
+        self.spin_default_value.setToolTip(
+            self.tr("Default value shown when creating a new raster component")
+        )
+        range_layout.addRow(self.tr("Default Value:"), self.spin_default_value)
+
+        layout.addLayout(form_layout)
+        layout.addWidget(range_group)
 
         # Validation message
         self.lbl_validation = QtWidgets.QLabel()
@@ -75,16 +115,35 @@ class CustomTypeDefinitionDialog(QtWidgets.QDialog):
 
         # Validate type name
         if not type_name:
-            self._show_validation_error("Type name cannot be empty.")
+            self._show_validation_error(self.tr("Type name cannot be empty."))
             return
 
         # Check for duplicate names (skip check if editing and name unchanged)
         if not (self.edit_mode and type_name == self.original_name):
             if type_name in self.existing_types:
                 self._show_validation_error(
-                    f"A type named '{type_name}' already exists. Please choose a different name."
+                    self.tr(
+                        "A type named '{0}' already exists. Please choose a different name."
+                    ).format(type_name)
                 )
                 return
+
+        # Validate range values
+        min_val = self.spin_min_value.value()
+        max_val = self.spin_max_value.value()
+        default_val = self.spin_default_value.value()
+
+        if min_val >= max_val:
+            self._show_validation_error(
+                self.tr("Minimum value must be less than maximum value.")
+            )
+            return
+
+        if default_val < min_val or default_val > max_val:
+            self._show_validation_error(
+                self.tr("Default value must be between minimum and maximum values.")
+            )
+            return
 
         # All validation passed
         self.accept()
@@ -102,22 +161,25 @@ class CustomTypeDefinitionDialog(QtWidgets.QDialog):
 
         Used in edit mode to populate the dialog with existing values.
 
-        :param type_def: Dictionary with type definition (name)
+        :param type_def: Dictionary with type definition
         """
         self.original_name = type_def.get("name", "")
         self.txt_type_name.setText(self.original_name)
+        self.spin_min_value.setValue(type_def.get("min_value", 0.0))
+        self.spin_max_value.setValue(type_def.get("max_value", 100.0))
+        self.spin_default_value.setValue(type_def.get("default_value", 0.0))
 
     def get_type_definition(self) -> dict:
         """Get the type definition from dialog values.
 
-        Returns default values for min_value and max_value
-        that match Years of Experience widget.
+        Returns user-configured values for min, max, and default.
 
         :returns: Dictionary with type definition
         """
         return {
             "name": self.txt_type_name.text().strip(),
             "component_type": ModelComponentType.ACTIVITY.value,
-            "min_value": 0.0,
-            "max_value": 100.0,
+            "min_value": self.spin_min_value.value(),
+            "max_value": self.spin_max_value.value(),
+            "default_value": self.spin_default_value.value(),
         }

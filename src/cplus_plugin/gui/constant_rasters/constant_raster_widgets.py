@@ -254,58 +254,72 @@ class GenericNumericWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
     def __init__(
         self,
         label: str,
-        min_value: float,
-        max_value: float,
         metadata_id: str,
+        min_value: float = 0.0,
+        max_value: float = 100.0,
+        default_value: float = None,
         parent=None,
     ):
         """Initialize the generic numeric widget.
 
         :param label: Display label for the input (e.g., "Training Hours")
-        :param min_value: Minimum allowed value
-        :param max_value: Maximum allowed value
         :param metadata_id: Unique identifier for the metadata
+        :param min_value: Minimum allowed value (default: 0.0)
+        :param max_value: Maximum allowed value (default: 100.0)
+        :param default_value: Default value for new components (default: min_value)
         :param parent: Parent widget
         """
         super().__init__(parent)
 
         # Store configuration
-        self._label = label
-        self._min_value = min_value
-        self._max_value = max_value
-        self._metadata_id = metadata_id
+        self.label = label
+        self.metadata_id = metadata_id
+        self.min_value = min_value
+        self.max_value = max_value
+        self.default_value = default_value if default_value is not None else min_value
 
         # Create UI
         self._create_ui()
 
         # Connect signals
-        if hasattr(self, "spin_box"):
-            self.spin_box.valueChanged.connect(self.on_value_changed)
+        self.spin_box.valueChanged.connect(self.on_value_changed)
 
     def _create_ui(self):
         """Create UI with configurable parameters."""
         layout = QtWidgets.QVBoxLayout(self)
 
         # Label
-        label = QtWidgets.QLabel(f"{self._label}:")
+        label = QtWidgets.QLabel(f"{self.label}:")
         layout.addWidget(label)
 
         # Spin box
         self.spin_box = QtWidgets.QDoubleSpinBox()
-        self.spin_box.setMinimum(self._min_value)
-        self.spin_box.setMaximum(self._max_value)
-        self.spin_box.setValue(self._min_value)
+        self.spin_box.setMinimum(self.min_value)
+        self.spin_box.setMaximum(self.max_value)
+        self.spin_box.setValue(self.default_value)
         self.spin_box.setDecimals(1)
         layout.addWidget(self.spin_box)
 
         # Stretch
         layout.addStretch()
 
+    def set_range(self, min_value: float, max_value: float):
+        """Update the allowed range for the spinbox.
+
+        :param min_value: New minimum value
+        :param max_value: New maximum value
+        """
+        self.min_value = min_value
+        self.max_value = max_value
+        if hasattr(self, "spin_box"):
+            self.spin_box.setMinimum(min_value)
+            self.spin_box.setMaximum(max_value)
+
     def reset(self):
         """Reset widget to default value."""
         if hasattr(self, "spin_box"):
             self.spin_box.blockSignals(True)
-            self.spin_box.setValue(self._min_value)
+            self.spin_box.setValue(self.default_value)
             self.spin_box.blockSignals(False)
 
     def load(self, raster_component: ConstantRasterComponent):
@@ -315,7 +329,7 @@ class GenericNumericWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
             if raster_component and raster_component.value_info:
                 self.spin_box.setValue(raster_component.value_info.absolute)
             else:
-                self.spin_box.setValue(self._min_value)
+                self.spin_box.setValue(self.default_value)
             self.spin_box.blockSignals(False)
 
     def on_value_changed(self, value: float):
@@ -327,19 +341,18 @@ class GenericNumericWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
             self._constant_raster_component.value_info.absolute = value
         self.notify_update()
 
-    @classmethod
     def create_raster_component(
-        cls, model_component: LayerModelComponent
+        self, model_component: LayerModelComponent
     ) -> ConstantRasterComponent:
         """Create a default raster component.
 
-        Creates a component with default value 0.0. The actual value
-        will be set later when the user enters it in the widget.
+        Creates a component with the configured default value.
+        The actual value will be set later when the user enters it in the widget.
         """
         component_type = ModelComponentType.ACTIVITY
 
         return ConstantRasterComponent(
-            value_info=ConstantRasterInfo(absolute=0.0),
+            value_info=ConstantRasterInfo(absolute=self.default_value),
             component=model_component,
             component_type=component_type,
             skip_raster=False,
@@ -366,8 +379,8 @@ class GenericNumericWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         :returns: ConstantRasterMetadata object configured for this type
         """
         collection = ConstantRasterCollection(
-            min_value=0.0,
-            max_value=0.0,
+            min_value=min_value,
+            max_value=max_value,
             component_type=component_type,
             components=[],
             allowable_max=sys.float_info.max,

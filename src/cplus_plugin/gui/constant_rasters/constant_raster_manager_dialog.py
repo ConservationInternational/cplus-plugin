@@ -36,6 +36,7 @@ from ...definitions.constants import (
     NAME_ATTRIBUTE,
     MIN_VALUE_ATTRIBUTE_KEY,
     MAX_VALUE_ATTRIBUTE_KEY,
+    DEFAULT_VALUE_ATTRIBUTE_KEY,
 )
 from ...definitions.defaults import (
     ICON_PATH,
@@ -48,7 +49,7 @@ from .constant_raster_widgets import (
     GenericNumericWidget,
 )
 from .custom_type_dialog import CustomTypeDefinitionDialog
-from ...utils import log, tr, clean_filename
+from ...utils import log, tr, clean_filename, FileUtils
 
 
 class ConstantRastersManagerDialog(QtWidgets.QDialog):
@@ -112,7 +113,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         info_text = QtWidgets.QLabel(
             self.tr(
                 "Define constant raster parameters for activities. "
-                "Configure input values (e.g., years of experience), "
+                "Configure input values for custom numeric parameters, "
                 "specify the output normalization range, and create rasters clipped to your Area of Interest."
             )
         )
@@ -126,6 +127,10 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         top_layout = QtWidgets.QVBoxLayout(top_widget)
         top_layout.setContentsMargins(0, 0, 0, 0)
 
+        # Message bar for feedback
+        self.message_bar = QgsMessageBar()
+        top_layout.addWidget(self.message_bar)
+
         # Constant raster type selection
         raster_type_widget = QtWidgets.QWidget()
         raster_type_layout = QtWidgets.QHBoxLayout(raster_type_widget)
@@ -137,21 +142,23 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         raster_type_layout.addWidget(self.cbo_raster_type)
 
         # Custom type management buttons
-        self.btn_add_custom_type = QtWidgets.QPushButton(self.tr("Add Custom Type"))
-        self.btn_add_custom_type.setToolTip(
-            self.tr("Create a new custom constant raster type")
-        )
+        add_icon = FileUtils.get_icon("symbologyAdd.svg")
+        self.btn_add_custom_type = QtWidgets.QToolButton()
+        self.btn_add_custom_type.setIcon(add_icon)
+        self.btn_add_custom_type.setToolTip(self.tr("Add New Constant Raster Type"))
         raster_type_layout.addWidget(self.btn_add_custom_type)
 
-        self.btn_edit_custom_type = QtWidgets.QPushButton(self.tr("Edit"))
-        self.btn_edit_custom_type.setToolTip(self.tr("Edit the selected custom type"))
+        edit_icon = FileUtils.get_icon("mActionToggleEditing.svg")
+        self.btn_edit_custom_type = QtWidgets.QToolButton()
+        self.btn_edit_custom_type.setIcon(edit_icon)
+        self.btn_edit_custom_type.setToolTip(self.tr("Edit Constant Raster Type"))
         self.btn_edit_custom_type.setEnabled(False)
         raster_type_layout.addWidget(self.btn_edit_custom_type)
 
-        self.btn_delete_custom_type = QtWidgets.QPushButton(self.tr("Delete"))
-        self.btn_delete_custom_type.setToolTip(
-            self.tr("Delete the selected custom type")
-        )
+        delete_icon = FileUtils.get_icon("symbologyRemove.svg")
+        self.btn_delete_custom_type = QtWidgets.QToolButton()
+        self.btn_delete_custom_type.setIcon(delete_icon)
+        self.btn_delete_custom_type.setToolTip(self.tr("Delete Constant Raster Type"))
         self.btn_delete_custom_type.setEnabled(False)
         raster_type_layout.addWidget(self.btn_delete_custom_type)
 
@@ -159,10 +166,6 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         top_layout.addWidget(raster_type_widget)
 
         main_layout.addWidget(top_widget)
-
-        # Message bar for feedback
-        self.message_bar = QgsMessageBar()
-        main_layout.addWidget(self.message_bar)
 
         # Middle section: Two-column layout with splitter
         splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
@@ -193,15 +196,6 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         right_layout.addWidget(self.sw_component_container, 1)
 
-        # Last updated timestamp label
-        self.lbl_last_updated = QtWidgets.QLabel("")
-        self.lbl_last_updated.setStyleSheet(
-            "color: gray; font-size: 9pt; font-style: italic;"
-        )
-        self.lbl_last_updated.setAlignment(QtCore.Qt.AlignLeft)
-        self.lbl_last_updated.setContentsMargins(5, 5, 5, 5)
-        right_layout.addWidget(self.lbl_last_updated)
-
         # Normalization range (collapsible)
         # This allows users to remap the normalized output to any range they want
         self.grp_normalization_range = QtWidgets.QGroupBox(
@@ -231,6 +225,15 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         norm_layout.addRow(self.tr("Minimum"), self.spin_min_value)
         norm_layout.addRow(self.tr("Maximum"), self.spin_max_value)
         right_layout.addWidget(self.grp_normalization_range)
+
+        # Last updated timestamp label
+        self.lbl_last_updated = QtWidgets.QLabel("")
+        self.lbl_last_updated.setStyleSheet(
+            "color: gray; font-size: 9pt; font-style: italic;"
+        )
+        self.lbl_last_updated.setAlignment(QtCore.Qt.AlignLeft)
+        self.lbl_last_updated.setContentsMargins(5, 5, 5, 5)
+        right_layout.addWidget(self.lbl_last_updated)
 
         splitter.addWidget(right_widget)
 
@@ -390,9 +393,10 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                     # Create widget for this custom type
                     widget = GenericNumericWidget(
                         label=type_def.get(NAME_ATTRIBUTE, "Custom Type"),
+                        metadata_id=metadata_id,
                         min_value=type_def.get(MIN_VALUE_ATTRIBUTE_KEY, 0.0),
                         max_value=type_def.get(MAX_VALUE_ATTRIBUTE_KEY, 100.0),
-                        metadata_id=metadata_id,
+                        default_value=type_def.get(DEFAULT_VALUE_ATTRIBUTE_KEY, 0.0),
                         parent=self.sw_component_container,
                     )
                     self.register_widget(metadata_id, widget)
@@ -1422,6 +1426,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                     NAME_ATTRIBUTE: type_def[NAME_ATTRIBUTE],
                     MIN_VALUE_ATTRIBUTE_KEY: type_def[MIN_VALUE_ATTRIBUTE_KEY],
                     MAX_VALUE_ATTRIBUTE_KEY: type_def[MAX_VALUE_ATTRIBUTE_KEY],
+                    DEFAULT_VALUE_ATTRIBUTE_KEY: type_def[DEFAULT_VALUE_ATTRIBUTE_KEY],
                     COMPONENT_TYPE_ATTRIBUTE: type_def[COMPONENT_TYPE_ATTRIBUTE],
                 }
                 self.constant_raster_registry.add_custom_type_definition(
@@ -1431,9 +1436,10 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                 # Create and register widget
                 widget = GenericNumericWidget(
                     label=type_def[NAME_ATTRIBUTE],
+                    metadata_id=metadata_id,
                     min_value=type_def[MIN_VALUE_ATTRIBUTE_KEY],
                     max_value=type_def[MAX_VALUE_ATTRIBUTE_KEY],
-                    metadata_id=metadata_id,
+                    default_value=type_def[DEFAULT_VALUE_ATTRIBUTE_KEY],
                     parent=self.sw_component_container,
                 )
                 self.register_widget(metadata_id, widget)
@@ -1511,6 +1517,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                 NAME_ATTRIBUTE: updated_def[NAME_ATTRIBUTE],
                 MIN_VALUE_ATTRIBUTE_KEY: updated_def[MIN_VALUE_ATTRIBUTE_KEY],
                 MAX_VALUE_ATTRIBUTE_KEY: updated_def[MAX_VALUE_ATTRIBUTE_KEY],
+                DEFAULT_VALUE_ATTRIBUTE_KEY: updated_def[DEFAULT_VALUE_ATTRIBUTE_KEY],
                 COMPONENT_TYPE_ATTRIBUTE: updated_def[COMPONENT_TYPE_ATTRIBUTE],
             }
             self.constant_raster_registry.update_custom_type_definition(
@@ -1523,9 +1530,10 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             # Update widget (recreate it)
             widget = GenericNumericWidget(
                 label=updated_def[NAME_ATTRIBUTE],
+                metadata_id=metadata_id,
                 min_value=updated_def[MIN_VALUE_ATTRIBUTE_KEY],
                 max_value=updated_def[MAX_VALUE_ATTRIBUTE_KEY],
-                metadata_id=metadata_id,
+                default_value=updated_def[DEFAULT_VALUE_ATTRIBUTE_KEY],
                 parent=self.sw_component_container,
             )
 
