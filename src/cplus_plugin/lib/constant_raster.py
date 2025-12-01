@@ -697,5 +697,5 @@ class ConstantRasterRegistry:
         return iter(self._metadata_store.values())
 
 
-# Global registry instance (singleton)
+# Global registry instance
 constant_raster_registry = ConstantRasterRegistry()

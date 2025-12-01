@@ -97,7 +97,7 @@ from ..definitions.constants import (
     SUFFIX_ATTRIBUTE,
 )
 from ..definitions.defaults import DEFAULT_CRS_ID, QGIS_GDAL_PROVIDER
-from .financial import NcsPathwayNpv, NcsPathwayNpvCollection, NpvParameters
+from .financial import ActivityNpv, ActivityNpvCollection, NpvParameters
 from .report import (
     ActivityColumnMetric,
     MetricColumn,
@@ -554,7 +554,7 @@ def extent_to_project_crs_extent(
     return input_rect
 
 
-def ncs_pathway_npv_to_dict(pathway_npv: NcsPathwayNpv) -> dict:
+def ncs_pathway_npv_to_dict(pathway_npv: ActivityNpv) -> dict:
     """Converts an NcsPathwayNpv object to a dictionary representation.
 
     :returns: A dictionary containing attribute name-value pairs.
@@ -572,7 +572,7 @@ def ncs_pathway_npv_to_dict(pathway_npv: NcsPathwayNpv) -> dict:
     }
 
 
-def create_ncs_pathway_npv(pathway_npv_dict: dict) -> typing.Optional[NcsPathwayNpv]:
+def create_ncs_pathway_npv(pathway_npv_dict: dict) -> typing.Optional[ActivityNpv]:
     """Creates an NcsPathwayNpv object from the equivalent dictionary
     representation.
 
@@ -585,7 +585,7 @@ def create_ncs_pathway_npv(pathway_npv_dict: dict) -> typing.Optional[NcsPathway
     :type pathway_npv_dict: dict
 
     :returns: NcsPathwayNpv deserialized from the dictionary representation.
-    :rtype: NcsPathwayNpv
+    :rtype: ActivityNpv
     """
     args = []
     if YEARS_ATTRIBUTE in pathway_npv_dict:
@@ -618,11 +618,11 @@ def create_ncs_pathway_npv(pathway_npv_dict: dict) -> typing.Optional[NcsPathway
     if ENABLED_ATTRIBUTE in pathway_npv_dict:
         npv_enabled = pathway_npv_dict[ENABLED_ATTRIBUTE]
 
-    return NcsPathwayNpv(npv_params, npv_enabled, None)
+    return ActivityNpv(npv_params, npv_enabled, None)
 
 
 def ncs_pathway_npv_collection_to_dict(
-    pathway_collection: NcsPathwayNpvCollection,
+    pathway_collection: ActivityNpvCollection,
 ) -> dict:
     """Converts the NCS pathway NPV collection object to the
     dictionary representation.
@@ -646,7 +646,7 @@ def ncs_pathway_npv_collection_to_dict(
 
 def create_ncs_pathway_npv_collection(
     pathway_collection_dict: dict, reference_pathways: typing.List[NcsPathway] = None
-) -> typing.Optional[NcsPathwayNpvCollection]:
+) -> typing.Optional[ActivityNpvCollection]:
     """Creates an NCS pathway NPV collection object from the corresponding
     dictionary representation.
 
@@ -660,7 +660,7 @@ def create_ncs_pathway_npv_collection(
 
     :returns: NCS pathway NPV collection object from the dictionary
     representation or None if the source dictionary is invalid.
-    :rtype: NcsPathwayNpvCollection
+    :rtype: ActivityNpvCollection
     """
     if len(pathway_collection_dict) == 0:
         return None
@@ -682,7 +682,7 @@ def create_ncs_pathway_npv_collection(
     if len(args) < 2:
         return None
 
-    pathway_npv_collection = NcsPathwayNpvCollection(*args)
+    pathway_npv_collection = ActivityNpvCollection(*args)
 
     # Use computed
     if COMPUTED_ATTRIBUTE in pathway_collection_dict:

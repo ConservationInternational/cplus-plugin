@@ -13,7 +13,6 @@
 """
 
 import os.path
-import sys
 
 from qgis.core import (
     QgsApplication,
@@ -608,13 +607,17 @@ def initialize_report_settings():
 def initialize_constant_raster_registry():
     """Initialize constant raster metadata registry during plugin startup.
 
-    Registers default constant raster types (e.g., Years of Experience)
-    for activities. Uses widget's create_metadata() method to ensure
-    consistency with serializer/deserializer setup.
+    Registers default constant raster types for activities. Uses widget's
+    create_metadata() method to ensure consistency with serializer/deserializer
+    setup.
     """
     log("Initializing constant raster metadata registry", info=True)
 
-    # Register "Years of Experience" for Activities
+    # Load saved state from settings
+    constant_raster_registry.load()
+    log("Constant raster registry initialized", info=True)
+
+    # If not in settings then initialize
     if YEARS_EXPERIENCE_ACTIVITY_ID not in constant_raster_registry.metadata_ids():
         metadata_activity = YearsExperienceWidget.create_metadata(
             YEARS_EXPERIENCE_ACTIVITY_ID, ModelComponentType.ACTIVITY
@@ -624,7 +627,3 @@ def initialize_constant_raster_registry():
             f"Registered constant raster metadata: {YEARS_EXPERIENCE_ACTIVITY_ID}",
             info=True,
         )
-
-    # Load saved state from settings
-    constant_raster_registry.load()
-    log("Constant raster registry initialized", info=True)

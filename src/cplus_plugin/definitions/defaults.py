@@ -241,6 +241,8 @@ IRRECOVERABLE_CARBON_API_URL = f"{BASE_API_URL}/reference_layer/carbon_calculati
 DEFAULT_BASE_COMPARISON_REPORT_NAME = "Scenario Comparison Report"
 MAXIMUM_COMPARISON_REPORTS = 10
 
+FINANCIAL_NPV_NAME = "Net Present Value"
+
 # Carbon defaults
 MAX_CARBON_IMPACT_MANAGE = 100000.0
 

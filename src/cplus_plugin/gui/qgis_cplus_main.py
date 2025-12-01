@@ -87,7 +87,7 @@ from ..models.base import (
     PriorityLayerType,
     AreaOfInterestSource,
 )
-from ..models.financial import NcsPathwayNpv
+from ..models.financial import ActivityNpv
 from ..conf import settings_manager, Settings
 
 from ..lib.financials import create_npv_pwls
@@ -1276,7 +1276,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def on_npv_pwl_created(
         self,
-        pathway_npv: NcsPathwayNpv,
+        pathway_npv: ActivityNpv,
         npv_pwl_path: str,
         algorithm: QgsProcessingAlgorithm,
         context: QgsProcessingContext,
@@ -1286,7 +1286,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         raster layer has been created.
 
         :param pathway_npv: NPV mapping for an NCS pathway.
-        :type pathway_npv: NcsPathwayNpv
+        :type pathway_npv: ActivityNpv
 
         :param npv_pwl_path: Absolute file path of the created NPV PWL.
         :type npv_pwl_path: str

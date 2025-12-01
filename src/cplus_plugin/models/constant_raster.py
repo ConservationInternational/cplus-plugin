@@ -10,30 +10,7 @@ from datetime import datetime
 from typing import NamedTuple
 from qgis.core import QgsRasterLayer
 
-from .base import LayerModelComponent, ModelComponentType
-from ..definitions.constants import (
-    PATH_ATTRIBUTE,
-    COMPONENT_UUID_ATTRIBUTE,
-    COMPONENT_ID_ATTRIBUTE,
-    COMPONENT_TYPE_ATTRIBUTE,
-    SKIP_RASTER_ATTRIBUTE,
-    ENABLED_ATTRIBUTE,
-    VALUE_INFO_ATTRIBUTE,
-    NORMALIZED_ATTRIBUTE,
-    ABSOLUTE_ATTRIBUTE,
-    MIN_VALUE_ATTRIBUTE_KEY,
-    MAX_VALUE_ATTRIBUTE_KEY,
-    ALLOWABLE_MIN_ATTRIBUTE,
-    ALLOWABLE_MAX_ATTRIBUTE,
-    LAST_UPDATED_ATTRIBUTE,
-    COMPONENTS_ATTRIBUTE,
-    DISPLAY_NAME_ATTRIBUTE,
-    RASTER_COLLECTION_ATTRIBUTE,
-    INPUT_RANGE_ATTRIBUTE,
-    PREFIX_ATTRIBUTE,
-    BASE_NAME_ATTRIBUTE,
-    SUFFIX_ATTRIBUTE,
-)
+from .base import Activity, LayerModelComponent, ModelComponentType, NcsPathway
 
 
 class InputRange(NamedTuple):
@@ -62,8 +39,8 @@ class ConstantRasterComponent:
     This class links the ConstantRasterInfo with the Activity component.
     """
 
-    value_info: ConstantRasterInfo
-    component: LayerModelComponent  # Activity component
+    value_info: ConstantRasterInfo = None
+    component: LayerModelComponent = None  # Activity component
     prefix: str = ""  # Prefix for naming
     base_name: str = ""  # Base component name
     suffix: str = ""  # Suffix for naming
@@ -71,8 +48,8 @@ class ConstantRasterComponent:
     skip_raster: bool = (
         False  # Skip raster creation for this component (default: False)
     )
-    enabled: bool = True  # Whether this component is enabled
-    component_type: ModelComponentType = ModelComponentType.UNKNOWN
+    # Whether this component is enabled i.e. can be used in normalization
+    enabled: bool = True
 
     @property
     def component_id(self) -> str:
@@ -84,6 +61,21 @@ class ConstantRasterComponent:
         if not self.component:
             return ""
         return str(self.component.uuid)
+
+    @property
+    def component_type(self) -> ModelComponentType:
+        """Get the type of the component model i.e. Activity or NcsPathway.
+
+        :returns: An activity or NCS pathway or unknown.
+        :rtype: ModelComponentType
+        """
+        if isinstance(self.component, Activity):
+            return ModelComponentType.ACTIVITY
+
+        elif isinstance(self.component, NcsPathway):
+            return ModelComponentType.NCS_PATHWAY
+
+        return ModelComponentType.UNKNOWN
 
     def identifier(self) -> str:
         """Generate unique identifier by concatenating naming components.
@@ -147,7 +139,7 @@ class ConstantRasterCollection:
     allowable_min: float = 0.0
     last_updated: str = ""  # ISO format timestamp of last modification
 
-    def normalize(self) -> None:
+    def normalize(self):
         """Normalize the collection by updating min/max values and calculating normalized values.
 
         This method:
@@ -191,6 +183,10 @@ class ConstantRasterCollection:
 
         # Calculate normalized values for each component
         value_range = self.max_value - self.min_value
+
+        # Cannot normalize if range is zero
+        if value_range == 0.0:
+            return
 
         # Standard normalization: (value - min) / (max - min)
         for c in enabled:
@@ -249,13 +245,7 @@ class ConstantRasterCollection:
         :param identifier: UUID of the component to retrieve
         :returns: ConstantRasterComponent if found, None otherwise
         """
-        for component in self.components:
-            if component.component_id == identifier:
-                return component
-            # Also check the component's UUID if available
-            if component.component and str(component.component.uuid) == identifier:
-                return component
-        return None
+        return next((c for c in self.components if c.component_id == identifier), None)
 
     def component_by_identifier(
         self, identifier: str

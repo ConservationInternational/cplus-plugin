@@ -41,7 +41,7 @@ from .models.base import (
     ScenarioResult,
     SpatialExtent,
 )
-from .models.financial import NcsPathwayNpvCollection
+from .models.financial import ActivityNpvCollection
 from .models.helpers import (
     create_metrics_profile_collection,
     create_result_info,
@@ -1452,12 +1452,12 @@ class SettingsManager(QtCore.QObject):
         if self.get_activity(activity_uuid) is not None:
             self.remove(f"{self.ACTIVITY_BASE}/{activity_uuid}")
 
-    def get_npv_collection(self) -> typing.Optional[NcsPathwayNpvCollection]:
+    def get_npv_collection(self) -> typing.Optional[ActivityNpvCollection]:
         """Gets the collection of NPV mappings of NCS pathways.
 
         :returns: The collection of NCS pathway NPV mappings or None
         if not defined.
-        :rtype: NcsPathwayNpvCollection
+        :rtype: ActivityNpvCollection
         """
         npv_collection_str = self.get_value(NPV_COLLECTION_PROPERTY, None)
         if not npv_collection_str:
@@ -1473,12 +1473,12 @@ class SettingsManager(QtCore.QObject):
             npv_collection_dict, self.get_all_ncs_pathways()
         )
 
-    def save_npv_collection(self, npv_collection: NcsPathwayNpvCollection):
+    def save_npv_collection(self, npv_collection: ActivityNpvCollection):
         """Saves the NCS pathway NPV collection in the settings as a serialized
         JSON string.
 
         :param npv_collection: NCS pathway NPV collection serialized to a JSON string.
-        :type npv_collection: NcsPathwayNpvCollection
+        :type npv_collection: ActivityNpvCollection
         """
         npv_collection_dict = ncs_pathway_npv_collection_to_dict(npv_collection)
         npv_collection_str = json.dumps(npv_collection_dict)
@@ -1509,7 +1509,7 @@ class SettingsManager(QtCore.QObject):
         """Serializes the metric configuration in settings as a JSON string.
 
         :param metric_configuration: Activity NPV collection serialized to a JSON string.
-        :type metric_configuration: NcsPathwayNpvCollection
+        :type metric_configuration: ActivityNpvCollection
         """
         metric_configuration_dict = metric_configuration_to_dict(metric_configuration)
         metric_configuration_str = json.dumps(metric_configuration_dict)
