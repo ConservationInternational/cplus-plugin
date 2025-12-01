@@ -722,6 +722,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             "studyarea_layer_uuid": studyarea_layer_uuid,
             "relative_impact_matrix": impact_matrix_dict,
             "activity_constant_rasters": activity_constant_rasters,
+            "pixel_connectivity_enabled": self.get_settings_value(
+                Settings.PIXEL_CONNECTIVITY_ENABLED, default=True, setting_type=bool
+            ),
         }
 
     def __execute_scenario_analysis(self) -> None:

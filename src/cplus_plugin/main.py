@@ -33,6 +33,12 @@ from qgis.PyQt.QtWidgets import QMenu
 
 from .api.base import ApiRequestStatus
 from .conf import Settings, settings_manager
+from .definitions.constants import (
+    ID_ATTRIBUTE,
+    NAME_ATTRIBUTE,
+    MIN_VALUE_ATTRIBUTE_KEY,
+    MAX_VALUE_ATTRIBUTE_KEY,
+)
 from .definitions.defaults import (
     ABOUT_DOCUMENTATION_SITE,
     CI_LOGO_PATH,
@@ -60,7 +66,7 @@ from .gui.settings.carbon_options import CarbonOptionsFactory
 from .gui.settings.cplus_options import CplusOptionsFactory
 from .gui.settings.log_options import LogOptionsFactory
 from .gui.settings.report_options import ReportOptionsFactory
-from .gui.constant_rasters import YearsExperienceWidget
+from .gui.constant_rasters import YearsExperienceWidget, GenericNumericWidget
 
 from .utils import (
     FileUtils,
@@ -615,7 +621,6 @@ def initialize_constant_raster_registry():
 
     # Load saved state from settings
     constant_raster_registry.load()
-    log("Constant raster registry initialized", info=True)
 
     # If not in settings then initialize
     if YEARS_EXPERIENCE_ACTIVITY_ID not in constant_raster_registry.metadata_ids():
@@ -627,3 +632,23 @@ def initialize_constant_raster_registry():
             f"Registered constant raster metadata: {YEARS_EXPERIENCE_ACTIVITY_ID}",
             info=True,
         )
+
+    custom_types = constant_raster_registry.get_custom_type_definitions()
+    for type_def in custom_types:
+        metadata_id = type_def.get(ID_ATTRIBUTE)
+        if metadata_id and metadata_id not in constant_raster_registry.metadata_ids():
+            metadata = GenericNumericWidget.create_metadata(
+                metadata_id=metadata_id,
+                component_type=ModelComponentType.ACTIVITY,
+                display_name=type_def.get(NAME_ATTRIBUTE, "Custom Type"),
+                min_value=type_def.get(MIN_VALUE_ATTRIBUTE_KEY, 0.0),
+                max_value=type_def.get(MAX_VALUE_ATTRIBUTE_KEY, 100.0),
+                user_defined=True,
+            )
+            constant_raster_registry.add_metadata(metadata)
+            log(
+                f"Registered custom constant raster type: {metadata_id} ({type_def.get(NAME_ATTRIBUTE)})",
+                info=True,
+            )
+
+    log("Constant raster registry initialized", info=True)

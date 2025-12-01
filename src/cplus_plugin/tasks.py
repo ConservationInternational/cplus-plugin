@@ -25,6 +25,8 @@ from qgis.core import (
     QgsVectorLayer,
     QgsWkbTypes,
     QgsRasterBandStats,
+    QgsProcessingFeatureSourceDefinition,
+    QgsFeatureRequest,
 )
 from qgis.core import QgsTask
 
@@ -45,7 +47,6 @@ from .utils import (
     FileUtils,
     CustomJsonEncoder,
     todict,
-    create_connectivity_raster,
     normalize_raster,
 )
 
@@ -2783,7 +2784,101 @@ class ScenarioAnalysisTask(QgsTask):
             if self.processing_cancelled:
                 return None
 
-            ok, logs = create_connectivity_raster(activity.path, output_path)
+            self.feedback = QgsProcessingFeedback()
+            self.feedback.progressChanged.connect(self.update_progress)
+
+            # 1. Creating a binary raster
+            binary = processing.run(
+                "qgis:rastercalculator",
+                {
+                    "CELLSIZE": 0,
+                    "LAYERS": [activity.path],
+                    "CRS": None,
+                    "EXPRESSION": f"{Path(activity.path).stem}@1 > 0",
+                    "OUTPUT": "TEMPORARY_OUTPUT",
+                },
+                context=self.processing_context,
+                feedback=self.feedback,
+            )["OUTPUT"]
+
+            # 2. Polygonize the binary to get polygon clusters
+            binary_polygonize = processing.run(
+                "gdal:polygonize",
+                {
+                    "INPUT": binary,
+                    "BAND": 1,
+                    "FIELD": "DN",
+                    "EIGHT_CONNECTEDNESS": True,
+                    "EXTRA": "",
+                    "OUTPUT": "TEMPORARY_OUTPUT",
+                },
+                context=self.processing_context,
+                feedback=self.feedback,
+            )["OUTPUT"]
+
+            if self.processing_cancelled:
+                return None
+
+            # 3. Create a zonal statistics to find the number of pixels in each cluster
+            zonal_statistics = processing.run(
+                "native:zonalstatisticsfb",
+                {
+                    "INPUT": QgsProcessingFeatureSourceDefinition(
+                        binary_polygonize,
+                        selectedFeaturesOnly=False,
+                        featureLimit=-1,
+                        flags=QgsProcessingFeatureSourceDefinition.FlagOverrideDefaultGeometryCheck
+                        | QgsProcessingFeatureSourceDefinition.FlagCreateIndividualOutputPerInputFeature,
+                        geometryCheck=QgsFeatureRequest.GeometryNoCheck,
+                    ),
+                    "INPUT_RASTER": binary,
+                    "RASTER_BAND": 1,
+                    "COLUMN_PREFIX": "_",
+                    "STATISTICS": [1],  # sum
+                    "OUTPUT": "TEMPORARY_OUTPUT",
+                },
+                context=self.processing_context,
+                feedback=self.feedback,
+            )["OUTPUT"]
+
+            # 4. Caculate connectivity score = count of pixels in cluster * compactness
+            score = processing.run(
+                "native:fieldcalculator",
+                {
+                    "INPUT": zonal_statistics,
+                    "FIELD_NAME": "score",
+                    "FIELD_TYPE": 0,
+                    "FIELD_LENGTH": 0,
+                    "FIELD_PRECISION": 0,
+                    "FORMULA": '"_sum"  * 4* pi() *  $area  /($perimeter * $perimeter)',
+                    "OUTPUT": "TEMPORARY_OUTPUT",
+                },
+                context=self.processing_context,
+                feedback=self.feedback,
+            )["OUTPUT"]
+
+            if self.processing_cancelled:
+                return None
+
+            # 5. Rasterize the score vector
+            processing.run(
+                "gdal:rasterize_over",
+                {
+                    "INPUT": score,
+                    "INPUT_RASTER": binary,
+                    "FIELD": "score",
+                    "ADD": True,
+                    "EXTRA": "",
+                },
+                context=self.processing_context,
+                feedback=self.feedback,
+            )
+
+            # 6. Normalize the raster
+            ok, message = normalize_raster(
+                binary, output_path, self.processing_context, self.feedback
+            )
+            self.log_message(message)
 
             if ok and os.path.exists(output_path):
                 return output_path
@@ -2791,8 +2886,6 @@ class ScenarioAnalysisTask(QgsTask):
             self.log_message(
                 f" Error creating the connectivity layer for activity {activity.name}, "
             )
-            for log in logs:
-                self.log_message(tr(log))
 
             return None
 
@@ -2872,22 +2965,25 @@ class ScenarioAnalysisTask(QgsTask):
                 if self.processing_cancelled:
                     return False
 
-                # Add connectivity layer
-                connectivity_path = self.create_activity_connectivity_layer(
-                    activity=activity
-                )
-                if connectivity_path and os.path.exists(connectivity_path):
-                    constant_rasters.append(
-                        {
-                            "path": connectivity_path,
-                            "name": "Connectivity layer",
-                            "skip_raster": False,
-                        }
+                if self.get_settings_value(
+                    Settings.PIXEL_CONNECTIVITY_ENABLED, default=True, setting_type=bool
+                ):
+                    # Add connectivity layer
+                    connectivity_path = self.create_activity_connectivity_layer(
+                        activity=activity
                     )
-                else:
-                    self.log_message(
-                        f"Invalid path for connectivity layer of activity {activity.name}"
-                    )
+                    if connectivity_path and os.path.exists(connectivity_path):
+                        constant_rasters.append(
+                            {
+                                "path": connectivity_path,
+                                "name": "Connectivity layer",
+                                "skip_raster": False,
+                            }
+                        )
+                    else:
+                        self.log_message(
+                            f"Invalid path for connectivity layer of activity {activity.name}"
+                        )
 
                 nr_constant_rasters = len(constant_rasters)
 

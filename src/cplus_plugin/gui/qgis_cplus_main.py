@@ -168,12 +168,19 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.prepare_input()
 
+        # Set tooltips for all tabs
+        self.tab_widget.setTabToolTip(0, self.tr("Scenario Setup"))
+
         # Insert widget for step 2
         self.activity_widget = ActivityContainerWidget(self, self.message_bar)
         self.tab_widget.insertTab(1, self.activity_widget, self.tr("Step 2"))
         self.tab_widget.setTabToolTip(
-            1, self.tr("Here you can select activities and pathways")
+            1, self.tr("Defining NCS Pathways and Activities")
         )
+
+        self.tab_widget.setTabToolTip(2, self.tr("Variable Selection and Weighting"))
+        self.tab_widget.setTabToolTip(3, self.tr("Run Analysis"))
+
         self.tab_widget.currentChanged.connect(self.on_tab_step_changed)
 
         # Step 3, priority weighting layers initialization
