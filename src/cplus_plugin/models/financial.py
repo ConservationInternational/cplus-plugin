@@ -91,13 +91,13 @@ class ActivityNpv(ConstantRasterComponent):
         self.value_info = params
 
     @property
-    def base_name(self) -> str:
-        """Returns a proposed name for the NCS pathway NPV.
+    def computed_base_name(self) -> str:
+        """Returns a proposed name for the activity NPV.
 
-        An empty string will be return id the `pathway` attribute
+        An empty string will be return id the `activity` attribute
         is not set.
 
-        :returns: Proposed base name for the NCS pathway NPV.
+        :returns: Proposed base name for the activity NPV.
         :rtype: str
         """
         if self.activity is None:
@@ -113,7 +113,6 @@ class ActivityNpvCollection(ConstantRasterCollection):
     """
 
     use_computed: bool = True
-    remove_existing: bool = False
 
     def activity_npv(self, activity_identifier: str) -> typing.Optional[ActivityNpv]:
         """Gets the mapping of an activity's NPV mapping if defined.
@@ -207,7 +206,7 @@ class ActivityNpvCollection(ConstantRasterCollection):
         _ = self.normalize_npvs()
 
     def normalize_npvs(self) -> bool:
-        """Normalize the NPV values of NCS pathway using the specified
+        """Normalize the NPV values of activity using the specified
         normalization range.
 
         If the absolute NPV values are less than or greater than the

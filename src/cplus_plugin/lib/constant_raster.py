@@ -502,14 +502,25 @@ class ConstantRasterRegistry:
         :param metadata_identifier: Identifier for the metadata to retrieve
         :returns: ConstantRasterMetadata if found, None otherwise
         """
-        try:
-            return self._metadata_store.get(metadata_identifier)
-        except Exception as e:
+        if metadata_identifier not in self._metadata_store:
             log(
-                f"Error retrieving metadata by ID '{metadata_identifier}': {str(e)}",
+                f"Error retrieving metadata by ID: '{metadata_identifier}'",
                 info=False,
             )
             return None
+
+        return self._metadata_store.get(metadata_identifier)
+
+    def has_metadata(self, metadata_id: str) -> bool:
+        """Check if the registry has a metadata item with the given identifier.
+
+        :param metadata_id: Identifier of the metadata item.
+        :type metadata_id: str
+
+        :returns: True if the metadata exists in the collection else False.
+        :rtype: bool
+        """
+        return True if self.metadata_by_id(metadata_id) else False
 
     def metadata_by_component_type(
         self, component_type: "ModelComponentType"

@@ -16,7 +16,7 @@ from qgis.core import (
     QgsRasterLayer,
     QgsCoordinateReferenceSystem,
 )
-from qgis.gui import QgsMessageBar
+from qgis.gui import QgsGui, QgsMessageBar
 from qgis.utils import iface
 
 from ...conf import settings_manager, Settings
@@ -25,21 +25,21 @@ from ...models.constant_raster import (
     ConstantRasterCollection,
     ConstantRasterComponent,
     ConstantRasterContext,
-    ConstantRasterMetadata,
 )
 from ...lib.constant_raster import (
     constant_raster_registry,
 )
 from ...definitions.constants import (
     COMPONENT_TYPE_ATTRIBUTE,
+    DEFAULT_VALUE_ATTRIBUTE_KEY,
     ID_ATTRIBUTE,
     NAME_ATTRIBUTE,
     MIN_VALUE_ATTRIBUTE_KEY,
     MAX_VALUE_ATTRIBUTE_KEY,
-    DEFAULT_VALUE_ATTRIBUTE_KEY,
 )
 from ...definitions.defaults import (
     ICON_PATH,
+    NPV_METADATA_ID,
     YEARS_EXPERIENCE_ACTIVITY_ID,
 )
 from ..component_item_model import ActivityItemModel
@@ -49,6 +49,7 @@ from .constant_raster_widgets import (
     GenericNumericWidget,
 )
 from .custom_type_dialog import CustomTypeDefinitionDialog
+from .financial_npv_widget import ActivityNpvWidget
 from ...utils import log, tr, clean_filename, FileUtils
 
 
@@ -69,7 +70,10 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(tr("Constant Rasters Manager"))
+
+        QgsGui.enableAutoGeometryRestore(self)
+
+        self.setWindowTitle(tr("Constant Raster Manager"))
 
         self.constant_raster_registry = constant_raster_registry
 
@@ -113,8 +117,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         info_text = QtWidgets.QLabel(
             self.tr(
                 "Define constant raster parameters for activities. "
-                "Configure input values for custom numeric parameters, "
-                "specify the output normalization range, and create rasters clipped to your Area of Interest."
+                "Configure input values, specify the output normalization "
+                "range, and create rasters clipped to your project's "
+                "extent as defined in Step 1."
             )
         )
         info_text.setWordWrap(True)
@@ -380,6 +385,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             self.register_widget(
                 YEARS_EXPERIENCE_ACTIVITY_ID, experience_widget_activity
             )
+
+        if NPV_METADATA_ID in metadata_ids:
+            self.register_widget(NPV_METADATA_ID, ActivityNpvWidget())
 
         # Register widgets for custom types
         for metadata_id in metadata_ids:

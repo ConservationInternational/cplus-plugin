@@ -69,6 +69,9 @@ class ConstantRasterComponent:
         :returns: An activity or NCS pathway or unknown.
         :rtype: ModelComponentType
         """
+        if not self.component:
+            return ModelComponentType.UNKNOWN
+
         if isinstance(self.component, Activity):
             return ModelComponentType.ACTIVITY
 

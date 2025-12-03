@@ -88,9 +88,9 @@ CARBON_OPTIONS_KEY = "cplus_carbon"
 
 # Headers for financial NPV computation
 YEAR_HEADER = "Year"
-TOTAL_PROJECTED_COSTS_HEADER = "Projected Total Costs/ha (US$)"
-TOTAL_PROJECTED_REVENUES_HEADER = "Projected Total Revenues/ha (US$)"
-DISCOUNTED_VALUE_HEADER = "Discounted Value (US$)"
+TOTAL_PROJECTED_COSTS_HEADER = "Costs/ha"
+TOTAL_PROJECTED_REVENUES_HEADER = "Revenues/ha"
+DISCOUNTED_VALUE_HEADER = "Discounted Value"
 MAX_YEARS = 99
 
 NO_DATA_VALUE = -9999
