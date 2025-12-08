@@ -151,7 +151,6 @@ class TestConstantRasterCollection(TestCase):
         new_component = ConstantRasterComponent(
             value_info=get_constant_raster_info(),
             component=activity2,
-            component_type=ModelComponentType.ACTIVITY,
             skip_raster=False,
             enabled=True,
         )

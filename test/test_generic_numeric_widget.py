@@ -90,17 +90,11 @@ class TestGenericNumericWidget(TestCase):
 
     def test_create_metadata_input_range(self):
         """Test create_metadata sets input range correctly."""
-        metadata = GenericNumericWidget.create_metadata(
-            metadata_id="test",
-            component_type=ModelComponentType.ACTIVITY,
-            display_name="Test",
-            min_value=5.0,
-            max_value=95.0,
-        )
+        metadata = GenericNumericWidget.create_metadata()
 
         self.assertIsInstance(metadata.input_range, InputRange)
-        self.assertEqual(metadata.input_range.min, 5.0)
-        self.assertEqual(metadata.input_range.max, 95.0)
+        self.assertEqual(metadata.input_range.min, 0.0)
+        self.assertEqual(metadata.input_range.max, 100.0)
 
     def test_create_raster_component(self):
         """Test create_raster_component creates valid component."""
@@ -181,7 +175,6 @@ class TestGenericNumericWidget(TestCase):
         )
         component = ConstantRasterComponent(
             component=activity,
-            component_type=ModelComponentType.ACTIVITY,
             value_info=ConstantRasterInfo(normalized=42.5, absolute=42.5),
             skip_raster=False,
         )
