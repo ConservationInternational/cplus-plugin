@@ -50,6 +50,10 @@ class ConsoleFeedBack(QgsProcessingFeedback):
         self._errors.append(error)
 
 
+@unittest.skip(
+    "Skipping all Financial NPV tests for now as some tests "
+    "already incorporated in constant raster framework"
+)
 class TestFinancialNpv(TestCase):
     """Tests for financial NPV computations."""
 

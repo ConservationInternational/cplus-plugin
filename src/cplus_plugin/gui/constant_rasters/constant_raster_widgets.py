@@ -217,6 +217,7 @@ class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
             components=[],
             allowable_max=sys.float_info.max,
             allowable_min=0.0,
+            use_manual=False,
         )
 
         return ConstantRasterMetadata(

@@ -61,7 +61,7 @@ from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
 from .lib.reports.manager import report_manager
 from .lib.reports.metrics import register_metric_functions, unregister_metric_functions
 from .lib.constant_raster import constant_raster_registry
-from .models.base import PriorityLayerType, ModelComponentType
+from .models.base import PriorityLayerType
 from .models.report import MetricConfigurationProfile, MetricProfileCollection
 from .gui.constant_rasters import (
     ActivityNpvWidget,
@@ -624,6 +624,15 @@ def initialize_constant_raster_registry():
     """
     log("Initializing constant raster metadata registry", info=True)
 
+    # Register serializers so the registry can know how to unpack the
+    # metadata from settings.
+    constant_raster_registry.serializers_from_metadata(
+        YearsExperienceWidget.create_metadata()
+    )
+    constant_raster_registry.serializers_from_metadata(
+        ActivityNpvWidget.create_metadata()
+    )
+
     # Load saved state from settings
     constant_raster_registry.load()
 
@@ -637,11 +646,9 @@ def initialize_constant_raster_registry():
 
     # NPV
     if not constant_raster_registry.has_metadata(NPV_METADATA_ID):
-        years_of_experience_metadata = ActivityNpvWidget.create_metadata()
-        constant_raster_registry.add_metadata(years_of_experience_metadata)
-        log(
-            f"Registered constant raster metadata: {years_of_experience_metadata.display_name}"
-        )
+        npv_metadata = ActivityNpvWidget.create_metadata()
+        constant_raster_registry.add_metadata(npv_metadata)
+        log(f"Registered constant raster metadata: {npv_metadata.display_name}")
 
     custom_types = constant_raster_registry.get_custom_type_definitions()
     for type_def in custom_types:
@@ -663,3 +670,6 @@ def initialize_constant_raster_registry():
             )
 
     log("Constant raster registry initialized", info=True)
+
+    # Save with latest changes
+    constant_raster_registry.save()

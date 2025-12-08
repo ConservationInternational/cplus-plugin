@@ -141,6 +141,7 @@ class ConstantRasterCollection:
     allowable_max: float = sys.float_info.max
     allowable_min: float = 0.0
     last_updated: str = ""  # ISO format timestamp of last modification
+    use_manual: bool = False  # True if min/max values are manually specified
 
     def normalize(self):
         """Normalize the collection by updating min/max values and calculating normalized values.

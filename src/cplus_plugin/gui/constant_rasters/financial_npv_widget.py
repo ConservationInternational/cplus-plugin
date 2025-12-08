@@ -5,6 +5,7 @@ Activity NPV configuration widget implementing the ConstantRasterWidgetInterface
 
 import math
 import sys
+import typing
 
 from qgis.core import (
     Qgis,
@@ -16,7 +17,6 @@ from qgis.PyQt import QtWidgets, QtCore, QtGui
 
 from .constant_raster_widgets import (
     ConstantRasterWidgetInterface,
-    ConstantRasterCollection,
     ConstantRasterComponent,
     ConstantRasterMetadata,
 )
@@ -28,9 +28,17 @@ from ...definitions.constants import (
     MAX_YEARS,
 )
 from ...definitions.defaults import FINANCIAL_NPV_NAME, NPV_METADATA_ID
+from ...lib.financials import compute_discount_value
 from ...models.base import LayerModelComponent, ModelComponentType
-from ...models.financial import ActivityNpv, NpvParameters
+from ...models.financial import ActivityNpv, ActivityNpvCollection, NpvParameters
+from ...models.helpers import (
+    activity_npv_collection_to_dict,
+    create_activity_npv_collection,
+)
 from ...utils import FileUtils, tr
+
+
+DEFAULT_DECIMAL_PLACES = 2
 
 
 class NpvFinancialModel(QtGui.QStandardItemModel):
@@ -105,10 +113,135 @@ class NpvFinancialModel(QtGui.QStandardItemModel):
             self.removeRows(self.rowCount() - remove_years, remove_years)
 
 
+class DisplayValueFormatterItemDelegate(QtWidgets.QStyledItemDelegate):
+    """
+    Delegate for formatting numeric values using thousand comma separator,
+    number of decimal places etc.
+    """
+
+    def displayText(self, value: float, locale: QtCore.QLocale) -> str:
+        """Format the value to incorporate thousand comma separator.
+
+        :param value: Value of the display role provided by the model.
+        :type value: float
+
+        :param locale: Locale for the value in the display role.
+        :type locale: QtCore.QLocale
+
+        :returns: Formatted value of the display role data.
+        :rtype: str
+        """
+        if value is None:
+            return ""
+
+        formatter = QgsBasicNumericFormat()
+        formatter.setShowThousandsSeparator(True)
+        formatter.setNumberDecimalPlaces(DEFAULT_DECIMAL_PLACES)
+
+        return formatter.formatDouble(float(value), QgsNumericFormatContext())
+
+
+class FinancialValueItemDelegate(DisplayValueFormatterItemDelegate):
+    """
+    Delegate for ensuring only numbers are specified in financial value
+    fields.
+    """
+
+    def createEditor(
+        self,
+        parent: QtWidgets.QWidget,
+        option: QtWidgets.QStyleOptionViewItem,
+        idx: QtCore.QModelIndex,
+    ) -> QtWidgets.QLineEdit:
+        """Creates a line edit control whose input value is limited to numbers only.
+
+        :param parent: Parent widget.
+        :type parent: QtWidgets.QWidget
+
+        :param option: Options for drawing the widget in the view.
+        :type option: QtWidgets.QStyleOptionViewItem
+
+        :param idx: Location of the request in the data model.
+        :type idx: QtCore.QModelIndex
+
+        :returns: The editor widget.
+        :rtype: QtWidgets.QLineEdit
+        """
+        line_edit = QtWidgets.QLineEdit(parent)
+        line_edit.setFrame(False)
+        line_edit.setMaxLength(50)
+        validator = QtGui.QDoubleValidator()
+        validator.setDecimals(DEFAULT_DECIMAL_PLACES)
+        line_edit.setValidator(validator)
+
+        return line_edit
+
+    def setEditorData(self, widget: QtWidgets.QWidget, idx: QtCore.QModelIndex):
+        """Sets the data to be displayed and edited by the editor.
+
+        :param widget: Editor widget.
+        :type widget: QtWidgets.QWidget
+
+        :param idx: Location in the data model.
+        :type idx: QtCore.QModelIndex
+        """
+        value = idx.model().data(idx, QtCore.Qt.EditRole)
+        if value is None:
+            widget.setText("")
+        else:
+            widget.setText(str(value))
+
+    def setModelData(
+        self,
+        widget: QtWidgets.QWidget,
+        model: QtCore.QAbstractItemModel,
+        idx: QtCore.QModelIndex,
+    ):
+        """Gets data from the editor widget and stores it in the specified
+        model at the item index.
+
+        :param widget: Editor widget.
+        :type widget: QtWidgets.QWidget
+
+        :param model: Model to store the editor data in.
+        :type model: QtCore.QAbstractItemModel
+
+        :param idx: Location in the data model.
+        :type idx: QtCore.QModelIndex
+        """
+        if not widget.text():
+            value = None
+        else:
+            value = float(widget.text())
+
+        model.setData(idx, value, QtCore.Qt.EditRole)
+
+    def updateEditorGeometry(
+        self,
+        widget: QtWidgets.QWidget,
+        option: QtWidgets.QStyleOptionViewItem,
+        idx: QtCore.QModelIndex,
+    ):
+        """Updates the geometry of the editor for the item with the given index,
+        according to the rectangle specified in the option.
+
+        :param widget: Widget whose geometry will be updated.
+        :type widget: QtWidgets.QWidget
+
+        :param option: Option containing the rectangle for
+        updating the widget.
+        :type option: QtWidgets.QStyleOptionViewItem
+
+        :param idx: Location of the widget in the data model.
+        :type idx: QtCore.QModelIndex
+        """
+        widget.setGeometry(option.rect)
+
+
 class ActivityNpvWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
     """Widget for configuring an Activity's NPV values using NpvFinancialModel."""
 
-    update_requested = QtCore.pyqtSignal(object)
+    update_requested = QtCore.pyqtSignal(ConstantRasterComponent)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -130,7 +263,7 @@ class ActivityNpvWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
 
         self.sb_discount = QtWidgets.QDoubleSpinBox()
         self.sb_discount.setRange(0.0, 100.0)
-        self.sb_discount.setDecimals(2)
+        self.sb_discount.setDecimals(DEFAULT_DECIMAL_PLACES)
         self.sb_discount.setSingleStep(1.0)
         self.sb_discount.setToolTip(self.tr("Discount rate (0-100)"))
         form.addRow(self.tr("Discount rate (%)"), self.sb_discount)
@@ -141,6 +274,14 @@ class ActivityNpvWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         self.tv_revenue_costs = QtWidgets.QTableView()
         self.fin_model = NpvFinancialModel(self)
         self.tv_revenue_costs.setModel(self.fin_model)
+        self._revenue_delegate = FinancialValueItemDelegate()
+        self._costs_delegate = FinancialValueItemDelegate()
+        self._discounted_value_delegate = DisplayValueFormatterItemDelegate()
+        self.tv_revenue_costs.setItemDelegateForColumn(1, self._revenue_delegate)
+        self.tv_revenue_costs.setItemDelegateForColumn(2, self._costs_delegate)
+        self.tv_revenue_costs.setItemDelegateForColumn(
+            3, self._discounted_value_delegate
+        )
         self.tv_revenue_costs.horizontalHeader().setStretchLastSection(True)
         self.tv_revenue_costs.setSelectionBehavior(
             QtWidgets.QAbstractItemView.SelectItems
@@ -148,6 +289,8 @@ class ActivityNpvWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         self.tv_revenue_costs.setSelectionMode(
             QtWidgets.QAbstractItemView.SingleSelection
         )
+        self.fin_model.itemChanged.connect(self.on_npv_computation_item_changed)
+        self.fin_model.rowsRemoved.connect(self.on_years_removed)
         self.tv_revenue_costs.installEventFilter(self)
         layout.addWidget(self.tv_revenue_costs)
 
@@ -161,7 +304,7 @@ class ActivityNpvWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         # NPV spinbox
         self.sb_npv = QtWidgets.QDoubleSpinBox()
         self.sb_npv.setRange(0.0, 1e12)
-        self.sb_npv.setDecimals(2)
+        self.sb_npv.setDecimals(DEFAULT_DECIMAL_PLACES)
         self.sb_npv.setSingleStep(10.0)
         self.sb_npv.setReadOnly(True)
         npv_layout.addWidget(self.sb_npv)
@@ -188,23 +331,24 @@ class ActivityNpvWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         self.spn_years.valueChanged.connect(self._on_years_changed)
         self.sb_discount.valueChanged.connect(self._recompute_discounted_column)
         self.tb_copy_npv.clicked.connect(self.copy_npv)
+        self.cb_manual_npv.toggled.connect(self._on_manual_npv_toggled)
+        self.sb_npv.valueChanged.connect(self._on_npv_value_changed)
 
     def reset(self):
         self._constant_raster_component = None
         self.spn_years.setValue(0)
         self.sb_discount.setValue(0.0)
         self.fin_model.removeRows(0, self.fin_model.rowCount())
+        self.cb_manual_npv.setChecked(False)
+        self.sb_npv.setValue(0.0)
 
-    def load(self, raster_component: ConstantRasterComponent):
-        """Load a component (ideally ActivityNpv) into the widget and populate controls."""
-        # Set internal reference
-        self.raster_component = raster_component
+    def load(self, raster_component: ActivityNpv):
+        """Load a ActivityNpv into the widget and populate controls."""
+        # Ensure NpvParameters exists and is of the correct type
+        if not isinstance(self.raster_component, ActivityNpv):
+            raise ValueError("ActivityNpv object expected.")
 
-        # Ensure NpvParameters exists
-        if not isinstance(self.raster_component.value_info, NpvParameters):
-            self.raster_component.value_info = NpvParameters()
-
-        params: NpvParameters = self.raster_component.value_info
+        params: NpvParameters = self.raster_component.params
 
         self.spn_years.blockSignals(True)
         years = int(params.years or 0)
@@ -218,37 +362,17 @@ class ActivityNpvWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         self.fin_model.set_number_of_years(years)
 
         rates = params.yearly_rates or []
-        for row in range(self.fin_model.rowCount()):
-            # Revenue item
-            revenue_item = self.fin_model.item(row, 1)
-            cost_item = self.fin_model.item(row, 2)
-            discount_item = self.fin_model.item(row, 3)
+        for i, year_info in enumerate(rates):
+            if len(year_info) < 3:
+                continue
 
-            revenue_item.setText("")
-            cost_item.setText("")
-            discount_item.setText("")
-            discount_item.setData(
-                None, QtCore.Qt.UserRole
-            )  # store per-row discount rate here
+            revenue_index = self.fin_model.index(i, 1)
+            self.fin_model.setData(revenue_index, year_info[0], QtCore.Qt.EditRole)
+            cost_index = self.fin_model.index(i, 2)
+            self.fin_model.setData(cost_index, year_info[1], QtCore.Qt.EditRole)
 
-            if row < len(rates):
-                rev, cost, per_row_disc = (
-                    rates[row] if rates[row] is not None else (None, None, None)
-                )
-                if rev is not None:
-                    revenue_item.setText(str(rev))
-                if cost is not None:
-                    cost_item.setText(str(cost))
-                if per_row_disc is not None:
-                    discount_item.setData(float(per_row_disc), QtCore.Qt.UserRole)
-                else:
-                    discount_item.setData(None, QtCore.Qt.UserRole)
-
-        # Compute discounted column values based on either per-row discount or global discount
+        # Compute discounted column values
         self._recompute_discounted_column()
-
-        # Update normalized preview
-        self._update_normalized_preview()
 
     @classmethod
     def create_raster_component(
@@ -259,7 +383,7 @@ class ActivityNpvWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         component = ActivityNpv()
         component.value_info = params
         component.activity = model_component
-        component.skip_raster = False
+        component.skip_raster = True
         component.enabled = True
 
         return component
@@ -267,21 +391,23 @@ class ActivityNpvWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
     @classmethod
     def create_metadata(cls) -> ConstantRasterMetadata:
         """Base method override."""
-        collection = ConstantRasterCollection(
+        collection = ActivityNpvCollection(
             min_value=0.0,
             max_value=0.0,
             component_type=ModelComponentType.ACTIVITY,
             components=[],
             allowable_max=sys.float_info.max,
             allowable_min=0.0,
+            skip_raster=True,
+            use_manual=False,
         )
 
         return ConstantRasterMetadata(
             id=NPV_METADATA_ID,
             display_name=FINANCIAL_NPV_NAME,
             raster_collection=collection,
-            serializer=None,
-            deserializer=None,
+            serializer=activity_npv_collection_to_dict,
+            deserializer=create_activity_npv_collection,
             component_type=ModelComponentType.ACTIVITY,
         )
 
@@ -323,82 +449,164 @@ class ActivityNpvWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         # Recompute discounted values for any new rows
         self._recompute_discounted_column()
 
-    def _recompute_discounted_column(self):
-        """Recompute discounted value column using per-row discount
-        if provided, else global discount.
+    def _on_manual_npv_toggled(self, checked: bool):
+        """Slot raised to enable/disable manual NPV value.
+
+        :param checked: True if the manual NPV is enabled else False.
+        :type checked: bool
         """
-        global_discount = float(self.sb_discount.value() or 0.0)
+        if checked:
+            self.sb_npv.setReadOnly(False)
+            self.sb_npv.setFocus()
+            self.enable_npv_parameters_widgets(False)
+        else:
+            self.sb_npv.setReadOnly(True)
+            self.enable_npv_parameters_widgets(True)
+
+        # Notify changes
+        self._request_update()
+
+    def enable_npv_parameters_widgets(self, enable: bool):
+        """Enable or disable the UI widgets for specifying NPV parameters.
+
+        :param enable: True to enable the widgets, else False to disable.
+        :type enable: bool
+        """
+        self.spn_years.setEnabled(enable)
+        self.sb_discount.setEnabled(enable)
+        self.tv_revenue_costs.setEnabled(enable)
+
+    def _on_npv_value_changed(self, npv: float):
+        """Slot raised when NPV value has changed.
+
+        Send alert for the updated activity NPV object to be sent.
+
+        :param npv: NPV value to be saved.
+        :type npv: float
+        """
+        self._request_update()
+
+    def _recompute_discounted_column(self):
+        """Updates all discounted values that had already been
+        computed using the revised discount rate.
+        """
         for row in range(self.fin_model.rowCount()):
-            rev_item = self.fin_model.item(row, 1)
-            cost_item = self.fin_model.item(row, 2)
-            discount_item = self.fin_model.item(row, 3)
-
-            # Get numeric values
-            try:
-                rev = (
-                    float(rev_item.text())
-                    if rev_item and rev_item.text().strip() != ""
-                    else 0.0
-                )
-            except Exception:
-                rev = 0.0
-            try:
-                cost = (
-                    float(cost_item.text())
-                    if cost_item and cost_item.text().strip() != ""
-                    else 0.0
-                )
-            except Exception:
-                cost = 0.0
-
-            # Year index (1-based)
-            year_index = row + 1
-
-            # Per-row discount rate saved in UserRole if available
-            per_row_discount = discount_item.data(QtCore.Qt.UserRole)
-            used_discount = (
-                float(per_row_discount)
-                if per_row_discount is not None
-                else global_discount
+            discount_value = self.fin_model.data(
+                self.fin_model.index(row, 3), QtCore.Qt.EditRole
             )
+            if discount_value is None:
+                continue
+            self.update_discounted_value(row)
 
-            # Avoid negative or crazy discount rates; clamp to [0, 10]
-            if used_discount is None:
-                used_discount = 0.0
-            try:
-                used_discount = max(0.0, min(10.0, float(used_discount)))
-            except Exception:
-                used_discount = 0.0
+    def update_discounted_value(self, row: int):
+        """Updated the discounted value for the given row number.
 
-            # Compute discounted net = (rev - cost) / (1 + r)^t
-            try:
-                denom = math.pow(1.0 + used_discount, year_index)
-                discounted = (rev - cost) / denom if denom != 0 else (rev - cost)
-            except Exception:
-                discounted = 0.0
+        :param row: Row number to compute the discounted value.
+        :type row: int
+        """
+        # For computation purposes, any None value will be
+        # translated to zero.
+        revenue = self.fin_model.data(self.fin_model.index(row, 1), QtCore.Qt.EditRole)
 
-            discount_item.setText(f"{discounted:.2f}")
+        cost = self.fin_model.data(self.fin_model.index(row, 2), QtCore.Qt.EditRole)
 
-        # Keep normalized preview in sync after recompute
-        self._update_normalized_preview()
-
-    def _update_normalized_preview(self):
-        """Update normalized label based on the current collection if available."""
-        if self.raster_component is None or not self.raster_component.value_info:
+        # No need to compute if both revenue and cost have not been defined
+        if revenue is None and cost is None:
             return
 
-        absolute = float(
-            getattr(self.raster_component.value_info, "absolute", 0.0) or 0.0
+        if revenue is None:
+            revenue = 0.0
+
+        if cost is None:
+            cost = 0.0
+
+        discounted_value = compute_discount_value(
+            revenue, cost, row + 1, self.sb_discount.value()
+        )
+        rounded_discounted_value = round(discounted_value, DEFAULT_DECIMAL_PLACES)
+        discounted_value_index = self.fin_model.index(row, 3)
+        self.fin_model.setData(
+            discounted_value_index, rounded_discounted_value, QtCore.Qt.EditRole
         )
 
-        collection = getattr(self.raster_component, "_parent_collection", None)
-        if collection is None:
+        if not self.cb_manual_npv.isChecked():
+            self.compute_npv()
+
+    def compute_npv(self):
+        """Computes the NPV based on the total of the discounted value and
+        sets it in the corresponding control.
+        """
+        npv = 0.0
+        for row in range(self.fin_model.rowCount()):
+            discount_value = self.fin_model.data(
+                self.fin_model.index(row, 3), QtCore.Qt.EditRole
+            )
+            if discount_value is None:
+                continue
+            npv += discount_value
+
+        self.sb_npv.setValue(npv)
+
+    def on_years_removed(self, index: QtCore.QModelIndex, start: int, end: int):
+        """Slot raised when the year rows have been removed.
+
+        :param index: Reference item at the given location.
+        :type index: QtCore.QModelIndex
+
+        :param start: Start location of the items that have been removed.
+        :type start: int
+
+        :param end: End location of the items that have been removed.
+        :type end: int
+        """
+        # Recalculate the NPV
+        self.compute_npv()
+
+    def on_npv_computation_item_changed(self, item: QtGui.QStandardItem):
+        """Slot raised when the data of an item has changed.
+
+        This is used to compute discounted value as well as the NPV.
+
+        :param item: Item whose value has changed.
+        :type item: QtGui.QStandardItem
+        """
+        # Update discounted value only if revenue or cost
+        # have changed.
+        column = item.column()
+        if column == 1 or column == 2:
+            self.update_discounted_value(item.row())
+
+    def update_activity_npv(self):
+        """Update changes made in the UI to the underlying activity NPV object."""
+        if self._constant_raster_component is None:
             return
 
-        minv = float(collection.min_value)
-        maxv = float(collection.max_value)
-        if maxv == minv:
-            normalized = 1.0
-        else:
-            normalized = (absolute - minv) / float(maxv - minv)
-            normalized = max(0.0, min(1.0, normalized))
+        self._constant_raster_component.params.manual_npv = (
+            self.cb_manual_npv.isChecked()
+        )
+
+        if not self._constant_raster_component.params.manual_npv:
+            self._constant_raster_component.params.years = self.spn_years.value()
+            self._constant_raster_component.params.discount = self.sb_discount.value()
+
+            yearly_rates = []
+            for row in range(self.fin_model.rowCount()):
+                revenue_value = self.fin_model.data(
+                    self.fin_model.index(row, 1), QtCore.Qt.EditRole
+                )
+                cost_value = self.fin_model.data(
+                    self.fin_model.index(row, 2), QtCore.Qt.EditRole
+                )
+                discount_value = self.fin_model.data(
+                    self.fin_model.index(row, 3), QtCore.Qt.EditRole
+                )
+                yearly_rates.append((revenue_value, cost_value, discount_value))
+
+            self._constant_raster_component.params.yearly_rates = yearly_rates
+
+        self._constant_raster_component.params.absolute = self.sb_npv.value()
+
+    def _request_update(self):
+        """Send a notification to the parent widget to save the latest changes."""
+        self.update_activity_npv()
+        self.notify_update()

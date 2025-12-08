@@ -112,8 +112,6 @@ class ActivityNpvCollection(ConstantRasterCollection):
     that have been specified by the user.
     """
 
-    use_computed: bool = True
-
     def activity_npv(self, activity_identifier: str) -> typing.Optional[ActivityNpv]:
         """Gets the mapping of an activity's NPV mapping if defined.
 
