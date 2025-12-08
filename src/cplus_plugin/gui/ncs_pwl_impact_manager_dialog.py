@@ -25,13 +25,13 @@ WidgetUi, _ = loadUiType(
 )
 
 IMPACT_MATRIX_COLORS = {
-    -3: {"color": "#d7191c", "impact": "Worst"},
-    -2: {"color": "#f07c4a", "impact": "Worse"},
-    -1: {"color": "#fec981", "impact": "Bad"},
-    0: {"color": "#ffffc0", "impact": "Neutral"},
-    1: {"color": "#c4e687", "impact": "Good"},
-    2: {"color": "#77c35c", "impact": "Better"},
-    3: {"color": "#1a9641", "impact": "Best"},
+    -3: {"color": "#d7191c", "impact": "Strong Negative Impact"},
+    -2: {"color": "#f07c4a", "impact": "Moderate Negative Impact"},
+    -1: {"color": "#fec981", "impact": "Slight Negative Impact"},
+    0: {"color": "#ffffc0", "impact": "Neutral / No Measurable Impact"},
+    1: {"color": "#c4e687", "impact": "Slight Positive Impact"},
+    2: {"color": "#77c35c", "impact": "Moderate Positive Impact"},
+    3: {"color": "#1a9641", "impact": "Strong Positive Impact"},
 }
 
 DEFAULT_CELL_STYLE = "QLineEdit {background: white;} QLineEdit:hover {border: 1px solid gray; background: white;}"
@@ -215,6 +215,13 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
         icon_pixmap = QtGui.QPixmap(ICON_PATH)
         self.icon_la.setPixmap(icon_pixmap)
         self.btn_help.clicked.connect(self.open_help)
+
+        self.label_description.setText(
+            self.tr(
+                "Assign impact coefficients (-3 to +3) showing how each pathway impacts each PWL. "
+                "Click Help for more information."
+            )
+        )
 
         # Set up table for land cover transitions
         label_ncs_pathways = VerticalLabel(self)
@@ -477,10 +484,6 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
         """Sets up the legend for the relative impact ratings."""
         idx = 0
         for rating, color in IMPACT_MATRIX_COLORS.items():
-            self.gridLayoutLegend.addWidget(
-                QtWidgets.QLabel(color["impact"]), 0, idx, QtCore.Qt.AlignCenter
-            )
-
             legend_text = QtWidgets.QLineEdit()
             legend_text.setReadOnly(True)
             legend_text.setText(str(rating))
@@ -493,7 +496,7 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
             )
             legend_text.setToolTip(f"Rating: {rating}, Impact {color['impact']}")
             legend_text.setAlignment(QtCore.Qt.AlignHCenter)
-            legend_text.setMinimumWidth(100)
+            legend_text.setMinimumWidth(130)
             legend_text.setMinimumHeight(30)
 
             font = QtGui.QFont()
@@ -508,7 +511,11 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
             sizePolicy.setVerticalStretch(0)
             legend_text.setSizePolicy(sizePolicy)
 
-            self.gridLayoutLegend.addWidget(legend_text, 1, idx, QtCore.Qt.AlignCenter)
+            self.gridLayoutLegend.addWidget(legend_text, 0, idx, QtCore.Qt.AlignCenter)
+
+            self.gridLayoutLegend.addWidget(
+                QtWidgets.QLabel(color["impact"]), 1, idx, QtCore.Qt.AlignCenter
+            )
 
             idx += 1
 
