@@ -31,8 +31,8 @@ from cplus_plugin.models.base import (
     SpatialExtent,
 )
 from cplus_plugin.models.financial import (
-    NcsPathwayNpv,
-    NcsPathwayNpvCollection,
+    ActivityNpv,
+    ActivityNpvCollection,
     NpvParameters,
 )
 from cplus_plugin.models.report import (
@@ -255,8 +255,8 @@ def get_test_scenario_result() -> ScenarioResult:
     return ScenarioResult(get_test_scenario(), output_layer_name="Test Scenario Layer")
 
 
-def get_ncs_pathway_npvs() -> typing.List[NcsPathwayNpv]:
-    """Returns a collection of NCS pathway NPV mappings."""
+def get_activity_npvs() -> typing.List[ActivityNpv]:
+    """Returns a collection of activity NPV mappings."""
     ncs_pathways = get_ncs_pathways()
 
     npv_params_1 = NpvParameters(3, 2.0)
@@ -266,7 +266,7 @@ def get_ncs_pathway_npvs() -> typing.List[NcsPathwayNpv]:
         (28000.0, 15000.0, 12745.1),
         (35000.0, 13500.0, 20665.13),
     ]
-    pathway_npv_1 = NcsPathwayNpv(npv_params_1, True, ncs_pathways[0])
+    pathway_npv_1 = ActivityNpv(npv_params_1, True, ncs_pathways[0])
 
     npv_params_2 = NpvParameters(2, 4.0)
     npv_params_2.absolute_npv = 102307.69
@@ -274,7 +274,7 @@ def get_ncs_pathway_npvs() -> typing.List[NcsPathwayNpv]:
         (100000.0, 65000.0, 35000.0),
         (120000.0, 50000.0, 67307.69),
     ]
-    pathway_npv_2 = NcsPathwayNpv(npv_params_2, True, ncs_pathways[1])
+    pathway_npv_2 = ActivityNpv(npv_params_2, True, ncs_pathways[1])
 
     npv_params_3 = NpvParameters(3, 7.0)
     npv_params_3.absolute_npv = 38767.05
@@ -283,16 +283,16 @@ def get_ncs_pathway_npvs() -> typing.List[NcsPathwayNpv]:
         (67500.0, 53000.0, 13551.4),
         (70000.0, 48000.0, 19215.65),
     ]
-    pathway_npv_3 = NcsPathwayNpv(npv_params_3, True, ncs_pathways[2])
+    pathway_npv_3 = ActivityNpv(npv_params_3, True, ncs_pathways[2])
 
     return [pathway_npv_1, pathway_npv_2, pathway_npv_3]
 
 
-def get_ncs_pathway_npv_collection() -> NcsPathwayNpvCollection:
+def get_ncs_pathway_npv_collection() -> ActivityNpvCollection:
     """Returns an NCS pathway NPV collection for testing."""
-    npv_collection = NcsPathwayNpvCollection(0.0, 0.0)
+    npv_collection = ActivityNpvCollection(0.0, 0.0)
 
-    mappings = get_ncs_pathway_npvs()
+    mappings = get_activity_npvs()
     npv_collection.mappings = mappings
 
     return npv_collection
