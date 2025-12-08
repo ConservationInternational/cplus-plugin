@@ -72,43 +72,15 @@ class TestGenericNumericWidget(TestCase):
 
     def test_create_metadata_returns_valid_metadata(self):
         """Test create_metadata returns valid ConstantRasterMetadata."""
-        metadata = GenericNumericWidget.create_metadata(
-            metadata_id="test_type",
-            component_type=ModelComponentType.ACTIVITY,
-            display_name="Test Type",
-            min_value=0.0,
-            max_value=100.0,
-            user_defined=True,
-        )
+        metadata = GenericNumericWidget.create_metadata()
 
         self.assertIsInstance(metadata, ConstantRasterMetadata)
-        self.assertEqual(metadata.id, "test_type")
-        self.assertEqual(metadata.display_name, "Test Type")
         self.assertTrue(metadata.user_defined)
         self.assertEqual(metadata.component_type, ModelComponentType.ACTIVITY)
 
-    def test_create_metadata_user_defined_flag(self):
-        """Test create_metadata sets user_defined flag correctly."""
-        metadata = GenericNumericWidget.create_metadata(
-            metadata_id="custom_type",
-            component_type=ModelComponentType.ACTIVITY,
-            display_name="Custom",
-            min_value=0.0,
-            max_value=100.0,
-            user_defined=True,
-        )
-
-        self.assertTrue(metadata.user_defined)
-
     def test_create_metadata_collection_defaults(self):
         """Test create_metadata creates collection with correct defaults."""
-        metadata = GenericNumericWidget.create_metadata(
-            metadata_id="test",
-            component_type=ModelComponentType.ACTIVITY,
-            display_name="Test",
-            min_value=0.0,
-            max_value=100.0,
-        )
+        metadata = GenericNumericWidget.create_metadata()
 
         collection = metadata.raster_collection
         self.assertIsNotNone(collection)

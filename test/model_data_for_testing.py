@@ -454,7 +454,6 @@ def get_constant_raster_component() -> ConstantRasterComponent:
     return ConstantRasterComponent(
         value_info=value_info,
         component=activity,
-        component_type=ModelComponentType.ACTIVITY,
         skip_raster=False,
         enabled=True,
     )
