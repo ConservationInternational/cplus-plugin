@@ -416,7 +416,6 @@ class TestYearsExperienceWidget(TestCase):
         component1 = ConstantRasterComponent(
             value_info=ConstantRasterInfo(absolute=20.0),
             component=activity2,
-            component_type=ModelComponentType.ACTIVITY,
             skip_raster=False,
             enabled=True,
         )
@@ -424,7 +423,6 @@ class TestYearsExperienceWidget(TestCase):
         component2 = ConstantRasterComponent(
             value_info=ConstantRasterInfo(absolute=50.0),
             component=activity3,
-            component_type=ModelComponentType.ACTIVITY,
             skip_raster=False,
             enabled=True,
         )
