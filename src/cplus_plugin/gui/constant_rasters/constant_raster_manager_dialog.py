@@ -597,9 +597,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             return
 
         item = self._activities_model.model_component_items()[0]
-        # self.lst_activities.selectionModel().select(
-        #     item.index(), QtCore.QItemSelectionModel.Select
-        # )
+        self.lst_activities.selectionModel().select(
+            item.index(), QtCore.QItemSelectionModel.ClearAndSelect
+        )
 
         # Save selected raster type
         settings_manager.set_value(
