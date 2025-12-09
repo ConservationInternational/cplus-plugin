@@ -446,11 +446,6 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Populate component references with actual activity objects
         self._populate_component_references(activities)
 
-        # Connect to the view's selection model, not the model itself
-        self.lst_activities.selectionModel().selectionChanged.connect(
-            self._on_model_component_selection_changed
-        )
-
         # Connections
         self.cbo_raster_type.currentIndexChanged.connect(
             self.on_raster_type_selection_changed
@@ -463,6 +458,11 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         # Connect model itemChanged signals to save checkbox states
         self._activities_model.itemChanged.connect(self._on_item_checked_changed)
+
+        # Connect to the view's selection model, not the model itself
+        self.lst_activities.selectionModel().selectionChanged.connect(
+            self._on_model_component_selection_changed
+        )
 
         # Connect normalization range spinboxes to save the values to the collection
         self.spin_min_value.valueChanged.connect(self.on_normalization_range_changed)
@@ -519,7 +519,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                 item.setCheckState(QtCore.Qt.Unchecked)
 
     def on_raster_type_selection_changed(self, index: int):
-        """Slot raised when the selection in the combobox for raster type has changed."""
+        """Slot raised when the selection in the combobox
+        for raster type has changed.
+        """
         # First clear activity selection
         self.lst_activities.selectionModel().blockSignals(True)
         self._activities_model.blockSignals(True)
@@ -548,10 +550,6 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             )
             return
 
-        # Enable/disable raster creation button
-        raster_creation_ui_state = not collection.skip_raster
-        self.btn_create_raster.setEnabled(raster_creation_ui_state)
-
         # Block signals while loading
         self.grp_normalization_range.blockSignals(True)
         self.spin_min_value.blockSignals(True)
@@ -568,21 +566,22 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         self.spin_min_value.setValue(collection.min_value)
         self.spin_max_value.setValue(collection.max_value)
 
+        self.spin_min_value.blockSignals(False)
+        self.spin_max_value.blockSignals(False)
+        self._activities_model.blockSignals(False)
+        self.grp_normalization_range.blockSignals(False)
+
         # Check/uncheck activity item based on raster component
         for raster_component in collection:
-            if not raster_component.enabled:
-                continue
             activity_item = self._activities_model.component_item_by_uuid(
                 raster_component.component_id
             )
             if not activity_item:
                 continue
-            activity_item.setCheckState(QtCore.Qt.Checked)
-
-        self.spin_min_value.blockSignals(False)
-        self.spin_max_value.blockSignals(False)
-        self._activities_model.blockSignals(False)
-        self.grp_normalization_range.blockSignals(False)
+            check_state = (
+                QtCore.Qt.Checked if raster_component.enabled else QtCore.Qt.Unchecked
+            )
+            activity_item.setCheckState(check_state)
 
         # Update button states based on skip_raster flag
         self._update_create_button_states(collection)
@@ -598,9 +597,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             return
 
         item = self._activities_model.model_component_items()[0]
-        self.lst_activities.selectionModel().select(
-            item.index(), QtCore.QItemSelectionModel.Select
-        )
+        # self.lst_activities.selectionModel().select(
+        #     item.index(), QtCore.QItemSelectionModel.Select
+        # )
 
         # Save selected raster type
         settings_manager.set_value(
@@ -617,10 +616,11 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         # Disable current view action if skip_raster is True
         if collection.skip_raster:
-            self.action_create_current.setEnabled(True)  # Always enabled
+            self.action_create_current.setEnabled(False)
             self.action_create_current.setToolTip(
                 self.tr(
-                    "Current view disabled - this constant raster type does not require rasters"
+                    "This raster type does not support the creation of "
+                    "constant rasters"
                 )
             )
         else:
