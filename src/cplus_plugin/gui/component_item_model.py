@@ -69,6 +69,15 @@ class ModelComponentItem(QtGui.QStandardItem):
         return self._model_component
 
     @property
+    def component_name(self) -> str:
+        """Returns the name of the model component.
+
+        :returns: name of the model component.
+        :rtype: str
+        """
+        return self._model_component.name
+
+    @property
     def uuid(self) -> str:
         """Returns the UUID of the item.
 

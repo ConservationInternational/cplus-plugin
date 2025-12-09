@@ -13,7 +13,6 @@
 """
 
 import os.path
-import sys
 
 from qgis.core import (
     QgsApplication,
@@ -49,6 +48,7 @@ from .definitions.defaults import (
     DOCUMENTATION_SITE,
     ICON_PATH,
     IRRECOVERABLE_CARBON_API_URL,
+    NPV_METADATA_ID,
     OPTIONS_TITLE,
     PRIORITY_GROUPS,
     PRIORITY_LAYERS,
@@ -61,13 +61,17 @@ from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata
 from .lib.reports.manager import report_manager
 from .lib.reports.metrics import register_metric_functions, unregister_metric_functions
 from .lib.constant_raster import constant_raster_registry
-from .models.base import PriorityLayerType, ModelComponentType
+from .models.base import PriorityLayerType
 from .models.report import MetricConfigurationProfile, MetricProfileCollection
+from .gui.constant_rasters import (
+    ActivityNpvWidget,
+    GenericNumericWidget,
+    YearsExperienceWidget,
+)
 from .gui.settings.carbon_options import CarbonOptionsFactory
 from .gui.settings.cplus_options import CplusOptionsFactory
 from .gui.settings.log_options import LogOptionsFactory
 from .gui.settings.report_options import ReportOptionsFactory
-from .gui.constant_rasters import YearsExperienceWidget, GenericNumericWidget
 
 from .utils import (
     FileUtils,
@@ -614,42 +618,58 @@ def initialize_report_settings():
 def initialize_constant_raster_registry():
     """Initialize constant raster metadata registry during plugin startup.
 
-    Registers default constant raster types (e.g., Years of Experience)
-    for activities. Uses widget's create_metadata() method to ensure
-    consistency with serializer/deserializer setup.
+    Registers default constant raster types for activities. Uses widget's
+    create_metadata() method to ensure consistency with serializer/deserializer
+    setup.
     """
     log("Initializing constant raster metadata registry", info=True)
 
-    # Register "Years of Experience" for Activities
-    if YEARS_EXPERIENCE_ACTIVITY_ID not in constant_raster_registry.metadata_ids():
-        metadata_activity = YearsExperienceWidget.create_metadata(
-            YEARS_EXPERIENCE_ACTIVITY_ID, ModelComponentType.ACTIVITY
-        )
-        constant_raster_registry.add_metadata(metadata_activity)
-        log(
-            f"Registered constant raster metadata: {YEARS_EXPERIENCE_ACTIVITY_ID}",
-            info=True,
-        )
+    # Register serializers so the registry can know how to unpack the
+    # metadata from settings.
+    constant_raster_registry.serializers_from_metadata(
+        YearsExperienceWidget.create_metadata()
+    )
+    constant_raster_registry.serializers_from_metadata(
+        ActivityNpvWidget.create_metadata()
+    )
 
     # Load saved state from settings
     constant_raster_registry.load()
+
+    # If not in settings then initialize
+    if not constant_raster_registry.has_metadata(YEARS_EXPERIENCE_ACTIVITY_ID):
+        years_of_experience_metadata = YearsExperienceWidget.create_metadata()
+        constant_raster_registry.add_metadata(years_of_experience_metadata)
+        log(
+            f"Registered constant raster metadata: {years_of_experience_metadata.display_name}"
+        )
+
+    # NPV
+    if not constant_raster_registry.has_metadata(NPV_METADATA_ID):
+        npv_metadata = ActivityNpvWidget.create_metadata()
+        constant_raster_registry.add_metadata(npv_metadata)
+        log(f"Registered constant raster metadata: {npv_metadata.display_name}")
 
     custom_types = constant_raster_registry.get_custom_type_definitions()
     for type_def in custom_types:
         metadata_id = type_def.get(ID_ATTRIBUTE)
         if metadata_id and metadata_id not in constant_raster_registry.metadata_ids():
-            metadata = GenericNumericWidget.create_metadata(
-                metadata_id=metadata_id,
-                component_type=ModelComponentType.ACTIVITY,
-                display_name=type_def.get(NAME_ATTRIBUTE, "Custom Type"),
-                min_value=type_def.get(MIN_VALUE_ATTRIBUTE_KEY, 0.0),
-                max_value=type_def.get(MAX_VALUE_ATTRIBUTE_KEY, 100.0),
-                user_defined=True,
+            metadata = GenericNumericWidget.create_metadata()
+            metadata.id = metadata_id
+            metadata.display_name = type_def.get(NAME_ATTRIBUTE, "Custom Type")
+            metadata.raster_collection.min_value = type_def.get(
+                MIN_VALUE_ATTRIBUTE_KEY, 0.0
+            )
+            metadata.raster_collection.max_value = type_def.get(
+                MAX_VALUE_ATTRIBUTE_KEY, 100.0
             )
             constant_raster_registry.add_metadata(metadata)
+
             log(
                 f"Registered custom constant raster type: {metadata_id} ({type_def.get(NAME_ATTRIBUTE)})",
-                info=True,
             )
 
     log("Constant raster registry initialized", info=True)
+
+    # Save with latest changes
+    constant_raster_registry.save()

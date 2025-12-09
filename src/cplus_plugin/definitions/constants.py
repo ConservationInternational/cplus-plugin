@@ -88,15 +88,17 @@ CARBON_OPTIONS_KEY = "cplus_carbon"
 
 # Headers for financial NPV computation
 YEAR_HEADER = "Year"
-TOTAL_PROJECTED_COSTS_HEADER = "Projected Total Costs/ha (US$)"
-TOTAL_PROJECTED_REVENUES_HEADER = "Projected Total Revenues/ha (US$)"
-DISCOUNTED_VALUE_HEADER = "Discounted Value (US$)"
+TOTAL_PROJECTED_COSTS_HEADER = "Costs/ha"
+TOTAL_PROJECTED_REVENUES_HEADER = "Revenues/ha"
+DISCOUNTED_VALUE_HEADER = "Discounted Value"
 MAX_YEARS = 99
+
+CURRENT_ACTIVITY_HEADER = "Current Activity"
 
 NO_DATA_VALUE = -9999
 
 # Constant Raster attributes and keys
-CONSTANT_RASTERS_SETTINGS_KEY = "cplus/constant_rasters"
+CONSTANT_RASTERS_SETTINGS_KEY = "constant_rasters"
 COMPONENT_UUID_ATTRIBUTE = "component_uuid"
 COMPONENT_ID_ATTRIBUTE = "component_id"
 COMPONENT_TYPE_ATTRIBUTE = "component_type"

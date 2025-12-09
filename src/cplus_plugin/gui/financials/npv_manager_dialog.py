@@ -18,18 +18,18 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
-from ..component_item_model import NcsPathwayItemModel
+from ..component_item_model import ActivityItemModel
 from ...conf import settings_manager
 from ...definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
-from ...models.base import NcsPathway
-from ...models.financial import NcsPathwayNpv, NcsPathwayNpvCollection, NpvParameters
+from ...models.base import Activity
+from ...models.financial import ActivityNpv, ActivityNpvCollection, NpvParameters
 from .npv_financial_model import NpvFinancialModel
 from ...lib.financials import compute_discount_value
 from ...utils import FileUtils, open_documentation, tr
 
 
 WidgetUi, _ = loadUiType(
-    os.path.join(os.path.dirname(__file__), "../../ui/financial_pwl_dialog.ui")
+    os.path.join(os.path.dirname(__file__), "../../ui/financial_npv_widget.ui")
 )
 
 
@@ -162,7 +162,7 @@ class FinancialValueItemDelegate(DisplayValueFormatterItemDelegate):
 
 
 class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
-    """Dialog for managing NPV priority weighting layers for NCS pathways."""
+    """Dialog for managing NPVs for activities."""
 
     DEFAULT_YEARS = 5
     DEFAULT_DISCOUNT_RATE = 0.0
@@ -208,21 +208,21 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
         self._npv = None
 
-        # Current selected NCS pathway identifier
-        self._current_pathway_identifier: str = None
+        # Current selected activity identifier
+        self._current_activity_identifier: str = None
 
         icon_pixmap = QtGui.QPixmap(ICON_PATH)
         self.icon_la.setPixmap(icon_pixmap)
         self.btn_help.clicked.connect(self.open_help)
 
-        # Load NCS pathways
-        self._ncs_pathway_model = NcsPathwayItemModel()
-        self.lst_pathways.setModel(self._ncs_pathway_model)
-        for pathway in settings_manager.get_all_ncs_pathways():
-            self._ncs_pathway_model.add_ncs_pathway(pathway)
+        # Load activities
+        self._activity_model = ActivityItemModel(load_pathways=False)
+        self.lst_activities.setModel(self._activity_model)
+        for activity in settings_manager.get_all_activities():
+            self._activity_model.add_activity(activity)
 
-        self.lst_pathways.selectionModel().selectionChanged.connect(
-            self.on_pathway_selection_changed
+        self.lst_activities.selectionModel().selectionChanged.connect(
+            self.on_activity_selection_changed
         )
 
         # Set view model
@@ -249,24 +249,24 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
         self.cb_computed_npv.toggled.connect(self.on_use_computed_npvs_toggled)
 
-        self._npv_collection = settings_manager.get_npv_collection()
+        self._npv_collection = None  # settings_manager.get_npv_collection()
         if self._npv_collection is None:
-            self._npv_collection = NcsPathwayNpvCollection(0.0, 0.0)
+            self._npv_collection = ActivityNpvCollection(0.0, 0.0)
 
-        self.sb_min_normalize.setValue(self._npv_collection.minimum_value)
-        self.sb_max_normalize.setValue(self._npv_collection.maximum_value)
+        self.sb_min_normalize.setValue(self._npv_collection.min_value)
+        self.sb_max_normalize.setValue(self._npv_collection.max_value)
         self.cb_computed_npv.setChecked(self._npv_collection.use_computed)
         self.cb_remove_disabled.setChecked(self._npv_collection.remove_existing)
 
-        # Select first NCS pathway
-        if self._ncs_pathway_model.rowCount() > 0:
-            pathway_idx = self._ncs_pathway_model.index(0, 0)
-            if pathway_idx.isValid():
-                self.lst_pathways.selectionModel().select(
-                    pathway_idx, QtCore.QItemSelectionModel.ClearAndSelect
+        # Select first activity
+        if self._activity_model.rowCount() > 0:
+            activity_idx = self._activity_model.index(0, 0)
+            if activity_idx.isValid():
+                self.lst_activities.selectionModel().select(
+                    activity_idx, QtCore.QItemSelectionModel.ClearAndSelect
                 )
 
-        self.gp_npv_pwl.toggled.connect(self._on_ncs_pathway_npv_groupbox_toggled)
+        self.gp_npv_pwl.toggled.connect(self._on_activity_npv_groupbox_toggled)
         self.cb_manual_npv.toggled.connect(self._on_manual_npv_toggled)
 
     def open_help(self, activated: bool):
@@ -274,12 +274,12 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         open_documentation(USER_DOCUMENTATION_SITE)
 
     @property
-    def npv_collection(self) -> NcsPathwayNpvCollection:
-        """Gets the NCS pathway NPV collection as defined by the user.
+    def npv_collection(self) -> ActivityNpvCollection:
+        """Gets the activity NPV collection as defined by the user.
 
-        :returns: The NCS pathway NPV collection containing the NPV
-        parameters for NCS pathways.
-        :rtype: NcsPathwayNpvCollection
+        :returns: The activity NPV collection containing the NPV
+        parameters for activities.
+        :rtype: ActivityNpvCollection
         """
         return self._npv_collection
 
@@ -316,7 +316,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         :type years: int
         """
         self._npv_model.set_number_of_years(years)
-        self._update_current_ncs_pathway_npv()
+        self._update_current_activity_npv()
 
     def on_npv_computation_item_changed(self, item: QtGui.QStandardItem):
         """Slot raised when the data of an item has changed.
@@ -333,7 +333,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         column = item.column()
         if column == 1 or column == 2:
             self.update_discounted_value(item.row())
-            self._update_current_ncs_pathway_npv()
+            self._update_current_activity_npv()
 
     def on_total_npv_value_changed(self, value: float):
         """Slot raised when the total NPV has changed either through
@@ -343,12 +343,12 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         :type value: float
         """
         if (
-            not self._current_pathway_identifier is None
+            not self._current_activity_identifier is None
             and self.cb_manual_npv.isChecked()
         ):
-            pathway_npv = self._get_current_ncs_pathway_npv()
-            if pathway_npv is not None:
-                pathway_npv.params.absolute_npv = self.sb_npv.value()
+            activity_npv = self._get_current_activity_npv()
+            if activity_npv is not None:
+                activity_npv.params.absolute = self.sb_npv.value()
 
                 # Update NPV normalization range
                 if self.cb_computed_npv.isChecked():
@@ -410,7 +410,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         """
         # Recompute discounted values
         self.update_all_discounted_values()
-        self._update_current_ncs_pathway_npv()
+        self._update_current_activity_npv()
 
     def compute_npv(self):
         """Computes the NPV based on the total of the discounted value and
@@ -461,43 +461,44 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
         if self.sb_min_normalize.value() > self.sb_max_normalize.value():
             msg = tr(
-                "Minimum normalization value cannot be greater than the maximum normalization value."
+                "Minimum normalization value cannot be greater than the "
+                "maximum normalization value."
             )
             self._show_warning_message(msg)
             status = False
 
         missing_msg_tr = tr("Missing values in Year")
-        for pathway_mapping in self._npv_collection.mappings:
-            # Only validate enabled NCS pathway mappings
-            if not pathway_mapping.enabled:
+        for activity_mapping in self._npv_collection.mappings:
+            # Only validate enabled activity mappings
+            if not activity_mapping.enabled:
                 continue
 
-            pathway_name = pathway_mapping.pathway.name
+            activity_name = activity_mapping.activity.name
 
-            if pathway_mapping.params.manual_npv:
-                if pathway_mapping.params.absolute_npv is None:
+            if activity_mapping.params.manual_npv:
+                if activity_mapping.params.absolute is None:
                     missing_value_tr = tr("Manual NPV is missing")
-                    msg = f"{pathway_name}: {missing_value_tr}."
+                    msg = f"{activity_name}: {missing_value_tr}."
                     self._show_warning_message(msg)
 
             else:
                 # First check if size of yearly rates matches the numbers of years
-                if pathway_mapping.params.years != len(
-                    pathway_mapping.params.yearly_rates
+                if activity_mapping.params.years != len(
+                    activity_mapping.params.yearly_rates
                 ):
                     msg = tr("Size of yearly rates and number of years do not match.")
-                    self._show_warning_message(f"{pathway_name}: {msg}")
+                    self._show_warning_message(f"{activity_name}: {msg}")
                     if status:
                         status = False
                     continue
 
                 missing_value_rows = []
-                for i, rates_info in enumerate(pathway_mapping.params.yearly_rates):
+                for i, rates_info in enumerate(activity_mapping.params.yearly_rates):
                     if len(rates_info) < 3 or None in rates_info:
                         missing_value_rows.append(str(i + 1))
 
                 if len(missing_value_rows) > 0:
-                    msg = f"{pathway_name}: {missing_msg_tr} {', '.join(missing_value_rows)}."
+                    msg = f"{activity_name}: {missing_msg_tr} {', '.join(missing_value_rows)}."
                     self._show_warning_message(msg)
                     if status:
                         status = False
@@ -534,8 +535,8 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         computed.
         """
         if self._npv_collection.update_computed_normalization_range():
-            self.sb_min_normalize.setValue(self._npv_collection.minimum_value)
-            self.sb_max_normalize.setValue(self._npv_collection.maximum_value)
+            self.sb_min_normalize.setValue(self._npv_collection.min_value)
+            self.sb_max_normalize.setValue(self._npv_collection.max_value)
         else:
             self._show_warning_message(
                 tr("Min/max normalization values could not be computed.")
@@ -543,8 +544,8 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
 
     def _update_base_npv_collection(self):
         """Update the NPV collection general values based on the UI values."""
-        self._npv_collection.minimum_value = self.sb_min_normalize.value()
-        self._npv_collection.maximum_value = self.sb_max_normalize.value()
+        self._npv_collection.min_value = self.sb_min_normalize.value()
+        self._npv_collection.max_value = self.sb_max_normalize.value()
         self._npv_collection.use_computed = self.cb_computed_npv.isChecked()
         self._npv_collection.remove_existing = self.cb_remove_disabled.isChecked()
 
@@ -586,11 +587,10 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         self.sb_npv.setValue(0.0)
         self.gp_npv_pwl.setChecked(False)
 
-    def on_pathway_selection_changed(
+    def on_activity_selection_changed(
         self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection
     ):
-        """Slot raised when the selection of NCS pathways
-        changes.
+        """Slot raised when the selection of activities changes.
 
         :param selected: Selected items.
         :type selected: QtCore.QItemSelection
@@ -598,7 +598,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         :param deselected: Deselected items.
         :type deselected: QtCore.QItemSelection
         """
-        self._current_pathway_identifier = None
+        self._current_activity_identifier = None
         self.reset_npv_values()
 
         selected_indexes = selected.indexes()
@@ -608,38 +608,38 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         if not selected_indexes[0].isValid():
             return
 
-        pathway_item = self._ncs_pathway_model.itemFromIndex(selected_indexes[0])
-        pathway_npv = self._npv_collection.pathway_npv(pathway_item.uuid)
-        if pathway_npv is None:
+        activity_item = self._activity_model.itemFromIndex(selected_indexes[0])
+        activity_npv = self._npv_collection.activity_npv(activity_item.uuid)
+        if activity_npv is None:
             return
 
-        self.load_ncs_pathway_npv(pathway_npv)
+        self.load_activity_npv(activity_npv)
 
-    def _get_current_ncs_pathway_npv(self) -> typing.Optional[NcsPathwayNpv]:
-        """Gets the current NCS pathway NPV model.
+    def _get_current_activity_npv(self) -> typing.Optional[ActivityNpv]:
+        """Gets the current activity NPV model.
 
-        :returns: The current NCS pathway NPV model or None if the current
+        :returns: The current NCS activity NPV model or None if the current
         identifier is not set or if no model was found in the collection.
-        :rtype: NcsPathwayNpv
+        :rtype: ActivityNpv
         """
-        if self._current_pathway_identifier is None:
+        if self._current_activity_identifier is None:
             return None
 
-        return self._npv_collection.pathway_npv(self._current_pathway_identifier)
+        return self._npv_collection.activity_npv(self._current_activity_identifier)
 
-    def load_ncs_pathway_npv(self, pathway_npv: NcsPathwayNpv):
-        """Loads NPV parameters for an NCS pathway.
+    def load_activity_npv(self, activity_npv: ActivityNpv):
+        """Loads NPV parameters for an activity.
 
-        :param pathway_npv: Object containing the NPV parameters
-        for an NCS pathway.
-        :type pathway_npv: NcsPathwayNpv
+        :param activity_npv: Container for the NPV parameters
+        for an activity.
+        :type activity_npv: ActivityNpv
         """
-        self._current_pathway_identifier = pathway_npv.pathway_id
-        npv_params = pathway_npv.params
+        self._current_activity_identifier = activity_npv.activity_id
+        npv_params = activity_npv.params
 
-        saved_total_npv = npv_params.absolute_npv
+        saved_total_npv = npv_params.absolute
 
-        self.gp_npv_pwl.setChecked(pathway_npv.enabled)
+        self.gp_npv_pwl.setChecked(activity_npv.enabled)
 
         self.sb_num_years.blockSignals(True)
         self.sb_num_years.setValue(npv_params.years)
@@ -670,21 +670,23 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         if npv_params.manual_npv:
             self.sb_npv.setValue(saved_total_npv)
 
-    def _update_current_ncs_pathway_npv(self):
+    def _update_current_activity_npv(self):
         """Update NPV parameters changes made in the UI to the underlying
-        NCS pathway NPV.
+        activity NPV.
         """
-        if self._current_pathway_identifier is None:
+        if self._current_activity_identifier is None:
             return
 
-        pathway_npv = self._npv_collection.pathway_npv(self._current_pathway_identifier)
+        activity_npv = self._npv_collection.activity_npv(
+            self._current_activity_identifier
+        )
 
-        pathway_npv.params.manual_npv = self.cb_manual_npv.isChecked()
-        pathway_npv.enabled = self.gp_npv_pwl.isChecked()
+        activity_npv.params.manual_npv = self.cb_manual_npv.isChecked()
+        activity_npv.enabled = self.gp_npv_pwl.isChecked()
 
-        if not pathway_npv.params.manual_npv:
-            pathway_npv.params.years = self.sb_num_years.value()
-            pathway_npv.params.discount = self.sb_discount.value()
+        if not activity_npv.params.manual_npv:
+            activity_npv.params.years = self.sb_num_years.value()
+            activity_npv.params.discount = self.sb_discount.value()
 
             yearly_rates = []
             for row in range(self._npv_model.rowCount()):
@@ -699,57 +701,57 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
                 )
                 yearly_rates.append((revenue_value, cost_value, discount_value))
 
-            pathway_npv.params.yearly_rates = yearly_rates
+            activity_npv.params.yearly_rates = yearly_rates
 
         if not self.cb_manual_npv.isChecked() and self._npv is not None:
-            pathway_npv.params.absolute_npv = self._npv
+            activity_npv.params.absolute = self._npv
         else:
-            pathway_npv.params.absolute_npv = self.sb_npv.value()
+            activity_npv.params.absolute = self.sb_npv.value()
 
         # Update NPV normalization range
         if self.cb_computed_npv.isChecked():
             self._compute_min_max_range()
 
-    def selected_ncs_pathway(self) -> typing.Optional[NcsPathway]:
-        """Gets the current selected NCS pathway.
+    def selected_activity(self) -> typing.Optional[Activity]:
+        """Gets the current selected activity.
 
-        :returns: Current selected NCS pathway or None if there is no selection.
-        :rtype: NcsPathway
+        :returns: Current selected activity or None if there is no selection.
+        :rtype: Activity
         """
-        selected_indexes = self.lst_pathways.selectedIndexes()
+        selected_indexes = self.lst_activities.selectedIndexes()
         if len(selected_indexes) == 0:
             return None
 
         if not selected_indexes[0].isValid():
             return None
 
-        pathway_item = self._ncs_pathway_model.itemFromIndex(selected_indexes[0])
+        activity_item = self._activity_model.itemFromIndex(selected_indexes[0])
 
-        return pathway_item.ncs_pathway
+        return activity_item.activity
 
-    def _on_ncs_pathway_npv_groupbox_toggled(self, checked: bool):
+    def _on_activity_npv_groupbox_toggled(self, checked: bool):
         """Slot raised when the NPV PWL groupbox has been enabled or disabled.
 
         :param checked: True if the groupbox is enabled else False.
         :type checked: bool
         """
-        if checked and self._current_pathway_identifier is None:
-            selected_pathway = self.selected_ncs_pathway()
-            if selected_pathway is not None:
+        if checked and self._current_activity_identifier is None:
+            selected_activity = self.selected_activity()
+            if selected_activity is not None:
                 npv_params = NpvParameters(
                     self.DEFAULT_YEARS, self.DEFAULT_DISCOUNT_RATE
                 )
-                pathway_npv = NcsPathwayNpv(npv_params, True, selected_pathway)
-                self._npv_collection.mappings.append(pathway_npv)
-                self._current_pathway_identifier = str(selected_pathway.uuid)
+                activity_npv = ActivityNpv(npv_params, True, selected_activity)
+                self._npv_collection.mappings.append(activity_npv)
+                self._current_activity_identifier = str(selected_activity.uuid)
 
-        elif self._current_pathway_identifier is not None:
+        elif self._current_activity_identifier is not None:
             if not checked:
-                self._update_current_ncs_pathway_npv()
+                self._update_current_activity_npv()
             else:
-                pathway_npv = self._get_current_ncs_pathway_npv()
-                if pathway_npv is not None:
-                    pathway_npv.enabled = self.gp_npv_pwl.isChecked()
+                activity_npv = self._get_current_activity_npv()
+                if activity_npv is not None:
+                    activity_npv.enabled = self.gp_npv_pwl.isChecked()
 
                 # Update NPV normalization range
                 if self.cb_computed_npv.isChecked():
@@ -766,9 +768,9 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
             self.sb_npv.setFocus()
             self.enable_npv_parameters_widgets(False)
 
-            pathway_npv = self._get_current_ncs_pathway_npv()
-            if pathway_npv is not None:
-                pathway_npv.params.manual_npv = self.cb_manual_npv.isChecked()
+            activity_npv = self._get_current_activity_npv()
+            if activity_npv is not None:
+                activity_npv.params.manual_npv = self.cb_manual_npv.isChecked()
 
         else:
             self.sb_npv.setReadOnly(True)

@@ -8,6 +8,7 @@ import typing
 
 from qgis.PyQt import QtCore, QtWidgets
 
+from ...definitions.defaults import YEARS_EXPERIENCE_ACTIVITY_ID
 from ...models.base import LayerModelComponent, ModelComponentType
 from ...models.constant_raster import (
     ConstantRasterComponent,
@@ -20,6 +21,7 @@ from ...models.helpers import (
     constant_raster_collection_to_dict,
     constant_raster_collection_from_dict,
 )
+from ...utils import tr
 
 
 class ConstantRasterWidgetInterface:
@@ -104,28 +106,19 @@ class ConstantRasterWidgetInterface:
         raise NotImplementedError
 
     @classmethod
-    def create_metadata(
-        cls, metadata_id: str, component_type: "ModelComponentType"
-    ) -> "ConstantRasterMetadata":
+    def create_metadata(cls) -> "ConstantRasterMetadata":
         """Creates metadata for this constant raster type.
 
-        Provides default implementation that can be overridden by subclasses.
-        Each widget type should define its own display name, input range,
-        and other metadata properties.
+        Convenience function for returning default metadata for
+        this constant raster type.
 
-        :param metadata_id: Unique identifier for this metadata instance
-        :param component_type: Type of component (ACTIVITY)
-        :returns: ConstantRasterMetadata object
+        Subclasses need to override this function.
+
+        :returns: Metadata definition for the constant raster
+        type.
+        :rtype: ConstantRasterMetadata
         """
-        return ConstantRasterMetadata(
-            id=metadata_id,
-            display_name="Constant Raster",
-            raster_collection=None,
-            serializer=None,
-            deserializer=None,
-            component_type=component_type,
-            input_range=InputRange(min=0.0, max=100.0),
-        )
+        raise NotImplementedError
 
 
 class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
@@ -205,39 +198,35 @@ class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         return ConstantRasterComponent(
             value_info=ConstantRasterInfo(absolute=0.0),  # Default value
             component=model_component,
-            component_type=component_type,
             skip_raster=False,
         )
 
     @classmethod
-    def create_metadata(
-        cls, metadata_id: str, component_type: "ModelComponentType"
-    ) -> "ConstantRasterMetadata":
+    def create_metadata(cls) -> "ConstantRasterMetadata":
         """Create metadata for Years of Experience constant raster type.
 
         Overrides the default implementation to provide specific
         metadata for this widget type.
 
-        :param metadata_id: Unique identifier for this metadata instance
-        :param component_type: Type of component (ACTIVITY)
         :returns: ConstantRasterMetadata object configured for years of experience
         """
         collection = ConstantRasterCollection(
             min_value=0.0,
             max_value=0.0,
-            component_type=component_type,
+            component_type=ModelComponentType.ACTIVITY,
             components=[],
             allowable_max=sys.float_info.max,
             allowable_min=0.0,
+            use_manual=False,
         )
 
         return ConstantRasterMetadata(
-            id=metadata_id,
-            display_name="Years of Experience",
+            id=YEARS_EXPERIENCE_ACTIVITY_ID,
+            display_name=tr("Years of Experience"),
             raster_collection=collection,
             serializer=constant_raster_collection_to_dict,
             deserializer=constant_raster_collection_from_dict,
-            component_type=component_type,
+            component_type=ModelComponentType.ACTIVITY,
             input_range=InputRange(min=0.0, max=100.0),  # 0-100 years
         )
 
@@ -349,51 +338,35 @@ class GenericNumericWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         Creates a component with the configured default value.
         The actual value will be set later when the user enters it in the widget.
         """
-        component_type = ModelComponentType.ACTIVITY
-
         return ConstantRasterComponent(
             value_info=ConstantRasterInfo(absolute=self.default_value),
             component=model_component,
-            component_type=component_type,
             skip_raster=False,
         )
 
     @classmethod
-    def create_metadata(
-        cls,
-        metadata_id: str,
-        component_type: "ModelComponentType",
-        display_name: str,
-        min_value: float,
-        max_value: float,
-        user_defined: bool = True,
-    ) -> "ConstantRasterMetadata":
+    def create_metadata(cls) -> "ConstantRasterMetadata":
         """Create metadata for this generic numeric constant raster type.
 
-        :param metadata_id: Unique identifier for this metadata instance
-        :param component_type: Type of component (ACTIVITY or NCS_PATHWAY)
-        :param display_name: Display name for this constant raster type
-        :param min_value: Minimum input value
-        :param max_value: Maximum input value
-        :param user_defined: Whether this is a user-defined custom type
-        :returns: ConstantRasterMetadata object configured for this type
+        Base class override.
+
+        :returns: ConstantRasterMetadata object configured for this
+        generic type.
+        :rtype: ConstantRasterMetadata
         """
         collection = ConstantRasterCollection(
-            min_value=min_value,
-            max_value=max_value,
-            component_type=component_type,
+            min_value=0.0,
+            max_value=100.0,
+            component_type=ModelComponentType.ACTIVITY,
             components=[],
             allowable_max=sys.float_info.max,
             allowable_min=0.0,
         )
 
         return ConstantRasterMetadata(
-            id=metadata_id,
-            display_name=display_name,
             raster_collection=collection,
             serializer=constant_raster_collection_to_dict,
             deserializer=constant_raster_collection_from_dict,
-            component_type=component_type,
-            input_range=InputRange(min=min_value, max=max_value),
-            user_defined=user_defined,
+            component_type=ModelComponentType.ACTIVITY,
+            user_defined=True,
         )
