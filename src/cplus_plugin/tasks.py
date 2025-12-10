@@ -651,7 +651,7 @@ class ScenarioAnalysisTask(QgsTask):
                     else:
                         self.log_message(
                             f"Replacing nodata value for {pathway.name} pathway layer "
-                            f"to {nodata_value}\n"
+                            f"from {raster_no_data_value} to {nodata_value}\n"
                         )
 
                         output_file = os.path.join(
@@ -917,6 +917,11 @@ class ScenarioAnalysisTask(QgsTask):
         pathways: typing.List[NcsPathway] = []
 
         try:
+            aoi_layer = QgsVectorLayer(studyarea_path, "aoi_layer")
+            if not aoi_layer.isValid():
+                self.log_message(f"Invalid Study Area Layer {studyarea_path}")
+                return False
+
             for activity in self.analysis_activities:
                 if not activity.pathways and (
                     activity.path is None or activity.path == ""
@@ -954,6 +959,38 @@ class ScenarioAnalysisTask(QgsTask):
                         f"Clipping the {pathway.name} pathway layer by "
                         f"the study area layer\n"
                     )
+
+                    if aoi_layer.crs() != pathway_layer.crs:
+                        studyarea_path_reprojected = self.reproject_layer(
+                            studyarea_path, pathway_layer.crs(), is_raster=False
+                        )
+                        if studyarea_path_reprojected and os.path.exists(
+                            studyarea_path_reprojected
+                        ):
+                            aoi_layer = QgsVectorLayer(
+                                studyarea_path_reprojected, "aoi_layer_reprojected"
+                            )
+
+                    # If aoi intersects the path
+                    if not aoi_layer.extent().intersects(pathway_layer.extent()):
+                        self.log_message(
+                            "Skipping clipping pathway, the study area layer extent"
+                            " and the pathway extent do not overlap."
+                        )
+                        continue
+
+                    aoi_extent_area = aoi_layer.extent().area()
+                    pathway_extent_area = pathway_layer.extent().area()
+
+                    area_ratio = aoi_extent_area / pathway_extent_area
+
+                    # If aoi extent is 10 % greater than pathway extent
+                    if abs(area_ratio - 1) < 0.1:
+                        self.log_message(
+                            "Skipping clipping pathway, "
+                            "the study area extent is within 10 percent of the pathway extent"
+                        )
+                        continue
 
                     output_file = os.path.join(
                         clipped_pathways_directory,
@@ -1003,6 +1040,39 @@ class ScenarioAnalysisTask(QgsTask):
                                     f"Priority layer {priority_layer.get('name')} "
                                     f"from pathway {pathway.name} is not valid, "
                                     f"skipping clipping the layer."
+                                )
+                                continue
+
+                            if aoi_layer.crs() != layer.crs:
+                                studyarea_path_reprojected = self.reproject_layer(
+                                    studyarea_path, layer.crs(), is_raster=False
+                                )
+                                if studyarea_path_reprojected and os.path.exists(
+                                    studyarea_path_reprojected
+                                ):
+                                    aoi_layer = QgsVectorLayer(
+                                        studyarea_path_reprojected,
+                                        "aoi_layer_reprojected",
+                                    )
+
+                            # If aoi intersects the path
+                            if not aoi_layer.extent().intersects(layer.extent()):
+                                self.log_message(
+                                    "Skipping clipping PWL, the study area layer extent"
+                                    " and the PWL extent do not overlap."
+                                )
+                                continue
+
+                            aoi_extent_area = aoi_layer.extent().area()
+                            pwl_extent_area = layer.extent().area()
+
+                            area_ratio = aoi_extent_area / pwl_extent_area
+
+                            # If aoi extent is 10 % greater than pathway extent
+                            if abs(area_ratio - 1) < 0.1:
+                                self.log_message(
+                                    "Skipping clipping PWL, "
+                                    "the study area extent is within 10 percent of the PWL extent"
                                 )
                                 continue
 
