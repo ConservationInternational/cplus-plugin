@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 
 """Helper functions for supporting model management."""
-import os
 import sys
-from dataclasses import field, fields
-from datetime import datetime
+from dataclasses import asdict, fields
 import typing
 import uuid
 
@@ -35,18 +33,30 @@ from .base import (
     SpatialExtent,
 )
 from ..definitions.constants import (
+    ABSOLUTE_ATTRIBUTE,
+    ABSOLUTE_NPV_ATTRIBUTE,
     ACTIVITY_IDENTIFIER_PROPERTY,
     ACTIVITY_METRICS_PROPERTY,
-    ABSOLUTE_NPV_ATTRIBUTE,
     ALIGNMENT_ATTRIBUTE,
+    ALLOWABLE_MIN_ATTRIBUTE,
+    ALLOWABLE_MAX_ATTRIBUTE,
     AUTO_CALCULATED_ATTRIBUTE,
+    BASE_NAME_ATTRIBUTE,
+    COMPONENT_UUID_ATTRIBUTE,
+    COMPONENT_ID_ATTRIBUTE,
+    COMPONENT_TYPE_ATTRIBUTE,
+    COMPONENTS_ATTRIBUTE,
     COMPUTED_ATTRIBUTE,
     CURRENT_PROFILE_PROPERTY,
     DISCOUNT_ATTRIBUTE,
+    DISPLAY_NAME_ATTRIBUTE,
     DESCRIPTION_ATTRIBUTE,
     ENABLED_ATTRIBUTE,
     EXPRESSION_ATTRIBUTE,
     HEADER_ATTRIBUTE,
+    ID_ATTRIBUTE,
+    INPUT_RANGE_ATTRIBUTE,
+    LAST_UPDATED_ATTRIBUTE,
     LAST_UPDATED_DATE_ATTRIBUTE,
     LAYER_TYPE_ATTRIBUTE,
     MANUAL_NPV_ATTRIBUTE,
@@ -71,6 +81,7 @@ from ..definitions.constants import (
     PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
     PROFILES_ATTRIBUTE,
+    RASTER_COLLECTION_ATTRIBUTE,
     REMOVE_EXISTING_ATTRIBUTE,
     RESULT_COLLECTION_ATTRIBUTE,
     STYLE_ATTRIBUTE,
@@ -78,26 +89,16 @@ from ..definitions.constants import (
     UUID_ATTRIBUTE,
     YEARS_ATTRIBUTE,
     YEARLY_RATES_ATTRIBUTE,
-    COMPONENT_UUID_ATTRIBUTE,
-    COMPONENT_ID_ATTRIBUTE,
-    COMPONENT_TYPE_ATTRIBUTE,
     SKIP_RASTER_ATTRIBUTE,
-    ALLOWABLE_MIN_ATTRIBUTE,
-    ALLOWABLE_MAX_ATTRIBUTE,
-    LAST_UPDATED_ATTRIBUTE,
-    COMPONENTS_ATTRIBUTE,
-    ABSOLUTE_VALUE_ATTRIBUTE,
     VALUE_INFO_ATTRIBUTE,
     NORMALIZED_ATTRIBUTE,
-    ABSOLUTE_ATTRIBUTE,
     MIN_VALUE_ATTRIBUTE_KEY,
     MAX_VALUE_ATTRIBUTE_KEY,
     PREFIX_ATTRIBUTE,
-    BASE_NAME_ATTRIBUTE,
     SUFFIX_ATTRIBUTE,
 )
 from ..definitions.defaults import DEFAULT_CRS_ID, QGIS_GDAL_PROVIDER
-from .financial import NcsPathwayNpv, NcsPathwayNpvCollection, NpvParameters
+from .financial import ActivityNpv, ActivityNpvCollection, NpvParameters
 from .report import (
     ActivityColumnMetric,
     MetricColumn,
@@ -111,6 +112,7 @@ from .constant_raster import (
     ConstantRasterComponent,
     ConstantRasterInfo,
     ConstantRasterMetadata,
+    InputRange,
 )
 from .base import ModelComponentType
 
@@ -552,168 +554,6 @@ def extent_to_project_crs_extent(
         log(f"{e}, using the default input extent.")
 
     return input_rect
-
-
-def ncs_pathway_npv_to_dict(pathway_npv: NcsPathwayNpv) -> dict:
-    """Converts an NcsPathwayNpv object to a dictionary representation.
-
-    :returns: A dictionary containing attribute name-value pairs.
-    :rtype: dict
-    """
-    return {
-        YEARS_ATTRIBUTE: pathway_npv.params.years,
-        DISCOUNT_ATTRIBUTE: pathway_npv.params.discount,
-        ABSOLUTE_NPV_ATTRIBUTE: pathway_npv.params.absolute_npv,
-        NORMALIZED_NPV_ATTRIBUTE: pathway_npv.params.normalized_npv,
-        YEARLY_RATES_ATTRIBUTE: pathway_npv.params.yearly_rates,
-        MANUAL_NPV_ATTRIBUTE: pathway_npv.params.manual_npv,
-        ENABLED_ATTRIBUTE: pathway_npv.enabled,
-        NCS_PATHWAY_IDENTIFIER_PROPERTY: pathway_npv.pathway_id,
-    }
-
-
-def create_ncs_pathway_npv(pathway_npv_dict: dict) -> typing.Optional[NcsPathwayNpv]:
-    """Creates an NcsPathwayNpv object from the equivalent dictionary
-    representation.
-
-    Please note that the `pathway` attribute of the `NcsPathwayNpv` object will be
-    `None` hence, will have to be set manually by extracting the corresponding `NcsPathway`
-    from the activity UUID.
-
-    :param pathway_npv_dict: Dictionary containing information for deserializing
-    to the NcsPathwayNpv object.
-    :type pathway_npv_dict: dict
-
-    :returns: NcsPathwayNpv deserialized from the dictionary representation.
-    :rtype: NcsPathwayNpv
-    """
-    args = []
-    if YEARS_ATTRIBUTE in pathway_npv_dict:
-        args.append(pathway_npv_dict[YEARS_ATTRIBUTE])
-
-    if DISCOUNT_ATTRIBUTE in pathway_npv_dict:
-        args.append(pathway_npv_dict[DISCOUNT_ATTRIBUTE])
-
-    if len(args) < 2:
-        return None
-
-    kwargs = {}
-
-    if ABSOLUTE_NPV_ATTRIBUTE in pathway_npv_dict:
-        kwargs[ABSOLUTE_NPV_ATTRIBUTE] = pathway_npv_dict[ABSOLUTE_NPV_ATTRIBUTE]
-
-    if NORMALIZED_NPV_ATTRIBUTE in pathway_npv_dict:
-        kwargs[NORMALIZED_NPV_ATTRIBUTE] = pathway_npv_dict[NORMALIZED_NPV_ATTRIBUTE]
-
-    if MANUAL_NPV_ATTRIBUTE in pathway_npv_dict:
-        kwargs[MANUAL_NPV_ATTRIBUTE] = pathway_npv_dict[MANUAL_NPV_ATTRIBUTE]
-
-    npv_params = NpvParameters(*args, **kwargs)
-
-    if YEARLY_RATES_ATTRIBUTE in pathway_npv_dict:
-        yearly_rates = pathway_npv_dict[YEARLY_RATES_ATTRIBUTE]
-        npv_params.yearly_rates = yearly_rates
-
-    npv_enabled = False
-    if ENABLED_ATTRIBUTE in pathway_npv_dict:
-        npv_enabled = pathway_npv_dict[ENABLED_ATTRIBUTE]
-
-    return NcsPathwayNpv(npv_params, npv_enabled, None)
-
-
-def ncs_pathway_npv_collection_to_dict(
-    pathway_collection: NcsPathwayNpvCollection,
-) -> dict:
-    """Converts the NCS pathway NPV collection object to the
-    dictionary representation.
-
-    :returns: A dictionary containing the attribute name-value pairs
-    of an NCS pathway NPV collection object
-    :rtype: dict
-    """
-    npv_collection_dict = {
-        MIN_VALUE_ATTRIBUTE: pathway_collection.minimum_value,
-        MAX_VALUE_ATTRIBUTE: pathway_collection.maximum_value,
-        COMPUTED_ATTRIBUTE: pathway_collection.use_computed,
-        REMOVE_EXISTING_ATTRIBUTE: pathway_collection.remove_existing,
-    }
-
-    mapping_dict = list(map(ncs_pathway_npv_to_dict, pathway_collection.mappings))
-    npv_collection_dict[NPV_MAPPINGS_ATTRIBUTE] = mapping_dict
-
-    return npv_collection_dict
-
-
-def create_ncs_pathway_npv_collection(
-    pathway_collection_dict: dict, reference_pathways: typing.List[NcsPathway] = None
-) -> typing.Optional[NcsPathwayNpvCollection]:
-    """Creates an NCS pathway NPV collection object from the corresponding
-    dictionary representation.
-
-    :param pathway_collection_dict: Dictionary representation containing
-    information of an NCS pathway NPV collection object.
-    :type pathway_collection_dict: dict
-
-    :param reference_pathways: Optional list of NCS pathways that will be
-    used to lookup  when deserializing the NcsPathwayNpv objects.
-    :type reference_pathways: list
-
-    :returns: NCS pathway NPV collection object from the dictionary
-    representation or None if the source dictionary is invalid.
-    :rtype: NcsPathwayNpvCollection
-    """
-    if len(pathway_collection_dict) == 0:
-        return None
-
-    ref_pathways_by_uuid = {
-        str(pathway.uuid): pathway for pathway in reference_pathways
-    }
-
-    args = []
-
-    # Minimum value
-    if MIN_VALUE_ATTRIBUTE in pathway_collection_dict:
-        args.append(pathway_collection_dict[MIN_VALUE_ATTRIBUTE])
-
-    # Maximum value
-    if MAX_VALUE_ATTRIBUTE in pathway_collection_dict:
-        args.append(pathway_collection_dict[MAX_VALUE_ATTRIBUTE])
-
-    if len(args) < 2:
-        return None
-
-    pathway_npv_collection = NcsPathwayNpvCollection(*args)
-
-    # Use computed
-    if COMPUTED_ATTRIBUTE in pathway_collection_dict:
-        use_computed = pathway_collection_dict[COMPUTED_ATTRIBUTE]
-        pathway_npv_collection.use_computed = use_computed
-
-    # Remove existing
-    if REMOVE_EXISTING_ATTRIBUTE in pathway_collection_dict:
-        remove_existing = pathway_collection_dict[REMOVE_EXISTING_ATTRIBUTE]
-        pathway_npv_collection.remove_existing = remove_existing
-
-    if NPV_MAPPINGS_ATTRIBUTE in pathway_collection_dict:
-        mappings_dict = pathway_collection_dict[NPV_MAPPINGS_ATTRIBUTE]
-        npv_mappings = []
-        for md in mappings_dict:
-            pathway_npv = create_ncs_pathway_npv(md)
-            if pathway_npv is None:
-                continue
-
-            # Get the corresponding NCS pathway from the unique
-            # identifier
-            if NCS_PATHWAY_IDENTIFIER_PROPERTY in md:
-                pathway_id = md[NCS_PATHWAY_IDENTIFIER_PROPERTY]
-                if pathway_id in ref_pathways_by_uuid:
-                    ref_pathway = ref_pathways_by_uuid[pathway_id]
-                    pathway_npv.pathway = ref_pathway
-                    npv_mappings.append(pathway_npv)
-
-        pathway_npv_collection.mappings = npv_mappings
-
-    return pathway_npv_collection
 
 
 def layer_from_scenario_result(
@@ -1264,7 +1104,8 @@ def constant_raster_component_to_dict(
 
 
 def create_constant_raster_component(
-    source_dict: dict, component_lookup: typing.Callable[[str], LayerModelComponent]
+    source_dict: dict,
+    component_lookup: typing.Callable[[str], LayerModelComponent] = None,
 ) -> ConstantRasterComponent:
     """Factory method for creating a ConstantRasterComponent from dictionary.
 
@@ -1279,7 +1120,7 @@ def create_constant_raster_component(
     """
     component = None
     component_uuid = source_dict.get(COMPONENT_UUID_ATTRIBUTE)
-    if component_uuid:
+    if component_uuid and component_lookup:
         component = component_lookup(component_uuid)
 
     value_info_data = source_dict.get(VALUE_INFO_ATTRIBUTE, {})
@@ -1288,11 +1129,6 @@ def create_constant_raster_component(
         if value_info_data
         else ConstantRasterInfo()
     )
-
-    component_type_str = source_dict.get(
-        COMPONENT_TYPE_ATTRIBUTE, ModelComponentType.UNKNOWN.value
-    )
-    component_type = ModelComponentType.from_string(component_type_str)
 
     return ConstantRasterComponent(
         value_info=value_info,
@@ -1303,28 +1139,237 @@ def create_constant_raster_component(
         path=source_dict.get(PATH_ATTRIBUTE, ""),
         skip_raster=bool(source_dict.get(SKIP_RASTER_ATTRIBUTE, False)),
         enabled=bool(source_dict.get(ENABLED_ATTRIBUTE, True)),
-        component_type=component_type,
     )
 
 
-def constant_raster_metadata_to_dict(metadata: ConstantRasterMetadata) -> dict:
+def constant_raster_metadata_to_dict(
+    metadata: ConstantRasterMetadata, collection_serializer: typing.Callable = None
+) -> dict:
     """Creates a dictionary containing attribute name-value pairs
     from a ConstantRasterMetadata object.
 
     :param metadata: ConstantRasterMetadata instance to serialize
     :type metadata: ConstantRasterMetadata
 
+    :param collection_serializer: Callable for serializing. If not specified,
+    an empty dictionary will be used.
+    :type collection_serializer: typing.Callable
+
     :returns: Dictionary representation of the metadata
     :rtype: dict
     """
-    collection_dict = constant_raster_collection_to_dict(metadata.raster_collection)
+
+    collection_dict = (
+        collection_serializer(metadata.raster_collection)
+        if collection_serializer
+        else {}
+    )
 
     return {
-        "id": metadata.id,
+        ID_ATTRIBUTE: metadata.id,
         DISPLAY_NAME_ATTRIBUTE: metadata.display_name,
         RASTER_COLLECTION_ATTRIBUTE: collection_dict,
         COMPONENT_TYPE_ATTRIBUTE: (
             metadata.component_type.value if metadata.component_type else None
         ),
         INPUT_RANGE_ATTRIBUTE: list(metadata.input_range),
+        USER_DEFINED_ATTRIBUTE: metadata.user_defined,
     }
+
+
+def constant_raster_metadata_from_dict(
+    metadata_dict,
+    collection_deserializer: typing.Callable = None,
+    activities: typing.List[Activity] = None,
+) -> typing.Optional[ConstantRasterMetadata]:
+    """Creates a constant raster metadata object from the dictionary
+    representation.
+
+    :param metadata_dict: Dictionary representation of the metadata object.
+    :type metadata_dict: dict
+
+    :param collection_deserializer: Callable for deserializing. If not specified,
+    the raster collection will be None.
+    :type collection_deserializer: typing.Callable
+
+    :param activities: List of activities to lookup and link to constant raster component.
+    :type activities: typing.List[Activity]
+
+    :returns: Constant raster metadata object or None if the dictionary is empty.
+    :rtype: ConstantRasterMetadata
+    """
+    if not metadata_dict:
+        return None
+
+    kwargs = {}
+
+    if ID_ATTRIBUTE in metadata_dict:
+        kwargs[ID_ATTRIBUTE] = metadata_dict[ID_ATTRIBUTE]
+
+    if DISPLAY_NAME_ATTRIBUTE in metadata_dict:
+        kwargs[DISPLAY_NAME_ATTRIBUTE] = metadata_dict[DISPLAY_NAME_ATTRIBUTE]
+
+    if USER_DEFINED_ATTRIBUTE in metadata_dict:
+        kwargs[USER_DEFINED_ATTRIBUTE] = metadata_dict[USER_DEFINED_ATTRIBUTE]
+
+    if COMPONENT_TYPE_ATTRIBUTE in metadata_dict:
+        kwargs[COMPONENT_TYPE_ATTRIBUTE] = ModelComponentType.from_string(
+            metadata_dict[COMPONENT_TYPE_ATTRIBUTE]
+        )
+
+    if INPUT_RANGE_ATTRIBUTE in metadata_dict:
+        input_range = metadata_dict[INPUT_RANGE_ATTRIBUTE]
+        kwargs[INPUT_RANGE_ATTRIBUTE] = InputRange(input_range[0], input_range[1])
+
+    raster_collection = None
+    if RASTER_COLLECTION_ATTRIBUTE in metadata_dict and collection_deserializer:
+        raster_collection = collection_deserializer(
+            metadata_dict[RASTER_COLLECTION_ATTRIBUTE], activities
+        )
+    kwargs[RASTER_COLLECTION_ATTRIBUTE] = raster_collection
+
+    return ConstantRasterMetadata(**kwargs)
+
+
+def activity_npv_to_dict(activity_npv: ActivityNpv) -> dict:
+    """Converts an ActivityNpv object to a dictionary representation.
+
+    :returns: A dictionary containing attribute name-value pairs.
+    :rtype: dict
+    """
+    # NPV parameters
+    npv_params_dict = constant_raster_info_to_dict(activity_npv.value_info)
+    npv_params_dict[YEARS_ATTRIBUTE] = activity_npv.params.years
+    npv_params_dict[DISCOUNT_ATTRIBUTE] = activity_npv.params.discount
+    npv_params_dict[YEARLY_RATES_ATTRIBUTE] = activity_npv.params.yearly_rates
+    npv_params_dict[MANUAL_NPV_ATTRIBUTE] = activity_npv.params.manual_npv
+
+    # Activity NPV
+    raster_component_dict = constant_raster_component_to_dict(activity_npv)
+
+    # Replace value info
+    raster_component_dict[VALUE_INFO_ATTRIBUTE] = npv_params_dict
+
+    return raster_component_dict
+
+
+def create_activity_npv(activity_npv_dict: dict) -> typing.Optional[ActivityNpv]:
+    """Creates an ActivityNpv object from the equivalent dictionary
+    representation.
+
+    Please note that the `activity` attribute will be
+    `None` hence, will have to be set manually by extracting the
+    corresponding `Activity` from the activity UUID.
+
+    :param activity_npv_dict: Dictionary containing information for deserializing
+    the ActivityNpv object.
+    :type activity_npv_dict: dict
+
+    :returns: ActivityNpv deserialized from the dictionary representation.
+    :rtype: ActivityNpv
+    """
+    kwargs = {}
+    npv_params = None
+    if VALUE_INFO_ATTRIBUTE in activity_npv_dict:
+        npv_params_dict = activity_npv_dict[VALUE_INFO_ATTRIBUTE]
+        if YEARS_ATTRIBUTE in npv_params_dict:
+            kwargs[YEARS_ATTRIBUTE] = npv_params_dict[YEARS_ATTRIBUTE]
+
+        if DISCOUNT_ATTRIBUTE in npv_params_dict:
+            kwargs[DISCOUNT_ATTRIBUTE] = npv_params_dict[DISCOUNT_ATTRIBUTE]
+
+        if ABSOLUTE_NPV_ATTRIBUTE in npv_params_dict:
+            kwargs[ABSOLUTE_NPV_ATTRIBUTE] = npv_params_dict[ABSOLUTE_NPV_ATTRIBUTE]
+
+        if NORMALIZED_NPV_ATTRIBUTE in npv_params_dict:
+            kwargs[NORMALIZED_NPV_ATTRIBUTE] = npv_params_dict[NORMALIZED_NPV_ATTRIBUTE]
+
+        if MANUAL_NPV_ATTRIBUTE in npv_params_dict:
+            kwargs[MANUAL_NPV_ATTRIBUTE] = npv_params_dict[MANUAL_NPV_ATTRIBUTE]
+
+        if YEARLY_RATES_ATTRIBUTE in npv_params_dict:
+            kwargs[YEARLY_RATES_ATTRIBUTE] = npv_params_dict[YEARLY_RATES_ATTRIBUTE]
+
+        npv_params = NpvParameters(**kwargs)
+
+    constant_raster_component = create_constant_raster_component(activity_npv_dict)
+    npv_kwargs = asdict(constant_raster_component)
+    npv_kwargs[VALUE_INFO_ATTRIBUTE] = npv_params
+
+    return ActivityNpv(**npv_kwargs)
+
+
+def activity_npv_collection_to_dict(
+    activity_collection: ActivityNpvCollection,
+) -> dict:
+    """Converts the activity NPV collection object to the
+    dictionary representation.
+
+    :param activity_collection: Activity collection to serialize to a
+    dictionary.
+    :type activity_collection: ActivityNpvCollection
+
+    :returns: A dictionary containing the attribute name-value pairs
+    of an activity NPV collection object
+    :rtype: dict
+    """
+    if activity_collection is None:
+        return {}
+
+    activity_collection_dict = constant_raster_collection_to_dict(activity_collection)
+    mapping_dict = list(map(activity_npv_to_dict, activity_collection.mappings))
+    activity_collection_dict[COMPONENTS_ATTRIBUTE] = mapping_dict
+
+    return activity_collection_dict
+
+
+def create_activity_npv_collection(
+    activity_collection_dict: dict, reference_activities: typing.List[Activity] = None
+) -> typing.Optional[ActivityNpvCollection]:
+    """Creates an activity NPV collection object from the corresponding
+    dictionary representation.
+
+    :param activity_collection_dict: Dictionary representation containing
+    information of an activity NPV collection object.
+    :type activity_collection_dict: dict
+
+    :param reference_activities: Optional list of activities that will be
+    used to lookup  when deserializing the ActivityNpv objects.
+    :type reference_activities: list
+
+    :returns: Activity NPV collection object from the dictionary
+    representation or None if the source dictionary is invalid.
+    :rtype: ActivityNpvCollection
+    """
+    if not activity_collection_dict:
+        return None
+
+    ref_activities_by_uuid = {
+        str(activity.uuid): activity for activity in reference_activities
+    }
+
+    raster_collection = constant_raster_collection_from_dict(
+        activity_collection_dict, reference_activities
+    )
+    kwargs = asdict(raster_collection)
+
+    if COMPONENTS_ATTRIBUTE in activity_collection_dict:
+        mappings_dict = activity_collection_dict[COMPONENTS_ATTRIBUTE]
+        npv_mappings = []
+        for md in mappings_dict:
+            activity_npv = create_activity_npv(md)
+            if activity_npv is None:
+                continue
+
+            # Get the corresponding activity from the unique
+            # identifier
+            if COMPONENT_ID_ATTRIBUTE in md:
+                activity_id = md[COMPONENT_ID_ATTRIBUTE]
+                if activity_id in ref_activities_by_uuid:
+                    activity = ref_activities_by_uuid[activity_id]
+                    activity_npv.activity = activity
+                    npv_mappings.append(activity_npv)
+
+        kwargs[COMPONENTS_ATTRIBUTE] = npv_mappings
+
+    return ActivityNpvCollection(**kwargs)

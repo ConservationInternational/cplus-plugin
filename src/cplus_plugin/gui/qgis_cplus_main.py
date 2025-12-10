@@ -87,7 +87,7 @@ from ..models.base import (
     PriorityLayerType,
     AreaOfInterestSource,
 )
-from ..models.financial import NcsPathwayNpv
+from ..models.financial import ActivityNpv
 from ..conf import settings_manager, Settings
 
 from ..lib.financials import create_npv_pwls
@@ -437,7 +437,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.remove_group_btn.clicked.connect(self.remove_priority_group)
 
         # Priority layers buttons
-        self.new_financial_pwl_btn.setIcon(FileUtils.get_icon("mActionNewMap.svg"))
         self.new_constant_raster_pwl_btn.setIcon(
             FileUtils.get_icon("mActionNewMap.svg")
         )
@@ -448,7 +447,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             FileUtils.get_icon("mActionAddVectorTileLayer.svg")
         )
 
-        self.new_financial_pwl_btn.clicked.connect(self.on_manage_npv_pwls)
         self.new_constant_raster_pwl_btn.clicked.connect(
             self.on_manage_constant_raster_pwls
         )
@@ -1054,98 +1052,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """Opens the user documentation for the plugin in a browser"""
         open_documentation(USER_DOCUMENTATION_SITE)
 
-    def on_manage_npv_pwls(self):
-        """Slot raised to show the NPV PWL manager dialog."""
-        # Show NPV PWL manager dialog
-        npv_dialog = NpvPwlManagerDialog(parent=self)
-        if npv_dialog.exec_() == QtWidgets.QDialog.Accepted:
-            # Process NPV collection if available
-            npv_collection = npv_dialog.npv_collection
-            if npv_collection:
-                self.npv_processing_context = QgsProcessingContext()
-                self.npv_feedback = QgsProcessingFeedback(False)
-                self.npv_multi_step_feedback = QgsProcessingMultiStepFeedback(
-                    len(npv_collection.mappings), self.npv_feedback
-                )
-
-                # Get CRS and pixel size from at least one of the
-                # NCS pathways in the collection.
-                if len(npv_collection.mappings) == 0:
-                    log(
-                        message=tr(
-                            "No NPV mappings to extract the CRS and pixel size."
-                        ),
-                        info=False,
-                    )
-                    return
-
-                reference_layer = None
-                for pathway_npv in npv_collection.mappings:
-                    if pathway_npv.pathway is None:
-                        continue
-                    else:
-                        if pathway_npv.pathway.is_valid():
-                            reference_ncs_pathway = pathway_npv.pathway
-                            reference_layer = reference_ncs_pathway.to_map_layer()
-                            break
-
-                if reference_layer is None:
-                    # Attempt to get reference layer from the snapping layer
-                    snap_layer_path = settings_manager.get_value(
-                        Settings.SNAP_LAYER, default="", setting_type=str
-                    )
-                    reference_layer = QgsRasterLayer(snap_layer_path, "reference_layer")
-                    if not reference_layer.isValid():
-                        log(
-                            message=tr(
-                                "There is no valid reference layer to extract the pixel size."
-                            ),
-                            info=False,
-                        )
-                        return
-
-                reference_crs = self.crs_selector.crs()
-                reference_pixel_size = reference_layer.rasterUnitsPerPixelX()
-
-                # Get the reference extent
-                source_extent = self.extent_box.outputExtent()
-                source_crs = (
-                    self.extent_box.outputCrs()
-                    or QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
-                )
-
-                if self.can_clip_to_studyarea():
-                    studyarea_path = self.get_studyarea_path()
-                    studyarea_layer = QgsVectorLayer(studyarea_path, "studyarea")
-                    if studyarea_layer.isValid():
-                        source_extent = studyarea_layer.extent()
-                        source_crs = studyarea_layer.crs()
-
-                reference_extent = self.transform_extent(
-                    source_extent, source_crs, reference_crs
-                )
-                reference_extent_str = (
-                    f"{reference_extent.xMinimum()!s},"
-                    f"{reference_extent.xMaximum()!s},"
-                    f"{reference_extent.yMinimum()!s},"
-                    f"{reference_extent.yMaximum()!s}"
-                )
-
-                self.npv_progress_dialog = NpvPwlProgressDialog(self, self.npv_feedback)
-                self.npv_progress_dialog.show()
-
-                create_npv_pwls(
-                    npv_collection,
-                    self.npv_processing_context,
-                    self.npv_multi_step_feedback,
-                    self.npv_feedback,
-                    reference_crs.authid(),
-                    reference_pixel_size,
-                    reference_extent_str,
-                    self.on_npv_pwl_created,
-                    self.on_npv_pwl_removed,
-                )
-
     def on_manage_constant_raster_pwls(self):
         """Slot raised to show the Constant Raster manager dialog."""
         # Show Constant Raster manager dialog
@@ -1283,7 +1189,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def on_npv_pwl_created(
         self,
-        pathway_npv: NcsPathwayNpv,
+        pathway_npv: ActivityNpv,
         npv_pwl_path: str,
         algorithm: QgsProcessingAlgorithm,
         context: QgsProcessingContext,
@@ -1293,7 +1199,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         raster layer has been created.
 
         :param pathway_npv: NPV mapping for an NCS pathway.
-        :type pathway_npv: NcsPathwayNpv
+        :type pathway_npv: ActivityNpv
 
         :param npv_pwl_path: Absolute file path of the created NPV PWL.
         :type npv_pwl_path: str

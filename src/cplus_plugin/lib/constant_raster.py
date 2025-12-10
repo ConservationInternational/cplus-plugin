@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Processing utilities for constant rasters."""
 
+import json
 import os
 import typing
 from datetime import datetime
@@ -31,15 +32,16 @@ from ..utils import (
     log,
     tr,
 )
-from ..conf import settings_manager
+from ..conf import settings_manager, Settings
 from ..models.helpers import (
-    constant_raster_collection_to_dict,
-    constant_raster_collection_from_dict,
+    constant_raster_metadata_from_dict,
+    constant_raster_metadata_to_dict,
 )
 from ..definitions.constants import (
     COMPONENT_ID_ATTRIBUTE,
     COMPONENT_UUID_ATTRIBUTE,
     COMPONENTS_ATTRIBUTE,
+    ID_ATTRIBUTE,
     PATH_ATTRIBUTE,
 )
 
@@ -479,6 +481,11 @@ class ConstantRasterRegistry:
         self._metadata_store: typing.Dict[str, ConstantRasterMetadata] = {}
         self._custom_type_definitions: typing.List[dict] = []
 
+        # We keep track of known serializer/deserializer pairs by
+        # metadata id so we can reconstruct collections during load
+        self._serializers: typing.Dict[str, typing.Callable] = {}
+        self._deserializers: typing.Dict[str, typing.Callable] = {}
+
     def add_metadata(self, metadata: ConstantRasterMetadata) -> bool:
         """Add constant raster metadata to the registry.
 
@@ -487,7 +494,14 @@ class ConstantRasterRegistry:
         """
         if metadata.id in self._metadata_store:
             return False
+
         self._metadata_store[metadata.id] = metadata
+
+        # Register serializer/deserializer references for reconstruction
+        if metadata.serializer:
+            self._serializers[metadata.id] = metadata.serializer
+        if metadata.deserializer:
+            self._deserializers[metadata.id] = metadata.deserializer
         return True
 
     def metadata_ids(self) -> typing.List[str]:
@@ -502,14 +516,21 @@ class ConstantRasterRegistry:
         :param metadata_identifier: Identifier for the metadata to retrieve
         :returns: ConstantRasterMetadata if found, None otherwise
         """
-        try:
-            return self._metadata_store.get(metadata_identifier)
-        except Exception as e:
-            log(
-                f"Error retrieving metadata by ID '{metadata_identifier}': {str(e)}",
-                info=False,
-            )
+        if metadata_identifier not in self._metadata_store:
             return None
+
+        return self._metadata_store.get(metadata_identifier)
+
+    def has_metadata(self, metadata_id: str) -> bool:
+        """Check if the registry has a metadata item with the given identifier.
+
+        :param metadata_id: Identifier of the metadata item.
+        :type metadata_id: str
+
+        :returns: True if the metadata exists in the collection else False.
+        :rtype: bool
+        """
+        return True if self.metadata_by_id(metadata_id) else False
 
     def metadata_by_component_type(
         self, component_type: "ModelComponentType"
@@ -640,19 +661,20 @@ class ConstantRasterRegistry:
         Uses metadata.serializer if provided, otherwise uses default serializer.
         Also saves custom type definitions.
         """
+        metadata_collection = []
         for metadata_id, metadata in self._metadata_store.items():
-            if metadata.raster_collection:
-                # Use custom serializer if provided, otherwise use default
-                if metadata.serializer:
-                    collection_data = metadata.serializer(metadata.raster_collection)
-                else:
-                    collection_data = constant_raster_collection_to_dict(
-                        metadata.raster_collection
-                    )
+            # choose serializer - registered one first, then metadata-level one
+            serializer = self._serializers.get(metadata_id) or getattr(
+                metadata, "serializer", None
+            )
+            if metadata.raster_collection is not None and serializer:
+                metadata_dict = constant_raster_metadata_to_dict(metadata, serializer)
+                metadata_collection.append(metadata_dict)
 
-                settings_manager.save_constant_raster_collection(
-                    metadata_id, collection_data
-                )
+        # Save collection
+        settings_manager.set_value(
+            Settings.CONSTANT_RASTER_METADATA_REGISTRY, json.dumps(metadata_collection)
+        )
 
         # Save custom type definitions
         settings_manager.save_custom_constant_raster_types(
@@ -665,75 +687,54 @@ class ConstantRasterRegistry:
         Uses metadata.deserializer if provided, otherwise uses default deserializer.
         Also loads custom type definitions.
         """
-        for metadata_id in settings_manager.get_all_constant_raster_metadata_ids():
-            if metadata_id in self._metadata_store:
-                try:
-                    collection_data = settings_manager.load_constant_raster_collection(
-                        metadata_id
-                    )
-                    if not collection_data:
-                        continue
+        self._metadata_store = {}
+        self._custom_type_definitions = []
 
-                    metadata = self._metadata_store[metadata_id]
+        metadata_registry = settings_manager.get_value(
+            Settings.CONSTANT_RASTER_METADATA_REGISTRY
+        )
+        metadata_collection = json.loads(metadata_registry) if metadata_registry else []
 
-                    if metadata.raster_collection is not None:
-                        # Get all activities for reference
-                        model_components = settings_manager.get_all_activities()
+        activities = settings_manager.get_all_activities()
 
-                        # Use custom deserializer if provided, otherwise use default
-                        if metadata.deserializer:
-                            loaded_collection = metadata.deserializer(
-                                collection_data, model_components
-                            )
-                        else:
-                            loaded_collection = constant_raster_collection_from_dict(
-                                collection_data, model_components
-                            )
+        for metadata_dict in metadata_collection:
+            metadata_id = metadata_dict.get(ID_ATTRIBUTE)
+            if not metadata_id:
+                log("Skipping metadata entry with no id.", info=False)
+                continue
 
-                        if loaded_collection:
-                            # Copy values to existing collection
-                            metadata.raster_collection.min_value = (
-                                loaded_collection.min_value
-                            )
-                            metadata.raster_collection.max_value = (
-                                loaded_collection.max_value
-                            )
-                            metadata.raster_collection.allowable_min = (
-                                loaded_collection.allowable_min
-                            )
-                            metadata.raster_collection.allowable_max = (
-                                loaded_collection.allowable_max
-                            )
-                            metadata.raster_collection.skip_raster = (
-                                loaded_collection.skip_raster
-                            )
-                            metadata.raster_collection.last_updated = (
-                                loaded_collection.last_updated
-                            )
-                            metadata.raster_collection.components = (
-                                loaded_collection.components
-                            )
+            # Prefer registry-registered deserializer, fall back to None
+            deserializer = self._deserializers.get(metadata_id)
+            serializer = self._serializers.get(metadata_id)
+            metadata = None
+            try:
+                metadata = constant_raster_metadata_from_dict(
+                    metadata_dict, deserializer, activities
+                )
+            except Exception as exc:
+                log(
+                    f"Failed to create metadata object from dict for id={metadata_id}: {exc}",
+                    info=False,
+                )
+                continue
 
-                            # Store saved UUIDs for later population
-                            components_data = collection_data.get(
-                                COMPONENTS_ATTRIBUTE, []
-                            )
-                            for idx, saved_component in enumerate(components_data):
-                                if idx < len(metadata.raster_collection.components):
-                                    component = metadata.raster_collection.components[
-                                        idx
-                                    ]
-                                    saved_uuid = saved_component.get(
-                                        COMPONENT_UUID_ATTRIBUTE
-                                    ) or saved_component.get(COMPONENT_ID_ATTRIBUTE)
-                                    if saved_uuid:
-                                        component._saved_component_uuid = saved_uuid
+            if metadata is None:
+                log(
+                    f"Constant raster metadata is None for id={metadata_id}", info=False
+                )
+                continue
 
-                except Exception as e:
-                    log(
-                        f"Error loading constant raster state for {metadata_id}: {str(e)}",
-                        info=False,
-                    )
+            # Patch serializers
+            metadata.deserializer = deserializer
+            metadata.serializer = serializer
+
+            self.add_metadata(metadata)
+
+            # Ensure registry maps are consistent with metadata object
+            if getattr(metadata, "serializer", None):
+                self._serializers[metadata_id] = metadata.serializer
+            if getattr(metadata, "deserializer", None):
+                self._deserializers[metadata_id] = metadata.deserializer
 
         # Load custom type definitions
         self._custom_type_definitions = (
@@ -751,6 +752,43 @@ class ConstantRasterRegistry:
             return True
         return False
 
+    def register_serializers(
+        self,
+        metadata_id: str,
+        serializer: typing.Callable,
+        deserializer: typing.Callable,
+    ):
+        """Register serializer/deserializer pair for the given metadata id.
+
+        Useful when your plugin registers built-in types: call this after creating the metadata
+        so load() can reconstruct them in future runs.
+
+        :param metadata_id: Metadata ID for the callables to be registered.
+        :type metadata_id: str
+
+        :param serializer: Callable function for serializing to a dictionary.
+        :type serializer: typing.Callable
+
+        :param deserializer: Callable function for deserializing from a dictionary.
+        :type deserializer: typing.Callable
+        """
+        if serializer:
+            self._serializers[metadata_id] = serializer
+        if deserializer:
+            self._deserializers[metadata_id] = deserializer
+
+    def serializers_from_metadata(self, metadata: ConstantRasterMetadata):
+        """Registers serializer and deserializer pair from the metadata.
+
+        :param metadata: Metadata object to extract serializer and
+        deserializer functions.
+        :type metadata: ConstantRasterMetadata
+        """
+        if metadata.serializer and metadata.deserializer:
+            self.register_serializers(
+                metadata.id, metadata.serializer, metadata.deserializer
+            )
+
     def items(self) -> typing.List[ConstantRasterMetadata]:
         """Get list of all registered metadata items.
 
@@ -767,5 +805,5 @@ class ConstantRasterRegistry:
         return iter(self._metadata_store.values())
 
 
-# Global registry instance (singleton)
+# Global registry instance
 constant_raster_registry = ConstantRasterRegistry()

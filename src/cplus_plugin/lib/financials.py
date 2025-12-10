@@ -19,7 +19,7 @@ from qgis import processing
 
 from ..definitions.constants import NPV_PRIORITY_LAYERS_SEGMENT, PRIORITY_LAYERS_SEGMENT
 from ..conf import settings_manager, Settings
-from ..models.financial import NcsPathwayNpvCollection
+from ..models.financial import ActivityNpvCollection
 from ..utils import clean_filename, FileUtils, log, tr
 
 
@@ -47,7 +47,7 @@ def compute_discount_value(
 
 
 def create_npv_pwls(
-    npv_collection: NcsPathwayNpvCollection,
+    npv_collection: ActivityNpvCollection,
     context: QgsProcessingContext,
     multi_step_feedback: QgsProcessingMultiStepFeedback,
     feedback: QgsProcessingFeedback,
@@ -62,7 +62,7 @@ def create_npv_pwls(
 
     :param npv_collection: The NCS pathway NPV collection containing the NPV
     parameters for NCS pathway.
-    :type npv_collection: NcsPathwayNpvCollection
+    :type npv_collection: ActivityNpvCollection
 
     :param context: Context information for performing the processing.
     :type context: QgsProcessingContext
@@ -229,7 +229,7 @@ def calculate_activity_npv(activity_id: str, activity_area: float) -> float:
 
     pathway_npv_values = []
     for pathway in activity.pathways:
-        pathway_npv = npv_collection.pathway_npv(str(pathway.uuid))
+        pathway_npv = npv_collection.activity_npv(str(pathway.uuid))
         if pathway_npv is None:
             continue
 

@@ -151,7 +151,6 @@ class TestConstantRasterCollection(TestCase):
         new_component = ConstantRasterComponent(
             value_info=get_constant_raster_info(),
             component=activity2,
-            component_type=ModelComponentType.ACTIVITY,
             skip_raster=False,
             enabled=True,
         )
@@ -417,7 +416,6 @@ class TestYearsExperienceWidget(TestCase):
         component1 = ConstantRasterComponent(
             value_info=ConstantRasterInfo(absolute=20.0),
             component=activity2,
-            component_type=ModelComponentType.ACTIVITY,
             skip_raster=False,
             enabled=True,
         )
@@ -425,7 +423,6 @@ class TestYearsExperienceWidget(TestCase):
         component2 = ConstantRasterComponent(
             value_info=ConstantRasterInfo(absolute=50.0),
             component=activity3,
-            component_type=ModelComponentType.ACTIVITY,
             skip_raster=False,
             enabled=True,
         )
@@ -473,12 +470,10 @@ class TestYearsExperienceWidget(TestCase):
 
     def test_create_metadata(self):
         """Test create_metadata creates valid metadata."""
-        metadata = YearsExperienceWidget.create_metadata(
-            "test_years_exp", ModelComponentType.ACTIVITY
-        )
+        metadata = YearsExperienceWidget.create_metadata()
 
         self.assertIsNotNone(metadata)
-        self.assertEqual(metadata.id, "test_years_exp")
+        self.assertEqual(metadata.id, "years_experience_activity")
         self.assertEqual(metadata.display_name, "Years of Experience")
         self.assertEqual(metadata.component_type, ModelComponentType.ACTIVITY)
         self.assertEqual(metadata.input_range.min, 0.0)

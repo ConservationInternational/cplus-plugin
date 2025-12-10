@@ -15,7 +15,7 @@ from ...definitions.constants import (
     YEAR_HEADER,
 )
 
-from ...utils import FileUtils, tr
+from ...utils import tr
 
 
 class NpvFinancialModel(QtGui.QStandardItemModel):

@@ -7,8 +7,10 @@ from .constant_raster_widgets import (
     YearsExperienceWidget,
     GenericNumericWidget,
 )
+from .financial_npv_widget import ActivityNpvWidget
 
 __all__ = [
+    "ActivityNpvWidget",
     "ConstantRastersManagerDialog",
     "ConstantRasterWidgetInterface",
     "YearsExperienceWidget",

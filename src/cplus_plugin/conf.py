@@ -22,7 +22,6 @@ from .definitions.constants import (
     METRIC_CONFIGURATION_PROPERTY,
     NCS_CARBON_SEGMENT,
     NCS_PATHWAY_SEGMENT,
-    NPV_COLLECTION_PROPERTY,
     MASK_PATHS_SEGMENT,
     NATURE_BASE_MEAN_ZONAL_STATS_ATTRIBUTE,
     PATH_ATTRIBUTE,
@@ -41,13 +40,12 @@ from .models.base import (
     ScenarioResult,
     SpatialExtent,
 )
-from .models.financial import NcsPathwayNpvCollection
+from .models.constant_raster import ConstantRasterMetadata
+from .models.financial import ActivityNpvCollection
 from .models.helpers import (
     create_metrics_profile_collection,
     create_result_info,
-    ncs_pathway_npv_collection_to_dict,
     create_activity,
-    create_ncs_pathway_npv_collection,
     create_metric_configuration,
     create_ncs_pathway,
     layer_component_to_dict,
@@ -283,6 +281,7 @@ class Settings(enum.Enum):
         "constant_rasters_dialog/activity_raster_type"
     )
     CUSTOM_CONSTANT_RASTER_TYPES = "constant_rasters/custom_types"
+    CONSTANT_RASTER_METADATA_REGISTRY = "constant_raster/metadata_registry"
 
 
 class SettingsManager(QtCore.QObject):
@@ -1454,38 +1453,6 @@ class SettingsManager(QtCore.QObject):
         if self.get_activity(activity_uuid) is not None:
             self.remove(f"{self.ACTIVITY_BASE}/{activity_uuid}")
 
-    def get_npv_collection(self) -> typing.Optional[NcsPathwayNpvCollection]:
-        """Gets the collection of NPV mappings of NCS pathways.
-
-        :returns: The collection of NCS pathway NPV mappings or None
-        if not defined.
-        :rtype: NcsPathwayNpvCollection
-        """
-        npv_collection_str = self.get_value(NPV_COLLECTION_PROPERTY, None)
-        if not npv_collection_str:
-            return None
-
-        npv_collection_dict = {}
-        try:
-            npv_collection_dict = json.loads(npv_collection_str)
-        except json.JSONDecodeError:
-            log("NcsPathwayNPVCollection JSON is invalid.")
-
-        return create_ncs_pathway_npv_collection(
-            npv_collection_dict, self.get_all_ncs_pathways()
-        )
-
-    def save_npv_collection(self, npv_collection: NcsPathwayNpvCollection):
-        """Saves the NCS pathway NPV collection in the settings as a serialized
-        JSON string.
-
-        :param npv_collection: NCS pathway NPV collection serialized to a JSON string.
-        :type npv_collection: NcsPathwayNpvCollection
-        """
-        npv_collection_dict = ncs_pathway_npv_collection_to_dict(npv_collection)
-        npv_collection_str = json.dumps(npv_collection_dict)
-        self.set_value(NPV_COLLECTION_PROPERTY, npv_collection_str)
-
     def get_metric_configuration(self) -> typing.Optional[MetricConfiguration]:
         """Gets the activity metric configuration.
 
@@ -1511,7 +1478,7 @@ class SettingsManager(QtCore.QObject):
         """Serializes the metric configuration in settings as a JSON string.
 
         :param metric_configuration: Activity NPV collection serialized to a JSON string.
-        :type metric_configuration: NcsPathwayNpvCollection
+        :type metric_configuration: ActivityNpvCollection
         """
         metric_configuration_dict = metric_configuration_to_dict(metric_configuration)
         metric_configuration_str = json.dumps(metric_configuration_dict)
@@ -1581,11 +1548,7 @@ class SettingsManager(QtCore.QObject):
             return settings.value(self.ONLINE_TASK_BASE)
 
     def delete_online_task(self):
-        """Delete the online task with the passed scenarion id.
-
-        :param scenario_id: Scenario identifier
-        :type scenario_id: str
-        """
+        """Delete the online task with the passed scenarion id."""
         log("delete online task")
         with qgis_settings(self.BASE_GROUP_NAME) as settings:
             a = settings.value(self.ONLINE_TASK_BASE)
@@ -1628,6 +1591,14 @@ class SettingsManager(QtCore.QObject):
 
         return create_result_info(result_info_dict)
 
+    def _get_constant_raster_collection_settings_base(self) -> str:
+        """Returns the path for constant raster collection settings.
+
+        :returns: Base path to the constant raster collection group.
+        :rtype: str
+        """
+        return f"{self.BASE_GROUP_NAME}/" f"{CONSTANT_RASTERS_SETTINGS_KEY}"
+
     def save_constant_raster_collection(
         self, metadata_id: str, collection_data: dict
     ) -> None:
@@ -1636,30 +1607,54 @@ class SettingsManager(QtCore.QObject):
         :param metadata_id: Unique identifier for the metadata
         :param collection_data: Dictionary representation of the collection
         """
-        with qgis_settings(CONSTANT_RASTERS_SETTINGS_KEY) as settings:
+        constant_raster_root = self._get_constant_raster_collection_settings_base()
+        with qgis_settings(constant_raster_root) as settings:
             json_str = json.dumps(collection_data)
             settings.setValue(metadata_id, json_str)
 
-    def load_constant_raster_collection(
-        self, metadata_id: str
-    ) -> typing.Optional[dict]:
+    def update_constant_raster_collection(
+        self, metadata_id: str, collection_data: dict
+    ):
+        """Update constant raster collection data with the given metadata
+        identifier.
+
+        :param metadata_id: Unique identifier for the metadata
+        :param collection_data: Dictionary representation of the collection
+        """
+        if self.get_constant_raster_collection(metadata_id) is not None:
+            self.remove_constant_raster_collection(metadata_id)
+            self.save_constant_raster_collection(metadata_id, collection_data)
+
+    def get_constant_raster_collection(self, metadata_id: str) -> typing.Optional[dict]:
         """Load constant raster collection data from settings.
 
         :param metadata_id: Unique identifier for the metadata
         :returns: Dictionary representation of the collection, or None if not found
         """
-        with qgis_settings(CONSTANT_RASTERS_SETTINGS_KEY) as settings:
+        constant_raster_root = self._get_constant_raster_collection_settings_base()
+        with qgis_settings(constant_raster_root) as settings:
             json_str = settings.value(metadata_id, None)
             if json_str:
                 return json.loads(json_str)
             return None
+
+    def remove_constant_raster_collection(self, metadata_id: str):
+        """Removes the constant raster collection entry with the given identifier.
+
+        :param metadata_id: Unique identifier of the constant raster collection.
+        :type metadata_id: str
+        """
+        constant_raster_root = self._get_constant_raster_collection_settings_base()
+        if self.get_constant_raster_collection(metadata_id) is not None:
+            self.remove(f"{constant_raster_root}/{metadata_id}")
 
     def get_all_constant_raster_metadata_ids(self) -> typing.List[str]:
         """Get all constant raster metadata IDs stored in settings.
 
         :returns: List of metadata IDs
         """
-        with qgis_settings(CONSTANT_RASTERS_SETTINGS_KEY) as settings:
+        constant_raster_root = self._get_constant_raster_collection_settings_base()
+        with qgis_settings(constant_raster_root) as settings:
             return settings.childKeys()
 
     def save_custom_constant_raster_types(
