@@ -37,7 +37,7 @@ from .definitions.defaults import (
     DEFAULT_CRS_ID,
 )
 from .lib.constant_raster import constant_raster_registry
-from .models.base import ScenarioResult, Activity, NcsPathway
+from .models.base import ScenarioResult, Activity, NcsPathway, NcsPathwayType
 from .resources import *
 from .utils import (
     align_rasters,
@@ -2725,19 +2725,30 @@ class ScenarioAnalysisTask(QgsTask):
                                     if pwl not in layers:
                                         layers.append(pwl)
 
-                                    pwl_expression = f'({priority_group_coefficient}*"{pwl_path_basename}@1")'
+                                    pwl_expression = (
+                                        f"({priority_group_coefficient}*"
+                                        f'"{pwl_path_basename}@1")'
+                                    )
 
-                                    if impact_value is not None:
-                                        pwl_expression = (
-                                            f"({priority_group_coefficient * int(impact_value)}*"
-                                            f'"{pwl_path_basename}@1")'
-                                        )
+                                    if impact_value is not None and impact_value < 0:
                                         # Inverse the PWL
-                                        if impact_value < 0:
-                                            pwl_expression = (
-                                                f"({priority_group_coefficient * abs(int(impact_value))}*"
-                                                f'("{pwl_path_basename}@1" - 1) * -1)'
-                                            )
+                                        pwl_expression = (
+                                            f"({priority_group_coefficient}*"
+                                            f'("{pwl_path_basename}@1" - 1) * -1)'
+                                        )
+                                    norm_carbon_impact = pathway.type_options.get(
+                                        "norm_carbon_impact"
+                                    )
+                                    if (
+                                        layer.get("is_carbon")
+                                        and norm_carbon_impact is not None
+                                    ):
+                                        # For restore and manage pathways, multiply by normalized carbon impact
+                                        pwl_expression += f" * {abs(int(impact_value)) * norm_carbon_impact}"
+                                    elif impact_value is not None:
+                                        # For non-carbon PWLS and and protect pathways,
+                                        pwl_expression += f"* {abs(int(impact_value))}"
+
                                     base_names.append(pwl_expression)
                                     if not run_calculation:
                                         run_calculation = True
@@ -2758,10 +2769,6 @@ class ScenarioAnalysisTask(QgsTask):
                     pwl_calc_expression = " + ".join(base_names[1:])
                     expression += f" * ({pwl_calc_expression})"
 
-                output = (
-                    QgsProcessing.TEMPORARY_OUTPUT if temporary_output else output_file
-                )
-
                 # Actual processing calculation
                 alg_params = {
                     "CELLSIZE": 0,
@@ -2769,7 +2776,7 @@ class ScenarioAnalysisTask(QgsTask):
                     "EXPRESSION": expression,
                     "EXTENT": extent,
                     "LAYERS": layers,
-                    "OUTPUT": output,
+                    "OUTPUT": output_file,
                 }
 
                 self.log_message(
