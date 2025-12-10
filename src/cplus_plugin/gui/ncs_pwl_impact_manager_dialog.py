@@ -16,7 +16,7 @@ from qgis.PyQt.uic import loadUiType
 
 from ..conf import settings_manager, Settings
 from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
-from ..models.base import NcsPathway, PriorityLayerType
+from ..models.base import NcsPathway, PriorityLayerType, NcsPathwayType
 from ..utils import FileUtils, open_documentation, tr, log
 
 
@@ -32,6 +32,12 @@ IMPACT_MATRIX_COLORS = {
     1: {"color": "#c4e687", "impact": "Slight Positive Impact"},
     2: {"color": "#77c35c", "impact": "Moderate Positive Impact"},
     3: {"color": "#1a9641", "impact": "Strong Positive Impact"},
+}
+
+CARBON_IMPACT_MATRIX_COLORS = {
+    -3: {"color": "#d7191c", "impact": "Low Carbon"},
+    0: {"color": "#ffffc0", "impact": "Neutral"},
+    3: {"color": "#1a9641", "impact": "High Carbon"},
 }
 
 DEFAULT_CELL_STYLE = "QLineEdit {background: white;} QLineEdit:hover {border: 1px solid gray; background: white;}"
@@ -121,20 +127,23 @@ class TransMatrixEdit(QtWidgets.QLineEdit):
     Custom QLineEdit for matrix cell editing with validation and color feedback.
     """
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, impact_matrix_colors: dict = IMPACT_MATRIX_COLORS):
         super().__init__(parent)
+
+        self.impact_matrix_colors = impact_matrix_colors
+
         self.editingFinished.connect(self.style_cell)
         self.textChanged.connect(self.validate_cell)
 
     def validate_cell(self):
-        """Validate the cell input. Values must be integers between -3 and 3, or empty."""
+        """Validate the cell input. Values must be integers between minimum and maximum rating, or empty."""
         text = self.text().strip()
         if text == "" or text == "-":
             # Allow empty input
             return
         try:
             value = int(text)
-            if value < -3 or value > 3:
+            if value not in list(self.impact_matrix_colors.keys()):
                 raise ValueError
         except ValueError:
             # Invalid input: reset to empty
@@ -153,9 +162,9 @@ class TransMatrixEdit(QtWidgets.QLineEdit):
 
         try:
             value = int(text)
-            if value < -3 or value > 3:
+            if value not in list(self.impact_matrix_colors.keys()):
                 raise ValueError
-            color = IMPACT_MATRIX_COLORS.get(value, {}).get("color", "white")
+            color = self.impact_matrix_colors.get(value, {}).get("color", "white")
             self.setStyleSheet(
                 f"QLineEdit {{background: {color};}} "
                 f"QLineEdit:hover {{border: 1px solid gray; background: {color};}}"
@@ -175,9 +184,6 @@ class TransMatrixEdit(QtWidgets.QLineEdit):
 
 class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
     """Dialog for managing matrix of relative impact of priority weighting layers and NCS pathways."""
-
-    MINIMUM_RATING_VALUE = -3
-    MAXIMUM_RATING_VALUE = 3
 
     # If there are equal to less than this value rows than the row height will be decreased
     RESIZE_NUM_ROWS = 5
@@ -294,15 +300,18 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
             self.rel_impact_matrix.setHorizontalHeader(rotated_header)
 
         # Populate each cell with a validated TransMatrixEdit widget
-        for row in range(num_pathways):
-            for col in range(num_priority_layers):
+        for row, pathway in enumerate(pathways):
+            for col, pwl in enumerate(priority_layers):
                 line_edit = TransMatrixEdit()
+                if pwl.get("is_carbon"):
+                    line_edit.impact_matrix_colors = CARBON_IMPACT_MATRIX_COLORS
+
                 line_edit.setAlignment(QtCore.Qt.AlignHCenter)
                 line_edit.setToolTip(
                     f"""
-                    Pathway: {pathways[row].name},
-                    <br>PWL: {priority_layers[col]["name"]}
-                    """
+                    <p><b>Pathway:</b> {pathway.name}</p>
+                    <p><b>PWL:</b> {pwl["name"]}
+                    </p>"""
                 )
                 self.rel_impact_matrix.setCellWidget(row, col, line_edit)
 
@@ -391,9 +400,18 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
                             cell_widget.setStyleSheet(DEFAULT_CELL_STYLE)
                         else:
                             cell_widget.setText(str(value))
+
                             color = IMPACT_MATRIX_COLORS.get(value, {}).get(
                                 "color", "white"
                             )
+                            if pwl.get("is_carbon"):
+                                color = CARBON_IMPACT_MATRIX_COLORS.get(value, {}).get(
+                                    "color", "white"
+                                )
+                                cell_widget.impact_matrix_colors = (
+                                    CARBON_IMPACT_MATRIX_COLORS
+                                )
+
                             cell_widget.setStyleSheet(
                                 f"QLineEdit {{background: {color};}} "
                                 f"QLineEdit:hover {{border: 1px solid gray; background: {color};}}"
