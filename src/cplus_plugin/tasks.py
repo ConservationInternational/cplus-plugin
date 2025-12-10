@@ -2468,8 +2468,84 @@ class ScenarioAnalysisTask(QgsTask):
 
         return True
 
+    def run_normalize_pathways_carbon_impact(
+        self, pathways: typing.List[NcsPathway]
+    ) -> bool:
+        """Normalizes the total carbon impact for the pathways grouped by the pathway type
+
+        :param pathways: List of the pathways
+        :type pathways: typing.List[NcsPathway]
+
+        :returns: True if the task operation was successfully completed else False.
+        :rtype: bool
+        """
+        if self.processing_cancelled:
+            return False
+
+        self.log_message(tr(f"Normalizing Total Carbon Impact for Pathways"))
+
+        if len(pathways) == 0:
+            msg = tr(f"No defined pathways for running normalize total carbon impact.")
+            self.set_info_message(
+                msg,
+                level=Qgis.Critical,
+            )
+            self.log_message(msg)
+            return False
+
+        try:
+            pathways_carbon_value = [
+                p.type_options.get("carbon_impact", 0)
+                for p in pathways
+                if p.pathway_type in (NcsPathwayType.MANAGE, NcsPathwayType.RESTORE)
+            ]
+            pathways_carbon_value = [v for v in pathways_carbon_value if v is not None]
+
+            # Calculate min/max for each pathway type
+
+            carbon_stats = {}
+            if len(pathways_carbon_value) > 0:
+                carbon_stats = {
+                    "min": min(pathways_carbon_value),
+                    "max": max(pathways_carbon_value),
+                    "range": max(pathways_carbon_value) - min(pathways_carbon_value),
+                }
+
+            # Normalize carbon impact for each pathway
+            for pathway in pathways:
+                # Ignore protect pathways
+                if pathway.pathway_type not in (
+                    NcsPathwayType.MANAGE,
+                    NcsPathwayType.RESTORE,
+                ):
+                    continue
+
+                carbon_impact = pathway.type_options.get("carbon_impact")
+                if carbon_impact is None:
+                    continue
+
+                if carbon_stats["range"] == 0:
+                    # All values are the same carbon impact
+                    norm_carbon_impact = 1 / len(pathways_carbon_value)
+                else:
+                    norm_carbon_impact = (
+                        carbon_impact - carbon_stats["min"]
+                    ) / carbon_stats["range"]
+
+                pathway.type_options.update({"norm_carbon_impact": norm_carbon_impact})
+
+            return True
+        except Exception as e:
+            self.log_message(f"Problem normalizing pathways carbon impact, {e}\n")
+            self.cancel_task(e)
+            return False
+
     def run_pathways_weighting(
-        self, activities, priority_layers_groups, extent, temporary_output=False
+        self,
+        activities: typing.List[Activity],
+        priority_layers_groups,
+        extent,
+        temporary_output=False,
     ) -> bool:
         """Runs weighting analysis on the pathways in the activities using
         the corresponding NCS PWLs.
@@ -2521,7 +2597,7 @@ class ScenarioAnalysisTask(QgsTask):
         relative_impact_values = relative_impact_matrix.get("values", [])
 
         # Get valid pathways
-        pathways = []
+        pathways: typing.List[NcsPathway] = []
         activities_paths = []
 
         try:
@@ -2553,6 +2629,8 @@ class ScenarioAnalysisTask(QgsTask):
             if not pathways and len(activities_paths) > 0:
                 self.run_activities_analysis(activities, extent)
                 return False
+
+            self.run_normalize_pathways_carbon_impact(pathways)
 
             suitability_index = float(
                 self.get_settings_value(Settings.PATHWAY_SUITABILITY_INDEX, default=0)
