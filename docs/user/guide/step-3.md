@@ -17,7 +17,7 @@ The final step deals with the **Weighting priorities** and **Priority groups**. 
 - Weight values range from 0 to 5, and affect how important a Priority Weighting Layer (PWL) is compared to other layers.
 - A value of 0 indicates that the PWL has a lower importance.
 
-- A value of 5 means that the PWL has a higher importance
+- A value of 5 means that the PWL has a higher importance.
 
 <br>
 
