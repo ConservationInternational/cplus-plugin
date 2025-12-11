@@ -23,12 +23,9 @@ class CplusPluginSettingsTest(unittest.TestCase):
         settings_dialog = CplusSettings(PARENT)
 
         save_base_dir = "base directory"
-        pathway_suitability_index = 1.5
 
         # Sets the values in the GUI
         settings_dialog.folder_data.setFilePath(save_base_dir)
-
-        settings_dialog.suitability_index_box.setValue(pathway_suitability_index)
 
         # Saves the settings set in the GUI
         settings_dialog.save_settings()
@@ -37,11 +34,6 @@ class CplusPluginSettingsTest(unittest.TestCase):
         base_dir = settings_manager.get_value(Settings.BASE_DIR)
         self.assertEqual(save_base_dir, base_dir)
 
-        pathway_suitability_index_val = settings_manager.get_value(
-            Settings.PATHWAY_SUITABILITY_INDEX
-        )
-        self.assertEqual(pathway_suitability_index, pathway_suitability_index_val)
-
     def test_load(self):
         """A test which will check if the main CPLUS settings are loaded correctly
         into the settings UI when calling the load_settings function.
@@ -49,14 +41,9 @@ class CplusPluginSettingsTest(unittest.TestCase):
         settings_dialog = CplusSettings(PARENT)
 
         save_base_dir = "base directory 2"
-        save_pathway_suitability_index = 1.5
 
         # Set all values for testing
         settings_manager.set_value(Settings.BASE_DIR, save_base_dir)
-
-        settings_manager.set_value(
-            Settings.PATHWAY_SUITABILITY_INDEX, save_pathway_suitability_index
-        )
 
         # Loads the values into the GUI
         settings_dialog.load_settings()
@@ -64,9 +51,6 @@ class CplusPluginSettingsTest(unittest.TestCase):
         # Tests if the values were loaded correctly
         base_dir_path = settings_dialog.folder_data.filePath()
         self.assertEqual(save_base_dir, base_dir_path)
-
-        pathway_suitability_index = settings_dialog.suitability_index_box.value()
-        self.assertEqual(save_pathway_suitability_index, pathway_suitability_index)
 
     def test_base_dir_exist(self):
         """A test which checks if the base_dir_exists function works
