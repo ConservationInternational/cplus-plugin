@@ -31,9 +31,9 @@ class CustomTypeDefinitionDialog(QtWidgets.QDialog):
         self.original_name = None  # Store original name in edit mode
 
         if edit_mode:
-            self.setWindowTitle(self.tr("Edit Constant Raster Type"))
+            self.setWindowTitle(self.tr("Edit Investability Type"))
         else:
-            self.setWindowTitle(self.tr("Add New Constant Raster Type"))
+            self.setWindowTitle(self.tr("Add Investability Type"))
         self.setMinimumWidth(400)
 
         self._setup_ui()
@@ -48,11 +48,23 @@ class CustomTypeDefinitionDialog(QtWidgets.QDialog):
 
         # Type Name
         self.txt_type_name = QtWidgets.QLineEdit()
-        self.txt_type_name.setPlaceholderText(self.tr("e.g., Market Trends"))
+        self.txt_type_name.setPlaceholderText(self.tr("e.g. Market Trends"))
         form_layout.addRow(self.tr("Name:"), self.txt_type_name)
 
+        # Default value
+        self.spin_default_value = QtWidgets.QDoubleSpinBox()
+        self.spin_default_value.setRange(0.0, sys.float_info.max)
+        self.spin_default_value.setDecimals(1)
+        self.spin_default_value.setValue(0.0)
+        self.spin_default_value.setToolTip(
+            self.tr(
+                "Default value shown when creating a new item for this investability type"
+            )
+        )
+        form_layout.addRow(self.tr("Default Value:"), self.spin_default_value)
+
         # Range configuration group
-        range_group = QtWidgets.QGroupBox(self.tr("Normalization Range Configuration"))
+        range_group = QtWidgets.QGroupBox(self.tr("Normalization Range"))
         range_layout = QtWidgets.QFormLayout(range_group)
 
         # Minimum value
@@ -61,7 +73,7 @@ class CustomTypeDefinitionDialog(QtWidgets.QDialog):
         self.spin_min_value.setDecimals(1)
         self.spin_min_value.setValue(0.0)
         self.spin_min_value.setToolTip(
-            self.tr("Minimum value users can enter in the widget")
+            self.tr("Minimum value for the investability type")
         )
         range_layout.addRow(self.tr("Minimum:"), self.spin_min_value)
 
@@ -71,19 +83,9 @@ class CustomTypeDefinitionDialog(QtWidgets.QDialog):
         self.spin_max_value.setDecimals(1)
         self.spin_max_value.setValue(100.0)
         self.spin_max_value.setToolTip(
-            self.tr("Maximum value users can enter in the widget")
+            self.tr("Maximum value for the investability type")
         )
         range_layout.addRow(self.tr("Maximum:"), self.spin_max_value)
-
-        # Default value
-        self.spin_default_value = QtWidgets.QDoubleSpinBox()
-        self.spin_default_value.setRange(0.0, sys.float_info.max)
-        self.spin_default_value.setDecimals(1)
-        self.spin_default_value.setValue(0.0)
-        self.spin_default_value.setToolTip(
-            self.tr("Default value shown when creating a new raster component")
-        )
-        range_layout.addRow(self.tr("Default Value:"), self.spin_default_value)
 
         layout.addLayout(form_layout)
         layout.addWidget(range_group)
@@ -146,7 +148,7 @@ class CustomTypeDefinitionDialog(QtWidgets.QDialog):
 
         # Validate type name
         if not type_name:
-            self._show_validation_error(self.tr("Type name cannot be empty."))
+            self._show_validation_error(self.tr("Name cannot be empty."))
             return
 
         # Check for duplicate names (skip check if editing and name unchanged)
@@ -154,7 +156,7 @@ class CustomTypeDefinitionDialog(QtWidgets.QDialog):
             if type_name in self.existing_types:
                 self._show_validation_error(
                     self.tr(
-                        "A type named '{0}' already exists. Please choose a different name."
+                        "'{0}' already exists. Please type a different name."
                     ).format(type_name)
                 )
                 return

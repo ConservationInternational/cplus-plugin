@@ -21,7 +21,6 @@ from ..models.constant_raster import (
     ConstantRasterComponent,
     ConstantRasterMetadata,
     ConstantRasterContext,
-    ConstantRasterInfo,
     ConstantRasterFileMetadata,
 )
 from ..models.base import ModelComponentType
@@ -34,13 +33,12 @@ from ..utils import (
 )
 from ..conf import settings_manager, Settings
 from ..models.helpers import (
+    constant_raster_collection_from_dict,
+    constant_raster_collection_to_dict,
     constant_raster_metadata_from_dict,
     constant_raster_metadata_to_dict,
 )
 from ..definitions.constants import (
-    COMPONENT_ID_ATTRIBUTE,
-    COMPONENT_UUID_ATTRIBUTE,
-    COMPONENTS_ATTRIBUTE,
     ID_ATTRIBUTE,
     PATH_ATTRIBUTE,
 )
@@ -237,11 +235,6 @@ class ConstantRasterProcessingUtils:
         if not collection:
             raise QgsProcessingException("No collection provided")
 
-        # Log skip_raster status
-        log(
-            f"Constant raster collection skip_raster value: {collection.skip_raster}",
-            info=True,
-        )
         if collection.skip_raster:
             if feedback:
                 feedback.pushInfo(
@@ -495,6 +488,10 @@ class ConstantRasterRegistry:
         if metadata.id in self._metadata_store:
             return False
 
+        # Also check if collection is not defined
+        if metadata.raster_collection is None:
+            return False
+
         self._metadata_store[metadata.id] = metadata
 
         # Register serializer/deserializer references for reconstruction
@@ -609,6 +606,7 @@ class ConstantRasterRegistry:
             t.get("id") == type_def.get("id") for t in self._custom_type_definitions
         ):
             return False
+
         self._custom_type_definitions.append(type_def)
         return True
 
@@ -706,6 +704,13 @@ class ConstantRasterRegistry:
             # Prefer registry-registered deserializer, fall back to None
             deserializer = self._deserializers.get(metadata_id)
             serializer = self._serializers.get(metadata_id)
+
+            # Fallback to default serializer, however there needs to be a better
+            # way to manage such cases.
+            if deserializer is None and serializer is None:
+                deserializer = constant_raster_collection_from_dict
+                serializer = constant_raster_collection_to_dict
+
             metadata = None
             try:
                 metadata = constant_raster_metadata_from_dict(
@@ -728,7 +733,7 @@ class ConstantRasterRegistry:
             metadata.deserializer = deserializer
             metadata.serializer = serializer
 
-            self.add_metadata(metadata)
+            _ = self.add_metadata(metadata)
 
             # Ensure registry maps are consistent with metadata object
             if getattr(metadata, "serializer", None):

@@ -1172,7 +1172,6 @@ def constant_raster_metadata_to_dict(
         COMPONENT_TYPE_ATTRIBUTE: (
             metadata.component_type.value if metadata.component_type else None
         ),
-        INPUT_RANGE_ATTRIBUTE: list(metadata.input_range),
         USER_DEFINED_ATTRIBUTE: metadata.user_defined,
     }
 
@@ -1216,10 +1215,6 @@ def constant_raster_metadata_from_dict(
         kwargs[COMPONENT_TYPE_ATTRIBUTE] = ModelComponentType.from_string(
             metadata_dict[COMPONENT_TYPE_ATTRIBUTE]
         )
-
-    if INPUT_RANGE_ATTRIBUTE in metadata_dict:
-        input_range = metadata_dict[INPUT_RANGE_ATTRIBUTE]
-        kwargs[INPUT_RANGE_ATTRIBUTE] = InputRange(input_range[0], input_range[1])
 
     raster_collection = None
     if RASTER_COLLECTION_ATTRIBUTE in metadata_dict and collection_deserializer:
