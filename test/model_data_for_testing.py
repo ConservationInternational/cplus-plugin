@@ -480,12 +480,14 @@ def get_constant_raster_metadata() -> ConstantRasterMetadata:
     """Creates a ConstantRasterMetadata object for testing."""
     collection = get_constant_raster_collection()
 
-    return ConstantRasterMetadata(
+    metadata = ConstantRasterMetadata(
         id="test_metadata",
         display_name="Test Constant Raster",
         raster_collection=collection,
         serializer=None,
         deserializer=None,
         component_type=ModelComponentType.ACTIVITY,
-        input_range=InputRange(min=0.0, max=100.0),
     )
+    metadata.input_range = ((0.0, 100.0),)
+
+    return metadata
