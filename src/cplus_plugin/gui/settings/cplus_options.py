@@ -663,12 +663,6 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         base_dir_path = self.folder_data.filePath()
         settings_manager.set_value(Settings.BASE_DIR, base_dir_path)
 
-        # Pathway suitability index
-        pathway_suitability_index = self.suitability_index_box.value()
-        settings_manager.set_value(
-            Settings.PATHWAY_SUITABILITY_INDEX, pathway_suitability_index
-        )
-
         # NoData value
         no_data_value = self.nodata_value_box.value()
         settings_manager.set_value(Settings.NCS_NO_DATA_VALUE, no_data_value)
@@ -763,12 +757,6 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         base_dir = settings_manager.get_value(Settings.BASE_DIR, default="")
         self.folder_data.setFilePath(base_dir)
         self.base_dir_exists()
-
-        # Pathway suitability index
-        pathway_suitability_index = settings_manager.get_value(
-            Settings.PATHWAY_SUITABILITY_INDEX, default=0
-        )
-        self.suitability_index_box.setValue(float(pathway_suitability_index))
 
         # NoData value
         no_data_value = settings_manager.get_value(
