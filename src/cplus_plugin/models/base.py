@@ -317,6 +317,8 @@ class NcsPathway(LayerModelComponent):
     pathway_type: NcsPathwayType = NcsPathwayType.UNDEFINED
     priority_layers: typing.List[typing.Dict] = dataclasses.field(default_factory=list)
     carbon_impact_value: float = None
+    suitability_index: float = 0.0
+
     # Additional properties based on the NCS pathway type
     type_options: typing.Dict = dataclasses.field(default_factory=dict)
 
