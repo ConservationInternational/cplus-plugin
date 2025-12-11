@@ -815,6 +815,67 @@ class ScenarioAnalysisTask(QgsTask):
 
         return True
 
+    def _can_clip_raster_by_mask(
+        self, raster_layer: QgsRasterLayer, mask_layer: QgsVectorLayer
+    ) -> bool:
+        """
+        Check if the raster layer can be clipped by the mask layer.
+
+        Conditions:
+            1. The difference in area of the extent of the raster and
+                vector layer should be greater than 5%
+            2. The mask layer should be intersecting the raster layer
+
+        :param raster_layer: Raster layer
+        :type raster_layer: QgsRasterLayer
+
+        :param mask_layer: Masking layer
+        :type mask_layer: QgsVectorLayer
+
+        :returns: True if the check is successful else False.
+        :rtype: bool
+        """
+        # Check if raster and mask layer is valid
+
+        if not mask_layer.isValid() or not raster_layer.isValid():
+            self.log_message(
+                "Skipping clipping raster, the mask layer or"
+                " the raster layer is invalid."
+            )
+            return False
+
+        # Reproject the masklayer if its CRS is different from the raster CRS
+        if mask_layer.crs() != raster_layer.crs:
+            mask_path_reprojected = self.reproject_layer(
+                mask_layer.source(), raster_layer.crs(), is_raster=False
+            )
+            if mask_path_reprojected and os.path.exists(mask_path_reprojected):
+                mask_layer = QgsVectorLayer(
+                    mask_path_reprojected, "mask_layer_reprojected"
+                )
+
+        # If mask layer intersects the raster layer
+        if not mask_layer.extent().intersects(raster_layer.extent()):
+            self.log_message(
+                "Skipping clipping raster, the mask layer extent"
+                " and the raster extent do not overlap."
+            )
+            return False
+
+        mask_extent_area = mask_layer.extent().area()
+        raster_extent_area = raster_layer.extent().area()
+
+        area_ratio = mask_extent_area / raster_extent_area
+
+        # If mask layer extent is 5 % greater than raster layer extent
+        if abs(area_ratio - 1) < 0.05:
+            self.log_message(
+                "Skipping clipping raster layer, "
+                "the mask layer extent is within 10 percent of the raster layer extent"
+            )
+            return False
+        return True
+
     def clip_raster_by_mask(
         self, input_raster_path: str, mask_layer_path: str, output_path: str
     ) -> bool:
@@ -960,37 +1021,8 @@ class ScenarioAnalysisTask(QgsTask):
                         f"the study area layer\n"
                     )
 
-                    if aoi_layer.crs() != pathway_layer.crs:
-                        studyarea_path_reprojected = self.reproject_layer(
-                            studyarea_path, pathway_layer.crs(), is_raster=False
-                        )
-                        if studyarea_path_reprojected and os.path.exists(
-                            studyarea_path_reprojected
-                        ):
-                            aoi_layer = QgsVectorLayer(
-                                studyarea_path_reprojected, "aoi_layer_reprojected"
-                            )
-
-                    # If aoi intersects the path
-                    if not aoi_layer.extent().intersects(pathway_layer.extent()):
-                        self.log_message(
-                            "Skipping clipping pathway, the study area layer extent"
-                            " and the pathway extent do not overlap."
-                        )
-                        continue
-
-                    aoi_extent_area = aoi_layer.extent().area()
-                    pathway_extent_area = pathway_layer.extent().area()
-
-                    area_ratio = aoi_extent_area / pathway_extent_area
-
-                    # If aoi extent is 10 % greater than pathway extent
-                    if abs(area_ratio - 1) < 0.1:
-                        self.log_message(
-                            "Skipping clipping pathway, "
-                            "the study area extent is within 10 percent of the pathway extent"
-                        )
-                        continue
+                    if not self._can_clip_raster_by_mask(pathway_layer, aoi_layer):
+                        self.processing_cancelled = True
 
                     output_file = os.path.join(
                         clipped_pathways_directory,
@@ -1043,38 +1075,8 @@ class ScenarioAnalysisTask(QgsTask):
                                 )
                                 continue
 
-                            if aoi_layer.crs() != layer.crs:
-                                studyarea_path_reprojected = self.reproject_layer(
-                                    studyarea_path, layer.crs(), is_raster=False
-                                )
-                                if studyarea_path_reprojected and os.path.exists(
-                                    studyarea_path_reprojected
-                                ):
-                                    aoi_layer = QgsVectorLayer(
-                                        studyarea_path_reprojected,
-                                        "aoi_layer_reprojected",
-                                    )
-
-                            # If aoi intersects the path
-                            if not aoi_layer.extent().intersects(layer.extent()):
-                                self.log_message(
-                                    "Skipping clipping PWL, the study area layer extent"
-                                    " and the PWL extent do not overlap."
-                                )
-                                continue
-
-                            aoi_extent_area = aoi_layer.extent().area()
-                            pwl_extent_area = layer.extent().area()
-
-                            area_ratio = aoi_extent_area / pwl_extent_area
-
-                            # If aoi extent is 10 % greater than pathway extent
-                            if abs(area_ratio - 1) < 0.1:
-                                self.log_message(
-                                    "Skipping clipping PWL, "
-                                    "the study area extent is within 10 percent of the PWL extent"
-                                )
-                                continue
+                            if not self._can_clip_raster_by_mask(layer, aoi_layer):
+                                self.processing_cancelled = True
 
                             self.log_message(
                                 f"Clipping the {priority_layer.get('name')} priority layer "
