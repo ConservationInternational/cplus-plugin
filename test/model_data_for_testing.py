@@ -488,6 +488,6 @@ def get_constant_raster_metadata() -> ConstantRasterMetadata:
         deserializer=None,
         component_type=ModelComponentType.ACTIVITY,
     )
-    metadata.input_range = ((0.0, 100.0),)
+    metadata.input_range = (0.0, 100.0)
 
     return metadata
