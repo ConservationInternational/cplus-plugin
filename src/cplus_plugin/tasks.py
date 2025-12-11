@@ -846,7 +846,7 @@ class ScenarioAnalysisTask(QgsTask):
             return False
 
         # Reproject the masklayer if its CRS is different from the raster CRS
-        if mask_layer.crs() != raster_layer.crs:
+        if mask_layer.crs() != raster_layer.crs():
             mask_path_reprojected = self.reproject_layer(
                 mask_layer.source(), raster_layer.crs(), is_raster=False
             )
@@ -867,10 +867,10 @@ class ScenarioAnalysisTask(QgsTask):
         mask_extent_area = mask_layer.extent().area()
         raster_extent_area = raster_layer.extent().area()
 
-        area_ratio = mask_extent_area / raster_extent_area
+        area_difference = abs(mask_extent_area - raster_extent_area)
 
-        # If mask layer extent is 15 % greater than raster layer extent
-        if abs(area_ratio - 1) < 0.15:
+        # Check if the difference in area greater than 15% of the raster layer extent
+        if (area_difference / raster_extent_area) < 0.15:
             self.log_message(
                 "Skipping clipping raster layer, "
                 "the mask layer extent is within 15 percent of the raster layer extent"
@@ -2506,15 +2506,17 @@ class ScenarioAnalysisTask(QgsTask):
             ]
             pathways_carbon_value = [v for v in pathways_carbon_value if v is not None]
 
+            if len(pathways_carbon_value) == 0:
+                self.log_message("No manage or restore pathways")
+                return False
+
             # Calculate min/max for each pathway type
 
-            carbon_stats = {}
-            if len(pathways_carbon_value) > 0:
-                carbon_stats = {
-                    "min": min(pathways_carbon_value),
-                    "max": max(pathways_carbon_value),
-                    "range": max(pathways_carbon_value) - min(pathways_carbon_value),
-                }
+            carbon_stats = {
+                "min": min(pathways_carbon_value),
+                "max": max(pathways_carbon_value),
+                "range": max(pathways_carbon_value) - min(pathways_carbon_value),
+            }
 
             # Normalize carbon impact for each pathway
             for pathway in pathways:
