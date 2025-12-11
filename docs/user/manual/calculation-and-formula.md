@@ -129,6 +129,44 @@ $$
 
 - The resulting PWL will then be used as input to the Highest position calculation
 
+### Naturebase Decision Tree
+
+The plugin incorporates *The Nature Conservancy (TNC)* decision-tree rules to ensure that overlapping pathway areas are resolved consistently and without double counting. These rules are implemented as a series of **If/Then conditions**, supplied by Conservation International, and define which pathway should take priority when spatial overlaps occur.
+
+The decision tree follows TNC’s official Natural Climate Solutions (NCS) accounting framework. When two or more pathways overlap, the plugin evaluates the pixel using these principles:
+
+1. **Cropland supersedes all other pathways**
+
+    Existing croplands are reserved for food security and therefore override any restoration or management pathways.
+
+2. **Wetlands supersede all non-cropland pathways**
+
+    When wetlands overlap with forests, grasslands or other biomes, mitigation is counted toward the wetland pathway.
+
+3. **Biodiversity protection constraints apply**
+
+    Pathways that would cause demonstrable harm to native ecosystems are excluded.
+
+4. **NCS Hierarchy (Protect → Manage → Restore)**
+
+    After applying base rules, protection activities outrank management, which outrank restoration activities.
+
+5. **Scenario-specific rules may apply**
+
+    Depending on the selected scenario, additional prioritization logic may be used (e.g., maximum cost-effective potential or maximum mitigation potential).
+
+These steps ensure that each pixel is assigned to a single valid pathway in accordance with global NCS accounting standards. The plugin automatically applies these rules in all calculations, matrices, summaries, and reports.
+
+<br>
+
+**Visualization of Base Accounting Rules (1) and Prioritization Rules (2)**
+
+![Visualization of Rules 1](img/manual-calc-1.png)
+
+![Visualization of Rules 2](img/manual-calc-2.png)
+
+<br>
+
 ### Highest Position
 
 The <a href="https://docs.qgis.org/3.28/en/docs/user_manual/processing_algs/qgis/rasteranalysis.html#qgishighestpositioninrasterstack">Highest position</a>
