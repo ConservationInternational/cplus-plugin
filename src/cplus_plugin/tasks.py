@@ -839,9 +839,10 @@ class ScenarioAnalysisTask(QgsTask):
 
         if not mask_layer.isValid() or not raster_layer.isValid():
             self.log_message(
-                "Skipping clipping raster, the mask layer or"
+                "Cancelling clipping raster, the mask layer or"
                 " the raster layer is invalid."
             )
+            self.processing_cancelled = True
             return False
 
         # Reproject the masklayer if its CRS is different from the raster CRS
@@ -857,9 +858,10 @@ class ScenarioAnalysisTask(QgsTask):
         # If mask layer intersects the raster layer
         if not mask_layer.extent().intersects(raster_layer.extent()):
             self.log_message(
-                "Skipping clipping raster, the mask layer extent"
+                "Cancelling clipping raster, the mask layer extent"
                 " and the raster extent do not overlap."
             )
+            self.processing_cancelled = True
             return False
 
         mask_extent_area = mask_layer.extent().area()
@@ -871,9 +873,10 @@ class ScenarioAnalysisTask(QgsTask):
         if abs(area_ratio - 1) < 0.05:
             self.log_message(
                 "Skipping clipping raster layer, "
-                "the mask layer extent is within 10 percent of the raster layer extent"
+                "the mask layer extent is within 5 percent of the raster layer extent"
             )
             return False
+
         return True
 
     def clip_raster_by_mask(
@@ -1022,7 +1025,7 @@ class ScenarioAnalysisTask(QgsTask):
                     )
 
                     if not self._can_clip_raster_by_mask(pathway_layer, aoi_layer):
-                        self.processing_cancelled = True
+                        continue
 
                     output_file = os.path.join(
                         clipped_pathways_directory,
@@ -1076,7 +1079,7 @@ class ScenarioAnalysisTask(QgsTask):
                                 continue
 
                             if not self._can_clip_raster_by_mask(layer, aoi_layer):
-                                self.processing_cancelled = True
+                                continue
 
                             self.log_message(
                                 f"Clipping the {priority_layer.get('name')} priority layer "
