@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    Handles storage and retrieval of the plugin QgsSettings.
+Handles storage and retrieval of the plugin QgsSettings.
 """
 
 import contextlib
