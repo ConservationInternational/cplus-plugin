@@ -761,7 +761,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         else:
             self.rb_extent.setChecked(True)
             self.on_aoi_source_changed(1, True)
-        print("Restored scenario", clip_to_studyarea, studyarea_path)
 
     def initialize_priority_layers(self):
         """Prepares the priority weighted layers UI with the defaults.
