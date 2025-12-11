@@ -19,10 +19,10 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Setup cache
-        uses: actions/cache@v3
+      - name: Checkout code
+        uses: actions/checkout@v2
         with:
-          key: ${{ github.ref }}
+          key: ${{github.ref}}
           path: .cache
 
       - name: Fix Python command
