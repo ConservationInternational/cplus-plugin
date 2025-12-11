@@ -220,15 +220,16 @@ class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
             use_manual=False,
         )
 
-        return ConstantRasterMetadata(
+        metadata = ConstantRasterMetadata(
             id=YEARS_EXPERIENCE_ACTIVITY_ID,
             display_name=tr("Years of Experience"),
             raster_collection=collection,
             serializer=constant_raster_collection_to_dict,
             deserializer=constant_raster_collection_from_dict,
             component_type=ModelComponentType.ACTIVITY,
-            input_range=InputRange(min=0.0, max=100.0),  # 0-100 years
         )
+        metadata.input_range = (0.0, 100.0)
+        return metadata
 
 
 class GenericNumericWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
