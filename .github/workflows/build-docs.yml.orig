@@ -1,0 +1,43 @@
+name: Build documentation
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-22.04
+    container:
+      image: qgis/qgis:release-3_34
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Setup cache
+        uses: actions/cache@v3
+        with:
+<<<<<<< HEAD
+          key: ${{github.ref}}
+=======
+          key: ${{ github.ref }}
+>>>>>>> 010875b798bf8f3f2097a0abe5969c83670bf181
+          path: .cache
+
+      - name: Fix Python command
+        run: apt-get install python-is-python3
+
+      - name: Install plugin development dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Update the documentation
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global --add safe.directory /__w/cplus-plugin/cplus-plugin
+          PYTHONPATH=src mkdocs gh-deploy --force
