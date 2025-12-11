@@ -823,7 +823,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         Conditions:
             1. The difference in area of the extent of the raster and
-                vector layer should be greater than 5%
+                vector layer should be greater than 15%
             2. The mask layer should be intersecting the raster layer
 
         :param raster_layer: Raster layer
@@ -842,7 +842,7 @@ class ScenarioAnalysisTask(QgsTask):
                 "Cancelling clipping raster, the mask layer or"
                 " the raster layer is invalid."
             )
-            self.processing_cancelled = True
+            self.cancel_task()
             return False
 
         # Reproject the masklayer if its CRS is different from the raster CRS
@@ -861,7 +861,7 @@ class ScenarioAnalysisTask(QgsTask):
                 "Cancelling clipping raster, the mask layer extent"
                 " and the raster extent do not overlap."
             )
-            self.processing_cancelled = True
+            self.cancel_task()
             return False
 
         mask_extent_area = mask_layer.extent().area()
@@ -869,11 +869,11 @@ class ScenarioAnalysisTask(QgsTask):
 
         area_ratio = mask_extent_area / raster_extent_area
 
-        # If mask layer extent is 5 % greater than raster layer extent
-        if abs(area_ratio - 1) < 0.05:
+        # If mask layer extent is 15 % greater than raster layer extent
+        if abs(area_ratio - 1) < 0.15:
             self.log_message(
                 "Skipping clipping raster layer, "
-                "the mask layer extent is within 5 percent of the raster layer extent"
+                "the mask layer extent is within 15 percent of the raster layer extent"
             )
             return False
 
