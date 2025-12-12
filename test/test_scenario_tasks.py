@@ -438,6 +438,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             name="first_test_pathway",
             description="first_test_description",
             path=pathway_layer_path_1,
+            suitability_index=1.0,
         )
 
         pathway_layer_path_2 = os.path.join(
@@ -449,6 +450,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             name="second_test_pathway",
             description="second_test_description",
             path=pathway_layer_path_2,
+            suitability_index=1.0,
         )
 
         first_test_layer = QgsRasterLayer(
@@ -516,7 +518,6 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         analysis_task.scenario_directory = scenario_directory
 
         settings_manager.set_value(Settings.BASE_DIR, base_dir)
-        settings_manager.set_value(Settings.PATHWAY_SUITABILITY_INDEX, 1.0)
 
         first_layer_stat = first_test_layer.dataProvider().bandStatistics(1)
         second_layer_stat = second_test_layer.dataProvider().bandStatistics(1)
