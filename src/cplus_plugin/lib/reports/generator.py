@@ -10,7 +10,6 @@ import typing
 import uuid
 
 from qgis.core import (
-    Qgis,
     QgsBasicNumericFormat,
     QgsCoordinateReferenceSystem,
     QgsFallbackNumericFormat,
@@ -18,7 +17,6 @@ from qgis.core import (
     QgsFillSymbol,
     QgsLayerTreeNode,
     QgsLayoutExporter,
-    QgsLayoutItemHtml,
     QgsLayoutItemLabel,
     QgsLayoutItemLegend,
     QgsLayoutItemManualTable,
@@ -43,7 +41,6 @@ from qgis.core import (
     QgsTableCell,
     QgsTextFormat,
     QgsUnitTypes,
-    QgsMessageLog,
     Qgis,
 )
 
@@ -57,7 +54,7 @@ from ..carbon import (
     CarbonImpactRestoreCalculator,
 )
 from .comparison_table import ScenarioComparisonTableInfo
-from ...conf import settings_manager
+from ...conf import settings_manager, Settings
 from ...definitions.constants import (
     ACTIVITY_GROUP_LAYER_NAME,
     ACTIVITY_IDENTIFIER_PROPERTY,
@@ -67,6 +64,7 @@ from ...definitions.defaults import (
     ACTIVITY_AREA_TABLE_ID,
     AREA_COMPARISON_TABLE_ID,
     CARBON_IMPACT_HEADER,
+    IMPACT_MATRIX_TABLE_ID,
     MANAGE_CARBON_IMPACT_HEADER,
     MAX_ACTIVITY_DESCRIPTION_LENGTH,
     MAX_ACTIVITY_NAME_LENGTH,
@@ -1798,6 +1796,106 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         legend_item.invalidateCache()
         legend_item.update()
 
+    def _filter_impact_matrix_table(
+        self,
+        pathway_ids: typing.List[str] = None,
+        priority_layer_ids: typing.List[str] = None,
+    ) -> dict:
+        """Filter the impact matrix table by specific NCS pathway and/or
+        priority layer IDs.
+
+        :param pathway_ids: List of pathway UUIDs to filter or None to keep all.
+        :type pathway_ids: typing.List[str]
+        :param priority_layer_ids: List of priority layer UUIDs to filter or
+        None to keep all.
+        :type priority_layer_ids: typing.List[str]
+
+        :returns: Filtered dictionary with the same format as that used for the
+        impact matrix stored in settings
+        i.e. {pathway_uuids: [], priority_layer_uuids: [], values: [[], []...]}
+        :rtype: dict
+        """
+        impact_matrix = settings_manager.get_value(
+            Settings.SCENARIO_IMPACT_MATRIX, dict()
+        )
+        if not impact_matrix:
+            return dict()
+
+        # Get indices for pathways to keep
+        if pathway_ids is None:
+            pathway_indices = list(range(len(impact_matrix["pathway_uuids"])))
+            filtered_pathways = impact_matrix["pathway_uuids"]
+        else:
+            pathway_indices = [
+                i
+                for i, p in enumerate(impact_matrix["pathway_uuids"])
+                if p in pathway_ids
+            ]
+            filtered_pathways = [
+                impact_matrix["pathway_uuids"][i] for i in pathway_indices
+            ]
+
+        # Get indices for priority layers to keep
+        if priority_layer_ids is None:
+            pwl_indices = list(range(len(impact_matrix["priority_layer_uuids"])))
+            filtered_layers = impact_matrix["priority_layer_uuids"]
+        else:
+            pwl_indices = [
+                i
+                for i, p in enumerate(impact_matrix["priority_layer_uuids"])
+                if p in priority_layer_ids
+            ]
+            filtered_layers = [
+                impact_matrix["priority_layer_uuids"][i] for i in pwl_indices
+            ]
+
+        # Filter values
+        filtered_values = []
+        for pathway_idx in pathway_indices:
+            row = [
+                impact_matrix["values"][pathway_idx][layer_idx]
+                for layer_idx in pwl_indices
+            ]
+            filtered_values.append(row)
+
+        return {
+            "pathway_uuids": filtered_pathways,
+            "priority_layer_uuids": filtered_layers,
+            "values": filtered_values,
+        }
+
+    def _populate_impact_matrix_table(self):
+        """Populate the table for NCS pathway / PWM impact matrix."""
+        parent_table = self._get_manual_table_from_id(IMPACT_MATRIX_TABLE_ID)
+        if parent_table is None:
+            self._error_messages.append(
+                tr("Could not find parent table for NCS pathway/PWL impact matrix.")
+            )
+            return
+
+        activities = self._context.scenario.activities
+        if not activities:
+            self._error_messages.append(tr("No activities in the scenario"))
+            return
+
+        # Collect unique NCS pathways from activities
+        pathways = {pathway for activity in activities for pathway in activity.pathways}
+
+        # Collect PWL info (uuid → name) from valid priority groups
+        pwl_info = {
+            layer["uuid"]: layer["name"]
+            for group in self._context.scenario.priority_layer_groups
+            if "name" in group and "value" in group
+            for layer in settings_manager.find_layers_by_group(group["name"]) or []
+        }
+
+        # Get filtered table
+        pathway_ids = [str(p.uuid) for p in pathways]
+        filtered_impact_matrix = self._filter_impact_matrix_table(
+            pathway_ids, list(pwl_info.keys())
+        )
+        log(f"Matrix info: {str(filtered_impact_matrix)}")
+
     def _populate_activity_area_table(self):
         """Populate the table(s) for activities and
         corresponding areas.
@@ -1977,7 +2075,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 # Number of columns with substantial calculation; use
                 # this to update progress
                 num_columns = 4
-                progress_increment = 15 / (float(num_columns) * num_activities)
+                progress_increment = 10 / (float(num_columns) * num_activities)
 
                 # Update values
                 formatted_area = self.format_number(area_info)
@@ -2232,9 +2330,6 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         for the selected scenario and saves it as a HTML file for use
         in the main application thread when the task has finished..
         """
-        # Build labels/values/colors from scenario data computed
-        log("scenario pie: start")
-
         labels, values, colors = [], [], []
         for act in self._context.scenario.activities:
             pv = int(getattr(act, "style_pixel_value", -1))
@@ -2275,13 +2370,13 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         """Runs report generation process."""
         super()._run()
 
-        # Set repeat page
-        self._set_repeat_page()
-
         if self._process_check_cancelled_or_set_progress(
             20, tr("initializing process")
         ):
             return self._get_failed_result()
+
+        # Set repeat page
+        self._set_repeat_page()
 
         if self._process_check_cancelled_or_set_progress(
             45, tr("rendering repeat page")
@@ -2298,6 +2393,14 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
         # Populate activity area table
         self._populate_activity_area_table()
+
+        if self._process_check_cancelled_or_set_progress(
+            80, tr("updating impact matrix table")
+        ):
+            return self._get_failed_result()
+
+            # Populate activity area table
+        self._populate_impact_matrix_table()
 
         if self._process_check_cancelled_or_set_progress(85, tr("rendering map items")):
             return self._get_failed_result()

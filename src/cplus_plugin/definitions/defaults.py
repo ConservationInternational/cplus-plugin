@@ -182,6 +182,7 @@ ACTIVITY_AREA_TABLE_ID = "activity_area_table"
 PRIORITY_GROUP_WEIGHT_TABLE_ID = "assigned_weights_table"
 AREA_COMPARISON_TABLE_ID = "comparison_table"
 ACTIVITY_AREA_HTML_ID = "activity_area_pie_html"
+IMPACT_MATRIX_TABLE_ID = "impact_matrix_table"
 
 # IDs for items in the metrics report template
 METRICS_HEADER_BACKGROUND = "metrics_header_background"
