@@ -256,6 +256,20 @@ Here is an explanation of how to use the **Highest position** tool:
 
 *Figure 6: Highest position result*
 
+### Naturebase Carbon Impact Calculation
+
+The plugin automatically calculates the carbon impact of each scenario using the mitigation potential values provided by Naturebase. Because Naturebase pathways already include carbon mitigation expressed in consistent units, the plugin can directly sum these values across all pathways selected in a scenario. The resulting total carbon impact is added to the final output report and reflected in any scenario summaries.
+
+To enable this calculation for a scenario, users should add the `cplus_activity_naturebase_carbon_impact` variable in *Step 2* of the **Activity Metrics Wizard**. This ensures that the carbon metric is correctly applied and that the scenario’s total mitigation value is recorded using Naturebase’s native units of analysis.
+
+<br>
+
+![cplus_activity_naturebase_carbon_impact variable](img/manual-calc-3.png)
+
+![Final Output Report](img/manual-calc-4.png)
+
+<br>
+
 This concludes the section on how the calculations are done.
 
 ### References
