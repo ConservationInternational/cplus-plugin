@@ -31,13 +31,17 @@ The second section offers a succinct overview of each step, providing references
 
 ### Evaluation Normalization Across Pathways
 
-Conservation planning analyses often use pathways that differ in structure, scale, or number of input variables. Without correction, pathways containing more variables may contribute disproportionately to the results. To ensure fairness and comparability, the plugin performs an Evaluation Normalization step before any pathway is processed into activities.
+Conservation planning analyses often use pathways that differ in structure, scale, or number of input variables. Without correction, pathways containing more variables may contribute disproportionately to the results. To ensure fairness and comparability, the plugin performs an Evaluation Normalization / Priority Weighting step before any pathway is processed into activities.
 
 **Figure 2** shows the Evaluation normalization workflow. 
 
+![Evaluation normalization workflow](img/cplus-normalization0.png)
+
+*Figure 2.1: Assigning priority weights*
+
 ![Evaluation normalization workflow](img/cplus-normalization.png)
 
-*Figure 2: Evaluation Normalization workflow*
+*Figure 2.2: Evaluation Normalization workflow*
 
 **Purpose of Evaluation Normalization**
 
