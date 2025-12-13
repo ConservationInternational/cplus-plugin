@@ -155,7 +155,7 @@ class ColumnMetricItemDelegate(QtWidgets.QStyledItemDelegate):
             create_metrics_expression_context(),
         )
         expression_builder.setWindowTitle(tr("Activity Column Expression Builder"))
-        if expression_builder.exec_() == QtWidgets.QDialog.Accepted:
+        if expression_builder.exec() == QtWidgets.QDialog.DialogCode.Accepted:
             # Save the expression for use when persisting in the model
             editor.setProperty(
                 self.EXPRESSION_PROPERTY_NAME, expression_builder.expressionText()
@@ -256,9 +256,9 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         # Initialize wizard
         ci_icon = FileUtils.get_icon("cplus_logo.svg")
         ci_pixmap = ci_icon.pixmap(64, 64)
-        self.setPixmap(QtWidgets.QWizard.LogoPixmap, ci_pixmap)
+        self.setPixmap(QtWidgets.QWizard.WizardPixmap.LogoPixmap, ci_pixmap)
 
-        help_button = self.button(QtWidgets.QWizard.HelpButton)
+        help_button = self.button(QtWidgets.QWizard.WizardButton.HelpButton)
         help_icon = FileUtils.get_icon("mActionHelpContents_green.svg")
         help_button.setIcon(help_icon)
 
@@ -1210,7 +1210,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
             return
 
         selection_model = self.lst_columns.selectionModel()
-        selection_model.select(index, QtCore.QItemSelectionModel.ClearAndSelect)
+        selection_model.select(index, QtCore.QItemSelectionModel.SelectionFlag.ClearAndSelect)
 
     def load_column_properties(self, column_item: MetricColumnListItem):
         """Load the properties of the column item in the corresponding
@@ -1230,19 +1230,19 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         self.cbo_column_alignment.clear()
 
         left_icon = FileUtils.get_icon("mIconAlignLeft.svg")
-        self.cbo_column_alignment.addItem(left_icon, tr("Left"), QtCore.Qt.AlignLeft)
+        self.cbo_column_alignment.addItem(left_icon, tr("Left"), QtCore.Qt.AlignmentFlag.AlignLeft)
 
         right_icon = FileUtils.get_icon("mIconAlignRight.svg")
-        self.cbo_column_alignment.addItem(right_icon, tr("Right"), QtCore.Qt.AlignRight)
+        self.cbo_column_alignment.addItem(right_icon, tr("Right"), QtCore.Qt.AlignmentFlag.AlignRight)
 
         center_icon = FileUtils.get_icon("mIconAlignCenter.svg")
         self.cbo_column_alignment.addItem(
-            center_icon, tr("Center"), QtCore.Qt.AlignHCenter
+            center_icon, tr("Center"), QtCore.Qt.AlignmentFlag.AlignHCenter
         )
 
         justify_icon = FileUtils.get_icon("mIconAlignJustify.svg")
         self.cbo_column_alignment.addItem(
-            justify_icon, tr("Justify"), QtCore.Qt.AlignJustify
+            justify_icon, tr("Justify"), QtCore.Qt.AlignmentFlag.AlignJustify
         )
 
         alignment_index = self.cbo_column_alignment.findData(column_item.alignment)
@@ -1448,7 +1448,7 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         """
         # Resize activity metric table columns based on the size of the table view.
         if observed_object == self.tb_activity_metrics:
-            if event.type() == QtCore.QEvent.Resize:
+            if event.type() == QtCore.QEvent.Type.Resize:
                 self.resize_activity_table_columns()
 
         return super().eventFilter(observed_object, event)

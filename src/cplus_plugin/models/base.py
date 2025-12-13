@@ -734,11 +734,11 @@ class ResultInfo:
         if not self.updated_date:
             return ""
 
-        updated_date_time = QDateTime.fromString(self.updated_date, Qt.ISODate)
+        updated_date_time = QDateTime.fromString(self.updated_date, Qt.DateFormat.ISODate)
         if not updated_date_time.isValid():
             return ""
 
-        updated_date_time.setTimeSpec(Qt.UTC)
+        updated_date_time.setTimeSpec(Qt.TimeSpec.UTC)
         local_date_time = updated_date_time.toLocalTime()
 
-        return QLocale.system().toString(local_date_time, QLocale.LongFormat)
+        return QLocale.system().toString(local_date_time, QLocale.FormatType.LongFormat)

@@ -71,21 +71,21 @@ class NpvFinancialModel(QtGui.QStandardItemModel):
         year_number = self.rowCount() + 1
         year_item = QtGui.QStandardItem(str(year_number))
         year_item.setEditable(False)
-        year_item.setTextAlignment(QtCore.Qt.AlignCenter)
+        year_item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         # style background
         year_item.setData(QtGui.QBrush(QtCore.Qt.lightGray), QtCore.Qt.BackgroundRole)
 
         revenue_item = QtGui.QStandardItem()
         revenue_item.setEditable(True)
-        revenue_item.setTextAlignment(QtCore.Qt.AlignCenter)
+        revenue_item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
         cost_item = QtGui.QStandardItem()
         cost_item.setEditable(True)
-        cost_item.setTextAlignment(QtCore.Qt.AlignCenter)
+        cost_item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
         discount_item = QtGui.QStandardItem()
         discount_item.setEditable(False)
-        discount_item.setTextAlignment(QtCore.Qt.AlignCenter)
+        discount_item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         discount_item.setData(
             QtGui.QBrush(QtCore.Qt.lightGray), QtCore.Qt.BackgroundRole
         )
@@ -185,7 +185,7 @@ class FinancialValueItemDelegate(DisplayValueFormatterItemDelegate):
         :param idx: Location in the data model.
         :type idx: QtCore.QModelIndex
         """
-        value = idx.model().data(idx, QtCore.Qt.EditRole)
+        value = idx.model().data(idx, QtCore.Qt.ItemDataRole.EditRole)
         if value is None:
             widget.setText("")
         else:
@@ -214,7 +214,7 @@ class FinancialValueItemDelegate(DisplayValueFormatterItemDelegate):
         else:
             value = float(widget.text())
 
-        model.setData(idx, value, QtCore.Qt.EditRole)
+        model.setData(idx, value, QtCore.Qt.ItemDataRole.EditRole)
 
     def updateEditorGeometry(
         self,
@@ -284,10 +284,10 @@ class ActivityNpvWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         )
         self.tv_revenue_costs.horizontalHeader().setStretchLastSection(True)
         self.tv_revenue_costs.setSelectionBehavior(
-            QtWidgets.QAbstractItemView.SelectItems
+            QtWidgets.QAbstractItemView.SelectionBehavior.SelectItems
         )
         self.tv_revenue_costs.setSelectionMode(
-            QtWidgets.QAbstractItemView.SingleSelection
+            QtWidgets.QAbstractItemView.SelectionMode.SingleSelection
         )
         self.fin_model.itemChanged.connect(self.on_npv_computation_item_changed)
         self.fin_model.rowsRemoved.connect(self.on_years_removed)
@@ -367,9 +367,9 @@ class ActivityNpvWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
                 continue
 
             revenue_index = self.fin_model.index(i, 1)
-            self.fin_model.setData(revenue_index, year_info[0], QtCore.Qt.EditRole)
+            self.fin_model.setData(revenue_index, year_info[0], QtCore.Qt.ItemDataRole.EditRole)
             cost_index = self.fin_model.index(i, 2)
-            self.fin_model.setData(cost_index, year_info[1], QtCore.Qt.EditRole)
+            self.fin_model.setData(cost_index, year_info[1], QtCore.Qt.ItemDataRole.EditRole)
 
         # Compute discounted column values
         self._recompute_discounted_column()
@@ -422,7 +422,7 @@ class ActivityNpvWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         """
         # Resize table columns based on the size of the table view.
         if observed_object == self.tv_revenue_costs:
-            if event.type() == QtCore.QEvent.Resize:
+            if event.type() == QtCore.QEvent.Type.Resize:
                 self.resize_column_widths()
 
         return super().eventFilter(observed_object, event)
@@ -492,7 +492,7 @@ class ActivityNpvWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         """
         for row in range(self.fin_model.rowCount()):
             discount_value = self.fin_model.data(
-                self.fin_model.index(row, 3), QtCore.Qt.EditRole
+                self.fin_model.index(row, 3), QtCore.Qt.ItemDataRole.EditRole
             )
             if discount_value is None:
                 continue
@@ -506,9 +506,9 @@ class ActivityNpvWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         """
         # For computation purposes, any None value will be
         # translated to zero.
-        revenue = self.fin_model.data(self.fin_model.index(row, 1), QtCore.Qt.EditRole)
+        revenue = self.fin_model.data(self.fin_model.index(row, 1), QtCore.Qt.ItemDataRole.EditRole)
 
-        cost = self.fin_model.data(self.fin_model.index(row, 2), QtCore.Qt.EditRole)
+        cost = self.fin_model.data(self.fin_model.index(row, 2), QtCore.Qt.ItemDataRole.EditRole)
 
         # No need to compute if both revenue and cost have not been defined
         if revenue is None and cost is None:
@@ -526,7 +526,7 @@ class ActivityNpvWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         rounded_discounted_value = round(discounted_value, DEFAULT_DECIMAL_PLACES)
         discounted_value_index = self.fin_model.index(row, 3)
         self.fin_model.setData(
-            discounted_value_index, rounded_discounted_value, QtCore.Qt.EditRole
+            discounted_value_index, rounded_discounted_value, QtCore.Qt.ItemDataRole.EditRole
         )
 
         if not self.cb_manual_npv.isChecked():
@@ -539,7 +539,7 @@ class ActivityNpvWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         npv = 0.0
         for row in range(self.fin_model.rowCount()):
             discount_value = self.fin_model.data(
-                self.fin_model.index(row, 3), QtCore.Qt.EditRole
+                self.fin_model.index(row, 3), QtCore.Qt.ItemDataRole.EditRole
             )
             if discount_value is None:
                 continue
@@ -592,13 +592,13 @@ class ActivityNpvWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
             yearly_rates = []
             for row in range(self.fin_model.rowCount()):
                 revenue_value = self.fin_model.data(
-                    self.fin_model.index(row, 1), QtCore.Qt.EditRole
+                    self.fin_model.index(row, 1), QtCore.Qt.ItemDataRole.EditRole
                 )
                 cost_value = self.fin_model.data(
-                    self.fin_model.index(row, 2), QtCore.Qt.EditRole
+                    self.fin_model.index(row, 2), QtCore.Qt.ItemDataRole.EditRole
                 )
                 discount_value = self.fin_model.data(
-                    self.fin_model.index(row, 3), QtCore.Qt.EditRole
+                    self.fin_model.index(row, 3), QtCore.Qt.ItemDataRole.EditRole
                 )
                 yearly_rates.append((revenue_value, cost_value, discount_value))
 

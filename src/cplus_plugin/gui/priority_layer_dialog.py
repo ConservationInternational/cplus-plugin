@@ -42,7 +42,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         self.setupUi(self)
         self.layer = layer
 
-        self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(False)
+        self.button_box.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setEnabled(False)
 
         self.map_layer_box.layerChanged.connect(self.map_layer_changed)
 
@@ -92,7 +92,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
                 or self._get_selected_default_layer() != {}
             )
         )
-        self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(enabled_state)
+        self.button_box.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setEnabled(enabled_state)
 
     def _disable_input_controls(self):
         """Disable key controls for PWL properties."""
@@ -168,7 +168,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         pathway_select_dialog = ItemsSelectionDialog(
             self, self.layer, self.ncs_pathways
         )
-        pathway_select_dialog.exec_()
+        pathway_select_dialog.exec()
 
     def set_selected_items(self, pathways, removed_pathways=None):
         """Adds this dialog layer into the passed pathways and removes it from the

@@ -40,7 +40,7 @@ class UploadProgressDialog(QtWidgets.QDialog, WidgetUi):
         super().__init__(parent)
         self.setupUi(self)
 
-        self.btn_cancel = self.buttonBox.button(QtWidgets.QDialogButtonBox.Cancel)
+        self.btn_cancel = self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel)
 
         self.btn_cancel.clicked.connect(self.on_cancel)
         self.pg_bar.setValue(0)
@@ -113,8 +113,8 @@ class DlgPriorityAddEdit(QtWidgets.QDialog, Ui_PwlDlgAddEdit):
         self.buttonBox.accepted.connect(self.save)
         self.buttonBox.rejected.connect(self.cancel_clicked)
 
-        self.btn_cancel = self.buttonBox.button(QtWidgets.QDialogButtonBox.Cancel)
-        self.btn_save = self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
+        self.btn_cancel = self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        self.btn_save = self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
 
         self.trends_earth_api_client = api.APIClient(API_URL, TIMEOUT)
 
@@ -138,10 +138,10 @@ class DlgPriorityAddEdit(QtWidgets.QDialog, Ui_PwlDlgAddEdit):
         """Initializes the widget message bar settings"""
 
         self.message_bar.setSizePolicy(
-            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed
+            QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Fixed
         )
         self.grid_layout.addWidget(
-            self.message_bar, 0, 0, 1, 1, alignment=QtCore.Qt.AlignTop
+            self.message_bar, 0, 0, 1, 1, alignment=QtCore.Qt.AlignmentFlag.AlignTop
         )
         self.mainLayout.insertLayout(0, self.grid_layout)
         self.message_bar.clearWidgets()

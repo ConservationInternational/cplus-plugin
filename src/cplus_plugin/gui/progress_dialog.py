@@ -77,7 +77,7 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         self.report_running = False
 
         # Progress bar
-        self.progress_bar.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        self.progress_bar.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignVCenter)
         self.progress_bar.setMinimum(minimum)
         self.progress_bar.setMaximum(maximum)
 
@@ -282,7 +282,7 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         # Change cancel button to the close button status
         self.btn_cancel.setText(tr("Close"))
         self.btn_view_report.setEnabled(True)
-        icon = self.style().standardIcon(QStyle.SP_DialogCloseButton)
+        icon = self.style().standardIcon(QStyle.StandardPixmap.SP_DialogCloseButton)
         self.btn_cancel.setIcon(icon)
 
 
@@ -424,7 +424,7 @@ class ReportProgressDialog(ProgressDialog):
         # Change cancel button to the close button status
         self.btn_cancel.setText(tr("Close"))
         self.btn_view_report.setEnabled(True)
-        icon = self.style().standardIcon(QStyle.SP_DialogCloseButton)
+        icon = self.style().standardIcon(QStyle.StandardPixmap.SP_DialogCloseButton)
         self.btn_cancel.setIcon(icon)
         self.btn_hide.setEnabled(False)
 

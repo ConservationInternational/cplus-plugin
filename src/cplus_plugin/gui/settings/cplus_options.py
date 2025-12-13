@@ -422,11 +422,11 @@ class DlgSettingsEditForgotPassword(
                 f"{self.email.text()}? Your new password will be emailed "
                 "to you."
             ),
-            QtWidgets.QMessageBox.Yes,
-            QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.StandardButton.Yes,
+            QtWidgets.QMessageBox.StandardButton.No,
         )
 
-        if reply == QtWidgets.QMessageBox.Yes:
+        if reply == QtWidgets.QMessageBox.StandardButton.Yes:
             resp = self.trends_earth_api_client.recover_pwd(self.email.text())
 
             if resp:
@@ -740,7 +740,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         mask_paths = ""
         for row in range(0, self.lst_mask_layers.count()):
             item = self.lst_mask_layers.item(row)
-            item_path = item.data(QtCore.Qt.DisplayRole)
+            item_path = item.data(QtCore.Qt.ItemDataRole.DisplayRole)
             mask_paths += f"{item_path},"
 
         settings_manager.set_value(Settings.MASK_LAYERS_PATHS, mask_paths)
@@ -812,7 +812,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             if mask_path == "":
                 continue
             item = QListWidgetItem()
-            item.setData(QtCore.Qt.DisplayRole, mask_path)
+            item.setData(QtCore.Qt.ItemDataRole.DisplayRole, mask_path)
             self.lst_mask_layers.addItem(item)
 
         if len(mask_paths_list) > 0:
@@ -869,7 +869,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             return
 
         item = QListWidgetItem()
-        item.setData(QtCore.Qt.DisplayRole, mask_path)
+        item.setData(QtCore.Qt.ItemDataRole.DisplayRole, mask_path)
 
         if self.lst_mask_layers.findItems(mask_path, QtCore.Qt.MatchExactly):
             error_tr = tr("The selected mask layer already exists.")
@@ -889,7 +889,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             error_tr = tr("Select a mask layer first.")
             self.show_message(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return
-        mask_path = self._show_mask_path_selector(item.data(QtCore.Qt.DisplayRole))
+        mask_path = self._show_mask_path_selector(item.data(QtCore.Qt.ItemDataRole.DisplayRole))
         if not mask_path:
             return
 
@@ -898,7 +898,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             self.show_message(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return
 
-        item.setData(QtCore.Qt.DisplayRole, mask_path)
+        item.setData(QtCore.Qt.ItemDataRole.DisplayRole, mask_path)
 
     def _on_remove_mask_layer(self, activated: bool):
         """Slot raised to remove one or more selected mask layers."""
@@ -912,13 +912,13 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             self,
             tr("QGIS CPLUS PLUGIN | Settings"),
             tr('Remove the mask layer from "{}"?').format(
-                item.data(QtCore.Qt.DisplayRole)
+                item.data(QtCore.Qt.ItemDataRole.DisplayRole)
             ),
-            QMessageBox.Yes,
-            QMessageBox.No,
+            QMessageBox.StandardButton.Yes,
+            QMessageBox.StandardButton.No,
         )
 
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             item_row = self.lst_mask_layers.row(item)
             self.lst_mask_layers.takeItem(item_row)
 
@@ -933,7 +933,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             self.tr("Select Mask Layer"),
             layer_dir,
             f"{filter_tr} (*.*)",
-            options=QFileDialog.DontResolveSymlinks,
+            options=QFileDialog.Option.DontResolveSymlinks,
         )
         if not layer_path:
             return ""
@@ -953,26 +953,26 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         for col, header in enumerate(headers):
             item = QStandardItem(header)
-            item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+            item.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
             self.pwl_model.setHorizontalHeaderItem(col, item)
 
         self.proxy_model = NumericSortProxyModel(
             numeric_columns=[1], size_columns=[4], date_columns=[7]
         )
         self.proxy_model.setSourceModel(self.pwl_model)
-        self.proxy_model.setSortCaseSensitivity(Qt.CaseInsensitive)
+        self.proxy_model.setSortCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
 
         self.tbl_pwl_layers.setModel(self.proxy_model)
         self.tbl_pwl_layers.setSortingEnabled(True)
-        self.tbl_pwl_layers.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.tbl_pwl_layers.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tbl_pwl_layers.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.Interactive
+            1, QHeaderView.ResizeMode.Interactive
         )
 
         self.tbl_pwl_layers.verticalHeader().hide()
         self.tbl_pwl_layers.setColumnWidth(1, 50)
 
-        self.tbl_pwl_layers.sortByColumn(1, Qt.AscendingOrder)
+        self.tbl_pwl_layers.sortByColumn(1, Qt.SortOrder.AscendingOrder)
         self.tbl_pwl_layers.setAlternatingRowColors(True)
         self.tbl_pwl_layers.setColumnHidden(0, True)  # Hide the column (ID)
         # Set minimum height of the table to accommodate 10 rows or the number of rows, whichever is smaller
@@ -1042,7 +1042,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
     def _on_add_pwl_layer(self, activated: bool):
         """Slot raised to add a new PWL layer."""
         dlg_pwl_add = DlgPriorityAddEdit(parent=self)
-        dlg_pwl_add.exec_()
+        dlg_pwl_add.exec()
 
     def _on_edit_pwl_layer(self, activated: bool):
         """Slot raised to edit a selected PWL layer."""
@@ -1052,7 +1052,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             self.show_message(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return
         dlg_pwl_add = DlgPriorityAddEdit(parent=self, layer=selected_layer)
-        dlg_pwl_add.exec_()
+        dlg_pwl_add.exec()
 
     def _on_remove_pwl_layer(self, activated: bool):
         """Slot raised to remove a selected PWL layer."""
@@ -1069,10 +1069,10 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             tr("Confirm Deletion"),
             tr("Are you sure you want to remove the selected layer")
             + f" <b>{layer.get('name')}</b>?",
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
         )
 
-        if reply == QtWidgets.QMessageBox.No:
+        if reply == QtWidgets.QMessageBox.StandardButton.No:
             return
 
         # Proceed with deletion
@@ -1278,14 +1278,14 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         return True, None
 
     def register(self):
-        self.dlg_settings_register.exec_()
+        self.dlg_settings_register.exec()
 
     def login(self):
-        self.dlg_settings_login.exec_()
+        self.dlg_settings_login.exec()
 
     def forgot_pwd(self):
         dlg_settings_edit_forgot_password = DlgSettingsEditForgotPassword()
-        dlg_settings_edit_forgot_password.exec_()
+        dlg_settings_edit_forgot_password.exec()
 
     def update_profile(self):
         user = self.trends_earth_api_client.get_user()
@@ -1293,7 +1293,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         if not user:
             return
         dlg_settings_edit_update = DlgSettingsEditUpdate(user)
-        dlg_settings_edit_update.exec_()
+        dlg_settings_edit_update.exec()
 
     def delete(self):
         email = _get_user_email(auth.TE_API_AUTH_SETUP)
@@ -1309,11 +1309,11 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
                 "be lost and you will no longer be able to process data online "
                 "using Trends.Earth.".format(email)
             ),
-            QtWidgets.QMessageBox.Yes,
-            QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.StandardButton.Yes,
+            QtWidgets.QMessageBox.StandardButton.No,
         )
 
-        if reply == QtWidgets.QMessageBox.Yes:
+        if reply == QtWidgets.QMessageBox.StandardButton.Yes:
             resp = self.trends_earth_api_client.delete_user(email)
 
             if resp:

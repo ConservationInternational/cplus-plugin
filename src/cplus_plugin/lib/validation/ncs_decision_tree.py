@@ -244,7 +244,7 @@ class ApplyNcsDecisionTreeAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.P_PIXEL,
                 tr("Pixel size (map units)"),
-                QgsProcessingParameterNumber.Double,
+                QgsProcessingParameterNumber.Type.Double,
                 30.0,
                 minValue=1e-6,
             )
@@ -253,7 +253,7 @@ class ApplyNcsDecisionTreeAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.P_NODATA,
                 tr("NoData value"),
-                QgsProcessingParameterNumber.Integer,
+                QgsProcessingParameterNumber.Type.Integer,
                 0,
             )
         )

@@ -108,7 +108,7 @@ class FinancialValueItemDelegate(DisplayValueFormatterItemDelegate):
         :param idx: Location in the data model.
         :type idx: QtCore.QModelIndex
         """
-        value = idx.model().data(idx, QtCore.Qt.EditRole)
+        value = idx.model().data(idx, QtCore.Qt.ItemDataRole.EditRole)
         if value is None:
             widget.setText("")
         else:
@@ -137,7 +137,7 @@ class FinancialValueItemDelegate(DisplayValueFormatterItemDelegate):
         else:
             value = float(widget.text())
 
-        model.setData(idx, value, QtCore.Qt.EditRole)
+        model.setData(idx, value, QtCore.Qt.ItemDataRole.EditRole)
 
     def updateEditorGeometry(
         self,
@@ -192,7 +192,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         self.tb_copy_npv.setIcon(copy_icon)
         self.tb_copy_npv.clicked.connect(self.copy_npv)
 
-        ok_button = self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
+        ok_button = self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
         ok_button.setText(tr("Update"))
         # Prevent button from being triggered when Enter is pressed
         # and use dummy interceptor below
@@ -263,7 +263,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
             activity_idx = self._activity_model.index(0, 0)
             if activity_idx.isValid():
                 self.lst_activities.selectionModel().select(
-                    activity_idx, QtCore.QItemSelectionModel.ClearAndSelect
+                    activity_idx, QtCore.QItemSelectionModel.SelectionFlag.ClearAndSelect
                 )
 
         self.gp_npv_pwl.toggled.connect(self._on_activity_npv_groupbox_toggled)
@@ -294,7 +294,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         """
         # Resize table columns based on the size of the table view.
         if observed_object == self.tv_revenue_costs:
-            if event.type() == QtCore.QEvent.Resize:
+            if event.type() == QtCore.QEvent.Type.Resize:
                 self.resize_column_widths()
 
         return super().eventFilter(observed_object, event)
@@ -363,10 +363,10 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         # For computation purposes, any None value will be
         # translated to zero.
         revenue = self._npv_model.data(
-            self._npv_model.index(row, 1), QtCore.Qt.EditRole
+            self._npv_model.index(row, 1), QtCore.Qt.ItemDataRole.EditRole
         )
 
-        cost = self._npv_model.data(self._npv_model.index(row, 2), QtCore.Qt.EditRole)
+        cost = self._npv_model.data(self._npv_model.index(row, 2), QtCore.Qt.ItemDataRole.EditRole)
 
         # No need to compute if both revenue and cost have not been defined
         if revenue is None and cost is None:
@@ -384,7 +384,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         rounded_discounted_value = round(discounted_value, self.NUM_DECIMAL_PLACES)
         discounted_value_index = self._npv_model.index(row, 3)
         self._npv_model.setData(
-            discounted_value_index, rounded_discounted_value, QtCore.Qt.EditRole
+            discounted_value_index, rounded_discounted_value, QtCore.Qt.ItemDataRole.EditRole
         )
 
         if not self.cb_manual_npv.isChecked():
@@ -396,7 +396,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         """
         for row in range(self._npv_model.rowCount()):
             discount_value = self._npv_model.data(
-                self._npv_model.index(row, 3), QtCore.Qt.EditRole
+                self._npv_model.index(row, 3), QtCore.Qt.ItemDataRole.EditRole
             )
             if discount_value is None:
                 continue
@@ -420,7 +420,7 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         self._npv = None
         for row in range(self._npv_model.rowCount()):
             discount_value = self._npv_model.data(
-                self._npv_model.index(row, 3), QtCore.Qt.EditRole
+                self._npv_model.index(row, 3), QtCore.Qt.ItemDataRole.EditRole
             )
             if discount_value is None:
                 continue
@@ -661,9 +661,9 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
                 continue
 
             revenue_index = self._npv_model.index(i, 1)
-            self._npv_model.setData(revenue_index, year_info[0], QtCore.Qt.EditRole)
+            self._npv_model.setData(revenue_index, year_info[0], QtCore.Qt.ItemDataRole.EditRole)
             cost_index = self._npv_model.index(i, 2)
-            self._npv_model.setData(cost_index, year_info[1], QtCore.Qt.EditRole)
+            self._npv_model.setData(cost_index, year_info[1], QtCore.Qt.ItemDataRole.EditRole)
 
         self.update_all_discounted_values()
 
@@ -691,13 +691,13 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
             yearly_rates = []
             for row in range(self._npv_model.rowCount()):
                 revenue_value = self._npv_model.data(
-                    self._npv_model.index(row, 1), QtCore.Qt.EditRole
+                    self._npv_model.index(row, 1), QtCore.Qt.ItemDataRole.EditRole
                 )
                 cost_value = self._npv_model.data(
-                    self._npv_model.index(row, 2), QtCore.Qt.EditRole
+                    self._npv_model.index(row, 2), QtCore.Qt.ItemDataRole.EditRole
                 )
                 discount_value = self._npv_model.data(
-                    self._npv_model.index(row, 3), QtCore.Qt.EditRole
+                    self._npv_model.index(row, 3), QtCore.Qt.ItemDataRole.EditRole
                 )
                 yearly_rates.append((revenue_value, cost_value, discount_value))
 

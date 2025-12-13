@@ -172,7 +172,7 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
         description_editor.setWindowTitle(
             f"{reference_item.model_component.name} {title_tr}"
         )
-        if description_editor.exec_() == QtWidgets.QDialog.Accepted:
+        if description_editor.exec() == QtWidgets.QDialog.DialogCode.Accepted:
             updated_description = description_editor.description
             reference_item.model_component.description = updated_description
             self.txt_item_description.setText(updated_description)
@@ -323,7 +323,7 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
                 item = self._item_model.item(sel_idx.row(), 0)
                 # If not enabled then deselect
                 if not item.isEnabled():
-                    selection_model.select(sel_idx, QtCore.QItemSelectionModel.Deselect)
+                    selection_model.select(sel_idx, QtCore.QItemSelectionModel.SelectionFlag.Deselect)
 
     def add_action_widget(self, widget: QtWidgets.QWidget):
         """Adds an auxiliary widget below the list view from the left-hand side.
@@ -363,14 +363,14 @@ class NcsComponentWidget(ModelComponentWidget):
 
         self.btn_remove.setMenu(self._delete_menu)
         self.btn_remove.setDefaultAction(self._remove_default_action)
-        self.btn_remove.setPopupMode(QtWidgets.QToolButton.MenuButtonPopup)
+        self.btn_remove.setPopupMode(QtWidgets.QToolButton.ToolButtonPopupMode.MenuButtonPopup)
         self.btn_remove.triggered.connect(self.on_delete_triggered)
 
         self.item_model = NcsPathwayItemModel(parent)
         self.item_model.itemChanged.connect(self.on_item_changed)
 
         self.lst_model_items.setDragEnabled(True)
-        self.lst_model_items.setDragDropMode(QtWidgets.QAbstractItemView.DragOnly)
+        self.lst_model_items.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.DragOnly)
         self.lst_model_items.setAcceptDrops(False)
 
         self._validation_manager = validation_manager
@@ -424,9 +424,9 @@ class NcsComponentWidget(ModelComponentWidget):
                 self,
                 self.tr("Remove NCS Pathways"),
                 msg,
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
             )
-            == QtWidgets.QMessageBox.Yes
+            == QtWidgets.QMessageBox.StandardButton.Yes
         ):
             for ncs in ncs_models:
                 self.item_model.remove_ncs_pathway(str(ncs.uuid))
@@ -591,7 +591,7 @@ class NcsComponentWidget(ModelComponentWidget):
             progress_dialog = ValidationProgressDialog(
                 self._validation_submit_result, self
             )
-            progress_dialog.exec_()
+            progress_dialog.exec()
 
     def validate_pathways(self):
         """Validates NCS pathway model components against a given set of
@@ -623,7 +623,7 @@ class NcsComponentWidget(ModelComponentWidget):
     def _on_add_item(self):
         """Show NCS pathway editor."""
         ncs_editor = NcsPathwayEditorDialog(self, excluded_names=self.model_names())
-        if ncs_editor.exec_() == QtWidgets.QDialog.Accepted:
+        if ncs_editor.exec() == QtWidgets.QDialog.DialogCode.Accepted:
             ncs_pathway = ncs_editor.ncs_pathway
             result = self.item_model.add_ncs_pathway(ncs_pathway)
             if result:
@@ -655,7 +655,7 @@ class NcsComponentWidget(ModelComponentWidget):
         ncs_editor = NcsPathwayEditorDialog(
             self, item.ncs_pathway, excluded_names=excluded_names
         )
-        if ncs_editor.exec_() == QtWidgets.QDialog.Accepted:
+        if ncs_editor.exec() == QtWidgets.QDialog.DialogCode.Accepted:
             ncs_pathway = ncs_editor.ncs_pathway
             result = self.item_model.update_ncs_pathway(ncs_pathway)
             if result:
@@ -716,7 +716,7 @@ class ActivityComponentWidget(ModelComponentWidget):
         self.item_model.activity_pathways_updated.connect(self.on_pathways_updated)
 
         self.lst_model_items.setAcceptDrops(True)
-        self.lst_model_items.setDragDropMode(QtWidgets.QAbstractItemView.DropOnly)
+        self.lst_model_items.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.DropOnly)
         self.lst_model_items.setDropIndicatorShown(True)
 
         self.btn_reload.setVisible(False)
@@ -751,7 +751,7 @@ class ActivityComponentWidget(ModelComponentWidget):
         values for styling.
         """
         pixel_dialog = PixelValueEditorDialog(self)
-        if pixel_dialog.exec_() == QtWidgets.QDialog.Accepted:
+        if pixel_dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
             # Update pixel values
             pixel_values = pixel_dialog.item_mapping
             for val, activity_id in pixel_values.items():
@@ -809,7 +809,7 @@ class ActivityComponentWidget(ModelComponentWidget):
     def _on_add_item(self):
         """Show activity editor."""
         editor = ActivityEditorDialog(self, excluded_names=self.model_names())
-        if editor.exec_() == QtWidgets.QDialog.Accepted:
+        if editor.exec() == QtWidgets.QDialog.DialogCode.Accepted:
             activity = editor.activity
             layer = editor.layer
             num_models = len(settings_manager.get_all_activities())
@@ -845,7 +845,7 @@ class ActivityComponentWidget(ModelComponentWidget):
         editor = ActivityEditorDialog(
             self, item.activity, excluded_names=excluded_names
         )
-        if editor.exec_() == QtWidgets.QDialog.Accepted:
+        if editor.exec() == QtWidgets.QDialog.DialogCode.Accepted:
             activity = editor.activity
             layer = editor.layer
             result = self.item_model.update_activity(activity, layer)
@@ -877,9 +877,9 @@ class ActivityComponentWidget(ModelComponentWidget):
                 self,
                 self.tr("Remove Selection"),
                 msg,
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
             )
-            == QtWidgets.QMessageBox.Yes
+            == QtWidgets.QMessageBox.StandardButton.Yes
         ):
             activity_id_pixel_values = {
                 item.uuid: item.activity.style_pixel_value

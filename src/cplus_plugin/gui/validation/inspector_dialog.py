@@ -151,7 +151,7 @@ class ValidationInspectorDialog(QtWidgets.QDialog, WidgetUi):
         menu = QtWidgets.QMenu(self)
         menu.addAction(copy_action)
 
-        menu.exec_(self.tw_results.mapToGlobal(point))
+        menu.exec(self.tw_results.mapToGlobal(point))
 
     def on_copy_detailed_results(self, copy_text: str):
         """Slot raised to copy detailed error/warning text.

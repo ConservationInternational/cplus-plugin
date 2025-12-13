@@ -49,11 +49,11 @@ class ValidationProgressDialog(QtWidgets.QDialog, WidgetUi):
 
         self._close_on_completion = close_on_completion
 
-        self.btn_show_details = self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
+        self.btn_show_details = self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
         if hide_details_button:
             self.btn_show_details.setVisible(False)
 
-        self.btn_close = self.buttonBox.button(QtWidgets.QDialogButtonBox.Close)
+        self.btn_close = self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Close)
         if cancel_mode:
             self.btn_close.setText(tr("Cancel"))
 
@@ -131,7 +131,7 @@ class ValidationProgressDialog(QtWidgets.QDialog, WidgetUi):
                 return
 
             inspector_dialog = ValidationInspectorDialog(self, result=validation_result)
-            inspector_dialog.exec_()
+            inspector_dialog.exec()
 
     def hide_results_button(self, hide: bool):
         """Hides or shows the button for showing the validation inspector.

@@ -19,7 +19,7 @@ from zipfile import ZipFile
 import numpy as np
 from osgeo import gdal
 
-from qgis.PyQt import QtCore, QtGui
+from qgis.PyQt import QtCore, QtGui, QtWidgets
 from qgis.core import (
     Qgis,
     QgsCoordinateReferenceSystem,
@@ -54,6 +54,30 @@ from .definitions.constants import (
 )
 from .models.base import ModelComponentType
 from .models.constant_raster import ConstantRasterFileMetadata
+
+
+def item_user_type():
+    """Get QStandardItem.UserType in Qt5/Qt6 compatible way.
+
+    Uses Qt6-style ItemType.UserType which works in both Qt5 and Qt6.
+
+    Returns:
+        int: The user type value for QStandardItem
+    """
+    user_type = QtGui.QStandardItem.ItemType.UserType
+    return user_type.value if hasattr(user_type, 'value') else int(user_type)
+
+
+def tree_item_user_type():
+    """Get QTreeWidgetItem.UserType in Qt5/Qt6 compatible way.
+
+    Uses Qt6-style ItemType.UserType which works in both Qt5 and Qt6.
+
+    Returns:
+        int: The user type value for QTreeWidgetItem
+    """
+    user_type = QtWidgets.QTreeWidgetItem.ItemType.UserType
+    return user_type.value if hasattr(user_type, 'value') else int(user_type)
 
 
 def tr(message):
@@ -93,7 +117,7 @@ def log(
     :param notify: Whether to notify user about the log
     :type notify: bool
     """
-    level = Qgis.Info if info else Qgis.Warning
+    level = Qgis.MessageLevel.Info if info else Qgis.MessageLevel.Warning
     if not isinstance(message, str):
         message = json.dumps(todict(message), cls=CustomJsonEncoder)
     QgsMessageLog.logMessage(
@@ -577,7 +601,7 @@ def contains_font_family(font_family: str) -> bool:
     :returns: True if the font family exists, else False.
     :rtype: bool
     """
-    font_families = QtGui.QFontDatabase().families()
+    font_families = QtGui.QFontDatabase.families()
     matching_fonts = [family for family in font_families if font_family in family]
 
     return True if len(matching_fonts) > 0 else False

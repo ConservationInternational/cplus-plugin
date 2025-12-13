@@ -125,7 +125,7 @@ class MetricColumn:
     name: str
     header: str
     expression: str
-    alignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignHCenter
+    alignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag.AlignHCenter
     auto_calculated: bool = False
     format_as_number: bool = True
     number_formatter: QgsNumericFormat = QgsFallbackNumericFormat

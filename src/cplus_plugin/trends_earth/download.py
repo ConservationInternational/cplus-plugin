@@ -369,7 +369,7 @@ class DownloadWorker(AbstractWorker):
             if self.killed:
                 downloader.downloadProgress.connect(downloader.cancelDownload)
 
-            loop.exec_()
+            loop.exec()
 
         except Exception as e:
             log(tr_download.tr("Error in downloading file, {}").format(str(e)))
@@ -413,7 +413,7 @@ class Download:
             start_worker(
                 worker, iface, tr_download.tr("Downloading {}").format(self.outfile)
             )
-            pause.exec_()
+            pause.exec()
             if self.get_exception():
                 raise self.get_exception()
 
