@@ -314,3 +314,12 @@ MANAGE_CARBON_IMPACT_EXPRESSION_DESCRIPTION = (
 # Constant raster type identifiers
 YEARS_EXPERIENCE_ACTIVITY_ID = "years_experience_activity"
 NPV_METADATA_ID = "financial_npv"
+IMPACT_MATRIX_COLORS = {
+    -3: {"color": "#d7191c", "impact": "Strong Negative Impact"},
+    -2: {"color": "#f07c4a", "impact": "Moderate Negative Impact"},
+    -1: {"color": "#fec981", "impact": "Slight Negative Impact"},
+    0: {"color": "#ffffc0", "impact": "Neutral / No Measurable Impact"},
+    1: {"color": "#c4e687", "impact": "Slight Positive Impact"},
+    2: {"color": "#77c35c", "impact": "Moderate Positive Impact"},
+    3: {"color": "#1a9641", "impact": "Strong Positive Impact"},
+}
