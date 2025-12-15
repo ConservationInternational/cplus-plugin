@@ -31,17 +31,13 @@ The second section offers a succinct overview of each step, providing references
 
 ### Evaluation Normalization Across Pathways
 
-Conservation planning analyses often use pathways that differ in structure, scale, or number of input variables. Without correction, pathways containing more variables may contribute disproportionately to the results. To ensure fairness and comparability, the plugin performs an Evaluation Normalization / Priority Weighting step before any pathway is processed into activities.
+Conservation planning analyses often use pathways that differ in structure, scale, or number of input variables. Without correction, pathways containing more variables may contribute disproportionately to the results. To ensure fairness and comparability, the plugin performs an Evaluation Normalization step before any pathway is processed into activities.
 
 **Figure 2** shows the Evaluation normalization workflow. 
 
-![Evaluation normalization workflow](img/cplus-normalization0.png)
-
-*Figure 2.1: Assigning priority weights*
-
 ![Evaluation normalization workflow](img/cplus-normalization.png)
 
-*Figure 2.2: Evaluation Normalization workflow*
+*Figure 2: Evaluation Normalization workflow*
 
 **Purpose of Evaluation Normalization**
 
@@ -222,6 +218,44 @@ $$
 
 - The resulting PWL will then be used as input to the Highest position calculation
 
+### Naturebase Decision Tree
+
+The plugin incorporates *The Nature Conservancy (TNC)* decision-tree rules to ensure that overlapping pathway areas are resolved consistently and without double counting. These rules are implemented as a series of **If/Then conditions**, supplied by Conservation International, and define which pathway should take priority when spatial overlaps occur.
+
+The decision tree follows TNC’s official Natural Climate Solutions (NCS) accounting framework. When two or more pathways overlap, the plugin evaluates the pixel using these principles:
+
+1. **Cropland supersedes all other pathways**
+
+    Existing croplands are reserved for food security and therefore override any restoration or management pathways.
+
+2. **Wetlands supersede all non-cropland pathways**
+
+    When wetlands overlap with forests, grasslands or other biomes, mitigation is counted toward the wetland pathway.
+
+3. **Biodiversity protection constraints apply**
+
+    Pathways that would cause demonstrable harm to native ecosystems are excluded.
+
+4. **NCS Hierarchy (Protect → Manage → Restore)**
+
+    After applying base rules, protection activities outrank management, which outrank restoration activities.
+
+5. **Scenario-specific rules may apply**
+
+    Depending on the selected scenario, additional prioritization logic may be used (e.g., maximum cost-effective potential or maximum mitigation potential).
+
+These steps ensure that each pixel is assigned to a single valid pathway in accordance with global NCS accounting standards. The plugin automatically applies these rules in all calculations, matrices, summaries, and reports.
+
+<br>
+
+**Visualization of Base Accounting Rules (1) and Prioritization Rules (2)**
+
+![Visualization of Rules 1](img/manual-calc-1.png)
+
+![Visualization of Rules 2](img/manual-calc-2.png)
+
+<br>
+
 ### Highest Position
 
 The <a href="https://docs.qgis.org/3.28/en/docs/user_manual/processing_algs/qgis/rasteranalysis.html#qgishighestpositioninrasterstack">Highest position</a>
@@ -259,6 +293,20 @@ Here is an explanation of how to use the **Highest position** tool:
 ![QGIS highest position result](img/qgis-hp-result.png)
 
 *Figure 6: Highest position result*
+
+### Naturebase Carbon Impact Calculation
+
+The plugin automatically calculates the carbon impact of each scenario using the mitigation potential values provided by Naturebase. Because Naturebase pathways already include carbon mitigation expressed in consistent units, the plugin can directly sum these values across all pathways selected in a scenario. The resulting total carbon impact is added to the final output report and reflected in any scenario summaries.
+
+To enable this calculation for a scenario, users should add the `cplus_activity_naturebase_carbon_impact` variable in *Step 2* of the **Activity Metrics Wizard**. This ensures that the carbon metric is correctly applied and that the scenario’s total mitigation value is recorded using Naturebase’s native units of analysis.
+
+<br>
+
+![cplus_activity_naturebase_carbon_impact variable](img/manual-calc-3.png)
+
+![Final Output Report](img/manual-calc-4.png)
+
+<br>
 
 This concludes the section on how the calculations are done.
 

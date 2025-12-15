@@ -66,6 +66,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             description="test_description",
             path=pathway_layer_path,
             priority_layers=[],
+            suitability_index=0.5,
         )
 
         test_layer = QgsRasterLayer(test_pathway.path, test_pathway.name)
@@ -128,7 +129,6 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         analysis_task.scenario_directory = scenario_directory
 
         settings_manager.set_value(Settings.BASE_DIR, base_dir)
-        settings_manager.set_value(Settings.PATHWAY_SUITABILITY_INDEX, 0.5)
 
         past_stat = test_layer.dataProvider().bandStatistics(1)
 
@@ -261,6 +261,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
                 priority_layer_3,
                 priority_layer_4,
             ],
+            suitability_index=2.0,
         )
 
         test_layer = QgsRasterLayer(test_pathway.path, test_pathway.name)
@@ -333,7 +334,6 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         analysis_task.scenario_directory = scenario_directory
 
         settings_manager.set_value(Settings.BASE_DIR, base_dir)
-        settings_manager.set_value(Settings.PATHWAY_SUITABILITY_INDEX, 2.0)
 
         # Using positive impact matrix
         settings_manager.set_value(
@@ -1025,6 +1025,93 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         self.assertEqual(result_stat.minimumValue, 2.0)
         self.assertEqual(result_stat.maximumValue, 10.0)
         self.assertAlmostEqual(result_stat.mean, 6, places=3)
+
+    def test_scenario_create_connectivity_layer(self):
+        activities_layer_directory = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "data", "activities", "layers"
+        )
+
+        activity_layer_path_1 = os.path.join(
+            activities_layer_directory, "test_activity_2.tif"
+        )
+
+        test_activity = Activity(
+            uuid=uuid.uuid4(),
+            name="test_activity",
+            description="test_description",
+            pathways=[],
+            path=activity_layer_path_1,
+            mask_paths=[],
+        )
+
+        settings_manager.save_activity(test_activity)
+
+        activity_layer = QgsRasterLayer(test_activity.path, test_activity.name)
+
+        test_extent = activity_layer.extent()
+
+        spatial_extent = SpatialExtent(
+            bbox=[
+                test_extent.xMinimum(),
+                test_extent.xMaximum(),
+                test_extent.yMinimum(),
+                test_extent.yMaximum(),
+            ],
+            crs=activity_layer.crs().authid(),
+        )
+
+        scenario = Scenario(
+            uuid=uuid.uuid4(),
+            name="Scenario",
+            description="Scenario description",
+            activities=[test_activity],
+            extent=spatial_extent,
+            priority_layer_groups=[],
+        )
+
+        analysis_task = ScenarioAnalysisTask(
+            "test_scenario_create_connectivity_layer",
+            "test_scenario_create_connectivity_layer_description",
+            [test_activity],
+            [],
+            test_extent,
+            scenario,
+            clip_to_studyarea=True,
+        )
+
+        base_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "data",
+            "activities",
+        )
+
+        scenario_directory = os.path.join(
+            f"{base_dir}",
+            f'scenario_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+            f"_{str(uuid.uuid4())[:4]}",
+        )
+
+        analysis_task.scenario_directory = scenario_directory
+
+        settings_manager.set_value(Settings.BASE_DIR, base_dir)
+
+        first_layer_stat = activity_layer.dataProvider().bandStatistics(1)
+
+        self.assertEqual(first_layer_stat.minimumValue, 0.0)
+        self.assertEqual(first_layer_stat.maximumValue, 1.0)
+
+        activity_connectivity_path = analysis_task.create_activity_connectivity_layer(
+            test_activity
+        )
+
+        self.assertIsNotNone(activity_connectivity_path)
+        self.assertTrue(os.path.exists(activity_connectivity_path))
+
+        connectivity_layer = QgsRasterLayer(activity_connectivity_path, "Layer")
+
+        result_stat = connectivity_layer.dataProvider().bandStatistics(1)
+        self.assertEqual(result_stat.minimumValue, 0.0)
+        self.assertEqual(result_stat.maximumValue, 1.0)
 
     def tearDown(self):
         pass

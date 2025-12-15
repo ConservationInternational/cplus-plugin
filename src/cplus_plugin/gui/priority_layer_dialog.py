@@ -146,6 +146,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
 
             self.layer_name.setText(self.layer["name"])
             self.layer_description.setText(self.layer["description"])
+            self.carbon_enabled.setChecked(self.layer.get("is_carbon", False))
 
             all_pathways = settings_manager.get_all_ncs_pathways()
 
@@ -241,6 +242,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         layer["uuid"] = str(layer_id)
         layer["name"] = self.layer_name.text()
         layer["description"] = self.layer_description.toPlainText()
+        layer["is_carbon"] = self.carbon_enabled.isChecked()
         layer["groups"] = layer_groups
 
         default_layer = self._get_selected_default_layer()

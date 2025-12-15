@@ -7,7 +7,9 @@ will be saved using QgsSettings. Settings can be accessed via the QGIS options,
 a button on the docking widget, and from the toolbar menu.
 """
 
+from datetime import datetime, timezone
 import os
+import re
 import typing
 import uuid
 
@@ -661,12 +663,6 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         base_dir_path = self.folder_data.filePath()
         settings_manager.set_value(Settings.BASE_DIR, base_dir_path)
 
-        # Pathway suitability index
-        pathway_suitability_index = self.suitability_index_box.value()
-        settings_manager.set_value(
-            Settings.PATHWAY_SUITABILITY_INDEX, pathway_suitability_index
-        )
-
         # NoData value
         no_data_value = self.nodata_value_box.value()
         settings_manager.set_value(Settings.NCS_NO_DATA_VALUE, no_data_value)
@@ -721,6 +717,10 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             Settings.RESCALE_VALUES, self.rescale_values.isChecked()
         )
         settings_manager.set_value(
+            Settings.PIXEL_CONNECTIVITY_ENABLED,
+            self.pixel_connectivity_enabled.isChecked(),
+        )
+        settings_manager.set_value(
             Settings.RESAMPLING_METHOD, self.resample_method_box.currentIndex()
         )
 
@@ -758,12 +758,6 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.folder_data.setFilePath(base_dir)
         self.base_dir_exists()
 
-        # Pathway suitability index
-        pathway_suitability_index = settings_manager.get_value(
-            Settings.PATHWAY_SUITABILITY_INDEX, default=0
-        )
-        self.suitability_index_box.setValue(float(pathway_suitability_index))
-
         # NoData value
         no_data_value = settings_manager.get_value(
             Settings.NCS_NO_DATA_VALUE, default=NO_DATA_VALUE, setting_type=float
@@ -782,6 +776,11 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.rescale_values.setChecked(
             settings_manager.get_value(
                 Settings.RESCALE_VALUES, default=False, setting_type=bool
+            )
+        )
+        self.pixel_connectivity_enabled.setChecked(
+            settings_manager.get_value(
+                Settings.PIXEL_CONNECTIVITY_ENABLED, default=True, setting_type=bool
             )
         )
         self.resample_method_box.setCurrentIndex(
@@ -957,7 +956,9 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
             self.pwl_model.setHorizontalHeaderItem(col, item)
 
-        self.proxy_model = QSortFilterProxyModel()
+        self.proxy_model = NumericSortProxyModel(
+            numeric_columns=[1], size_columns=[4], date_columns=[7]
+        )
         self.proxy_model.setSourceModel(self.pwl_model)
         self.proxy_model.setSortCaseSensitivity(Qt.CaseInsensitive)
 
@@ -1015,6 +1016,11 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         if self.default_priority_layers is not None:
             for idx, pwl in enumerate(self.default_priority_layers):
+                # Created date are in ISO-8601 format e.g 2025-05-13T06:02:13Z
+                created_date = datetime.fromisoformat(
+                    pwl.get("created_on").replace("Z", "+00:00")
+                )
+                formatted_date = created_date.strftime("%Y-%m-%d %H:%M")
                 items = [
                     QStandardItem(str(pwl.get("layer_uuid"))),
                     QStandardItem(str(idx + 1)),
@@ -1027,7 +1033,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
                     QStandardItem(str(convert_size(pwl.get("size")))),
                     QStandardItem(str(pwl.get("metadata", {}).get("crs"))),
                     QStandardItem(str(pwl.get("version", "v0.0.1"))),
-                    QStandardItem(str(pwl.get("created_on"))),
+                    QStandardItem(formatted_date),
                 ]
                 self.pwl_model.appendRow(items)
 
@@ -1430,3 +1436,85 @@ class CplusOptionsFactory(QgsOptionsWidgetFactory):
         """
 
         return CplusSettings(parent, main_widget=self.main_widget)
+
+
+class NumericSortProxyModel(QSortFilterProxyModel):
+    def __init__(
+        self, numeric_columns=None, size_columns=None, date_columns=None, parent=None
+    ):
+        super().__init__(parent)
+        self.numeric_columns = numeric_columns or []
+        self.size_columns = size_columns or []
+        self.date_columns = date_columns or []
+
+    def lessThan(self, left, right):
+        column = left.column()
+
+        left_data = left.data()
+        right_data = right.data()
+
+        # --- Numeric columns ---
+        if column in self.numeric_columns:
+            return self.parse_number(left_data) < self.parse_number(right_data)
+
+        # --- File Size columns ---
+        if column in self.size_columns:
+            left_bytes = self.parse_size(left_data)
+            right_bytes = self.parse_size(right_data)
+            return left_bytes < right_bytes
+
+        # --- Date columns ---
+        if column in self.date_columns:
+            left_val = self.parse_date(left_data)
+            right_val = self.parse_date(right_data)
+            return left_val < right_val
+
+        # otherwise fallback to string comparison
+        return str(left_data) < str(right_data)
+
+    def parse_number(self, value):
+        """Convert plain number to float if possible."""
+        try:
+            return float(value)
+        except:
+            return float("-inf")
+
+    def parse_size(self, value):
+        """
+        Convert "90.14 MB", "1 GB", "512 KB" → bytes (float)
+        """
+        if not value:
+            return float("-inf")
+
+        value = value.strip().upper()
+
+        match = re.match(r"([\d\.]+)\s*(B|KB|MB|GB|TB)?", value)
+        if not match:
+            return float("-inf")
+
+        num, unit = match.groups()
+        num = float(num)
+
+        unit_multipliers = {
+            "B": 1,
+            "KB": 1024,
+            "MB": 1024**2,
+            "GB": 1024**3,
+            "TB": 1024**4,
+            None: 1,  # default = bytes
+        }
+
+        return num * unit_multipliers.get(unit, 1)
+
+    def parse_date(self, value):
+        """
+        Parse timestamps: '2025-05-13 06:02'
+        """
+        if not value:
+            return float("-inf")
+
+        try:
+            dt = datetime.strptime(value, "%Y-%m-%d %H:%M")
+            return dt.timestamp()
+        except Exception:
+            return float("-inf")

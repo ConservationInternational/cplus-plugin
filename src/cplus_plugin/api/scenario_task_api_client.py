@@ -541,9 +541,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             if snapping_enabled
             else ""
         )
-        suitability_index = float(
-            self.get_settings_value(Settings.PATHWAY_SUITABILITY_INDEX, default=0)
-        )
         snap_rescale = self.get_settings_value(
             Settings.RESCALE_VALUES, default=False, setting_type=bool
         )
@@ -688,7 +685,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             "snapping_enabled": snapping_enabled,
             "snap_layer": snap_layer_path,
             "snap_layer_uuid": snap_layer_uuid,
-            "pathway_suitability_index": suitability_index,
             "snap_rescale": snap_rescale,
             "snap_method": resampling_method,
             "sieve_enabled": sieve_enabled,
@@ -722,6 +718,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             "studyarea_layer_uuid": studyarea_layer_uuid,
             "relative_impact_matrix": impact_matrix_dict,
             "activity_constant_rasters": activity_constant_rasters,
+            "pixel_connectivity_enabled": self.get_settings_value(
+                Settings.PIXEL_CONNECTIVITY_ENABLED, default=True, setting_type=bool
+            ),
         }
 
     def __execute_scenario_analysis(self) -> None:

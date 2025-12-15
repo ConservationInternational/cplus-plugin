@@ -27,6 +27,7 @@ CARBON_PATHS_ATTRIBUTE = "carbon_paths"
 COLOR_RAMP_PROPERTIES_ATTRIBUTE = "color_ramp"
 COLOR_RAMP_TYPE_ATTRIBUTE = "ramp_type"
 DESCRIPTION_ATTRIBUTE = "description"
+ID_ATTRIBUTE = "id"
 PATHWAY_TYPE_OPTIONS_ATTRIBUTE = "type_options"
 ACTIVITY_LAYER_STYLE_ATTRIBUTE = "activity_layer"
 ACTIVITY_SCENARIO_STYLE_ATTRIBUTE = "scenario_layer"
@@ -87,15 +88,17 @@ CARBON_OPTIONS_KEY = "cplus_carbon"
 
 # Headers for financial NPV computation
 YEAR_HEADER = "Year"
-TOTAL_PROJECTED_COSTS_HEADER = "Projected Total Costs/ha (US$)"
-TOTAL_PROJECTED_REVENUES_HEADER = "Projected Total Revenues/ha (US$)"
-DISCOUNTED_VALUE_HEADER = "Discounted Value (US$)"
+TOTAL_PROJECTED_COSTS_HEADER = "Costs/ha"
+TOTAL_PROJECTED_REVENUES_HEADER = "Revenues/ha"
+DISCOUNTED_VALUE_HEADER = "Discounted Value"
 MAX_YEARS = 99
+
+CURRENT_ACTIVITY_HEADER = "Current Activity"
 
 NO_DATA_VALUE = -9999
 
 # Constant Raster attributes and keys
-CONSTANT_RASTERS_SETTINGS_KEY = "cplus/constant_rasters"
+CONSTANT_RASTERS_SETTINGS_KEY = "constant_rasters"
 COMPONENT_UUID_ATTRIBUTE = "component_uuid"
 COMPONENT_ID_ATTRIBUTE = "component_id"
 COMPONENT_TYPE_ATTRIBUTE = "component_type"
@@ -113,6 +116,7 @@ DISPLAY_NAME_ATTRIBUTE = "display_name"
 RASTER_COLLECTION_ATTRIBUTE = "raster_collection"
 MIN_VALUE_ATTRIBUTE_KEY = "min_value"
 MAX_VALUE_ATTRIBUTE_KEY = "max_value"
+DEFAULT_VALUE_ATTRIBUTE_KEY = "default_value"
 PREFIX_ATTRIBUTE = "prefix"
 BASE_NAME_ATTRIBUTE = "base_name"
 SUFFIX_ATTRIBUTE = "suffix"

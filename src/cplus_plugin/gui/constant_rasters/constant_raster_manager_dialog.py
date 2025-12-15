@@ -16,7 +16,7 @@ from qgis.core import (
     QgsRasterLayer,
     QgsCoordinateReferenceSystem,
 )
-from qgis.gui import QgsMessageBar
+from qgis.gui import QgsGui, QgsMessageBar, QgsCollapsibleGroupBox
 from qgis.utils import iface
 
 from ...conf import settings_manager, Settings
@@ -25,21 +25,33 @@ from ...models.constant_raster import (
     ConstantRasterCollection,
     ConstantRasterComponent,
     ConstantRasterContext,
-    ConstantRasterMetadata,
 )
 from ...lib.constant_raster import (
     constant_raster_registry,
 )
+from ...definitions.constants import (
+    COMPONENT_TYPE_ATTRIBUTE,
+    CURRENT_ACTIVITY_HEADER,
+    DEFAULT_VALUE_ATTRIBUTE_KEY,
+    ID_ATTRIBUTE,
+    NAME_ATTRIBUTE,
+    MIN_VALUE_ATTRIBUTE_KEY,
+    MAX_VALUE_ATTRIBUTE_KEY,
+)
 from ...definitions.defaults import (
     ICON_PATH,
+    NPV_METADATA_ID,
     YEARS_EXPERIENCE_ACTIVITY_ID,
 )
 from ..component_item_model import ActivityItemModel
 from .constant_raster_widgets import (
     ConstantRasterWidgetInterface,
     YearsExperienceWidget,
+    GenericNumericWidget,
 )
-from ...utils import log, tr
+from .custom_type_dialog import CustomTypeDefinitionDialog
+from .financial_npv_widget import ActivityNpvWidget
+from ...utils import log, tr, clean_filename, FileUtils
 
 
 class ConstantRastersManagerDialog(QtWidgets.QDialog):
@@ -59,12 +71,17 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(tr("Constant Rasters Manager"))
+
+        QgsGui.enableAutoGeometryRestore(self)
+
+        self.setWindowTitle(tr("Constant Raster Manager"))
 
         self.constant_raster_registry = constant_raster_registry
 
         # Registry for configuration widgets
         self._registered_component_widgets = {}
+
+        self._activities_model: ActivityItemModel = None
 
         # Current raster collection being viewed/edited
         self.current_raster_collection: typing.Optional[ConstantRasterCollection] = None
@@ -103,8 +120,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         info_text = QtWidgets.QLabel(
             self.tr(
                 "Define constant raster parameters for activities. "
-                "Configure input values (e.g., years of experience), "
-                "specify the output normalization range, and create rasters clipped to your Area of Interest."
+                "Configure input values, specify the output normalization "
+                "range, and create rasters clipped to your project's "
+                "spatial extent as defined in Step 1."
             )
         )
         info_text.setWordWrap(True)
@@ -117,6 +135,10 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         top_layout = QtWidgets.QVBoxLayout(top_widget)
         top_layout.setContentsMargins(0, 0, 0, 0)
 
+        # Message bar for feedback
+        self.message_bar = QgsMessageBar()
+        top_layout.addWidget(self.message_bar)
+
         # Constant raster type selection
         raster_type_widget = QtWidgets.QWidget()
         raster_type_layout = QtWidgets.QHBoxLayout(raster_type_widget)
@@ -126,56 +148,87 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         self.cbo_raster_type.setMinimumWidth(200)
         raster_type_layout.addWidget(self.lbl_raster_type)
         raster_type_layout.addWidget(self.cbo_raster_type)
+
+        # Custom type management buttons
+        add_icon = FileUtils.get_icon("symbologyAdd.svg")
+        self.btn_add_custom_type = QtWidgets.QToolButton()
+        self.btn_add_custom_type.setIcon(add_icon)
+        self.btn_add_custom_type.setToolTip(self.tr("Add New Constant Raster Type"))
+        raster_type_layout.addWidget(self.btn_add_custom_type)
+
+        edit_icon = FileUtils.get_icon("mActionToggleEditing.svg")
+        self.btn_edit_custom_type = QtWidgets.QToolButton()
+        self.btn_edit_custom_type.setIcon(edit_icon)
+        self.btn_edit_custom_type.setToolTip(self.tr("Edit Constant Raster Type"))
+        self.btn_edit_custom_type.setEnabled(False)
+        raster_type_layout.addWidget(self.btn_edit_custom_type)
+
+        delete_icon = FileUtils.get_icon("symbologyRemove.svg")
+        self.btn_delete_custom_type = QtWidgets.QToolButton()
+        self.btn_delete_custom_type.setIcon(delete_icon)
+        self.btn_delete_custom_type.setToolTip(self.tr("Delete Constant Raster Type"))
+        self.btn_delete_custom_type.setEnabled(False)
+        raster_type_layout.addWidget(self.btn_delete_custom_type)
+
         raster_type_layout.addStretch()
         top_layout.addWidget(raster_type_widget)
 
         main_layout.addWidget(top_widget)
 
-        # Message bar for feedback
-        self.message_bar = QgsMessageBar()
-        main_layout.addWidget(self.message_bar)
-
         # Middle section: Two-column layout with splitter
         splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
 
+        label_stylesheet = """
+            QLabel {
+                padding: 2px;
+                background-color: rgb(200, 200, 200);
+                font-weight: bold;
+            }
+        """
+
         # Left column - Component list
-        self._left_group = QtWidgets.QGroupBox()
-        self._left_group.setTitle(self.tr("Activities"))
-        left_layout = QtWidgets.QVBoxLayout(self._left_group)
+        left_widget = QtWidgets.QWidget()
+        left_layout = QtWidgets.QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+
+        activities_label = QtWidgets.QLabel(self.tr("Activities"))
+        activities_label.setStyleSheet(label_stylesheet)
+        left_layout.addWidget(activities_label)
 
         self.lst_activities = QtWidgets.QListView()
+        self.lst_activities.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         left_layout.addWidget(self.lst_activities)
 
-        splitter.addWidget(self._left_group)
+        splitter.addWidget(left_widget)
 
         # Right column - Configuration + Min/Max
         right_widget = QtWidgets.QWidget()
         right_layout = QtWidgets.QVBoxLayout(right_widget)
         right_layout.setContentsMargins(0, 0, 0, 0)
 
+        self.current_activity_label = QtWidgets.QLabel(self.tr(CURRENT_ACTIVITY_HEADER))
+        self.current_activity_label.setStyleSheet(label_stylesheet)
+        right_layout.addWidget(self.current_activity_label)
+
         # Configuration widget container
         self.sw_component_container = QtWidgets.QStackedWidget()
 
         # Add a blank widget as default
-        blank_widget = QtWidgets.QLabel(self.tr("Select a component to configure"))
+        blank_widget = QtWidgets.QLabel(
+            self.tr(
+                "Select a constant raster type. If already s"
+                "elected there is configuration error."
+            )
+        )
         blank_widget.setAlignment(QtCore.Qt.AlignCenter)
         blank_widget.setStyleSheet("color: gray; padding: 20px;")
         self.sw_component_container.addWidget(blank_widget)
 
         right_layout.addWidget(self.sw_component_container, 1)
 
-        # Last updated timestamp label
-        self.lbl_last_updated = QtWidgets.QLabel("")
-        self.lbl_last_updated.setStyleSheet(
-            "color: gray; font-size: 9pt; font-style: italic;"
-        )
-        self.lbl_last_updated.setAlignment(QtCore.Qt.AlignLeft)
-        self.lbl_last_updated.setContentsMargins(5, 5, 5, 5)
-        right_layout.addWidget(self.lbl_last_updated)
-
         # Normalization range (collapsible)
         # This allows users to remap the normalized output to any range they want
-        self.grp_normalization_range = QtWidgets.QGroupBox(
+        self.grp_normalization_range = QgsCollapsibleGroupBox(
             self.tr("Normalization Range")
         )
         self.grp_normalization_range.setCheckable(True)
@@ -203,11 +256,20 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         norm_layout.addRow(self.tr("Maximum"), self.spin_max_value)
         right_layout.addWidget(self.grp_normalization_range)
 
+        # Last updated timestamp label
+        self.lbl_last_updated = QtWidgets.QLabel("")
+        self.lbl_last_updated.setStyleSheet(
+            "color: gray; font-size: 9pt; font-style: italic;"
+        )
+        self.lbl_last_updated.setAlignment(QtCore.Qt.AlignLeft)
+        self.lbl_last_updated.setContentsMargins(5, 5, 5, 5)
+        right_layout.addWidget(self.lbl_last_updated)
+
         splitter.addWidget(right_widget)
 
-        # Set initial splitter sizes (40% left, 60% right)
-        splitter.setStretchFactor(0, 4)
-        splitter.setStretchFactor(1, 6)
+        # Set initial splitter sizes
+        splitter.setStretchFactor(0, 3)
+        splitter.setStretchFactor(1, 8)
 
         main_layout.addWidget(splitter, 1)
 
@@ -215,10 +277,10 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         button_layout = QtWidgets.QHBoxLayout()
 
         # Create tool button with dropdown menu for raster creation
-        self.btn_create_current = QtWidgets.QToolButton()
-        self.btn_create_current.setText(self.tr("Create Rasters"))
-        self.btn_create_current.setPopupMode(QtWidgets.QToolButton.MenuButtonPopup)
-        self.btn_create_current.setToolTip(
+        self.btn_create_raster = QtWidgets.QToolButton()
+        self.btn_create_raster.setText(self.tr("Create Rasters"))
+        self.btn_create_raster.setPopupMode(QtWidgets.QToolButton.MenuButtonPopup)
+        self.btn_create_raster.setToolTip(
             self.tr("Create constant rasters for current view or all types")
         )
 
@@ -233,21 +295,19 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             lambda: self.update_current_widget(current_view=True)
         )
 
-        self.action_create_all = create_menu.addAction(
-            self.tr("Create - All Constant Raster Types")
-        )
+        self.action_create_all = create_menu.addAction(self.tr("Create - All Types"))
         self.action_create_all.triggered.connect(
             lambda: self.update_current_widget(current_view=False)
         )
 
         # Set menu to button
-        self.btn_create_current.setMenu(create_menu)
+        self.btn_create_raster.setMenu(create_menu)
 
         # Set default action (triggered when button clicked directly)
-        self.btn_create_current.setDefaultAction(self.action_create_current)
+        self.btn_create_raster.setDefaultAction(self.action_create_current)
 
         self.btn_close = QtWidgets.QPushButton(self.tr("Close"))
-        button_layout.addWidget(self.btn_create_current)
+        button_layout.addWidget(self.btn_create_raster)
         button_layout.addStretch()
         button_layout.addWidget(self.btn_close)
         main_layout.addLayout(button_layout)
@@ -288,10 +348,18 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         idx = self._registered_component_widgets[metadata_id]
         return self.sw_component_container.widget(idx)
 
-    def show_widget(self, metadata_id: str):
-        """Show widget corresponding to the given metadata ID or a blank widget if not found.
+    def show_widget(
+        self, metadata_id: str
+    ) -> typing.Optional[ConstantRasterWidgetInterface]:
+        """Show widget corresponding to the given metadata ID or a blank
+        widget if not found.
 
-        :param metadata_id: Metadata ID to show widget for
+        :param metadata_id: Metadata ID to show configuration widget.
+        :type metadata_id: str
+
+        :returns: The current widget or None if there is no widget
+        registered for the given metadata ID.
+        :rtype: ConstantRasterWidgetInterface
         """
         if metadata_id not in self._registered_component_widgets:
             # Show the blank widget (index 0)
@@ -303,11 +371,12 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                     "No widget defined for metadata ID '{metadata_id}'. Please contact the plugin developer."
                 ).format(metadata_id=metadata_id),
             )
-            return
+            return None
 
-        self.sw_component_container.setCurrentIndex(
-            self._registered_component_widgets[metadata_id]
-        )
+        index = self._registered_component_widgets[metadata_id]
+        self.sw_component_container.setCurrentIndex(index)
+
+        return self.sw_component_container.widget(index)
 
     def _populate_component_references(self, activities):
         """Connect loaded components with actual Activity objects.
@@ -337,17 +406,33 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
     def initialize(self):
         """Initialize UI components and connections."""
-
-        # Load saved state from settings
-        self.constant_raster_registry.load()
-
         # Register widgets for known constant rasters
         metadata_ids = self.constant_raster_registry.metadata_ids()
         if YEARS_EXPERIENCE_ACTIVITY_ID in metadata_ids:
-            experience_widget_activity = YearsExperienceWidget()
-            self.register_widget(
-                YEARS_EXPERIENCE_ACTIVITY_ID, experience_widget_activity
-            )
+            self.register_widget(YEARS_EXPERIENCE_ACTIVITY_ID, YearsExperienceWidget())
+
+        if NPV_METADATA_ID in metadata_ids:
+            self.register_widget(NPV_METADATA_ID, ActivityNpvWidget())
+
+        # Register widgets for custom types
+        for metadata_id in metadata_ids:
+            metadata = self.constant_raster_registry.metadata_by_id(metadata_id)
+            if metadata and metadata.user_defined:
+                # Get custom type definition to retrieve configuration
+                type_def = self.constant_raster_registry.get_custom_type_definition(
+                    metadata_id
+                )
+                if type_def:
+                    # Create widget for this custom type
+                    widget = GenericNumericWidget(
+                        label=type_def.get(NAME_ATTRIBUTE, self.tr("Custom Type")),
+                        metadata_id=metadata_id,
+                        min_value=type_def.get(MIN_VALUE_ATTRIBUTE_KEY, 0.0),
+                        max_value=type_def.get(MAX_VALUE_ATTRIBUTE_KEY, 100.0),
+                        default_value=type_def.get(DEFAULT_VALUE_ATTRIBUTE_KEY, 0.0),
+                        parent=self.sw_component_container,
+                    )
+                    self.register_widget(metadata_id, widget)
 
         # Load activity model
         self._activities_model = ActivityItemModel(
@@ -370,7 +455,10 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         self.cbo_raster_type.currentIndexChanged.connect(
             self.on_raster_type_selection_changed
         )
-        # Note: btn_create_current uses menu actions, not direct clicked connection
+        self.btn_add_custom_type.clicked.connect(self.on_add_custom_type_clicked)
+        self.btn_edit_custom_type.clicked.connect(self.on_edit_custom_type_clicked)
+        self.btn_delete_custom_type.clicked.connect(self.on_delete_custom_type_clicked)
+        # Note: btn_create_raster uses menu actions, not direct clicked connection
         self.btn_close.clicked.connect(self.close)
 
         # Connect model itemChanged signals to save checkbox states
@@ -395,6 +483,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         self.cbo_raster_type.clear()
         for metadata in activity_metadatas:
             self.cbo_raster_type.addItem(metadata.display_name, metadata.id)
+        self.cbo_raster_type.model().sort(0)
 
         # Try to restore the previously selected activity raster type
         activity_raster_type = settings_manager.get_value(
@@ -402,64 +491,121 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         )
 
         # Select the saved raster type if available, otherwise first item
-        if activity_raster_type:
-            for i in range(self.cbo_raster_type.count()):
-                if self.cbo_raster_type.itemData(i) == activity_raster_type:
-                    self.cbo_raster_type.setCurrentIndex(i)
-                    break
-        elif self.cbo_raster_type.count() > 0:
-            self.cbo_raster_type.setCurrentIndex(0)
+        if self.cbo_raster_type.count() > 0:
+            matching_index = (
+                self.cbo_raster_type.findData(activity_raster_type)
+                if activity_raster_type
+                else -1
+            )
+            self.cbo_raster_type.setCurrentIndex(
+                matching_index if matching_index != -1 else 0
+            )
 
-        # Auto-select first checked activity to load its values into widget
+    def _check_all_activities(self, check: bool):
+        """Check or uncheck all activities in the activities model.
+
+        Used to reset the model dring initialization.
+
+        :param check: True to check else False to uncheck.
+        :type check: bool
+        """
         for row in range(self._activities_model.rowCount()):
             item = self._activities_model.item(row)
-            if item and item.checkState() == QtCore.Qt.Checked:
-                index = self._activities_model.indexFromItem(item)
-                self.lst_activities.setCurrentIndex(index)
-                break
+            if not item:
+                continue
+            if check and item.checkState() == QtCore.Qt.Unchecked:
+                item.setCheckState(QtCore.Qt.Checked)
+            elif not check and item.checkState() == QtCore.Qt.Checked:
+                item.setCheckState(QtCore.Qt.Unchecked)
 
     def on_raster_type_selection_changed(self, index: int):
         """Slot raised when the selection in the combobox for raster type has changed."""
+        # First clear activity selection
+        self.lst_activities.selectionModel().blockSignals(True)
+        self._activities_model.blockSignals(True)
+        self._check_all_activities(False)
+        self.lst_activities.clearSelection()
+        self._activities_model.blockSignals(False)
+        self.lst_activities.selectionModel().blockSignals(False)
+
         metadata_id = self.cbo_raster_type.itemData(index)
-        if metadata_id:
-            self.show_widget(metadata_id)
+        if not metadata_id:
+            return
 
-            # Restore normalization mode for this metadata_id
-            auto_mode_key = f"constant_rasters_dialog/auto_mode/{metadata_id}"
-            is_auto_mode = settings_manager.get_value(
-                auto_mode_key, default=False, setting_type=bool
+        config_widget = self.show_widget(metadata_id)
+        if not config_widget:
+            return
+
+        # Disable until manually enabled by user or when raster
+        # component info has been loaded.
+        config_widget.setEnabled(False)
+
+        # Update min/max values from the collection
+        collection = self.constant_raster_registry.collection_by_id(metadata_id)
+        if collection is None:
+            log(
+                f"Constant raster collection not found for metadata with ID: {metadata_id}"
             )
+            return
 
-            self.grp_normalization_range.blockSignals(True)
-            self.grp_normalization_range.setChecked(not is_auto_mode)
-            self.grp_normalization_range.blockSignals(False)
+        # Enable/disable raster creation button
+        raster_creation_ui_state = not collection.skip_raster
+        self.btn_create_raster.setEnabled(raster_creation_ui_state)
 
-            self.spin_min_value.setEnabled(not is_auto_mode)
-            self.spin_max_value.setEnabled(not is_auto_mode)
+        # Block signals while loading
+        self.grp_normalization_range.blockSignals(True)
+        self.spin_min_value.blockSignals(True)
+        self.spin_max_value.blockSignals(True)
+        self._activities_model.blockSignals(True)
 
-            # Update min/max values from the collection
-            collection = self.constant_raster_registry.collection_by_id(metadata_id)
-            if collection is not None:
-                # Block signals temporarily to avoid triggering save while loading
-                self.spin_min_value.blockSignals(True)
-                self.spin_max_value.blockSignals(True)
+        self.grp_normalization_range.setChecked(collection.use_manual)
 
-                # Sanity check: if the range is invalid, reset to defaults
-                if collection.min_value >= collection.max_value:
-                    collection.min_value = 0.0
-                    collection.max_value = 100.0
+        # Reset invalid range
+        if collection.min_value > collection.max_value:
+            collection.min_value = 0.0
+            collection.max_value = 0.0
 
-                self.spin_min_value.setValue(collection.min_value)
-                self.spin_max_value.setValue(collection.max_value)
+        self.spin_min_value.setValue(collection.min_value)
+        self.spin_max_value.setValue(collection.max_value)
 
-                self.spin_min_value.blockSignals(False)
-                self.spin_max_value.blockSignals(False)
+        # Check/uncheck activity item based on raster component
+        for raster_component in collection:
+            if not raster_component.enabled:
+                continue
+            activity_item = self._activities_model.component_item_by_uuid(
+                raster_component.component_id
+            )
+            if not activity_item:
+                continue
+            activity_item.setCheckState(QtCore.Qt.Checked)
 
-                # Update button states based on skip_raster flag
-                self._update_create_button_states(collection)
+        self.spin_min_value.blockSignals(False)
+        self.spin_max_value.blockSignals(False)
+        self._activities_model.blockSignals(False)
+        self.grp_normalization_range.blockSignals(False)
 
-                # Update last updated timestamp display
-                self._update_last_updated_display(collection)
+        # Update button states based on skip_raster flag
+        self._update_create_button_states(collection)
+
+        # Update custom type button states
+        self._update_custom_type_button_states()
+
+        # Update last updated timestamp display
+        self._update_last_updated_display(collection)
+
+        # Select first item
+        if not self._activities_model.rowCount():
+            return
+
+        item = self._activities_model.model_component_items()[0]
+        self.lst_activities.selectionModel().select(
+            item.index(), QtCore.QItemSelectionModel.Select
+        )
+
+        # Save selected raster type
+        settings_manager.set_value(
+            Settings.CONSTANT_RASTERS_DIALOG_ACTIVITY_TYPE, metadata_id
+        )
 
     def _update_create_button_states(self, collection):
         """Update create button states based on collection's skip_raster flag.
@@ -556,72 +702,25 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         :param checked: True if group box is checked (manual mode)
         """
-        # Save the checkbox state
-        current_metadata_id = self.cbo_raster_type.itemData(
-            self.cbo_raster_type.currentIndex()
-        )
-        if current_metadata_id:
-            auto_mode_key = f"constant_rasters_dialog/auto_mode/{current_metadata_id}"
-            settings_manager.set_value(auto_mode_key, not checked)
+        collection = self.current_constant_raster_collection()
+        if collection is None:
+            return
 
-        # Enable/disable spinboxes based on checked state
-        self.spin_min_value.setEnabled(checked)
-        self.spin_max_value.setEnabled(checked)
+        collection.use_manual = checked
 
         if not checked:
-            # Save current manual values to QgsSettings before switching to auto mode
-            if current_metadata_id:
-                manual_min_key = (
-                    f"constant_rasters_dialog/manual_min/{current_metadata_id}"
-                )
-                manual_max_key = (
-                    f"constant_rasters_dialog/manual_max/{current_metadata_id}"
-                )
-                settings_manager.set_value(manual_min_key, self.spin_min_value.value())
-                settings_manager.set_value(manual_max_key, self.spin_max_value.value())
-
-            # Auto-calculate mode - update from collection
             self._auto_calculate_normalization_range()
         else:
-            # Manual mode - restore previous manual values from QgsSettings
-            if current_metadata_id:
-                manual_min_key = (
-                    f"constant_rasters_dialog/manual_min/{current_metadata_id}"
-                )
-                manual_max_key = (
-                    f"constant_rasters_dialog/manual_max/{current_metadata_id}"
-                )
-
-                manual_min = settings_manager.get_value(
-                    manual_min_key, default=None, setting_type=float
-                )
-                manual_max = settings_manager.get_value(
-                    manual_max_key, default=None, setting_type=float
-                )
-
-                if manual_min is not None and manual_max is not None:
-                    # Restore saved manual values
-                    self.spin_min_value.blockSignals(True)
-                    self.spin_max_value.blockSignals(True)
-
-                    self.spin_min_value.setValue(manual_min)
-                    self.spin_max_value.setValue(manual_max)
-
-                    self.spin_min_value.blockSignals(False)
-                    self.spin_max_value.blockSignals(False)
-
             # Explicitly set the collection's min/max from spinboxes
-            collection = self.current_constant_raster_collection()
-            if collection is not None:
-                collection.min_value = self.spin_min_value.value()
-                collection.max_value = self.spin_max_value.value()
+            collection.min_value = self.spin_min_value.value()
+            collection.max_value = self.spin_max_value.value()
 
-                # Update timestamp
-                collection.last_updated = datetime.now().isoformat()
-                self._update_last_updated_display(collection)
+        # Update timestamp
+        collection.last_updated = datetime.now().isoformat()
+        self._update_last_updated_display(collection)
 
-                # Save to registry
-                self.constant_raster_registry.save()
+        # Save to registry
+        self.constant_raster_registry.save()
 
     def _auto_calculate_normalization_range(self):
         """Auto-calculate normalization range from component absolute values."""
@@ -673,14 +772,17 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         if model_item is None:
             return
 
-        model_identifier = model_item.uuid
+        # Update current activity label
+        self.current_activity_label.setText(
+            f"{self.tr(CURRENT_ACTIVITY_HEADER)} - {model_item.component_name}"
+        )
 
         # Get current raster collection
         raster_collection = self.current_constant_raster_collection()
         if raster_collection is None:
             return
 
-        # Reset current widget and load information
+        # Reset current widget and load raster component
         current_config_widget = self.sw_component_container.currentWidget()
 
         # Check if it implements the raster interface
@@ -688,19 +790,24 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             return
 
         # Raster component for the activity
-        raster_component = raster_collection.component_by_id(model_identifier)
+        raster_component = raster_collection.component_by_id(model_item.uuid)
         component_created = False
         if raster_component is None:
             # Create a default one and add it to the collection
             raster_component = current_config_widget.create_raster_component(
                 model_item.model_component
             )
+            # Disable it so that its explicitly enabled by the user
+            raster_component.enabled = False
             raster_collection.components.append(raster_component)
             component_created = True
 
-        current_config_widget.raster_component = raster_component
         current_config_widget.reset()
+        current_config_widget.raster_component = raster_component
         current_config_widget.load(raster_component)
+
+        # Enable/disable configuration widget accordingly
+        current_config_widget.setEnabled(raster_component.enabled)
 
         # Save if we created a new component
         if component_created:
@@ -716,8 +823,8 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         if not isinstance(current_config_widget, ConstantRasterWidgetInterface):
             return
 
-        current_config_widget.raster_component = component
         current_config_widget.reset()
+        current_config_widget.raster_component = component
         current_config_widget.load(component)
 
     def _on_item_checked_changed(self, item: QtGui.QStandardItem):
@@ -726,69 +833,74 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         # Update the component's enabled state based on checkbox state
         raster_collection = self.current_constant_raster_collection()
-        if raster_collection is not None:
-            component = raster_collection.component_by_id(item.uuid)
+        if not raster_collection:
+            return
 
-            if component:
-                # Component exists, update its enabled state
-                component.enabled = is_checked
+        # Ensure the item is also selected for consistent behaviour
+        self.lst_activities.selectionModel().blockSignals(True)
+        self.lst_activities.selectionModel().select(
+            item.index(), QtCore.QItemSelectionModel.ClearAndSelect
+        )
+        # Update current activity label since the item selection is manual
+        self.current_activity_label.setText(
+            f"{self.tr(CURRENT_ACTIVITY_HEADER)} - {item.component_name}"
+        )
+        self.lst_activities.selectionModel().blockSignals(False)
 
-                # If checked, load this component into the widget
-                if is_checked:
-                    self._load_component_into_widget(component)
+        metadata_id = self.cbo_raster_type.itemData(self.cbo_raster_type.currentIndex())
+        current_config_widget = self.widget_by_identifier(metadata_id)
 
-            elif is_checked:
-                # Component doesn't exist and item was just checked - create it
-                metadata_id = self.cbo_raster_type.itemData(
-                    self.cbo_raster_type.currentIndex()
+        component = raster_collection.component_by_id(item.uuid)
+        if not component:
+            if current_config_widget:
+                component = current_config_widget.create_raster_component(
+                    item.model_component
                 )
-                current_config_widget = self.widget_by_identifier(metadata_id)
+                if not component:
+                    return
+                raster_collection.components.append(component)
 
-                if current_config_widget and hasattr(item, "model_component"):
-                    new_component = current_config_widget.create_raster_component(
-                        item.model_component
-                    )
-                    new_component.enabled = True  # It's checked
-                    raster_collection.components.append(new_component)
+        component.enabled = is_checked
+        self._load_component_into_widget(component)
+        current_config_widget.setEnabled(is_checked)
 
-                    # Load the new component into widget
-                    self._load_component_into_widget(new_component)
+        self.constant_raster_registry.save()
 
-            # Update timestamp
-            raster_collection.last_updated = datetime.now().isoformat()
-            self._update_last_updated_display(raster_collection)
+        # Update timestamp
+        raster_collection.last_updated = datetime.now().isoformat()
+        self._update_last_updated_display(raster_collection)
 
-            # Auto-calculate normalization range if unchecked
-            if not self.grp_normalization_range.isChecked():
-                self._auto_calculate_normalization_range()
-            else:
-                # Save to registry (auto-calculate saves internally)
-                self.constant_raster_registry.save()
+        # Auto-calculate normalization range if unchecked
+        if not self.grp_normalization_range.isChecked():
+            self._auto_calculate_normalization_range()
+        else:
+            # Save to registry (auto-calculate saves internally)
+            self.constant_raster_registry.save()
 
     def on_update_raster_component(self, raster_component: ConstantRasterComponent):
         """Slot raised when the component has been updated through the configuration widget."""
-        # Get current collection and ensure the component is in it
         raster_collection = self.current_constant_raster_collection()
-        if raster_collection is not None:
-            # Check if component is already in collection by UUID (safer than using 'in')
-            existing_component = raster_collection.component_by_id(
-                raster_component.component_id
-            )
+        if not raster_collection:
+            return
 
-            if existing_component is None:
-                # Component not in collection, add it
-                raster_collection.components.append(raster_component)
+        existing_component = raster_collection.component_by_id(
+            raster_component.component_id
+        )
 
-            # Update timestamp
-            raster_collection.last_updated = datetime.now().isoformat()
-            self._update_last_updated_display(raster_collection)
+        if existing_component is None:
+            # Component not in collection, add it
+            raster_collection.components.append(raster_component)
 
-            # Auto-calculate normalization range if unchecked
-            if not self.grp_normalization_range.isChecked():
-                self._auto_calculate_normalization_range()
-            else:
-                # Save the registry to settings (auto-calculate saves internally)
-                self.constant_raster_registry.save()
+        # Update timestamp
+        raster_collection.last_updated = datetime.now().isoformat()
+        self._update_last_updated_display(raster_collection)
+
+        # Auto-calculate normalization range if unchecked
+        if not self.grp_normalization_range.isChecked():
+            self._auto_calculate_normalization_range()
+        else:
+            # Save the registry to settings (auto-calculate saves internally)
+            self.constant_raster_registry.save()
 
     def _ensure_checked_components_in_collection(self):
         """Ensure all checked items in the list have components in the collection.
@@ -809,8 +921,11 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         # Get the current value from the widget to use for ALL checked items
         current_value = None
-        if hasattr(current_config_widget, "sb_experience"):
-            current_value = current_config_widget.sb_experience.value()
+        if (
+            current_config_widget.raster_component
+            and current_config_widget.raster_component.value_info
+        ):
+            current_value = current_config_widget.raster_component.value_info.absolute
 
         # First, build a set of all model item UUIDs for quick lookup
         model_uuids = set()
@@ -1088,7 +1203,8 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             self.message_bar.pushWarning(self.tr("Warning"), message)
 
     def update_current_widget(self, current_view: bool = True):
-        """Update current widget - creates constant rasters (if skip_raster is False) then saves the current collection in settings.
+        """Update current widget - creates constant rasters (if skip_raster is False)
+        then saves the current collection in settings.
 
         This method validates the configuration and emits a signal for
         the caller to handle the actual raster creation.
@@ -1233,29 +1349,294 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Update last updated display
         self._update_last_updated_display(current_collection)
 
-        # Restore checked items for activities
-        activity_collection = self.constant_raster_registry.collection_by_id(
-            YEARS_EXPERIENCE_ACTIVITY_ID
+    def _update_custom_type_button_states(self):
+        """Update Edit and Delete button states based on current metadata's user_defined flag."""
+        current_index = self.cbo_raster_type.currentIndex()
+        if current_index < 0:
+            self.btn_edit_custom_type.setEnabled(False)
+            self.btn_delete_custom_type.setEnabled(False)
+            return
+
+        metadata_id = self.cbo_raster_type.itemData(current_index)
+        if not metadata_id:
+            self.btn_edit_custom_type.setEnabled(False)
+            self.btn_delete_custom_type.setEnabled(False)
+            return
+
+        metadata = self.constant_raster_registry.metadata_by_id(metadata_id)
+        if metadata and metadata.user_defined:
+            self.btn_edit_custom_type.setEnabled(True)
+            self.btn_delete_custom_type.setEnabled(True)
+            self.btn_edit_custom_type.setToolTip(
+                self.tr("Edit the selected custom type")
+            )
+            self.btn_delete_custom_type.setToolTip(
+                self.tr("Delete the selected custom type")
+            )
+        else:
+            self.btn_edit_custom_type.setEnabled(False)
+            self.btn_delete_custom_type.setEnabled(False)
+            self.btn_edit_custom_type.setToolTip(self.tr("Cannot edit built-in types"))
+            self.btn_delete_custom_type.setToolTip(
+                self.tr("Cannot delete built-in types")
+            )
+
+    def on_add_custom_type_clicked(self):
+        """Handle Add Custom Type button click."""
+        # Get existing type names for validation
+        existing_names = [
+            self.constant_raster_registry.metadata_by_id(meta_id).display_name
+            for meta_id in self.constant_raster_registry.metadata_ids()
+            if self.constant_raster_registry.metadata_by_id(meta_id)
+        ]
+
+        # Show dialog
+        dialog = CustomTypeDefinitionDialog(
+            parent=self, edit_mode=False, existing_types=existing_names
         )
-        if activity_collection:
-            first_activity_index = None
-            for row in range(self._activities_model.rowCount()):
-                item = self._activities_model.item(row)
-                if item is None:
-                    continue
 
-                component = activity_collection.component_by_id(item.uuid)
-                if component and component.enabled:
-                    self._activities_model.blockSignals(True)
-                    item.setCheckState(QtCore.Qt.Checked)
-                    self._activities_model.blockSignals(False)
-                    if first_activity_index is None:
-                        first_activity_index = self._activities_model.indexFromItem(
-                            item
-                        )
+        if dialog.exec_() == QtWidgets.QDialog.Accepted:
+            type_def = dialog.get_type_definition()
 
-            if first_activity_index is not None:
-                self.lst_activities.setCurrentIndex(first_activity_index)
+            # Generate unique ID from type name (like "training_hours")
+            base_id = clean_filename(type_def[NAME_ATTRIBUTE].lower().replace(" ", "_"))
+
+            # Ensure uniqueness by checking existing IDs
+            metadata_id = base_id
+            counter = 2
+            while metadata_id in self.constant_raster_registry.metadata_ids():
+                metadata_id = f"{base_id}_{counter}"
+                counter += 1
+
+            # Create metadata
+            metadata = GenericNumericWidget.create_metadata(
+                metadata_id=metadata_id,
+                component_type=ModelComponentType.ACTIVITY,
+                display_name=type_def[NAME_ATTRIBUTE],
+                min_value=type_def[MIN_VALUE_ATTRIBUTE_KEY],
+                max_value=type_def[MAX_VALUE_ATTRIBUTE_KEY],
+                user_defined=True,
+            )
+
+            # Register metadata
+            if self.constant_raster_registry.add_metadata(metadata):
+                # Store custom type definition
+                custom_type_def = {
+                    ID_ATTRIBUTE: metadata_id,
+                    NAME_ATTRIBUTE: type_def[NAME_ATTRIBUTE],
+                    MIN_VALUE_ATTRIBUTE_KEY: type_def[MIN_VALUE_ATTRIBUTE_KEY],
+                    MAX_VALUE_ATTRIBUTE_KEY: type_def[MAX_VALUE_ATTRIBUTE_KEY],
+                    DEFAULT_VALUE_ATTRIBUTE_KEY: type_def[DEFAULT_VALUE_ATTRIBUTE_KEY],
+                    COMPONENT_TYPE_ATTRIBUTE: type_def[COMPONENT_TYPE_ATTRIBUTE],
+                }
+                self.constant_raster_registry.add_custom_type_definition(
+                    custom_type_def
+                )
+
+                # Create and register widget
+                widget = GenericNumericWidget(
+                    label=type_def[NAME_ATTRIBUTE],
+                    metadata_id=metadata_id,
+                    min_value=type_def[MIN_VALUE_ATTRIBUTE_KEY],
+                    max_value=type_def[MAX_VALUE_ATTRIBUTE_KEY],
+                    default_value=type_def[DEFAULT_VALUE_ATTRIBUTE_KEY],
+                    parent=self.sw_component_container,
+                )
+                self.register_widget(metadata_id, widget)
+
+                # Add to dropdown
+                self.cbo_raster_type.addItem(type_def[NAME_ATTRIBUTE], metadata_id)
+
+                # Select the new type
+                new_index = self.cbo_raster_type.findData(metadata_id)
+                if new_index >= 0:
+                    self.cbo_raster_type.setCurrentIndex(new_index)
+
+                # Save
+                self.constant_raster_registry.save()
+
+                self.message_bar.pushSuccess(
+                    self.tr("Success"),
+                    self.tr(
+                        f"Custom type '{type_def[NAME_ATTRIBUTE]}' created successfully."
+                    ),
+                )
+
+    def on_edit_custom_type_clicked(self):
+        """Handle Edit Custom Type button click."""
+        current_index = self.cbo_raster_type.currentIndex()
+        if current_index < 0:
+            return
+
+        metadata_id = self.cbo_raster_type.itemData(current_index)
+        if not metadata_id:
+            return
+
+        metadata = self.constant_raster_registry.metadata_by_id(metadata_id)
+        if not metadata or not metadata.user_defined:
+            return
+
+        # Get custom type definition
+        type_def = self.constant_raster_registry.get_custom_type_definition(metadata_id)
+        if not type_def:
+            self.message_bar.pushWarning(
+                self.tr("Error"),
+                self.tr("Could not load custom type definition."),
+            )
+            return
+
+        # Get existing type names for validation (excluding current)
+        existing_names = [
+            self.constant_raster_registry.metadata_by_id(meta_id).display_name
+            for meta_id in self.constant_raster_registry.metadata_ids()
+            if (
+                self.constant_raster_registry.metadata_by_id(meta_id)
+                and meta_id != metadata_id
+            )
+        ]
+
+        # Show dialog in edit mode
+        dialog = CustomTypeDefinitionDialog(
+            parent=self, edit_mode=True, existing_types=existing_names
+        )
+        dialog.set_values(type_def)
+
+        if dialog.exec_() == QtWidgets.QDialog.Accepted:
+            updated_def = dialog.get_type_definition()
+
+            # Update metadata
+            metadata.display_name = updated_def[NAME_ATTRIBUTE]
+            metadata.input_range = (
+                updated_def[MIN_VALUE_ATTRIBUTE_KEY],
+                updated_def[MAX_VALUE_ATTRIBUTE_KEY],
+            )
+
+            # Update custom type definition
+            updated_type_def = {
+                ID_ATTRIBUTE: metadata_id,
+                NAME_ATTRIBUTE: updated_def[NAME_ATTRIBUTE],
+                MIN_VALUE_ATTRIBUTE_KEY: updated_def[MIN_VALUE_ATTRIBUTE_KEY],
+                MAX_VALUE_ATTRIBUTE_KEY: updated_def[MAX_VALUE_ATTRIBUTE_KEY],
+                DEFAULT_VALUE_ATTRIBUTE_KEY: updated_def[DEFAULT_VALUE_ATTRIBUTE_KEY],
+                COMPONENT_TYPE_ATTRIBUTE: updated_def[COMPONENT_TYPE_ATTRIBUTE],
+            }
+            self.constant_raster_registry.update_custom_type_definition(
+                metadata_id, updated_type_def
+            )
+
+            # Update dropdown item
+            self.cbo_raster_type.setItemText(current_index, updated_def[NAME_ATTRIBUTE])
+
+            # Update widget (recreate it)
+            widget = GenericNumericWidget(
+                label=updated_def[NAME_ATTRIBUTE],
+                metadata_id=metadata_id,
+                min_value=updated_def[MIN_VALUE_ATTRIBUTE_KEY],
+                max_value=updated_def[MAX_VALUE_ATTRIBUTE_KEY],
+                default_value=updated_def[DEFAULT_VALUE_ATTRIBUTE_KEY],
+                parent=self.sw_component_container,
+            )
+
+            # Replace widget in stacked widget
+            old_widget_index = self._registered_component_widgets.get(metadata_id)
+            if old_widget_index is not None:
+                old_widget = self.sw_component_container.widget(old_widget_index)
+                if old_widget:
+                    self.sw_component_container.removeWidget(old_widget)
+                    new_widget_index = self.sw_component_container.insertWidget(
+                        old_widget_index, widget
+                    )
+                    old_widget.deleteLater()
+                    self._registered_component_widgets[metadata_id] = new_widget_index
+            else:
+                # Fallback: register as new widget
+                new_widget_index = self.sw_component_container.addWidget(widget)
+                self._registered_component_widgets[metadata_id] = new_widget_index
+
+            # Reconnect widget update signal
+            if hasattr(widget, "update_requested"):
+                widget.update_requested.connect(self.on_update_raster_component)
+
+            # Show updated widget
+            self.show_widget(metadata_id)
+
+            # Reload currently selected activity's component into the new widget
+            current_activity_index = self.lst_activities.currentIndex()
+            if current_activity_index.isValid():
+                model_item = self._activities_model.itemFromIndex(
+                    current_activity_index
+                )
+                if model_item:
+                    model_identifier = model_item.uuid
+                    collection = self.constant_raster_registry.collection_by_id(
+                        metadata_id
+                    )
+                    if collection:
+                        raster_component = collection.component_by_id(model_identifier)
+                        if raster_component:
+                            widget.raster_component = raster_component
+                            widget.reset()
+                            widget.load(raster_component)
+
+            # Save
+            self.constant_raster_registry.save()
+
+            self.message_bar.pushSuccess(
+                self.tr("Success"),
+                self.tr(f"Custom type '{updated_def['name']}' updated successfully."),
+            )
+
+    def on_delete_custom_type_clicked(self):
+        """Handle Delete Custom Type button click."""
+        current_index = self.cbo_raster_type.currentIndex()
+        if current_index < 0:
+            return
+
+        metadata_id = self.cbo_raster_type.itemData(current_index)
+        if not metadata_id:
+            return
+
+        metadata = self.constant_raster_registry.metadata_by_id(metadata_id)
+        if not metadata or not metadata.user_defined:
+            return
+
+        # Confirmation dialog
+        reply = QtWidgets.QMessageBox.question(
+            self,
+            self.tr("Confirm Deletion"),
+            self.tr(
+                f"Are you sure you want to delete the custom type '{metadata.display_name}'?\n\n"
+                "This will remove the type definition and all associated data."
+            ),
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.No,
+        )
+
+        if reply != QtWidgets.QMessageBox.Yes:
+            return
+
+        # Remove from dropdown first
+        self.cbo_raster_type.removeItem(current_index)
+
+        # Remove widget
+        widget_index = self._registered_component_widgets.pop(metadata_id, None)
+        if widget_index is not None:
+            widget = self.sw_component_container.widget(widget_index)
+            if widget:
+                self.sw_component_container.removeWidget(widget)
+                widget.deleteLater()
+
+        # Remove from registry
+        self.constant_raster_registry.remove_metadata(metadata_id)
+        self.constant_raster_registry.remove_custom_type_definition(metadata_id)
+
+        # Save
+        self.constant_raster_registry.save()
+
+        self.message_bar.pushSuccess(
+            self.tr("Success"),
+            self.tr(f"Custom type '{metadata.display_name}' deleted successfully."),
+        )
 
     def close(self):
         """Handle close button click."""
