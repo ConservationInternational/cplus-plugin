@@ -204,6 +204,7 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         self.txt_name.setText(self._ncs_pathway.name)
         self.txt_description.setPlainText(self._ncs_pathway.description)
+        self.suitability_index_box.setValue(float(self._ncs_pathway.suitability_index))
 
         if self._ncs_pathway.pathway_type == NcsPathwayType.PROTECT:
             self.rb_protection.setChecked(True)
@@ -409,11 +410,13 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
                 self.txt_name.text(),
                 self.txt_description.toPlainText(),
                 user_defined=True,
+                suitability_index=self.suitability_index_box.value(),
             )
         else:
             # Update mode
             self._ncs_pathway.name = self.txt_name.text()
             self._ncs_pathway.description = self.txt_description.toPlainText()
+            self._ncs_pathway.suitability_index = self.suitability_index_box.value()
 
         selected_pathway_type_id = self._pathway_type_group.checkedId()
         if selected_pathway_type_id == NcsPathwayType.PROTECT.value:

@@ -713,6 +713,9 @@ class SettingsManager(QtCore.QObject):
             priority_layer["user_defined"] = settings.value(
                 "user_defined", defaultValue=True, type=bool
             )
+            priority_layer["is_carbon"] = settings.value(
+                "is_carbon", defaultValue=True, type=bool
+            )
             priority_layer["type"] = settings.value("type", defaultValue=0, type=int)
             priority_layer["groups"] = groups
         return priority_layer
@@ -755,6 +758,9 @@ class SettingsManager(QtCore.QObject):
                             "type", defaultValue=0, type=int
                         ),
                         "groups": groups,
+                        "is_carbon": priority_settings.value(
+                            "is_carbon", defaultValue=True, type=bool
+                        ),
                     }
                     priority_layer_list.append(layer)
         return priority_layer_list
@@ -830,6 +836,7 @@ class SettingsManager(QtCore.QObject):
             settings.setValue("path", priority_layer["path"])
             settings.setValue("selected", priority_layer.get("selected", False))
             settings.setValue("user_defined", priority_layer.get("user_defined", True))
+            settings.setValue("is_carbon", priority_layer.get("is_carbon", False))
             settings.setValue("type", priority_layer.get("type", 0))
             groups_key = f"{settings_key}/groups"
             with qgis_settings(groups_key) as groups_settings:

@@ -166,6 +166,13 @@
     <widget class="QTextEdit" name="layer_description"/>
    </item>
    <item>
+     <widget class="QCheckBox" name="carbon_enabled">
+       <property name="text">
+         <string>Enable if layer has carbon storage values</string>
+       </property>
+     </widget>
+   </item>
+   <item>
     <widget class="QLabel" name="label_3">
      <property name="text">
       <string>Assign NCS pathways</string>

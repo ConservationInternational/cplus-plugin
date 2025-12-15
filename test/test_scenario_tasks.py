@@ -66,6 +66,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
             description="test_description",
             path=pathway_layer_path,
             priority_layers=[],
+            suitability_index=0.5,
         )
 
         test_layer = QgsRasterLayer(test_pathway.path, test_pathway.name)
@@ -128,7 +129,6 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         analysis_task.scenario_directory = scenario_directory
 
         settings_manager.set_value(Settings.BASE_DIR, base_dir)
-        settings_manager.set_value(Settings.PATHWAY_SUITABILITY_INDEX, 0.5)
 
         past_stat = test_layer.dataProvider().bandStatistics(1)
 
@@ -261,6 +261,7 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
                 priority_layer_3,
                 priority_layer_4,
             ],
+            suitability_index=2.0,
         )
 
         test_layer = QgsRasterLayer(test_pathway.path, test_pathway.name)
@@ -333,7 +334,6 @@ class ScenarioAnalysisTaskTest(unittest.TestCase):
         analysis_task.scenario_directory = scenario_directory
 
         settings_manager.set_value(Settings.BASE_DIR, base_dir)
-        settings_manager.set_value(Settings.PATHWAY_SUITABILITY_INDEX, 2.0)
 
         # Using positive impact matrix
         settings_manager.set_value(

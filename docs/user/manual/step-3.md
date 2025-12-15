@@ -30,13 +30,75 @@ license: This program is free software; you can redistribute it and/or modify it
 
 - ![left arrow](img/cplus_left_arrow.svg): Add the selected PWL to the selected priority group.
 
+- ![file icon](./img/MatrixIcon.png): Create matrix of relative impact values for priority weighting layers. 
+
 - ![file icon](./img/mActionNewMap.svg): Create a financial priority weighted layer.
+
+- ![file icon](./img/mActionNewMap.svg): Manage constant rasters.
 
 - ![add button](img/symbologyAdd.svg): Add a new PWL.
 
 - ![edit button](img/mActionToggleEditing.svg): Edit the selected PWL.
 
 - ![remove button](img/symbologyRemove.svg): Remove the selected PWL.
+
+##  Matrix of Relative Impact values Editor dialog
+
+The NCS Pathways and PWLs Matrix tool provides a structured way to define how each Natural Climate Solutions (NCS) pathway influences specific Priority/Weighting Layers (PWLs). Using a scale from –3 to +3, users can describe whether a pathway has a negative, neutral, or positive effect on key variables.
+
+**Understanding the Matrix of Relative Impact values tool**
+
+In Step 3 of the workflow, the plugin displays a matrix where:
+
+- **Rows → NCS pathways**
+
+- **Columns → PWL variables**
+
+Users assign a coefficient (–3 to +3) to each pathway–PWL combination.
+
+The matrix focuses only on impact-based PWLs, where the pathway directly influences the variable (e.g., carbon, biodiversity, water, livelihoods).
+Fragmentation-based PWLs, those related to spatial configuration or landscape compatibility, are handled separately and do not require coefficients.
+
+Carbon-related variables (biomass, sequestration potential, soil carbon) fit naturally within this scheme and can be assigned positive or negative impact scores.
+
+**Below is an example of the relative impact of pathways on different variables:**
+
+![Matrix window](./img/Matrix_0.png)
+
+**Purpose of Matrix of Relative Impact values tool**
+
+Earlier steps in the workflow evaluate implementability, producing maps that show how suitable or feasible it is to apply each pathway in each location. These implementability variables are pathway-specific and relate to costs, logistics, governance, access, degradation type, and other factors.
+
+However, implementability does not reflect the broader system-level outcomes of restoration.
+Impact variables such as:
+
+- carbon benefits
+
+- biodiversity gains
+
+- livelihood contributions
+
+- freshwater regulation
+
+remain essential for holistic planning.
+
+The impact coefficient system captures these direct effects, allowing users to integrate impact modelling into the evaluation. In many analyses, implementability results are later combined with impact-based outcomes in a second multicriteria assessment, which the CPLUS plugin fully supports.
+
+![Matrix window](./img/Matrix_1.png)
+
+1. **File Icon:** Click on the file icon to open the matrix of relative impact values tool. Upon clicking, a new window will open for adding coefficient values to each pathway–PWL combination.
+
+![Matrix window](./img/Matrix_2.png)
+
+Below is an example of a completed matrix table with coefficient values between -3 and 3. Any other values is not allowed by the system.
+
+![Matrix window](./img/Matrix_3.png)
+
+1. **Reset Matrix:** Values may be modified individually, or the entire table can be reset and repopulated as needed.
+
+2. **Save:** Save the matrix table after adding or editing coefficient values.
+
+3. **Cancel:** Cancel to discard any changes made to the matrix table. 
 
 ## Financial Priority Weighted Layer Editor dialog
 
@@ -96,6 +158,44 @@ The primary purpose of the NPV Tool is to help users prioritise activities by pr
     * The extents are based on the user-defined extents specified in Step 1.
 
 ![NPV directory](./img/step3-7.png)
+
+## Manage Constant Rasters Editor dialog
+
+Some evaluation criteria, such as years of project experience or other investability factors, are not spatially variable and must be introduced as constant raster layers. These layers ensure that non-spatial attributes are treated consistently alongside spatial data such as PW or NPV rasters. By converting these variables into normalized and weighted raster layers, they can be incorporated into the broader project evaluation workflow.
+
+**Understanding Constant Rasters**
+
+A constant raster is a layer in which every cell holds the same value. These values typically represent project-level attributes that do not change across space. Examples include:
+
+- Years of project experience
+
+- Market Trends
+
+- Confidence in Ability to Deliver
+
+Since these variables can influence investment prioritization, they must be normalized and included in the analysis in a controlled and comparable way.
+
+Normalization ensures that each variable contributes proportionally to the overall evaluation. This typically involves scaling values to a 0–1 range, where the highest-performing project receives a value of 1, and others are scaled accordingly.
+
+![Constant Raster](./img/constant-raster.png)
+
+This process aligns these variables with other normalized layers like PW and NPV.
+
+![Constant Raster](./img/constant-raster0.png)
+
+**Purpose of Constant Rasters**
+
+The purpose of incorporating constant rasters is to:
+
+- Integrate non-spatial project attributes into spatial evaluation workflows
+
+- Standardize the influence of investability variables through normalization
+
+- Ensure consistency in multi-criteria decision analysis and scoring
+
+- Allow users to input, modify, or replace investability values without altering the underlying geospatial structure
+
+This enables more balanced, transparent, and defensible project prioritization results.
 
 ## Add new Priority Weighting Layer (PWL)
 
