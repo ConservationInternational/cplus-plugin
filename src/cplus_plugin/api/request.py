@@ -506,7 +506,9 @@ class CplusApiRequest:
         # Check for network errors
         if reply.error() == QNetworkReply.NetworkError.NoError:
             # Check the HTTP status code
-            http_status = reply.attribute(QNetworkRequest.Attribute.HttpStatusCodeAttribute)
+            http_status = reply.attribute(
+                QNetworkRequest.Attribute.HttpStatusCodeAttribute
+            )
             if http_status is not None and 200 <= http_status < 300:
                 if http_status == 204:
                     json_response = {}
@@ -727,7 +729,9 @@ class CplusApiRequest:
         """
         nam = QgsNetworkAccessManager.instance()
         request = QNetworkRequest(QtCore.QUrl(url))
-        request.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/octet-stream")
+        request.setHeader(
+            QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/octet-stream"
+        )
         request.setHeader(QNetworkRequest.KnownHeaders.ContentLengthHeader, len(chunk))
         if url.startswith("http://"):
             # add header for minio host in local env

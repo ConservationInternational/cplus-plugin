@@ -45,7 +45,9 @@ class PixelValueEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.tv_activities.setAcceptDrops(True)
         self.tv_activities.setShowGrid(False)
         self.tv_activities.setDragDropOverwriteMode(False)
-        self.tv_activities.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.InternalMove)
+        self.tv_activities.setDragDropMode(
+            QtWidgets.QAbstractItemView.DragDropMode.InternalMove
+        )
         self.tv_activities.horizontalHeader().setSectionResizeMode(
             QtWidgets.QHeaderView.ResizeMode.Stretch
         )

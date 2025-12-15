@@ -71,7 +71,9 @@ class UserAbortedNotification(Exception):
 def start_worker(worker, iface, message, with_progress=True):
     message_bar_item = qgis.gui.QgsMessageBar.createMessage(message)
     progress_bar = QProgressBar()
-    progress_bar.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+    progress_bar.setAlignment(
+        Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+    )
     if not with_progress:
         progress_bar.setMinimum(0)
         progress_bar.setMaximum(0)

@@ -49,11 +49,15 @@ class ValidationProgressDialog(QtWidgets.QDialog, WidgetUi):
 
         self._close_on_completion = close_on_completion
 
-        self.btn_show_details = self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
+        self.btn_show_details = self.buttonBox.button(
+            QtWidgets.QDialogButtonBox.StandardButton.Ok
+        )
         if hide_details_button:
             self.btn_show_details.setVisible(False)
 
-        self.btn_close = self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Close)
+        self.btn_close = self.buttonBox.button(
+            QtWidgets.QDialogButtonBox.StandardButton.Close
+        )
         if cancel_mode:
             self.btn_close.setText(tr("Cancel"))
 

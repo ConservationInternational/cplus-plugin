@@ -871,7 +871,7 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         item = QListWidgetItem()
         item.setData(QtCore.Qt.ItemDataRole.DisplayRole, mask_path)
 
-        if self.lst_mask_layers.findItems(mask_path, QtCore.Qt.MatchExactly):
+        if self.lst_mask_layers.findItems(mask_path, QtCore.Qt.MatchFlag.MatchExactly):
             error_tr = tr("The selected mask layer already exists.")
             self.show_message(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return
@@ -889,11 +889,13 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             error_tr = tr("Select a mask layer first.")
             self.show_message(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return
-        mask_path = self._show_mask_path_selector(item.data(QtCore.Qt.ItemDataRole.DisplayRole))
+        mask_path = self._show_mask_path_selector(
+            item.data(QtCore.Qt.ItemDataRole.DisplayRole)
+        )
         if not mask_path:
             return
 
-        if self.lst_mask_layers.findItems(mask_path, QtCore.Qt.MatchExactly):
+        if self.lst_mask_layers.findItems(mask_path, QtCore.Qt.MatchFlag.MatchExactly):
             error_tr = tr("The selected mask layer already exists.")
             self.show_message(error_tr, qgis.core.Qgis.MessageLevel.Warning)
             return
@@ -953,7 +955,9 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         for col, header in enumerate(headers):
             item = QStandardItem(header)
-            item.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            item.setTextAlignment(
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+            )
             self.pwl_model.setHorizontalHeaderItem(col, item)
 
         self.proxy_model = NumericSortProxyModel(
@@ -964,7 +968,9 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
         self.tbl_pwl_layers.setModel(self.proxy_model)
         self.tbl_pwl_layers.setSortingEnabled(True)
-        self.tbl_pwl_layers.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.tbl_pwl_layers.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
         self.tbl_pwl_layers.horizontalHeader().setSectionResizeMode(
             1, QHeaderView.ResizeMode.Interactive
         )
@@ -1069,7 +1075,8 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
             tr("Confirm Deletion"),
             tr("Are you sure you want to remove the selected layer")
             + f" <b>{layer.get('name')}</b>?",
-            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+            QtWidgets.QMessageBox.StandardButton.Yes
+            | QtWidgets.QMessageBox.StandardButton.No,
         )
 
         if reply == QtWidgets.QMessageBox.StandardButton.No:

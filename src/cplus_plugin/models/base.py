@@ -734,7 +734,9 @@ class ResultInfo:
         if not self.updated_date:
             return ""
 
-        updated_date_time = QDateTime.fromString(self.updated_date, Qt.DateFormat.ISODate)
+        updated_date_time = QDateTime.fromString(
+            self.updated_date, Qt.DateFormat.ISODate
+        )
         if not updated_date_time.isValid():
             return ""
 

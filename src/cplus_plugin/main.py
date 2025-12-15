@@ -326,7 +326,9 @@ class QgisCplus:
             )
             self.create_dock_widget_action()
 
-        self.iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.main_widget)
+        self.iface.addDockWidget(
+            Qt.DockWidgetArea.RightDockWidgetArea, self.main_widget
+        )
         self.main_widget.show()
 
         if not self.pluginIsActive:
@@ -354,8 +356,13 @@ class QgisCplus:
             app_window = self.iface.mainWindow()
             dock_area = app_window.dockWidgetArea(self.main_widget)
 
-            if dock_area == Qt.DockWidgetArea.NoDockWidgetArea and not self.main_widget.isFloating():
-                self.iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.main_widget)
+            if (
+                dock_area == Qt.DockWidgetArea.NoDockWidgetArea
+                and not self.main_widget.isFloating()
+            ):
+                self.iface.addDockWidget(
+                    Qt.DockWidgetArea.RightDockWidgetArea, self.main_widget
+                )
                 self.main_widget.show()
 
     def run_settings(self):

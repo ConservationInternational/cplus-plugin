@@ -36,12 +36,16 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
         select_all_btn = QtWidgets.QPushButton(tr("Select All"))
         select_all_btn.setToolTip(tr("Select the all listed items"))
         select_all_btn.clicked.connect(self.select_all_clicked)
-        self.mButtonBox.addButton(select_all_btn, QtWidgets.QDialogButtonBox.ButtonRole.ActionRole)
+        self.mButtonBox.addButton(
+            select_all_btn, QtWidgets.QDialogButtonBox.ButtonRole.ActionRole
+        )
 
         clear_all_btn = QtWidgets.QPushButton(tr("Clear Selection"))
         clear_all_btn.setToolTip(tr("Clear the current selection"))
         clear_all_btn.clicked.connect(self.clear_all_clicked)
-        self.mButtonBox.addButton(clear_all_btn, QtWidgets.QDialogButtonBox.ButtonRole.ActionRole)
+        self.mButtonBox.addButton(
+            clear_all_btn, QtWidgets.QDialogButtonBox.ButtonRole.ActionRole
+        )
 
         toggle_selection_btn = QtWidgets.QPushButton(tr("Toggle Selection"))
         toggle_selection_btn.clicked.connect(self.toggle_selection_clicked)

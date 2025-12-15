@@ -196,7 +196,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         left_layout.addWidget(activities_label)
 
         self.lst_activities = QtWidgets.QListView()
-        self.lst_activities.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.lst_activities.setEditTriggers(
+            QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers
+        )
         left_layout.addWidget(self.lst_activities)
 
         splitter.addWidget(left_widget)
@@ -279,7 +281,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Create tool button with dropdown menu for raster creation
         self.btn_create_raster = QtWidgets.QToolButton()
         self.btn_create_raster.setText(self.tr("Create Rasters"))
-        self.btn_create_raster.setPopupMode(QtWidgets.QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+        self.btn_create_raster.setPopupMode(
+            QtWidgets.QToolButton.ToolButtonPopupMode.MenuButtonPopup
+        )
         self.btn_create_raster.setToolTip(
             self.tr("Create constant rasters for current view or all types")
         )
@@ -1608,7 +1612,8 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                 f"Are you sure you want to delete the custom type '{metadata.display_name}'?\n\n"
                 "This will remove the type definition and all associated data."
             ),
-            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+            QtWidgets.QMessageBox.StandardButton.Yes
+            | QtWidgets.QMessageBox.StandardButton.No,
             QtWidgets.QMessageBox.StandardButton.No,
         )
 

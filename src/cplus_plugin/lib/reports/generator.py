@@ -2377,7 +2377,7 @@ def _load_layout_from_file(
     doc = QtXml.QDomDocument()
     doc_status = True
     try:
-        if not template_file.open(QtCore.QIODevice.ReadOnly):
+        if not template_file.open(QtCore.QIODevice.OpenModeFlag.ReadOnly):
             if error_messages:
                 tr_msg = tr("Unable to read template file")
                 error_messages.append(f"{tr_msg} {template_path}")

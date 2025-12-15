@@ -111,7 +111,12 @@ class VerticalLabel(QtWidgets.QLabel):
         painter.translate(0, self.height())
         painter.rotate(-90)
         painter.drawText(
-            0, 0, self.height(), self.width(), QtCore.Qt.AlignmentFlag.AlignCenter, self.text()
+            0,
+            0,
+            self.height(),
+            self.width(),
+            QtCore.Qt.AlignmentFlag.AlignCenter,
+            self.text(),
         )
 
     def sizeHint(self):
@@ -209,7 +214,9 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
         btn_save.setDefault(False)
         btn_save.clicked.connect(self._on_accepted)
 
-        btn_reset = self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Reset)
+        btn_reset = self.buttonBox.button(
+            QtWidgets.QDialogButtonBox.StandardButton.Reset
+        )
         btn_reset.setText(tr("Reset Matrix"))
         btn_reset.setAutoDefault(False)
         btn_reset.setDefault(False)
@@ -482,7 +489,8 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
             self.tr(
                 "Are you sure you want to reset the matrix table? All changes will be lost."
             ),
-            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+            QtWidgets.QMessageBox.StandardButton.Yes
+            | QtWidgets.QMessageBox.StandardButton.No,
             QtWidgets.QMessageBox.StandardButton.No,
         )
         if reply == QtWidgets.QMessageBox.StandardButton.Yes:
@@ -523,16 +531,22 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
             legend_text.setFont(font)
 
             sizePolicy = QtWidgets.QSizePolicy(
-                QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum
+                QtWidgets.QSizePolicy.Policy.Expanding,
+                QtWidgets.QSizePolicy.Policy.Minimum,
             )
             sizePolicy.setHorizontalStretch(0)
             sizePolicy.setVerticalStretch(0)
             legend_text.setSizePolicy(sizePolicy)
 
-            self.gridLayoutLegend.addWidget(legend_text, 0, idx, QtCore.Qt.AlignmentFlag.AlignCenter)
+            self.gridLayoutLegend.addWidget(
+                legend_text, 0, idx, QtCore.Qt.AlignmentFlag.AlignCenter
+            )
 
             self.gridLayoutLegend.addWidget(
-                QtWidgets.QLabel(color["impact"]), 1, idx, QtCore.Qt.AlignmentFlag.AlignCenter
+                QtWidgets.QLabel(color["impact"]),
+                1,
+                idx,
+                QtCore.Qt.AlignmentFlag.AlignCenter,
             )
 
             idx += 1

@@ -33,7 +33,7 @@ class ValidationInspectorDialog(QtWidgets.QDialog, WidgetUi):
         super().__init__(parent)
         self.setupUi(self)
 
-        flags = self.windowFlags() | QtCore.Qt.WindowMinimizeButtonHint
+        flags = self.windowFlags() | QtCore.Qt.WindowType.WindowMinimizeButtonHint
         self.setWindowFlags(flags)
 
         QgsGui.enableAutoGeometryRestore(self)

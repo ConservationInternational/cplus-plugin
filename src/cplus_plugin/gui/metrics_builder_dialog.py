@@ -1210,7 +1210,9 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
             return
 
         selection_model = self.lst_columns.selectionModel()
-        selection_model.select(index, QtCore.QItemSelectionModel.SelectionFlag.ClearAndSelect)
+        selection_model.select(
+            index, QtCore.QItemSelectionModel.SelectionFlag.ClearAndSelect
+        )
 
     def load_column_properties(self, column_item: MetricColumnListItem):
         """Load the properties of the column item in the corresponding
@@ -1230,10 +1232,14 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         self.cbo_column_alignment.clear()
 
         left_icon = FileUtils.get_icon("mIconAlignLeft.svg")
-        self.cbo_column_alignment.addItem(left_icon, tr("Left"), QtCore.Qt.AlignmentFlag.AlignLeft)
+        self.cbo_column_alignment.addItem(
+            left_icon, tr("Left"), QtCore.Qt.AlignmentFlag.AlignLeft
+        )
 
         right_icon = FileUtils.get_icon("mIconAlignRight.svg")
-        self.cbo_column_alignment.addItem(right_icon, tr("Right"), QtCore.Qt.AlignmentFlag.AlignRight)
+        self.cbo_column_alignment.addItem(
+            right_icon, tr("Right"), QtCore.Qt.AlignmentFlag.AlignRight
+        )
 
         center_icon = FileUtils.get_icon("mIconAlignCenter.svg")
         self.cbo_column_alignment.addItem(

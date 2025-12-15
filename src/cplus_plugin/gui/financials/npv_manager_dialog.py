@@ -263,7 +263,8 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
             activity_idx = self._activity_model.index(0, 0)
             if activity_idx.isValid():
                 self.lst_activities.selectionModel().select(
-                    activity_idx, QtCore.QItemSelectionModel.SelectionFlag.ClearAndSelect
+                    activity_idx,
+                    QtCore.QItemSelectionModel.SelectionFlag.ClearAndSelect,
                 )
 
         self.gp_npv_pwl.toggled.connect(self._on_activity_npv_groupbox_toggled)
@@ -366,7 +367,9 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
             self._npv_model.index(row, 1), QtCore.Qt.ItemDataRole.EditRole
         )
 
-        cost = self._npv_model.data(self._npv_model.index(row, 2), QtCore.Qt.ItemDataRole.EditRole)
+        cost = self._npv_model.data(
+            self._npv_model.index(row, 2), QtCore.Qt.ItemDataRole.EditRole
+        )
 
         # No need to compute if both revenue and cost have not been defined
         if revenue is None and cost is None:
@@ -384,7 +387,9 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
         rounded_discounted_value = round(discounted_value, self.NUM_DECIMAL_PLACES)
         discounted_value_index = self._npv_model.index(row, 3)
         self._npv_model.setData(
-            discounted_value_index, rounded_discounted_value, QtCore.Qt.ItemDataRole.EditRole
+            discounted_value_index,
+            rounded_discounted_value,
+            QtCore.Qt.ItemDataRole.EditRole,
         )
 
         if not self.cb_manual_npv.isChecked():
@@ -661,9 +666,13 @@ class NpvPwlManagerDialog(QtWidgets.QDialog, WidgetUi):
                 continue
 
             revenue_index = self._npv_model.index(i, 1)
-            self._npv_model.setData(revenue_index, year_info[0], QtCore.Qt.ItemDataRole.EditRole)
+            self._npv_model.setData(
+                revenue_index, year_info[0], QtCore.Qt.ItemDataRole.EditRole
+            )
             cost_index = self._npv_model.index(i, 2)
-            self._npv_model.setData(cost_index, year_info[1], QtCore.Qt.ItemDataRole.EditRole)
+            self._npv_model.setData(
+                cost_index, year_info[1], QtCore.Qt.ItemDataRole.EditRole
+            )
 
         self.update_all_discounted_values()
 

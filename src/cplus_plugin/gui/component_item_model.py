@@ -972,7 +972,9 @@ class NcsPathwayItemModel(ComponentItemModel):
         """
         mime_data = QtCore.QMimeData()
         item_data = QtCore.QByteArray()
-        data_stream = QtCore.QDataStream(item_data, QtCore.QIODevice.WriteOnly)
+        data_stream = QtCore.QDataStream(
+            item_data, QtCore.QIODevice.OpenModeFlag.WriteOnly
+        )
 
         for idx in indexes:
             if not idx.isValid():
@@ -1367,7 +1369,9 @@ class ActivityItemModel(ComponentItemModel):
             return False
 
         encoded_data = data.data(NCS_MIME_TYPE)
-        data_stream = QtCore.QDataStream(encoded_data, QtCore.QIODevice.ReadOnly)
+        data_stream = QtCore.QDataStream(
+            encoded_data, QtCore.QIODevice.OpenModeFlag.ReadOnly
+        )
 
         ncs_items = []
 

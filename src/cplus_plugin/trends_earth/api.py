@@ -69,7 +69,8 @@ class RequestTask(QgsTask):
             auth_added, _ = auth_manager.updateNetworkRequest(network_request, auth_id)
 
             network_request.setHeader(
-                QtNetwork.QNetworkRequest.ContentTypeHeader, "application/json"
+                QtNetwork.QNetworkRequest.KnownHeaders.ContentTypeHeader,
+                "application/json",
             )
 
             if len(self.headers) > 0:
@@ -389,7 +390,7 @@ class APIClient(QtCore.QObject):
 
         if resp != None:
             status_code = resp.attribute(
-                QtNetwork.QNetworkRequest.HttpStatusCodeAttribute
+                QtNetwork.QNetworkRequest.Attribute.HttpStatusCodeAttribute
             )
             if status_code == 200:
                 ret = resp

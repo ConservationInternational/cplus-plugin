@@ -375,7 +375,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             self.log_text_box.setPlainText(f"{message} \n")
             log_text_cursor = self.log_text_box.textCursor()
-            log_text_cursor.movePosition(QtGui.QTextCursor.End)
+            log_text_cursor.movePosition(QtGui.QTextCursor.MoveOperation.End)
             self.log_text_box.setTextCursor(log_text_cursor)
             try:
                 os.makedirs(
@@ -476,7 +476,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.priority_groups_list.setDragDropOverwriteMode(True)
         self.priority_groups_list.viewport().setAcceptDrops(True)
 
-        self.priority_groups_list.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.DropOnly)
+        self.priority_groups_list.setDragDropMode(
+            QtWidgets.QAbstractItemView.DragDropMode.DropOnly
+        )
 
         self.priority_groups_list.child_dragged_dropped.connect(
             self.priority_groups_update
@@ -824,7 +826,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     layer_item = QtWidgets.QTreeWidgetItem(item)
                     layer_item.setText(0, layer.get("name"))
                     layer_item.setData(
-                        0, QtCore.Qt.ItemDataRole.UserRole, layer.get(USER_DEFINED_ATTRIBUTE)
+                        0,
+                        QtCore.Qt.ItemDataRole.UserRole,
+                        layer.get(USER_DEFINED_ATTRIBUTE),
                     )
 
             list_items.append((item, group_widget))
@@ -895,7 +899,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     layer_item = QtWidgets.QTreeWidgetItem(item)
                     layer_item.setText(0, layer.get("name"))
                     layer_item.setData(
-                        0, QtCore.Qt.ItemDataRole.UserRole, layer.get(USER_DEFINED_ATTRIBUTE)
+                        0,
+                        QtCore.Qt.ItemDataRole.UserRole,
+                        layer.get(USER_DEFINED_ATTRIBUTE),
                     )
 
             list_items.append((item, group_widget))
@@ -993,7 +999,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     group_widget = self.priority_groups_list.itemWidget(
                         selected_group, 0
                     )
-                    layer_id = selected_priority_layer.data(QtCore.Qt.ItemDataRole.UserRole)
+                    layer_id = selected_priority_layer.data(
+                        QtCore.Qt.ItemDataRole.UserRole
+                    )
 
                     priority_layer = settings_manager.get_priority_layer(layer_id)
                     item.setData(
@@ -1093,7 +1101,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             "Creating constant rasters...", "Cancel", 0, 100, self
         )
         progress_dialog.setWindowTitle("Creating Constant Rasters")
-        progress_dialog.setWindowModality(QtCore.Qt.WindowModal)
+        progress_dialog.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
         progress_dialog.show()
 
         # Create feedback
@@ -1177,7 +1185,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             progress_dialog.close()
             log(f"Error creating constant rasters: {str(e)}", info=False)
             self.show_message(
-                f"Failed to create constant rasters: {str(e)}", level=Qgis.MessageLevel.Critical
+                f"Failed to create constant rasters: {str(e)}",
+                level=Qgis.MessageLevel.Critical,
             )
 
     def on_npv_pwl_removed(self, pwl_identifier: str):
@@ -1322,7 +1331,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
         if reply == QtWidgets.QMessageBox.StandardButton.Yes:
             group_ids = [
-                group_item.data(0, QtCore.Qt.ItemDataRole.UserRole) for group_item in selected_groups
+                group_item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+                for group_item in selected_groups
             ]
             for group_id in group_ids:
                 if not group_id:
@@ -1401,7 +1411,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             return
 
-        pwls = [item.data(QtCore.Qt.ItemDataRole.DisplayRole) for item in selected_pwl_items]
+        pwls = [
+            item.data(QtCore.Qt.ItemDataRole.DisplayRole) for item in selected_pwl_items
+        ]
         if len(pwls) == 1:
             tr_layer = tr("layer")
         else:
@@ -1437,7 +1449,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def on_manage_pwls_relative_impact_matrix(self):
         """Slot raised to show the dialog for managing relative impact matrix of PWLs."""
         ncs_pwl_relative_impact_dialog = NcsPwlImpactManagerDialog(self)
-        if ncs_pwl_relative_impact_dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
+        if (
+            ncs_pwl_relative_impact_dialog.exec()
+            == QtWidgets.QDialog.DialogCode.Accepted
+        ):
             pass
 
     def has_trends_auth(self):
@@ -1480,7 +1495,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             item.setData(QtCore.Qt.ItemDataRole.UserRole, str(scenario.uuid))
             item.setData(QtCore.Qt.ItemDataRole.UserRole + 1, scenario.name)
             if scenario.server_uuid:
-                item.setData(QtCore.Qt.ItemDataRole.UserRole + 2, str(scenario.server_uuid))
+                item.setData(
+                    QtCore.Qt.ItemDataRole.UserRole + 2, str(scenario.server_uuid)
+                )
             else:
                 item.setData(QtCore.Qt.ItemDataRole.UserRole + 2, "")
             self.scenario_list.setItemWidget(item, item_widget)
@@ -1704,7 +1721,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def show_scenario_info(self):
         """Loads dialog for showing scenario information."""
-        scenario_uuid = self.scenario_list.currentItem().data(QtCore.Qt.ItemDataRole.UserRole)
+        scenario_uuid = self.scenario_list.currentItem().data(
+            QtCore.Qt.ItemDataRole.UserRole
+        )
         scenario = settings_manager.get_scenario(scenario_uuid)
         scenario_result = settings_manager.get_scenario_result(scenario_uuid)
 
@@ -2037,7 +2056,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             }
             for layer in settings_manager.get_priority_layers():
                 pwl_items = self.priority_layers_list.findItems(
-                    layer.get("name"), QtCore.Qt.MatchExactly
+                    layer.get("name"), QtCore.Qt.MatchFlag.MatchExactly
                 )
                 if len(pwl_items) > 0:
                     # Exclude adding the PWL since its for a disabled default
@@ -2964,7 +2983,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.profiles_action_group.addAction(action)
 
         self.btn_metric_builder.setMenu(profiles_menu)
-        self.btn_metric_builder.setPopupMode(QtWidgets.QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+        self.btn_metric_builder.setPopupMode(
+            QtWidgets.QToolButton.ToolButtonPopupMode.MenuButtonPopup
+        )
 
     def on_profile_action_group_triggered(self, action: QtWidgets.QAction):
         """Slot raised when the action group for profiles

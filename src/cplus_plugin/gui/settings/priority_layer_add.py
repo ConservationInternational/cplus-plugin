@@ -40,7 +40,9 @@ class UploadProgressDialog(QtWidgets.QDialog, WidgetUi):
         super().__init__(parent)
         self.setupUi(self)
 
-        self.btn_cancel = self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        self.btn_cancel = self.buttonBox.button(
+            QtWidgets.QDialogButtonBox.StandardButton.Cancel
+        )
 
         self.btn_cancel.clicked.connect(self.on_cancel)
         self.pg_bar.setValue(0)
@@ -113,8 +115,12 @@ class DlgPriorityAddEdit(QtWidgets.QDialog, Ui_PwlDlgAddEdit):
         self.buttonBox.accepted.connect(self.save)
         self.buttonBox.rejected.connect(self.cancel_clicked)
 
-        self.btn_cancel = self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel)
-        self.btn_save = self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
+        self.btn_cancel = self.buttonBox.button(
+            QtWidgets.QDialogButtonBox.StandardButton.Cancel
+        )
+        self.btn_save = self.buttonBox.button(
+            QtWidgets.QDialogButtonBox.StandardButton.Ok
+        )
 
         self.trends_earth_api_client = api.APIClient(API_URL, TIMEOUT)
 

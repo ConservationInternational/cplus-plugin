@@ -323,7 +323,9 @@ class ModelComponentWidget(QtWidgets.QWidget, WidgetUi):
                 item = self._item_model.item(sel_idx.row(), 0)
                 # If not enabled then deselect
                 if not item.isEnabled():
-                    selection_model.select(sel_idx, QtCore.QItemSelectionModel.SelectionFlag.Deselect)
+                    selection_model.select(
+                        sel_idx, QtCore.QItemSelectionModel.SelectionFlag.Deselect
+                    )
 
     def add_action_widget(self, widget: QtWidgets.QWidget):
         """Adds an auxiliary widget below the list view from the left-hand side.
@@ -363,14 +365,18 @@ class NcsComponentWidget(ModelComponentWidget):
 
         self.btn_remove.setMenu(self._delete_menu)
         self.btn_remove.setDefaultAction(self._remove_default_action)
-        self.btn_remove.setPopupMode(QtWidgets.QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+        self.btn_remove.setPopupMode(
+            QtWidgets.QToolButton.ToolButtonPopupMode.MenuButtonPopup
+        )
         self.btn_remove.triggered.connect(self.on_delete_triggered)
 
         self.item_model = NcsPathwayItemModel(parent)
         self.item_model.itemChanged.connect(self.on_item_changed)
 
         self.lst_model_items.setDragEnabled(True)
-        self.lst_model_items.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.DragOnly)
+        self.lst_model_items.setDragDropMode(
+            QtWidgets.QAbstractItemView.DragDropMode.DragOnly
+        )
         self.lst_model_items.setAcceptDrops(False)
 
         self._validation_manager = validation_manager
@@ -424,7 +430,8 @@ class NcsComponentWidget(ModelComponentWidget):
                 self,
                 self.tr("Remove NCS Pathways"),
                 msg,
-                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                QtWidgets.QMessageBox.StandardButton.Yes
+                | QtWidgets.QMessageBox.StandardButton.No,
             )
             == QtWidgets.QMessageBox.StandardButton.Yes
         ):
@@ -716,7 +723,9 @@ class ActivityComponentWidget(ModelComponentWidget):
         self.item_model.activity_pathways_updated.connect(self.on_pathways_updated)
 
         self.lst_model_items.setAcceptDrops(True)
-        self.lst_model_items.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.DropOnly)
+        self.lst_model_items.setDragDropMode(
+            QtWidgets.QAbstractItemView.DragDropMode.DropOnly
+        )
         self.lst_model_items.setDropIndicatorShown(True)
 
         self.btn_reload.setVisible(False)
@@ -877,7 +886,8 @@ class ActivityComponentWidget(ModelComponentWidget):
                 self,
                 self.tr("Remove Selection"),
                 msg,
-                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                QtWidgets.QMessageBox.StandardButton.Yes
+                | QtWidgets.QMessageBox.StandardButton.No,
             )
             == QtWidgets.QMessageBox.StandardButton.Yes
         ):

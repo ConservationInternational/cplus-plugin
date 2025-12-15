@@ -57,7 +57,10 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         self.analysis_task = None
 
         # Dialog window flags
-        flags = QtCore.Qt.WindowMinimizeButtonHint | QtCore.Qt.WindowCloseButtonHint
+        flags = (
+            QtCore.Qt.WindowType.WindowMinimizeButtonHint
+            | QtCore.Qt.WindowType.WindowCloseButtonHint
+        )
         self.setWindowFlags(flags)
 
         # Dialog statuses
@@ -77,7 +80,9 @@ class ProgressDialog(QtWidgets.QDialog, Ui_DlgProgress):
         self.report_running = False
 
         # Progress bar
-        self.progress_bar.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignVCenter)
+        self.progress_bar.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
         self.progress_bar.setMinimum(minimum)
         self.progress_bar.setMaximum(maximum)
 

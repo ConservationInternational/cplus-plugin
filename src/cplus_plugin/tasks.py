@@ -1846,7 +1846,8 @@ class ScenarioAnalysisTask(QgsTask):
             # see https://qgis.org/pyqgis/master/core/Qgis.html#qgis.core.Qgis.GeometryType
             if Qgis.versionInt() < 33000:
                 layer_check = (
-                    initial_mask_layer.geometryType() == QgsWkbTypes.GeometryType.PolygonGeometry
+                    initial_mask_layer.geometryType()
+                    == QgsWkbTypes.GeometryType.PolygonGeometry
                 )
             else:
                 layer_check = (
@@ -2020,7 +2021,8 @@ class ScenarioAnalysisTask(QgsTask):
                 # see https://qgis.org/pyqgis/master/core/Qgis.html#qgis.core.Qgis.GeometryType
                 if Qgis.versionInt() < 33000:
                     layer_check = (
-                        initial_mask_layer.geometryType() == QgsWkbTypes.GeometryType.PolygonGeometry
+                        initial_mask_layer.geometryType()
+                        == QgsWkbTypes.GeometryType.PolygonGeometry
                     )
                 else:
                     layer_check = (

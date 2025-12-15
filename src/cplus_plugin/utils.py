@@ -65,7 +65,7 @@ def item_user_type():
         int: The user type value for QStandardItem
     """
     user_type = QtGui.QStandardItem.ItemType.UserType
-    return user_type.value if hasattr(user_type, 'value') else int(user_type)
+    return user_type.value if hasattr(user_type, "value") else int(user_type)
 
 
 def tree_item_user_type():
@@ -77,7 +77,7 @@ def tree_item_user_type():
         int: The user type value for QTreeWidgetItem
     """
     user_type = QtWidgets.QTreeWidgetItem.ItemType.UserType
-    return user_type.value if hasattr(user_type, 'value') else int(user_type)
+    return user_type.value if hasattr(user_type, "value") else int(user_type)
 
 
 def tr(message):
@@ -601,7 +601,13 @@ def contains_font_family(font_family: str) -> bool:
     :returns: True if the font family exists, else False.
     :rtype: bool
     """
-    font_families = QtGui.QFontDatabase.families()
+    # Qt6 uses static method, some Qt5 versions use instance method
+    try:
+        font_families = QtGui.QFontDatabase.families()
+    except TypeError:
+        # Fallback for versions where families() is an instance method
+        font_families = QtGui.QFontDatabase().families()
+
     matching_fonts = [family for family in font_families if font_family in family]
 
     return True if len(matching_fonts) > 0 else False

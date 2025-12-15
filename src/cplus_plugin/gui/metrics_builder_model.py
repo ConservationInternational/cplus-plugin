@@ -424,7 +424,7 @@ class ActivityNameTableItem(QtGui.QStandardItem):
         self.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
         background = self.background()
-        background.setColor(QtCore.Qt.lightGray)
+        background.setColor(QtCore.Qt.GlobalColor.lightGray)
         background.setStyle(QtCore.Qt.BrushStyle.SolidPattern)
         self.setBackground(background)
 
@@ -617,7 +617,7 @@ class ActivityColumnMetricItem(QtGui.QStandardItem):
             background.setStyle(QtCore.Qt.BrushStyle.SolidPattern)
         else:
             background.setColor(QtCore.Qt.GlobalColor.white)
-            background.setStyle(QtCore.Qt.NoBrush)
+            background.setStyle(QtCore.Qt.BrushStyle.NoBrush)
 
         self.setBackground(background)
 
@@ -740,7 +740,10 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
 
         # Update header
         self.setHeaderData(
-            model_index, QtCore.Qt.Orientation.Horizontal, column.header, QtCore.Qt.ItemDataRole.DisplayRole
+            model_index,
+            QtCore.Qt.Orientation.Horizontal,
+            column.header,
+            QtCore.Qt.ItemDataRole.DisplayRole,
         )
         self._metric_columns[index] = column
 

@@ -52,7 +52,7 @@ class NpvFinancialModel(QtGui.QStandardItemModel):
         year_item.setEditable(False)
         year_item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         year_background = year_item.background()
-        year_background.setColor(QtCore.Qt.lightGray)
+        year_background.setColor(QtCore.Qt.GlobalColor.lightGray)
         year_background.setStyle(QtCore.Qt.BrushStyle.SolidPattern)
         year_item.setBackground(year_background)
 
@@ -68,7 +68,7 @@ class NpvFinancialModel(QtGui.QStandardItemModel):
         discount_item.setEditable(False)
         discount_item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         discount_background = discount_item.background()
-        discount_background.setColor(QtCore.Qt.lightGray)
+        discount_background.setColor(QtCore.Qt.GlobalColor.lightGray)
         discount_background.setStyle(QtCore.Qt.BrushStyle.SolidPattern)
         discount_item.setBackground(discount_background)
 

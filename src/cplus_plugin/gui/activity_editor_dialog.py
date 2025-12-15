@@ -227,7 +227,7 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
         item = QtWidgets.QListWidgetItem()
         item.setData(QtCore.Qt.ItemDataRole.DisplayRole, mask_path)
 
-        if self.lst_mask_layers.findItems(mask_path, QtCore.Qt.MatchExactly):
+        if self.lst_mask_layers.findItems(mask_path, QtCore.Qt.MatchFlag.MatchExactly):
             error_tr = tr("The selected mask layer already exists.")
             self._message_bar.pushMessage(error_tr, Qgis.MessageLevel.Warning)
             return
@@ -245,11 +245,13 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
             error_tr = tr("Select a mask layer first.")
             self._message_bar.pushMessage(error_tr, Qgis.MessageLevel.Warning)
             return
-        mask_path = self._show_mask_path_selector(item.data(QtCore.Qt.ItemDataRole.DisplayRole))
+        mask_path = self._show_mask_path_selector(
+            item.data(QtCore.Qt.ItemDataRole.DisplayRole)
+        )
         if not mask_path:
             return
 
-        if self.lst_mask_layers.findItems(mask_path, QtCore.Qt.MatchExactly):
+        if self.lst_mask_layers.findItems(mask_path, QtCore.Qt.MatchFlag.MatchExactly):
             error_tr = tr("The selected mask layer already exists.")
             self._message_bar.pushMessage(error_tr, Qgis.MessageLevel.Warning)
             return

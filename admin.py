@@ -318,7 +318,7 @@ def copy_resource_icons(
         "icon.svg",
         "cplus_left_arrow.svg",
         "cplus_right_arrow.svg",
-        "cplus_double_right_arrows.svg"
+        "cplus_double_right_arrows.svg",
     ]
 
     _log(f"copy_resource_icons target_dir: {target_icons_dir}", context=context)

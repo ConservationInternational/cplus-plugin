@@ -139,7 +139,21 @@ class MetricColumn:
         :rtype: QgsLayoutTableColumn
         """
         layout_column = QgsLayoutTableColumn(self.header)
-        layout_column.setHAlignment(self.alignment)
+
+        # Convert int to Qt.AlignmentFlag enum if needed (Qt6 compatibility)
+        alignment = self.alignment
+        if isinstance(alignment, int):
+            alignment_map = {
+                1: QtCore.Qt.AlignmentFlag.AlignLeft,
+                2: QtCore.Qt.AlignmentFlag.AlignRight,
+                4: QtCore.Qt.AlignmentFlag.AlignHCenter,
+                8: QtCore.Qt.AlignmentFlag.AlignJustify,
+            }
+            alignment = alignment_map.get(
+                alignment, QtCore.Qt.AlignmentFlag.AlignHCenter
+            )
+
+        layout_column.setHAlignment(alignment)
         layout_column.setWidth(0)
 
         return layout_column

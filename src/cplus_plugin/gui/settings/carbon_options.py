@@ -67,7 +67,9 @@ class NaturebaseCarbonImpactModel(QStandardItemModel):
         given display text.
         """
         item = QStandardItem(text)
-        item.setFlags(QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled)
+        item.setFlags(
+            QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled
+        )
 
         return item
 
@@ -172,7 +174,9 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
         header.setSectionsClickable(True)
         header.setSortIndicatorShown(True)
         self.load_carbon_impact()
-        self.tv_naturebase_carbon_impact.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
+        self.tv_naturebase_carbon_impact.sortByColumn(
+            0, QtCore.Qt.SortOrder.AscendingOrder
+        )
 
         self.btn_reload_carbon_impact.clicked.connect(
             self._on_reload_naturebase_carbon_impact
