@@ -105,7 +105,8 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
-          import:
+          paths:
+          inventories:
             - https://docs.python.org/3/objects.inv
             - https://mkdocstrings.github.io/autorefs/objects.inv
           options:
