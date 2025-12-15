@@ -256,7 +256,31 @@ Here is an explanation of how to use the **Highest position** tool:
 
 *Figure 6: Highest position result*
 
-This concludes the section on how the calculations are done.
+### Carbon Calculations for User-Defined Pathways
+
+The plugin supports carbon impact calculations for user-defined pathways by applying distinct methods for Protection, Improved Management, and Restoration. Each pathway type requires its own calculation approach because carbon dynamics differ depending on whether carbon is being safeguarded, enhanced, or gradually sequestered over time.
+
+#### Protection Pathways
+
+For Protection pathways, the plugin calculates the total stored carbon within the selected area using authoritative global carbon rasters that include both biomass and soil organic carbon. These values represent existing carbon stocks and are not treated as avoided emissions. All reports clearly label the result as “stored carbon” to reflect this distinction.
+
+The calculation follows the avoided-emissions methodology used in Naturebase workflows and draws on the reference implementation available in the avoided emissions analysis codebase.
+
+#### Improved Management Pathways
+
+Improved Management pathways rely on *user-defined carbon impact values*, which are entered through a popup interface. Because management practices vary widely and cannot be accurately inferred from spatial datasets, the plugin depends on these per-hectare values to perform the carbon calculation.
+
+This approach allows users to incorporate project-specific data, expert knowledge, or published values to ensure accurate and relevant carbon estimates for their scenarios.
+
+#### Restoration Pathways
+
+Restoration pathways require a baseline comparison to determine how much carbon can be regained over time. The plugin integrates Trends.Earth to identify pixels that have remained stable for at least 20 years and uses these as a representation of healthy baseline carbon conditions.
+
+Restoration impact is calculated as the difference between the current pixel carbon value and this baseline, and is then projected over a long-term sequestration timeline, typically spanning 50 years or more. This method reflects the gradual nature of carbon accumulation as ecosystems recover.
+
+#### Reporting
+
+All pathway-specific carbon calculations are included in the final scenario outputs. The report clearly identifies the method used for each pathway type, ensuring transparency and avoiding confusion between stored carbon, user-defined management impacts, and long-term restoration sequestration.
 
 ### References
 
