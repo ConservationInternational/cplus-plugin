@@ -316,6 +316,18 @@ class ScenarioAnalysisTask(QgsTask):
 
         # Clip to StudyArea
         if self.clip_to_studyarea and os.path.exists(self.studyarea_path):
+            # Reproject the study area to the EPSG:4326
+            # The validate_vector_layer is successful when the layer is in EPSG:4326
+            studyarea_path = self.reproject_layer(
+                studyarea_path,
+                target_crs=QgsCoordinateReferenceSystem("EPSG:4326"),
+                is_raster=False,
+            )
+
+            # Validate layer geometries
+            validated_path = self.validate_vector_layer(studyarea_path)
+            if not validated_path:
+                self.log_message(f"Invalid studyarea layer: {studyarea_path} ")
             self.clip_analysis_data(self.studyarea_path)
 
         # Reproject the pathways and priority layers to the
@@ -815,6 +827,57 @@ class ScenarioAnalysisTask(QgsTask):
 
         return True
 
+    def validate_vector_layer(self, source_path) -> str:
+        """Create a valid representation of a given vector layer without losing any of the input vertices.
+
+        :param source_path: Path to vector layer. The native:fixgeometries requires the layer in EPSG:4326
+        :type source_path: str
+
+        :returns: Path to the validated vector layer else False.
+        :rtype: str | bool
+        """
+        self.log_message(f"Validating the vector layer {source_path}")
+
+        layer = QgsVectorLayer(source_path, "input_layer")
+
+        if not layer.isValid():
+            return False
+
+        try:
+            validated_directory = Path(source_path).parent
+
+            self.feedback = QgsProcessingFeedback()
+            self.feedback.progressChanged.connect(self.update_progress)
+
+            if self.processing_cancelled:
+                return False
+
+            output_file = os.path.join(
+                validated_directory,
+                f"validated_{str(uuid.uuid4())[:4]}.shp",
+            )
+
+            alg_params = {"INPUT": source_path, "METHOD": 1, "OUTPUT": output_file}
+
+            self.log_message(
+                f"Used parameters for validating the vector: {source_path} "
+                f" {alg_params} \n"
+            )
+
+            result = processing.run(
+                "native:fixgeometries",
+                alg_params,
+                context=self.processing_context,
+                feedback=self.feedback,
+            )
+            return result.get("OUTPUT")
+
+        except Exception as e:
+            self.log_message(f"Problem validating the vector, {e} \n")
+            self.log_message(traceback.format_exc())
+            self.cancel_task(e)
+            return False
+
     def _can_clip_raster_by_mask(
         self, raster_layer: QgsRasterLayer, mask_layer: QgsVectorLayer
     ) -> bool:
@@ -981,11 +1044,6 @@ class ScenarioAnalysisTask(QgsTask):
         pathways: typing.List[NcsPathway] = []
 
         try:
-            aoi_layer = QgsVectorLayer(studyarea_path, "aoi_layer")
-            if not aoi_layer.isValid():
-                self.log_message(f"Invalid Study Area Layer {studyarea_path}")
-                return False
-
             for activity in self.analysis_activities:
                 if not activity.pathways and (
                     activity.path is None or activity.path == ""
@@ -1024,7 +1082,7 @@ class ScenarioAnalysisTask(QgsTask):
                         f"the study area layer\n"
                     )
 
-                    if not self._can_clip_raster_by_mask(pathway_layer, aoi_layer):
+                    if not self._can_clip_raster_by_mask(pathway_layer, mask_layer):
                         continue
 
                     output_file = os.path.join(
@@ -1078,7 +1136,7 @@ class ScenarioAnalysisTask(QgsTask):
                                 )
                                 continue
 
-                            if not self._can_clip_raster_by_mask(layer, aoi_layer):
+                            if not self._can_clip_raster_by_mask(layer, mask_layer):
                                 continue
 
                             self.log_message(
@@ -1387,14 +1445,13 @@ class ScenarioAnalysisTask(QgsTask):
             )
             return None
 
-        if output_directory is None:
-            output_directory = Path(input_path).parent
-
-        ext = "tif" if is_raster else ".shp"
-        output_file = os.path.join(
-            output_directory,
-            f"{Path(input_path).stem}_{str(self.scenario.uuid)[:4]}.{ext}",
-        )
+        output_file = "TEMPORARY_OUTPUT"
+        if output_directory:
+            ext = "tif" if is_raster else "shp"
+            output_file = os.path.join(
+                output_directory,
+                f"{Path(input_path).stem}_{str(self.scenario.uuid)[:4]}.{ext}",
+            )
 
         alg_params = {
             "INPUT": input_path,
