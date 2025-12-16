@@ -2216,8 +2216,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 out_name = f"{self.analysis_scenario_name}__{activity.name}__decision_protect.tif"
                 out_path = os.path.join(scenario_dir, out_name)
 
+                # Pass pathway UUIDs directly as JSON array
+                pathway_uuids = [str(p.uuid) for p in (activity.pathways or [])]
+
                 dt_params = {
-                    dt_alg.P_ACTIVITY_ID: str(activity.uuid),
+                    "PATHWAY_UUIDS": json.dumps(pathway_uuids),
                     dt_alg.P_TARGET_CRS: self.analysis_extent.crs,
                     dt_alg.P_EXTENT: dt_extent,
                     dt_alg.P_PIXEL: pixel_size,
