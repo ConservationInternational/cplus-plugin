@@ -261,6 +261,8 @@ class Settings(enum.Enum):
     IRRECOVERABLE_CARBON_ONLINE_STATUS_DESCRIPTION = (
         "carbon/irrecoverable_carbon_online_status_description"
     )
+    # Stored carbon
+    STORED_CARBON_ONLINE_SOURCE = "carbon/stored_carbon_online_source"
 
     # Study Area Path
     STUDYAREA_PATH = "studyarea_path"

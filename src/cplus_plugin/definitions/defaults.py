@@ -237,6 +237,7 @@ DEFAULT_REPORT_LICENSE = (
 )
 BASE_API_URL = "https://stage.cplus.earth/api/v1"
 IRRECOVERABLE_CARBON_API_URL = f"{BASE_API_URL}/reference_layer/carbon_calculation/"
+STORED_CARBON_API_URL = f"{BASE_API_URL}/reference_layer/carbon_calculation/"
 
 DEFAULT_BASE_COMPARISON_REPORT_NAME = "Scenario Comparison Report"
 MAXIMUM_COMPARISON_REPORTS = 10
@@ -313,3 +314,7 @@ MANAGE_CARBON_IMPACT_EXPRESSION_DESCRIPTION = (
 # Constant raster type identifiers
 YEARS_EXPERIENCE_ACTIVITY_ID = "years_experience_activity"
 NPV_METADATA_ID = "financial_npv"
+
+# Online stored carbon config values
+STORED_CARBON_ID = "e7c3f70f-91a1-4cde-8c77-f09e93acf811"
+STORED_CARBON_NAME = "Biomass AGB BGB"

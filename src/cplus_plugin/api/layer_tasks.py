@@ -16,9 +16,7 @@ from qgis.core import (
     QgsTask,
     QgsProcessingFeedback,
     QgsProcessingContext,
-    QgsProject,
     QgsFileDownloader,
-    QgsCoordinateTransform,
     QgsCoordinateReferenceSystem,
     QgsVectorLayer,
 )
@@ -48,7 +46,6 @@ from .request import (
     CplusApiUrl,
     JOB_COMPLETED_STATUS,
 )
-from ..definitions.defaults import DEFAULT_CRS_ID
 
 
 class FetchDefaultLayerTask(QgsTask):
@@ -652,42 +649,59 @@ class DefaultPriorityLayerDownloadTask(QgsTask):
             return False
 
         # Get extents, URL and local path
-        extent = settings_manager.get_value(Settings.SCENARIO_EXTENT, default=None)
-        if extent is None:
-            log(
-                f"Scenario extent not defined for downloading {self.priority_layer.get('name')}.",
-                info=False,
-            )
-            return False
-
-        if len(extent) < 4:
-            log(
-                "Definition of scenario extent is incorrect. Consists of "
-                "less than 4 segments.",
-                info=False,
-            )
-            return False
-
-        extent_rectangle = QgsRectangle(
-            float(extent[0]), float(extent[2]), float(extent[1]), float(extent[3])
+        clip_to_studyarea = settings_manager.get_value(
+            Settings.CLIP_TO_STUDYAREA, default=False, setting_type=bool
         )
-
-        source_crs = QgsCoordinateReferenceSystem(
-            settings_manager.get_value(Settings.SCENARIO_CRS, f"EPSG:{DEFAULT_CRS_ID}")
-        )
-
-        dest_crs = QgsCoordinateReferenceSystem("EPSG:4326")
-        if source_crs.isValid() and source_crs != dest_crs:
-            transform = QgsCoordinateTransform(
-                source_crs, dest_crs, QgsProject.instance()
+        if clip_to_studyarea:
+            # From vector layer
+            study_area_path = settings_manager.get_value(
+                Settings.STUDYAREA_PATH, default="", setting_type=str
             )
-            extent_rectangle = transform.transformBoundingBox(extent_rectangle)
+            if not study_area_path or not os.path.exists(study_area_path):
+                log("Path for determining layer extent is invalid.", info=False)
+                return False
 
-        url_bbox_part = extent_to_url_param(extent_rectangle)
+            aoi_layer = QgsVectorLayer(study_area_path, "AOI Layer")
+            if not aoi_layer.isValid():
+                log("AOI layer is invalid.", info=False)
+                return False
+
+            source_crs = aoi_layer.crs()
+            if not source_crs:
+                log("CRS of AOI layer is undefined.", info=False)
+                return False
+
+            aoi_extent = aoi_layer.extent()
+            if not aoi_extent:
+                log("Extent of AOI layer is undefined.", info=False)
+                return False
+
+            # Reproject extent if required
+            destination_crs = QgsCoordinateReferenceSystem("EPSG:4326")
+            if source_crs != destination_crs:
+                aoi_extent = transform_extent(aoi_extent, source_crs, destination_crs)
+        else:
+            aoi_extent = None
+            # From explicit extent definition
+            settings_extent = settings_manager.get_value(
+                Settings.SCENARIO_EXTENT, default=None
+            )
+            if settings_extent and len(settings_extent) == 4:
+                aoi_extent = QgsRectangle(
+                    float(settings_extent[0]),
+                    float(settings_extent[2]),
+                    float(settings_extent[1]),
+                    float(settings_extent[3]),
+                )
+
+        if not aoi_extent:
+            raise ValueError("Scenario extent is not defined or invalid.")
+
+        url_bbox_part = extent_to_url_param(aoi_extent)
         if not url_bbox_part:
             log(
                 "Unable to create the bbox query part of the default "
-                "priotity layer download URL.",
+                "priority layer download URL.",
                 info=False,
             )
             return False
@@ -817,17 +831,19 @@ class CalculateNatureBaseZonalStatsTask(QgsTask):
                 aoi_extent.yMaximum(),
             ]
         else:
+            extent = None
             # From explicit extent definition
             settings_extent = settings_manager.get_value(
                 Settings.SCENARIO_EXTENT, default=None
             )
-            # Ensure in minX, minY, maxX, maxY format
-            extent = [
-                float(settings_extent[0]),
-                float(settings_extent[2]),
-                float(settings_extent[1]),
-                float(settings_extent[3]),
-            ]
+            if settings_extent:
+                # Ensure in minX, minY, maxX, maxY format
+                extent = [
+                    float(settings_extent[0]),
+                    float(settings_extent[2]),
+                    float(settings_extent[1]),
+                    float(settings_extent[3]),
+                ]
 
         if not extent or len(extent) < 4:
             raise ValueError("Scenario extent is not defined or invalid.")
