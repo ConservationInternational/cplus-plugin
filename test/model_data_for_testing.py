@@ -86,6 +86,7 @@ def get_valid_ncs_pathway() -> NcsPathway:
         True,
         pathway_type=NcsPathwayType.MANAGE,
         priority_layers=[],
+        suitability_index=1.0,
     )
 
 
@@ -376,7 +377,7 @@ NCS_PATHWAY_DICT = {
     PATHWAY_TYPE_ATTRIBUTE: 2,
     PATHWAY_TYPE_OPTIONS_ATTRIBUTE: {},
     PRIORITY_LAYERS_SEGMENT: [],
-    PATHWAY_SUITABILITY_INDEX_ATTRIBUTE: 0.0,
+    PATHWAY_SUITABILITY_INDEX_ATTRIBUTE: 1.0,
 }
 
 
