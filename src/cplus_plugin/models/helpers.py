@@ -78,6 +78,7 @@ from ..definitions.constants import (
     PATH_ATTRIBUTE,
     PATHWAY_TYPE_ATTRIBUTE,
     PATHWAY_TYPE_OPTIONS_ATTRIBUTE,
+    PATHWAY_SUITABILITY_INDEX_ATTRIBUTE,
     PIXEL_VALUE_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
     PROFILES_ATTRIBUTE,
@@ -254,6 +255,9 @@ def create_ncs_pathway(source_dict) -> typing.Union[NcsPathway, None]:
     if PATHWAY_TYPE_OPTIONS_ATTRIBUTE in source_dict:
         ncs.type_options = source_dict[PATHWAY_TYPE_OPTIONS_ATTRIBUTE]
 
+    if PATHWAY_SUITABILITY_INDEX_ATTRIBUTE in source_dict:
+        ncs.suitability_index = source_dict[PATHWAY_SUITABILITY_INDEX_ATTRIBUTE]
+
     return ncs
 
 
@@ -344,6 +348,7 @@ def ncs_pathway_to_dict(ncs_pathway: NcsPathway, uuid_to_str=True) -> dict:
     base_ncs_dict[PATHWAY_TYPE_ATTRIBUTE] = ncs_pathway.pathway_type
     base_ncs_dict[PRIORITY_LAYERS_SEGMENT] = ncs_pathway.priority_layers
     base_ncs_dict[PATHWAY_TYPE_OPTIONS_ATTRIBUTE] = ncs_pathway.type_options
+    base_ncs_dict[PATHWAY_SUITABILITY_INDEX_ATTRIBUTE] = ncs_pathway.suitability_index
 
     return base_ncs_dict
 
