@@ -632,7 +632,7 @@ def initialize_constant_raster_registry():
     log("Initializing constant raster metadata registry", info=True)
 
     # Register serializers so the registry can know how to unpack the
-    # metadata from settings.
+    # constant raster collection from settings.
     constant_raster_registry.serializers_from_metadata(
         YearsExperienceWidget.create_metadata()
     )
@@ -670,7 +670,6 @@ def initialize_constant_raster_registry():
             metadata.raster_collection.max_value = type_def.get(
                 MAX_VALUE_ATTRIBUTE_KEY, 100.0
             )
-            constant_raster_registry.add_metadata(metadata)
 
             log(
                 f"Registered custom constant raster type: {metadata_id} ({type_def.get(NAME_ATTRIBUTE)})",

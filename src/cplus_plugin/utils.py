@@ -1222,19 +1222,22 @@ def normalize_raster(
         if min_value is None or max_value is None:
             return False, f"Raster layer has no valid statistics, {input_raster_path}"
 
+        if max_value < min_value:
+            return (
+                False,
+                f"Layer cannot be normalized, min value {min_value} is greater than max value {max_value}",
+            )
+
         if min_value >= 0 and max_value <= 1:
             return (
                 True,
-                f"Layer is already normalized (min={min_value}, max={max_value})",
-            )
-
-        if min_value == max_value:
-            return (
-                False,
-                f"Layer cannot be normalized because min value = {min_value} is same as max value = {max_value}",
+                f"Layer {input_raster_path} is already normalized (min={min_value}, max={max_value})",
             )
 
         expression = f"(A - {min_value}) / ({max_value} - {min_value})"
+        if min_value == max_value:
+            # Treat layer as a constant raster when min and max value is equal
+            expression = f"(A / {min_value})"
 
         alg_params = {
             "INPUT_A": input_raster_path,

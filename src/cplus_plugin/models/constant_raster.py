@@ -8,7 +8,7 @@ import dataclasses
 import typing
 from datetime import datetime
 from typing import NamedTuple
-from qgis.core import QgsRasterLayer
+from qgis.core import QgsCoordinateReferenceSystem, QgsRasterLayer, QgsRectangle
 
 from .base import Activity, LayerModelComponent, ModelComponentType, NcsPathway
 
@@ -304,9 +304,9 @@ class ConstantRasterContext:
     """
 
     component: typing.Optional[LayerModelComponent] = None  # Associated component
-    extent: typing.Any = None  # QgsRectangle
+    extent: QgsRectangle = None
     pixel_size: float = 30.0  # Default pixel size in map units
-    crs: typing.Any = None  # QgsCoordinateReferenceSystem
+    crs: QgsCoordinateReferenceSystem = None
     output_dir: str = ""  # Output directory for created rasters
     remove_existing: bool = True  # Whether to remove existing rasters
 
@@ -335,10 +335,34 @@ class ConstantRasterMetadata:
     component_type: typing.Optional[
         "ModelComponentType"
     ] = None  # Type this metadata applies to
-    input_range: InputRange = InputRange(
-        min=0.0, max=100.0
-    )  # Min and max for input values (e.g., 0-100 years)
     user_defined: bool = False  # True for custom types, False for built-ins
+
+    @property
+    def input_range(self) -> typing.Optional[InputRange]:
+        """Returns the allowable limit for the raster collection.
+
+        :returns: Raster collection range limit.
+        :rtype: InputRange
+        """
+        if self.raster_collection is None:
+            return None
+
+        return InputRange(
+            self.raster_collection.allowable_min, self.raster_collection.allowable_max
+        )
+
+    @input_range.setter
+    def input_range(self, min_max_range: tuple):
+        """Set the allowable range for the raster collection.
+
+        :param min_max_range: Minimum/maximum values allowed in the collection.
+        :type min_max_range: tuple
+        """
+        if self.raster_collection is None and len(min_max_range) < 2:
+            return
+
+        self.raster_collection.allowable_min = min_max_range[0]
+        self.raster_collection.allowable_max = min_max_range[1]
 
 
 @dataclasses.dataclass
