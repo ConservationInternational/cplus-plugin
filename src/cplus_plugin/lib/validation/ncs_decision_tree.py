@@ -1,5 +1,6 @@
 """Decision tree processing algorithm for Nature-based Solutions (NCS)."""
 
+import json
 import os
 import tempfile
 import typing
@@ -214,7 +215,6 @@ class ApplyNcsDecisionTreeAlgorithm(QgsProcessingAlgorithm):
     """
 
     # Parameters
-    P_ACTIVITY_ID = "ACTIVITY_ID"
     P_TARGET_CRS = "TARGET_CRS"
     P_EXTENT = "EXTENT"
     P_PIXEL = "PIXEL_SIZE"
@@ -231,8 +231,11 @@ class ApplyNcsDecisionTreeAlgorithm(QgsProcessingAlgorithm):
         return "apply_ncs_decision_tree"
 
     def initAlgorithm(self, config=None):
+        # Accept pathway UUIDs directly instead of activity ID
         self.addParameter(
-            QgsProcessingParameterString(self.P_ACTIVITY_ID, tr("Activity ID (UUID)"))
+            QgsProcessingParameterString(
+                "PATHWAY_UUIDS", tr("Pathway UUIDs (JSON array)")
+            )
         )
         self.addParameter(
             QgsProcessingParameterCrs(self.P_TARGET_CRS, tr("Target CRS"))
@@ -244,7 +247,7 @@ class ApplyNcsDecisionTreeAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.P_PIXEL,
                 tr("Pixel size (map units)"),
-                QgsProcessingParameterNumber.Double,
+                QgsProcessingParameterNumber.Type.Double,
                 30.0,
                 minValue=1e-6,
             )
@@ -253,7 +256,7 @@ class ApplyNcsDecisionTreeAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.P_NODATA,
                 tr("NoData value"),
-                QgsProcessingParameterNumber.Integer,
+                QgsProcessingParameterNumber.Type.Integer,
                 0,
             )
         )
@@ -275,7 +278,7 @@ class ApplyNcsDecisionTreeAlgorithm(QgsProcessingAlgorithm):
 
     def processAlgorithm(self, params, context, feedback):
         # Inputs
-        act_id = self.parameterAsString(params, self.P_ACTIVITY_ID, context)
+        pathway_uuids_json = self.parameterAsString(params, "PATHWAY_UUIDS", context)
         tgt_crs = self.parameterAsCrs(params, self.P_TARGET_CRS, context)
         extent = self.parameterAsExtent(params, self.P_EXTENT, context)
         pixel = self.parameterAsDouble(params, self.P_PIXEL, context)
@@ -283,14 +286,22 @@ class ApplyNcsDecisionTreeAlgorithm(QgsProcessingAlgorithm):
         sel_idx = self.parameterAsEnum(params, self.P_SELECTED_ACTION, context)
         selected_name = self.CHOICES_ACTION[sel_idx]
 
-        # Resolve activity + pathways
-        activity = settings_manager.get_activity(act_id)
-        if activity is None:
-            raise QgsProcessingException(f"Activity not found: {act_id}")
+        # Resolve pathways from provided UUIDs
+        pathways: typing.List[NcsPathway] = []
 
-        pathways: typing.List[NcsPathway] = activity.pathways or []
+        try:
+            pathway_uuids = json.loads(pathway_uuids_json)
+            for uuid_str in pathway_uuids:
+                pathway = settings_manager.get_ncs_pathway(uuid_str)
+                if pathway:
+                    pathways.append(pathway)
+        except (json.JSONDecodeError, Exception) as e:
+            raise QgsProcessingException(f"Invalid pathway UUIDs: {e}")
+
         if not pathways:
-            raise QgsProcessingException("Activity has no pathways.")
+            raise QgsProcessingException(
+                "No valid pathways provided for decision tree."
+            )
 
         # Materialize + group masks
         cropland, wetlands, grass_sav_shrub = [], [], []

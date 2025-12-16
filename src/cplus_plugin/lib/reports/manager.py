@@ -610,7 +610,7 @@ class ReportManager(QtCore.QObject):
         the first time.
         """
         layout_type = designer.masterLayout().layoutType()
-        if layout_type == QgsMasterLayoutInterface.PrintLayout:
+        if layout_type == QgsMasterLayoutInterface.Type.PrintLayout:
             layout = designer.layout()
             if self._variable_register.is_analysis_report(layout):
                 view = designer.view()

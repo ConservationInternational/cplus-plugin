@@ -100,8 +100,8 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         # Information banner
         info_banner = QtWidgets.QFrame()
-        info_banner.setFrameShape(QtWidgets.QFrame.StyledPanel)
-        info_banner.setFrameShadow(QtWidgets.QFrame.Raised)
+        info_banner.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
+        info_banner.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
         info_banner.setMinimumHeight(100)
         info_banner.setMaximumHeight(100)
         info_banner.setAutoFillBackground(False)
@@ -176,7 +176,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         main_layout.addWidget(top_widget)
 
         # Middle section: Two-column layout with splitter
-        splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
 
         label_stylesheet = """
             QLabel {
@@ -196,7 +196,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         left_layout.addWidget(activities_label)
 
         self.lst_activities = QtWidgets.QListView()
-        self.lst_activities.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.lst_activities.setEditTriggers(
+            QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers
+        )
         left_layout.addWidget(self.lst_activities)
 
         splitter.addWidget(left_widget)
@@ -220,7 +222,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                 "selected there is configuration error."
             )
         )
-        blank_widget.setAlignment(QtCore.Qt.AlignCenter)
+        blank_widget.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         blank_widget.setStyleSheet("color: gray; padding: 20px;")
         self.sw_component_container.addWidget(blank_widget)
 
@@ -265,7 +267,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         self.lbl_last_updated.setStyleSheet(
             "color: gray; font-size: 9pt; font-style: italic;"
         )
-        self.lbl_last_updated.setAlignment(QtCore.Qt.AlignLeft)
+        self.lbl_last_updated.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)
         self.lbl_last_updated.setContentsMargins(5, 5, 5, 5)
         right_layout.addWidget(self.lbl_last_updated)
 
@@ -283,7 +285,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Create tool button with dropdown menu for raster creation
         self.btn_create_raster = QtWidgets.QToolButton()
         self.btn_create_raster.setText(self.tr("Create Rasters"))
-        self.btn_create_raster.setPopupMode(QtWidgets.QToolButton.MenuButtonPopup)
+        self.btn_create_raster.setPopupMode(
+            QtWidgets.QToolButton.ToolButtonPopupMode.MenuButtonPopup
+        )
         self.btn_create_raster.setToolTip(
             self.tr(
                 "Create constant rasters for current investability in the view or all types"
@@ -521,10 +525,10 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             item = self._activities_model.item(row)
             if not item:
                 continue
-            if check and item.checkState() == QtCore.Qt.Unchecked:
-                item.setCheckState(QtCore.Qt.Checked)
-            elif not check and item.checkState() == QtCore.Qt.Checked:
-                item.setCheckState(QtCore.Qt.Unchecked)
+            if check and item.checkState() == QtCore.Qt.CheckState.Unchecked:
+                item.setCheckState(QtCore.Qt.CheckState.Checked)
+            elif not check and item.checkState() == QtCore.Qt.CheckState.Checked:
+                item.setCheckState(QtCore.Qt.CheckState.Unchecked)
 
     def on_raster_type_selection_changed(self, index: int):
         """Slot raised when the selection in the combobox
@@ -587,7 +591,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             if not activity_item:
                 continue
             check_state = (
-                QtCore.Qt.Checked if raster_component.enabled else QtCore.Qt.Unchecked
+                QtCore.Qt.CheckState.Checked
+                if raster_component.enabled
+                else QtCore.Qt.CheckState.Unchecked
             )
             activity_item.setCheckState(check_state)
 
@@ -604,12 +610,13 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         if not self._activities_model.rowCount():
             return
 
-        item = self._activities_model.model_component_items()[0]
         for item in self._activities_model.model_component_items():
-            if item.checkState() == QtCore.Qt.Checked:
+            if item.checkState() == QtCore.Qt.CheckState.Checked:
                 self.lst_activities.selectionModel().select(
-                    item.index(), QtCore.QItemSelectionModel.ClearAndSelect
+                    item.index(),
+                    QtCore.QItemSelectionModel.SelectionFlag.ClearAndSelect,
                 )
+                break
 
         # Save selected raster type
         settings_manager.set_value(
@@ -840,7 +847,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
     def _on_item_checked_changed(self, item: QtGui.QStandardItem):
         """Slot raised when an item's checkbox state changes."""
-        is_checked = item.checkState() == QtCore.Qt.Checked
+        is_checked = item.checkState() == QtCore.Qt.CheckState.Checked
 
         # Update the component's enabled state based on checkbox state
         raster_collection = self.current_constant_raster_collection()
@@ -850,7 +857,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Ensure the item is also selected for consistent behaviour
         self.lst_activities.selectionModel().blockSignals(True)
         self.lst_activities.selectionModel().select(
-            item.index(), QtCore.QItemSelectionModel.ClearAndSelect
+            item.index(), QtCore.QItemSelectionModel.SelectionFlag.ClearAndSelect
         )
         # Update current activity label since the item selection is manual
         self.current_activity_label.setText(
@@ -962,7 +969,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                 continue
 
             model_identifier = item.uuid
-            is_checked = item.checkState() == QtCore.Qt.Checked
+            is_checked = item.checkState() == QtCore.Qt.CheckState.Checked
 
             # Find or create component for this item
             component = raster_collection.component_by_id(model_identifier)
@@ -1428,7 +1435,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             parent=self, edit_mode=False, existing_types=existing_names
         )
 
-        if dialog.exec_() == QtWidgets.QDialog.Accepted:
+        if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
             type_def = dialog.get_type_definition()
 
             # Generate unique ID from type name (like "training_hours")
@@ -1537,7 +1544,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         )
         dialog.set_values(type_def)
 
-        if dialog.exec_() == QtWidgets.QDialog.Accepted:
+        if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
             updated_def = dialog.get_type_definition()
 
             # Update metadata
@@ -1646,11 +1653,12 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                 f"Are you sure you want to delete the '{metadata.display_name}' investability type?\n"
                 "This will remove its configuration and all associated data."
             ),
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-            QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.StandardButton.Yes
+            | QtWidgets.QMessageBox.StandardButton.No,
+            QtWidgets.QMessageBox.StandardButton.No,
         )
 
-        if reply != QtWidgets.QMessageBox.Yes:
+        if reply != QtWidgets.QMessageBox.StandardButton.Yes:
             return
 
         # Remove from dropdown first

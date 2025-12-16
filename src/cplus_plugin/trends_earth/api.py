@@ -42,7 +42,7 @@ class tr_api:
 
 class RequestTask(QgsTask):
     def __init__(self, description, url, method, payload, headers, timeout=30):
-        super().__init__(description, QgsTask.CanCancel)
+        super().__init__(description, QgsTask.Flag.CanCancel)
 
         self.description = description
         self.url = url
@@ -69,7 +69,8 @@ class RequestTask(QgsTask):
             auth_added, _ = auth_manager.updateNetworkRequest(network_request, auth_id)
 
             network_request.setHeader(
-                QtNetwork.QNetworkRequest.ContentTypeHeader, "application/json"
+                QtNetwork.QNetworkRequest.KnownHeaders.ContentTypeHeader,
+                "application/json",
             )
 
             if len(self.headers) > 0:
@@ -113,7 +114,7 @@ class RequestTask(QgsTask):
 
                 loop = QtCore.QEventLoop()
                 self.resp.finished.connect(loop.quit)
-                loop.exec_()
+                loop.exec()
 
             elif self.method == "delete":
                 empty_payload = {}
@@ -126,7 +127,7 @@ class RequestTask(QgsTask):
 
                 loop = QtCore.QEventLoop()
                 self.resp.finished.connect(loop.quit)
-                loop.exec_()
+                loop.exec()
 
             elif self.method == "patch":
                 doc = QtCore.QJsonDocument(self.payload)
@@ -138,14 +139,14 @@ class RequestTask(QgsTask):
 
                 loop = QtCore.QEventLoop()
                 self.resp.finished.connect(loop.quit)
-                loop.exec_()
+                loop.exec()
 
             elif self.method == "head":
                 self.resp = network_manager.head(network_request)
 
                 loop = QtCore.QEventLoop()
                 self.resp.finished.connect(loop.quit)
-                loop.exec_()
+                loop.exec()
 
             else:
                 self.exception = ValueError(
@@ -389,7 +390,7 @@ class APIClient(QtCore.QObject):
 
         if resp != None:
             status_code = resp.attribute(
-                QtNetwork.QNetworkRequest.HttpStatusCodeAttribute
+                QtNetwork.QNetworkRequest.Attribute.HttpStatusCodeAttribute
             )
             if status_code == 200:
                 ret = resp

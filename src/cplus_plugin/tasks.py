@@ -38,7 +38,6 @@ from .definitions.defaults import (
 )
 from .lib.constant_raster import constant_raster_registry
 from .models.base import ScenarioResult, Activity, NcsPathway, NcsPathwayType
-from .resources import *
 from .utils import (
     align_rasters,
     clean_filename,
@@ -446,7 +445,7 @@ class ScenarioAnalysisTask(QgsTask):
         self.status_message = message
         self.status_message_changed.emit(self.status_message)
 
-    def set_info_message(self, message: str, level=Qgis.Info):
+    def set_info_message(self, message: str, level=Qgis.MessageLevel.Info):
         """Set info message.
 
         :param message: Message
@@ -634,7 +633,7 @@ class ScenarioAnalysisTask(QgsTask):
                             f"No defined activity pathways or "
                             f" activity layers for the activity {activity.name}"
                         ),
-                        level=Qgis.Critical,
+                        level=Qgis.MessageLevel.Critical,
                     )
                     self.log_message(
                         f"No defined activity pathways or "
@@ -777,7 +776,7 @@ class ScenarioAnalysisTask(QgsTask):
                     msg = f"""No defined activity pathways or
                      activity layers for the activity {activity.name}
                     """
-                    self.set_info_message(tr(msg), level=Qgis.Critical)
+                    self.set_info_message(tr(msg), level=Qgis.MessageLevel.Critical)
                     self.log_message(msg)
                     return False
 
@@ -791,7 +790,7 @@ class ScenarioAnalysisTask(QgsTask):
             if len(pathways) == 0:
                 self.set_info_message(
                     tr("No Naturebase pathways found in any activity."),
-                    level=Qgis.Critical,
+                    level=Qgis.MessageLevel.Critical,
                 )
                 return False
 
@@ -1051,7 +1050,7 @@ class ScenarioAnalysisTask(QgsTask):
                             f"No defined activity pathways or "
                             f" activity layers for the activity {activity.name}"
                         ),
-                        level=Qgis.Critical,
+                        level=Qgis.MessageLevel.Critical,
                     )
                     self.log_message(
                         f"No defined activity pathways or "
@@ -1195,7 +1194,7 @@ class ScenarioAnalysisTask(QgsTask):
                             f"No defined activity pathways or a"
                             f" activity layer for the activity {activity.name}"
                         ),
-                        level=Qgis.Critical,
+                        level=Qgis.MessageLevel.Critical,
                     )
                     self.log_message(
                         f"No defined activity pathways or a "
@@ -1493,7 +1492,7 @@ class ScenarioAnalysisTask(QgsTask):
         if target_crs is None or not target_crs.isValid():
             self.set_info_message(
                 tr("Invalid target CRS for reprojecting pathways."),
-                level=Qgis.Critical,
+                level=Qgis.MessageLevel.Critical,
             )
             self.log_message("Invalid target CRS for reprojecting pathways.")
             return False
@@ -1527,7 +1526,7 @@ class ScenarioAnalysisTask(QgsTask):
                             f"No defined activity pathways or a"
                             f" activity layer for the activity {activity.name}"
                         ),
-                        level=Qgis.Critical,
+                        level=Qgis.MessageLevel.Critical,
                     )
                     self.log_message(
                         f"No defined activity pathways or a "
@@ -1681,7 +1680,7 @@ class ScenarioAnalysisTask(QgsTask):
                             f"No defined activity pathways or a"
                             f" activity layer for the activity {activity.name}"
                         ),
-                        level=Qgis.Critical,
+                        level=Qgis.MessageLevel.Critical,
                     )
                     self.log_message(
                         f"No defined activity pathways or an "
@@ -1777,7 +1776,7 @@ class ScenarioAnalysisTask(QgsTask):
                     msg = f"No defined activity layer for the activity {activity.name}"
                     self.set_info_message(
                         tr(msg),
-                        level=Qgis.Critical,
+                        level=Qgis.MessageLevel.Critical,
                     )
                     self.log_message(msg)
                     return False
@@ -1905,7 +1904,8 @@ class ScenarioAnalysisTask(QgsTask):
             # see https://qgis.org/pyqgis/master/core/Qgis.html#qgis.core.Qgis.GeometryType
             if Qgis.versionInt() < 33000:
                 layer_check = (
-                    initial_mask_layer.geometryType() == QgsWkbTypes.PolygonGeometry
+                    initial_mask_layer.geometryType()
+                    == QgsWkbTypes.GeometryType.PolygonGeometry
                 )
             else:
                 layer_check = (
@@ -1941,7 +1941,7 @@ class ScenarioAnalysisTask(QgsTask):
                                 f"Problem when masking activities, "
                                 f"there is no map layer for the activity {activity.name}"
                             ),
-                            level=Qgis.Critical,
+                            level=Qgis.MessageLevel.Critical,
                         )
                         self.log_message(
                             f"Problem when masking activities, "
@@ -1951,7 +1951,7 @@ class ScenarioAnalysisTask(QgsTask):
                         # If the user cancelled the processing
                         self.set_info_message(
                             tr(f"Processing has been cancelled by the user."),
-                            level=Qgis.Critical,
+                            level=Qgis.MessageLevel.Critical,
                         )
                         self.log_message(f"Processing has been cancelled by the user.")
 
@@ -2079,7 +2079,8 @@ class ScenarioAnalysisTask(QgsTask):
                 # see https://qgis.org/pyqgis/master/core/Qgis.html#qgis.core.Qgis.GeometryType
                 if Qgis.versionInt() < 33000:
                     layer_check = (
-                        initial_mask_layer.geometryType() == QgsWkbTypes.PolygonGeometry
+                        initial_mask_layer.geometryType()
+                        == QgsWkbTypes.GeometryType.PolygonGeometry
                     )
                 else:
                     layer_check = (
@@ -2130,7 +2131,7 @@ class ScenarioAnalysisTask(QgsTask):
                                 f"Problem when masking activity, "
                                 f"there is no map layer for the activity {activity.name}"
                             ),
-                            level=Qgis.Critical,
+                            level=Qgis.MessageLevel.Critical,
                         )
                         self.log_message(
                             f"Problem when masking activity, "
@@ -2140,7 +2141,7 @@ class ScenarioAnalysisTask(QgsTask):
                         # If the user cancelled the processing
                         self.set_info_message(
                             tr(f"Processing has been cancelled by the user."),
-                            level=Qgis.Critical,
+                            level=Qgis.MessageLevel.Critical,
                         )
                         self.log_message(f"Processing has been cancelled by the user.")
 
@@ -2353,7 +2354,7 @@ class ScenarioAnalysisTask(QgsTask):
                                 f"Problem when running sieve function on activities, "
                                 f"there is no map layer for the activity {activity.name}"
                             ),
-                            level=Qgis.Critical,
+                            level=Qgis.MessageLevel.Critical,
                         )
                         self.log_message(
                             f"Problem when running sieve function on activities, "
@@ -2363,7 +2364,7 @@ class ScenarioAnalysisTask(QgsTask):
                         # If the user cancelled the processing
                         self.set_info_message(
                             tr(f"Processing has been cancelled by the user."),
-                            level=Qgis.Critical,
+                            level=Qgis.MessageLevel.Critical,
                         )
                         self.log_message(f"Processing has been cancelled by the user.")
 
@@ -2551,7 +2552,7 @@ class ScenarioAnalysisTask(QgsTask):
             msg = tr(f"No defined pathways for running normalize total carbon impact.")
             self.set_info_message(
                 msg,
-                level=Qgis.Critical,
+                level=Qgis.MessageLevel.Critical,
             )
             self.log_message(msg)
             return False
@@ -2644,7 +2645,7 @@ class ScenarioAnalysisTask(QgsTask):
             msg = tr(f"No defined activities for running pathways weighting.")
             self.set_info_message(
                 msg,
-                level=Qgis.Critical,
+                level=Qgis.MessageLevel.Critical,
             )
             self.log_message(msg)
             return False
@@ -2676,7 +2677,7 @@ class ScenarioAnalysisTask(QgsTask):
                             f"No defined activity pathways or an"
                             f" activity layer for the activity {activity.name}"
                         ),
-                        level=Qgis.Critical,
+                        level=Qgis.MessageLevel.Critical,
                     )
                     self.log_message(
                         f"No defined activity pathways or an "
@@ -2899,7 +2900,7 @@ class ScenarioAnalysisTask(QgsTask):
                             f"Problem when running activity updates, "
                             f"there is no map layer for the activity {activity.name}"
                         ),
-                        level=Qgis.Critical,
+                        level=Qgis.MessageLevel.Critical,
                     )
                     self.log_message(
                         f"Problem when running activity updates, "
@@ -3049,9 +3050,9 @@ class ScenarioAnalysisTask(QgsTask):
                         binary_polygonize,
                         selectedFeaturesOnly=False,
                         featureLimit=-1,
-                        flags=QgsProcessingFeatureSourceDefinition.FlagOverrideDefaultGeometryCheck
-                        | QgsProcessingFeatureSourceDefinition.FlagCreateIndividualOutputPerInputFeature,
-                        geometryCheck=QgsFeatureRequest.GeometryNoCheck,
+                        flags=QgsProcessingFeatureSourceDefinition.Flag.FlagOverrideDefaultGeometryCheck
+                        | QgsProcessingFeatureSourceDefinition.Flag.FlagCreateIndividualOutputPerInputFeature,
+                        geometryCheck=QgsFeatureRequest.InvalidGeometryCheck.GeometryNoCheck,
                     ),
                     "INPUT_RASTER": binary,
                     "RASTER_BAND": 1,

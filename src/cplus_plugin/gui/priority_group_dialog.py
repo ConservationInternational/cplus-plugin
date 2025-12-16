@@ -44,7 +44,9 @@ class PriorityGroupDialog(QtWidgets.QDialog, DialogUi):
         if self.group is not None:
             self.layers = settings_manager.find_layers_by_group(group.get("name"))
 
-        self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(False)
+        self.button_box.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setEnabled(
+            False
+        )
 
         ok_signals = [
             self.group_name.textChanged,
@@ -68,7 +70,9 @@ class PriorityGroupDialog(QtWidgets.QDialog, DialogUi):
         enabled_state = (
             self.group_name.text() != "" and self.group_description.toPlainText() != ""
         )
-        self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(enabled_state)
+        self.button_box.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setEnabled(
+            enabled_state
+        )
 
     def initialize_ui(self):
         """Populate UI inputs when loading the dialog"""
@@ -102,7 +106,7 @@ class PriorityGroupDialog(QtWidgets.QDialog, DialogUi):
         layer_select_dialog = ItemsSelectionDialog(
             self, self.group, model_layers, item_type=PriorityLayer
         )
-        layer_select_dialog.exec_()
+        layer_select_dialog.exec()
 
     def set_selected_items(self, items, removed_items=[]):
         """Adds this dialog group into the passed layers and removes it from the

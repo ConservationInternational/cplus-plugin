@@ -158,7 +158,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             err = f"Problem uploading layer to the server: {e}\n"
             self.log_message(err, info=False)
             self.log_message(str(traceback.format_exc()))
-            self.set_info_message(err, level=Qgis.Critical)
+            self.set_info_message(err, level=Qgis.MessageLevel.Critical)
             self.cancel_task(e)
             return False
         if self.processing_cancelled:
@@ -170,7 +170,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             self.log_message(traceback.format_exc(), info=False)
             err = f"Problem building scenario JSON: {ex}\n"
             self.log_message(err, info=False)
-            self.set_info_message(err, level=Qgis.Critical)
+            self.set_info_message(err, level=Qgis.MessageLevel.Critical)
             self.cancel_task(ex)
             return False
 
@@ -180,7 +180,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             self.log_message(traceback.format_exc(), info=False)
             err = f"Problem executing scenario analysis in the server side: {ex}\n"
             self.log_message(err, info=False)
-            self.set_info_message(err, level=Qgis.Critical)
+            self.set_info_message(err, level=Qgis.MessageLevel.Critical)
             self.cancel_task(ex)
             return False
         return not self.processing_cancelled

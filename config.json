@@ -2,8 +2,9 @@
   "general": {
     "name" : "CPLUS plugin",
     "qgisMinimumVersion": 3.22,
-    "qgisMaximumVersion": 3.99,
+    "qgisMaximumVersion": 4.99,
     "icon": "icon.svg",
+    "supportsQt6": true,
     "experimental": false,
     "deprecated": false,
     "homepage": "https://github.com/ConservationInternational/cplus-plugin",

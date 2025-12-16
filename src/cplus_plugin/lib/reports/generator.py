@@ -113,7 +113,7 @@ DEFAULT_AREA_DECIMAL_PLACES = 2
 
 def _qcolor_to_hex(c: QColor) -> str:
     try:
-        return c.name(QColor.HexRgb) if isinstance(c, QColor) else "#888888"
+        return c.name(QColor.NameFormat.HexRgb) if isinstance(c, QColor) else "#888888"
     except Exception:
         return "#888888"
 
@@ -1763,7 +1763,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
         if len(root_children) > 0:
             QgsLegendRenderer.setNodeLegendStyle(
-                root_children[0], QgsLegendStyle.Hidden
+                root_children[0], QgsLegendStyle.Style.Hidden
             )
 
         for tree_layer in legend_item.model().rootGroup().findLayers():
@@ -1773,7 +1773,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 scenario_child_nodes = model.layerLegendNodes(tree_layer)
                 activity_node_indices = []
                 for i, child_node in enumerate(scenario_child_nodes):
-                    node_name = str(child_node.data(QtCore.Qt.DisplayRole))
+                    node_name = str(child_node.data(QtCore.Qt.ItemDataRole.DisplayRole))
                     # Only show nodes for activity nodes used for the scenario
                     if node_name.lower() in activity_names:
                         activity_node_indices.append(i)
@@ -1783,7 +1783,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 )
 
                 # Remove the tree layer band title
-                QgsLegendRenderer.setNodeLegendStyle(tree_layer, QgsLegendStyle.Hidden)
+                QgsLegendRenderer.setNodeLegendStyle(tree_layer, QgsLegendStyle.Style.Hidden)
 
                 model.refreshLayerLegend(tree_layer)
             else:
@@ -2053,7 +2053,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             # Otherwise just add the additional default columns - carbon-related columns
             carbon_impact_column = QgsLayoutTableColumn(tr(CARBON_IMPACT_HEADER))
             carbon_impact_column.setWidth(0)
-            carbon_impact_column.setHAlignment(QtCore.Qt.AlignHCenter)
+            carbon_impact_column.setHAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
 
             columns.append(carbon_impact_column)
 
@@ -2062,7 +2062,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 tr(PROTECT_CARBON_IMPACT_HEADER)
             )
             carbon_impact_protect_column.setWidth(0)
-            carbon_impact_protect_column.setHAlignment(QtCore.Qt.AlignHCenter)
+            carbon_impact_protect_column.setHAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
 
             columns.append(carbon_impact_protect_column)
 
@@ -2071,7 +2071,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 tr(MANAGE_CARBON_IMPACT_HEADER)
             )
             carbon_impact_manage_column.setWidth(0)
-            carbon_impact_manage_column.setHAlignment(QtCore.Qt.AlignHCenter)
+            carbon_impact_manage_column.setHAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
 
             columns.append(carbon_impact_manage_column)
 
@@ -2080,14 +2080,14 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 tr(RESTORE_CARBON_IMPACT_HEADER)
             )
             carbon_impact_restore_column.setWidth(0)
-            carbon_impact_restore_column.setHAlignment(QtCore.Qt.AlignHCenter)
+            carbon_impact_restore_column.setHAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
 
             columns.append(carbon_impact_restore_column)
 
             # Total carbon
             total_carbon_column = QgsLayoutTableColumn(tr(TOTAL_CARBON_IMPACT_HEADER))
             total_carbon_column.setWidth(0)
-            total_carbon_column.setHAlignment(QtCore.Qt.AlignHCenter)
+            total_carbon_column.setHAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
 
             columns.append(total_carbon_column)
 
@@ -2175,7 +2175,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
                     if highlight_error:
                         text_format = activity_cell.textFormat()
-                        text_format.setColor(QtCore.Qt.red)
+                        text_format.setColor(QtCore.Qt.GlobalColor.red)
                         activity_cell.setTextFormat(text_format)
 
                     activity_row_cells.append(activity_cell)
@@ -2189,7 +2189,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 # Update values
                 formatted_area = self.format_number(area_info)
                 area_cell = QgsTableCell(formatted_area)
-                area_cell.setHorizontalAlignment(QtCore.Qt.AlignHCenter)
+                area_cell.setHorizontalAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
 
                 activity_row_cells.append(area_cell)
 
@@ -2208,7 +2208,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 carbon_impact_cell = QgsTableCell(
                     self.format_number(activity_naturebase_carbon)
                 )
-                carbon_impact_cell.setHorizontalAlignment(QtCore.Qt.AlignHCenter)
+                carbon_impact_cell.setHorizontalAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
                 activity_row_cells.append(carbon_impact_cell)
 
                 # Carbon impact (protect)
@@ -2225,7 +2225,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                     self.format_number(carbon_impact_protect, True)
                 )
                 carbon_impact_protect_cell.setHorizontalAlignment(
-                    QtCore.Qt.AlignHCenter
+                    QtCore.Qt.AlignmentFlag.AlignHCenter
                 )
                 activity_row_cells.append(carbon_impact_protect_cell)
 
@@ -2243,7 +2243,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 carbon_impact_manage_cell = QgsTableCell(
                     self.format_number(carbon_impact_manage, True)
                 )
-                carbon_impact_manage_cell.setHorizontalAlignment(QtCore.Qt.AlignHCenter)
+                carbon_impact_manage_cell.setHorizontalAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
                 activity_row_cells.append(carbon_impact_manage_cell)
 
                 if carbon_impact_manage != -1.0:
@@ -2263,7 +2263,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                     self.format_number(carbon_impact_restore, True)
                 )
                 carbon_impact_restore_cell.setHorizontalAlignment(
-                    QtCore.Qt.AlignHCenter
+                    QtCore.Qt.AlignmentFlag.AlignHCenter
                 )
                 activity_row_cells.append(carbon_impact_restore_cell)
 
@@ -2274,7 +2274,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 total_carbon_impact_cell = QgsTableCell(
                     self.format_number(total_carbon_impact, True)
                 )
-                total_carbon_impact_cell.setHorizontalAlignment(QtCore.Qt.AlignHCenter)
+                total_carbon_impact_cell.setHorizontalAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
                 activity_row_cells.append(total_carbon_impact_cell)
 
             rows_data.append(activity_row_cells)
@@ -2590,7 +2590,7 @@ def _load_layout_from_file(
     doc = QtXml.QDomDocument()
     doc_status = True
     try:
-        if not template_file.open(QtCore.QIODevice.ReadOnly):
+        if not template_file.open(QtCore.QIODevice.OpenModeFlag.ReadOnly):
             if error_messages:
                 tr_msg = tr("Unable to read template file")
                 error_messages.append(f"{tr_msg} {template_path}")

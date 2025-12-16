@@ -9,7 +9,7 @@ from qgis.PyQt.QtGui import QDropEvent
 from qgis.PyQt import QtCore
 
 
-SORT_ROLE = QtCore.Qt.UserRole + 2
+SORT_ROLE = QtCore.Qt.ItemDataRole.UserRole + 2
 
 
 class SortableTreeWidgetItem(QTreeWidgetItem):

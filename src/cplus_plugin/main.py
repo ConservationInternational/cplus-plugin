@@ -24,8 +24,8 @@ from qgis.PyQt.QtCore import QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 
-# Initialize Qt resources from file resources.py
-from .resources import *
+# Resources no longer compiled for Qt6 compatibility
+# Icons are loaded directly from filesystem using resources_path()
 
 from .gui.qgis_cplus_main import QgisCplusMain
 from qgis.PyQt.QtWidgets import QToolButton
@@ -115,7 +115,7 @@ class QgisCplus:
         self.toolButton = QToolButton()
         self.toolButton.setMenu(QMenu())
         self.toolButton.setCheckable(True)
-        self.toolButton.setPopupMode(QToolButton.MenuButtonPopup)
+        self.toolButton.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
         self.toolBtnAction = self.toolbar.addWidget(self.toolButton)
         self.actions.append(self.toolBtnAction)
 
@@ -326,7 +326,9 @@ class QgisCplus:
             )
             self.create_dock_widget_action()
 
-        self.iface.addDockWidget(Qt.RightDockWidgetArea, self.main_widget)
+        self.iface.addDockWidget(
+            Qt.DockWidgetArea.RightDockWidgetArea, self.main_widget
+        )
         self.main_widget.show()
 
         if not self.pluginIsActive:
@@ -354,8 +356,13 @@ class QgisCplus:
             app_window = self.iface.mainWindow()
             dock_area = app_window.dockWidgetArea(self.main_widget)
 
-            if dock_area == Qt.NoDockWidgetArea and not self.main_widget.isFloating():
-                self.iface.addDockWidget(Qt.RightDockWidgetArea, self.main_widget)
+            if (
+                dock_area == Qt.DockWidgetArea.NoDockWidgetArea
+                and not self.main_widget.isFloating()
+            ):
+                self.iface.addDockWidget(
+                    Qt.DockWidgetArea.RightDockWidgetArea, self.main_widget
+                )
                 self.main_widget.show()
 
     def run_settings(self):
@@ -365,7 +372,7 @@ class QgisCplus:
     def on_layout_designer_opened(self, designer: QgsLayoutDesignerInterface):
         """Register custom report variables in a print layout only."""
         layout_type = designer.masterLayout().layoutType()
-        if layout_type == QgsMasterLayoutInterface.PrintLayout:
+        if layout_type == QgsMasterLayoutInterface.Type.PrintLayout:
             layout = designer.layout()
             report_manager.register_variables(layout)
 

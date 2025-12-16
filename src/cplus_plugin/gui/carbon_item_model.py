@@ -10,7 +10,7 @@ from qgis.core import QgsRasterLayer
 
 from qgis.PyQt import QtCore, QtGui
 
-from ..utils import FileUtils, tr
+from ..utils import FileUtils, item_user_type, tr
 
 
 class CarbonLayerItem(QtGui.QStandardItem):
@@ -81,7 +81,7 @@ class CarbonLayerItem(QtGui.QStandardItem):
         :returns: Type identifier of the carbob item.
         :rtype: int
         """
-        return QtGui.QStandardItem.UserType + 5
+        return item_user_type() + 5
 
 
 class CarbonLayerModel(QtGui.QStandardItemModel):

@@ -741,7 +741,7 @@ class DefaultPriorityLayerDownloadTask(QgsTask):
             f"on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         )
 
-        self._event_loop.exec_()
+        self._event_loop.exec()
 
         return True
 
