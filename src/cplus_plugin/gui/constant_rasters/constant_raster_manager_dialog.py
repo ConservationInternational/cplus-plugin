@@ -591,7 +591,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             if not activity_item:
                 continue
             check_state = (
-                QtCore.Qt.CheckState.Checked if raster_component.enabled else QtCore.Qt.CheckState.Unchecked
+                QtCore.Qt.CheckState.Checked
+                if raster_component.enabled
+                else QtCore.Qt.CheckState.Unchecked
             )
             activity_item.setCheckState(check_state)
 
@@ -611,7 +613,8 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         for item in self._activities_model.model_component_items():
             if item.checkState() == QtCore.Qt.CheckState.Checked:
                 self.lst_activities.selectionModel().select(
-                    item.index(), QtCore.QItemSelectionModel.SelectionFlag.ClearAndSelect
+                    item.index(),
+                    QtCore.QItemSelectionModel.SelectionFlag.ClearAndSelect,
                 )
                 break
 
