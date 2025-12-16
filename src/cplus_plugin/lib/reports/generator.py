@@ -1823,9 +1823,42 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         try:
             impact_matrix = json.loads(impact_matrix_str) or {}
         except json.JSONDecodeError:
+            log("Unable to read scenario impact matrix from settings.", info=False)
             return {}
 
         if not impact_matrix:
+            log("Scenario impact matrix is empty.", info=False)
+            return {}
+
+        # Check impact matrix has all the required keys
+        required_keys = {"pathway_uuids", "priority_layer_uuids", "values"}
+        if not required_keys.issubset(impact_matrix):
+            log("Scenario impact matrix data is missing key information.", info=False)
+            return {}
+
+        # Type checks
+        if not isinstance(impact_matrix["pathway_uuids"], list):
+            log(
+                "'pathway_uuids' key in scenario impact matrix is not iterable.",
+                info=False,
+            )
+            return {}
+        if not isinstance(impact_matrix["priority_layer_uuids"], list):
+            log(
+                "'priority_layer_uuids' key in scenario impact matrix is not iterable.",
+                info=False,
+            )
+            return {}
+        if not isinstance(impact_matrix["values"], list):
+            log("'values' keys] in scenario impact matrix is not iterable.", info=False)
+            return {}
+
+        # Values must be list of lists
+        if not all(isinstance(row, list) for row in impact_matrix["values"]):
+            log(
+                "'values' row representation in scenario impact matrix is not iterable.",
+                info=False,
+            )
             return {}
 
         # Get indices for pathways to keep
