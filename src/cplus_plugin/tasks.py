@@ -1508,6 +1508,19 @@ class ScenarioAnalysisTask(QgsTask):
         pathways: typing.List[NcsPathway] = []
 
         try:
+            # Create directories for storing reprojected pathways and priority layers
+            reprojected_pathways_directory = os.path.join(
+                self.scenario_directory, "pathways", "reprojected"
+            )
+
+            FileUtils.create_new_dir(reprojected_pathways_directory)
+
+            reprojected_priority_directory = os.path.join(
+                self.scenario_directory, "priority_layer", "reprojected"
+            )
+
+            FileUtils.create_new_dir(reprojected_priority_directory)
+
             for activity in self.analysis_activities:
                 if not activity.pathways and (
                     activity.path is None or activity.path == ""
@@ -1529,13 +1542,48 @@ class ScenarioAnalysisTask(QgsTask):
                     if not (pathway in pathways):
                         pathways.append(pathway)
 
-            if pathways is not None and len(pathways) > 0:
-                reprojected_pathways_directory = os.path.join(
-                    self.scenario_directory, "reprojected_pathways"
+            # Reproject priority layers
+            # Dict with PWL uuid as key and path as value
+            priority_layers_paths = {}
+            for priority_layer in self.get_priority_layers():
+                if priority_layer is None:
+                    continue
+
+                if self.processing_cancelled:
+                    return False
+
+                priority_layer_path = priority_layer.get("path")
+
+                if not Path(priority_layer_path).exists():
+                    continue
+
+                priority_layers_paths[priority_layer.get("uuid")] = priority_layer_path
+
+                layer = QgsRasterLayer(priority_layer_path, f"{str(uuid.uuid4())[:4]}")
+                if not layer.isValid():
+                    self.log_message(
+                        f"Priority layer {priority_layer.get('name')} is not valid, "
+                        f"skipping layer reprojection."
+                    )
+                    continue
+
+                if layer.crs() == target_crs:
+                    self.log_message(
+                        f"Priority layer {priority_layer.get('name')} "
+                        f"is already in the target CRS "
+                        f"{target_crs.authid()}, skipping layer reprojection."
+                    )
+                    continue
+                output_path = self.reproject_layer(
+                    priority_layer_path,
+                    target_crs,
+                    reprojected_priority_directory,
+                    target_extent,
                 )
+                if output_path:
+                    priority_layers_paths[priority_layer.get("uuid")] = output_path
 
-                FileUtils.create_new_dir(reprojected_pathways_directory)
-
+            if pathways is not None and len(pathways) > 0:
                 for pathway in pathways:
                     pathway_layer = QgsRasterLayer(pathway.path, pathway.name)
 
@@ -1576,59 +1624,17 @@ class ScenarioAnalysisTask(QgsTask):
                         pathway.priority_layers is not None
                         and len(pathway.priority_layers) > 0
                     ):
-                        reprojected_priority_directory = os.path.join(
-                            self.scenario_directory, "reprojected_priority_layers"
-                        )
-
-                        FileUtils.create_new_dir(reprojected_priority_directory)
-
-                        priority_layers = []
+                        pathway_priority_layers = []
                         for priority_layer in pathway.priority_layers:
-                            if priority_layer is None:
-                                continue
-
-                            priority_layer_settings = self.get_priority_layer(
-                                priority_layer.get("uuid")
-                            )
-                            if priority_layer_settings is None:
-                                continue
-
-                            priority_layer_path = priority_layer_settings.get("path")
-
-                            if not Path(priority_layer_path).exists():
-                                priority_layers.append(priority_layer)
-                                continue
-
-                            layer = QgsRasterLayer(
-                                priority_layer_path, f"{str(uuid.uuid4())[:4]}"
-                            )
-                            if not layer.isValid():
-                                self.log_message(
-                                    f"Priority layer {priority_layer.get('name')} "
-                                    f"from pathway {pathway.name} is not valid, "
-                                    f"skipping layer reprojection."
+                            pwl_uuid = priority_layer.get("uuid")
+                            if pwl_uuid in priority_layers_paths:
+                                priority_layer["path"] = priority_layers_paths.get(
+                                    pwl_uuid, ""
                                 )
-                                continue
 
-                            if layer.crs() == target_crs:
-                                self.log_message(
-                                    f"Priority layer {priority_layer.get('name')} "
-                                    f"from pathway {pathway.name} is already in the target CRS "
-                                    f"{target_crs.authid()}, skipping layer reprojection."
-                                )
-                            else:
-                                output_path = self.reproject_layer(
-                                    priority_layer_path,
-                                    target_crs,
-                                    reprojected_priority_directory,
-                                    target_extent,
-                                )
-                                if output_path:
-                                    priority_layer["path"] = output_path
+                            pathway_priority_layers.append(priority_layer)
 
-                            priority_layers.append(priority_layer)
-
-                        pathway.priority_layers = priority_layers
+                        pathway.priority_layers = pathway_priority_layers
 
         except Exception as e:
             self.log_message(f"Problem reprojecting layers, {e} \n")
