@@ -9,19 +9,9 @@ import plotly.graph_objects as go
 
 from qgis.core import (
     QgsBasicNumericFormat,
-    QgsLayoutExporter,
-    QgsLayoutFrame,
-    QgsLayoutItemHtml,
-    QgsLayoutPoint,
-    QgsLayoutSize,
     QgsNumericFormatContext,
-    QgsPrintLayout,
-    QgsProject,
     QgsReadWriteContext,
-    QgsUnitTypes,
 )
-
-from qgis.PyQt import QtCore
 
 from ...definitions.defaults import REPORT_FONT_NAME
 from ...utils import log
