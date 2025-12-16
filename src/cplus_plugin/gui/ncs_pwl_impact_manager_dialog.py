@@ -15,24 +15,18 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 from qgis.PyQt.uic import loadUiType
 
 from ..conf import settings_manager, Settings
-from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
-from ..models.base import NcsPathway, PriorityLayerType, NcsPathwayType
+from ..definitions.defaults import (
+    ICON_PATH,
+    USER_DOCUMENTATION_SITE,
+    IMPACT_MATRIX_COLORS,
+)
+from ..models.base import NcsPathway, PriorityLayerType
 from ..utils import FileUtils, open_documentation, tr, log
 
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/ncs_pwl_impact_manager_dialog.ui")
 )
-
-IMPACT_MATRIX_COLORS = {
-    -3: {"color": "#d7191c", "impact": "Strong Negative Impact"},
-    -2: {"color": "#f07c4a", "impact": "Moderate Negative Impact"},
-    -1: {"color": "#fec981", "impact": "Slight Negative Impact"},
-    0: {"color": "#ffffc0", "impact": "Neutral / No Measurable Impact"},
-    1: {"color": "#c4e687", "impact": "Slight Positive Impact"},
-    2: {"color": "#77c35c", "impact": "Moderate Positive Impact"},
-    3: {"color": "#1a9641", "impact": "Strong Positive Impact"},
-}
 
 CARBON_IMPACT_MATRIX_COLORS = {
     -3: {"color": "#d7191c", "impact": "Low Carbon"},

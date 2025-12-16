@@ -182,6 +182,7 @@ ACTIVITY_AREA_TABLE_ID = "activity_area_table"
 PRIORITY_GROUP_WEIGHT_TABLE_ID = "assigned_weights_table"
 AREA_COMPARISON_TABLE_ID = "comparison_table"
 ACTIVITY_AREA_HTML_ID = "activity_area_pie_html"
+IMPACT_MATRIX_TABLE_ID = "impact_matrix_table"
 
 # IDs for items in the metrics report template
 METRICS_HEADER_BACKGROUND = "metrics_header_background"
@@ -313,3 +314,12 @@ MANAGE_CARBON_IMPACT_EXPRESSION_DESCRIPTION = (
 # Constant raster type identifiers
 YEARS_EXPERIENCE_ACTIVITY_ID = "years_experience_activity"
 NPV_METADATA_ID = "financial_npv"
+IMPACT_MATRIX_COLORS = {
+    -3: {"color": "#d7191c", "impact": "Strong Negative Impact"},
+    -2: {"color": "#f07c4a", "impact": "Moderate Negative Impact"},
+    -1: {"color": "#fec981", "impact": "Slight Negative Impact"},
+    0: {"color": "#ffffc0", "impact": "Neutral / No Measurable Impact"},
+    1: {"color": "#c4e687", "impact": "Slight Positive Impact"},
+    2: {"color": "#77c35c", "impact": "Moderate Positive Impact"},
+    3: {"color": "#1a9641", "impact": "Strong Positive Impact"},
+}
