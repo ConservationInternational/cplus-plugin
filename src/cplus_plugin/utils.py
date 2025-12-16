@@ -1205,6 +1205,9 @@ def normalize_raster(
             )
 
         expression = f"(A - {min_value}) / ({max_value} - {min_value})"
+        if min_value == max_value:
+            # Treat layer as a constant raster when min and max value is equal
+            expression = f"(A / {min_value})"
 
         alg_params = {
             "INPUT_A": input_raster_path,
