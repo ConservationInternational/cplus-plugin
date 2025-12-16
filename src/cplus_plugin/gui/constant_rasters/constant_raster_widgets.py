@@ -192,9 +192,6 @@ class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         Creates a component with default value 0.0. The actual value
         will be set later when the user enters it in the widget.
         """
-        # Component type is always ACTIVITY for constant rasters
-        component_type = ModelComponentType.ACTIVITY
-
         return ConstantRasterComponent(
             value_info=ConstantRasterInfo(absolute=0.0),  # Default value
             component=model_component,
@@ -346,44 +343,31 @@ class GenericNumericWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         )
 
     @classmethod
-    def create_metadata(
-        cls,
-        metadata_id: str = "generic_numeric",
-        component_type: "ModelComponentType" = ModelComponentType.ACTIVITY,
-        display_name: str = "Generic Numeric",
-        min_value: float = 0.0,
-        max_value: float = 100.0,
-        user_defined: bool = True,
-    ) -> "ConstantRasterMetadata":
+    def create_metadata(cls) -> "ConstantRasterMetadata":
         """Create metadata for this generic numeric constant raster type.
 
-        Base class override.
+        Base class override. Returns default metadata that can be customized
+        after instantiation.
 
-        :param metadata_id: Unique identifier for this metadata
-        :param component_type: Type of model component this applies to
-        :param display_name: Display name for this constant raster type
-        :param min_value: Minimum normalization value
-        :param max_value: Maximum normalization value
-        :param user_defined: Whether this is a user-defined type
         :returns: ConstantRasterMetadata object configured for this
         generic type.
         :rtype: ConstantRasterMetadata
         """
         collection = ConstantRasterCollection(
-            min_value=min_value,
-            max_value=max_value,
-            component_type=component_type,
+            min_value=0.0,
+            max_value=100.0,
+            component_type=ModelComponentType.ACTIVITY,
             components=[],
             allowable_max=sys.float_info.max,
             allowable_min=0.0,
         )
 
         return ConstantRasterMetadata(
-            id=metadata_id,
-            display_name=display_name,
+            id="generic_numeric",
+            display_name="Generic Numeric",
             raster_collection=collection,
             serializer=constant_raster_collection_to_dict,
             deserializer=constant_raster_collection_from_dict,
-            component_type=component_type,
-            user_defined=user_defined,
+            component_type=ModelComponentType.ACTIVITY,
+            user_defined=True,
         )
