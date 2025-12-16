@@ -1090,9 +1090,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
         # Create progress dialog
         progress_dialog = QtWidgets.QProgressDialog(
-            "Creating constant rasters...", "Cancel", 0, 100, self
+            "Creating investability rasters...", "Cancel", 0, 100, self
         )
-        progress_dialog.setWindowTitle("Creating Constant Rasters")
+        progress_dialog.setWindowTitle("Creating investability Rasters")
         progress_dialog.setWindowModality(QtCore.Qt.WindowModal)
         progress_dialog.show()
 

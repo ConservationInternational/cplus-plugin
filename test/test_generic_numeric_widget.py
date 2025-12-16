@@ -3,6 +3,7 @@
 Unit tests for GenericNumericWidget.
 """
 
+import sys
 from unittest import TestCase
 from uuid import uuid4
 
@@ -94,7 +95,7 @@ class TestGenericNumericWidget(TestCase):
 
         self.assertIsInstance(metadata.input_range, InputRange)
         self.assertEqual(metadata.input_range.min, 0.0)
-        self.assertEqual(metadata.input_range.max, 100.0)
+        self.assertEqual(metadata.input_range.max, sys.float_info.max)
 
     def test_create_raster_component(self):
         """Test create_raster_component creates valid component."""
