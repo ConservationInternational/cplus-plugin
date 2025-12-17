@@ -172,9 +172,9 @@ Select the target layer from the priority weighting layers list from its priorit
 
 <br>
 
-## Matrix of Relative Impact Values
+## NCS Pathways/PWLs Matrix of Relative Impact Values
 
-The Matrix of Relative Impact Values is used to assign impact coefficients to describe how each pathway influences each Priority Weighting Layer (PWL). These coefficients range from –3 to +3 and are evaluated separately from the PWL weightings.
+The NCS Pathways/PWLs Matrix of Relative Impact Values is used to assign impact coefficients to describe how each pathway influences each Priority Weighting Layer (PWL). These coefficients range from –3 to +3 and are evaluated separately from the PWL weightings.
 
 The system also clearly distinguishes between impact-based and fragmentation-based PWLs, ensuring that the correct type of coefficient is applied during evaluation.
 
@@ -188,7 +188,7 @@ To open the Matrix of Relative Impact Values Manager, first ensure that a Priori
 
 2. Select a layer from the Priority Weighted Layers panel.
 
-3. Click the `Create Matrix of Relative Impact Values` button to open the manager.
+3. Click the `Create Matrix of Relative Impact Values for Priority Weighted Layer` button to open the manager.
 
 <br>
 
@@ -205,6 +205,69 @@ These coefficients are stored and used during model evaluation alongside, but in
 <br>
 
 ![Matrix of Relative Impact Values Manager](./img/plugin-step3_14.png)
+
+<br>
+
+## NCS Pathways Matrix of Relative Impact Values
+
+### Identifying Carbon Layers
+
+Because layer names alone are not reliable indicators of carbon content, the interface includes a dedicated checkbox (1️⃣ `Enable if layer has carbon storage values`) that allows users to mark a layer as containing carbon storage or carbon impact values. 
+
+<br>
+
+![Enable if layer has carbon storage values checkbox](./img/plugin-step3_15.png)
+
+<br>
+
+Once selected, the layer is treated as a carbon layer during prioritisation and is automatically added to the carbon-specific tab within the interface. Layers not marked as carbon layers are listed instead in the general impact matrix.
+
+<br>
+
+### Opening the Matrix Manager
+
+To open the NCS Pathways Matrix of Relative Impact Values Manager, click the 1️⃣ `Create Matrix of Relative Impact Values` button to open the manager.
+
+<br>
+
+![Create Matrix of Relative Impact Values](./img/plugin-step3_16.png)
+
+<br>
+
+For each eligible pathway, the plugin converts the carbon calculation results into a carbon impact potential raster. This raster is normalised to a consistent scale so that it can be compared with other pathway-variable relationships.
+
+At the top of the manager 2 tabs are available:
+
+1. **Carbon Impact**
+2. **Priority Weighting Layers**
+
+<br>
+
+![NCS Pathways Matrix of Relative Impact Values Manager](./img/plugin-step3_17.png)
+
+<br>
+
+### Assigning Impact Values
+
+Carbon layers use an impact weight range from –1 to +1, while non-carbon layers continue to use the –3 to +3 range. This separation ensures that carbon values remain proportionate without overwhelming other prioritisation factors.
+
+1. Navigate to the `Carbon Impact` tab.
+
+2. Enter a Carbon Impact Rating (–1 to +1) for each NCS Pathway.
+
+<br>
+
+![Carbon Impact Tab](./img/plugin-step3_18.png)
+
+<br>
+
+1. Navigate to the `Priority Weighting Layers` tab.
+
+2. Enter an impact coefficient (–3 to +3) for each NCS Pathway and PWL combination.
+
+<br>
+
+![Priority Weighting Layers Tab](./img/plugin-step3_19.png)
 
 <br>
 
