@@ -513,10 +513,10 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
         """Slot raised to initiate download of the global stored carbon
         dataset.
         """
-        stored_carbon_url = settings_manager.get_value(
+
+        if not settings_manager.get_value(
             Settings.STORED_CARBON_ONLINE_SOURCE, default=""
-        )
-        if not stored_carbon_url:
+        ):
             self.message_bar.pushWarning(
                 self.tr("CPLUS Stored Carbon"),
                 self.tr("URL for downloading online data is not defined"),
@@ -542,28 +542,27 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
         self.fw_biomass.setFilePath(file_path)
 
         # Initiate download
-        stored_carbon_download_task = start_stored_carbon_download(local_path=file_path)
-        stored_carbon_download_task.status_message_changed.connect(
+        self.stored_carbon_download_task = start_stored_carbon_download(
+            local_path=file_path
+        )
+        self.stored_carbon_download_task.status_message_changed.connect(
             self._on_stored_carbon_download_status_changed
         )
 
     def _on_stored_carbon_download_status_changed(self, status, description):
         """Slot raised when the download status of stored carbon has changed."""
-        icon_path = ""
-        if status == ApiRequestStatus.NOT_STARTED:
-            icon_path = FileUtils.get_icon_path("mIndicatorTemporal.svg")
-        elif status == ApiRequestStatus.IN_PROGRESS:
-            self.btn_download_stored_carbon.setEnabled(False)
-            icon_path = FileUtils.get_icon_path("progress-indicator.svg")
-        elif status == ApiRequestStatus.COMPLETED:
-            self.btn_download_stored_carbon.setEnabled(True)
-            icon_path = FileUtils.get_icon_path("mIconSuccess.svg")
-        elif status == ApiRequestStatus.ERROR:
-            self.btn_download_stored_carbon.setEnabled(True)
-            icon_path = FileUtils.get_icon_path("mIconWarning.svg")
-        elif status == ApiRequestStatus.CANCELED:
-            self.btn_download_stored_carbon.setEnabled(True)
-            icon_path = FileUtils.get_icon_path("mTaskCancel.svg")
+        # Status map value: (download status icon name, enable/disable download button)
+        status_map = {
+            ApiRequestStatus.NOT_STARTED: ("mIndicatorTemporal.svg", True),
+            ApiRequestStatus.IN_PROGRESS: ("progress-indicator.svg", False),
+            ApiRequestStatus.COMPLETED: ("mIconSuccess.svg", True),
+            ApiRequestStatus.ERROR: ("mIconWarning.svg", True),
+            ApiRequestStatus.CANCELED: ("mTaskCancel.svg", True),
+        }
+
+        icon_file, enable_button = status_map.get(status, ("", True))
+        self.btn_download_stored_carbon.setEnabled(enable_button)
+        icon_path = FileUtils.get_icon_path(icon_file)
 
         self.lbl_stored_carbon_icon.svg_path = icon_path
         self.lbl_stored_carbon_description.setText(description)

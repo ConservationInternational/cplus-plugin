@@ -157,7 +157,7 @@ class BaseCarbonDownloadTask(QgsTask):
         log(f"Error in downloading {self.dataset_name} dataset: {err_msg}", info=False)
 
         self._update_download_status(
-            ApiRequestStatus.ERROR, tr("Download error.  See logs for details.")
+            ApiRequestStatus.ERROR, tr("Download error. See logs for details.")
         )
 
         self._event_loop.quit()
