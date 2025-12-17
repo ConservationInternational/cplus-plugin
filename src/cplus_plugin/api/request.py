@@ -504,9 +504,11 @@ class CplusApiRequest:
         json_response = {}
         http_status = None
         # Check for network errors
-        if reply.error() == QNetworkReply.NoError:
+        if reply.error() == QNetworkReply.NetworkError.NoError:
             # Check the HTTP status code
-            http_status = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+            http_status = reply.attribute(
+                QNetworkRequest.Attribute.HttpStatusCodeAttribute
+            )
             if http_status is not None and 200 <= http_status < 300:
                 if http_status == 204:
                     json_response = {}
@@ -539,7 +541,7 @@ class CplusApiRequest:
         # Connect the reply's finished signal to the event loop's quit slot
         reply.finished.connect(event_loop.quit)
         # Start the event loop, waiting for the request to complete
-        event_loop.exec_()
+        event_loop.exec()
 
     def _get_request_payload(self, data: typing.Union[dict, list]) -> QtCore.QByteArray:
         """Get byte array of json request payload.
@@ -727,8 +729,10 @@ class CplusApiRequest:
         """
         nam = QgsNetworkAccessManager.instance()
         request = QNetworkRequest(QtCore.QUrl(url))
-        request.setHeader(QNetworkRequest.ContentTypeHeader, "application/octet-stream")
-        request.setHeader(QNetworkRequest.ContentLengthHeader, len(chunk))
+        request.setHeader(
+            QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/octet-stream"
+        )
+        request.setHeader(QNetworkRequest.KnownHeaders.ContentLengthHeader, len(chunk))
         if url.startswith("http://"):
             # add header for minio host in local env
             request.setRawHeader(
@@ -738,7 +742,7 @@ class CplusApiRequest:
         reply = nam.put(request, chunk)
         self._make_request(reply)
         response = {}
-        if reply.error() == QNetworkReply.NoError:
+        if reply.error() == QNetworkReply.NetworkError.NoError:
             etag = reply.rawHeader(b"ETag")
             response = {
                 "part_number": file_part_number,

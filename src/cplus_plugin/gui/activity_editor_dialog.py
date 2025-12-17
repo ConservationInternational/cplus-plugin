@@ -116,7 +116,7 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
                 if mask_path == "":
                     continue
                 item = QtWidgets.QListWidgetItem()
-                item.setData(QtCore.Qt.DisplayRole, mask_path)
+                item.setData(QtCore.Qt.ItemDataRole.DisplayRole, mask_path)
                 self.lst_mask_layers.addItem(item)
             self.mask_layers_changed()
 
@@ -225,9 +225,9 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
             return
 
         item = QtWidgets.QListWidgetItem()
-        item.setData(QtCore.Qt.DisplayRole, mask_path)
+        item.setData(QtCore.Qt.ItemDataRole.DisplayRole, mask_path)
 
-        if self.lst_mask_layers.findItems(mask_path, QtCore.Qt.MatchExactly):
+        if self.lst_mask_layers.findItems(mask_path, QtCore.Qt.MatchFlag.MatchExactly):
             error_tr = tr("The selected mask layer already exists.")
             self._message_bar.pushMessage(error_tr, Qgis.MessageLevel.Warning)
             return
@@ -245,16 +245,18 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
             error_tr = tr("Select a mask layer first.")
             self._message_bar.pushMessage(error_tr, Qgis.MessageLevel.Warning)
             return
-        mask_path = self._show_mask_path_selector(item.data(QtCore.Qt.DisplayRole))
+        mask_path = self._show_mask_path_selector(
+            item.data(QtCore.Qt.ItemDataRole.DisplayRole)
+        )
         if not mask_path:
             return
 
-        if self.lst_mask_layers.findItems(mask_path, QtCore.Qt.MatchExactly):
+        if self.lst_mask_layers.findItems(mask_path, QtCore.Qt.MatchFlag.MatchExactly):
             error_tr = tr("The selected mask layer already exists.")
             self._message_bar.pushMessage(error_tr, Qgis.MessageLevel.Warning)
             return
 
-        item.setData(QtCore.Qt.DisplayRole, mask_path)
+        item.setData(QtCore.Qt.ItemDataRole.DisplayRole, mask_path)
 
     def _on_remove_mask_layer(self, activated: bool):
         """Slot raised to remove one or more selected mask layers."""
@@ -268,11 +270,11 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
             self,
             tr("QGIS CPLUS PLUGIN | Settings"),
             tr("Remove the selected mask layer(s)?"),
-            QtWidgets.QMessageBox.Yes,
-            QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.StandardButton.Yes,
+            QtWidgets.QMessageBox.StandardButton.No,
         )
 
-        if reply == QtWidgets.QMessageBox.Yes:
+        if reply == QtWidgets.QMessageBox.StandardButton.Yes:
             for item in items:
                 item_row = self.lst_mask_layers.row(item)
                 self.lst_mask_layers.takeItem(item_row)
@@ -379,7 +381,7 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
         mask_paths = []
         for row in range(0, self.lst_mask_layers.count()):
             item = self.lst_mask_layers.item(row)
-            item_path = item.data(QtCore.Qt.DisplayRole)
+            item_path = item.data(QtCore.Qt.ItemDataRole.DisplayRole)
             mask_paths.append(item_path)
 
         self._activity.mask_paths = mask_paths

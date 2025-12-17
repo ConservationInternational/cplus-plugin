@@ -192,9 +192,6 @@ class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         Creates a component with default value 0.0. The actual value
         will be set later when the user enters it in the widget.
         """
-        # Component type is always ACTIVITY for constant rasters
-        component_type = ModelComponentType.ACTIVITY
-
         return ConstantRasterComponent(
             value_info=ConstantRasterInfo(absolute=0.0),  # Default value
             component=model_component,
@@ -220,15 +217,16 @@ class YearsExperienceWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
             use_manual=False,
         )
 
-        return ConstantRasterMetadata(
+        metadata = ConstantRasterMetadata(
             id=YEARS_EXPERIENCE_ACTIVITY_ID,
             display_name=tr("Years of Experience"),
             raster_collection=collection,
             serializer=constant_raster_collection_to_dict,
             deserializer=constant_raster_collection_from_dict,
             component_type=ModelComponentType.ACTIVITY,
-            input_range=InputRange(min=0.0, max=100.0),  # 0-100 years
         )
+        metadata.input_range = (0.0, 100.0)
+        return metadata
 
 
 class GenericNumericWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
@@ -348,7 +346,8 @@ class GenericNumericWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
     def create_metadata(cls) -> "ConstantRasterMetadata":
         """Create metadata for this generic numeric constant raster type.
 
-        Base class override.
+        Base class override. Returns default metadata that can be customized
+        after instantiation.
 
         :returns: ConstantRasterMetadata object configured for this
         generic type.
@@ -364,6 +363,8 @@ class GenericNumericWidget(QtWidgets.QWidget, ConstantRasterWidgetInterface):
         )
 
         return ConstantRasterMetadata(
+            id="generic_numeric",
+            display_name="Generic Numeric",
             raster_collection=collection,
             serializer=constant_raster_collection_to_dict,
             deserializer=constant_raster_collection_from_dict,

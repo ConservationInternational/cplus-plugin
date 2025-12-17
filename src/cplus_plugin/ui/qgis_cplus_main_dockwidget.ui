@@ -431,7 +431,7 @@
           <item>
            <widget class="QToolButton" name="new_constant_raster_pwl_btn">
             <property name="toolTip">
-             <string>Manage constant rasters</string>
+             <string>Manage investability parameters</string>
             </property>
             <property name="text">
              <string>...</string>

@@ -103,7 +103,7 @@ from .components.custom_tree_widget import (
     SORT_ROLE,
 )
 
-from ..resources import *
+# Resources no longer compiled for Qt6 compatibility
 
 from ..definitions.defaults import (
     ADD_LAYER_ICON_PATH,
@@ -375,7 +375,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             self.log_text_box.setPlainText(f"{message} \n")
             log_text_cursor = self.log_text_box.textCursor()
-            log_text_cursor.movePosition(QtGui.QTextCursor.End)
+            log_text_cursor.movePosition(QtGui.QTextCursor.MoveOperation.End)
             self.log_text_box.setTextCursor(log_text_cursor)
             try:
                 os.makedirs(
@@ -467,7 +467,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.priority_groups_list.setHeaderHidden(True)
 
         self.priority_groups_list.setSelectionMode(
-            QtWidgets.QAbstractItemView.ExtendedSelection
+            QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection
         )
 
         self.priority_groups_list.setSortingEnabled(True)
@@ -476,7 +476,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.priority_groups_list.setDragDropOverwriteMode(True)
         self.priority_groups_list.viewport().setAcceptDrops(True)
 
-        self.priority_groups_list.setDragDropMode(QtWidgets.QAbstractItemView.DropOnly)
+        self.priority_groups_list.setDragDropMode(
+            QtWidgets.QAbstractItemView.DragDropMode.DropOnly
+        )
 
         self.priority_groups_list.child_dragged_dropped.connect(
             self.priority_groups_update
@@ -671,7 +673,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     "Updated all the activities"
                     " with their respective priority layers"
                 ),
-                Qgis.Info,
+                Qgis.MessageLevel.Info,
             )
         log(tr("Updated all the activities" " with their respective priority layers"))
 
@@ -774,8 +776,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         for layer in settings_manager.get_priority_layers():
             item = QtWidgets.QListWidgetItem()
-            item.setData(QtCore.Qt.DisplayRole, layer.get("name"))
-            item.setData(QtCore.Qt.UserRole, layer.get("uuid"))
+            item.setData(QtCore.Qt.ItemDataRole.DisplayRole, layer.get("name"))
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, layer.get("uuid"))
 
             if not os.path.exists(layer.get("path")) and not layer.get(
                 "path"
@@ -812,7 +814,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             item = SortableTreeWidgetItem()
             item.setSizeHint(0, group_widget.sizeHint())
             item.setExpanded(True)
-            item.setData(0, QtCore.Qt.UserRole, group.get("uuid"))
+            item.setData(0, QtCore.Qt.ItemDataRole.UserRole, group.get("uuid"))
             item.setData(0, SORT_ROLE, group.get("name"))
 
             # Add priority layers into the group as a child items.
@@ -824,14 +826,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     layer_item = QtWidgets.QTreeWidgetItem(item)
                     layer_item.setText(0, layer.get("name"))
                     layer_item.setData(
-                        0, QtCore.Qt.UserRole, layer.get(USER_DEFINED_ATTRIBUTE)
+                        0,
+                        QtCore.Qt.ItemDataRole.UserRole,
+                        layer.get(USER_DEFINED_ATTRIBUTE),
                     )
 
             list_items.append((item, group_widget))
             items_only.append(item)
 
         self.priority_groups_list.addTopLevelItems(items_only)
-        self.priority_groups_list.sortItems(0, QtCore.Qt.AscendingOrder)
+        self.priority_groups_list.sortItems(0, QtCore.Qt.SortOrder.AscendingOrder)
         for item in list_items:
             self.priority_groups_list.setItemWidget(item[0], 0, item[1])
 
@@ -883,7 +887,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             item = SortableTreeWidgetItem()
             item.setSizeHint(0, group_widget.sizeHint())
             item.setExpanded(True)
-            item.setData(0, QtCore.Qt.UserRole, group.get("uuid"))
+            item.setData(0, QtCore.Qt.ItemDataRole.UserRole, group.get("uuid"))
             item.setData(0, SORT_ROLE, group.get("name"))
 
             # Add priority layers into the group as a child items.
@@ -895,14 +899,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     layer_item = QtWidgets.QTreeWidgetItem(item)
                     layer_item.setText(0, layer.get("name"))
                     layer_item.setData(
-                        0, QtCore.Qt.UserRole, layer.get(USER_DEFINED_ATTRIBUTE)
+                        0,
+                        QtCore.Qt.ItemDataRole.UserRole,
+                        layer.get(USER_DEFINED_ATTRIBUTE),
                     )
 
             list_items.append((item, group_widget))
             items_only.append(item)
 
         self.priority_groups_list.addTopLevelItems(items_only)
-        self.priority_groups_list.sortItems(0, QtCore.Qt.AscendingOrder)
+        self.priority_groups_list.sortItems(0, QtCore.Qt.SortOrder.AscendingOrder)
         for item in list_items:
             self.priority_groups_list.setItemWidget(item[0], 0, item[1])
 
@@ -915,8 +921,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.priority_layers_list.clear()
         for layer in settings_manager.get_priority_layers():
             item = QtWidgets.QListWidgetItem()
-            item.setData(QtCore.Qt.DisplayRole, layer.get("name"))
-            item.setData(QtCore.Qt.UserRole, layer.get("uuid"))
+            item.setData(QtCore.Qt.ItemDataRole.DisplayRole, layer.get("name"))
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, layer.get("uuid"))
 
             if os.path.exists(layer.get("path")) or layer.get("path").startswith(
                 "cplus://"
@@ -979,7 +985,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             ) and selected_priority_layer is not None:
                 children = selected_group.takeChildren()
                 item_found = False
-                text = selected_priority_layer.data(QtCore.Qt.DisplayRole)
+                text = selected_priority_layer.data(QtCore.Qt.ItemDataRole.DisplayRole)
                 for child in children:
                     if child.text(0) == text:
                         item_found = True
@@ -993,12 +999,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     group_widget = self.priority_groups_list.itemWidget(
                         selected_group, 0
                     )
-                    layer_id = selected_priority_layer.data(QtCore.Qt.UserRole)
+                    layer_id = selected_priority_layer.data(
+                        QtCore.Qt.ItemDataRole.UserRole
+                    )
 
                     priority_layer = settings_manager.get_priority_layer(layer_id)
                     item.setData(
                         0,
-                        QtCore.Qt.UserRole,
+                        QtCore.Qt.ItemDataRole.UserRole,
                         priority_layer.get(USER_DEFINED_ATTRIBUTE),
                     )
                     target_group_name = (
@@ -1068,7 +1076,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
         )
 
-        constant_raster_dialog.exec_()
+        constant_raster_dialog.exec()
 
     def _on_constant_rasters_create_requested(
         self,
@@ -1090,10 +1098,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
         # Create progress dialog
         progress_dialog = QtWidgets.QProgressDialog(
-            "Creating constant rasters...", "Cancel", 0, 100, self
+            "Creating investability rasters...", "Cancel", 0, 100, self
         )
-        progress_dialog.setWindowTitle("Creating Constant Rasters")
-        progress_dialog.setWindowModality(QtCore.Qt.WindowModal)
+        progress_dialog.setWindowTitle("Creating investability Rasters")
+        progress_dialog.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
         progress_dialog.show()
 
         # Create feedback
@@ -1125,13 +1133,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                             True, message, len(created_rasters)
                         )
                     else:
-                        self.show_message(message, level=Qgis.Success)
+                        self.show_message(message, level=Qgis.MessageLevel.Success)
                 else:
                     message = "No enabled components found in the collection."
                     if dialog:
                         dialog.raster_creation_completed.emit(False, message, 0)
                     else:
-                        self.show_message(message, level=Qgis.Warning)
+                        self.show_message(message, level=Qgis.MessageLevel.Warning)
             else:
                 # Create rasters for all constant raster types
                 all_created_rasters = []
@@ -1165,19 +1173,20 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                             True, message, len(all_created_rasters)
                         )
                     else:
-                        self.show_message(message, level=Qgis.Success)
+                        self.show_message(message, level=Qgis.MessageLevel.Success)
                 else:
                     message = "No enabled components found in any collection."
                     if dialog:
                         dialog.raster_creation_completed.emit(False, message, 0)
                     else:
-                        self.show_message(message, level=Qgis.Warning)
+                        self.show_message(message, level=Qgis.MessageLevel.Warning)
 
         except Exception as e:
             progress_dialog.close()
             log(f"Error creating constant rasters: {str(e)}", info=False)
             self.show_message(
-                f"Failed to create constant rasters: {str(e)}", level=Qgis.Critical
+                f"Failed to create constant rasters: {str(e)}",
+                level=Qgis.MessageLevel.Critical,
             )
 
     def on_npv_pwl_removed(self, pwl_identifier: str):
@@ -1252,14 +1261,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         the priority list to show the new added priority group.
         """
         group_dialog = PriorityGroupDialog()
-        group_dialog.exec_()
+        group_dialog.exec()
         self.update_priority_groups()
 
     def _on_double_click_priority_group(self, tree_item: QtWidgets.QTreeWidgetItem):
         """Slot raised when a priority group item has been
         double clicked.
         """
-        group_id = tree_item.data(0, QtCore.Qt.UserRole)
+        group_id = tree_item.data(0, QtCore.Qt.ItemDataRole.UserRole)
         self._show_priority_group_editor(group_id)
 
     def _show_priority_group_editor(self, group_identifier: str):
@@ -1268,7 +1277,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
         group = settings_manager.get_priority_group(group_identifier)
         group_dialog = PriorityGroupDialog(group)
-        group_dialog.exec_()
+        group_dialog.exec()
         self.update_priority_groups()
 
     def edit_priority_group(self):
@@ -1277,12 +1286,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if self.priority_groups_list.currentItem() is None:
             self.show_message(
                 tr("Select first the priority group from the groups list."),
-                Qgis.Critical,
+                Qgis.MessageLevel.Critical,
             )
             return
 
         group_identifier = self.priority_groups_list.currentItem().data(
-            0, QtCore.Qt.UserRole
+            0, QtCore.Qt.ItemDataRole.UserRole
         )
 
         if (
@@ -1292,7 +1301,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         ):
             self.show_message(
                 tr("Could not fetch the selected" " priority groups for editing."),
-                Qgis.Critical,
+                Qgis.MessageLevel.Critical,
             )
             return
 
@@ -1304,7 +1313,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if not selected_groups:
             self.show_message(
                 tr("Select the priority groups to be deleted from the groups list."),
-                Qgis.Critical,
+                Qgis.MessageLevel.Critical,
             )
             return
 
@@ -1317,12 +1326,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self,
             tr("Remove Priority Groups"),
             msg,
-            QtWidgets.QMessageBox.Yes,
-            QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.StandardButton.Yes,
+            QtWidgets.QMessageBox.StandardButton.No,
         )
-        if reply == QtWidgets.QMessageBox.Yes:
+        if reply == QtWidgets.QMessageBox.StandardButton.Yes:
             group_ids = [
-                group_item.data(0, QtCore.Qt.UserRole) for group_item in selected_groups
+                group_item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+                for group_item in selected_groups
             ]
             for group_id in group_ids:
                 if not group_id:
@@ -1342,7 +1352,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         the priority list to show the new added priority layer.
         """
         layer_dialog = PriorityLayerDialog()
-        layer_dialog.exec_()
+        layer_dialog.exec()
         self.update_priority_layers(update_groups=False)
 
     def edit_priority_layer(self):
@@ -1351,18 +1361,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if self.priority_layers_list.currentItem() is None:
             self.show_message(
                 tr("Select first the priority weighting layer from the layers list."),
-                Qgis.Critical,
+                Qgis.MessageLevel.Critical,
             )
             return
 
         layer_identifier = self.priority_layers_list.currentItem().data(
-            QtCore.Qt.UserRole
+            QtCore.Qt.ItemDataRole.UserRole
         )
 
         if layer_identifier == "":
             self.show_message(
                 tr("Could not fetch the selected priority layer for editing."),
-                Qgis.Critical,
+                Qgis.MessageLevel.Critical,
             )
             return
 
@@ -1371,7 +1381,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def _on_double_click_priority_layer(self, list_item: QtWidgets.QListWidgetItem):
         """Slot raised when a priority list item has been double clicked."""
-        layer_id = list_item.data(QtCore.Qt.UserRole)
+        layer_id = list_item.data(QtCore.Qt.ItemDataRole.UserRole)
         self._show_priority_layer_editor(layer_id)
 
     def _show_priority_layer_editor(self, layer_identifier: str):
@@ -1379,14 +1389,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         layer_uuid = uuid.UUID(layer_identifier)
         layer = settings_manager.get_priority_layer(layer_uuid)
         layer_dialog = PriorityLayerDialog(layer)
-        layer_dialog.exec_()
+        layer_dialog.exec()
 
     def remove_priority_layer(self):
         """Removes one or more of the selected priority layers."""
         if self.priority_layers_list.currentItem() is None:
             self.show_message(
                 tr("Select first the priority weighting layer from the layers list."),
-                Qgis.Critical,
+                Qgis.MessageLevel.Critical,
             )
             return
 
@@ -1397,11 +1407,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     "Select one or more priority weighting layers to be removed "
                     "from the layers list."
                 ),
-                Qgis.Critical,
+                Qgis.MessageLevel.Critical,
             )
             return
 
-        pwls = [item.data(QtCore.Qt.DisplayRole) for item in selected_pwl_items]
+        pwls = [
+            item.data(QtCore.Qt.ItemDataRole.DisplayRole) for item in selected_pwl_items
+        ]
         if len(pwls) == 1:
             tr_layer = tr("layer")
         else:
@@ -1412,10 +1424,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self,
             tr("Remove PWLs"),
             msg,
-            QtWidgets.QMessageBox.Yes,
-            QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.StandardButton.Yes,
+            QtWidgets.QMessageBox.StandardButton.No,
         )
-        if reply == QtWidgets.QMessageBox.Yes:
+        if reply == QtWidgets.QMessageBox.StandardButton.Yes:
             for pwl in pwls:
                 layer = settings_manager.find_layer_by_name(pwl)
                 if not layer:
@@ -1437,7 +1449,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def on_manage_pwls_relative_impact_matrix(self):
         """Slot raised to show the dialog for managing relative impact matrix of PWLs."""
         ncs_pwl_relative_impact_dialog = NcsPwlImpactManagerDialog(self)
-        if ncs_pwl_relative_impact_dialog.exec_() == QtWidgets.QDialog.Accepted:
+        if (
+            ncs_pwl_relative_impact_dialog.exec()
+            == QtWidgets.QDialog.DialogCode.Accepted
+        ):
             pass
 
     def has_trends_auth(self):
@@ -1477,12 +1492,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             item_widget = ScenarioItemWidget(scenario.name, scenario_type)
             item = QtWidgets.QListWidgetItem(self.scenario_list)
             item.setSizeHint(item_widget.sizeHint())
-            item.setData(QtCore.Qt.UserRole, str(scenario.uuid))
-            item.setData(QtCore.Qt.UserRole + 1, scenario.name)
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, str(scenario.uuid))
+            item.setData(QtCore.Qt.ItemDataRole.UserRole + 1, scenario.name)
             if scenario.server_uuid:
-                item.setData(QtCore.Qt.UserRole + 2, str(scenario.server_uuid))
+                item.setData(
+                    QtCore.Qt.ItemDataRole.UserRole + 2, str(scenario.server_uuid)
+                )
             else:
-                item.setData(QtCore.Qt.UserRole + 2, "")
+                item.setData(QtCore.Qt.ItemDataRole.UserRole + 2, "")
             self.scenario_list.setItemWidget(item, item_widget)
 
     def add_scenario(self):
@@ -1553,18 +1570,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             if self.scenario_list.currentItem() is None:
                 self.show_message(
                     tr("Select first the scenario from the scenario list."),
-                    Qgis.Critical,
+                    Qgis.MessageLevel.Critical,
                 )
                 return
 
             scenario_identifier = self.scenario_list.currentItem().data(
-                QtCore.Qt.UserRole
+                QtCore.Qt.ItemDataRole.UserRole
             )
 
             if scenario_identifier == "":
                 self.show_message(
                     tr("Could not fetch the selected priority layer for editing."),
-                    Qgis.Critical,
+                    Qgis.MessageLevel.Critical,
                 )
                 return
 
@@ -1704,43 +1721,45 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
     def show_scenario_info(self):
         """Loads dialog for showing scenario information."""
-        scenario_uuid = self.scenario_list.currentItem().data(QtCore.Qt.UserRole)
+        scenario_uuid = self.scenario_list.currentItem().data(
+            QtCore.Qt.ItemDataRole.UserRole
+        )
         scenario = settings_manager.get_scenario(scenario_uuid)
         scenario_result = settings_manager.get_scenario_result(scenario_uuid)
 
         scenario_dialog = ScenarioDialog(scenario, scenario_result)
-        scenario_dialog.exec_()
+        scenario_dialog.exec()
 
     def remove_scenario(self):
         """Removes the current active scenario."""
         if self.scenario_list.currentItem() is None:
             self.show_message(
                 tr("Select first a scenario from the scenario list."),
-                Qgis.Critical,
+                Qgis.MessageLevel.Critical,
             )
             return
 
         texts = []
         for item in self.scenario_list.selectedItems():
-            current_text = item.data(QtCore.Qt.UserRole + 1)
+            current_text = item.data(QtCore.Qt.ItemDataRole.UserRole + 1)
             texts.append(current_text)
 
         reply = QtWidgets.QMessageBox.warning(
             self,
             tr("QGIS CPLUS PLUGIN"),
             tr('Remove the selected scenario(s) "{}"?').format(texts),
-            QtWidgets.QMessageBox.Yes,
-            QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.StandardButton.Yes,
+            QtWidgets.QMessageBox.StandardButton.No,
         )
-        if reply == QtWidgets.QMessageBox.Yes:
+        if reply == QtWidgets.QMessageBox.StandardButton.Yes:
             for item in self.scenario_list.selectedItems():
-                scenario_id = item.data(QtCore.Qt.UserRole)
+                scenario_id = item.data(QtCore.Qt.ItemDataRole.UserRole)
 
                 if scenario_id == "":
                     continue
                 settings_manager.delete_scenario(scenario_id)
 
-                scenario_server_uuid = item.data(QtCore.Qt.UserRole + 2)
+                scenario_server_uuid = item.data(QtCore.Qt.ItemDataRole.UserRole + 2)
                 if scenario_server_uuid == "":
                     continue
                 if not self.has_trends_auth():
@@ -1763,7 +1782,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         scenario_results = []
         for item in selected_items:
-            scenario_identifier = item.data(QtCore.Qt.UserRole)
+            scenario_identifier = item.data(QtCore.Qt.ItemDataRole.UserRole)
             scenario = settings_manager.get_scenario(scenario_identifier)
             scenario_result = settings_manager.get_scenario_result(scenario_identifier)
             if not scenario_result and not scenario:
@@ -1898,10 +1917,10 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def prepare_message_bar(self):
         """Initializes the widget message bar settings"""
         self.message_bar.setSizePolicy(
-            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed
+            QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Fixed
         )
         self.grid_layout.addWidget(
-            self.message_bar, 0, 0, 1, 1, alignment=QtCore.Qt.AlignTop
+            self.message_bar, 0, 0, 1, 1, alignment=QtCore.Qt.AlignmentFlag.AlignTop
         )
         self.dock_widget_contents.layout().insertLayout(0, self.grid_layout)
 
@@ -1999,7 +2018,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         ):
             self.show_message(
                 tr("Please select a valid Coordinate System from step one."),
-                level=Qgis.Critical,
+                level=Qgis.MessageLevel.Critical,
             )
             return
 
@@ -2037,7 +2056,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             }
             for layer in settings_manager.get_priority_layers():
                 pwl_items = self.priority_layers_list.findItems(
-                    layer.get("name"), QtCore.Qt.MatchExactly
+                    layer.get("name"), QtCore.Qt.MatchFlag.MatchExactly
                 )
                 if len(pwl_items) > 0:
                     # Exclude adding the PWL since its for a disabled default
@@ -2059,7 +2078,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if self.analysis_scenario_name == "" or self.analysis_scenario_name is None:
             self.show_message(
                 tr(f"Scenario name cannot be blank."),
-                level=Qgis.Critical,
+                level=Qgis.MessageLevel.Critical,
             )
             return
         if (
@@ -2068,13 +2087,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         ):
             self.show_message(
                 tr(f"Scenario description cannot be blank."),
-                level=Qgis.Critical,
+                level=Qgis.MessageLevel.Critical,
             )
             return
         if self.analysis_activities == [] or self.analysis_activities is None:
             self.show_message(
                 tr("Select at least one activity from step two."),
-                level=Qgis.Critical,
+                level=Qgis.MessageLevel.Critical,
             )
             return
 
@@ -2084,7 +2103,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     f"Plugin base data directory is not set! "
                     f"Go to plugin settings in order to set it."
                 ),
-                level=Qgis.Critical,
+                level=Qgis.MessageLevel.Critical,
             )
             return
 
@@ -2095,7 +2114,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                         f"Trends.Earth account is not set! "
                         f"Go to plugin settings in order to set it."
                     ),
-                    level=Qgis.Critical,
+                    level=Qgis.MessageLevel.Critical,
                 )
                 return
 
@@ -2197,8 +2216,11 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 out_name = f"{self.analysis_scenario_name}__{activity.name}__decision_protect.tif"
                 out_path = os.path.join(scenario_dir, out_name)
 
+                # Pass pathway UUIDs directly as JSON array
+                pathway_uuids = [str(p.uuid) for p in (activity.pathways or [])]
+
                 dt_params = {
-                    dt_alg.P_ACTIVITY_ID: str(activity.uuid),
+                    "PATHWAY_UUIDS": json.dumps(pathway_uuids),
                     dt_alg.P_TARGET_CRS: self.analysis_extent.crs,
                     dt_alg.P_EXTENT: dt_extent,
                     dt_alg.P_PIXEL: pixel_size,
@@ -2264,7 +2286,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         except Exception as err:
             self.show_message(
                 tr("An error occurred when preparing analysis task"),
-                level=Qgis.Info,
+                level=Qgis.MessageLevel.Info,
             )
             log(
                 tr(
@@ -2553,7 +2575,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                                             "An error occurred loading a pathway, "
                                             "check logs for more information"
                                         ),
-                                        level=Qgis.Info,
+                                        level=Qgis.MessageLevel.Info,
                                     )
                                     log(
                                         tr(
@@ -2653,8 +2675,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             renderer.setClassificationMax(max_value)
             renderer.createShader(
                 color_ramp,
-                QgsColorRampShader.Interpolated,
-                QgsColorRampShader.Continuous,
+                QgsColorRampShader.Type.Interpolated,
+                QgsColorRampShader.ClassificationMode.Continuous,
             )
 
         return renderer
@@ -2704,9 +2726,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             message_bar_item = self.message_bar.createMessage(message)
         else:
             message_bar_item = message
-        self.message_bar.pushWidget(message_bar_item, Qgis.Info)
+        self.message_bar.pushWidget(message_bar_item, Qgis.MessageLevel.Info)
 
-    def show_message(self, message, level=Qgis.Warning, duration: int = 0):
+    def show_message(self, message, level=Qgis.MessageLevel.Warning, duration: int = 0):
         """Shows message on the main widget message bar.
 
         :param message: Text message
@@ -2740,7 +2762,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if canvas_crs.authid() != original_crs.authid():
             zoom_extent = self.transform_extent(zoom_extent, original_crs, canvas_crs)
 
-        aoi = QgsRubberBand(iface.mapCanvas(), QgsWkbTypes.PolygonGeometry)
+        aoi = QgsRubberBand(iface.mapCanvas(), QgsWkbTypes.GeometryType.PolygonGeometry)
 
         aoi.setFillColor(QtGui.QColor(0, 0, 0, 0))
         aoi.setStrokeColor(QtGui.QColor(88, 128, 8))
@@ -2798,7 +2820,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.cbo_studyarea.layerChanged.connect(self._on_studyarea_layer_changed)
         self.cbo_studyarea.setAllowEmptyLayer(True, tr("<Select layer>"))
-        self.cbo_studyarea.setFilters(QgsMapLayerProxyModel.PolygonLayer)
+        self.cbo_studyarea.setFilters(QgsMapLayerProxyModel.Filter.PolygonLayer)
 
         self.studyarea_layer_file_widget.setToolTip(
             tr("Select the study area layer from the local filesystem")
@@ -2920,7 +2942,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         else:
             metrics_builder.initialize_collection()
 
-        if metrics_builder.exec_() == QtWidgets.QDialog.Accepted:
+        if metrics_builder.exec() == QtWidgets.QDialog.DialogCode.Accepted:
             metric_profile_collection = metrics_builder.profile_collection
             settings_manager.save_metric_profile_collection(metric_profile_collection)
             self.update_metric_button_profiles()
@@ -2964,7 +2986,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             self.profiles_action_group.addAction(action)
 
         self.btn_metric_builder.setMenu(profiles_menu)
-        self.btn_metric_builder.setPopupMode(QtWidgets.QToolButton.MenuButtonPopup)
+        self.btn_metric_builder.setPopupMode(
+            QtWidgets.QToolButton.ToolButtonPopupMode.MenuButtonPopup
+        )
 
     def on_profile_action_group_triggered(self, action: QtWidgets.QAction):
         """Slot raised when the action group for profiles

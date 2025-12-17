@@ -36,7 +36,7 @@ class TestCustomTypeDefinitionDialog(TestCase):
 
         self.assertIsNotNone(dialog)
         self.assertFalse(dialog.edit_mode)
-        self.assertEqual(dialog.windowTitle(), "Add New Constant Raster Type")
+        self.assertEqual(dialog.windowTitle(), "Add Investability Type")
         self.assertEqual(dialog.txt_type_name.text(), "")
 
     def test_dialog_initialization_edit_mode(self):
@@ -44,7 +44,7 @@ class TestCustomTypeDefinitionDialog(TestCase):
         dialog = CustomTypeDefinitionDialog(edit_mode=True)
 
         self.assertTrue(dialog.edit_mode)
-        self.assertEqual(dialog.windowTitle(), "Edit Constant Raster Type")
+        self.assertEqual(dialog.windowTitle(), "Edit Investability Type")
 
     def test_get_type_definition_structure(self):
         """Test get_type_definition returns correct structure."""

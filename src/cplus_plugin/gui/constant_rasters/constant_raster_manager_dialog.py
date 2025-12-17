@@ -74,7 +74,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         QgsGui.enableAutoGeometryRestore(self)
 
-        self.setWindowTitle(tr("Constant Raster Manager"))
+        self.setWindowTitle(tr("Investability Variable Manager"))
 
         self.constant_raster_registry = constant_raster_registry
 
@@ -100,8 +100,8 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         # Information banner
         info_banner = QtWidgets.QFrame()
-        info_banner.setFrameShape(QtWidgets.QFrame.StyledPanel)
-        info_banner.setFrameShadow(QtWidgets.QFrame.Raised)
+        info_banner.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
+        info_banner.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
         info_banner.setMinimumHeight(100)
         info_banner.setMaximumHeight(100)
         info_banner.setAutoFillBackground(False)
@@ -119,9 +119,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Information text
         info_text = QtWidgets.QLabel(
             self.tr(
-                "Define constant raster parameters for activities. "
+                "Define investability parameters for activities. "
                 "Configure input values, specify the output normalization "
-                "range, and create rasters clipped to your project's "
+                "range, and create rasters clipped to the project's "
                 "spatial extent as defined in Step 1."
             )
         )
@@ -143,7 +143,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         raster_type_widget = QtWidgets.QWidget()
         raster_type_layout = QtWidgets.QHBoxLayout(raster_type_widget)
         raster_type_layout.setContentsMargins(0, 0, 0, 0)
-        self.lbl_raster_type = QtWidgets.QLabel(self.tr("Constant raster type:"))
+        self.lbl_raster_type = QtWidgets.QLabel(self.tr("Investability type:"))
         self.cbo_raster_type = QtWidgets.QComboBox()
         self.cbo_raster_type.setMinimumWidth(200)
         raster_type_layout.addWidget(self.lbl_raster_type)
@@ -153,20 +153,20 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         add_icon = FileUtils.get_icon("symbologyAdd.svg")
         self.btn_add_custom_type = QtWidgets.QToolButton()
         self.btn_add_custom_type.setIcon(add_icon)
-        self.btn_add_custom_type.setToolTip(self.tr("Add New Constant Raster Type"))
+        self.btn_add_custom_type.setToolTip(self.tr("Add New Investability Type"))
         raster_type_layout.addWidget(self.btn_add_custom_type)
 
         edit_icon = FileUtils.get_icon("mActionToggleEditing.svg")
         self.btn_edit_custom_type = QtWidgets.QToolButton()
         self.btn_edit_custom_type.setIcon(edit_icon)
-        self.btn_edit_custom_type.setToolTip(self.tr("Edit Constant Raster Type"))
+        self.btn_edit_custom_type.setToolTip(self.tr("Edit Investability Type"))
         self.btn_edit_custom_type.setEnabled(False)
         raster_type_layout.addWidget(self.btn_edit_custom_type)
 
         delete_icon = FileUtils.get_icon("symbologyRemove.svg")
         self.btn_delete_custom_type = QtWidgets.QToolButton()
         self.btn_delete_custom_type.setIcon(delete_icon)
-        self.btn_delete_custom_type.setToolTip(self.tr("Delete Constant Raster Type"))
+        self.btn_delete_custom_type.setToolTip(self.tr("Delete Investability Type"))
         self.btn_delete_custom_type.setEnabled(False)
         raster_type_layout.addWidget(self.btn_delete_custom_type)
 
@@ -176,7 +176,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         main_layout.addWidget(top_widget)
 
         # Middle section: Two-column layout with splitter
-        splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
 
         label_stylesheet = """
             QLabel {
@@ -196,7 +196,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         left_layout.addWidget(activities_label)
 
         self.lst_activities = QtWidgets.QListView()
-        self.lst_activities.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.lst_activities.setEditTriggers(
+            QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers
+        )
         left_layout.addWidget(self.lst_activities)
 
         splitter.addWidget(left_widget)
@@ -216,11 +218,11 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Add a blank widget as default
         blank_widget = QtWidgets.QLabel(
             self.tr(
-                "Select a constant raster type. If already s"
-                "elected there is configuration error."
+                "Select an investability type. If already "
+                "selected there is configuration error."
             )
         )
-        blank_widget.setAlignment(QtCore.Qt.AlignCenter)
+        blank_widget.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         blank_widget.setStyleSheet("color: gray; padding: 20px;")
         self.sw_component_container.addWidget(blank_widget)
 
@@ -245,13 +247,17 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         self.spin_min_value.setDecimals(3)
         self.spin_min_value.setSingleStep(0.1)
         self.spin_min_value.setValue(0.0)
-        self.spin_min_value.setToolTip(self.tr("Minimum output value for the raster"))
+        self.spin_min_value.setToolTip(
+            self.tr("Minimum output value for the investability type")
+        )
         self.spin_max_value = QtWidgets.QDoubleSpinBox()
         self.spin_max_value.setRange(0.0, sys.float_info.max)
         self.spin_max_value.setDecimals(3)
         self.spin_max_value.setSingleStep(0.1)
         self.spin_max_value.setValue(0.0)
-        self.spin_max_value.setToolTip(self.tr("Maximum output value for the raster"))
+        self.spin_max_value.setToolTip(
+            self.tr("Maximum output value for the investability type")
+        )
         norm_layout.addRow(self.tr("Minimum"), self.spin_min_value)
         norm_layout.addRow(self.tr("Maximum"), self.spin_max_value)
         right_layout.addWidget(self.grp_normalization_range)
@@ -261,7 +267,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         self.lbl_last_updated.setStyleSheet(
             "color: gray; font-size: 9pt; font-style: italic;"
         )
-        self.lbl_last_updated.setAlignment(QtCore.Qt.AlignLeft)
+        self.lbl_last_updated.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)
         self.lbl_last_updated.setContentsMargins(5, 5, 5, 5)
         right_layout.addWidget(self.lbl_last_updated)
 
@@ -279,9 +285,13 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Create tool button with dropdown menu for raster creation
         self.btn_create_raster = QtWidgets.QToolButton()
         self.btn_create_raster.setText(self.tr("Create Rasters"))
-        self.btn_create_raster.setPopupMode(QtWidgets.QToolButton.MenuButtonPopup)
+        self.btn_create_raster.setPopupMode(
+            QtWidgets.QToolButton.ToolButtonPopupMode.MenuButtonPopup
+        )
         self.btn_create_raster.setToolTip(
-            self.tr("Create constant rasters for current view or all types")
+            self.tr(
+                "Create constant rasters for current investability in the view or all types"
+            )
         )
 
         # Create menu for the button
@@ -425,7 +435,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                 if type_def:
                     # Create widget for this custom type
                     widget = GenericNumericWidget(
-                        label=type_def.get(NAME_ATTRIBUTE, self.tr("Custom Type")),
+                        label=type_def.get(
+                            NAME_ATTRIBUTE, self.tr("Name of investability type")
+                        ),
                         metadata_id=metadata_id,
                         min_value=type_def.get(MIN_VALUE_ATTRIBUTE_KEY, 0.0),
                         max_value=type_def.get(MAX_VALUE_ATTRIBUTE_KEY, 100.0),
@@ -446,11 +458,6 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Populate component references with actual activity objects
         self._populate_component_references(activities)
 
-        # Connect to the view's selection model, not the model itself
-        self.lst_activities.selectionModel().selectionChanged.connect(
-            self._on_model_component_selection_changed
-        )
-
         # Connections
         self.cbo_raster_type.currentIndexChanged.connect(
             self.on_raster_type_selection_changed
@@ -463,6 +470,11 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         # Connect model itemChanged signals to save checkbox states
         self._activities_model.itemChanged.connect(self._on_item_checked_changed)
+
+        # Connect to the view's selection model, not the model itself
+        self.lst_activities.selectionModel().selectionChanged.connect(
+            self._on_model_component_selection_changed
+        )
 
         # Connect normalization range spinboxes to save the values to the collection
         self.spin_min_value.valueChanged.connect(self.on_normalization_range_changed)
@@ -504,7 +516,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
     def _check_all_activities(self, check: bool):
         """Check or uncheck all activities in the activities model.
 
-        Used to reset the model dring initialization.
+        Used to reset the model during initialization.
 
         :param check: True to check else False to uncheck.
         :type check: bool
@@ -513,13 +525,15 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             item = self._activities_model.item(row)
             if not item:
                 continue
-            if check and item.checkState() == QtCore.Qt.Unchecked:
-                item.setCheckState(QtCore.Qt.Checked)
-            elif not check and item.checkState() == QtCore.Qt.Checked:
-                item.setCheckState(QtCore.Qt.Unchecked)
+            if check and item.checkState() == QtCore.Qt.CheckState.Unchecked:
+                item.setCheckState(QtCore.Qt.CheckState.Checked)
+            elif not check and item.checkState() == QtCore.Qt.CheckState.Checked:
+                item.setCheckState(QtCore.Qt.CheckState.Unchecked)
 
     def on_raster_type_selection_changed(self, index: int):
-        """Slot raised when the selection in the combobox for raster type has changed."""
+        """Slot raised when the selection in the combobox
+        for raster type has changed.
+        """
         # First clear activity selection
         self.lst_activities.selectionModel().blockSignals(True)
         self._activities_model.blockSignals(True)
@@ -548,10 +562,6 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             )
             return
 
-        # Enable/disable raster creation button
-        raster_creation_ui_state = not collection.skip_raster
-        self.btn_create_raster.setEnabled(raster_creation_ui_state)
-
         # Block signals while loading
         self.grp_normalization_range.blockSignals(True)
         self.spin_min_value.blockSignals(True)
@@ -568,21 +578,24 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         self.spin_min_value.setValue(collection.min_value)
         self.spin_max_value.setValue(collection.max_value)
 
+        self.spin_min_value.blockSignals(False)
+        self.spin_max_value.blockSignals(False)
+        self._activities_model.blockSignals(False)
+        self.grp_normalization_range.blockSignals(False)
+
         # Check/uncheck activity item based on raster component
         for raster_component in collection:
-            if not raster_component.enabled:
-                continue
             activity_item = self._activities_model.component_item_by_uuid(
                 raster_component.component_id
             )
             if not activity_item:
                 continue
-            activity_item.setCheckState(QtCore.Qt.Checked)
-
-        self.spin_min_value.blockSignals(False)
-        self.spin_max_value.blockSignals(False)
-        self._activities_model.blockSignals(False)
-        self.grp_normalization_range.blockSignals(False)
+            check_state = (
+                QtCore.Qt.CheckState.Checked
+                if raster_component.enabled
+                else QtCore.Qt.CheckState.Unchecked
+            )
+            activity_item.setCheckState(check_state)
 
         # Update button states based on skip_raster flag
         self._update_create_button_states(collection)
@@ -593,14 +606,17 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Update last updated timestamp display
         self._update_last_updated_display(collection)
 
-        # Select first item
+        # Select first checked item
         if not self._activities_model.rowCount():
             return
 
-        item = self._activities_model.model_component_items()[0]
-        self.lst_activities.selectionModel().select(
-            item.index(), QtCore.QItemSelectionModel.Select
-        )
+        for item in self._activities_model.model_component_items():
+            if item.checkState() == QtCore.Qt.CheckState.Checked:
+                self.lst_activities.selectionModel().select(
+                    item.index(),
+                    QtCore.QItemSelectionModel.SelectionFlag.ClearAndSelect,
+                )
+                break
 
         # Save selected raster type
         settings_manager.set_value(
@@ -617,16 +633,17 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         # Disable current view action if skip_raster is True
         if collection.skip_raster:
-            self.action_create_current.setEnabled(True)  # Always enabled
+            self.action_create_current.setEnabled(False)
             self.action_create_current.setToolTip(
                 self.tr(
-                    "Current view disabled - this constant raster type does not require rasters"
+                    "This investability type does not support the creation of "
+                    "constant rasters"
                 )
             )
         else:
             self.action_create_current.setEnabled(True)
             self.action_create_current.setToolTip(
-                self.tr("Create rasters for the current view")
+                self.tr("Create rasters for the current investability type in the view")
             )
 
         # "All types" action is always enabled
@@ -701,6 +718,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         When checked, allow manual editing and restore previous manual values.
 
         :param checked: True if group box is checked (manual mode)
+        :type checked: bool
         """
         collection = self.current_constant_raster_collection()
         if collection is None:
@@ -829,7 +847,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
     def _on_item_checked_changed(self, item: QtGui.QStandardItem):
         """Slot raised when an item's checkbox state changes."""
-        is_checked = item.checkState() == QtCore.Qt.Checked
+        is_checked = item.checkState() == QtCore.Qt.CheckState.Checked
 
         # Update the component's enabled state based on checkbox state
         raster_collection = self.current_constant_raster_collection()
@@ -839,7 +857,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         # Ensure the item is also selected for consistent behaviour
         self.lst_activities.selectionModel().blockSignals(True)
         self.lst_activities.selectionModel().select(
-            item.index(), QtCore.QItemSelectionModel.ClearAndSelect
+            item.index(), QtCore.QItemSelectionModel.SelectionFlag.ClearAndSelect
         )
         # Update current activity label since the item selection is manual
         self.current_activity_label.setText(
@@ -880,14 +898,14 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
     def on_update_raster_component(self, raster_component: ConstantRasterComponent):
         """Slot raised when the component has been updated through the configuration widget."""
         raster_collection = self.current_constant_raster_collection()
-        if not raster_collection:
+        if raster_collection is None:
             return
 
-        existing_component = raster_collection.component_by_id(
+        updated_component = raster_collection.component_by_id(
             raster_component.component_id
         )
 
-        if existing_component is None:
+        if updated_component is None:
             # Component not in collection, add it
             raster_collection.components.append(raster_component)
 
@@ -951,7 +969,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                 continue
 
             model_identifier = item.uuid
-            is_checked = item.checkState() == QtCore.Qt.Checked
+            is_checked = item.checkState() == QtCore.Qt.CheckState.Checked
 
             # Find or create component for this item
             component = raster_collection.component_by_id(model_identifier)
@@ -991,21 +1009,21 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             msg_parts = []
             if items_created:
                 msg_parts.append(
-                    self.tr("Created {count} component(s)").format(
-                        count=len(items_created)
-                    )
+                    self.tr(
+                        "Created {count} item(s) for the given investability type"
+                    ).format(count=len(items_created))
                 )
             if items_updated:
                 msg_parts.append(
-                    self.tr("Updated {count} component(s)").format(
-                        count=len(items_updated)
-                    )
+                    self.tr(
+                        "Updated {count} item(s) for the given investability type"
+                    ).format(count=len(items_updated))
                 )
             msg = " and ".join(msg_parts)
 
             if current_value is not None:
                 self.message_bar.pushInfo(
-                    self.tr("Components Configured"),
+                    self.tr("Items Configured"),
                     self.tr("{msg} with value: {value}").format(
                         msg=msg, value=current_value
                     ),
@@ -1155,23 +1173,38 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                 log(f"AOI layer invalid: {studyarea_path}", info=False)
                 use_aoi = False
 
-        if not use_aoi:
-            # Fallback to map canvas extent
-            try:
-                canvas = iface.mapCanvas() if iface else None
-            except Exception:
-                canvas = None
-
-            if canvas:
-                extent = canvas.extent()
-                crs = canvas.mapSettings().destinationCrs()
+        else:
+            # From explicit extent definition
+            settings_extent = settings_manager.get_value(
+                Settings.SCENARIO_EXTENT, default=None
+            )
+            if settings_extent:
+                # Ensure in minX, minY, maxX, maxY format
+                extent = QgsRectangle(
+                    float(settings_extent[0]),
+                    float(settings_extent[2]),
+                    float(settings_extent[1]),
+                    float(settings_extent[3]),
+                )
             else:
-                # Last resort: use project CRS and default extent
-                project = QgsProject.instance()
-                crs = project.crs()
-                # Default extent if no canvas
-                extent = QgsRectangle(0, 0, 1000, 1000)
-                log("Warning: No map canvas found, using default extent", info=False)
+                # Fallback to map canvas extent
+                try:
+                    canvas = iface.mapCanvas() if iface else None
+                except Exception:
+                    canvas = None
+
+                if canvas:
+                    extent = canvas.extent()
+                    crs = canvas.mapSettings().destinationCrs()
+                else:
+                    # Last resort: use project CRS and default extent
+                    project = QgsProject.instance()
+                    crs = project.crs()
+                    # Default extent if no canvas
+                    extent = QgsRectangle(0, 0, 1000, 1000)
+                    log(
+                        "Warning: No map canvas found, using default extent", info=False
+                    )
 
         # Get output directory from BASE_DIR setting
         base_dir = settings_manager.get_value(Settings.BASE_DIR)
@@ -1215,17 +1248,18 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         current_raster_collection = self.current_constant_raster_collection()
         if current_raster_collection is None:
             self.message_bar.pushWarning(
-                self.tr("No Collection"),
-                self.tr("Please select a constant raster type first."),
+                self.tr("No Investability Specified"),
+                self.tr("Please select an investability type first."),
             )
             return
 
         # Apply user-specified min/max values to the collection
-        min_val = self.spin_min_value.value()
-        max_val = self.spin_max_value.value()
+        if current_raster_collection.use_manual:
+            min_val = self.spin_min_value.value()
+            max_val = self.spin_max_value.value()
 
-        current_raster_collection.min_value = min_val
-        current_raster_collection.max_value = max_val
+            current_raster_collection.min_value = min_val
+            current_raster_collection.max_value = max_val
 
         # Ensure all checked items have components in the collection
         self._ensure_checked_components_in_collection()
@@ -1243,8 +1277,10 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             enabled_components = current_raster_collection.enabled_components()
             if not enabled_components:
                 self.message_bar.pushWarning(
-                    self.tr("No Enabled Components"),
-                    self.tr("Please check at least one activity and set its value."),
+                    self.tr("No Selected Activity Items"),
+                    self.tr(
+                        "Please select at least one activity and configure its value."
+                    ),
                 )
                 return
         else:
@@ -1259,9 +1295,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
             if not has_any_enabled:
                 self.message_bar.pushWarning(
-                    self.tr("No Enabled Components"),
+                    self.tr("No Selected Activity Items"),
                     self.tr(
-                        "No enabled components found in any constant raster collection. Please check at least one activity and set its value."
+                        "Please select at least one activity and configure its value."
                     ),
                 )
                 return
@@ -1270,7 +1306,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         try:
             context = self._create_context()
         except ValueError as e:
-            self.message_bar.pushWarning(self.tr("Cannot Create Context"), str(e))
+            self.message_bar.pushWarning(
+                self.tr("Cannot Create Context for Creating Rasters"), str(e)
+            )
             return
 
         # Get the metadata to extract input_range
@@ -1368,17 +1406,19 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             self.btn_edit_custom_type.setEnabled(True)
             self.btn_delete_custom_type.setEnabled(True)
             self.btn_edit_custom_type.setToolTip(
-                self.tr("Edit the selected custom type")
+                self.tr("Edit the selected investability type")
             )
             self.btn_delete_custom_type.setToolTip(
-                self.tr("Delete the selected custom type")
+                self.tr("Delete the selected investability type")
             )
         else:
             self.btn_edit_custom_type.setEnabled(False)
             self.btn_delete_custom_type.setEnabled(False)
-            self.btn_edit_custom_type.setToolTip(self.tr("Cannot edit built-in types"))
+            self.btn_edit_custom_type.setToolTip(
+                self.tr("Cannot edit built-in investability types")
+            )
             self.btn_delete_custom_type.setToolTip(
-                self.tr("Cannot delete built-in types")
+                self.tr("Cannot delete built-in investability types")
             )
 
     def on_add_custom_type_clicked(self):
@@ -1395,7 +1435,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             parent=self, edit_mode=False, existing_types=existing_names
         )
 
-        if dialog.exec_() == QtWidgets.QDialog.Accepted:
+        if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
             type_def = dialog.get_type_definition()
 
             # Generate unique ID from type name (like "training_hours")
@@ -1409,14 +1449,15 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                 counter += 1
 
             # Create metadata
-            metadata = GenericNumericWidget.create_metadata(
-                metadata_id=metadata_id,
-                component_type=ModelComponentType.ACTIVITY,
-                display_name=type_def[NAME_ATTRIBUTE],
-                min_value=type_def[MIN_VALUE_ATTRIBUTE_KEY],
-                max_value=type_def[MAX_VALUE_ATTRIBUTE_KEY],
-                user_defined=True,
+            metadata = GenericNumericWidget.create_metadata()
+            metadata.id = metadata_id
+            metadata.component_type = ModelComponentType.ACTIVITY
+            metadata.display_name = type_def[NAME_ATTRIBUTE]
+            metadata.input_range = (
+                type_def[MIN_VALUE_ATTRIBUTE_KEY],
+                type_def[MAX_VALUE_ATTRIBUTE_KEY],
             )
+            metadata.user_defined = True
 
             # Register metadata
             if self.constant_raster_registry.add_metadata(metadata):
@@ -1458,7 +1499,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
                 self.message_bar.pushSuccess(
                     self.tr("Success"),
                     self.tr(
-                        f"Custom type '{type_def[NAME_ATTRIBUTE]}' created successfully."
+                        f"'{type_def[NAME_ATTRIBUTE]}' investability type created successfully."
                     ),
                 )
 
@@ -1481,7 +1522,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         if not type_def:
             self.message_bar.pushWarning(
                 self.tr("Error"),
-                self.tr("Could not load custom type definition."),
+                self.tr(
+                    f"Could not load details of '{metadata.display_name}' investability type."
+                ),
             )
             return
 
@@ -1501,7 +1544,7 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
         )
         dialog.set_values(type_def)
 
-        if dialog.exec_() == QtWidgets.QDialog.Accepted:
+        if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
             updated_def = dialog.get_type_definition()
 
             # Update metadata
@@ -1583,7 +1626,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
             self.message_bar.pushSuccess(
                 self.tr("Success"),
-                self.tr(f"Custom type '{updated_def['name']}' updated successfully."),
+                self.tr(
+                    f"'{updated_def['name']}' investability type updated successfully."
+                ),
             )
 
     def on_delete_custom_type_clicked(self):
@@ -1605,14 +1650,15 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
             self,
             self.tr("Confirm Deletion"),
             self.tr(
-                f"Are you sure you want to delete the custom type '{metadata.display_name}'?\n\n"
-                "This will remove the type definition and all associated data."
+                f"Are you sure you want to delete the '{metadata.display_name}' investability type?\n"
+                "This will remove its configuration and all associated data."
             ),
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-            QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.StandardButton.Yes
+            | QtWidgets.QMessageBox.StandardButton.No,
+            QtWidgets.QMessageBox.StandardButton.No,
         )
 
-        if reply != QtWidgets.QMessageBox.Yes:
+        if reply != QtWidgets.QMessageBox.StandardButton.Yes:
             return
 
         # Remove from dropdown first
@@ -1635,7 +1681,9 @@ class ConstantRastersManagerDialog(QtWidgets.QDialog):
 
         self.message_bar.pushSuccess(
             self.tr("Success"),
-            self.tr(f"Custom type '{metadata.display_name}' deleted successfully."),
+            self.tr(
+                f"'{metadata.display_name}' investability type deleted successfully."
+            ),
         )
 
     def close(self):

@@ -36,17 +36,21 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
         select_all_btn = QtWidgets.QPushButton(tr("Select All"))
         select_all_btn.setToolTip(tr("Select the all listed items"))
         select_all_btn.clicked.connect(self.select_all_clicked)
-        self.mButtonBox.addButton(select_all_btn, QtWidgets.QDialogButtonBox.ActionRole)
+        self.mButtonBox.addButton(
+            select_all_btn, QtWidgets.QDialogButtonBox.ButtonRole.ActionRole
+        )
 
         clear_all_btn = QtWidgets.QPushButton(tr("Clear Selection"))
         clear_all_btn.setToolTip(tr("Clear the current selection"))
         clear_all_btn.clicked.connect(self.clear_all_clicked)
-        self.mButtonBox.addButton(clear_all_btn, QtWidgets.QDialogButtonBox.ActionRole)
+        self.mButtonBox.addButton(
+            clear_all_btn, QtWidgets.QDialogButtonBox.ButtonRole.ActionRole
+        )
 
         toggle_selection_btn = QtWidgets.QPushButton(tr("Toggle Selection"))
         toggle_selection_btn.clicked.connect(self.toggle_selection_clicked)
         self.mButtonBox.addButton(
-            toggle_selection_btn, QtWidgets.QDialogButtonBox.ActionRole
+            toggle_selection_btn, QtWidgets.QDialogButtonBox.ButtonRole.ActionRole
         )
 
         self.mButtonBox.accepted.connect(self.accept)
@@ -55,7 +59,7 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
 
         for index in range(self.list_widget.count()):
             item = self.list_widget.item(index)
-            item_uuid = item.data(QtCore.Qt.UserRole)
+            item_uuid = item.data(QtCore.Qt.ItemDataRole.UserRole)
 
             if self.item_type is NcsPathway:
                 pathway = settings_manager.get_ncs_pathway(str(item_uuid))
@@ -71,7 +75,7 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
                     self.parent_item is not None
                     and str(self.parent_item.get("uuid")) in pathway_layer_uuids
                 ) or (pathway.uuid in layer_model_uuids):
-                    item.setCheckState(QtCore.Qt.Checked)
+                    item.setCheckState(QtCore.Qt.CheckState.Checked)
             else:
                 layer = settings_manager.get_priority_layer(str(item_uuid))
                 group_uuids = []
@@ -86,7 +90,7 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
                     self.parent_item is not None
                     and self.parent_item.get("uuid") in group_uuids
                 ):
-                    item.setCheckState(QtCore.Qt.Checked)
+                    item.setCheckState(QtCore.Qt.CheckState.Checked)
 
     def set_items(self):
         """Sets the item list in the dialog"""
@@ -107,10 +111,10 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
         for item in items:
             list_widget_item = QtWidgets.QListWidgetItem(item.name)
             list_widget_item.setFlags(
-                list_widget_item.flags() | QtCore.Qt.ItemIsUserCheckable
+                list_widget_item.flags() | QtCore.Qt.ItemFlag.ItemIsUserCheckable
             )
-            list_widget_item.setData(QtCore.Qt.UserRole, item.uuid)
-            list_widget_item.setCheckState(QtCore.Qt.Unchecked)
+            list_widget_item.setData(QtCore.Qt.ItemDataRole.UserRole, item.uuid)
+            list_widget_item.setCheckState(QtCore.Qt.CheckState.Unchecked)
             self.list_widget.addItem(list_widget_item)
 
     def selected_items(self):
@@ -132,7 +136,7 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
         items_text = []
         for index in range(self.list_widget.count()):
             item = self.list_widget.item(index)
-            if item.checkState() == QtCore.Qt.Checked:
+            if item.checkState() == QtCore.Qt.CheckState.Checked:
                 items_text.append(item.text())
 
         final_items = []
@@ -164,7 +168,7 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
         items_text = []
         for index in range(self.list_widget.count()):
             item = self.list_widget.item(index)
-            if item.checkState() == QtCore.Qt.Unchecked:
+            if item.checkState() == QtCore.Qt.CheckState.Unchecked:
                 items_text.append(item.text())
         item_names = ",".join(items_text)
         items = [item for item in items if item.name in item_names]
@@ -179,20 +183,20 @@ class ItemsSelectionDialog(QtWidgets.QDialog, DialogUi):
         """Slot for handling selection for all items."""
         for item_index in range(self.list_widget.count()):
             item_item = self.list_widget.item(item_index)
-            item_item.setCheckState(QtCore.Qt.Checked)
+            item_item.setCheckState(QtCore.Qt.CheckState.Checked)
 
     def clear_all_clicked(self):
         """Slot for handling clear selection for all items."""
         for item_index in range(self.list_widget.count()):
             item_item = self.list_widget.item(item_index)
-            item_item.setCheckState(QtCore.Qt.Unchecked)
+            item_item.setCheckState(QtCore.Qt.CheckState.Unchecked)
 
     def toggle_selection_clicked(self):
         """Toggles all the current items selection."""
         for item_index in range(self.list_widget.count()):
             item_item = self.list_widget.item(item_index)
             state = item_item.checkState()
-            if state == QtCore.Qt.Checked:
-                item_item.setCheckState(QtCore.Qt.Unchecked)
-            elif state == QtCore.Qt.Unchecked:
-                item_item.setCheckState(QtCore.Qt.Checked)
+            if state == QtCore.Qt.CheckState.Checked:
+                item_item.setCheckState(QtCore.Qt.CheckState.Unchecked)
+            elif state == QtCore.Qt.CheckState.Unchecked:
+                item_item.setCheckState(QtCore.Qt.CheckState.Checked)

@@ -2,6 +2,7 @@
 """
 CPLUS Report generator.
 """
+import json
 from numbers import Number
 import os
 from pathlib import Path
@@ -10,7 +11,6 @@ import typing
 import uuid
 
 from qgis.core import (
-    Qgis,
     QgsBasicNumericFormat,
     QgsCoordinateReferenceSystem,
     QgsFallbackNumericFormat,
@@ -18,7 +18,6 @@ from qgis.core import (
     QgsFillSymbol,
     QgsLayerTreeNode,
     QgsLayoutExporter,
-    QgsLayoutItemHtml,
     QgsLayoutItemLabel,
     QgsLayoutItemLegend,
     QgsLayoutItemManualTable,
@@ -29,6 +28,7 @@ from qgis.core import (
     QgsLayoutItemShape,
     QgsLayoutPoint,
     QgsLayoutSize,
+    QgsLayoutTable,
     QgsLayoutTableColumn,
     QgsMapLayerLegendUtils,
     QgsNumericFormatContext,
@@ -43,7 +43,6 @@ from qgis.core import (
     QgsTableCell,
     QgsTextFormat,
     QgsUnitTypes,
-    QgsMessageLog,
     Qgis,
 )
 
@@ -57,7 +56,7 @@ from ..carbon import (
     CarbonImpactRestoreCalculator,
 )
 from .comparison_table import ScenarioComparisonTableInfo
-from ...conf import settings_manager
+from ...conf import settings_manager, Settings
 from ...definitions.constants import (
     ACTIVITY_GROUP_LAYER_NAME,
     ACTIVITY_IDENTIFIER_PROPERTY,
@@ -67,6 +66,8 @@ from ...definitions.defaults import (
     ACTIVITY_AREA_TABLE_ID,
     AREA_COMPARISON_TABLE_ID,
     CARBON_IMPACT_HEADER,
+    IMPACT_MATRIX_COLORS,
+    IMPACT_MATRIX_TABLE_ID,
     MANAGE_CARBON_IMPACT_HEADER,
     MAX_ACTIVITY_DESCRIPTION_LENGTH,
     MAX_ACTIVITY_NAME_LENGTH,
@@ -112,7 +113,7 @@ DEFAULT_AREA_DECIMAL_PLACES = 2
 
 def _qcolor_to_hex(c: QColor) -> str:
     try:
-        return c.name(QColor.HexRgb) if isinstance(c, QColor) else "#888888"
+        return c.name(QColor.NameFormat.HexRgb) if isinstance(c, QColor) else "#888888"
     except Exception:
         return "#888888"
 
@@ -334,7 +335,6 @@ class ScenarioAnalysisReportGeneratorTask(BaseScenarioReportGeneratorTask):
                     html_item = html_frame.multiFrame()
                     html_item.setUrl(pie_url)
                     html_item.update()
-                    log(f"scenario pie: set HTML item URL - {html_path}.")
                 else:
                     log(
                         f"scenario pie: HTML layout item '{ACTIVITY_AREA_HTML_ID}' not found in the layout."
@@ -1763,7 +1763,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
         if len(root_children) > 0:
             QgsLegendRenderer.setNodeLegendStyle(
-                root_children[0], QgsLegendStyle.Hidden
+                root_children[0], QgsLegendStyle.Style.Hidden
             )
 
         for tree_layer in legend_item.model().rootGroup().findLayers():
@@ -1773,7 +1773,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 scenario_child_nodes = model.layerLegendNodes(tree_layer)
                 activity_node_indices = []
                 for i, child_node in enumerate(scenario_child_nodes):
-                    node_name = str(child_node.data(QtCore.Qt.DisplayRole))
+                    node_name = str(child_node.data(QtCore.Qt.ItemDataRole.DisplayRole))
                     # Only show nodes for activity nodes used for the scenario
                     if node_name.lower() in activity_names:
                         activity_node_indices.append(i)
@@ -1783,7 +1783,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 )
 
                 # Remove the tree layer band title
-                QgsLegendRenderer.setNodeLegendStyle(tree_layer, QgsLegendStyle.Hidden)
+                QgsLegendRenderer.setNodeLegendStyle(tree_layer, QgsLegendStyle.Style.Hidden)
 
                 model.refreshLayerLegend(tree_layer)
             else:
@@ -1797,6 +1797,213 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         legend_item.adjustBoxSize()
         legend_item.invalidateCache()
         legend_item.update()
+
+    def _filter_impact_matrix_table(
+        self,
+        pathway_ids: typing.List[str] = None,
+        priority_layer_ids: typing.List[str] = None,
+    ) -> dict:
+        """Filter the impact matrix table by specific NCS pathway and/or
+        priority layer IDs.
+
+        :param pathway_ids: List of pathway UUIDs to filter or None to keep all.
+        :type pathway_ids: typing.List[str]
+        :param priority_layer_ids: List of priority layer UUIDs to filter or
+        None to keep all.
+        :type priority_layer_ids: typing.List[str]
+
+        :returns: Filtered dictionary with the same format as that used for the
+        impact matrix stored in settings
+        i.e. {pathway_uuids: [], priority_layer_uuids: [], values: [[], []...]}
+        :rtype: dict
+        """
+        impact_matrix_str = settings_manager.get_value(
+            Settings.SCENARIO_IMPACT_MATRIX, "{}"
+        )
+        try:
+            impact_matrix = json.loads(impact_matrix_str) or {}
+        except json.JSONDecodeError:
+            log("Unable to read scenario impact matrix from settings.", info=False)
+            return {}
+
+        if not impact_matrix:
+            log("Scenario impact matrix is empty.", info=False)
+            return {}
+
+        # Check impact matrix has all the required keys
+        required_keys = {"pathway_uuids", "priority_layer_uuids", "values"}
+        if not required_keys.issubset(impact_matrix):
+            log("Scenario impact matrix data is missing key information.", info=False)
+            return {}
+
+        # Type checks
+        if not isinstance(impact_matrix["pathway_uuids"], list):
+            log(
+                "'pathway_uuids' key in scenario impact matrix is not iterable.",
+                info=False,
+            )
+            return {}
+        if not isinstance(impact_matrix["priority_layer_uuids"], list):
+            log(
+                "'priority_layer_uuids' key in scenario impact matrix is not iterable.",
+                info=False,
+            )
+            return {}
+        if not isinstance(impact_matrix["values"], list):
+            log("'values' keys] in scenario impact matrix is not iterable.", info=False)
+            return {}
+
+        # Values must be list of lists
+        if not all(isinstance(row, list) for row in impact_matrix["values"]):
+            log(
+                "'values' row representation in scenario impact matrix is not iterable.",
+                info=False,
+            )
+            return {}
+
+        # Get indices for pathways to keep
+        if pathway_ids is None:
+            pathway_indices = list(range(len(impact_matrix["pathway_uuids"])))
+            filtered_pathways = impact_matrix["pathway_uuids"]
+        else:
+            pathway_indices = [
+                i
+                for i, p in enumerate(impact_matrix["pathway_uuids"])
+                if p in pathway_ids
+            ]
+            filtered_pathways = [
+                impact_matrix["pathway_uuids"][i] for i in pathway_indices
+            ]
+
+        # Get indices for priority layers to keep
+        if priority_layer_ids is None:
+            pwl_indices = list(range(len(impact_matrix["priority_layer_uuids"])))
+            filtered_layers = impact_matrix["priority_layer_uuids"]
+        else:
+            pwl_indices = [
+                i
+                for i, p in enumerate(impact_matrix["priority_layer_uuids"])
+                if p in priority_layer_ids
+            ]
+            filtered_layers = [
+                impact_matrix["priority_layer_uuids"][i] for i in pwl_indices
+            ]
+
+        # Filter values
+        filtered_values = []
+        for pathway_idx in pathway_indices:
+            row = [
+                impact_matrix["values"][pathway_idx][layer_idx]
+                for layer_idx in pwl_indices
+            ]
+            filtered_values.append(row)
+
+        return {
+            "pathway_uuids": filtered_pathways,
+            "priority_layer_uuids": filtered_layers,
+            "values": filtered_values,
+        }
+
+    def _populate_impact_matrix_table(self):
+        """Populate the table for NCS pathway / PWM impact matrix."""
+        parent_table = self._get_manual_table_from_id(IMPACT_MATRIX_TABLE_ID)
+        if parent_table is None:
+            self._error_messages.append(
+                tr("Could not find parent table for NCS pathway/PWL impact matrix.")
+            )
+            return
+
+        activities = self._context.scenario.activities
+        if not activities:
+            self._error_messages.append(tr("No activities in the scenario"))
+            return
+
+        # Configure table
+        parent_table.setIncludeTableHeader(True)
+        parent_table.setHeaderMode(QgsLayoutTable.HeaderMode.FirstFrame)
+        parent_table.setEmptyTableBehavior(QgsLayoutTable.EmptyTableMode.ShowMessage)
+
+        # Collect unique NCS pathways from activities
+        pathway_info = {
+            str(pathway.uuid): pathway.name
+            for activity in activities
+            for pathway in activity.pathways
+        }
+
+        # Collect PWL info (uuid → name) from valid priority groups
+        pwl_info = {
+            layer["uuid"]: layer["name"]
+            for group in self._context.scenario.priority_layer_groups
+            if "name" in group and "value" in group
+            for layer in settings_manager.find_layers_by_group(group["name"]) or []
+        }
+
+        # Get filtered table
+        filtered_impact_matrix = self._filter_impact_matrix_table(
+            list(pathway_info.keys()), list(pwl_info.keys())
+        )
+
+        if not filtered_impact_matrix:
+            parent_table.setEmptyTableMessage(tr("No Impact Matrix Data"))
+            parent_table.setHeaders([])
+            parent_table.setTableContents([])
+            return
+
+        pathway_ids = filtered_impact_matrix.get("pathway_uuids")
+        pwl_ids = filtered_impact_matrix.get("priority_layer_uuids")
+        values = filtered_impact_matrix.get("values")
+        if not pathway_ids or not pwl_ids or not values:
+            parent_table.setEmptyTableMessage(tr("No NCS Pathway-PWL Matrix Data"))
+            parent_table.setHeaders([])
+            parent_table.setTableContents([])
+            return
+
+        # Define columns
+        columns = []
+        ncs_pathway_column = QgsLayoutTableColumn(tr(""))
+        ncs_pathway_column.setWidth(0)
+        ncs_pathway_column.setHAlignment(QtCore.Qt.AlignHCenter)
+        columns.append(ncs_pathway_column)
+
+        for pwl_id in pwl_ids:
+            pwl_name = pwl_info.get(pwl_id, tr("[PWL Name N/A]"))
+            pwl_column = QgsLayoutTableColumn(pwl_name)
+            pwl_column.setWidth(0)
+            pwl_column.setHAlignment(QtCore.Qt.AlignHCenter)
+            columns.append(pwl_column)
+
+        parent_table.setHeaders(columns)
+
+        # Define rows
+        row_data = []
+        for r, pathway_id in enumerate(pathway_ids):
+            row_cells = []
+            pathway_name = pathway_info.get(
+                pathway_id, f"[{self.tr('Pathway Name Error!')}]"
+            )
+            pathway_name_column = QgsTableCell(pathway_name)
+            row_cells.append(pathway_name_column)
+            for c, pwl_id in enumerate(pwl_ids):
+                value = values[r][c]
+                color = "#ffffff"
+                if value is None:
+                    impact_value = tr("Not Defined")
+                else:
+                    impact_value = str(value)
+                    if value in IMPACT_MATRIX_COLORS:
+                        info = IMPACT_MATRIX_COLORS[value]
+                        color = info.get("color", color)
+                        if "impact" in info:
+                            impact_value = f"{info['impact']} ({value})"
+
+                cell = QgsTableCell(impact_value)
+                cell.setBackgroundColor(QtGui.QColor(color))
+                cell.setHorizontalAlignment(QtCore.Qt.AlignHCenter)
+                row_cells.append(cell)
+
+            row_data.append(row_cells)
+
+        parent_table.setTableContents(row_data)
 
     def _populate_activity_area_table(self):
         """Populate the table(s) for activities and
@@ -1846,7 +2053,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             # Otherwise just add the additional default columns - carbon-related columns
             carbon_impact_column = QgsLayoutTableColumn(tr(CARBON_IMPACT_HEADER))
             carbon_impact_column.setWidth(0)
-            carbon_impact_column.setHAlignment(QtCore.Qt.AlignHCenter)
+            carbon_impact_column.setHAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
 
             columns.append(carbon_impact_column)
 
@@ -1855,7 +2062,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 tr(PROTECT_CARBON_IMPACT_HEADER)
             )
             carbon_impact_protect_column.setWidth(0)
-            carbon_impact_protect_column.setHAlignment(QtCore.Qt.AlignHCenter)
+            carbon_impact_protect_column.setHAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
 
             columns.append(carbon_impact_protect_column)
 
@@ -1864,7 +2071,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 tr(MANAGE_CARBON_IMPACT_HEADER)
             )
             carbon_impact_manage_column.setWidth(0)
-            carbon_impact_manage_column.setHAlignment(QtCore.Qt.AlignHCenter)
+            carbon_impact_manage_column.setHAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
 
             columns.append(carbon_impact_manage_column)
 
@@ -1873,14 +2080,14 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 tr(RESTORE_CARBON_IMPACT_HEADER)
             )
             carbon_impact_restore_column.setWidth(0)
-            carbon_impact_restore_column.setHAlignment(QtCore.Qt.AlignHCenter)
+            carbon_impact_restore_column.setHAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
 
             columns.append(carbon_impact_restore_column)
 
             # Total carbon
             total_carbon_column = QgsLayoutTableColumn(tr(TOTAL_CARBON_IMPACT_HEADER))
             total_carbon_column.setWidth(0)
-            total_carbon_column.setHAlignment(QtCore.Qt.AlignHCenter)
+            total_carbon_column.setHAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
 
             columns.append(total_carbon_column)
 
@@ -1968,7 +2175,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
                     if highlight_error:
                         text_format = activity_cell.textFormat()
-                        text_format.setColor(QtCore.Qt.red)
+                        text_format.setColor(QtCore.Qt.GlobalColor.red)
                         activity_cell.setTextFormat(text_format)
 
                     activity_row_cells.append(activity_cell)
@@ -1982,7 +2189,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 # Update values
                 formatted_area = self.format_number(area_info)
                 area_cell = QgsTableCell(formatted_area)
-                area_cell.setHorizontalAlignment(QtCore.Qt.AlignHCenter)
+                area_cell.setHorizontalAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
 
                 activity_row_cells.append(area_cell)
 
@@ -2001,7 +2208,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 carbon_impact_cell = QgsTableCell(
                     self.format_number(activity_naturebase_carbon)
                 )
-                carbon_impact_cell.setHorizontalAlignment(QtCore.Qt.AlignHCenter)
+                carbon_impact_cell.setHorizontalAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
                 activity_row_cells.append(carbon_impact_cell)
 
                 # Carbon impact (protect)
@@ -2018,7 +2225,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                     self.format_number(carbon_impact_protect, True)
                 )
                 carbon_impact_protect_cell.setHorizontalAlignment(
-                    QtCore.Qt.AlignHCenter
+                    QtCore.Qt.AlignmentFlag.AlignHCenter
                 )
                 activity_row_cells.append(carbon_impact_protect_cell)
 
@@ -2036,7 +2243,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 carbon_impact_manage_cell = QgsTableCell(
                     self.format_number(carbon_impact_manage, True)
                 )
-                carbon_impact_manage_cell.setHorizontalAlignment(QtCore.Qt.AlignHCenter)
+                carbon_impact_manage_cell.setHorizontalAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
                 activity_row_cells.append(carbon_impact_manage_cell)
 
                 if carbon_impact_manage != -1.0:
@@ -2056,7 +2263,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                     self.format_number(carbon_impact_restore, True)
                 )
                 carbon_impact_restore_cell.setHorizontalAlignment(
-                    QtCore.Qt.AlignHCenter
+                    QtCore.Qt.AlignmentFlag.AlignHCenter
                 )
                 activity_row_cells.append(carbon_impact_restore_cell)
 
@@ -2067,7 +2274,7 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 total_carbon_impact_cell = QgsTableCell(
                     self.format_number(total_carbon_impact, True)
                 )
-                total_carbon_impact_cell.setHorizontalAlignment(QtCore.Qt.AlignHCenter)
+                total_carbon_impact_cell.setHorizontalAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
                 activity_row_cells.append(total_carbon_impact_cell)
 
             rows_data.append(activity_row_cells)
@@ -2194,6 +2401,9 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             self._error_messages.append(tr_msg)
             return
 
+        # Configure table
+        parent_table.setEmptyTableBehavior(QgsLayoutTable.EmptyTableMode.ShowMessage)
+
         rows_data = []
         groups = []
         for priority_group in self._context.scenario.priority_layer_groups:
@@ -2225,6 +2435,11 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             rows_data.append([name_cell, value_cell])
             groups.append(group_name)
 
+        # Show empty message
+        if not groups or rows_data:
+            parent_table.setEmptyTableMessage(tr("No scenario weighting values"))
+            parent_table.setHeaders([])
+
         parent_table.setTableContents(rows_data)
 
     def _add_scenario_area_by_activity_pie(self) -> None:
@@ -2232,9 +2447,6 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         for the selected scenario and saves it as a HTML file for use
         in the main application thread when the task has finished..
         """
-        # Build labels/values/colors from scenario data computed
-        log("scenario pie: start")
-
         labels, values, colors = [], [], []
         for act in self._context.scenario.activities:
             pv = int(getattr(act, "style_pixel_value", -1))
@@ -2243,8 +2455,6 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             values.append(area)
             colors.append(_activity_hex_color(act))
 
-        log(f"scenario pie: labels={labels}")
-        log(f"scenario pie: values={values} sum={sum(values)}")
         if sum(values) <= 0:
             log("scenario pie: no positive values - skip")
             return
@@ -2253,7 +2463,6 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
         out_dir = os.path.join(self.output_dir, "charts")
         os.makedirs(out_dir, exist_ok=True)
         html_path = os.path.join(out_dir, f"scenario_pie_{uuid.uuid4().hex}.html")
-        log(f"scenario pie: will write to {html_path}")
         try:
             _ = PieChartRenderer.render_pie_html(
                 html_path,
@@ -2263,7 +2472,8 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
                 size_px=560,
             )
         except Exception as e:
-            log(f"scenario pie: render failed: {e!r}")
+            tr_msg = tr("scenario pie: render failed:")
+            self._error_messages.append(f"{tr_msg} {e!r}")
             return
 
         exists = os.path.exists(html_path)
@@ -2304,6 +2514,9 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
 
         # Populate table with priority weighting values
         self._populate_scenario_weighting_values()
+
+        # Populate impact matrix table
+        self._populate_impact_matrix_table()
 
         self._add_scenario_area_by_activity_pie()
 
@@ -2377,7 +2590,7 @@ def _load_layout_from_file(
     doc = QtXml.QDomDocument()
     doc_status = True
     try:
-        if not template_file.open(QtCore.QIODevice.ReadOnly):
+        if not template_file.open(QtCore.QIODevice.OpenModeFlag.ReadOnly):
             if error_messages:
                 tr_msg = tr("Unable to read template file")
                 error_messages.append(f"{tr_msg} {template_path}")

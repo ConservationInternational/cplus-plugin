@@ -19,7 +19,7 @@ from zipfile import ZipFile
 import numpy as np
 from osgeo import gdal
 
-from qgis.PyQt import QtCore, QtGui
+from qgis.PyQt import QtCore, QtGui, QtWidgets
 from qgis.core import (
     Qgis,
     QgsCoordinateReferenceSystem,
@@ -54,6 +54,30 @@ from .definitions.constants import (
 )
 from .models.base import ModelComponentType
 from .models.constant_raster import ConstantRasterFileMetadata
+
+
+def item_user_type():
+    """Get QStandardItem.UserType in Qt5/Qt6 compatible way.
+
+    Uses Qt6-style ItemType.UserType which works in both Qt5 and Qt6.
+
+    Returns:
+        int: The user type value for QStandardItem
+    """
+    user_type = QtGui.QStandardItem.ItemType.UserType
+    return user_type.value if hasattr(user_type, "value") else int(user_type)
+
+
+def tree_item_user_type():
+    """Get QTreeWidgetItem.UserType in Qt5/Qt6 compatible way.
+
+    Uses Qt6-style ItemType.UserType which works in both Qt5 and Qt6.
+
+    Returns:
+        int: The user type value for QTreeWidgetItem
+    """
+    user_type = QtWidgets.QTreeWidgetItem.ItemType.UserType
+    return user_type.value if hasattr(user_type, "value") else int(user_type)
 
 
 def tr(message):
@@ -93,7 +117,7 @@ def log(
     :param notify: Whether to notify user about the log
     :type notify: bool
     """
-    level = Qgis.Info if info else Qgis.Warning
+    level = Qgis.MessageLevel.Info if info else Qgis.MessageLevel.Warning
     if not isinstance(message, str):
         message = json.dumps(todict(message), cls=CustomJsonEncoder)
     QgsMessageLog.logMessage(
@@ -577,7 +601,13 @@ def contains_font_family(font_family: str) -> bool:
     :returns: True if the font family exists, else False.
     :rtype: bool
     """
-    font_families = QtGui.QFontDatabase().families()
+    # Qt6 uses static method, some Qt5 versions use instance method
+    try:
+        font_families = QtGui.QFontDatabase.families()
+    except TypeError:
+        # Fallback for versions where families() is an instance method
+        font_families = QtGui.QFontDatabase().families()
+
     matching_fonts = [family for family in font_families if font_family in family]
 
     return True if len(matching_fonts) > 0 else False
@@ -1192,19 +1222,22 @@ def normalize_raster(
         if min_value is None or max_value is None:
             return False, f"Raster layer has no valid statistics, {input_raster_path}"
 
+        if max_value < min_value:
+            return (
+                False,
+                f"Layer cannot be normalized, min value {min_value} is greater than max value {max_value}",
+            )
+
         if min_value >= 0 and max_value <= 1:
             return (
                 True,
-                f"Layer is already normalized (min={min_value}, max={max_value})",
-            )
-
-        if min_value == max_value:
-            return (
-                False,
-                f"Layer cannot be normalized because min value = {min_value} is same as max value = {max_value}",
+                f"Layer {input_raster_path} is already normalized (min={min_value}, max={max_value})",
             )
 
         expression = f"(A - {min_value}) / ({max_value} - {min_value})"
+        if min_value == max_value:
+            # Treat layer as a constant raster when min and max value is equal
+            expression = f"(A / {min_value})"
 
         alg_params = {
             "INPUT_A": input_raster_path,

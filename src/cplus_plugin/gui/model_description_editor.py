@@ -23,7 +23,8 @@ class ModelDescriptionEditorDialog(QtWidgets.QDialog):
 
         self.txt_description = QtWidgets.QPlainTextEdit(self)
         self.txt_description.setSizePolicy(
-            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Expanding,
         )
         self.txt_description.setPlaceholderText(
             self.tr("Enter the model's description...")
@@ -31,7 +32,9 @@ class ModelDescriptionEditorDialog(QtWidgets.QDialog):
         layout.addWidget(self.txt_description)
 
         self.dlg_btn = QtWidgets.QDialogButtonBox(
-            QtWidgets.QDialogButtonBox.Save | QtWidgets.QDialogButtonBox.Cancel, self
+            QtWidgets.QDialogButtonBox.Save
+            | QtWidgets.QDialogButtonBox.StandardButton.Cancel,
+            self,
         )
         self.dlg_btn.rejected.connect(self.reject)
         self.dlg_btn.accepted.connect(self.accept)

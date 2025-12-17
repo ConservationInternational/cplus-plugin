@@ -2,27 +2,19 @@
 
 from pathlib import Path
 import os
+import platform
 from typing import List, Optional
 
 import plotly.graph_objects as go
 
 from qgis.core import (
     QgsBasicNumericFormat,
-    QgsLayoutExporter,
-    QgsLayoutFrame,
-    QgsLayoutItemHtml,
-    QgsLayoutPoint,
-    QgsLayoutSize,
     QgsNumericFormatContext,
-    QgsPrintLayout,
-    QgsProject,
     QgsReadWriteContext,
-    QgsUnitTypes,
 )
 
-from qgis.PyQt import QtCore
-
 from ...definitions.defaults import REPORT_FONT_NAME
+from ...utils import log
 
 
 def _hex_to_rgb(hexstr: str) -> tuple[float, float, float]:
@@ -129,7 +121,7 @@ class PieChartRenderer:
             values=values,
             text=formatted_labels,
             textinfo="text",
-            textposition="inside",
+            textposition="auto",
             insidetextorientation="horizontal",
             marker=dict(colors=colors_hex, line=dict(color="white", width=1)),
             textfont=dict(family=REPORT_FONT_NAME, color=text_colors),
@@ -151,12 +143,31 @@ class PieChartRenderer:
         # Create the figure
         fig = go.Figure(data=[pie_trace], layout=layout)
 
+        is_linux = platform.system() in ('Linux', 'Unix', 'Darwin')
+
+        if is_linux:
+            png_path = out_path.replace('.html', '.png')
+            try:
+                fig.write_image(png_path, width=preferred_width, height=preferred_height)
+                html_content = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;display:flex;justify-content:center;align-items:center;min-height:100vh;">
+    <img src="{os.path.basename(png_path)}" alt="Pie Chart" style="max-width:100%;height:auto;">
+</body>
+</html>"""
+                with open(out_path, 'w', encoding='utf-8') as f:
+                    f.write(html_content)
+                return out_path
+            except Exception as e:
+                log(f"Could not create PNG (kaleido needed?): {e}. Falling back to HTML.", info=False)
+
         # Save the figure to as HTML
         fig.write_html(
             out_path,
             auto_open=False,
             auto_play=False,
-            config={"displayModeBar": False},
+            config={"displayModeBar": False, "staticPlot": True},
         )
 
         return out_path

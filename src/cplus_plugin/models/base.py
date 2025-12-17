@@ -91,6 +91,16 @@ class BaseModelComponent:
 
         return True
 
+    def __hash__(self) -> int:
+        """Use the `uuid` so that the component can be used in sets
+        or dictionaries.
+
+        :returns: Returns a unique identifier based on the `uuid`
+        attribute.
+        :rtype: int
+        """
+        return hash(self.uuid)
+
 
 BaseModelComponentType = typing.TypeVar(
     "BaseModelComponentType", bound=BaseModelComponent
@@ -348,6 +358,10 @@ class NcsPathway(LayerModelComponent):
             return False
 
         return True
+
+    def __hash__(self) -> int:
+        # Use base class implementation
+        return hash(self.uuid)
 
     def pw_layers(self) -> typing.List[QgsRasterLayer]:
         """Returns the list of priority weighting layers defined under
@@ -734,11 +748,13 @@ class ResultInfo:
         if not self.updated_date:
             return ""
 
-        updated_date_time = QDateTime.fromString(self.updated_date, Qt.ISODate)
+        updated_date_time = QDateTime.fromString(
+            self.updated_date, Qt.DateFormat.ISODate
+        )
         if not updated_date_time.isValid():
             return ""
 
-        updated_date_time.setTimeSpec(Qt.UTC)
+        updated_date_time.setTimeSpec(Qt.TimeSpec.UTC)
         local_date_time = updated_date_time.toLocalTime()
 
-        return QLocale.system().toString(local_date_time, QLocale.LongFormat)
+        return QLocale.system().toString(local_date_time, QLocale.FormatType.LongFormat)
