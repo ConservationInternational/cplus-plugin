@@ -533,7 +533,7 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
             return
 
         # Update last used directory
-        settings_manager.set_value(Settings.LAST_DATA_DIR, file_path)
+        settings_manager.set_value(Settings.LAST_DATA_DIR, os.path.dirname(file_path))
 
         self.fw_biomass.setFilePath(file_path)
 
@@ -549,12 +549,16 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
         if status == ApiRequestStatus.NOT_STARTED:
             icon_path = FileUtils.get_icon_path("mIndicatorTemporal.svg")
         elif status == ApiRequestStatus.IN_PROGRESS:
+            self.btn_download_stored_carbon.setEnabled(False)
             icon_path = FileUtils.get_icon_path("progress-indicator.svg")
         elif status == ApiRequestStatus.COMPLETED:
+            self.btn_download_stored_carbon.setEnabled(True)
             icon_path = FileUtils.get_icon_path("mIconSuccess.svg")
         elif status == ApiRequestStatus.ERROR:
+            self.btn_download_stored_carbon.setEnabled(True)
             icon_path = FileUtils.get_icon_path("mIconWarning.svg")
         elif status == ApiRequestStatus.CANCELED:
+            self.btn_download_stored_carbon.setEnabled(True)
             icon_path = FileUtils.get_icon_path("mTaskCancel.svg")
 
         self.lbl_stored_carbon_icon.svg_path = icon_path

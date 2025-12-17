@@ -581,7 +581,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         layer = QgsVectorLayer(layer_path, "studyarea")
         if not layer.isValid():
-            self.show_message(tr("Invalid study area layer : ") + layer_path)
+            self.show_message(tr("Invalid study area layer: ") + layer_path)
             return
 
         self._aoi_layer = QgsVectorLayer(layer_path, Path(layer_path).stem)
@@ -753,7 +753,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if studyarea_path:
             self._aoi_layer = QgsVectorLayer(studyarea_path, Path(studyarea_path).stem)
             if self._aoi_layer.isValid():
+                self.studyarea_layer_file_widget.blockSignals(True)
                 self.studyarea_layer_file_widget.setFilePath(studyarea_path)
+                self.studyarea_layer_file_widget.blockSignals(False)
 
         if clip_to_studyarea:
             self.on_aoi_source_changed(0, True)

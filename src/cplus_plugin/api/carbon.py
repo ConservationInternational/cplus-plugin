@@ -38,6 +38,7 @@ class BaseCarbonDownloadTask(QgsTask):
     completed = QtCore.pyqtSignal()
     started = QtCore.pyqtSignal()
     exited = QtCore.pyqtSignal()
+    status_message_changed = QtCore.pyqtSignal(ApiRequestStatus, str)
 
     def __init__(
         self,
@@ -188,8 +189,8 @@ class BaseCarbonDownloadTask(QgsTask):
         completion_datetime_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         log(
-            f"Download of {self. dataset_name} dataset successfully completed "
-            f"on {completion_datetime_str}."
+            f"Download of {self. dataset_name} dataset in {self._get_file_path()} "
+            f"successfully completed on {completion_datetime_str}."
         )
 
         self._update_download_status(
@@ -232,6 +233,8 @@ class BaseCarbonDownloadTask(QgsTask):
         if self.status_description_setting:
             settings_manager.set_value(self.status_description_setting, description)
 
+        self.status_message_changed.emit(status, description)
+
     def disconnect_receivers(self):
         """Disconnects all custom signals related to the downloader. This is
         recommended prior to canceling the task.
@@ -266,14 +269,7 @@ class BaseCarbonDownloadTask(QgsTask):
             return False
 
         # Get local save path - use constructor value if provided, otherwise get from settings
-        if self._local_path:
-            save_path = self._local_path
-        else:
-            save_path = settings_manager.get_value(
-                self.local_path_setting,
-                default="",
-                setting_type=str,
-            )
+        save_path = self._get_file_path()
         if not save_path:
             log(
                 f"Save location for {self.dataset_name} dataset not specified.",
@@ -375,6 +371,18 @@ class BaseCarbonDownloadTask(QgsTask):
         self._event_loop.exec_()
 
         return True
+
+    def _get_file_path(self) -> str:
+        # Get the path for saving the download file.
+        if self._local_path:
+            save_path = self._local_path
+        else:
+            save_path = settings_manager.get_value(
+                self.local_path_setting,
+                default="",
+                setting_type=str,
+            )
+        return save_path
 
 
 class IrrecoverableCarbonDownloadTask(BaseCarbonDownloadTask):
