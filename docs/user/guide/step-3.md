@@ -271,7 +271,7 @@ Carbon layers use an impact weight range from –1 to +1, while non-carbon layer
 
 <br>
 
-## Create a new financial priority layer Net Present Value (NPV)
+## Create a Net Present Value (NPV)
 
 The plugin supports adding additional investability factors, such as years of project experience, by allowing users to incorporate constant raster layers into their analysis.
 
