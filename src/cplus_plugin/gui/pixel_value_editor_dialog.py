@@ -45,9 +45,11 @@ class PixelValueEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.tv_activities.setAcceptDrops(True)
         self.tv_activities.setShowGrid(False)
         self.tv_activities.setDragDropOverwriteMode(False)
-        self.tv_activities.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
+        self.tv_activities.setDragDropMode(
+            QtWidgets.QAbstractItemView.DragDropMode.InternalMove
+        )
         self.tv_activities.horizontalHeader().setSectionResizeMode(
-            QtWidgets.QHeaderView.Stretch
+            QtWidgets.QHeaderView.ResizeMode.Stretch
         )
 
         self._load_items()
@@ -62,7 +64,7 @@ class PixelValueEditorDialog(QtWidgets.QDialog, WidgetUi):
             im_item = QtGui.QStandardItem(imp_model.name)
             im_item.setDropEnabled(False)
             im_item.setEditable(False)
-            im_item.setData(str(imp_model.uuid), QtCore.Qt.UserRole)
+            im_item.setData(str(imp_model.uuid), QtCore.Qt.ItemDataRole.UserRole)
             self._item_model.appendRow(im_item)
 
     def open_help(self, activated: bool):
@@ -86,7 +88,7 @@ class PixelValueEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         for i in range(self._item_model.rowCount()):
             item = self._item_model.item(i, 0)
-            activity_id = item.data(QtCore.Qt.UserRole)
+            activity_id = item.data(QtCore.Qt.ItemDataRole.UserRole)
             activity_position[i + 1] = activity_id
 
         return activity_position

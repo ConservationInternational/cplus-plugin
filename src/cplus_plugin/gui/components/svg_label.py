@@ -46,7 +46,7 @@ class SvgLabel(QtWidgets.QLabel):
         if self._svg_path:
             renderer = QtSvg.QSvgRenderer(os.path.normpath(self._svg_path))
             pixmap = QtGui.QPixmap(renderer.defaultSize())
-            pixmap.fill(QtCore.Qt.transparent)
+            pixmap.fill(QtCore.Qt.GlobalColor.transparent)
             painter = QtGui.QPainter(pixmap)
             renderer.render(painter)
             painter.end()

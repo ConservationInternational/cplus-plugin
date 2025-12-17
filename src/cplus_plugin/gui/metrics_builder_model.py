@@ -13,12 +13,12 @@ from ..definitions.constants import ACTIVITY_NAME
 from ..models.base import Activity
 from ..models.report import ActivityColumnMetric, MetricColumn, MetricType
 
-from ..utils import FileUtils, tr
+from ..utils import FileUtils, item_user_type, tr
 
 
-METRIC_COLUMN_LIST_ITEM_TYPE = QtGui.QStandardItem.UserType + 6
-ACTIVITY_NAME_TABLE_ITEM_TYPE = QtGui.QStandardItem.UserType + 7
-ACTIVITY_COLUMN_METRIC_TABLE_ITEM_TYPE = QtGui.QStandardItem.UserType + 8
+METRIC_COLUMN_LIST_ITEM_TYPE = item_user_type() + 6
+ACTIVITY_NAME_TABLE_ITEM_TYPE = item_user_type() + 7
+ACTIVITY_COLUMN_METRIC_TABLE_ITEM_TYPE = item_user_type() + 8
 
 COLUMN_METRIC_STR = "<Column metric>"
 CELL_METRIC_STR = "<Cell metric>"
@@ -321,7 +321,7 @@ class MetricColumnListModel(QtGui.QStandardItemModel):
         found else None.
         :rtype: MetricColumnListItem
         """
-        items = self.findItems(name, QtCore.Qt.MatchFixedString)
+        items = self.findItems(name, QtCore.Qt.MatchFlag.MatchFixedString)
 
         if len(items) > 0:
             return items[0]
@@ -421,11 +421,11 @@ class ActivityNameTableItem(QtGui.QStandardItem):
         self.setEditable(False)
         self.setText(activity.name)
         self.setToolTip(activity.name)
-        self.setTextAlignment(QtCore.Qt.AlignCenter)
+        self.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
         background = self.background()
-        background.setColor(QtCore.Qt.lightGray)
-        background.setStyle(QtCore.Qt.SolidPattern)
+        background.setColor(QtCore.Qt.GlobalColor.lightGray)
+        background.setStyle(QtCore.Qt.BrushStyle.SolidPattern)
         self.setBackground(background)
 
     @property
@@ -464,7 +464,7 @@ class ActivityColumnMetricItem(QtGui.QStandardItem):
         self._update_display_text()
         self.setTextAlignment(
             self._activity_column_metric.metric_column.alignment
-            | QtCore.Qt.AlignVCenter
+            | QtCore.Qt.AlignmentFlag.AlignVCenter
         )
 
         self._update_tool_tip()
@@ -614,10 +614,10 @@ class ActivityColumnMetricItem(QtGui.QStandardItem):
 
         if show:
             background.setColor(QtGui.QColor("#ffaeae"))
-            background.setStyle(QtCore.Qt.SolidPattern)
+            background.setStyle(QtCore.Qt.BrushStyle.SolidPattern)
         else:
-            background.setColor(QtCore.Qt.white)
-            background.setStyle(QtCore.Qt.NoBrush)
+            background.setColor(QtCore.Qt.GlobalColor.white)
+            background.setStyle(QtCore.Qt.BrushStyle.NoBrush)
 
         self.setBackground(background)
 
@@ -678,9 +678,9 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
         self.appendColumn(column_items)
         self.setHeaderData(
             self.columnCount() - 1,
-            QtCore.Qt.Horizontal,
+            QtCore.Qt.Orientation.Horizontal,
             column.header,
-            QtCore.Qt.DisplayRole,
+            QtCore.Qt.ItemDataRole.DisplayRole,
         )
 
         self._metric_columns.append(column)
@@ -740,7 +740,10 @@ class ActivityMetricTableModel(QtGui.QStandardItemModel):
 
         # Update header
         self.setHeaderData(
-            model_index, QtCore.Qt.Horizontal, column.header, QtCore.Qt.DisplayRole
+            model_index,
+            QtCore.Qt.Orientation.Horizontal,
+            column.header,
+            QtCore.Qt.ItemDataRole.DisplayRole,
         )
         self._metric_columns[index] = column
 

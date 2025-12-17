@@ -8,6 +8,8 @@ import json
 
 from pathlib import Path
 
+from ..lib.resources import resources_path
+
 PILOT_AREA_EXTENT = {
     "type": "Polygon",
     "coordinates": [30.743498637, 32.069186664, -25.201606226, -23.960197335],
@@ -54,44 +56,17 @@ TOTAL_CARBON_IMPACT_HEADER = "Total C.I."
 LAYER_NAME_HEADER = "Layer Name"
 CARBON_IMPACT_PER_HA_HEADER = "tCO2e/ha"
 
-ICON_PATH = ":/plugins/cplus_plugin/icon.svg"
-REPORT_SETTINGS_ICON_PATH = str(
-    os.path.normpath(
-        os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-        + "/icons/report_settings.svg"
-    )
-)
-LOG_SETTINGS_ICON_PATH = str(
-    os.path.normpath(
-        os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-        + "/icons/log_settings.svg"
-    )
-)
-CARBON_SETTINGS_ICON_PATH = str(
-    os.path.normpath(
-        os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-        + "/icons/carbon_settings.svg"
-    )
-)
-ICON_PDF = (
-    os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-    + "/icons/mActionSaveAsPDF.svg"
-)
-ICON_LAYOUT = (
-    os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-    + "/icons/mActionNewLayout.svg"
-)
-ICON_REPORT = (
-    os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-    + "/icons/mIconReport.svg"
-)
-ICON_HELP = (
-    os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-    + "/icons/mActionHelpContents_green.svg"
-)
+ICON_PATH = resources_path("icons", "icon.svg")
+REPORT_SETTINGS_ICON_PATH = resources_path("icons", "report_settings.svg")
+LOG_SETTINGS_ICON_PATH = resources_path("icons", "log_settings.svg")
+CARBON_SETTINGS_ICON_PATH = resources_path("icons", "carbon_settings.svg")
+ICON_PDF = resources_path("icons", "mActionSaveAsPDF.svg")
+ICON_LAYOUT = resources_path("icons", "mActionNewLayout.svg")
+ICON_REPORT = resources_path("icons", "mIconReport.svg")
+ICON_HELP = resources_path("icons", "mActionHelpContents_green.svg")
 
-ADD_LAYER_ICON_PATH = ":/plugins/cplus_plugin/cplus_left_arrow.svg"
-REMOVE_LAYER_ICON_PATH = ":/plugins/cplus_plugin/cplus_right_arrow.svg"
+ADD_LAYER_ICON_PATH = resources_path("icons", "cplus_left_arrow.svg")
+REMOVE_LAYER_ICON_PATH = resources_path("icons", "cplus_right_arrow.svg")
 
 SCENARIO_OUTPUT_FILE_NAME = "cplus_scenario_output"
 SCENARIO_OUTPUT_LAYER_NAME = "scenario_result"
@@ -141,21 +116,9 @@ ACTIVITY_COLOUR_RAMPS = {
 
 QGIS_GDAL_PROVIDER = "gdal"
 
-DEFAULT_LOGO_PATH = (
-    os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/icons/ci_logo.png"
-)
-CPLUS_LOGO_PATH = str(
-    os.path.normpath(
-        os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-        + "/icons/cplus_logo.svg"
-    )
-)
-CI_LOGO_PATH = str(
-    os.path.normpath(
-        os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-        + "/icons/ci_logo.svg"
-    )
-)
+DEFAULT_LOGO_PATH = resources_path("icons", "ci_logo.png")
+CPLUS_LOGO_PATH = resources_path("icons", "cplus_logo.svg")
+CI_LOGO_PATH = resources_path("icons", "ci_logo.svg")
 
 # Default template file name
 SCENARIO_ANALYSIS_TEMPLATE_NAME = "scenario_analysis_default.qpt"
@@ -182,6 +145,7 @@ ACTIVITY_AREA_TABLE_ID = "activity_area_table"
 PRIORITY_GROUP_WEIGHT_TABLE_ID = "assigned_weights_table"
 AREA_COMPARISON_TABLE_ID = "comparison_table"
 ACTIVITY_AREA_HTML_ID = "activity_area_pie_html"
+IMPACT_MATRIX_TABLE_ID = "impact_matrix_table"
 
 # IDs for items in the metrics report template
 METRICS_HEADER_BACKGROUND = "metrics_header_background"
@@ -314,6 +278,15 @@ MANAGE_CARBON_IMPACT_EXPRESSION_DESCRIPTION = (
 # Constant raster type identifiers
 YEARS_EXPERIENCE_ACTIVITY_ID = "years_experience_activity"
 NPV_METADATA_ID = "financial_npv"
+IMPACT_MATRIX_COLORS = {
+    -3: {"color": "#d7191c", "impact": "Strong Negative Impact"},
+    -2: {"color": "#f07c4a", "impact": "Moderate Negative Impact"},
+    -1: {"color": "#fec981", "impact": "Slight Negative Impact"},
+    0: {"color": "#ffffc0", "impact": "Neutral / No Measurable Impact"},
+    1: {"color": "#c4e687", "impact": "Slight Positive Impact"},
+    2: {"color": "#77c35c", "impact": "Moderate Positive Impact"},
+    3: {"color": "#1a9641", "impact": "Strong Positive Impact"},
+}
 
 # Online stored carbon config values
 STORED_CARBON_ID = "e7c3f70f-91a1-4cde-8c77-f09e93acf811"

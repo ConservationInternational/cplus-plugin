@@ -166,7 +166,7 @@ class ScenarioComparisonTableInfo(QtCore.QObject):
                     activity_area = self.NOT_AVAILABLE_STR
 
                 area_cell = QgsTableCell(activity_area)
-                area_cell.setHorizontalAlignment(QtCore.Qt.AlignHCenter)
+                area_cell.setHorizontalAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
                 if isinstance(activity_area, Number):
                     number_format = QgsBasicNumericFormat()
                     number_format.setThousandsSeparator(",")

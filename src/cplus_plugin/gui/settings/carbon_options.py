@@ -72,7 +72,9 @@ class NaturebaseCarbonImpactModel(QStandardItemModel):
         given display text.
         """
         item = QStandardItem(text)
-        item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+        item.setFlags(
+            QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled
+        )
 
         return item
 
@@ -87,7 +89,7 @@ class NaturebaseCarbonImpactModel(QStandardItemModel):
         """
         name_item = self._readonly_item(str(layer_name))
         carbon_item = self._readonly_item(str(carbon_impact))
-        carbon_item.setData(carbon_impact, QtCore.Qt.UserRole)
+        carbon_item.setData(carbon_impact, QtCore.Qt.ItemDataRole.UserRole)
 
         self.appendRow([name_item, carbon_item])
 
@@ -178,11 +180,13 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
         self.tv_naturebase_carbon_impact.setSortingEnabled(True)
 
         header = self.tv_naturebase_carbon_impact.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.Stretch)
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         header.setSectionsClickable(True)
         header.setSortIndicatorShown(True)
         self.load_carbon_impact()
-        self.tv_naturebase_carbon_impact.sortByColumn(0, QtCore.Qt.AscendingOrder)
+        self.tv_naturebase_carbon_impact.sortByColumn(
+            0, QtCore.Qt.SortOrder.AscendingOrder
+        )
 
         self.btn_reload_carbon_impact.setIcon(FileUtils.get_icon("mActionReload.svg"))
         self.btn_reload_carbon_impact.clicked.connect(

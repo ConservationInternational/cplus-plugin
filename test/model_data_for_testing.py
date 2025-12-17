@@ -14,6 +14,7 @@ from cplus_plugin.definitions.constants import (
     LAYER_TYPE_ATTRIBUTE,
     PATH_ATTRIBUTE,
     PATHWAY_TYPE_ATTRIBUTE,
+    PATHWAY_SUITABILITY_INDEX_ATTRIBUTE,
     PATHWAY_TYPE_OPTIONS_ATTRIBUTE,
     PRIORITY_LAYERS_SEGMENT,
     USER_DEFINED_ATTRIBUTE,
@@ -85,6 +86,7 @@ def get_valid_ncs_pathway() -> NcsPathway:
         True,
         pathway_type=NcsPathwayType.MANAGE,
         priority_layers=[],
+        suitability_index=1.0,
     )
 
 
@@ -375,6 +377,7 @@ NCS_PATHWAY_DICT = {
     PATHWAY_TYPE_ATTRIBUTE: 2,
     PATHWAY_TYPE_OPTIONS_ATTRIBUTE: {},
     PRIORITY_LAYERS_SEGMENT: [],
+    PATHWAY_SUITABILITY_INDEX_ATTRIBUTE: 1.0,
 }
 
 
@@ -480,12 +483,14 @@ def get_constant_raster_metadata() -> ConstantRasterMetadata:
     """Creates a ConstantRasterMetadata object for testing."""
     collection = get_constant_raster_collection()
 
-    return ConstantRasterMetadata(
+    metadata = ConstantRasterMetadata(
         id="test_metadata",
         display_name="Test Constant Raster",
         raster_collection=collection,
         serializer=None,
         deserializer=None,
         component_type=ModelComponentType.ACTIVITY,
-        input_range=InputRange(min=0.0, max=100.0),
     )
+    metadata.input_range = (0.0, 100.0)
+
+    return metadata

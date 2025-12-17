@@ -3,7 +3,7 @@
     Scenario item widget
 """
 
-from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout
+from qgis.PyQt.QtWidgets import QWidget, QLabel, QHBoxLayout
 
 
 class ScenarioItemWidget(QWidget):

@@ -200,9 +200,6 @@ class Settings(enum.Enum):
     SCENARIO_CRS = "scenario_crs"
     SCENARIO_IMPACT_MATRIX = "scenario_impact_matrix"
 
-    # Pathway suitability index value
-    PATHWAY_SUITABILITY_INDEX = "pathway_suitability_index"
-
     # NoData value
     NCS_NO_DATA_VALUE = "ncs_no_data_value"
 

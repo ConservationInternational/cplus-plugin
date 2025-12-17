@@ -142,7 +142,7 @@ class ActivityContainerWidget(QtWidgets.QWidget, WidgetUi):
         """
         self.activity_view.remove_ncs_pathway_items(ncs_pathway_uuid)
 
-    def show_message(self, message, level=Qgis.Warning):
+    def show_message(self, message, level=Qgis.MessageLevel.Warning):
         """Shows message if message bar has been specified.
 
         :param message: Text to display in the message bar.

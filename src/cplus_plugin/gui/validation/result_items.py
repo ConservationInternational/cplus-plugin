@@ -8,11 +8,11 @@ import typing
 from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from ...models.validation import RuleResult, ValidationCategory
-from ...utils import FileUtils
+from ...utils import FileUtils, tree_item_user_type
 
 
-RULE_RESULT_TYPE = QtWidgets.QTreeWidgetItem.UserType + 2
-DETAILED_RESULT_TYPE = QtWidgets.QTreeWidgetItem.UserType + 3
+RULE_RESULT_TYPE = tree_item_user_type() + 2
+DETAILED_RESULT_TYPE = tree_item_user_type() + 3
 
 
 class RuleResultItem(QtWidgets.QTreeWidgetItem):

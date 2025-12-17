@@ -28,12 +28,12 @@ from ..models.helpers import (
     ncs_pathway_to_dict,
 )
 
-from ..utils import FileUtils
+from ..utils import FileUtils, item_user_type
 
 
-NCS_PATHWAY_TYPE = QtGui.QStandardItem.UserType + 2
-ACTIVITY_TYPE = QtGui.QStandardItem.UserType + 3
-LAYER_ITEM_TYPE = QtGui.QStandardItem.UserType + 4
+NCS_PATHWAY_TYPE = item_user_type() + 2
+ACTIVITY_TYPE = item_user_type() + 3
+LAYER_ITEM_TYPE = item_user_type() + 4
 
 NCS_MIME_TYPE = "application/x-qabstractitemmodeldatalist"
 
@@ -972,7 +972,9 @@ class NcsPathwayItemModel(ComponentItemModel):
         """
         mime_data = QtCore.QMimeData()
         item_data = QtCore.QByteArray()
-        data_stream = QtCore.QDataStream(item_data, QtCore.QIODevice.WriteOnly)
+        data_stream = QtCore.QDataStream(
+            item_data, QtCore.QIODevice.OpenModeFlag.WriteOnly
+        )
 
         for idx in indexes:
             if not idx.isValid():
@@ -1327,7 +1329,7 @@ class ActivityItemModel(ComponentItemModel):
     def flags(self, index):
         flags = super().flags(index)
 
-        return QtCore.Qt.ItemIsDropEnabled | flags
+        return QtCore.Qt.ItemFlag.ItemIsDropEnabled | flags
 
     def dropMimeData(
         self,
@@ -1367,7 +1369,9 @@ class ActivityItemModel(ComponentItemModel):
             return False
 
         encoded_data = data.data(NCS_MIME_TYPE)
-        data_stream = QtCore.QDataStream(encoded_data, QtCore.QIODevice.ReadOnly)
+        data_stream = QtCore.QDataStream(
+            encoded_data, QtCore.QIODevice.OpenModeFlag.ReadOnly
+        )
 
         ncs_items = []
 

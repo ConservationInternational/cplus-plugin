@@ -221,7 +221,7 @@ def build(
     icon_path = copy_icon(output_directory)
     if icon_path is None:
         _log("Could not copy icon", context=context)
-    compile_resources(context, output_directory)
+    copy_resource_icons(context, output_directory)
     generate_metadata(context, output_directory)
     return output_directory
 
@@ -294,29 +294,42 @@ def copy_source_files(
 
 
 @app.command()
-def compile_resources(
+def copy_resource_icons(
     context: typer.Context,
     output_directory: typing.Optional[Path] = LOCAL_ROOT_DIR / "build/temp",
 ):
-    """Compiles plugin resources using the pyrcc package
+    """Copies resource icon files to the built plugin icons directory.
+
+    Qt6 compatibility: We no longer compile resources with pyrcc5.
+    Instead, icons are accessed directly from the filesystem.
 
     :param context: Application context
     :type context: typer.Context
 
-    :param output_directory: Output directory where the resources will be saved.
+    :param output_directory: Output directory where the icons will be saved.
     :type output_directory: Path
     """
-    resources_path = LOCAL_ROOT_DIR / "resources" / "resources.qrc"
-    target_path = output_directory / "resources.py"
-    target_path.parent.mkdir(parents=True, exist_ok=True)
+    resources_dir = LOCAL_ROOT_DIR / "resources"
+    target_icons_dir = output_directory / "icons"
+    target_icons_dir.mkdir(parents=True, exist_ok=True)
 
-    # Windows handling of paths for shlex.split function
-    if sys.platform == "win32":
-        target_path = target_path.as_posix()
-        resources_path = resources_path.as_posix()
+    # Icon files referenced in resources.qrc
+    icon_files = [
+        "icon.svg",
+        "cplus_left_arrow.svg",
+        "cplus_right_arrow.svg",
+        "cplus_double_right_arrows.svg",
+    ]
 
-    _log(f"compile_resources target_path: {target_path}", context=context)
-    subprocess.run(shlex.split(f"pyrcc5 -o {target_path} {resources_path}"))
+    _log(f"copy_resource_icons target_dir: {target_icons_dir}", context=context)
+    for icon_file in icon_files:
+        source = resources_dir / icon_file
+        if source.is_file():
+            target = target_icons_dir / icon_file
+            shutil.copy(source, target)
+            _log(f"  Copied {icon_file}", context=context)
+        else:
+            _log(f"  WARNING: {icon_file} not found", context=context)
 
 
 @app.command()

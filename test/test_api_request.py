@@ -246,9 +246,9 @@ class TestCplusApiRequest(unittest.TestCase):
             self.api_request._handle_response(url, mock_reply)
 
     @patch("qgis.PyQt.QtNetwork.QNetworkReply")
-    @patch("PyQt5.QtCore.QEventLoop.exec_")
+    @patch("qgis.PyQt.QtCore.QEventLoop.exec")
     def test_make_request(self, mock_event_loop, mock_reply):
-        mock_event_loop.exec_.side_effect = mocked_exec_loop
+        mock_event_loop.side_effect = mocked_exec_loop
         self.api_request._make_request(mock_reply)
         mock_event_loop.assert_called_once()
 

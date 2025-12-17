@@ -29,7 +29,7 @@ from ...models.base import ModelComponentType, ScenarioResult
 from ...utils import FileUtils, get_report_font, log, tr
 
 
-CPLUS_MAP_REPEAT_ITEM_TYPE = QgsLayoutItemRegistry.PluginItem + 2350
+CPLUS_MAP_REPEAT_ITEM_TYPE = QgsLayoutItemRegistry.ItemType.PluginItem + 2350
 
 
 class CplusMapRepeatItem(QgsLayoutItemShape):
@@ -153,7 +153,7 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
 
         normalized_scenario_name = self._result.scenario.name.lower().replace(" ", "_")
 
-        title_color = QtGui.QColor(QtCore.Qt.white)
+        title_color = QtGui.QColor(QtCore.Qt.GlobalColor.white)
         label_margin = 1.2
 
         # Scenario name
@@ -164,7 +164,7 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
         self._title_label.setBackgroundColor(QtGui.QColor(3, 109, 0))
         self._title_label.setBackgroundEnabled(True)
         self._title_label.setId(f"label_title_{normalized_scenario_name}")
-        self._title_label.setHAlign(QtCore.Qt.AlignHCenter)
+        self._title_label.setHAlign(QtCore.Qt.AlignmentFlag.AlignHCenter)
         self._title_label.setMargin(label_margin)
         self.set_label_font(self._title_label, 15, color=title_color)
         self.addItem(self._title_label)
@@ -310,7 +310,7 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
         root_children = root_group.children() if root_group is not None else []
 
         for child in root_children:
-            QgsLegendRenderer.setNodeLegendStyle(child, QgsLegendStyle.Hidden)
+            QgsLegendRenderer.setNodeLegendStyle(child, QgsLegendStyle.Style.Hidden)
 
         for tree_layer in model.rootGroup().findLayers():
             if tree_layer.name() == self._result.output_layer_name:
@@ -319,7 +319,7 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
                 scenario_child_nodes = model.layerLegendNodes(tree_layer)
                 activity_node_indices = []
                 for i, child_node in enumerate(scenario_child_nodes):
-                    node_name = str(child_node.data(QtCore.Qt.DisplayRole))
+                    node_name = str(child_node.data(QtCore.Qt.ItemDataRole.DisplayRole))
                     # Only show nodes for activity nodes used for the scenario
                     if node_name.lower() in activity_names:
                         activity_node_indices.append(i)
@@ -329,7 +329,7 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
                 )
 
                 # Remove the tree layer band title
-                QgsLegendRenderer.setNodeLegendStyle(tree_layer, QgsLegendStyle.Hidden)
+                QgsLegendRenderer.setNodeLegendStyle(tree_layer, QgsLegendStyle.Style.Hidden)
 
                 model.refreshLayerLegend(tree_layer)
             else:
@@ -344,14 +344,14 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
         font = get_report_font(item_font_size)
         version = Qgis.versionInt()
         if version < 33000:
-            self._legend.setStyleFont(QgsLegendStyle.SymbolLabel, font)
+            self._legend.setStyleFont(QgsLegendStyle.Style.SymbolLabel, font)
         else:
-            style = self._legend.style(QgsLegendStyle.SymbolLabel)
+            style = self._legend.style(QgsLegendStyle.Style.SymbolLabel)
             text_format = style.textFormat()
             text_format.setFont(font)
             text_format.setSize(item_font_size)
             style.setTextFormat(text_format)
-            self._legend.setStyle(QgsLegendStyle.SymbolLabel, style)
+            self._legend.setStyle(QgsLegendStyle.Style.SymbolLabel, style)
 
         # Refresh legend
         self._legend.adjustBoxSize()

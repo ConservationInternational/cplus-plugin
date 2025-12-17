@@ -15,24 +15,18 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 from qgis.PyQt.uic import loadUiType
 
 from ..conf import settings_manager, Settings
-from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
-from ..models.base import NcsPathway, PriorityLayerType, NcsPathwayType
+from ..definitions.defaults import (
+    ICON_PATH,
+    USER_DOCUMENTATION_SITE,
+    IMPACT_MATRIX_COLORS,
+)
+from ..models.base import NcsPathway, PriorityLayerType
 from ..utils import FileUtils, open_documentation, tr, log
 
 
 WidgetUi, _ = loadUiType(
     os.path.join(os.path.dirname(__file__), "../ui/ncs_pwl_impact_manager_dialog.ui")
 )
-
-IMPACT_MATRIX_COLORS = {
-    -3: {"color": "#d7191c", "impact": "Strong Negative Impact"},
-    -2: {"color": "#f07c4a", "impact": "Moderate Negative Impact"},
-    -1: {"color": "#fec981", "impact": "Slight Negative Impact"},
-    0: {"color": "#ffffc0", "impact": "Neutral / No Measurable Impact"},
-    1: {"color": "#c4e687", "impact": "Slight Positive Impact"},
-    2: {"color": "#77c35c", "impact": "Moderate Positive Impact"},
-    3: {"color": "#1a9641", "impact": "Strong Positive Impact"},
-}
 
 CARBON_IMPACT_MATRIX_COLORS = {
     -3: {"color": "#d7191c", "impact": "Low Carbon"},
@@ -52,7 +46,7 @@ class RotatedHeaderView(QtWidgets.QHeaderView):
         """
         Initialize the rotated header view.
 
-        :param orientation: The orientation of the header (Qt.Horizontal or Qt.Vertical).
+        :param orientation: The orientation of the header (Qt.Orientation.Horizontal or Qt.Orientation.Vertical).
         :param parent: The parent widget.
         """
         super().__init__(orientation, parent)
@@ -111,7 +105,12 @@ class VerticalLabel(QtWidgets.QLabel):
         painter.translate(0, self.height())
         painter.rotate(-90)
         painter.drawText(
-            0, 0, self.height(), self.width(), QtCore.Qt.AlignCenter, self.text()
+            0,
+            0,
+            self.height(),
+            self.width(),
+            QtCore.Qt.AlignmentFlag.AlignCenter,
+            self.text(),
         )
 
     def sizeHint(self):
@@ -203,13 +202,15 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
         help_icon = FileUtils.get_icon("mActionHelpContents_green.svg")
         self.btn_help.setIcon(help_icon)
 
-        btn_save = self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
+        btn_save = self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
         btn_save.setText(tr("Save"))
         btn_save.setAutoDefault(False)
         btn_save.setDefault(False)
         btn_save.clicked.connect(self._on_accepted)
 
-        btn_reset = self.buttonBox.button(QtWidgets.QDialogButtonBox.Reset)
+        btn_reset = self.buttonBox.button(
+            QtWidgets.QDialogButtonBox.StandardButton.Reset
+        )
         btn_reset.setText(tr("Reset Matrix"))
         btn_reset.setAutoDefault(False)
         btn_reset.setDefault(False)
@@ -233,7 +234,7 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
         label_ncs_pathways = VerticalLabel(self)
         label_ncs_pathways.setText(self.tr("NCS Pathways"))
         sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum
+            QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Minimum
         )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -244,7 +245,7 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
         font.setWeight(75)
         label_ncs_pathways.setFont(font)
         self.matrix_table_layout.addWidget(
-            label_ncs_pathways, 1, 0, 1, 1, QtCore.Qt.AlignCenter
+            label_ncs_pathways, 1, 0, 1, 1, QtCore.Qt.AlignmentFlag.AlignCenter
         )
 
         # Set up the matrix
@@ -295,7 +296,7 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
         # Use rotated headers for large matrices for better readability
         if num_pathways > 15:
             rotated_header = RotatedHeaderView(
-                QtCore.Qt.Horizontal, self.rel_impact_matrix
+                QtCore.Qt.Orientation.Horizontal, self.rel_impact_matrix
             )
             self.rel_impact_matrix.setHorizontalHeader(rotated_header)
 
@@ -306,7 +307,7 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
                 if pwl.get("is_carbon"):
                     line_edit.impact_matrix_colors = CARBON_IMPACT_MATRIX_COLORS
 
-                line_edit.setAlignment(QtCore.Qt.AlignHCenter)
+                line_edit.setAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
                 line_edit.setToolTip(
                     f"""
                     <p><b>Pathway:</b> {pathway.name}</p>
@@ -328,7 +329,7 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
         # Stretch horizontal header sections to fill available width
         for col in range(num_priority_layers):
             self.rel_impact_matrix.horizontalHeader().setSectionResizeMode(
-                col, QtWidgets.QHeaderView.Stretch
+                col, QtWidgets.QHeaderView.ResizeMode.Stretch
             )
 
         # Adjust row heights based on the number of pathways
@@ -336,7 +337,7 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
             if num_pathways <= self.RESIZE_NUM_ROWS:
                 # For small matrices, use a fixed minimum row height
                 self.rel_impact_matrix.verticalHeader().setSectionResizeMode(
-                    row, QtWidgets.QHeaderView.Fixed
+                    row, QtWidgets.QHeaderView.ResizeMode.Fixed
                 )
                 self.rel_impact_matrix.verticalHeader().resizeSection(
                     row, self.MINIMUM_ROW_HEIGHT
@@ -344,7 +345,7 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
             else:
                 # For larger matrices, stretch rows to fill the table
                 self.rel_impact_matrix.verticalHeader().setSectionResizeMode(
-                    row, QtWidgets.QHeaderView.Stretch
+                    row, QtWidgets.QHeaderView.ResizeMode.Stretch
                 )
 
     def restore_matrix_values(self) -> None:
@@ -482,10 +483,11 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
             self.tr(
                 "Are you sure you want to reset the matrix table? All changes will be lost."
             ),
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-            QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.StandardButton.Yes
+            | QtWidgets.QMessageBox.StandardButton.No,
+            QtWidgets.QMessageBox.StandardButton.No,
         )
-        if reply == QtWidgets.QMessageBox.Yes:
+        if reply == QtWidgets.QMessageBox.StandardButton.Yes:
             num_rows = self.rel_impact_matrix.rowCount()
             num_cols = self.rel_impact_matrix.columnCount()
             for row in range(num_rows):
@@ -513,7 +515,7 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
                 + ";}"
             )
             legend_text.setToolTip(f"Rating: {rating}, Impact {color['impact']}")
-            legend_text.setAlignment(QtCore.Qt.AlignHCenter)
+            legend_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
             legend_text.setMinimumWidth(130)
             legend_text.setMinimumHeight(30)
 
@@ -523,16 +525,22 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
             legend_text.setFont(font)
 
             sizePolicy = QtWidgets.QSizePolicy(
-                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum
+                QtWidgets.QSizePolicy.Policy.Expanding,
+                QtWidgets.QSizePolicy.Policy.Minimum,
             )
             sizePolicy.setHorizontalStretch(0)
             sizePolicy.setVerticalStretch(0)
             legend_text.setSizePolicy(sizePolicy)
 
-            self.gridLayoutLegend.addWidget(legend_text, 0, idx, QtCore.Qt.AlignCenter)
+            self.gridLayoutLegend.addWidget(
+                legend_text, 0, idx, QtCore.Qt.AlignmentFlag.AlignCenter
+            )
 
             self.gridLayoutLegend.addWidget(
-                QtWidgets.QLabel(color["impact"]), 1, idx, QtCore.Qt.AlignCenter
+                QtWidgets.QLabel(color["impact"]),
+                1,
+                idx,
+                QtCore.Qt.AlignmentFlag.AlignCenter,
             )
 
             idx += 1
@@ -556,7 +564,7 @@ class NcsPwlImpactManagerDialog(QtWidgets.QDialog, WidgetUi):
         )
         self.accept()
 
-    def show_message(self, message, level=Qgis.Info, duration: int = 0):
+    def show_message(self, message, level=Qgis.MessageLevel.Info, duration: int = 0):
         """Shows message on the main widget message bar.
 
         :param message: Text message
