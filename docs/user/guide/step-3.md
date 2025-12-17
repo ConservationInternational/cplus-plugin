@@ -250,13 +250,13 @@ Click on the ![File image](./img/mActionNewMap.svg) icon to open the Investabili
 
 ### Adding Custom Investability Variables
 
-Users have the ability to add a new investability variable besides NPV and user experience.
+Users have the ability to add a new investability variable besides NPV and years experience.
 
 1. Click the `Add New Investability Type` button.
 
 2. Provide a *Name* for your investabilty type.
 
-3. Define the *Normalizationn Range* values.
+3. Define the *Normalization Range* values.
 
 <br>
 
