@@ -271,71 +271,61 @@ Carbon layers use an impact weight range from –1 to +1, while non-carbon layer
 
 <br>
 
-## Create a new financial priority layer Net Present Value (NPV)
+## Create a Net Present Value (NPV)
 
-- Click on the ![File image](./img/mActionNewMap.svg) icon to add a new financial priority layer.
+The plugin supports adding additional investability factors, such as years of project experience, by allowing users to incorporate constant raster layers into their analysis.
 
-- This will open the Financial priority layer dialog. By default, on first-time load, the NPV configurations for all NCS pathways are disabled.
+Users can create or load constant raster layers representing custom variables. The plugin automatically normalizes these values, typically scaling them between 0 and 1 so they contribute consistently alongside other metrics.
 
-    <br>
+<br>
 
-    ![NPV dialog](./img/plugin-step3_5.png)
+### Opening the Manager
 
-    <br>
+Click on the ![File image](./img/mActionNewMap.svg) icon to open the Investability Variable Manager.
 
-- To enable the NPV for an NCS pathway, check the NPV Priority Weighting Layer group box.
+<br>
 
-    <br>
+![Investability Variable Manager Button](./img/plugin-step3_20.png)
 
-    ![NPV configuration enable](./img/plugin-step3_4.png)
+<br>
 
-    <br>
+### Adding a Net Present Value (NPV)
 
-- Enter the number of years and discount rate. Then, input the revenue and cost values for the respective years. The greyed out cells (i.e., Year and Discount Value) indicate that these values are automatically populated.
+1. From the *Investibility Type* dropdown select `Net Present Value`.
 
-- On updating the discount rate, revenue, and cost values, the total NPV is automatically updated.
+2. Select an *Activity* to open its coresponding configuration.
 
-- For an enabled NPV PWL, all revenue and cost values must be specified. Otherwise, an error message will appear in the message bar indicating which NCS pathway(s) and corresponding years have missing values. This occurs when the user tries to create or update the PWLs:
+<br>
 
-    <br>
+![Add NPV](./img/plugin-step3_21.png)
 
-    ![Error Message](./img/plugin-step3_6.png)
+<br>
 
-    <br>
+1. Enter the `Number of Years` and `Discount Rate`.
 
-- It is recommended to leave the `Use computed NPVs` checkbox enabled (the default option). This ensures that the minimum and maximum normalisation values can be synced and automatically updated when user input changes. The min/max values will be based on enabled NPV parameters for NCS pathways. Disabled NPV parameters (in the group box) will be excluded when computing the min/max normalisation values.
+2. Input the `Revenue` and `Cost` values for the respective years.
 
-    <br>
+<br>
 
-    ![Computed NPVs](./img/plugin-step3_7.png)
+![Add Variables](./img/plugin-step3_22.png)
 
-    <br>
+<br>
 
-- When the `Remove existing PWLs for disabled NCS pathway NPVs` checkbox is enabled, any previously created NPV PWLs will be deleted when updating the NPVs.
+### Adding Custom Investability Variables
 
-    <br>
+Users have the ability to add a new investability variable besides NPV and years experience.
 
-    ![Remove existing](./img/plugin-step3_8.png)
+1. Click the `Add New Investability Type` button.
 
-    <br>
+2. Provide a *Name* for your investabilty type.
 
-- Click on Update button to create the new financial priority layer. A dialog showing the progress of creating/updating the NPVs will be displayed.
+3. Define the *Normalization Range* values.
 
-    <br>
+<br>
 
-    ![Update button](./img/plugin-step3_9.png)
+![Add Variables](./img/plugin-step3_23.png)
 
-    <br>
-
-- Upon creating NPV PWL rasters, the corresponding PWLs will be created or updated in the list of PWLs. The naming convention for these layers will be `[NCS pathway name] NPV Norm`:
-
-    <br>
-
-    ![](./img/plugin-step3_10.png)
-
-    <br>
-
-- An NPV layer, which is a constant raster containing the normalised value, will be created under the `{BASE_DIR}/priority_layers/npv` directory. The extents are based on the user-defined extents from Step 1.
+<br>
 
 ## Setting groups values
 
