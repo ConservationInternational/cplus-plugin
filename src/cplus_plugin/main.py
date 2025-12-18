@@ -54,6 +54,7 @@ from .definitions.defaults import (
     PRIORITY_LAYERS,
     BASE_API_URL,
     REPORT_FONT_NAME,
+    STORED_CARBON_API_URL,
     YEARS_EXPERIENCE_ACTIVITY_ID,
 )
 from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
@@ -590,6 +591,12 @@ def initialize_api_url():
         settings_manager.set_value(
             Settings.IRRECOVERABLE_CARBON_ONLINE_STATUS_DESCRIPTION,
             tr("Download not started"),
+        )
+
+    # Default URL for downloading stored carbon
+    if not settings_manager.get_value(Settings.STORED_CARBON_ONLINE_SOURCE, None, str):
+        settings_manager.set_value(
+            Settings.STORED_CARBON_ONLINE_SOURCE, STORED_CARBON_API_URL
         )
 
 

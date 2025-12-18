@@ -19,14 +19,17 @@ from qgis.PyQt.QtGui import (
     QStandardItemModel,
 )
 
-from qgis.PyQt.QtWidgets import QButtonGroup, QHeaderView, QWidget
+from qgis.PyQt.QtWidgets import QButtonGroup, QFileDialog, QHeaderView, QWidget
 
 from ...api.base import ApiRequestStatus
 from ...api.carbon import (
     start_irrecoverable_carbon_download,
-    get_downloader_task,
+    start_stored_carbon_download,
+    get_irrecoverable_carbon_downloader_task,
 )
-from ...api.layer_tasks import calculate_zonal_stats_task
+from ...api.layer_tasks import (
+    calculate_zonal_stats_task,
+)
 
 from ...conf import (
     settings_manager,
@@ -44,6 +47,8 @@ from ...definitions.defaults import (
     CARBON_OPTIONS_TITLE,
     CARBON_SETTINGS_ICON_PATH,
     LAYER_NAME_HEADER,
+    STORED_CARBON_ID,
+    STORED_CARBON_NAME,
 )
 from ...models.base import DataSourceType
 from ...utils import FileUtils, tr
@@ -105,7 +110,7 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
         self.message_bar = QgsMessageBar(self)
         self.layout().insertWidget(0, self.message_bar)
 
-        tif_file_filter = tr("GeoTIFF (*.tif *.tiff *.TIF *.TIFF)")
+        self._tif_file_filter = tr("GeoTIFF (*.tif *.tiff *.TIF *.TIFF)")
 
         # Irrecoverable carbon
         self.gb_ic_reference_layer.toggled.connect(
@@ -126,7 +131,7 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
             QgsFileWidget.RelativeStorage.Absolute
         )
         self.fw_irrecoverable_carbon.setStorageMode(QgsFileWidget.StorageMode.GetFile)
-        self.fw_irrecoverable_carbon.setFilter(tif_file_filter)
+        self.fw_irrecoverable_carbon.setFilter(self._tif_file_filter)
 
         self.cbo_irrecoverable_carbon.layerChanged.connect(
             self._on_irrecoverable_carbon_layer_changed
@@ -142,7 +147,7 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
             QgsFileWidget.RelativeStorage.Absolute
         )
         self.fw_save_online_file.setStorageMode(QgsFileWidget.StorageMode.SaveFile)
-        self.fw_save_online_file.setFilter(tif_file_filter)
+        self.fw_save_online_file.setFilter(self._tif_file_filter)
 
         # self.lbl_url_tip.setPixmap(FileUtils.get_pixmap("info_green.svg"))
         # self.lbl_url_tip.setScaledContents(True)
@@ -158,10 +163,15 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
         self.fw_biomass.setDialogTitle(tr("Select Reference Layer"))
         self.fw_biomass.setRelativeStorage(QgsFileWidget.RelativeStorage.Absolute)
         self.fw_biomass.setStorageMode(QgsFileWidget.StorageMode.GetFile)
-        self.fw_biomass.setFilter(tif_file_filter)
+        self.fw_biomass.setFilter(self._tif_file_filter)
 
         self.cbo_biomass.layerChanged.connect(self._on_biomass_layer_changed)
         self.cbo_biomass.setFilters(qgis.core.QgsMapLayerProxyModel.Filter.RasterLayer)
+
+        self.btn_download_stored_carbon.setIcon(
+            FileUtils.get_icon("downloading_svg.svg")
+        )
+        self.btn_download_stored_carbon.clicked.connect(self._on_download_stored_carbon)
 
         # Naturebase carbon impact
         self.zonal_stats_task = None
@@ -178,6 +188,7 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
             0, QtCore.Qt.SortOrder.AscendingOrder
         )
 
+        self.btn_reload_carbon_impact.setIcon(FileUtils.get_icon("mActionReload.svg"))
         self.btn_reload_carbon_impact.clicked.connect(
             self._on_reload_naturebase_carbon_impact
         )
@@ -341,7 +352,9 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
         task in order to update the UI.
         """
         # Use the task to get real time updates on the download progress
-        self._irrecoverable_carbon_downloader = get_downloader_task()
+        self._irrecoverable_carbon_downloader = (
+            get_irrecoverable_carbon_downloader_task()
+        )
 
         if self._irrecoverable_carbon_downloader is None:
             return
@@ -495,6 +508,64 @@ class CarbonSettingsWidget(QgsOptionsPageWidget, Ui_CarbonSettingsWidget):
         """
         if layer is not None:
             self.fw_irrecoverable_carbon.setFilePath(layer.source())
+
+    def _on_download_stored_carbon(self, checked: bool):
+        """Slot raised to initiate download of the global stored carbon
+        dataset.
+        """
+
+        if not settings_manager.get_value(
+            Settings.STORED_CARBON_ONLINE_SOURCE, default=""
+        ):
+            self.message_bar.pushWarning(
+                self.tr("CPLUS Stored Carbon"),
+                self.tr("URL for downloading online data is not defined"),
+            )
+            return
+
+        default_dir = settings_manager.get_value(Settings.LAST_DATA_DIR)
+        if not default_dir:
+            default_dir = settings_manager.get_value(Settings.BASE_DIR)
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            self.tr("Specify Save Location of Stored Carbon"),
+            default_dir,
+            self._tif_file_filter,
+        )
+        if not file_path:
+            return
+
+        # Update last used directory
+        settings_manager.set_value(Settings.LAST_DATA_DIR, os.path.dirname(file_path))
+
+        self.fw_biomass.setFilePath(file_path)
+
+        # Initiate download
+        self.stored_carbon_download_task = start_stored_carbon_download(
+            local_path=file_path
+        )
+        self.stored_carbon_download_task.status_message_changed.connect(
+            self._on_stored_carbon_download_status_changed
+        )
+
+    def _on_stored_carbon_download_status_changed(self, status, description):
+        """Slot raised when the download status of stored carbon has changed."""
+        # Status map value: (download status icon name, enable/disable download button)
+        status_map = {
+            ApiRequestStatus.NOT_STARTED: ("mIndicatorTemporal.svg", True),
+            ApiRequestStatus.IN_PROGRESS: ("progress-indicator.svg", False),
+            ApiRequestStatus.COMPLETED: ("mIconSuccess.svg", True),
+            ApiRequestStatus.ERROR: ("mIconWarning.svg", True),
+            ApiRequestStatus.CANCELED: ("mTaskCancel.svg", True),
+        }
+
+        icon_file, enable_button = status_map.get(status, ("", True))
+        self.btn_download_stored_carbon.setEnabled(enable_button)
+        icon_path = FileUtils.get_icon_path(icon_file)
+
+        self.lbl_stored_carbon_icon.svg_path = icon_path
+        self.lbl_stored_carbon_description.setText(description)
 
     def _on_biomass_layer_changed(self, layer: qgis.core.QgsMapLayer):
         """Sets the file path of the currently selected biomass

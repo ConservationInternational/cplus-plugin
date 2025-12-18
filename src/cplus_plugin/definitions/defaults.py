@@ -201,6 +201,7 @@ DEFAULT_REPORT_LICENSE = (
 )
 BASE_API_URL = "https://stage.cplus.earth/api/v1"
 IRRECOVERABLE_CARBON_API_URL = f"{BASE_API_URL}/reference_layer/carbon_calculation/"
+STORED_CARBON_API_URL = f"{BASE_API_URL}/stored_carbon/download/"
 
 DEFAULT_BASE_COMPARISON_REPORT_NAME = "Scenario Comparison Report"
 MAXIMUM_COMPARISON_REPORTS = 10
@@ -286,3 +287,7 @@ IMPACT_MATRIX_COLORS = {
     2: {"color": "#77c35c", "impact": "Moderate Positive Impact"},
     3: {"color": "#1a9641", "impact": "Strong Positive Impact"},
 }
+
+# Online stored carbon config values
+STORED_CARBON_ID = "e7c3f70f-91a1-4cde-8c77-f09e93acf811"
+STORED_CARBON_NAME = "Biomass AGB BGB"

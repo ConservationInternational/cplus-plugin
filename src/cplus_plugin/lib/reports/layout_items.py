@@ -329,7 +329,9 @@ class BasicScenarioDetailsItem(QgsLayoutItemGroup):
                 )
 
                 # Remove the tree layer band title
-                QgsLegendRenderer.setNodeLegendStyle(tree_layer, QgsLegendStyle.Style.Hidden)
+                QgsLegendRenderer.setNodeLegendStyle(
+                    tree_layer, QgsLegendStyle.Style.Hidden
+                )
 
                 model.refreshLayerLegend(tree_layer)
             else:

@@ -143,12 +143,14 @@ class PieChartRenderer:
         # Create the figure
         fig = go.Figure(data=[pie_trace], layout=layout)
 
-        is_linux = platform.system() in ('Linux', 'Unix', 'Darwin')
+        is_linux = platform.system() in ("Linux", "Unix", "Darwin")
 
         if is_linux:
-            png_path = out_path.replace('.html', '.png')
+            png_path = out_path.replace(".html", ".png")
             try:
-                fig.write_image(png_path, width=preferred_width, height=preferred_height)
+                fig.write_image(
+                    png_path, width=preferred_width, height=preferred_height
+                )
                 html_content = f"""<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
@@ -156,11 +158,14 @@ class PieChartRenderer:
     <img src="{os.path.basename(png_path)}" alt="Pie Chart" style="max-width:100%;height:auto;">
 </body>
 </html>"""
-                with open(out_path, 'w', encoding='utf-8') as f:
+                with open(out_path, "w", encoding="utf-8") as f:
                     f.write(html_content)
                 return out_path
             except Exception as e:
-                log(f"Could not create PNG (kaleido needed?): {e}. Falling back to HTML.", info=False)
+                log(
+                    f"Could not create PNG (kaleido needed?): {e}. Falling back to HTML.",
+                    info=False,
+                )
 
         # Save the figure to as HTML
         fig.write_html(

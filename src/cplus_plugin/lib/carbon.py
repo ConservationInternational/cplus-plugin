@@ -20,6 +20,7 @@ from qgis.core import (
     QgsRasterIterator,
     QgsRasterLayer,
     QgsRectangle,
+    QgsVectorLayer,
 )
 from qgis import processing
 
@@ -31,7 +32,7 @@ from ..models.base import (
     NcsPathway,
     NcsPathwayType,
 )
-from ..utils import calculate_raster_area, log
+from ..utils import calculate_raster_area, log, transform_extent
 
 
 # For now, will set this manually but for future implementation, consider
@@ -157,24 +158,53 @@ def _get_intersecting_pixel_values(
         )
 
     # Get and validate scenario extent
-    scenario_extent = settings_manager.get_value(Settings.SCENARIO_EXTENT)
-    if scenario_extent is None:
-        log(f"{LOG_PREFIX} - Scenario extent not defined.", info=False)
-        return []
-
-    # Get and validate scenario CRS
-    reference_extent_crs_str = settings_manager.get_value(
-        Settings.SCENARIO_CRS, default=""
+    reference_extent = None
+    clip_to_studyarea = settings_manager.get_value(
+        Settings.CLIP_TO_STUDYAREA, default=False, setting_type=bool
     )
-    if not reference_extent_crs_str:
-        log(f"{LOG_PREFIX} - Scenario extent CRS not been defined.", info=False)
-        return []
+    if clip_to_studyarea:
+        # From vector layer
+        study_area_path = settings_manager.get_value(
+            Settings.STUDYAREA_PATH, default="", setting_type=str
+        )
+        if not study_area_path or not os.path.exists(study_area_path):
+            log("Path for determining layer extent is invalid.", info=False)
+            return []
 
-    # Transform extent to WGS84 if needed
-    reference_extent = _validate_and_transform_extent(
-        scenario_extent, reference_extent_crs_str
-    )
+        aoi_layer = QgsVectorLayer(study_area_path, "AOI Layer")
+        if not aoi_layer.isValid():
+            log("AOI layer is invalid.", info=False)
+            return []
+
+        source_crs = aoi_layer.crs()
+        if not source_crs:
+            log("CRS of AOI layer is undefined.", info=False)
+            return []
+
+        aoi_extent = aoi_layer.extent()
+        if not aoi_extent:
+            log("Extent of AOI layer is undefined.", info=False)
+            return []
+
+        # Reproject extent if required
+        destination_crs = QgsCoordinateReferenceSystem("EPSG:4326")
+        if source_crs != destination_crs:
+            reference_extent = transform_extent(aoi_extent, source_crs, destination_crs)
+    else:
+        # From explicit extent definition
+        settings_extent = settings_manager.get_value(
+            Settings.SCENARIO_EXTENT, default=None
+        )
+        if settings_extent and len(settings_extent) == 4:
+            reference_extent = QgsRectangle(
+                float(settings_extent[0]),
+                float(settings_extent[2]),
+                float(settings_extent[1]),
+                float(settings_extent[3]),
+            )
+
     if reference_extent is None:
+        log("Unable to determine the reference extent from settings.", info=False)
         return []
 
     # Check intersection
