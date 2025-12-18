@@ -776,7 +776,6 @@ class ScenarioAnalysisTask(QgsTask):
                     msg = f"""No defined activity pathways or
                      activity layers for the activity {activity.name}
                     """
-                    self.set_info_message(tr(msg), level=Qgis.MessageLevel.Critical)
                     self.log_message(msg)
                     return False
 
@@ -788,10 +787,7 @@ class ScenarioAnalysisTask(QgsTask):
                         pathways.append(pathway)
 
             if len(pathways) == 0:
-                self.set_info_message(
-                    tr("No Naturebase pathways found in any activity."),
-                    level=Qgis.MessageLevel.Critical,
-                )
+                self.log_message("No Naturebase pathways found in any activity.")
                 return False
 
             for pathway in pathways:
