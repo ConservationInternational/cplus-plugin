@@ -599,8 +599,22 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
 
         model.appendRow(group_item)
 
+        carbon_options = {}
+
         # Group options
         for option in options:
+            carbon_value = -1
+            impact = self._get_layer_carbon_info(option)
+            if impact:
+                carbon_value = impact.get(MEAN_VALUE_ATTRIBUTE, -1)
+            carbon_options[option] = carbon_value
+
+        sorted_carbon_list = sorted(
+            carbon_options.items(), key=lambda item: item[1], reverse=True
+        )
+        sorted_carbon_options = dict(sorted_carbon_list)
+
+        for option in sorted_carbon_options:
             impact = self._get_layer_carbon_info(option)
             label = f"  {option}"
             carbon_value = impact.get(MEAN_VALUE_ATTRIBUTE)
