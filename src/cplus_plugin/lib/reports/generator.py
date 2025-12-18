@@ -1987,16 +1987,11 @@ class ScenarioAnalysisReportGenerator(DuplicatableRepeatPageReportGenerator):
             row_cells.append(pathway_name_column)
             for c, pwl_id in enumerate(pwl_ids):
                 value = values[r][c]
-                color = "#ffffff"
                 if value is None:
-                    impact_value = tr("Not Defined")
+                    impact_value, color = tr("N/A"), "#ffffff"
                 else:
                     impact_value = str(value)
-                    if value in IMPACT_MATRIX_COLORS:
-                        info = IMPACT_MATRIX_COLORS[value]
-                        color = info.get("color", color)
-                        if "impact" in info:
-                            impact_value = f"{info['impact']} ({value})"
+                    color = IMPACT_MATRIX_COLORS.get(value, {}).get("color", "#ffffff")
 
                 cell = QgsTableCell(impact_value)
                 cell.setBackgroundColor(QtGui.QColor(color))
