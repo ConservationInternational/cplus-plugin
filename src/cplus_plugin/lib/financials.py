@@ -18,7 +18,9 @@ from qgis.core import (
 from qgis import processing
 
 from ..definitions.constants import NPV_PRIORITY_LAYERS_SEGMENT, PRIORITY_LAYERS_SEGMENT
+from ..definitions.defaults import NPV_METADATA_ID
 from ..conf import settings_manager, Settings
+from .constant_raster import constant_raster_registry
 from ..models.financial import ActivityNpvCollection
 from ..utils import clean_filename, FileUtils, log, tr
 
@@ -199,46 +201,35 @@ def create_npv_pwls(
 
 
 def calculate_activity_npv(activity_id: str, activity_area: float) -> float:
-    """Determines the total NPV of an activity by calculating
-    the individual NPV of the NCS pathways that constitute
-    the activity.
+    """Determines the NPV of an activity by multiplying the NPV
+    per ha by the area of the activity.
 
-    The NPV per hectare for an NCS pathway is determined based
-    on the value specified in the NPV PWL Manager.
+    The NPV per hectare of the activity is based on the value
+    specified in the constant raster manager.
 
     :param activity_id: The ID of the specific activity. The
     function will check whether the NPV rate had been defined
-    for pathways that constitute the activity.
+    for the activity.
     :type activity_id: str
 
     :param activity_area: The area of the activity in hectares.
     :type activity_area: float
 
-    :returns: Returns the total NPV of the activity, or -1.0
-    if the activity does not exist or if found, lacks pathways
-    or if the NPV rate for all pathways has not been specified.
+    :returns: Returns the NPV of the activity, or -1.0
+    if the activity does not exist or if found, does not have
+    its NPV per ha defined.
     :rtype: float
     """
     activity = settings_manager.get_activity(activity_id)
-    if activity is None or len(activity.pathways) == 0:
+    if not activity:
         return -1.0
 
-    npv_collection = settings_manager.get_npv_collection()
-    if npv_collection is None:
+    npv_collection = constant_raster_registry.collection_by_id(NPV_METADATA_ID)
+    if not npv_collection:
         return -1.0
 
-    pathway_npv_values = []
-    for pathway in activity.pathways:
-        pathway_npv = npv_collection.activity_npv(str(pathway.uuid))
-        if pathway_npv is None:
-            continue
-
-        if pathway_npv.params is None or pathway_npv.params.absolute_npv is None:
-            continue
-
-        pathway_npv_values.append(pathway_npv.params.absolute_npv)
-
-    if len(pathway_npv_values) == 0:
+    activity_npv = npv_collection.activity_npv(str(activity.uuid))
+    if not activity_npv or not activity_npv.params.absolute:
         return -1.0
 
-    return float(sum(pathway_npv_values) * activity_area)
+    return float(activity_npv.params.absolute * activity_area)

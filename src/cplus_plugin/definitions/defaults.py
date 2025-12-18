@@ -255,7 +255,7 @@ NATUREBASE_CARBON_IMPACT_EXPRESSION_DESCRIPTION = (
 
 PROTECT_CARBON_IMPACT_EXPRESSION_DESCRIPTION = (
     "Calculates the stored carbon (tons C) of "
-    "protect NCS pathways in an activity using the biomass "
+    "protect NCS pathways in an activity using the "
     "reference dataset. This dataset "
     "needs to be defined in the CPLUS settings for this "
     "expression to be evaluated.<br><b>NOTE: A value of -1.0 "
@@ -268,11 +268,19 @@ PROTECT_CARBON_IMPACT_EXPRESSION_DESCRIPTION = (
 MANAGE_CARBON_IMPACT_EXPRESSION_DESCRIPTION = (
     "Calculates the carbon impact (tons C) of "
     "manage NCS pathways in an activity using a custom "
-    "defined rate for each manage NCS pathway. This dataset "
-    "needs to be defined in the CPLUS settings for this "
-    "expression to be evaluated.<br><b>NOTE: A value of -1.0 "
+    "defined rate for each manage NCS pathway."
+    "<br><b>NOTE: A value of -1.0 "
     "will be returned if an error is encountered, or 0.0 if "
     "there are no manage NCS pathways in the activity.</b>"
+)
+
+RESTORE_CARBON_IMPACT_EXPRESSION_DESCRIPTION = (
+    "Calculates the carbon impact (tons C) of "
+    "restore NCS pathways in an activity using a custom "
+    "defined rate for each restore NCS pathway. "
+    "<br><b>NOTE: A value of -1.0 "
+    "will be returned if an error is encountered, or 0.0 if "
+    "there are no restore NCS pathways in the activity.</b>"
 )
 
 # Constant raster type identifiers

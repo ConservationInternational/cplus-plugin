@@ -1272,6 +1272,11 @@ def create_activity_npv(activity_npv_dict: dict) -> typing.Optional[ActivityNpv]
     npv_params = None
     if VALUE_INFO_ATTRIBUTE in activity_npv_dict:
         npv_params_dict = activity_npv_dict[VALUE_INFO_ATTRIBUTE]
+
+        # Create base constant raster info
+        constant_raster_info = create_constant_raster_info(npv_params_dict)
+        kwargs = asdict(constant_raster_info)
+
         if YEARS_ATTRIBUTE in npv_params_dict:
             kwargs[YEARS_ATTRIBUTE] = npv_params_dict[YEARS_ATTRIBUTE]
 
