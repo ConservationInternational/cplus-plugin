@@ -69,10 +69,20 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.cbo_default_layer_source.currentIndexChanged.connect(
             self._on_default_layer_source_selection_changed
         )
-        self.naturebase_list = []
         self.cplus_list = []
 
         pathways = settings_manager.get_default_layers("ncs_pathway")
+
+        self.cbo_default_layer.setModel(QtGui.QStandardItemModel())
+        self.cbo_naturebase_carbon_mng.setModel(QtGui.QStandardItemModel())
+
+        self.naturebase_pathway_type_groups = {
+            "Restore": [],
+            "Manage": [],
+            "Protect": [],
+            "General": [],
+        }
+
         self.cbo_default_layer.addItem("")
         # Populate the default layer combobox with available pathways
         for pathway in pathways:
@@ -80,7 +90,13 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             if source == LayerSource.CPLUS.value.lower():
                 self.cplus_list.append(pathway)
             elif source == LayerSource.NATUREBASE.value.lower():
-                self.naturebase_list.append(pathway)
+                pathway_type = NcsPathwayType.from_int(pathway.get("action"))
+                group_key = (
+                    pathway_type.name.capitalize()
+                    if pathway_type != NcsPathwayType.UNDEFINED
+                    else "General"
+                )
+                self.naturebase_pathway_type_groups[group_key].append(pathway["name"])
 
         items = sorted([p["name"] for p in self.cplus_list])
         self.cbo_default_layer.addItems(items)
@@ -108,18 +124,22 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.sb_management_carbon_impact_rst.setMaximum(MAX_CARBON_IMPACT_MANAGE)
 
         # Naturebase carbon impact reference
-        carbon_impact_info = settings_manager.get_nature_base_zonal_stats()
-        if carbon_impact_info:
+        self.carbon_impact_info = settings_manager.get_nature_base_zonal_stats()
+        if self.carbon_impact_info:
             self.cbo_naturebase_carbon_mng.addItem("")
             self.cbo_naturebase_carbon_rst.addItem("")
-            for impact in carbon_impact_info.result_collection:
-                layer_name = impact.get(LAYER_NAME_ATTRIBUTE)
-                mean_value = impact.get(MEAN_VALUE_ATTRIBUTE) or 0.0
 
-                if layer_name is not None:
-                    rounded_mean = round(mean_value, 8)
-                    self.cbo_naturebase_carbon_mng.addItem(layer_name, rounded_mean)
-                    self.cbo_naturebase_carbon_rst.addItem(layer_name, rounded_mean)
+            self.add_online_group(
+                "Manage",
+                self.naturebase_pathway_type_groups.get("Manage"),
+                self.cbo_naturebase_carbon_mng.model(),
+            )
+
+            self.add_online_group(
+                "Restore",
+                self.naturebase_pathway_type_groups.get("Restore"),
+                self.cbo_naturebase_carbon_rst.model(),
+            )
 
         self.cbo_naturebase_carbon_mng.currentIndexChanged.connect(
             self._on_naturebase_carbon_changed_manage
@@ -243,6 +263,19 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
                     self.cbo_default_layer.setCurrentIndex(i + 1)
                     break
 
+    def _get_layer_carbon_info(self, layer_name):
+        if self.carbon_impact_info is None:
+            return None
+
+        for impact in self.carbon_impact_info.result_collection:
+            if layer_name == impact.get(LAYER_NAME_ATTRIBUTE):
+                mean_value = impact.get(MEAN_VALUE_ATTRIBUTE) or 0.0
+                rounded_mean = round(mean_value, 8)
+                impact[MEAN_VALUE_ATTRIBUTE] = rounded_mean
+
+                return impact
+        return None
+
     def _on_data_source_changed(self, button_id: int, toggled: bool):
         """Slot raised when the data source type button group has
         been toggled.
@@ -274,9 +307,10 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         changed in the manage page. The corresponding value is populated
         in the spinbox.
         """
-        carbon_impact = self.cbo_naturebase_carbon_mng.itemData(index)
-        if not carbon_impact:
-            carbon_impact = 0.0
+        data = self.cbo_naturebase_carbon_mng.itemData(index)
+        carbon_impact = 0.0
+        if data:
+            carbon_impact = data.get(MEAN_VALUE_ATTRIBUTE)
 
         if not isinstance(carbon_impact, float):
             return
@@ -288,9 +322,10 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         changed in the restore page. The corresponding value is populated
         in the spinbox.
         """
-        carbon_impact = self.cbo_naturebase_carbon_rst.itemData(index)
-        if not carbon_impact:
-            carbon_impact = 0.0
+        data = self.cbo_naturebase_carbon_rst.itemData(index)
+        carbon_impact = 0.0
+        if data:
+            carbon_impact = data.get(MEAN_VALUE_ATTRIBUTE)
 
         if not isinstance(carbon_impact, float):
             return
@@ -461,11 +496,19 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         :return: layer dictionary
         :rtype: dict
         """
-        layer_name = self.cbo_default_layer.currentText()
-        if layer_name == "":
+
+        item = self.cbo_default_layer.model().item(
+            self.cbo_default_layer.currentIndex()
+        )
+        if not item or not item.isSelectable():
             return {}
+
+        data = item.data(QtCore.Qt.ItemDataRole.UserRole)
+        if not data:
+            return {}
+
         pathways = settings_manager.get_default_layers("ncs_pathway")
-        layer = [p for p in pathways if p["name"] == layer_name]
+        layer = [p for p in pathways if p["name"] == data.get(LAYER_NAME_ATTRIBUTE)]
         return layer[0] if layer else {}
 
     def open_help(self, activated: bool):
@@ -523,11 +566,54 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
 
     def _on_default_layer_source_selection_changed(self):
         """Event raised when online layer source selection is changed."""
+        self.cbo_default_layer.clear()
+        self.cbo_default_layer.addItem("")
+
         source = self.cbo_default_layer_source.currentText()
         if source.lower() == LayerSource.CPLUS.value.lower():
             items = sorted([p["name"] for p in self.cplus_list])
+            self.cbo_default_layer.addItems(items)
+
         elif source == LayerSource.NATUREBASE.value:
-            items = sorted([p["name"] for p in self.naturebase_list])
-        self.cbo_default_layer.clear()
-        self.cbo_default_layer.addItem("")
-        self.cbo_default_layer.addItems(items)
+            for group_name, options in self.naturebase_pathway_type_groups.items():
+                self.add_online_group(
+                    group_name, options, self.cbo_default_layer.model()
+                )
+
+    def add_online_group(self, group_name, options, model):
+        # Group header
+        group_item = QtGui.QStandardItem(group_name)
+        group_item.setEnabled(False)
+        group_item.setSelectable(False)
+        group_item.setData("group", QtCore.Qt.ItemDataRole.UserRole)
+        group_item.setForeground(QtCore.Qt.GlobalColor.darkGray)
+
+        model.appendRow(group_item)
+
+        carbon_options = {}
+        carbon_impacts = {}
+
+        # Group options
+        for option in options:
+            carbon_value = -1
+            impact = self._get_layer_carbon_info(option)
+            if impact:
+                carbon_value = impact.get(MEAN_VALUE_ATTRIBUTE, -1)
+            carbon_impacts[option] = impact
+            carbon_options[option] = carbon_value
+
+        sorted_carbon_list = sorted(
+            carbon_options.items(), key=lambda item: item[1], reverse=True
+        )
+        sorted_carbon_options = dict(sorted_carbon_list)
+
+        for option in sorted_carbon_options:
+            label = f"  {option}"
+
+            impact = carbon_impacts.get(option, {})
+            carbon_value = impact.get(MEAN_VALUE_ATTRIBUTE)
+            if carbon_value is not None:
+                label += f": {carbon_value} MtCO2e/yr"
+            item = QtGui.QStandardItem(label)
+            item.setData(impact, QtCore.Qt.ItemDataRole.UserRole)
+            model.appendRow(item)

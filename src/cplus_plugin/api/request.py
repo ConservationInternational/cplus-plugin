@@ -1154,6 +1154,7 @@ class CplusApiRequest:
                 "version": layer.get("version"),
                 "license": layer.get("license"),
                 "source": source,
+                "action": layer.get("action", -1),
             }
             if component_type in data:
                 data[component_type].append(out_layer)
