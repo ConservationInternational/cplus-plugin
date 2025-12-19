@@ -90,22 +90,13 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             if source == LayerSource.CPLUS.value.lower():
                 self.cplus_list.append(pathway)
             elif source == LayerSource.NATUREBASE.value.lower():
-                if pathway.get("action") == NcsPathwayType.MANAGE.value:
-                    self.naturebase_pathway_type_groups["Manage"].append(
-                        pathway["name"]
-                    )
-                elif pathway.get("action") == NcsPathwayType.RESTORE.value:
-                    self.naturebase_pathway_type_groups["Restore"].append(
-                        pathway["name"]
-                    )
-                elif pathway.get("action") == NcsPathwayType.PROTECT.value:
-                    self.naturebase_pathway_type_groups["Protect"].append(
-                        pathway["name"]
-                    )
-                else:
-                    self.naturebase_pathway_type_groups["General"].append(
-                        pathway["name"]
-                    )
+                pathway_type = NcsPathwayType.from_int(pathway.get("action"))
+                group_key = (
+                    pathway_type.name.capitalize()
+                    if pathway_type != NcsPathwayType.UNDEFINED
+                    else "General"
+                )
+                self.naturebase_pathway_type_groups[group_key].append(pathway["name"])
 
         items = sorted([p["name"] for p in self.cplus_list])
         self.cbo_default_layer.addItems(items)
