@@ -406,12 +406,44 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
             column_name = self._column_list_model.column_items[0].name
             self.remove_column(column_name)
 
+    def _add_metric_column(
+        self, defaults_columns: list, name: str, short_name: str, func_name: str
+    ):
+        """
+        Helper function to create and append a default MetricColumn
+        that is not auto-calculated and formatted as a number.
+
+        :param defaults_columns: The list to append the column to.
+        :type defaults_columns: list
+        :param name: Full display name of the metric.
+        :type name: str
+        :param short_name: Header to appear in the metrics
+        table in the report.
+        :type short_name: str
+        :param func_name: Function string to be used in the column.
+        :type func_name: str
+
+        :returns: Column that can be added to a metric collection.
+        :rtype: MetricColumn
+        """
+        column = MetricColumn.create_default_column(
+            tr(name),
+            tr(short_name),
+            f"{func_name}()",
+        )
+        column.auto_calculated = False
+        column.format_as_number = True
+        defaults_columns.append(column)
+
+        return column
+
     def initialize_collection(self):
         """Creates an initial profile collection. Use this if None is
         specified.
         """
-        # Add a default columns
+        # Default columns to be used in the 'Default' profile.
         defaults_columns = []
+
         # Area
         area_metric_column = MetricColumn.create_default_column(
             self.AREA_COLUMN, tr("Area (Ha)"), f"@{VAR_ACTIVITY_AREA}"
@@ -421,42 +453,33 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
         defaults_columns.append(area_metric_column)
 
         # Carbon protect
-        carbon_protect_column = MetricColumn.create_default_column(
+        self._add_metric_column(
+            defaults_columns,
             tr("Carbon Impact Protect"),
             tr("C.I. Protect"),
-            f"{FUNC_CARBON_IMPACT_PROTECT}()",
+            FUNC_CARBON_IMPACT_PROTECT,
         )
-        carbon_protect_column.auto_calculated = False
-        carbon_protect_column.format_as_number = True
-        defaults_columns.append(carbon_protect_column)
 
         # Carbon manage
-        carbon_manage_column = MetricColumn.create_default_column(
+        self._add_metric_column(
+            defaults_columns,
             tr("Carbon Impact Manage"),
             tr("C.I. Manage"),
-            f"{FUNC_CARBON_IMPACT_MANAGE}()",
+            FUNC_CARBON_IMPACT_MANAGE,
         )
-        carbon_manage_column.auto_calculated = False
-        carbon_manage_column.format_as_number = True
-        defaults_columns.append(carbon_manage_column)
 
         # Carbon restore
-        carbon_restore_column = MetricColumn.create_default_column(
+        self._add_metric_column(
+            defaults_columns,
             tr("Carbon Impact Restore"),
             tr("C.I. Restore"),
-            f"{FUNC_CARBON_IMPACT_RESTORE}()",
+            FUNC_CARBON_IMPACT_RESTORE,
         )
-        carbon_restore_column.auto_calculated = False
-        carbon_restore_column.format_as_number = True
-        defaults_columns.append(carbon_restore_column)
 
         # NPV
-        npv_column = MetricColumn.create_default_column(
-            tr("Net Present Value"), tr("NPV"), f"{FUNC_ACTIVITY_NPV}()"
+        self._add_metric_column(
+            defaults_columns, tr("Net Present Value"), tr("NPV"), FUNC_ACTIVITY_NPV
         )
-        npv_column.auto_calculated = False
-        npv_column.format_as_number = True
-        defaults_columns.append(npv_column)
 
         column_metrics = []
         for activity in self._activities:
