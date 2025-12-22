@@ -24,9 +24,10 @@ class NpvParameters(ConstantRasterInfo):
     manual_npv: bool = False
 
     def __post_init__(self):
-        """Set empty yearly rates for consistency."""
-        for i in range(self.years):
-            self.yearly_rates.append((None, None, None))
+        """Ensure yearly_rates has length equal to years."""
+        year_diff = self.years - len(self.yearly_rates)
+        if year_diff > 0:
+            self.yearly_rates.extend([(None, None, None)] * year_diff)
 
 
 @dataclasses.dataclass

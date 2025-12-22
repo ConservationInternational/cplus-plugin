@@ -22,7 +22,10 @@ from qgis.PyQt.uic import loadUiType
 from ..definitions.defaults import USER_DOCUMENTATION_SITE
 from ..lib.reports.metrics import (
     create_metrics_expression_context,
-    create_metrics_expression_scope,
+    FUNC_ACTIVITY_NPV,
+    FUNC_CARBON_IMPACT_MANAGE,
+    FUNC_CARBON_IMPACT_PROTECT,
+    FUNC_CARBON_IMPACT_RESTORE,
     MetricsExpressionContextGenerator,
     VAR_ACTIVITY_AREA,
 )
@@ -403,30 +406,96 @@ class ActivityMetricsBuilder(QtWidgets.QWizard, WidgetUi):
             column_name = self._column_list_model.column_items[0].name
             self.remove_column(column_name)
 
+    def _add_metric_column(
+        self, defaults_columns: list, name: str, short_name: str, func_name: str
+    ):
+        """
+        Helper function to create and append a default MetricColumn
+        that is not auto-calculated and formatted as a number.
+
+        :param defaults_columns: The list to append the column to.
+        :type defaults_columns: list
+        :param name: Full display name of the metric.
+        :type name: str
+        :param short_name: Header to appear in the metrics
+        table in the report.
+        :type short_name: str
+        :param func_name: Function string to be used in the column.
+        :type func_name: str
+
+        :returns: Column that can be added to a metric collection.
+        :rtype: MetricColumn
+        """
+        column = MetricColumn.create_default_column(
+            tr(name),
+            tr(short_name),
+            f"{func_name}()",
+        )
+        column.auto_calculated = False
+        column.format_as_number = True
+        defaults_columns.append(column)
+
+        return column
+
     def initialize_collection(self):
         """Creates an initial profile collection. Use this if None is
         specified.
         """
-        # Add a default area column
+        # Default columns to be used in the 'Default' profile.
+        defaults_columns = []
+
+        # Area
         area_metric_column = MetricColumn.create_default_column(
             self.AREA_COLUMN, tr("Area (Ha)"), f"@{VAR_ACTIVITY_AREA}"
         )
         area_metric_column.auto_calculated = True
         area_metric_column.format_as_number = True
+        defaults_columns.append(area_metric_column)
+
+        # Carbon protect
+        self._add_metric_column(
+            defaults_columns,
+            tr("Carbon Impact Protect"),
+            tr("C.I. Protect"),
+            FUNC_CARBON_IMPACT_PROTECT,
+        )
+
+        # Carbon manage
+        self._add_metric_column(
+            defaults_columns,
+            tr("Carbon Impact Manage"),
+            tr("C.I. Manage"),
+            FUNC_CARBON_IMPACT_MANAGE,
+        )
+
+        # Carbon restore
+        self._add_metric_column(
+            defaults_columns,
+            tr("Carbon Impact Restore"),
+            tr("C.I. Restore"),
+            FUNC_CARBON_IMPACT_RESTORE,
+        )
+
+        # NPV
+        self._add_metric_column(
+            defaults_columns, tr("Net Present Value"), tr("NPV"), FUNC_ACTIVITY_NPV
+        )
 
         column_metrics = []
         for activity in self._activities:
-            activity_column_metric = ActivityColumnMetric(
-                activity,
-                area_metric_column,
-                MetricType.COLUMN,
-                area_metric_column.expression,
-            )
-            column_metrics.append([activity_column_metric])
+            row_metrics = []
+            for metric_column in defaults_columns:
+                activity_column_metric = ActivityColumnMetric(
+                    activity,
+                    metric_column,
+                    MetricType.COLUMN,
+                    metric_column.expression,
+                )
+                row_metrics.append(activity_column_metric)
 
-        default_configuration = MetricConfiguration(
-            [area_metric_column], column_metrics
-        )
+            column_metrics.append(row_metrics)
+
+        default_configuration = MetricConfiguration(defaults_columns, column_metrics)
 
         # Create a default profile
         default_metric_profile = MetricConfigurationProfile(
