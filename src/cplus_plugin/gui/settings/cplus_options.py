@@ -1021,17 +1021,6 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.tbl_pwl_layers.sortByColumn(1, Qt.SortOrder.AscendingOrder)
         self.tbl_pwl_layers.setAlternatingRowColors(True)
         self.tbl_pwl_layers.setColumnHidden(0, True)  # Hide the column (ID)
-        # Set minimum height of the table to accommodate 10 rows or the number of rows, whichever is smaller
-        row_height = self.tbl_pwl_layers.verticalHeader().defaultSectionSize()
-        min_height = 10 * row_height
-        # self.tbl_pwl_layers.setMinimumHeight(min_height)
-        # Resize the parent container to avoid scrollbars
-        # self.pwl_layers_box.setMinimumHeight(
-        #     min_height
-        #     + self.tbl_pwl_layers.horizontalHeader().height()
-        #     + self.btn_add_mask.height()
-        #     + 20
-        # )
 
     def get_pwl_downloader_task(
         self,
