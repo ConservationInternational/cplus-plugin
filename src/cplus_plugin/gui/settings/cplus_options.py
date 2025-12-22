@@ -34,6 +34,7 @@ from qgis.PyQt.QtWidgets import (
     QWidget,
     QHeaderView,
     QFileDialog,
+    QTableView,
 )
 from qgis.PyQt import QtCore
 from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem
@@ -822,6 +823,42 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         self.initialize_default_layers_table()
         self.refresh_default_layers_table()
 
+        self._fix_groupbox_alignment()
+
+    def _fix_groupbox_alignment(self):
+        # Fix spacing of group boxes when collapsed.
+        scroll_layout = self.scroll_area_content.layout()
+
+        # Align every child/group box to the top and remove stretches
+        for i in range(scroll_layout.count()):
+            item = scroll_layout.itemAt(i)
+            w = item.widget() or item.layout()
+            if w:
+                scroll_layout.setAlignment(w, Qt.AlignTop)
+            scroll_layout.setStretch(i, 0)
+
+        # Keep all collapsible group boxes vertical policy as preferred
+        for b in (
+            self.gb_advanced,
+            self.mGroupBox,
+            self.snapping_group_box,
+            self.sieve_group_box,
+            self.mask_layers_box,
+            self.pwl_layers_box,
+            self.groupBox,
+        ):
+            policy = b.sizePolicy()
+            policy.setVerticalPolicy(policy.Preferred)
+            b.setSizePolicy(policy)
+
+        # Inside the PWL box, let the table row stretch (so it grows when expanded)
+        # 0 - toolbar row, 1- table row
+        self.gridLayout_pwls.setRowStretch(0, 0)
+        self.gridLayout_pwls.setRowStretch(1, 1)
+
+        # Add stretch for remaining space at the bottom
+        scroll_layout.addStretch(1)
+
     def show_message(self, message, level=qgis.core.Qgis.Info, duration: int = 0):
         """Shows message on the main widget message bar.
 
@@ -950,6 +987,9 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
 
     def initialize_default_layers_table(self):
         """Initialize the default layers table."""
+        # Disable table editing
+        self.tbl_pwl_layers.setEditTriggers(QTableView.NoEditTriggers)
+
         self.pwl_model = QStandardItemModel()
         headers = ["ID", "#", "Name", "Type", "Size", "CRS", "Version", "Created"]
 
@@ -984,14 +1024,14 @@ class CplusSettings(Ui_DlgSettings, QgsOptionsPageWidget):
         # Set minimum height of the table to accommodate 10 rows or the number of rows, whichever is smaller
         row_height = self.tbl_pwl_layers.verticalHeader().defaultSectionSize()
         min_height = 10 * row_height
-        self.tbl_pwl_layers.setMinimumHeight(min_height)
+        # self.tbl_pwl_layers.setMinimumHeight(min_height)
         # Resize the parent container to avoid scrollbars
-        self.pwl_layers_box.setMinimumHeight(
-            min_height
-            + self.tbl_pwl_layers.horizontalHeader().height()
-            + self.btn_add_mask.height()
-            + 20
-        )
+        # self.pwl_layers_box.setMinimumHeight(
+        #     min_height
+        #     + self.tbl_pwl_layers.horizontalHeader().height()
+        #     + self.btn_add_mask.height()
+        #     + 20
+        # )
 
     def get_pwl_downloader_task(
         self,

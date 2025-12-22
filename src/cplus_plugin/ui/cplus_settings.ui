@@ -40,11 +40,14 @@
         <height>773</height>
        </rect>
       </property>
-      <layout class="QVBoxLayout" name="verticalLayout_5">
+      <layout class="QVBoxLayout" name="verticalLayout_5" stretch="0,0,0,0,0,0">
        <item>
         <widget class="QgsCollapsibleGroupBox" name="gb_advanced">
          <property name="title">
           <string>General</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
          </property>
          <layout class="QGridLayout" name="gridLayout_2">
           <item row="2" column="1">
@@ -75,16 +78,19 @@
          <property name="title">
           <string>Scenario analysis</string>
          </property>
+         <property name="alignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+         </property>
          <property name="collapsed">
-          <bool>false</bool>
+          <bool>true</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout">
           <item row="0" column="0" colspan="2">
-            <widget class="QCheckBox" name="pixel_connectivity_enabled">
-               <property name="text">
-                <string>Enable Pixel Connectivity Analysis</string>
-               </property>
-            </widget>
+           <widget class="QCheckBox" name="pixel_connectivity_enabled">
+            <property name="text">
+             <string>Enable Pixel Connectivity Analysis</string>
+            </property>
+           </widget>
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="lbl_nodata_value">
@@ -181,6 +187,9 @@
          <property name="title">
           <string>Sieve </string>
          </property>
+         <property name="alignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+         </property>
          <property name="checkable">
           <bool>true</bool>
          </property>
@@ -237,6 +246,9 @@
         <widget class="QgsCollapsibleGroupBox" name="mask_layers_box">
          <property name="title">
           <string>Mask layers</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
          </property>
          <property name="collapsed">
           <bool>false</bool>
@@ -296,8 +308,17 @@
        </item>
        <item>
         <widget class="QgsCollapsibleGroupBox" name="pwl_layers_box">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="title">
           <string>Global priority weighted layers (PWLs)</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
          </property>
          <property name="collapsed">
           <bool>false</bool>
@@ -305,7 +326,7 @@
          <property name="saveCheckedState">
           <bool>false</bool>
          </property>
-         <layout class="QGridLayout" name="gridLayout_pwls">
+         <layout class="QGridLayout" name="gridLayout_pwls" rowstretch="0,1">
           <item row="0" column="3">
            <widget class="QToolButton" name="btn_edit_pwl">
             <property name="toolTip">
@@ -328,6 +349,12 @@
           </item>
           <item row="1" column="0" colspan="5">
            <widget class="QTableView" name="tbl_pwl_layers">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="toolTip">
              <string>Global priority weighted layers (PWLs)</string>
             </property>
@@ -394,6 +421,9 @@
          </property>
          <property name="title">
           <string>Trends.Earth login information</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
          </property>
          <property name="collapsed">
           <bool>false</bool>
@@ -502,19 +532,6 @@
           </item>
          </layout>
         </widget>
-       </item>
-       <item>
-        <spacer name="scroll_area_vspacer">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
        </item>
       </layout>
      </widget>
