@@ -611,9 +611,10 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             label = f"  {option}"
 
             impact = carbon_impacts.get(option, {})
-            carbon_value = impact.get(MEAN_VALUE_ATTRIBUTE)
-            if carbon_value is not None:
-                label += f": {carbon_value} MtCO2e/yr"
-            item = QtGui.QStandardItem(label)
-            item.setData(impact, QtCore.Qt.ItemDataRole.UserRole)
-            model.appendRow(item)
+            if impact:
+                carbon_value = impact.get(MEAN_VALUE_ATTRIBUTE)
+                if carbon_value is not None:
+                    label += f": {carbon_value} MtCO2e/yr"
+                item = QtGui.QStandardItem(label)
+                item.setData(impact, QtCore.Qt.ItemDataRole.UserRole)
+                model.appendRow(item)
