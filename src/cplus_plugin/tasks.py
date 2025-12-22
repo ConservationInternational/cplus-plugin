@@ -247,183 +247,193 @@ class ScenarioAnalysisTask(QgsTask):
 
     def run(self):
         """Runs the main scenario analysis task operations"""
+        try:
+            self.scenario_directory = self.get_scenario_directory()
 
-        self.scenario_directory = self.get_scenario_directory()
+            FileUtils.create_new_dir(self.scenario_directory)
 
-        FileUtils.create_new_dir(self.scenario_directory)
+            selected_pathway = None
+            pathway_found = False
 
-        selected_pathway = None
-        pathway_found = False
-
-        for activity in self.analysis_activities:
-            if pathway_found:
-                break
-            for pathway in activity.pathways:
-                if pathway is not None:
-                    pathway_found = True
-                    selected_pathway = pathway
+            for activity in self.analysis_activities:
+                if pathway_found:
                     break
+                for pathway in activity.pathways:
+                    if pathway is not None:
+                        pathway_found = True
+                        selected_pathway = pathway
+                        break
 
-        target_layer = QgsRasterLayer(selected_pathway.path, selected_pathway.name)
+            target_layer = QgsRasterLayer(selected_pathway.path, selected_pathway.name)
 
-        self.analysis_crs = self.analysis_extent.crs
+            self.analysis_crs = self.analysis_extent.crs
 
-        if self.analysis_crs is not None:
-            # Use the CRS of the analysis if it is provided
-            dest_crs = QgsCoordinateReferenceSystem(self.analysis_crs)
-        else:
-            # Use the CRS of the target layer if it exists
-            # or use EPSG:4326 as a default CRS
-            dest_crs = (
-                target_layer.crs()
-                if selected_pathway and selected_pathway.path
-                else QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
+            if self.analysis_crs is not None:
+                # Use the CRS of the analysis if it is provided
+                dest_crs = QgsCoordinateReferenceSystem(self.analysis_crs)
+            else:
+                # Use the CRS of the target layer if it exists
+                # or use EPSG:4326 as a default CRS
+                dest_crs = (
+                    target_layer.crs()
+                    if selected_pathway and selected_pathway.path
+                    else QgsCoordinateReferenceSystem.fromEpsgId(DEFAULT_CRS_ID)
+                )
+
+            processing_extent = QgsRectangle(
+                float(self.analysis_extent.bbox[0]),
+                float(self.analysis_extent.bbox[2]),
+                float(self.analysis_extent.bbox[1]),
+                float(self.analysis_extent.bbox[3]),
             )
 
-        processing_extent = QgsRectangle(
-            float(self.analysis_extent.bbox[0]),
-            float(self.analysis_extent.bbox[2]),
-            float(self.analysis_extent.bbox[1]),
-            float(self.analysis_extent.bbox[3]),
-        )
+            snapped_extent = self.align_extent(target_layer, processing_extent)
 
-        snapped_extent = self.align_extent(target_layer, processing_extent)
+            extent_string = (
+                f"{snapped_extent.xMinimum()},{snapped_extent.xMaximum()},"
+                f"{snapped_extent.yMinimum()},{snapped_extent.yMaximum()}"
+                f" [{dest_crs.authid()}]"
+            )
 
-        extent_string = (
-            f"{snapped_extent.xMinimum()},{snapped_extent.xMaximum()},"
-            f"{snapped_extent.yMinimum()},{snapped_extent.yMaximum()}"
-            f" [{dest_crs.authid()}]"
-        )
+            self.log_message(
+                "Original area of interest extent: "
+                f"{processing_extent.asWktPolygon()} \n"
+            )
+            self.log_message(
+                "Snapped area of interest extent " f"{snapped_extent.asWktPolygon()} \n"
+            )
+            # Run pathways layers snapping using a specified reference layer
+            snapping_enabled = self.get_settings_value(
+                Settings.SNAPPING_ENABLED, default=False, setting_type=bool
+            )
+            reference_layer = self.get_reference_layer()
+            if snapping_enabled and reference_layer:
+                self.snap_analysis_data(
+                    self.analysis_activities,
+                    extent_string,
+                )
 
-        self.log_message(
-            "Original area of interest extent: "
-            f"{processing_extent.asWktPolygon()} \n"
-        )
-        self.log_message(
-            "Snapped area of interest extent " f"{snapped_extent.asWktPolygon()} \n"
-        )
-        # Run pathways layers snapping using a specified reference layer
-        snapping_enabled = self.get_settings_value(
-            Settings.SNAPPING_ENABLED, default=False, setting_type=bool
-        )
-        reference_layer = self.get_reference_layer()
-        if snapping_enabled and reference_layer:
-            self.snap_analysis_data(
+            # Clip to StudyArea
+            if self.clip_to_studyarea and os.path.exists(self.studyarea_path):
+                # Reproject the study area to the EPSG:4326
+                # The validate_vector_layer is successful when the layer is in EPSG:4326
+                studyarea_path = self.reproject_layer(
+                    input_path=self.studyarea_path,
+                    target_crs=QgsCoordinateReferenceSystem("EPSG:4326"),
+                    is_raster=False,
+                )
+
+                # Validate layer geometries
+                validated_path = self.validate_vector_layer(studyarea_path)
+                if not validated_path:
+                    self.log_message(f"Invalid studyarea layer: {studyarea_path} ")
+                else:
+                    self.studyarea_path = validated_path
+                self.clip_analysis_data(self.studyarea_path)
+
+            # Reproject the pathways and priority layers to the
+            # scenario CRS if it is not the same as the pathways CRS
+
+            if self.analysis_crs is not None:
+                self.reproject_pathways(
+                    target_extent=extent_string,
+                    target_crs=QgsCoordinateReferenceSystem(self.analysis_crs),
+                )
+
+            # Replace no data value for the pathways and priority layers
+            nodata_value = float(
+                self.get_settings_value(
+                    Settings.NCS_NO_DATA_VALUE,
+                    default=NO_DATA_VALUE,
+                    setting_type=float,
+                )
+            )
+            self.log_message(
+                f"Replacing nodata value for the pathways and priority layers to {nodata_value}"
+            )
+            self.run_pathways_replace_nodata(nodata_value=nodata_value)
+
+            # Calculate total carbon mitigation values for the Naturebase pathways
+            self.run_pathways_carbon_summation()
+
+            # Weight the pathways using the pathway suitability index
+            # and priority group coefficients for the PWLs
+            save_output = self.get_settings_value(
+                Settings.NCS_WEIGHTED, default=True, setting_type=bool
+            )
+            self.run_pathways_weighting(
+                self.analysis_activities,
+                self.analysis_priority_layers_groups,
+                extent_string,
+                temporary_output=not save_output,
+            )
+
+            # Creating activities from the weighted pathways
+            save_output = self.get_settings_value(
+                Settings.LANDUSE_PROJECT, default=True, setting_type=bool
+            )
+            self.run_activities_analysis(
+                self.analysis_activities,
+                extent_string,
+                temporary_output=not save_output,
+            )
+
+            # Normalize the activities.
+            # This is useful when weighting pathways with relative impact matrix
+            # Activities created in previous step may have values greater than 1
+            self.run_activity_normalization()
+
+            # Run masking of the activities layers
+            masking_layers = self.get_masking_layers()
+            if masking_layers:
+                self.run_activities_masking(
+                    self.analysis_activities,
+                    masking_layers,
+                    extent_string,
+                )
+
+            # Run internal masking of the activities layers
+            self.run_internal_activities_masking(
                 self.analysis_activities,
                 extent_string,
             )
 
-        # Clip to StudyArea
-        if self.clip_to_studyarea and os.path.exists(self.studyarea_path):
-            # Reproject the study area to the EPSG:4326
-            # The validate_vector_layer is successful when the layer is in EPSG:4326
-            studyarea_path = self.reproject_layer(
-                studyarea_path,
-                target_crs=QgsCoordinateReferenceSystem("EPSG:4326"),
-                is_raster=False,
+            # Run sieve if enabled
+            sieve_enabled = self.get_settings_value(
+                Settings.SIEVE_ENABLED, default=False, setting_type=bool
+            )
+            if sieve_enabled:
+                self.run_activities_sieve(
+                    self.analysis_activities,
+                )
+
+            # After creating activities, we normalize them using the
+            # suitability index
+            save_output = self.get_settings_value(
+                Settings.LANDUSE_NORMALIZED, default=True, setting_type=bool
             )
 
-            # Validate layer geometries
-            validated_path = self.validate_vector_layer(studyarea_path)
-            if not validated_path:
-                self.log_message(f"Invalid studyarea layer: {studyarea_path} ")
-            self.clip_analysis_data(self.studyarea_path)
-
-        # Reproject the pathways and priority layers to the
-        # scenario CRS if it is not the same as the pathways CRS
-
-        if self.analysis_crs is not None:
-            self.reproject_pathways(
-                target_extent=extent_string,
-                target_crs=QgsCoordinateReferenceSystem(self.analysis_crs),
-            )
-
-        # Replace no data value for the pathways and priority layers
-        nodata_value = float(
-            self.get_settings_value(
-                Settings.NCS_NO_DATA_VALUE, default=NO_DATA_VALUE, setting_type=float
-            )
-        )
-        self.log_message(
-            f"Replacing nodata value for the pathways and priority layers to {nodata_value}"
-        )
-        self.run_pathways_replace_nodata(nodata_value=nodata_value)
-
-        # Calculate total carbon mitigation values for the Naturebase pathways
-        self.run_pathways_carbon_summation()
-
-        # Weight the pathways using the pathway suitability index
-        # and priority group coefficients for the PWLs
-        save_output = self.get_settings_value(
-            Settings.NCS_WEIGHTED, default=True, setting_type=bool
-        )
-        self.run_pathways_weighting(
-            self.analysis_activities,
-            self.analysis_priority_layers_groups,
-            extent_string,
-            temporary_output=not save_output,
-        )
-
-        # Creating activities from the weighted pathways
-        save_output = self.get_settings_value(
-            Settings.LANDUSE_PROJECT, default=True, setting_type=bool
-        )
-        self.run_activities_analysis(
-            self.analysis_activities,
-            extent_string,
-            temporary_output=not save_output,
-        )
-
-        # Normalize the activities.
-        # This is useful when weighting pathways with relative impact matrix
-        # Activities created in previous step may have values greater than 1
-        self.run_activity_normalization()
-
-        # Run masking of the activities layers
-        masking_layers = self.get_masking_layers()
-        if masking_layers:
-            self.run_activities_masking(
+            # Clean up activities
+            self.run_activities_cleaning(
                 self.analysis_activities,
-                masking_layers,
                 extent_string,
+                temporary_output=not save_output,
             )
 
-        # Run internal masking of the activities layers
-        self.run_internal_activities_masking(
-            self.analysis_activities,
-            extent_string,
-        )
+            # Investability analysis
+            self.run_investability_analysis()
 
-        # Run sieve if enabled
-        sieve_enabled = self.get_settings_value(
-            Settings.SIEVE_ENABLED, default=False, setting_type=bool
-        )
-        if sieve_enabled:
-            self.run_activities_sieve(
-                self.analysis_activities,
+            # The highest position tool analysis
+            save_output = self.get_settings_value(
+                Settings.HIGHEST_POSITION, default=True, setting_type=bool
             )
+            self.run_highest_position_analysis(temporary_output=not save_output)
 
-        # After creating activities, we normalize them using the
-        # suitability index
-        save_output = self.get_settings_value(
-            Settings.LANDUSE_NORMALIZED, default=True, setting_type=bool
-        )
-
-        # Clean up activities
-        self.run_activities_cleaning(
-            self.analysis_activities, extent_string, temporary_output=not save_output
-        )
-
-        # Investability analysis
-        self.run_investability_analysis()
-
-        # The highest position tool analysis
-        save_output = self.get_settings_value(
-            Settings.HIGHEST_POSITION, default=True, setting_type=bool
-        )
-        self.run_highest_position_analysis(temporary_output=not save_output)
-
-        return True
+            return True
+        except Exception as e:
+            self.log_message(f"Analysis failed with error {e}")
+            self.log_message(traceback.format_exc())
+            return False
 
     def finished(self, result: bool):
         """Calls the handler responsible for doing post analysis workflow.
@@ -1428,45 +1438,54 @@ class ScenarioAnalysisTask(QgsTask):
         :returns: Path to the reprojected layer
         :rtype: str
         """
+        if self.processing_cancelled:
+            return False
+
         if not os.path.exists(input_path):
             self.log_message(
                 f"Input layer {input_path} does not exist, "
                 f"skipping the layer reprojection."
             )
             return None
+        try:
+            if output_directory is None:
+                output_directory = Path(input_path).parent
 
-        output_file = "TEMPORARY_OUTPUT"
-        if output_directory:
             ext = "tif" if is_raster else "shp"
             output_file = os.path.join(
                 output_directory,
                 f"{Path(input_path).stem}_{str(self.scenario.uuid)[:4]}.{ext}",
             )
 
-        alg_params = {
-            "INPUT": input_path,
-            "TARGET_CRS": target_crs,
-            "OUTPUT": output_file,
-        }
+            alg_params = {
+                "INPUT": input_path,
+                "TARGET_CRS": target_crs,
+                "OUTPUT": output_file,
+            }
 
-        if target_extent is not None and target_extent != "":
-            alg_params["TARGET_EXTENT"] = target_extent
+            if target_extent is not None and target_extent != "":
+                alg_params["TARGET_EXTENT"] = target_extent
 
-        self.log_message(f"Used parameters for layer reprojection: " f"{alg_params} \n")
+            self.log_message(
+                f"Used parameters for layer reprojection: " f"{alg_params} \n"
+            )
 
-        self.feedback = QgsProcessingFeedback()
-        self.feedback.progressChanged.connect(self.update_progress)
+            self.feedback = QgsProcessingFeedback()
+            self.feedback.progressChanged.connect(self.update_progress)
 
-        if self.processing_cancelled:
+            if self.processing_cancelled:
+                return None
+
+            results = processing.run(
+                "gdal:warpreproject" if is_raster else "native:reprojectlayer",
+                alg_params,
+                context=self.processing_context,
+                feedback=self.feedback,
+            )
+            return results["OUTPUT"]
+        except Exception as e:
+            self.log_message(f"Problem reprojecting layer, {e} \n")
             return None
-
-        results = processing.run(
-            "gdal:warpreproject" if is_raster else "native:reprojectlayer",
-            alg_params,
-            context=self.processing_context,
-            feedback=self.feedback,
-        )
-        return results["OUTPUT"]
 
     def reproject_pathways(
         self,
