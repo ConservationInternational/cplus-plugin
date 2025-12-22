@@ -431,6 +431,7 @@ class ScenarioAnalysisTask(QgsTask):
 
             return True
         except Exception as e:
+            self.log_message(f"Analysis failed with error {e}")
             self.log_message(traceback.format_exc())
             return False
 
