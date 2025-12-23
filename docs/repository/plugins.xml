@@ -6,10 +6,10 @@
                 <version>v1.1.25</version>
                 <qgis_minimum_version>3.22</qgis_minimum_version>
                 <homepage><![CDATA[https://github.com/ConservationInternational/cplus-plugin]]></homepage>
-                <file_name>cplus_plugin.1.1.24.zip</file_name>
+                <file_name>cplus_plugin.1.1.25.zip</file_name>
                 <icon>icon.svg</icon>
                 <author_name><![CDATA[Kartoza]]></author_name>
-                <download_url>https://github.com/ConservationInternational/cplus-plugin/releases/download/v1.1.25/cplus_plugin.1.1.24.zip</download_url>
+                <download_url>https://github.com/ConservationInternational/cplus-plugin/releases/download/v1.1.25/cplus_plugin.1.1.25.zip</download_url>
                 <update_date>2025-12-23 13:42:27</update_date>
                 <experimental>False</experimental>
                 <deprecated>False</deprecated>
