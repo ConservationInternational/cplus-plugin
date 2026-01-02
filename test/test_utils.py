@@ -1,7 +1,5 @@
 # coding=utf-8
-"""Tests for the CPLUS plugin utilities.
-
-"""
+"""Tests for the CPLUS plugin utilities."""
 import os
 import unittest
 import uuid

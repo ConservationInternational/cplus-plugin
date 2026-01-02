@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    Scenario item widget
+Scenario item widget
 """
 
 from qgis.PyQt.QtWidgets import QWidget, QLabel, QHBoxLayout

@@ -382,9 +382,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             ):
                 for group in priority_layer.get("groups", []):
                     if int(group.get("value", 0)) > 0:
-                        items_to_check[
-                            priority_layer.get("path", "")
-                        ] = "priority_layer"
+                        items_to_check[priority_layer.get("path", "")] = (
+                            "priority_layer"
+                        )
                         break
 
         if sieve_enabled:
@@ -653,9 +653,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
                     "absolute": component.value_info.absolute,
                     "normalized": component.value_info.normalized,
                     "path": "",
-                    "skip_raster": component.skip_raster
-                    if os.path.exists(component.path)
-                    else True,
+                    "skip_raster": (
+                        component.skip_raster
+                        if os.path.exists(component.path)
+                        else True
+                    ),
                 }
 
                 if not component.skip_raster and component.path:

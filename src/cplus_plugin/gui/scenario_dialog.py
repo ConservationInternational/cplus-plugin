@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    Scenario dialog
+Scenario dialog
 """
 
 import os

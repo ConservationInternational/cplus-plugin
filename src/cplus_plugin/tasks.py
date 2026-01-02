@@ -1,6 +1,6 @@
 # coding=utf-8
 """
- Plugin tasks related to the scenario analysis
+Plugin tasks related to the scenario analysis
 
 """
 import datetime
@@ -3190,9 +3190,11 @@ class ScenarioAnalysisTask(QgsTask):
                         "absolute": component.value_info.absolute,
                         "normalized": component.value_info.normalized,
                         "path": component.path,
-                        "skip_raster": component.skip_raster
-                        if os.path.exists(component.path)
-                        else True,
+                        "skip_raster": (
+                            component.skip_raster
+                            if os.path.exists(component.path)
+                            else True
+                        ),
                     }
                     for component in constant_raster_components
                 ]
@@ -3409,9 +3411,9 @@ class ScenarioAnalysisTask(QgsTask):
                 "INPUT_RASTERS": sources,
                 "EXTENT": extent_string,
                 "OUTPUT_NODATA_VALUE": self.no_data_value,
-                "REFERENCE_LAYER": list(layers.values())[0]
-                if len(layers) >= 1
-                else None,
+                "REFERENCE_LAYER": (
+                    list(layers.values())[0] if len(layers) >= 1 else None
+                ),
                 "OUTPUT": output_file,
             }
 

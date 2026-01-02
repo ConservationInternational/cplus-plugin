@@ -332,9 +332,9 @@ class ConstantRasterMetadata:
     raster_collection: typing.Optional[ConstantRasterCollection] = None
     serializer: typing.Optional[typing.Callable] = None
     deserializer: typing.Optional[typing.Callable] = None
-    component_type: typing.Optional[
-        "ModelComponentType"
-    ] = None  # Type this metadata applies to
+    component_type: typing.Optional["ModelComponentType"] = (
+        None  # Type this metadata applies to
+    )
     user_defined: bool = False  # True for custom types, False for built-ins
 
     @property

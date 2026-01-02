@@ -240,9 +240,9 @@ class LayoutVariableRegister:
         cultural_considerations_var_info = NoneValueSettingsVariableInfo(
             "cultural_considerations", Settings.REPORT_CULTURE_CONSIDERATIONS
         )
-        self._var_infos[
-            cultural_considerations_var_info.name
-        ] = cultural_considerations_var_info
+        self._var_infos[cultural_considerations_var_info.name] = (
+            cultural_considerations_var_info
+        )
 
         # Setting - report cultural policies
         cultural_policies_var_info = NoneValueSettingsVariableInfo(

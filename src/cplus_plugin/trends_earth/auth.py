@@ -10,6 +10,7 @@
         email                : trends.earth@conservation.org
  ***************************************************************************/
 """
+
 import dataclasses
 
 from qgis.PyQt import QtCore

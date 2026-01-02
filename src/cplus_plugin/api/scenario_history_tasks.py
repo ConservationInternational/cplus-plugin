@@ -1,6 +1,6 @@
 # coding=utf-8
 """
- Plugin tasks related to the scenario history
+Plugin tasks related to the scenario history
 
 """
 import datetime
