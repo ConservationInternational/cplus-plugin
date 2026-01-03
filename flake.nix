@@ -25,6 +25,34 @@
           postgres = postgresWithPostGIS;
         });
 
+      apps = forAllSystems (system:
+        let
+          pkgs = pkgsFor system;
+        in
+        {
+          black-check = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "black-check" ''
+              #!/usr/bin/env bash
+              set -e
+              echo "🔍 Checking Python files with black..."
+              find . -type f -name "*.py" -not -path "./.venv/*" -not -path "./build/*" -not -path "./.git/*" | xargs black --check --diff
+              echo "✅ All Python files are formatted correctly!"
+            '');
+          };
+
+          black-fix = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "black-fix" ''
+              #!/usr/bin/env bash
+              set -e
+              echo "🔧 Fixing Python files with black..."
+              find . -type f -name "*.py" -not -path "./.venv/*" -not -path "./build/*" -not -path "./.git/*" | xargs black
+              echo "✅ All Python files have been formatted!"
+            '');
+          };
+        });
+
 
       devShells = forAllSystems (system:
         let
