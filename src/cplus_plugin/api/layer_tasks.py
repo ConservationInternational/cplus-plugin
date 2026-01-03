@@ -1,6 +1,6 @@
 # coding=utf-8
 """
- Plugin tasks related to the layer
+Plugin tasks related to the layer
 """
 
 from datetime import datetime

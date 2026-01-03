@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
- Custom tree widget class
+Custom tree widget class
 """
 
 from qgis.PyQt.QtWidgets import QTreeWidget, QTreeWidgetItem

@@ -1085,14 +1085,16 @@ def constant_raster_component_to_dict(
     :rtype: dict
     """
     return {
-        VALUE_INFO_ATTRIBUTE: constant_raster_info_to_dict(
-            constant_raster_component.value_info
-        )
-        if constant_raster_component.value_info
-        else {},
-        COMPONENT_UUID_ATTRIBUTE: str(constant_raster_component.component.uuid)
-        if constant_raster_component.component
-        else "",
+        VALUE_INFO_ATTRIBUTE: (
+            constant_raster_info_to_dict(constant_raster_component.value_info)
+            if constant_raster_component.value_info
+            else {}
+        ),
+        COMPONENT_UUID_ATTRIBUTE: (
+            str(constant_raster_component.component.uuid)
+            if constant_raster_component.component
+            else ""
+        ),
         PREFIX_ATTRIBUTE: constant_raster_component.prefix,
         BASE_NAME_ATTRIBUTE: constant_raster_component.base_name,
         SUFFIX_ATTRIBUTE: constant_raster_component.suffix,

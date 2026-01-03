@@ -1,7 +1,5 @@
 # coding=utf-8
-"""Tests for the plugin processing tasks
-
-"""
+"""Tests for the plugin processing tasks"""
 
 import unittest
 import json

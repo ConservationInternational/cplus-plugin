@@ -434,9 +434,11 @@ class SettingsManager(QtCore.QObject):
             settings.setValue("activities", activities)
             settings.setValue(
                 "server_uuid",
-                str(scenario_settings.server_uuid)
-                if scenario_settings.server_uuid
-                else None,
+                (
+                    str(scenario_settings.server_uuid)
+                    if scenario_settings.server_uuid
+                    else None
+                ),
             )
             settings.setValue("clip_to_studyarea", scenario_settings.clip_to_studyarea)
             settings.setValue("studyarea_path", scenario_settings.studyarea_path)

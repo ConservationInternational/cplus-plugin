@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    Priority group item widget
+Priority group item widget
 """
 
 import os

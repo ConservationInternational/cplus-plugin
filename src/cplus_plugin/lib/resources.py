@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    Resource path utilities for Qt6 compatibility
+Resource path utilities for Qt6 compatibility
 """
 
 import os

@@ -363,9 +363,9 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
         scenario_fill_symbol_layer = self.scenario_fill_symbol_layer()
         self._activity.layer_styles = {}
         if scenario_fill_symbol_layer:
-            self._activity.layer_styles[
-                ACTIVITY_SCENARIO_STYLE_ATTRIBUTE
-            ] = scenario_fill_symbol_layer.properties()
+            self._activity.layer_styles[ACTIVITY_SCENARIO_STYLE_ATTRIBUTE] = (
+                scenario_fill_symbol_layer.properties()
+            )
 
         output_activity_color_ramp = self.btn_color_ramp.colorRamp()
         if output_activity_color_ramp:
@@ -373,9 +373,9 @@ class ActivityEditorDialog(QtWidgets.QDialog, WidgetUi):
                 COLOR_RAMP_PROPERTIES_ATTRIBUTE: output_activity_color_ramp.properties(),
                 COLOR_RAMP_TYPE_ATTRIBUTE: output_activity_color_ramp.typeString(),
             }
-            self._activity.layer_styles[
-                ACTIVITY_LAYER_STYLE_ATTRIBUTE
-            ] = color_ramp_info
+            self._activity.layer_styles[ACTIVITY_LAYER_STYLE_ATTRIBUTE] = (
+                color_ramp_info
+            )
 
         # Mask layers settings
         mask_paths = []

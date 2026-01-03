@@ -1,6 +1,6 @@
 # coding=utf-8
 """Tests for the plugin settings manager logic
- for handling the priority weighting layers.
+for handling the priority weighting layers.
 
 """
 

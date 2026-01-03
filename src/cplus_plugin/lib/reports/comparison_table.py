@@ -56,9 +56,9 @@ class ScenarioComparisonTableInfo(QtCore.QObject):
                     continue
                 self._activity_header_info.append(activity_info)
 
-            self._scenario_activity_name_pixel[
-                result.scenario.uuid
-            ] = name_pixel_mapping
+            self._scenario_activity_name_pixel[result.scenario.uuid] = (
+                name_pixel_mapping
+            )
 
     @property
     def feedback(self) -> QgsProcessingFeedback:

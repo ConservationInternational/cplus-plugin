@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    Priority layer dialog
+Priority layer dialog
 """
 
 import os

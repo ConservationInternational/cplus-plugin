@@ -9,15 +9,21 @@ def log(message: str, level: typing.Optional[int] = 0):
     if isinstance(level, int):
         level_map = {
             0: Qgis.MessageLevel.Info if hasattr(Qgis, "MessageLevel") else Qgis.Info,
-            1: Qgis.MessageLevel.Warning
-            if hasattr(Qgis, "MessageLevel")
-            else Qgis.Warning,
-            2: Qgis.MessageLevel.Critical
-            if hasattr(Qgis, "MessageLevel")
-            else Qgis.Critical,
-            3: Qgis.MessageLevel.Success
-            if hasattr(Qgis, "MessageLevel")
-            else Qgis.Success,
+            1: (
+                Qgis.MessageLevel.Warning
+                if hasattr(Qgis, "MessageLevel")
+                else Qgis.Warning
+            ),
+            2: (
+                Qgis.MessageLevel.Critical
+                if hasattr(Qgis, "MessageLevel")
+                else Qgis.Critical
+            ),
+            3: (
+                Qgis.MessageLevel.Success
+                if hasattr(Qgis, "MessageLevel")
+                else Qgis.Success
+            ),
         }
         level = level_map.get(
             level,

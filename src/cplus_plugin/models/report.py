@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-""" Data models for report production."""
+"""Data models for report production."""
 
 import dataclasses
 from enum import IntEnum

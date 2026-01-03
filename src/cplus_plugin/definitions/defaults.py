@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    Definitions for all defaults settings
+Definitions for all defaults settings
 """
 
 import os

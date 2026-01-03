@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    Plugin utilities
+Plugin utilities
 """
 
 import hashlib

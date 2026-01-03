@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
- Item selection dialog  file
+Item selection dialog  file
 """
 
 import os

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    Priority group dialog
+Priority group dialog
 """
 
 import os

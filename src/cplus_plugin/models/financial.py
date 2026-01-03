@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-""" Data models for the financial elements of the tool."""
+"""Data models for the financial elements of the tool."""
 
 import dataclasses
 import typing

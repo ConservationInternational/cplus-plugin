@@ -138,3 +138,5 @@ reports
 ext-libs/
 .vscode
 .vscode-extensions
+.qgis_theme> 
+.claude
